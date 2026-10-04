@@ -93,15 +93,11 @@ SkillCheckConfig.LeadJitter = 0.10
 
 
 --[[
-	Bounds on what a client may request as an attempt percentage of their
-	forecasted max. The server derives the actual weight, so this is the only
-	number the client gets to influence.
-
-	The ceiling sits above 110% so players can attempt a genuine PR, while
-	refusing an absurd request that would resolve to difficulty 100 instantly.
+	The attempt-percentage bounds used to live here. They now belong to
+	LiftAttemptConfig, which is the correct owner: a percentage describes the whole
+	LIFT, not one phase of it, and the control phase was previously borrowing this
+	file's copy of them. The values themselves are unchanged.
 ]]
-SkillCheckConfig.MinimumAttemptPercent = 0.40
-SkillCheckConfig.MaximumAttemptPercent = 1.25
 
 --[[
 	How far a client's reported press time may disagree with the server's own

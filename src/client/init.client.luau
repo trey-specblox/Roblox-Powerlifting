@@ -8,10 +8,17 @@
 ]]
 
 local LiftingFolder = script:WaitForChild("Lifting")
-local SquatDepthController = require(LiftingFolder:WaitForChild("SquatDepthController"))
-local SquatControlController = require(LiftingFolder:WaitForChild("SquatControlController"))
+local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))
 
--- Both phases are driven by temporary debug triggers on separate keys and are not
--- yet chained into one squat attempt.
-SquatDepthController.start()
-SquatControlController.start()
+-- The single client owner of a lift attempt. It shows whichever phase the server
+-- presents and reports raw inputs; it decides nothing.
+LiftAttemptController.start()
+
+--[[
+	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
+	Squat is started from the keyboard. Deleting the Dev folder and these two lines
+	removes all test-only behaviour.
+]]
+local DevFolder = script:WaitForChild("Dev")
+local SquatAttemptDebugTrigger = require(DevFolder:WaitForChild("SquatAttemptDebugTrigger"))
+SquatAttemptDebugTrigger.start()

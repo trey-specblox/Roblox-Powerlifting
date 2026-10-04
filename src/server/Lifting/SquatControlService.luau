@@ -3,103 +3,73 @@
 	SquatControlService
 	Server / Lifting
 
-	The standalone Squat Control vertical slice. Server-authoritative end to end.
+	Runs ONE control phase, when told to. It does not own an attempt, does not read
+	a player's profile, does not resolve difficulty, and owns no RemoteEvents.
 
-	FLOW
+	WHY IT WORKS THIS WAY
 
-		client asks to attempt at a percentage
-			-> server clamps the percentage
-			-> server reads forecasted squat and Squat Control from the profile
-			-> server resolves difficulty
-			-> server builds the challenge INCLUDING the whole marker path, and
-			   keeps its own copy
-			-> client plays, drawing a bar it simulates locally for responsiveness
-			-> client reports only the times at which the player clicked
-			-> server REPLAYS the phase itself from those clicks
-			-> server announces its own result
+	It used to listen for its own request remote and start itself, which meant a
+	client could trigger a control phase directly and nothing above it could
+	sequence phases. Now LiftAttemptService drives it:
 
-	WHY REPLAY RATHER THAN TRUST
+		beginPhase(player, context, difficulty, callbacks)
+			-> builds the challenge and hands it to callbacks.present
+		submitInput(player, payload)
+			-> validates, replays, and reports once through callbacks.complete
 
-	The client never sends a progress value, a pass, or a fail. It sends a list of
-	click times, which is the smallest thing it is in a position to know. The server
-	runs the same deterministic simulation over its own copy of the marker path and
-	reaches its own conclusion. A client that reports a tidier set of clicks than it
-	really produced is still only choosing inputs, and inputs still have to actually
-	beat the phase.
+	That inversion is what lets the orchestrator own phase order and lock an
+	attempt's numbers, while this file stays reusable: the same code will run Bench
+	Bar Control with no changes, because everything lift-specific comes from the
+	phase's config entry.
 
-	This is a stronger position than the timing check is in, where a single press
-	time is inherently unverifiable. Here the whole interaction has to hold up.
+	WHAT IT STILL OWNS
 
-	WHAT IS STILL CHECKED
+	Challenge construction, input validation, the authoritative replay, grading,
+	its own timeout, and the guarantee that one phase reports exactly once.
 
-		- the phase must be one this build enables
-		- the percentage is clamped server-side and the weight derived from the
-		  profile, so the client cannot pick a weight
-		- click times must be finite, in range, and within the phase's own bounds
-		- clicks closer together than the configured rate cap are discarded, so an
-		  auto-clicker cannot flood the report
-		- the simulated elapsed time cannot exceed the wall-clock time the server
-		  measured, which stops a client claiming a long phase it never played
+	SERVER AUTHORITY
 
-	REMAINING LIMIT
-
-	Click times are still produced by the client, so a sufficiently sophisticated
-	cheat could synthesise a plausible winning input sequence offline. Beating the
-	simulation that way is far harder than reporting a single perfect press, but it
-	is not impossible. Before Control feeds permanent progression, add rate and
-	pattern analysis across attempts.
+	The client sends the times it clicked. Nothing else. This service replays those
+	clicks against its own copy of the marker path and reaches its own conclusion. A
+	client that reports a tidier set of clicks than it produced is still only
+	choosing inputs, and inputs still have to beat the phase.
 ]]
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local LiftingFolder = Shared:WaitForChild("Lifting")
-local DifficultyFolder = Shared:WaitForChild("Difficulty")
-local ModifiersFolder = Shared:WaitForChild("Modifiers")
 
 local ControlPhaseConfig = require(ConfigFolder:WaitForChild("ControlPhaseConfig"))
-local SkillCheckConfig = require(ConfigFolder:WaitForChild("SkillCheckConfig"))
-local LiftingRemotes = require(LiftingFolder:WaitForChild("LiftingRemotes"))
 local ControlChallenge = require(LiftingFolder:WaitForChild("ControlChallenge"))
 local ControlSimulation = require(LiftingFolder:WaitForChild("ControlSimulation"))
-local DifficultyResolver = require(DifficultyFolder:WaitForChild("DifficultyResolver"))
-local ModifierRegistry = require(ModifiersFolder:WaitForChild("ModifierRegistry"))
-
-local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
+local LiftAttempt = require(LiftingFolder:WaitForChild("LiftAttempt"))
 
 local SquatControlService = {}
-
---[[
-	The phases this slice accepts. Bench Bar Control exists in the design and in
-	ControlPhaseConfig's documentation but is deliberately not enabled.
-]]
-local ENABLED_PHASES: { [string]: boolean } = {
-	SquatControl = true,
-}
 
 -- How long after a phase's own bound the server waits before failing it outright.
 local TIMEOUT_GRACE_SECONDS = 2.0
 
-type ActiveChallenge = {
-	challenge: ControlChallenge.Challenge,
-	issuedAtClock: number,
-	token: number,
+export type Callbacks = {
+	present: (challenge: ControlChallenge.Challenge) -> (),
+	complete: (result: LiftAttempt.PhaseResult) -> (),
 }
 
-local active: { [Player]: ActiveChallenge } = {}
-local nextToken = 0
+type ActivePhase = {
+	challenge: ControlChallenge.Challenge,
+	attemptId: number,
+	issuedAtClock: number,
+	callbacks: Callbacks,
+	-- Set the moment a result is produced, so a phase can never report twice.
+	reported: boolean,
+}
+
+local active: { [Player]: ActivePhase } = {}
 local rng = Random.new()
-local remotes: LiftingRemotes.RemoteSet? = nil
-local started = false
 
 local function log(message: string, ...: any)
 	print("[SquatControlService] " .. string.format(message, ...))
-end
-
-local function clearActive(player: Player)
-	active[player] = nil
 end
 
 --[[
@@ -161,21 +131,17 @@ local function sanitiseClickTimes(
 end
 
 --[[
-	Replays the phase, announces the server's own result, and clears the slot.
+	Replays the phase and reports the outcome upward exactly once.
 ]]
-local function resolveAttempt(player: Player, entry: ActiveChallenge, reportedClicks: unknown)
-	local set = remotes
-	if set == nil then
+local function resolvePhase(player: Player, entry: ActivePhase, reportedClicks: unknown)
+	if entry.reported then
 		return
 	end
+	entry.reported = true
 
-	-- Ignore a late reply that arrives after a newer attempt has begun.
-	local current = active[player]
-	if current == nil or current.token ~= entry.token then
-		return
+	if active[player] == entry then
+		active[player] = nil
 	end
-
-	clearActive(player)
 
 	local clickTimes = sanitiseClickTimes(reportedClicks, entry.challenge)
 	local result = ControlSimulation.run(entry.challenge, clickTimes)
@@ -200,168 +166,120 @@ local function resolveAttempt(player: Player, entry: ActiveChallenge, reportedCl
 
 	local verdict = ControlChallenge.verdictText(entry.challenge.phase, outcome)
 
-	log(
-		"%s attempted %.1f kg (%.1f%%, difficulty %.1f %s) -> %s  [progress %.1f, %.2fs, on target %.2fs of %.2fs, %d clicks]",
-		player.Name,
-		entry.challenge.attemptWeightKg,
-		entry.challenge.intensityPercent,
-		entry.challenge.baseDifficulty,
-		entry.challenge.classification,
-		verdict,
+	local detail = string.format(
+		"progress %.1f, %.2fs, on target %.2fs, %d clicks accepted",
 		result.finalProgress,
 		result.elapsedSeconds,
 		result.timeInsideSeconds,
-		result.elapsedSeconds,
-		result.clicksApplied
+		#clickTimes
 	)
 
-	set.announceControlResult:FireClient(player, {
-		verdict = verdict,
-		outcome = outcome,
+	log("%s %s -> %s  [%s]", player.Name, entry.challenge.phase, verdict, detail)
+
+	entry.callbacks.complete({
+		phaseName = entry.challenge.phase,
+		kind = LiftAttempt.PhaseKind.Control,
 		passed = outcome == "Passed",
-		finalProgress = result.finalProgress,
-		elapsedSeconds = result.elapsedSeconds,
-		timeInsideSeconds = result.timeInsideSeconds,
-		clicksApplied = result.clicksApplied,
-		acceptedClicks = #clickTimes,
+		outcome = outcome,
+		verdict = verdict,
+		detail = detail,
 	})
 end
 
-local function onRequestControlAttempt(player: Player, requestedPhase: unknown, requestedPercent: unknown)
-	local set = remotes
-	if set == nil then
-		return
-	end
+--[[
+	Starts a control phase for a player.
 
-	if not ControlChallenge.isKnownPhase(requestedPhase) then
-		return
-	end
-
-	local phaseName = requestedPhase :: string
-	if not ENABLED_PHASES[phaseName] then
-		return
-	end
-
-	if typeof(requestedPercent) ~= "number" then
-		return
-	end
-
-	local percent = requestedPercent :: number
-	if percent ~= percent or percent == math.huge or percent == -math.huge then
-		return
-	end
-
-	--[[
-		The attempt percentage bounds are shared with the timing check, because they
-		describe the same decision: how much of your forecasted max you are willing
-		to put on the bar.
-	]]
-	percent = math.clamp(
-		percent,
-		SkillCheckConfig.MinimumAttemptPercent,
-		SkillCheckConfig.MaximumAttemptPercent
-	)
-
-	-- One phase at a time. Spamming the key cannot farm fresh challenges.
+	`difficulty` arrives already resolved by the orchestrator from locked inputs, so
+	this service never touches a profile and the attempt's numbers cannot drift
+	between phases.
+]]
+function SquatControlService.beginPhase(
+	player: Player,
+	context: LiftAttempt.PhaseContext,
+	difficulty: any,
+	callbacks: Callbacks
+): boolean
 	if active[player] ~= nil then
-		return
+		warn(string.format("[SquatControlService] %s already has a control phase running", player.Name))
+		return false
 	end
 
-	local data = PlayerDataService.getData(player)
-	if data == nil then
-		return
+	if ControlPhaseConfig.Phases[context.phaseName] == nil then
+		warn(string.format("[SquatControlService] unknown phase %q", tostring(context.phaseName)))
+		return false
 	end
 
-	local lift = ControlChallenge.liftFor(phaseName)
-	local techniqueStatName = ControlChallenge.techniqueStatFor(phaseName)
-	local forecastedMax = data.forecasted[lift]
-	local techniqueStat = data.technique[techniqueStatName]
-
-	if typeof(forecastedMax) ~= "number" or forecastedMax <= 0 then
-		warn(string.format("[SquatControlService] %s has no usable forecasted %s", player.Name, lift))
-		return
-	end
-
-	if typeof(techniqueStat) ~= "number" then
-		warn(string.format(
-			"[SquatControlService] %s has no technique stat %q",
-			player.Name,
-			techniqueStatName
-		))
-		return
-	end
-
-	local attemptWeight = forecastedMax * percent
-
-	local modifiers = ModifierRegistry.gather({
-		liftName = lift,
-		phase = phaseName,
-		profile = data,
-		isTraining = false,
-	})
-
-	local difficulty = DifficultyResolver.resolve({
-		attemptWeight = attemptWeight,
-		forecastedMax = forecastedMax,
-		techniqueStat = techniqueStat,
-		modifiers = modifiers,
-	})
-
-	local challenge = ControlChallenge.build(phaseName, difficulty, {
-		attemptWeightKg = attemptWeight,
-		forecastedMaxKg = forecastedMax,
+	local challenge = ControlChallenge.build(context.phaseName, difficulty, {
+		attemptWeightKg = context.attemptWeightKg,
+		forecastedMaxKg = context.forecastedMaxKg,
 	}, rng)
 
-	nextToken += 1
-	local entry: ActiveChallenge = {
+	local entry: ActivePhase = {
 		challenge = challenge,
+		attemptId = context.attemptId,
 		issuedAtClock = os.clock(),
-		token = nextToken,
+		callbacks = callbacks,
+		reported = false,
 	}
 	active[player] = entry
 
-	set.presentControlChallenge:FireClient(player, challenge)
+	callbacks.present(challenge)
 
 	--[[
 		Server-side backstop. A client that simply never reports would otherwise
-		hold its slot forever and block further attempts.
+		leave the attempt above us waiting forever.
 	]]
 	task.delay(challenge.maxPhaseSeconds + TIMEOUT_GRACE_SECONDS, function()
-		local stillActive = active[player]
-		if stillActive ~= nil and stillActive.token == entry.token then
-			resolveAttempt(player, entry, nil)
+		if active[player] == entry and not entry.reported then
+			resolvePhase(player, entry, nil)
 		end
 	end)
+
+	return true
 end
 
-local function onReportControlInput(player: Player, reportedClicks: unknown)
+--[[
+	Accepts the player's reported inputs for a running control phase.
+
+	`attemptId` is checked so a reply belonging to a finished attempt cannot resolve
+	a newer one.
+]]
+function SquatControlService.submitInput(player: Player, attemptId: number, payload: unknown)
 	local entry = active[player]
 	if entry == nil then
 		return
 	end
-	resolveAttempt(player, entry, reportedClicks)
+
+	if entry.attemptId ~= attemptId then
+		warn(string.format(
+			"[SquatControlService] %s submitted input for attempt %s during attempt %s; ignored",
+			player.Name,
+			tostring(attemptId),
+			tostring(entry.attemptId)
+		))
+		return
+	end
+
+	resolvePhase(player, entry, payload)
 end
 
-function SquatControlService.start()
-	assert(not started, "[SquatControlService] start() must only be called once")
-	started = true
-
-	local set = LiftingRemotes.createOnServer(ReplicatedStorage)
-	remotes = set
-
-	set.requestControlAttempt.OnServerEvent:Connect(onRequestControlAttempt)
-	set.reportControlInput.OnServerEvent:Connect(onReportControlInput)
-
-	Players.PlayerRemoving:Connect(clearActive)
-
-	for phaseName in pairs(ENABLED_PHASES) do
-		log(
-			"enabled phase %s (lift %s, driven by %s)",
-			phaseName,
-			ControlChallenge.liftFor(phaseName),
-			ControlChallenge.techniqueStatFor(phaseName)
-		)
+--[[
+	Drops a running phase without reporting, for a player leaving or an attempt
+	being abandoned from above.
+]]
+function SquatControlService.abandon(player: Player)
+	local entry = active[player]
+	if entry ~= nil then
+		entry.reported = true
+		active[player] = nil
 	end
+end
+
+--[[
+	True while this player has a control phase running.
+]]
+function SquatControlService.isRunning(player: Player): boolean
+	return active[player] ~= nil
 end
 
 return SquatControlService

@@ -36,7 +36,12 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LiftingFolder = Shared:WaitForChild("Lifting")
+local ConfigFolder = Shared:WaitForChild("Config")
 local Simulation = require(LiftingFolder:WaitForChild("ControlSimulation"))
+local ControlPhaseConfig = require(ConfigFolder:WaitForChild("ControlPhaseConfig"))
+
+-- Must match what the server enforces when it replays the reported clicks.
+local MINIMUM_CLICK_GAP = 1 / ControlPhaseConfig.MaxClicksPerSecond
 
 local ControlUI = {}
 
@@ -85,6 +90,8 @@ local accumulator = 0
 local pendingClicks: { number } = {}
 local recordedClicks: { number } = {}
 local phaseClock = 0
+-- Time of the last click the rate cap allowed through, for the check in registerImpulse.
+local lastAcceptedClick = -math.huge
 local reporter: Reporter? = nil
 local finished = true
 
@@ -306,12 +313,26 @@ end
 
 	The time is measured against the same clock the local simulation advances on,
 	so what the player saw is what gets reported.
+
+	THE RATE CAP HERE IS NOT COSMETIC. The server discards clicks closer together
+	than 1 / MaxClicksPerSecond before it replays them. If the client recorded and
+	simulated clicks the server then threw away, the two would diverge: a player
+	mashing could watch the local meter fill and then be told the phase failed.
+	Applying the same cap at the point of recording keeps the client simulating
+	exactly the input the server will accept.
 ]]
 function ControlUI.registerImpulse()
 	if finished or activeChallenge == nil then
 		return
 	end
+
 	local time = os.clock() - phaseClock
+
+	if time - lastAcceptedClick < MINIMUM_CLICK_GAP then
+		return
+	end
+	lastAcceptedClick = time
+
 	table.insert(pendingClicks, time)
 	table.insert(recordedClicks, time)
 end
@@ -337,6 +358,7 @@ function ControlUI.run(challenge: ControlChallengeType, report: Reporter)
 	pendingClicks = {}
 	recordedClicks = {}
 	phaseClock = os.clock()
+	lastAcceptedClick = -math.huge
 	reporter = report
 	finished = false
 
@@ -428,13 +450,38 @@ function ControlUI.showVerdict(verdictText: string, passed: boolean, detailLine:
 		current.readout.Text = detailLine
 	end
 
-	task.delay(2.5, function()
-		local still = visuals
-		if still ~= nil and still.verdict.Text == verdictText then
-			still.gui.Enabled = false
-			still.verdict.Text = ""
-		end
-	end)
+	--[[
+		This does NOT schedule its own disappearance.
+
+		It used to hide itself 2.5 seconds after a verdict, which collided with the
+		orchestrator's 0.75 second inter-phase transition: the depth check appeared
+		while this UI was still on screen. Two timers, neither aware of the other.
+
+		Whoever is sequencing the phases knows when this UI is in the way, so it
+		calls hide(). See LiftAttemptController.
+	]]
+end
+
+--[[
+	Clears the phase from the screen immediately.
+
+	Called by the controller, which is the only thing that knows whether another
+	phase is about to need the space.
+]]
+function ControlUI.hide()
+	local current = visuals
+	if current == nil then
+		return
+	end
+
+	finished = true
+	stopStepping()
+
+	current.gui.Enabled = false
+	current.verdict.Text = ""
+	current.readout.Text = ""
+	current.headline.Text = ""
+	current.detail.Text = ""
 end
 
 --[[

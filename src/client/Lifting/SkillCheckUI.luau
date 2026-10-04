@@ -76,10 +76,10 @@ local visuals: Visuals? = nil
 --[[
 	Live check state. Nil when no check is running.
 
-	This module does NOT listen for input. SquatDepthController owns every key and
+	This module does NOT listen for input. LiftAttemptController owns every key and
 	calls pressNow when the press belongs to a running check. Two listeners on the
-	same InputBegan would make behaviour depend on connection order, where one
-	press could both resolve the current check and start the next one.
+	same input would make behaviour depend on connection order, where one press
+	could both resolve the current check and start the next one.
 ]]
 local activeConnection: RBXScriptConnection? = nil
 local activeStartClock: number? = nil
@@ -501,13 +501,31 @@ function SkillCheckUI.showVerdict(verdictText: string, passed: boolean)
 
 	current.pivot.Rotation = 0
 
-	task.delay(2.0, function()
-		local still = visuals
-		if still ~= nil and still.verdict.Text ~= "" then
-			still.gui.Enabled = false
-			still.verdict.Text = ""
-		end
-	end)
+	--[[
+		This does NOT schedule its own disappearance, for the same reason ControlUI
+		does not: a phase UI cannot know when the next phase needs the screen. The
+		controller sequencing the attempt calls hide().
+	]]
+end
+
+--[[
+	Clears the check from the screen immediately.
+]]
+function SkillCheckUI.hide()
+	local current = visuals
+	if current == nil then
+		return
+	end
+
+	activeFinished = true
+	stopTracking()
+	clearSegments()
+
+	current.gui.Enabled = false
+	current.verdict.Text = ""
+	current.headline.Text = ""
+	current.detail.Text = ""
+	current.pivot.Rotation = 0
 end
 
 --[[
