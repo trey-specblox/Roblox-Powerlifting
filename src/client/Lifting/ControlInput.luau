@@ -50,11 +50,19 @@ local bound = false
 --[[
 	Starts routing impulses to `onImpulse`.
 
+	`onRelease` is optional and receives the matching release. The squat's control
+	phase only cares about presses and passes nothing, so its behaviour is
+	unchanged; the bench's power phase needs releases, because telling a continuous
+	hold from a burst of clicks is impossible without knowing when the input went
+	back up.
+
 	Passing true for createTouchButton means touch devices get an on-screen button
 	without any further work, which is what makes mobile and tablet support a
-	configuration detail rather than a rewrite.
+	configuration detail rather than a rewrite. A held touch button reports Begin
+	and End just as a held mouse button does, so the hold mechanic carries across
+	devices for free.
 ]]
-function ControlInput.bind(onImpulse: () -> ())
+function ControlInput.bind(onImpulse: () -> (), onRelease: (() -> ())?)
 	if bound then
 		return
 	end
@@ -65,8 +73,10 @@ function ControlInput.bind(onImpulse: () -> ())
 		function(_actionName, state)
 			if state == Enum.UserInputState.Begin then
 				onImpulse()
+			elseif state == Enum.UserInputState.End and onRelease ~= nil then
+				onRelease()
 			end
-			-- Sink, so nothing else reacts to a click meant for the bar.
+			-- Sink, so nothing else reacts to a click meant for the lift.
 			return Enum.ContextActionResult.Sink
 		end,
 		true,

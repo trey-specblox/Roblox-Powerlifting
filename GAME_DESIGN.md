@@ -1,4 +1,30 @@
+## MECHANIC ASSIGNMENT — CURRENT SOURCE OF TRUTH
+
+Each lift has its own first phase. All three converge on the same reusable timing
+skill check as their second phase.
+
+| Lift | Phase 1 | Phase 2 | Phase 1 stat | Phase 2 stat |
+|---|---|---|---|---|
+| Squat | Fisch-style Control (`References/FischeGame.md`) | Depth timing check (`References/DBD.md`) | Squat Control | Depth Awareness |
+| Bench | Test Your Might power (`References/testyourmight.md`) | Press timing check (`References/DBD.md`) | Start Control | Press Power |
+| Deadlift | Typing (`References/TypingGame.md`) | Lockout timing check (`References/DBD.md`) | — | Lockout |
+
+The Fisch-style control mechanic is **Squat-only**. The Test Your Might mechanic is
+**Bench-only**. The timing check is shared by all three, which is why it was built
+once and is driven entirely from per-phase configuration.
+
+> **This table is a correction.** `testyourmight.md` and `FischeGame.md` were
+> originally swapped: Test Your Might was assigned to Squat Control and the
+> Fisch-style mechanic to the Bench. Sections 7 and 9 below, and both reference
+> files, have been corrected to match this table. Where anything in this document
+> still disagrees, this table wins.
+
+Failing either phase of a lift is a NO LIFT and the second phase does not run.
+
+---
+
 1. Game Vision
+
 RPF is a progression-focused Roblox powerlifting RPG/simulator built around the real concepts of Squat, Bench Press, Deadlift, weight classes, training, meets, equipment, records and competition.
 The goal isn't simply:
 click → gain strength → rebirth.
@@ -169,12 +195,18 @@ Establish/improve the player's forecasted squat.
 ## Squat
 
 ### Control Phase
-The player completes the Squat Control minigame.
+The player completes the Squat Control minigame: a Fisch-style control mechanic.
 
-Reference: `References/testyourmight.md`
+Reference: `References/FischeGame.md`
 
 Relevant Stat: Squat Control
-See references/testyourmight.md for the visual/mechanical reference and implementation direction for this minigame. Read that file before designing or implementing this mechanic. If the reference is unclear or inaccessible, ask me rather than inventing the missing behavior. 
+
+> **Corrected.** This section previously pointed at `References/testyourmight.md`.
+> The two mechanic references had been swapped. The Squat's first phase is the
+> Fisch-style control mechanic; Test Your Might belongs to the Bench. See the
+> mechanic assignment table at the top of this document.
+
+See `References/FischeGame.md` for the visual/mechanical reference and implementation direction for this minigame. Read that file before designing or implementing this mechanic. If the reference is unclear or inaccessible, ask me rather than inventing the missing behavior.
 
 
 ### Depth Phase
@@ -234,13 +266,53 @@ Press Power
 Start Control mechanic
 ## Bench Press
 
-### Bar Control Phase
-The player must stabilize and control the bar.
+### Power Phase (Test Your Might)
+The player builds explosive drive off the chest through rapid repeated input.
 
-Reference: `References/FischeGame.md`
+Reference: `References/testyourmight.md`
 
 Relevant Stat: Start Control
-See references/Fischegame.md for the visual/mechanical reference and implementation direction for this minigame. Read that file before designing or implementing this mechanic. If the reference is unclear or inaccessible, ask me rather than inventing the missing behavior. 
+
+> **Corrected.** This section previously described a Fisch-style "Bar Control Phase"
+> and pointed at `References/FischeGame.md`. The two mechanic references had been
+> swapped. The Bench's first phase is the Test Your Might rapid-input power
+> mechanic; the Fisch-style control mechanic belongs to the Squat and is Squat-only.
+> See the mechanic assignment table at the top of this document.
+>
+> The stat is unchanged: Start Control still drives the Bench's first phase.
+
+A **circular** progress meter. The player's ring starts at the outer edge and
+contracts inward as progress builds; decay pushes it back out. The inner success
+circle is 100% complete, and **reaching it is the single authoritative completion
+condition** — there is no separate "power" requirement to satisfy afterwards.
+
+The mashing is interrupted two or three times by a **HOLD**. The instruction changes
+from `MASH!` to `HOLD!` and the player must press and keep the input held:
+
+- holding correctly **preserves** progress (decay pauses)
+- not holding lets progress **slip outward**
+- continuing to spam click **costs** progress
+
+A hold has no deadline and no press budget. It ends when the input has been held
+continuously for the required duration, so a legitimate continuous hold can never
+fail. Holds are triggered by **progress**, not by the clock, so every player meets
+every hold on the way in however fast they mash, and no hold can arrive after the
+circle is already complete.
+
+Once the inner circle is reached the phase passes immediately, progress freezes, and
+no further decay, hold or input is processed.
+
+This phase tests explosive repeated input plus one deliberate mode switch; the Press
+phase below provides the precision timing, so this one does not duplicate it. There
+is no moving indicator and no strike zone.
+
+> **Superseded.** An earlier prototype used a *vertical* meter with no hold, and a
+> later one used fixed STOP windows that failed the phase outright. Both are gone.
+> The hold replaced STOP because a punishment of lost progress is fairer than an
+> instant loss, and the circle replaced the bar because the inner target reads as a
+> finish line.
+
+See `References/testyourmight.md` for the visual/mechanical reference and implementation direction for this minigame. Read that file before designing or implementing this mechanic. If the reference is unclear or inaccessible, ask me rather than inventing the missing behavior.
 
 
 ### Press Phase

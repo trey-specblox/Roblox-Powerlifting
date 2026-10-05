@@ -103,7 +103,7 @@ SkillCheckConfig.LeadJitter = 0.10
 	How far a client's reported press time may disagree with the server's own
 	measurement before it is rejected. Covers network latency.
 
-	Read the honest limits of this in SquatDepthService.
+	Read the honest limits of this in SkillCheckPhaseService.
 ]]
 SkillCheckConfig.PressTimeToleranceSeconds = 1.0
 
@@ -348,6 +348,24 @@ SkillCheckConfig.Phases = {
 			early = "NO LIFT - HIGH SQUAT",
 			late = "NO LIFT - MISSED DEPTH",
 			noInput = "NO LIFT - NO ATTEMPT",
+		},
+	},
+
+	--[[
+		The bench's second phase. Shares the Default profile with Squat Depth for
+		now, so the two timing checks feel identical and only their stat and wording
+		differ. Give it its own profile later if bench should feel distinct.
+	]]
+	BenchPress = {
+		lift = "Bench",
+		techniqueStat = "PressPower",
+		profile = "Default",
+		displayName = "PRESS",
+		verdicts = {
+			pass = "GOOD LIFT",
+			early = "PRESS EARLY",
+			late = "PRESS LATE",
+			noInput = "NO PRESS",
 		},
 	},
 }

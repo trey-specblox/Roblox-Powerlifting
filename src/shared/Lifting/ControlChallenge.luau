@@ -280,4 +280,15 @@ function ControlChallenge.verdictText(phaseName: string, outcome: string): strin
 	return phase.verdicts.failLostControl
 end
 
+--[[
+	The label shown for a phase, e.g. "DEPTH". The attempt banner uses it so a
+	transition can name the phase that is coming next, instead of the client having
+	to know each lift's sequence.
+]]
+function ControlChallenge.displayNameFor(phaseName: string): string
+	local phase = ControlPhaseConfig.Phases[phaseName]
+	assert(phase ~= nil, string.format("[ControlChallenge] unknown phase %q", phaseName))
+	return phase.displayName
+end
+
 return ControlChallenge

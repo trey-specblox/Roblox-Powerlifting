@@ -31,6 +31,7 @@ local LiftingRemotes = require(LiftingFolder:WaitForChild("LiftingRemotes"))
 
 local ControlInput = require(script.Parent.ControlInput)
 local ControlUI = require(script.Parent.ControlUI)
+local PowerUI = require(script.Parent.PowerUI)
 local SkillCheckUI = require(script.Parent.SkillCheckUI)
 
 local LiftAttemptController = {}
@@ -46,6 +47,8 @@ local PRESS_KEY = Enum.KeyCode.Space
 local PRESS_ACTION = "RpfLiftPhasePress"
 
 local SKILL_CHECK_PROMPT = "PRESS SPACE IN THE ZONE"
+-- The power phase wants volume, not timing, so its prompt says so plainly.
+local POWER_PROMPT = "MASH TO BUILD POWER - HOLD WHEN TOLD TO HOLD"
 
 local started = false
 local remotes: LiftingRemotes.RemoteSet? = nil
@@ -181,6 +184,8 @@ end
 local function hidePhaseUI()
 	if shownPhaseKind == LiftAttempt.PhaseKind.Control then
 		ControlUI.hide()
+	elseif shownPhaseKind == LiftAttempt.PhaseKind.Power then
+		PowerUI.hide()
 	elseif shownPhaseKind == LiftAttempt.PhaseKind.SkillCheck then
 		SkillCheckUI.hide()
 	end
@@ -254,6 +259,26 @@ local function onPresentPhase(payload: any)
 			setJumpEnabled(true)
 			set.reportPhaseInput:FireServer(payload.attemptId, LiftAttempt.PhaseKind.Control, clickTimes)
 		end)
+	elseif payload.kind == LiftAttempt.PhaseKind.Power then
+		--[[
+			The power phase reuses ControlInput, which is the project's one abstract
+			impulse action. Both phases want "the player produced an input right now"
+			and neither cares which device sent it, so mobile, tablet and console
+			support arrives for the bench at the same time it arrives for the squat.
+		]]
+		--[[
+			The power phase binds BOTH directions, because its hold windows need to
+			know when the input went back up. The squat's control phase binds only
+			presses, so its behaviour is untouched by this.
+		]]
+		ControlInput.bind(PowerUI.registerPress, PowerUI.registerRelease)
+		setJumpEnabled(false)
+
+		PowerUI.run(challenge, function(inputEvents)
+			ControlInput.unbind()
+			setJumpEnabled(true)
+			set.reportPhaseInput:FireServer(payload.attemptId, LiftAttempt.PhaseKind.Power, inputEvents)
+		end)
 	else
 		SkillCheckUI.setInstruction(SKILL_CHECK_PROMPT)
 		bindPressKey()
@@ -282,7 +307,9 @@ local function onAnnouncePhaseResult(payload: any)
 			persists across phases.
 		]]
 		hidePhaseUI()
-		setBanner("DEPTH", Color3.fromRGB(255, 214, 92))
+		-- Named by the server from the next phase's config, so a bench says PRESS
+		-- where a squat says DEPTH.
+		setBanner(payload.nextPhaseDisplayName or "NEXT", Color3.fromRGB(255, 214, 92))
 		setStatus(payload.verdict)
 		return
 	end
@@ -294,6 +321,8 @@ local function onAnnouncePhaseResult(payload: any)
 	]]
 	if payload.kind == LiftAttempt.PhaseKind.Control then
 		ControlUI.showVerdict(payload.verdict, payload.passed, "server: " .. tostring(payload.detail))
+	elseif payload.kind == LiftAttempt.PhaseKind.Power then
+		PowerUI.showVerdict(payload.verdict, payload.passed, "server: " .. tostring(payload.detail))
 	else
 		SkillCheckUI.showVerdict(payload.verdict, payload.passed)
 	end
@@ -339,6 +368,7 @@ function LiftAttemptController.start()
 	local playerGui = player:WaitForChild("PlayerGui")
 
 	ControlUI.mount(playerGui, ControlInput.promptText())
+	PowerUI.mount(playerGui, POWER_PROMPT)
 	SkillCheckUI.mount(playerGui, SKILL_CHECK_PROMPT)
 	bannerLabel, statusLabel = buildBanner(playerGui)
 

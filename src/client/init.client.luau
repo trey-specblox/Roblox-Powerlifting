@@ -16,9 +16,9 @@ LiftAttemptController.start()
 
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
-	Squat is started from the keyboard. Deleting the Dev folder and these two lines
+	lift is started from the keyboard. Deleting the Dev folder and these two lines
 	removes all test-only behaviour.
 ]]
 local DevFolder = script:WaitForChild("Dev")
-local SquatAttemptDebugTrigger = require(DevFolder:WaitForChild("SquatAttemptDebugTrigger"))
-SquatAttemptDebugTrigger.start()
+local LiftAttemptDebugTrigger = require(DevFolder:WaitForChild("LiftAttemptDebugTrigger"))
+LiftAttemptDebugTrigger.start()

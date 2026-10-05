@@ -12,22 +12,24 @@
 
 	WHY THE SEQUENCE IS A TABLE
 
-	A lift is a list of phases. Adding Bench later should be an entry here plus an
-	interaction point, not a new orchestrator:
+	A lift is a list of phases. Adding Bench was an entry here plus one dispatch
+	branch in the orchestrator, not a new orchestrator.
 
-		Bench = {
-			displayName = "BENCH",
-			phases = {
-				{ kind = "Control",    phaseName = "BenchBarControl" },
-				{ kind = "SkillCheck", phaseName = "BenchPress" },
-			},
-		}
+	EACH LIFT HAS ITS OWN FIRST PHASE, AND THEY CONVERGE ON THE SAME SECOND
 
-	Deadlift will need a third kind ("Typing") when that mechanic exists. The
-	orchestrator dispatches on `kind`, so a new kind is a new branch there and
-	nothing else changes.
+		Squat     Control (Fisch-style)       -> SkillCheck
+		Bench     Power (Test Your Might)     -> SkillCheck
+		Deadlift  Typing (not yet built)      -> SkillCheck
 
-	Only Squat is defined. The others are deliberately absent rather than stubbed.
+	The Fisch-style control mechanic is Squat-only and the Test Your Might power
+	mechanic is Bench-only. The timing check is shared by all three, which is why it
+	was built once and is driven entirely from its phase config.
+
+	Deadlift will need a "Typing" kind when that mechanic exists. The orchestrator
+	dispatches on `kind`, so a new kind is a new branch there and nothing else
+	changes.
+
+	Deadlift is deliberately absent rather than stubbed.
 
 	=========================================================================
 	TIMINGS BELOW ARE PROVISIONAL UI VALUES, NOT FINAL.
@@ -35,6 +37,7 @@
 ]]
 
 local ControlPhaseConfig = require(script.Parent.ControlPhaseConfig)
+local PowerPhaseConfig = require(script.Parent.PowerPhaseConfig)
 local SkillCheckConfig = require(script.Parent.SkillCheckConfig)
 
 local LiftAttemptConfig = {}
@@ -53,10 +56,14 @@ LiftAttemptConfig.MinimumAttemptPercent = 0.40
 LiftAttemptConfig.MaximumAttemptPercent = 1.25
 
 --[[
-	Pause between one phase passing and the next being presented.
+	Default pause between one phase passing and the next being presented.
 
 	Without it the squat would snap from the control minigame straight into a
 	timing check with no beat, which reads as a glitch rather than a transition.
+
+	A phase may override this with its own `transitionSeconds` in the sequence
+	below, which is how the bench gets a longer beat after its power phase without
+	changing the squat's pacing.
 ]]
 LiftAttemptConfig.InterPhaseTransitionSeconds = 0.75
 
@@ -97,6 +104,21 @@ LiftAttemptConfig.Sequences = {
 			{ kind = "SkillCheck", phaseName = "SquatDepth" },
 		},
 	},
+
+	Bench = {
+		displayName = "BENCH",
+		lift = "Bench",
+		phases = {
+			--[[
+				The power phase ends the instant the ring reaches the inner circle, which
+				can happen mid-mash. A full second lets the player register that power is
+				complete and take their hand off the mouse before the press timing check
+				wants the spacebar, instead of carrying mashing momentum into it.
+			]]
+			{ kind = "Power", phaseName = "BenchStart", transitionSeconds = 1.0 },
+			{ kind = "SkillCheck", phaseName = "BenchPress" },
+		},
+	},
 }
 
 --[[
@@ -126,6 +148,16 @@ for liftName, sequence in pairs(LiftAttemptConfig.Sequences) do
 				ControlPhaseConfig.Phases[phase.phaseName] ~= nil,
 				string.format(
 					"[LiftAttemptConfig] %s phase %d names %q, which is not in ControlPhaseConfig.Phases",
+					liftName,
+					index,
+					tostring(phase.phaseName)
+				)
+			)
+		elseif phase.kind == "Power" then
+			assert(
+				PowerPhaseConfig.Phases[phase.phaseName] ~= nil,
+				string.format(
+					"[LiftAttemptConfig] %s phase %d names %q, which is not in PowerPhaseConfig.Phases",
 					liftName,
 					index,
 					tostring(phase.phaseName)

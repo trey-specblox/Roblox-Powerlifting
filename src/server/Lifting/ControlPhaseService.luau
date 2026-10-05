@@ -1,6 +1,6 @@
 --!strict
 --[[
-	SquatControlService
+	ControlPhaseService
 	Server / Lifting
 
 	Runs ONE control phase, when told to. It does not own an attempt, does not read
@@ -46,7 +46,7 @@ local ControlChallenge = require(LiftingFolder:WaitForChild("ControlChallenge"))
 local ControlSimulation = require(LiftingFolder:WaitForChild("ControlSimulation"))
 local LiftAttempt = require(LiftingFolder:WaitForChild("LiftAttempt"))
 
-local SquatControlService = {}
+local ControlPhaseService = {}
 
 -- How long after a phase's own bound the server waits before failing it outright.
 local TIMEOUT_GRACE_SECONDS = 2.0
@@ -69,7 +69,7 @@ local active: { [Player]: ActivePhase } = {}
 local rng = Random.new()
 
 local function log(message: string, ...: any)
-	print("[SquatControlService] " .. string.format(message, ...))
+	print("[ControlPhaseService] " .. string.format(message, ...))
 end
 
 --[[
@@ -156,7 +156,7 @@ local function resolvePhase(player: Player, entry: ActivePhase, reportedClicks: 
 
 	if result.elapsedSeconds > serverElapsed + ControlPhaseConfig.TimingToleranceSeconds then
 		warn(string.format(
-			"[SquatControlService] %s reported a %.2fs phase but only %.2fs elapsed server-side; failing it",
+			"[ControlPhaseService] %s reported a %.2fs phase but only %.2fs elapsed server-side; failing it",
 			player.Name,
 			result.elapsedSeconds,
 			serverElapsed
@@ -193,19 +193,19 @@ end
 	this service never touches a profile and the attempt's numbers cannot drift
 	between phases.
 ]]
-function SquatControlService.beginPhase(
+function ControlPhaseService.beginPhase(
 	player: Player,
 	context: LiftAttempt.PhaseContext,
 	difficulty: any,
 	callbacks: Callbacks
 ): boolean
 	if active[player] ~= nil then
-		warn(string.format("[SquatControlService] %s already has a control phase running", player.Name))
+		warn(string.format("[ControlPhaseService] %s already has a control phase running", player.Name))
 		return false
 	end
 
 	if ControlPhaseConfig.Phases[context.phaseName] == nil then
-		warn(string.format("[SquatControlService] unknown phase %q", tostring(context.phaseName)))
+		warn(string.format("[ControlPhaseService] unknown phase %q", tostring(context.phaseName)))
 		return false
 	end
 
@@ -244,7 +244,7 @@ end
 	`attemptId` is checked so a reply belonging to a finished attempt cannot resolve
 	a newer one.
 ]]
-function SquatControlService.submitInput(player: Player, attemptId: number, payload: unknown)
+function ControlPhaseService.submitInput(player: Player, attemptId: number, payload: unknown)
 	local entry = active[player]
 	if entry == nil then
 		return
@@ -252,7 +252,7 @@ function SquatControlService.submitInput(player: Player, attemptId: number, payl
 
 	if entry.attemptId ~= attemptId then
 		warn(string.format(
-			"[SquatControlService] %s submitted input for attempt %s during attempt %s; ignored",
+			"[ControlPhaseService] %s submitted input for attempt %s during attempt %s; ignored",
 			player.Name,
 			tostring(attemptId),
 			tostring(entry.attemptId)
@@ -267,7 +267,7 @@ end
 	Drops a running phase without reporting, for a player leaving or an attempt
 	being abandoned from above.
 ]]
-function SquatControlService.abandon(player: Player)
+function ControlPhaseService.abandon(player: Player)
 	local entry = active[player]
 	if entry ~= nil then
 		entry.reported = true
@@ -278,8 +278,8 @@ end
 --[[
 	True while this player has a control phase running.
 ]]
-function SquatControlService.isRunning(player: Player): boolean
+function ControlPhaseService.isRunning(player: Player): boolean
 	return active[player] ~= nil
 end
 
-return SquatControlService
+return ControlPhaseService

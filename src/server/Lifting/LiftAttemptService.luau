@@ -55,13 +55,15 @@ local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig")
 local LiftAttempt = require(LiftingFolder:WaitForChild("LiftAttempt"))
 local LiftingRemotes = require(LiftingFolder:WaitForChild("LiftingRemotes"))
 local ControlChallenge = require(LiftingFolder:WaitForChild("ControlChallenge"))
+local PowerChallenge = require(LiftingFolder:WaitForChild("PowerChallenge"))
 local SkillCheckChallenge = require(LiftingFolder:WaitForChild("SkillCheckChallenge"))
 local DifficultyResolver = require(DifficultyFolder:WaitForChild("DifficultyResolver"))
 local ModifierRegistry = require(ModifiersFolder:WaitForChild("ModifierRegistry"))
 
 local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
-local SquatControlService = require(script.Parent.SquatControlService)
-local SquatDepthService = require(script.Parent.SquatDepthService)
+local ControlPhaseService = require(script.Parent.ControlPhaseService)
+local PowerPhaseService = require(script.Parent.PowerPhaseService)
+local SkillCheckPhaseService = require(script.Parent.SkillCheckPhaseService)
 
 local LiftAttemptService = {}
 
@@ -71,11 +73,18 @@ local LiftAttemptService = {}
 ]]
 local ENABLED_LIFTS: { [string]: boolean } = {
 	Squat = true,
+	Bench = true,
 }
 
 type PhaseSpec = {
 	kind: string,
 	phaseName: string,
+	--[[
+		Optional override for the pause AFTER this phase passes. Absent means the
+		shared LiftAttemptConfig.InterPhaseTransitionSeconds applies, which is what
+		every squat phase uses.
+	]]
+	transitionSeconds: number?,
 }
 
 type Attempt = {
@@ -118,8 +127,9 @@ end
 	Tears down whatever the player had running, without announcing anything.
 ]]
 local function clearAttempt(player: Player)
-	SquatControlService.abandon(player)
-	SquatDepthService.abandon(player)
+	ControlPhaseService.abandon(player)
+	PowerPhaseService.abandon(player)
+	SkillCheckPhaseService.abandon(player)
 	attempts[player] = nil
 end
 
@@ -130,10 +140,24 @@ end
 	from the weight on the bar. Only the effective technique differs, because each
 	phase reads a different technique stat.
 ]]
+--[[
+	The on-screen label for a phase, from that phase system's own config.
+]]
+local function phaseDisplayName(spec: PhaseSpec): string
+	if spec.kind == LiftAttempt.PhaseKind.Control then
+		return ControlChallenge.displayNameFor(spec.phaseName)
+	elseif spec.kind == LiftAttempt.PhaseKind.Power then
+		return PowerChallenge.displayNameFor(spec.phaseName)
+	end
+	return SkillCheckChallenge.displayNameFor(spec.phaseName)
+end
+
 local function resolvePhaseDifficulty(attempt: Attempt, spec: PhaseSpec): any
 	local techniqueStatName: string
 	if spec.kind == LiftAttempt.PhaseKind.Control then
 		techniqueStatName = ControlChallenge.techniqueStatFor(spec.phaseName)
+	elseif spec.kind == LiftAttempt.PhaseKind.Power then
+		techniqueStatName = PowerChallenge.techniqueStatFor(spec.phaseName)
 	else
 		techniqueStatName = SkillCheckChallenge.techniqueStatFor(spec.phaseName)
 	end
@@ -249,6 +273,19 @@ local function onPhaseComplete(attempt: Attempt, spec: PhaseSpec, result: LiftAt
 
 	local hasNextPhase = result.passed and attempt.phaseIndex < #attempt.phases
 
+	--[[
+		The next phase's label travels with this result, so the transition banner can
+		name what is coming. Read from that phase's own config rather than guessed,
+		which is why a bench says PRESS where a squat says DEPTH.
+	]]
+	local nextPhaseDisplayName: string? = nil
+	if hasNextPhase then
+		local nextSpec = attempt.phases[attempt.phaseIndex + 1]
+		if nextSpec ~= nil then
+			nextPhaseDisplayName = phaseDisplayName(nextSpec)
+		end
+	end
+
 	local phasePayload: LiftAttempt.PhaseResultPayload = {
 		attemptId = attempt.attemptId,
 		kind = result.kind,
@@ -257,6 +294,7 @@ local function onPhaseComplete(attempt: Attempt, spec: PhaseSpec, result: LiftAt
 		verdict = result.verdict,
 		detail = result.detail,
 		hasNextPhase = hasNextPhase,
+		nextPhaseDisplayName = nextPhaseDisplayName,
 	}
 	set.announcePhaseResult:FireClient(player, phasePayload)
 
@@ -291,9 +329,22 @@ local function onPhaseComplete(attempt: Attempt, spec: PhaseSpec, result: LiftAt
 		return
 	end
 
-	-- A beat between phases, so the squat does not snap from one minigame to the next.
+	--[[
+		A beat between phases, so a lift does not snap from one minigame to the next.
+
+		The phase that just FINISHED chooses the length, falling back to the shared
+		default. That lets the bench take a longer pause after its power phase without
+		altering the squat, which keeps its 0.75s.
+	]]
 	local attemptId = attempt.attemptId
-	task.delay(LiftAttemptConfig.InterPhaseTransitionSeconds, function()
+	-- phaseIndex was advanced above, so the phase that just finished is the one before it.
+	local finishedPhase = attempt.phases[attempt.phaseIndex - 1]
+	local transitionSeconds = LiftAttemptConfig.InterPhaseTransitionSeconds
+	if finishedPhase ~= nil and finishedPhase.transitionSeconds ~= nil then
+		transitionSeconds = finishedPhase.transitionSeconds
+	end
+
+	task.delay(transitionSeconds, function()
 		local stillCurrent = attempts[player]
 		if stillCurrent ~= nil and stillCurrent.attemptId == attemptId and not stillCurrent.finished then
 			beginPhaseAtIndex(stillCurrent)
@@ -347,9 +398,11 @@ function beginPhaseAtIndex(attempt: Attempt)
 
 	local ok: boolean
 	if spec.kind == LiftAttempt.PhaseKind.Control then
-		ok = SquatControlService.beginPhase(player, context, difficulty, callbacks)
+		ok = ControlPhaseService.beginPhase(player, context, difficulty, callbacks)
+	elseif spec.kind == LiftAttempt.PhaseKind.Power then
+		ok = PowerPhaseService.beginPhase(player, context, difficulty, callbacks)
 	else
-		ok = SquatDepthService.beginPhase(player, context, difficulty, callbacks)
+		ok = SkillCheckPhaseService.beginPhase(player, context, difficulty, callbacks)
 	end
 
 	if not ok then
@@ -524,9 +577,11 @@ local function onReportPhaseInput(player: Player, attemptId: unknown, kind: unkn
 	end
 
 	if spec.kind == LiftAttempt.PhaseKind.Control then
-		SquatControlService.submitInput(player, attempt.attemptId, payload)
+		ControlPhaseService.submitInput(player, attempt.attemptId, payload)
+	elseif spec.kind == LiftAttempt.PhaseKind.Power then
+		PowerPhaseService.submitInput(player, attempt.attemptId, payload)
 	else
-		SquatDepthService.submitInput(player, attempt.attemptId, payload)
+		SkillCheckPhaseService.submitInput(player, attempt.attemptId, payload)
 	end
 end
 

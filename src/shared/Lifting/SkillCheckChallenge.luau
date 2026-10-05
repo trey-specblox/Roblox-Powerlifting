@@ -163,4 +163,15 @@ function SkillCheckChallenge.isKnownPhase(phaseName: unknown): boolean
 	return SkillCheckConfig.Phases[phaseName :: string] ~= nil
 end
 
+--[[
+	The label shown for a phase, e.g. "DEPTH". The attempt banner uses it so a
+	transition can name the phase that is coming next, instead of the client having
+	to know each lift's sequence.
+]]
+function SkillCheckChallenge.displayNameFor(phaseName: string): string
+	local phase = SkillCheckConfig.Phases[phaseName]
+	assert(phase ~= nil, string.format("[SkillCheckChallenge] unknown phase %q", phaseName))
+	return phase.displayName
+end
+
 return SkillCheckChallenge

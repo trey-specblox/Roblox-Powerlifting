@@ -4,11 +4,11 @@
 	TEMPORARY DEVELOPMENT CODE - DELETE THIS FILE WHEN THE RACK EXISTS
 	================================================================
 
-	SquatAttemptDebugTrigger
+	LiftAttemptDebugTrigger
 	Client / Dev
 
-	Lets a complete Squat attempt be started from the keyboard, because there is no
-	rack, barbell, animation or attempt-selection UI yet.
+	Lets a complete lift attempt be started from the keyboard, because there is no
+	rack, bench, barbell, animation or attempt-selection UI yet.
 
 	ALL temporary testing lives here. LiftAttemptController exposes requestAttempt
 	and knows nothing about these keys, so the real rack interaction will call the
@@ -17,14 +17,15 @@
 	CONTROLS
 
 		G    start a complete Squat attempt
+		H    start a complete Bench attempt
 		V    attempt percentage -2.5%
 		B    attempt percentage +2.5%
 		1    80%        2    90%        3    100%
 		4    105%       5    110%
 
-	During an attempt, the phases own their own inputs: the mouse lifts the control
-	bar, and Space presses the depth check. Those are bound by the controller, not
-	here.
+	During an attempt the phases own their own inputs, bound by the controller rather
+	than here: the mouse drives both first phases (steadying the squat bar, mashing
+	for bench power) and Space presses either timing check.
 ]]
 
 local ENABLED = true
@@ -40,11 +41,16 @@ local UserInputService = game:GetService("UserInputService")
 
 local LiftAttemptController = require(script.Parent.Parent.Lifting.LiftAttemptController)
 
-local SquatAttemptDebugTrigger = {}
+local LiftAttemptDebugTrigger = {}
 
-local LIFT_NAME = "Squat"
-
-local START_KEY = Enum.KeyCode.G
+--[[
+	Which lift each start key triggers. Both run through the same orchestrator and
+	the same controller; only the lift name differs.
+]]
+local START_KEYS: { [Enum.KeyCode]: string } = {
+	[Enum.KeyCode.G] = "Squat",
+	[Enum.KeyCode.H] = "Bench",
+}
 local DOWN_KEY = Enum.KeyCode.V
 local UP_KEY = Enum.KeyCode.B
 
@@ -67,7 +73,7 @@ local hudLabel: TextLabel? = nil
 
 local function buildHud(parent: Instance): TextLabel
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "SquatAttemptDebugHud"
+	gui.Name = "LiftAttemptDebugHud"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.Parent = parent
@@ -106,11 +112,12 @@ local function refreshHud()
 	end
 
 	label.Text = string.format(
-		"DEV: COMPLETE SQUAT ATTEMPT (temporary)\n"
+		"DEV: COMPLETE LIFT ATTEMPT (temporary)\n"
 			.. "attempt: %.1f%% of forecasted max\n"
-			.. "[G] start squat    [V] -2.5%%    [B] +2.5%%\n"
+			.. "[G] squat    [H] bench    [V] -2.5%%    [B] +2.5%%\n"
 			.. "[1] 80%%  [2] 90%%  [3] 100%%  [4] 105%%  [5] 110%%\n"
-			.. "in phase: mouse lifts the bar, SPACE hits the depth zone",
+			.. "squat: mouse steadies the bar, then SPACE hits depth\n"
+				.. "bench: mash mouse, HOLD on the blue cue, then SPACE hits press",
 		selectedPercent * 100
 	)
 end
@@ -125,8 +132,9 @@ local function onInput(input: InputObject, processed: boolean)
 		return
 	end
 
-	if input.KeyCode == START_KEY then
-		LiftAttemptController.requestAttempt(LIFT_NAME, selectedPercent)
+	local lift = START_KEYS[input.KeyCode]
+	if lift ~= nil then
+		LiftAttemptController.requestAttempt(lift, selectedPercent)
 		return
 	end
 
@@ -149,8 +157,8 @@ local function onInput(input: InputObject, processed: boolean)
 	end
 end
 
-function SquatAttemptDebugTrigger.start()
-	assert(not started, "[SquatAttemptDebugTrigger] start() must only be called once")
+function LiftAttemptDebugTrigger.start()
+	assert(not started, "[LiftAttemptDebugTrigger] start() must only be called once")
 	started = true
 
 	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
@@ -159,7 +167,7 @@ function SquatAttemptDebugTrigger.start()
 
 	UserInputService.InputBegan:Connect(onInput)
 
-	print("[SquatAttemptDebugTrigger] ready - press G to start a complete Squat attempt")
+	print("[LiftAttemptDebugTrigger] ready - G starts a Squat, H starts a Bench")
 end
 
-return SquatAttemptDebugTrigger
+return LiftAttemptDebugTrigger

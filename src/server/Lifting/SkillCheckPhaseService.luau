@@ -1,6 +1,6 @@
 --!strict
 --[[
-	SquatDepthService
+	SkillCheckPhaseService
 	Server / Lifting
 
 	Runs ONE timing skill check phase, when told to. It does not own an attempt,
@@ -48,7 +48,7 @@ local SkillCheckChallenge = require(LiftingFolder:WaitForChild("SkillCheckChalle
 local SkillCheckGrade = require(LiftingFolder:WaitForChild("SkillCheckGrade"))
 local LiftAttempt = require(LiftingFolder:WaitForChild("LiftAttempt"))
 
-local SquatDepthService = {}
+local SkillCheckPhaseService = {}
 
 -- How long after a check expires the server waits before failing it outright.
 local TIMEOUT_GRACE_SECONDS = 0.75
@@ -71,7 +71,7 @@ local active: { [Player]: ActivePhase } = {}
 local rng = Random.new()
 
 local function log(message: string, ...: any)
-	print("[SquatDepthService] " .. string.format(message, ...))
+	print("[SkillCheckPhaseService] " .. string.format(message, ...))
 end
 
 --[[
@@ -114,19 +114,19 @@ end
 	this service never touches a profile and the attempt's numbers cannot drift
 	between phases.
 ]]
-function SquatDepthService.beginPhase(
+function SkillCheckPhaseService.beginPhase(
 	player: Player,
 	context: LiftAttempt.PhaseContext,
 	difficulty: any,
 	callbacks: Callbacks
 ): boolean
 	if active[player] ~= nil then
-		warn(string.format("[SquatDepthService] %s already has a skill check running", player.Name))
+		warn(string.format("[SkillCheckPhaseService] %s already has a skill check running", player.Name))
 		return false
 	end
 
 	if SkillCheckConfig.Phases[context.phaseName] == nil then
-		warn(string.format("[SquatDepthService] unknown phase %q", tostring(context.phaseName)))
+		warn(string.format("[SkillCheckPhaseService] unknown phase %q", tostring(context.phaseName)))
 		return false
 	end
 
@@ -164,7 +164,7 @@ end
 
 	A nil payload is legitimate: it means the needle ran out without a press.
 ]]
-function SquatDepthService.submitInput(player: Player, attemptId: number, payload: unknown)
+function SkillCheckPhaseService.submitInput(player: Player, attemptId: number, payload: unknown)
 	local entry = active[player]
 	if entry == nil then
 		return
@@ -172,7 +172,7 @@ function SquatDepthService.submitInput(player: Player, attemptId: number, payloa
 
 	if entry.attemptId ~= attemptId then
 		warn(string.format(
-			"[SquatDepthService] %s submitted input for attempt %s during attempt %s; ignored",
+			"[SkillCheckPhaseService] %s submitted input for attempt %s during attempt %s; ignored",
 			player.Name,
 			tostring(attemptId),
 			tostring(entry.attemptId)
@@ -206,7 +206,7 @@ function SquatDepthService.submitInput(player: Player, attemptId: number, payloa
 	local serverElapsed = os.clock() - entry.issuedAtClock
 	if pressTime > serverElapsed + SkillCheckConfig.PressTimeToleranceSeconds then
 		warn(string.format(
-			"[SquatDepthService] %s reported a press at %.3fs but only %.3fs elapsed server-side; "
+			"[SkillCheckPhaseService] %s reported a press at %.3fs but only %.3fs elapsed server-side; "
 				.. "treating as a miss",
 			player.Name,
 			pressTime,
@@ -223,7 +223,7 @@ end
 	Drops a running phase without reporting, for a player leaving or an attempt
 	being abandoned from above.
 ]]
-function SquatDepthService.abandon(player: Player)
+function SkillCheckPhaseService.abandon(player: Player)
 	local entry = active[player]
 	if entry ~= nil then
 		entry.reported = true
@@ -234,8 +234,8 @@ end
 --[[
 	True while this player has a skill check running.
 ]]
-function SquatDepthService.isRunning(player: Player): boolean
+function SkillCheckPhaseService.isRunning(player: Player): boolean
 	return active[player] ~= nil
 end
 
-return SquatDepthService
+return SkillCheckPhaseService
