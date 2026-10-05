@@ -38,6 +38,7 @@
 
 local ControlPhaseConfig = require(script.Parent.ControlPhaseConfig)
 local PowerPhaseConfig = require(script.Parent.PowerPhaseConfig)
+local TypingPhaseConfig = require(script.Parent.TypingPhaseConfig)
 local SkillCheckConfig = require(script.Parent.SkillCheckConfig)
 
 local LiftAttemptConfig = {}
@@ -119,6 +120,25 @@ LiftAttemptConfig.Sequences = {
 			{ kind = "SkillCheck", phaseName = "BenchPress" },
 		},
 	},
+
+	Deadlift = {
+		displayName = "DEADLIFT",
+		lift = "Deadlift",
+		phases = {
+			--[[
+				A full second, like the bench, and for a sharper reason: the typing pull
+				can end mid-cue with the player's fingers still moving over the keys, and
+				the lockout wants the spacebar. A shorter beat risks a trailing keystroke
+				reading as a wildly early lockout.
+
+				Typed cues never contain a space precisely so that the spacebar belongs
+				to the lockout alone, but a stray letter press during the handover would
+				still be wasted motion for the player.
+			]]
+			{ kind = "Typing", phaseName = "DeadliftPull", transitionSeconds = 1.0 },
+			{ kind = "SkillCheck", phaseName = "DeadliftLockout" },
+		},
+	},
 }
 
 --[[
@@ -158,6 +178,16 @@ for liftName, sequence in pairs(LiftAttemptConfig.Sequences) do
 				PowerPhaseConfig.Phases[phase.phaseName] ~= nil,
 				string.format(
 					"[LiftAttemptConfig] %s phase %d names %q, which is not in PowerPhaseConfig.Phases",
+					liftName,
+					index,
+					tostring(phase.phaseName)
+				)
+			)
+		elseif phase.kind == "Typing" then
+			assert(
+				TypingPhaseConfig.Phases[phase.phaseName] ~= nil,
+				string.format(
+					"[LiftAttemptConfig] %s phase %d names %q, which is not in TypingPhaseConfig.Phases",
 					liftName,
 					index,
 					tostring(phase.phaseName)

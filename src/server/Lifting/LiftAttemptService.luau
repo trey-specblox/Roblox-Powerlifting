@@ -56,6 +56,7 @@ local LiftAttempt = require(LiftingFolder:WaitForChild("LiftAttempt"))
 local LiftingRemotes = require(LiftingFolder:WaitForChild("LiftingRemotes"))
 local ControlChallenge = require(LiftingFolder:WaitForChild("ControlChallenge"))
 local PowerChallenge = require(LiftingFolder:WaitForChild("PowerChallenge"))
+local TypingChallenge = require(LiftingFolder:WaitForChild("TypingChallenge"))
 local SkillCheckChallenge = require(LiftingFolder:WaitForChild("SkillCheckChallenge"))
 local DifficultyResolver = require(DifficultyFolder:WaitForChild("DifficultyResolver"))
 local ModifierRegistry = require(ModifiersFolder:WaitForChild("ModifierRegistry"))
@@ -63,6 +64,7 @@ local ModifierRegistry = require(ModifiersFolder:WaitForChild("ModifierRegistry"
 local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
 local ControlPhaseService = require(script.Parent.ControlPhaseService)
 local PowerPhaseService = require(script.Parent.PowerPhaseService)
+local TypingPhaseService = require(script.Parent.TypingPhaseService)
 local SkillCheckPhaseService = require(script.Parent.SkillCheckPhaseService)
 
 local LiftAttemptService = {}
@@ -74,6 +76,7 @@ local LiftAttemptService = {}
 local ENABLED_LIFTS: { [string]: boolean } = {
 	Squat = true,
 	Bench = true,
+	Deadlift = true,
 }
 
 type PhaseSpec = {
@@ -129,6 +132,7 @@ end
 local function clearAttempt(player: Player)
 	ControlPhaseService.abandon(player)
 	PowerPhaseService.abandon(player)
+	TypingPhaseService.abandon(player)
 	SkillCheckPhaseService.abandon(player)
 	attempts[player] = nil
 end
@@ -148,6 +152,8 @@ local function phaseDisplayName(spec: PhaseSpec): string
 		return ControlChallenge.displayNameFor(spec.phaseName)
 	elseif spec.kind == LiftAttempt.PhaseKind.Power then
 		return PowerChallenge.displayNameFor(spec.phaseName)
+	elseif spec.kind == LiftAttempt.PhaseKind.Typing then
+		return TypingChallenge.displayNameFor(spec.phaseName)
 	end
 	return SkillCheckChallenge.displayNameFor(spec.phaseName)
 end
@@ -158,6 +164,8 @@ local function resolvePhaseDifficulty(attempt: Attempt, spec: PhaseSpec): any
 		techniqueStatName = ControlChallenge.techniqueStatFor(spec.phaseName)
 	elseif spec.kind == LiftAttempt.PhaseKind.Power then
 		techniqueStatName = PowerChallenge.techniqueStatFor(spec.phaseName)
+	elseif spec.kind == LiftAttempt.PhaseKind.Typing then
+		techniqueStatName = TypingChallenge.techniqueStatFor(spec.phaseName)
 	else
 		techniqueStatName = SkillCheckChallenge.techniqueStatFor(spec.phaseName)
 	end
@@ -401,6 +409,8 @@ function beginPhaseAtIndex(attempt: Attempt)
 		ok = ControlPhaseService.beginPhase(player, context, difficulty, callbacks)
 	elseif spec.kind == LiftAttempt.PhaseKind.Power then
 		ok = PowerPhaseService.beginPhase(player, context, difficulty, callbacks)
+	elseif spec.kind == LiftAttempt.PhaseKind.Typing then
+		ok = TypingPhaseService.beginPhase(player, context, difficulty, callbacks)
 	else
 		ok = SkillCheckPhaseService.beginPhase(player, context, difficulty, callbacks)
 	end
@@ -580,6 +590,8 @@ local function onReportPhaseInput(player: Player, attemptId: unknown, kind: unkn
 		ControlPhaseService.submitInput(player, attempt.attemptId, payload)
 	elseif spec.kind == LiftAttempt.PhaseKind.Power then
 		PowerPhaseService.submitInput(player, attempt.attemptId, payload)
+	elseif spec.kind == LiftAttempt.PhaseKind.Typing then
+		TypingPhaseService.submitInput(player, attempt.attemptId, payload)
 	else
 		SkillCheckPhaseService.submitInput(player, attempt.attemptId, payload)
 	end

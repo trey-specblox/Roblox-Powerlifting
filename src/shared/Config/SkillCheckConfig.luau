@@ -368,6 +368,33 @@ SkillCheckConfig.Phases = {
 			noInput = "NO PRESS",
 		},
 	},
+
+	--[[
+		The deadlift's second phase. Shares the Default profile with Squat Depth and
+		Bench Press for now, so all three timing checks feel identical and only their
+		stat and wording differ. Give it its own profile later if the lockout should
+		feel distinct.
+
+		Single yellow target, like every other timing check: there is no Perfect zone
+		anywhere in this system.
+	]]
+	DeadliftLockout = {
+		lift = "Deadlift",
+		techniqueStat = "Lockout",
+		profile = "Default",
+		displayName = "LOCKOUT",
+		--[[
+			Pressing early is a soft lockout: the lifter stood up before the knees and
+			hips finished. Pressing late or not at all means they never locked out at
+			all. Placeholder copy; GAME_DESIGN.md does not specify the wording.
+		]]
+		verdicts = {
+			pass = "GOOD LIFT",
+			early = "NO LIFT - SOFT LOCKOUT",
+			late = "NO LIFT - NO LOCKOUT",
+			noInput = "NO LOCKOUT",
+		},
+	},
 }
 
 -- Fail at startup rather than mid-lift if a balancing table is malformed.

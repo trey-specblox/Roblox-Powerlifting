@@ -7,7 +7,7 @@ skill check as their second phase.
 |---|---|---|---|---|
 | Squat | Fisch-style Control (`References/FischeGame.md`) | Depth timing check (`References/DBD.md`) | Squat Control | Depth Awareness |
 | Bench | Test Your Might power (`References/testyourmight.md`) | Press timing check (`References/DBD.md`) | Start Control | Press Power |
-| Deadlift | Typing (`References/TypingGame.md`) | Lockout timing check (`References/DBD.md`) | — | Lockout |
+| Deadlift | Fluid Typing pull (`References/TypingGame.md`) | Lockout timing check (`References/DBD.md`) | Pull Strength | Lockout |
 
 The Fisch-style control mechanic is **Squat-only**. The Test Your Might mechanic is
 **Bench-only**. The timing check is shared by all three, which is why it was built
@@ -122,8 +122,8 @@ Bench:
 Start Control
 Press Power
 Deadlift:
+Pull Strength
 Lockout
-+ typing/execution component 
 Modifier layer
 Then modifiers influence the result:
 Height / Leverages
@@ -234,8 +234,7 @@ A Dead-by-Daylight- style circular skill check.(Check (skillcheck) for reference
 See references/DBD.mdfor the visual/mechanical reference and implementation direction for this minigame. Read that file before designing or implementing this mechanic. If the reference is unclear or inaccessible, ask me rather than inventing the missing behavior. 
 
 Depth Awareness influences:
-success-zone size
-perfect-zone size
+target-zone size
 needle speed
 reaction window
 Failure can result in:
@@ -336,8 +335,7 @@ slower danger movement
 Press command
 Then transition into a timing/skill check.
 Press Power determines:
-success zone
-perfect zone
+target-zone size
 needle speed
 reaction window
 This also gives you room to represent commands:
@@ -359,23 +357,67 @@ and makes the balance portion more forgiving during training.
 11. Deadlift
 Deadlift should have its own identity.
 Your unusual idea here could actually make it memorable.
-Phase 1 — Typing challenge
-Players type recognizable original/parody gym phrases or game-created motivational lines while pulling.
+Phase 1 — Fluid Typing pull
+
+Relevant Stat: Pull Strength
+
+A vertical bar rises from the floor toward lockout, driven by ONE authoritative
+progress value. The bar reaching lockout IS the pass; there is no second
+requirement behind a visually completed bar.
+
+The player types a CONTINUOUS LINE of short original powerlifting cues, left to
+right, the way they would type any words. Completed characters dim green, the
+current one carries a highlight and cursor at normal size, and upcoming ones fade
+ahead. The line scrolls to keep the cursor in place. Spaces are rendered but never
+typed, so word boundaries advance on their own and the spacebar stays free for the
+lockout. Each correct character raises the bar; the bar sags continuously, so
+hesitation costs height.
+
+    correct character -> bar rises
+    wrong character   -> no advance, bar drops, ~0.12s slip stall,
+                         and the expected character does NOT change
+    no input          -> continuous sag
+
+    bar reaches lockout -> PASS, terminal
+    budget expires      -> NO LIFT
+
+Difficulty scales through the AMOUNT of typing rather than its speed: 9 characters
+at 80% against 24 at 110%, with sag and mistake cost roughly doubling. The
+required rate only moves from 19 to 36 WPM, under what a modest typist manages.
+This is deliberately not a typing-speed test.
+
+Pull Strength increases progress per character, reduces sag and reduces the
+mistake penalty, so a trained lifter needs FEWER keystrokes rather than faster
+ones. It never reduces the threshold, the window or the cue content, so the pull
+can never become automatic.
+
+> **Superseded presentations.** This section first described typing "recognizable
+> original/parody gym phrases or game-created motivational lines", then a giant
+> single character reacted to one key at a time. Both are gone. The phrase version
+> tested reading rather than typing; the giant character capped a fluent player at
+> the speed they could read one letter. The giant-token idea is kept for a future
+> controller vocabulary, where a prompt genuinely is one button at a time.
+>
+> PC input is captured as text entry rather than key presses, because Roblox's
+> built-in controls claim some letters and a keybind competing for them loses.
+> See References/TypingGame.md.
 See references/TypingGame.md for the visual/mechanical reference and implementation direction for this minigame. Read that file before designing or implementing this mechanic. If the reference is unclear or inaccessible, ask me rather than inventing the missing behavior. 
 
 
 
-Difficulty can influence:
-phrase length
+Difficulty influences:
+characters required (9 at 80%, 24 at 110%)
 available time
-error tolerance
+bar sag rate
+mistake penalty
+
+It does NOT influence required typing speed beyond the 19-36 WPM band.
 
 Phase 2 — Lockout
 At the top:
 LOCKOUT SKILL CHECK
 Lockout stat controls:
-success-zone size
-perfect-zone size
+target-zone size
 needle speed
 reaction window
 Failure means:
@@ -683,7 +725,7 @@ LIFT PROGRESSION
 Forecasted S/B/D
 
 TECHNIQUE PROGRESSION
-Control / Depth / Start Control / Press / Lockout
+Squat Control / Depth Awareness / Start Control / Press Power / Pull Strength / Lockout
 
 CAREER PROGRESSION
 Local → National → Worlds

@@ -15,8 +15,7 @@ Pay attention specifically to:
 
 - How the indicator/needle moves
 - How the player activates the skill check
-- How the success zone works
-- How the perfect zone works
+- How the single target zone works
 - How timing determines the result
 - How success is communicated
 - How failure is communicated
@@ -43,8 +42,7 @@ Each use can have different difficulty settings and visual presentation while sh
 Relevant player stats should affect:
 
 - Needle speed
-- Success-zone size
-- Perfect-zone size
+- Target-zone size
 - Reaction window
 
 Higher relevant stats should make execution easier.

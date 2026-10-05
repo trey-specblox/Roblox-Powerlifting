@@ -18,6 +18,7 @@
 
 		G    start a complete Squat attempt
 		H    start a complete Bench attempt
+		J    start a complete Deadlift attempt
 		V    attempt percentage -2.5%
 		B    attempt percentage +2.5%
 		1    80%        2    90%        3    100%
@@ -50,6 +51,7 @@ local LiftAttemptDebugTrigger = {}
 local START_KEYS: { [Enum.KeyCode]: string } = {
 	[Enum.KeyCode.G] = "Squat",
 	[Enum.KeyCode.H] = "Bench",
+	[Enum.KeyCode.J] = "Deadlift",
 }
 local DOWN_KEY = Enum.KeyCode.V
 local UP_KEY = Enum.KeyCode.B
@@ -114,10 +116,11 @@ local function refreshHud()
 	label.Text = string.format(
 		"DEV: COMPLETE LIFT ATTEMPT (temporary)\n"
 			.. "attempt: %.1f%% of forecasted max\n"
-			.. "[G] squat    [H] bench    [V] -2.5%%    [B] +2.5%%\n"
+			.. "[G] squat   [H] bench   [J] deadlift   [V] -2.5%%   [B] +2.5%%\n"
 			.. "[1] 80%%  [2] 90%%  [3] 100%%  [4] 105%%  [5] 110%%\n"
 			.. "squat: mouse steadies the bar, then SPACE hits depth\n"
-				.. "bench: mash mouse, HOLD on the blue cue, then SPACE hits press",
+			.. "bench: mash mouse, HOLD on the blue cue, then SPACE hits press\n"
+			.. "deadlift: type the big letter shown, then SPACE hits lockout",
 		selectedPercent * 100
 	)
 end
@@ -132,18 +135,25 @@ local function onInput(input: InputObject, processed: boolean)
 		return
 	end
 
-	local lift = START_KEYS[input.KeyCode]
-	if lift ~= nil then
-		LiftAttemptController.requestAttempt(lift, selectedPercent)
+	--[[
+		EVERY debug key is inert while an attempt is running, and this guard has to
+		come first.
+
+		Two reasons, and the second only appeared with the deadlift. The percentage is
+		locked for the whole attempt by the server, so changing it mid-lift would be
+		ignored anyway and refusing it here keeps the HUD honest. And the typing pull
+		consumes the whole alphabet, so G, H and J are now live gameplay inputs during
+		a deadlift: without this, typing a G would both advance the bar and fire an
+		attempt request. The server rejects the second attempt, but the warning noise
+		would be real and the confusion worse.
+	]]
+	if LiftAttemptController.isAttemptActive() then
 		return
 	end
 
-	--[[
-		Percentage is locked for the whole attempt by the server, so changing it
-		mid-attempt would be ignored anyway. Refusing it here keeps the HUD honest
-		about what the current attempt is actually using.
-	]]
-	if LiftAttemptController.isAttemptActive() then
+	local lift = START_KEYS[input.KeyCode]
+	if lift ~= nil then
+		LiftAttemptController.requestAttempt(lift, selectedPercent)
 		return
 	end
 
@@ -167,7 +177,7 @@ function LiftAttemptDebugTrigger.start()
 
 	UserInputService.InputBegan:Connect(onInput)
 
-	print("[LiftAttemptDebugTrigger] ready - G starts a Squat, H starts a Bench")
+	print("[LiftAttemptDebugTrigger] ready - G starts a Squat, H a Bench, J a Deadlift")
 end
 
 return LiftAttemptDebugTrigger

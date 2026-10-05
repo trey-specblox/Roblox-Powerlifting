@@ -32,6 +32,8 @@ local LiftingRemotes = require(LiftingFolder:WaitForChild("LiftingRemotes"))
 local ControlInput = require(script.Parent.ControlInput)
 local ControlUI = require(script.Parent.ControlUI)
 local PowerUI = require(script.Parent.PowerUI)
+local SequenceInput = require(script.Parent.SequenceInput)
+local TypingUI = require(script.Parent.TypingUI)
 local SkillCheckUI = require(script.Parent.SkillCheckUI)
 
 local LiftAttemptController = {}
@@ -173,6 +175,7 @@ end
 local function releaseInput()
 	unbindPressKey()
 	ControlInput.unbind()
+	SequenceInput.unbind()
 	activePhaseKind = nil
 end
 
@@ -186,6 +189,8 @@ local function hidePhaseUI()
 		ControlUI.hide()
 	elseif shownPhaseKind == LiftAttempt.PhaseKind.Power then
 		PowerUI.hide()
+	elseif shownPhaseKind == LiftAttempt.PhaseKind.Typing then
+		TypingUI.hide()
 	elseif shownPhaseKind == LiftAttempt.PhaseKind.SkillCheck then
 		SkillCheckUI.hide()
 	end
@@ -233,6 +238,18 @@ local function onPresentPhase(payload: any)
 	]]
 	hidePhaseUI()
 
+	--[[
+		Input is released for the same reason the UI is cleared: nothing from a
+		previous phase may survive into this one.
+
+		This matters most for the typing pull, which OWNS the whole alphabet through
+		ContextActionService while it runs. An alphabet binding surviving into the
+		lockout would swallow every letter and leave the built-in camera controls
+		dead, so the release is unconditional rather than conditional on which phase
+		just ended.
+	]]
+	releaseInput()
+
 	activeAttemptId = payload.attemptId
 	activePhaseKind = payload.kind
 	shownPhaseKind = payload.kind
@@ -279,6 +296,24 @@ local function onPresentPhase(payload: any)
 			setJumpEnabled(true)
 			set.reportPhaseInput:FireServer(payload.attemptId, LiftAttempt.PhaseKind.Power, inputEvents)
 		end)
+	elseif payload.kind == LiftAttempt.PhaseKind.Typing then
+		--[[
+			The typing pull uses SequenceInput, which produces abstract TOKENS rather
+			than keyboard letters. The simulation compares strings and never asks which
+			vocabulary they came from, so a gamepad or touch vocabulary can be added
+			later without touching the authoritative model.
+
+			Jump stays disabled as in every other phase: a letter key is not Space, but
+			the lockout press that follows is.
+		]]
+		SequenceInput.bind(TypingUI.registerToken)
+		setJumpEnabled(false)
+
+		TypingUI.run(challenge, function(tokenEvents)
+			SequenceInput.unbind()
+			setJumpEnabled(true)
+			set.reportPhaseInput:FireServer(payload.attemptId, LiftAttempt.PhaseKind.Typing, tokenEvents)
+		end)
 	else
 		SkillCheckUI.setInstruction(SKILL_CHECK_PROMPT)
 		bindPressKey()
@@ -323,6 +358,8 @@ local function onAnnouncePhaseResult(payload: any)
 		ControlUI.showVerdict(payload.verdict, payload.passed, "server: " .. tostring(payload.detail))
 	elseif payload.kind == LiftAttempt.PhaseKind.Power then
 		PowerUI.showVerdict(payload.verdict, payload.passed, "server: " .. tostring(payload.detail))
+	elseif payload.kind == LiftAttempt.PhaseKind.Typing then
+		TypingUI.showVerdict(payload.verdict, payload.passed, "server: " .. tostring(payload.detail))
 	else
 		SkillCheckUI.showVerdict(payload.verdict, payload.passed)
 	end
@@ -369,6 +406,13 @@ function LiftAttemptController.start()
 
 	ControlUI.mount(playerGui, ControlInput.promptText())
 	PowerUI.mount(playerGui, POWER_PROMPT)
+	TypingUI.mount(playerGui, SequenceInput.promptText())
+	--[[
+		The typing pull's input is a hidden, focusable TextBox rather than a set of
+		keybinds, so it needs mounting like a UI even though the player never sees it.
+		See SequenceInput for why text entry replaced per-key capture.
+	]]
+	SequenceInput.mount(playerGui)
 	SkillCheckUI.mount(playerGui, SKILL_CHECK_PROMPT)
 	bannerLabel, statusLabel = buildBanner(playerGui)
 

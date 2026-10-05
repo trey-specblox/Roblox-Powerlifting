@@ -49,6 +49,8 @@ StartingValuesConfig.Technique = {
 	DepthAwareness = 0,
 	StartControl = 0,
 	PressPower = 0,
+	-- Added with schema version 2. Drives the Deadlift's typing pull.
+	PullStrength = 0,
 	Lockout = 0,
 }
 

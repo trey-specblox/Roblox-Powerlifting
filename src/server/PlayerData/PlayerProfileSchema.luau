@@ -40,7 +40,7 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below.
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 1
+PlayerProfileSchema.CURRENT_VERSION = 2
 
 export type Forecasted = {
 	-- Kilograms. These ARE the lifter's strength; there is no hidden true value.
@@ -55,6 +55,12 @@ export type Technique = {
 	DepthAwareness: number,
 	StartControl: number,
 	PressPower: number,
+	--[[
+		Added in version 2. Drives the Deadlift's first phase, the character-first
+		typing pull. One stat per lift-phase: the deadlift's two phases are
+		PullStrength off the floor and Lockout at the top.
+	]]
+	PullStrength: number,
 	Lockout: number,
 }
 
@@ -102,6 +108,7 @@ local template: ProfileData = {
 		DepthAwareness = StartingValuesConfig.Technique.DepthAwareness,
 		StartControl = StartingValuesConfig.Technique.StartControl,
 		PressPower = StartingValuesConfig.Technique.PressPower,
+		PullStrength = StartingValuesConfig.Technique.PullStrength,
 		Lockout = StartingValuesConfig.Technique.Lockout,
 	},
 
@@ -140,9 +147,46 @@ local template: ProfileData = {
 	by running 1 to 2, then 2 to 3, then 3 to 4. Each one must be safe to run on
 	real saved data: read the old fields, write the new ones, remove what is dead.
 
-	Empty at version 1, because there is nothing older to come from yet.
+	A STEP MUST EXIST FOR EVERY VERSION GAP, even one Reconcile would already
+	cover. migrate() warns and abandons the profile at its old version if it finds
+	no step, so a missing entry is not a harmless omission.
 ]]
 local migrations: { [number]: (ProfileData) -> () } = {}
+
+--[[
+	Version 1 to 2: the Deadlift gained its own first-phase technique stat.
+
+	Every pre-existing lifter receives PullStrength = 0, which is what a brand new
+	lifter starts with, so nobody is advantaged or disadvantaged by having played
+	before the deadlift existed. Nothing else is read, written or removed.
+
+	Reconcile() runs BEFORE this (see PlayerDataService), so in practice it has
+	already filled the field from the template. Writing it here anyway means the
+	migration does not silently depend on Reconcile's behaviour staying the same,
+	and the `if` keeps it from overwriting a value that is somehow already set.
+]]
+migrations[1] = function(data: ProfileData)
+	if typeof(data.technique) ~= "table" then
+		--[[
+			Defensive. A v1 save always has this table, but a migration runs against
+			whatever is actually in the DataStore, and crashing here would fail the
+			load and kick the player rather than repairing their profile.
+		]]
+		data.technique = {
+			SquatControl = StartingValuesConfig.Technique.SquatControl,
+			DepthAwareness = StartingValuesConfig.Technique.DepthAwareness,
+			StartControl = StartingValuesConfig.Technique.StartControl,
+			PressPower = StartingValuesConfig.Technique.PressPower,
+			PullStrength = StartingValuesConfig.Technique.PullStrength,
+			Lockout = StartingValuesConfig.Technique.Lockout,
+		}
+		return
+	end
+
+	if typeof(data.technique.PullStrength) ~= "number" then
+		data.technique.PullStrength = StartingValuesConfig.Technique.PullStrength
+	end
+end
 
 --[[
 	Reads the version from raw saved data.

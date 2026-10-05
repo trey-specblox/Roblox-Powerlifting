@@ -20,19 +20,20 @@ local LiftAttempt = {}
 
 	"Control"    the Fisch-style control minigame      (Squat phase 1)
 	"Power"      the Test Your Might rapid-input phase (Bench phase 1)
+	"Typing"     the character-first typing pull       (Deadlift phase 1)
 	"SkillCheck" the circular timing check             (every lift's phase 2)
 
-	Deadlift will add "Typing" when that mechanic exists.
-
-	Note that Control is Squat-only and Power is Bench-only, while SkillCheck is
-	shared by all three lifts. That asymmetry is the design: each lift has its own
-	first phase and they converge on the same timing check.
+	Note that Control is Squat-only, Power is Bench-only and Typing is
+	Deadlift-only, while SkillCheck is shared by all three lifts. That asymmetry is
+	the design: each lift has its own first phase and they converge on the same
+	timing check.
 ]]
-export type PhaseKind = "Control" | "Power" | "SkillCheck"
+export type PhaseKind = "Control" | "Power" | "Typing" | "SkillCheck"
 
 LiftAttempt.PhaseKind = {
 	Control = "Control" :: PhaseKind,
 	Power = "Power" :: PhaseKind,
+	Typing = "Typing" :: PhaseKind,
 	SkillCheck = "SkillCheck" :: PhaseKind,
 }
 
