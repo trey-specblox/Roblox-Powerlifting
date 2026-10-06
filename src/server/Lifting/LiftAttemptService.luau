@@ -468,7 +468,8 @@ local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requ
 		return
 	end
 
-	local forecastedMax = data.forecasted[sequence.lift]
+	-- Renamed field in schema v3; the in-memory name stays forecastedMax for now.
+	local forecastedMax = data.competitionNumber[sequence.lift]
 	if typeof(forecastedMax) ~= "number" or forecastedMax <= 0 then
 		warn(string.format("[LiftAttemptService] %s has no usable forecasted %s", player.Name, sequence.lift))
 		return

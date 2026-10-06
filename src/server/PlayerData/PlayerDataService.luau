@@ -15,17 +15,32 @@
 
 		local data = PlayerDataService.getData(player)
 		if data then
-			print(data.forecasted.Squat)
+			print(data.competitionNumber.Squat)
 		end
 
-		PlayerDataService.update(player, function(data)
-			data.forecasted.Squat += 2.5
-		end)
-
 	Reading returns the live table for speed, and callers must treat it as
-	READ-ONLY. All writes go through update, which refuses to run when the session
-	is not active, so a write can never be silently dropped into a table that is no
-	longer being saved.
+	READ-ONLY.
+
+	PREFER THE NAMED OPERATIONS OVER update()
+
+		PlayerDataService.consumeCompetitionBudget(player, "Squat", 1.886)
+		PlayerDataService.consumeTrainingEnergy(player, 30)
+
+	NOTE that no operation here WRITES a Competition Number. That is deliberate
+	and is explained where such a method would otherwise sit, further down.
+
+	Each validates its own arguments, rejects NaN and infinity, enforces the
+	resource's floor and cap, and regenerates a timestamped resource before
+	spending from it. The rules live in ProfileOperations, which is pure and
+	therefore actually tested.
+
+	update() remains for data that has no named operation yet. It is the escape
+	hatch, not the front door: a caller using it takes on every validation the
+	named operations would have done. New gameplay systems should ask for an
+	operation rather than reach through it.
+
+	Both refuse when the session is not active, so a change can never be silently
+	dropped into a table that is no longer being saved.
 
 	SERVER AUTHORITY
 
@@ -39,6 +54,7 @@
 local Players = game:GetService("Players")
 
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
+local ProfileOperations = require(script.Parent.ProfileOperations)
 
 --[[
 	ProfileStore ships with Luau type annotations that the current type solver
@@ -182,9 +198,9 @@ local function onPlayerAdded(player: Player)
 		player.Name,
 		finalVersion,
 		profile.Data.meta.sessionCount,
-		profile.Data.forecasted.Squat,
-		profile.Data.forecasted.Bench,
-		profile.Data.forecasted.Deadlift,
+		profile.Data.competitionNumber.Squat,
+		profile.Data.competitionNumber.Bench,
+		profile.Data.competitionNumber.Deadlift,
 		profile.Data.bodyweight.currentKg
 	)
 end
@@ -305,6 +321,185 @@ function PlayerDataService.update(
 	end
 
 	return true
+end
+
+--[[
+	=========================================================================
+	NAMED AUTHORITATIVE OPERATIONS
+	=========================================================================
+
+	Each of these binds a Player to their live profile, refuses when the session
+	is not active, and delegates the actual rule to ProfileOperations.
+
+	THE CLOCK IS ALWAYS os.time(), READ HERE, ON THE SERVER. No operation takes a
+	timestamp as a parameter, so there is no argument through which a caller --
+	let alone a client -- could supply one. That is the only reason offline
+	regeneration can be trusted.
+
+	NOTHING IN THE GAME CALLS THESE YET. No attempt awards Competition Number, no
+	meet consumes budget, and no AFK system consumes Training Energy. They exist
+	so the systems that will do those things have one validated path.
+]]
+
+--[[
+	The live profile of an active session, or nil with a warning.
+
+	Every operation below begins here, so the "is the session still active" check
+	is written once rather than five times.
+]]
+local function activeData(player: Player, operation: string): PlayerProfileSchema.ProfileData?
+	local profile = profiles[player]
+
+	if profile == nil then
+		warn(string.format("[PlayerDataService] %s for %s with no loaded profile", operation, player.Name))
+		return nil
+	end
+
+	if not profile:IsActive() then
+		warn(string.format("[PlayerDataService] %s for %s whose session is not active", operation, player.Name))
+		return nil
+	end
+
+	return profile.Data
+end
+
+--[[
+	The player's Competition Number for one lift, in kilograms.
+
+	Returns nil when the data is not loaded, the lift name is not one of the
+	three, or the stored value is unusable.
+]]
+function PlayerDataService.getCompetitionNumber(player: Player, lift: string): number?
+	local data = activeData(player, "getCompetitionNumber")
+	if data == nil then
+		return nil
+	end
+
+	return ProfileOperations.getCompetitionNumber(data, lift)
+end
+
+--[[
+	THERE IS DELIBERATELY NO METHOD HERE THAT WRITES A COMPETITION NUMBER.
+
+	An earlier draft exposed addCompetitionNumber(player, lift, deltaKg), which
+	let any caller award an arbitrary number of kilograms. The guard against that
+	was a constant, MAXIMUM_SINGLE_ADD_KG = 100, and it was wrong twice over: it
+	appears nowhere in GAME_DESIGN.md, and it was simultaneously too permissive
+	for a reward -- the real figure is under 3 kg for one attempt -- and too
+	restrictive for a legitimate weight-class translation.
+
+	Removing the constant without removing the door would have left the door
+	open, so the door is closed instead. Two operations will reopen it, each
+	owning its own bound, and neither is built yet:
+
+	  1. awardProgression(player, lift, effectiveEV)
+	     Takes EV, never kilograms, and derives the delta from
+	     ProgressionReference x BaseProgressRate x effectiveEV x Hill(PP).
+	     Bounded by construction, so no caller can get the magnitude wrong.
+	     Blocked on the M2 Progression Reference table, which section 29 freezes
+	     but which is not yet in the codebase.
+
+	  2. translateCompetitionNumbers(player, fromClass, toClass)
+	     The authoritative RP Preservation recalculation of section 29.11, whose
+	     legitimate deltas are large.
+
+	Both will call ProfileOperations.applyCompetitionNumberDelta, which keeps the
+	validation that is universally true -- finite delta, known lift, a result
+	that remains a positive weight -- and holds no magnitude opinion, because
+	magnitude is the caller's to justify.
+
+	Reading a Competition Number stays available above; only writing is closed.
+]]
+
+--[[
+	One lift's Competition Budget in EV units, including everything that
+	regenerated while the player was away. Reads without writing.
+
+	A negative result means that lift is in harmonic overflow, and the magnitude
+	is how deep.
+]]
+function PlayerDataService.getRegeneratedCompetitionBudget(player: Player, lift: string): number?
+	local data = activeData(player, "getRegeneratedCompetitionBudget")
+	if data == nil then
+		return nil
+	end
+
+	return ProfileOperations.getRegeneratedCompetitionBudget(data, lift, os.time())
+end
+
+--[[
+	One lift's current budget amount, harmonic multiplier and freshness state
+	(FRESH / WORKED / FATIGUED). Reads without writing.
+]]
+function PlayerDataService.getCompetitionBudgetState(
+	player: Player,
+	lift: string
+): (number?, number?, string?)
+	local data = activeData(player, "getCompetitionBudgetState")
+	if data == nil then
+		return nil, nil, nil
+	end
+
+	return ProfileOperations.getCompetitionBudgetState(data, lift, os.time())
+end
+
+--[[
+	Consumes `rawEV` of progression from one lift's Competition Budget and
+	returns the EFFECTIVE EV earned, after harmonic overflow.
+
+	THIS DOES NOT FAIL WHEN THE BUDGET IS SPENT. Progression continues at a
+	diminishing multiplier, because active meet progression is never hard-zeroed.
+	A nil return means the request was malformed, not that the player was short.
+
+	Contrast consumeTrainingEnergy below, which returns false when short.
+
+	Spending Squat does not touch Bench or Deadlift. The three pools are separate
+	and each is account-wide for its own lift.
+]]
+function PlayerDataService.consumeCompetitionBudget(
+	player: Player,
+	lift: string,
+	rawEV: number
+): (number?, number?)
+	local data = activeData(player, "consumeCompetitionBudget")
+	if data == nil then
+		return nil, nil
+	end
+
+	return ProfileOperations.consumeCompetitionBudget(data, lift, rawEV, os.time())
+end
+
+--[[
+	Training Energy in minutes, including offline regeneration. Reads without
+	writing.
+]]
+function PlayerDataService.getRegeneratedTrainingEnergy(player: Player): number?
+	local data = activeData(player, "getRegeneratedTrainingEnergy")
+	if data == nil then
+		return nil
+	end
+
+	return ProfileOperations.getRegeneratedTrainingEnergy(data, os.time())
+end
+
+--[[
+	Spends `minutes` of Training Energy. Returns success and what remains.
+
+	ALL-OR-NOTHING, AND IT DOES FAIL WHEN SHORT. Training Energy floors at zero:
+	at empty, passive AFK Competition Number stops and there is no overflow. That
+	is deliberately unlike the Competition Budget above, and the asymmetry is
+	what holds the intended ratio of roughly 0.25x the reference active rate.
+
+	This gates passive AFK Competition Number ONLY. It must never be made to gate
+	Muscle, which progresses independently.
+]]
+function PlayerDataService.consumeTrainingEnergy(player: Player, minutes: number): (boolean, number?)
+	local data = activeData(player, "consumeTrainingEnergy")
+	if data == nil then
+		return false, nil
+	end
+
+	return ProfileOperations.consumeTrainingEnergy(data, minutes, os.time())
 end
 
 return PlayerDataService

@@ -33,6 +33,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local StartingValuesConfig = require(ConfigFolder:WaitForChild("StartingValuesConfig"))
+local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
+
+local ProgressionFolder = Shared:WaitForChild("Progression")
+local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceRegeneration"))
 
 local PlayerProfileSchema = {}
 
@@ -40,13 +44,47 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below.
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 2
+PlayerProfileSchema.CURRENT_VERSION = 3
 
-export type Forecasted = {
+--[[
+	Renamed from `Forecasted` in version 3. Player-facing terminology is
+	Competition Number, per GAME_DESIGN.md section 29.1.
+
+	NOTE THE DELIBERATELY INCOMPLETE RENAME. The in-memory plumbing of the
+	difficulty engine and the four phase services still says `forecastedMax` /
+	`forecastedMaxKg`, in roughly forty places. Those are function parameters and
+	per-attempt snapshot fields, NOT persisted data, so renaming them buys no
+	data safety while touching every lifting file in the project. They are left
+	for a separate, purely mechanical pass. Only the SAVED field is renamed here,
+	because only the saved field needs a migration.
+]]
+export type CompetitionNumber = {
 	-- Kilograms. These ARE the lifter's strength; there is no hidden true value.
 	Squat: number,
 	Bench: number,
 	Deadlift: number,
+}
+
+--[[
+	A continuously regenerating resource. See ResourceRegeneration for why a
+	timestamp is stored rather than the resource being ticked by a loop.
+]]
+export type Resource = ResourceRegeneration.Resource
+
+--[[
+	The three per-lift Competition Budgets, from GAME_DESIGN.md section 29.9.
+
+	ACCOUNT-WIDE, NOT BUILD-SCOPED. A 59 kg squat build and a 120 kg squat build
+	draw from this same Squat pool, and Solo and Official meets share it too.
+	Spending Squat leaves Bench and Deadlift untouched.
+
+	`amount` may go NEGATIVE, and the magnitude is the overflow depth. That is
+	what keeps the model independent of how many meets were played.
+]]
+export type CompetitionBudget = {
+	Squat: Resource,
+	Bench: Resource,
+	Deadlift: Resource,
 }
 
 export type Technique = {
@@ -80,9 +118,36 @@ export type Meta = {
 
 export type ProfileData = {
 	version: number,
-	forecasted: Forecasted,
+
+	--[[
+		BUILD-SCOPED IN THE FROZEN DESIGN, FLAT FOR NOW.
+
+		Section 29.11 makes Competition Numbers per weight-class build, and the
+		Weight-Class Build Slot system is not built. This field therefore holds
+		the ACTIVE build's numbers, which is every player's only build today.
+
+		The later migration is deterministic and lossless: move this table to
+		`builds[classKey].competitionNumber`, keyed by the class the player is
+		already in, which WeightClass.resolve derives from bodyweight.currentKg.
+		No value is invented and nothing is lost.
+
+		A `builds` map is deliberately NOT created now. Which build is active,
+		how slots are keyed, and how many a player may own are all undecided, and
+		guessing that shape would mean migrating away from the guess. No
+		paid-slot behaviour is implied or implemented here.
+	]]
+	competitionNumber: CompetitionNumber,
+
 	technique: Technique,
 	bodyweight: Bodyweight,
+
+	--[[
+		ACCOUNT-WIDE, never build-scoped, so these stay OUTSIDE the future
+		`builds` map described above.
+	]]
+	competitionBudget: CompetitionBudget,
+	trainingEnergy: Resource,
+
 	meta: Meta,
 }
 
@@ -97,10 +162,32 @@ export type ProfileData = {
 local template: ProfileData = {
 	version = PlayerProfileSchema.CURRENT_VERSION,
 
-	forecasted = {
+	competitionNumber = {
 		Squat = StartingValuesConfig.Forecasted.Squat,
 		Bench = StartingValuesConfig.Forecasted.Bench,
 		Deadlift = StartingValuesConfig.Forecasted.Deadlift,
+	},
+
+	--[[
+		THE TEMPLATE STORES ZERO TIMESTAMPS, NOT os.time().
+
+		Same reasoning as meta.createdUnix below: a timestamp baked into the
+		template records when the SERVER started, not when the player first
+		played, and every profile created by that server would share it.
+
+		A zero timestamp means "never touched". ResourceRegeneration reads a full
+		amount and returns early without consulting the clock, so a brand new
+		profile is simply full. The first spend stamps a real server time.
+	]]
+	competitionBudget = {
+		Squat = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
+		Bench = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
+		Deadlift = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
+	},
+
+	trainingEnergy = {
+		amount = ProgressionConfig.TrainingEnergy.CapacityMinutes,
+		lastUpdatedUnix = 0,
 	},
 
 	technique = {
@@ -185,6 +272,110 @@ migrations[1] = function(data: ProfileData)
 
 	if typeof(data.technique.PullStrength) ~= "number" then
 		data.technique.PullStrength = StartingValuesConfig.Technique.PullStrength
+	end
+end
+
+--[[
+	Version 2 to 3: the Competition Number progression foundation.
+
+	TWO THINGS HAPPEN HERE, and the first is the one that can lose data.
+
+	1. THE STORED STRENGTH FIELD IS RENAMED.
+
+		forecasted {Squat, Bench, Deadlift}  ->  competitionNumber {...}
+
+	Reconcile() runs BEFORE this and will have created `competitionNumber` from
+	the template, which holds 25 kg for each lift. The old `forecasted` table is
+	untouched by Reconcile, because the template no longer mentions it.
+
+	So on arrival here a real v2 save looks like:
+
+		forecasted        = { Squat = 180, Bench = 120, Deadlift = 210 }   <- REAL
+		competitionNumber = { Squat = 25,  Bench = 25,  Deadlift = 25 }    <- template
+
+	COPYING THE OLD VALUES OVER IS THEREFORE MANDATORY, NOT DEFENSIVE. Skipping
+	it would reset every existing lifter to 25 kg. 25 is only ever the default
+	for genuinely new lift data.
+
+	Each lift is copied independently and only when the old value is a usable
+	number, so a save with two good lifts and one corrupt field keeps the two.
+
+	`forecasted` is then removed. It has to go: leaving it would mean two fields
+	claiming to be the lifter's strength, and the next person to read the profile
+	would have to guess which one won.
+
+	2. THE NEW RESOURCES ARE STARTED FULL.
+
+	Reconcile already copies the template's full values, so this only repairs a
+	resource whose shape is wrong. Starting full rather than empty is deliberate:
+	an existing player must not log in to find a new allowance they have to wait
+	a week for.
+
+	IDEMPOTENT. Running this twice is harmless. The second run finds no
+	`forecasted` field, finds every `competitionNumber` already a good number,
+	and changes nothing.
+]]
+migrations[2] = function(data: ProfileData)
+	local legacy = (data :: any).forecasted
+
+	if typeof(data.competitionNumber) ~= "table" then
+		--[[
+			Defensive. Reconcile should always have created this. Building it
+			empty lets the copy below fill it, rather than erroring and failing
+			the load, which would kick the player instead of repairing them.
+		]]
+		data.competitionNumber = {} :: any
+	end
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local saved = if typeof(legacy) == "table" then (legacy :: any)[lift] else nil
+
+		--[[
+			Only a finite number above zero is accepted. NaN, infinity, nil, a
+			string and a non-positive value all fall through to whatever
+			Reconcile put there, which is the 25 kg default.
+		]]
+		if typeof(saved) == "number" and saved == saved and saved > 0 and saved < math.huge then
+			(data.competitionNumber :: any)[lift] = saved
+		elseif typeof((data.competitionNumber :: any)[lift]) ~= "number" then
+			(data.competitionNumber :: any)[lift] = StartingValuesConfig.Forecasted[lift]
+		end
+	end
+
+	-- The rename is only complete once the old field is gone. See note 1 above.
+	(data :: any).forecasted = nil
+
+	--[[
+		Repair rather than create: Reconcile has normally done this already.
+		A resource is only rebuilt when its shape is actually wrong, so a
+		player's part-spent budget survives a second pass.
+	]]
+	if typeof(data.competitionBudget) ~= "table" then
+		data.competitionBudget = {} :: any
+	end
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local pool = (data.competitionBudget :: any)[lift]
+
+		if typeof(pool) ~= "table" or typeof(pool.amount) ~= "number" or pool.amount ~= pool.amount then
+			(data.competitionBudget :: any)[lift] = {
+				amount = ProgressionConfig.CompetitionBudget.CapacityEV,
+				lastUpdatedUnix = 0,
+			}
+		elseif typeof(pool.lastUpdatedUnix) ~= "number" then
+			pool.lastUpdatedUnix = 0
+		end
+	end
+
+	local energy = data.trainingEnergy
+
+	if typeof(energy) ~= "table" or typeof(energy.amount) ~= "number" or energy.amount ~= energy.amount then
+		data.trainingEnergy = {
+			amount = ProgressionConfig.TrainingEnergy.CapacityMinutes,
+			lastUpdatedUnix = 0,
+		}
+	elseif typeof(energy.lastUpdatedUnix) ~= "number" then
+		energy.lastUpdatedUnix = 0
 	end
 end
 

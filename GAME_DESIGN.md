@@ -84,6 +84,11 @@ The important design principle is that training and competition aren't the same 
 Training develops the character.
 Competition tests the character and the player controlling them.
 3. The Three Competition Numbers
+
+> **See section 29 for the finalized progression specification.** Player-facing
+> terminology is now **Competition Number**, not "Forecasted". The `Forecasted`
+> naming below and in code is retained only until the implementation rename.
+
 Every player should have three major performance values:
 Forecasted Squat
 Forecasted Bench
@@ -450,6 +455,13 @@ You gain cosmetic currency through training this.
 
 
 13. Bodyweight & Weight Classes
+
+> **The gains rule below is SUPERSEDED by section 29.** Competition Number gains
+> do NOT accelerate below a target bodyweight and do NOT slow as the player
+> approaches it. Under R2, reward magnitude scales with the class Progression
+> Reference, so every class progresses at the same PP rate. Muscle determines
+> bodyweight and physical size only -- never lift strength.
+
 Your current proposed classes:
 59
 66
@@ -467,6 +479,14 @@ but moves the player into a stronger weight class.
 Therefore gaining weight isn't automatically optimal.
 
 14. World-Record Scaling
+
+> **Refined by section 29.** "Record Percentage" has since split into TWO distinct
+> quantities: **Progression Proximity** (CN / Progression Reference), which drives
+> difficulty and progression, and **Actual Record Proximity** (CN / real world
+> record), which drives prestige and record eligibility. The real record sits
+> between PP 81.7% and PP 99.5%, so PP 100% is NOT the world record. Records do
+> live in a configuration table, as suggested: `ReferenceRecordConfig.luau`.
+
 This is one of your more interesting concepts.
 The game's difficulty can consider:
 Player performance
@@ -742,6 +762,388 @@ Titles / rankings / rare items
 PLAYER-SKILL PROGRESSION
 Actually becoming better at minigames
 That combination is what could make the game much deeper than a standard Roblox lifting simulator.
+
+---
+
+## 29. Competition Number Progression — FINAL SPECIFICATION
+
+This section supersedes any earlier statement in this document about how
+Forecasted / Competition Numbers grow. Where sections 3, 12, 13 or 14 disagree
+with this section, **this section wins**.
+
+Everything here is split into two kinds of rule:
+
+- **[FROZEN]** — architecture. Changing it changes the design.
+- **[TUNABLE]** — a balance constant. Expected to move after playtesting.
+
+### 29.1 Terminology
+
+| Player-facing term | Meaning |
+|---|---|
+| **Competition Number (CN)** | What the character can lift under competition conditions, in kg |
+| **Competition Total** | Squat CN + Bench CN + Deadlift CN |
+
+**[FROZEN] Player-facing terminology is "Competition Number", never "Forecasted".**
+
+> **Migration note.** The profile schema and existing code still use
+> `Forecasted` (`PlayerProfileSchema.ProfileData.forecasted`,
+> `StartingValuesConfig.Forecasted`, `DifficultyResolver`'s `forecastedMax`).
+> This naming is **flagged for a safe rename during implementation** and must
+> not be renamed piecemeal — it is load-bearing for the difficulty engine and
+> would need a schema migration. Until then, `Forecasted` in code means
+> Competition Number.
+
+### 29.2 The three quantities — do not confuse them
+
+| Quantity | Definition | Used for |
+|---|---|---|
+| **Competition Number (CN)** | the character's capability, in kg | attempt selection, display |
+| **Progression Reference** | the M2 fitted allometric reference for that lift and class | the denominator of PP |
+| **Real World Record** | the actual record from `ReferenceRecordConfig` | prestige, record eligibility |
+
+```
+Progression Proximity   PP  = CN / ProgressionReference(lift, class)
+Actual Record Proximity ARP = CN / RealWorldRecord(lift, class)
+```
+
+**[FROZEN]** PP drives difficulty and progression. ARP drives prestige and
+record eligibility. **PP 100% is NOT the world record** — the real record sits
+between PP 81.7% and PP 99.5% depending on class and lift.
+
+### 29.3 The core formula
+
+```
+Hill(PP) = 1 / (1 + (PP / 0.75)^5)
+
+dCN = ProgressionReference x BaseProgressRate x EV x Hill(PP) x BudgetMultiplier
+```
+
+| Constant | Value | Status |
+|---|---|---|
+| `h` (Hill midpoint) | 0.75 | **[TUNABLE]** — recalibrate from telemetry |
+| `m` (Hill exponent) | 5 | **[TUNABLE]** |
+| `BaseProgressRate` | **0.00482389** | **[TUNABLE]** — single config constant |
+
+**[FROZEN]** The soft cap is asymptotic. There is **no hard strength cap** at any
+PP. Progression slows without limit and never reaches zero.
+
+`BaseProgressRate` means: one unit-quality attempt grants **0.4824% of that
+lift's Progression Reference**, before the soft cap.
+
+### 29.4 R2 — reference normalization
+
+**[FROZEN]** Reward magnitude scales with the destination build's Progression
+Reference, **per lift**:
+
+```
+BaseRawReward = ProgressionReference(lift, class) x BaseProgressRate
+```
+
+Normalization is **per lift**, using that lift and class's own reference. There
+is no combined SBD progression value.
+
+Consequences, all verified:
+
+- Every class and lift reaches a given PP milestone in **the same calendar time**
+  (spread 1.03x-1.25x, caused only by differing starting PP).
+- Weight class is about identity, records, body size, competition and headroom —
+  **not progression speed**.
+- Heavier lifts move in larger kilogram increments, which matches real lifting.
+- Class switching is **exactly progression-neutral**: the reference ratio that
+  inflates the reward is the same ratio that deflates it under RP Preservation,
+  so the round trip multiplier is exactly 1.0000.
+
+**The Hill input is never normalized.** It remains `PP = CN / ProgressionReference`.
+
+### 29.5 EV — what each event is worth
+
+**[FROZEN]** EV is reference-independent. Kilograms follow from §29.3.
+
+| Event | EV | Status |
+|---|---|---|
+| Successful attempt | = intensity factor | **[FROZEN]** |
+| Failed attempt | = intensity factor x **0.20** | **[TUNABLE]** failure credit |
+| Full 9-attempt meet (Normal strategy) | ~5.658 (~1.886 per lift) | derived |
+| **Compete Daily** | **0.3948 to EACH active S/B/D lift** | **[TUNABLE]** |
+| **Daily Set completion** | **0.1974 to EACH active S/B/D lift** | **[TUNABLE]** |
+| AFK training | **0.2591 per hour** | **[TUNABLE]** |
+
+> **Daily wording is deliberately explicit.** Both daily rewards are **per lift**,
+> not a total to be divided. A completed Daily Set awards 0.1974 EV to Squat,
+> 0.1974 EV to Bench and 0.1974 EV to Deadlift — 0.5922 EV in total. The
+> alternative reading (0.1974 total, 0.0658 each) yields only a 15.6% daily share
+> and misses the 20% target.
+
+#### Intensity factors (I-A) — **[TUNABLE]**
+
+| Relative intensity | Factor |
+|---|---|
+| <= 60% | **0.00** |
+| 75% | 0.35 |
+| 85% | 0.70 |
+| 90% | 0.90 |
+| 95-100% | 1.00 |
+| 105% | 1.10 |
+| 110%+ | 1.20 (capped) |
+
+**[FROZEN] Aggressive lifting does not need to be CN-optimal.** Safe and normal
+attempts give better reliable CN; aggressive attempts exist for PR, record,
+victory and prestige upside. Verified: Conservative beats Aggressive by 21% in CN,
+and this is intended.
+
+**[FROZEN]** Nothing at or below 60% relative intensity awards CN.
+
+### 29.6 Source distribution target — **[TUNABLE]**
+
+For the **reference engaged player** (~5 days/week, ~5 meets/week, ~70% daily
+completion, ~60% Training Energy use):
+
+| Source | Share | EV/week per lift |
+|---|---|---|
+| Meets | **65%** | 9.430 |
+| Dailies | **20%** | 2.902 |
+| AFK | **15%** | 2.176 |
+
+**[FROZEN] hierarchy: MEETS > DAILIES > AFK.** The percentages are a balancing
+target, not a guarantee for any individual player.
+
+### 29.7 Daily architecture
+
+**[FROZEN]** Three daily pillars, three different reward types:
+
+| Daily | Awards |
+|---|---|
+| **Compete** | CN progression |
+| **Develop** | Technique / Muscle |
+| **World** | economy (money, items) |
+| **Daily Set completion** | additional CN consistency bonus |
+
+**[FROZEN] Cooking and trading never grant Squat/Bench/Deadlift CN directly.**
+The Set bonus is a *consistency* reward for engaging all three pillars, not
+economy activity converting into strength.
+
+**[FROZEN] Daily Set distribution:** awarded to all three lifts of the **currently
+active build**, **one claim per account per day**. Build slots cannot duplicate it;
+switching build before claiming only chooses the destination, and because R2 makes
+the gain PP-equivalent regardless of class, that choice is cosmetic.
+
+### 29.8 AFK progression and Training Energy
+
+**[FROZEN]** Training Energy limits **passive AFK CN only**.
+
+**[FROZEN] Training Energy never limits Muscle.** Muscle progresses
+independently and continues when Training Energy is empty.
+
+| Parameter | Baseline | Status |
+|---|---|---|
+| Maximum capacity | **120 minutes** | **[TUNABLE]** |
+| Regeneration | **5 min/hour** (full in 24 h) | **[TUNABLE]** |
+| Regenerates online and offline | yes | **[FROZEN]** |
+| Consumption | 1 minute capacity = 1 minute AFK CN training | **[FROZEN]** |
+| At zero | **AFK CN stops** | **[FROZEN]** |
+
+Available per week: 840 minutes (14 hours). The reference player uses ~60%.
+
+**Why AFK stops but meets never do:** meets are active play, and a player at the
+keyboard must never be told their effort is worth nothing. AFK is passive, and a
+hard allowance is what holds the intended ratio. Target: 100% Training Energy
+utilization ~= **0.25x** the reference active total rate, so AFK-only progression
+is ~4x slower.
+
+**Player-facing explanation:**
+
+> **Training Energy** — your gym stamina for background training. 2 hours
+> maximum, fully recovered every day, and it refills whether you are online or
+> not. *Background training only.*
+
+### 29.9 The three Competition Budgets
+
+**[FROZEN]** There are **three separate pools**: Squat, Bench and Deadlift.
+
+Each pool is **account-wide for that lift** and shared across:
+
+- all weight-class build slots (59 kg Squat and 120 kg Squat draw the same pool)
+- Solo Meets and Official Meets
+
+Each pool is **NOT** per weight class, **NOT** per build slot, and **NOT** shared
+between the three lifts.
+
+| Parameter | Baseline | Status |
+|---|---|---|
+| Capacity (each pool) | **9.43 EV** (= 5 meets) | **[TUNABLE]** |
+| Regeneration | **0.0561 EV/hour** (9.43/week) | **[TUNABLE]** |
+| `k` (overflow softness) | **3** | **[TUNABLE]** |
+
+**[FROZEN]** Full-rate allowance, then **harmonic diminishing overflow**:
+
+```
+BudgetMultiplier = 1 / (1 + overflowMeets / k)     where overflowMeets = overflow / 1.886
+```
+
+| Meet # in a week | Multiplier |
+|---|---|
+| 1-5 | 1.000 |
+| 6 | 0.750 |
+| 7 | 0.600 |
+| 8 | 0.500 |
+| 10 | 0.375 |
+
+**[FROZEN] Active meet progression is never hard-zeroed.** The 30th meet of a week
+still pays 10.7%. 1000 meets/week would yield ~3.2x the reference rate, not 200x.
+
+**[FROZEN] Budget consumption is proportional to the CN actually awarded**, not to
+meets or attempts counted. Consequences, all verified:
+
+- Bombing a meet consumes almost nothing — **no double punishment**.
+- EV per unit of budget is **identical** whether an attempt succeeds or fails, so
+  there is **no reason to fail on purpose**. Failing only wastes wall-clock time.
+- Leaving halfway or disconnecting consumes exactly what was earned; no refund is
+  needed and none is given.
+- Repeated sub-60% openers award nothing and therefore consume nothing.
+
+**Why three pools and not one:** with a single shared pool, a squat-only player
+earns 3x the squat progression of a full powerlifter per unit of budget. Per-lift
+pools invert that: a squat-only player doing **six times** the meets reaches 1.82x
+squat while their bench and deadlift sit at 0.35x. Specializing becomes a trade,
+and a bad one.
+
+**Player-facing presentation — [FROZEN]:** per-lift freshness state, **not three
+resource bars**.
+
+| State | Budget remaining | Meaning |
+|---|---|---|
+| **FRESH** | > 60% | full progression |
+| **WORKED** | 20-60% | still good |
+| **FATIGUED** | < 20% | reduced progression from here |
+
+> **Fatigued** — you have competed this lift a lot recently. It still progresses,
+> just more slowly. Recovers over the next day or two.
+
+### 29.10 Solo vs Official meets
+
+**[FROZEN]** Basic strength progression is **never population-gated**.
+
+| | Solo / Qualifying | Official multiplayer |
+|---|---|---|
+| Full 9-attempt S/B/D format | yes | yes |
+| Attempt selection and 2.5 kg rules | yes | yes |
+| **Build CN progression** | **full rate** | **full rate** |
+| Technique progression | yes | yes |
+| Personal records | yes | yes |
+| Bomb-out consequences | yes | yes |
+| Competition Budget consumed | yes (same pools) | yes (same pools) |
+| **Official victories** | no | yes |
+| **Placing** | no | yes |
+| **Leaderboard / record eligibility** | no | yes |
+| **Prestige / career history** | no | yes |
+| **Nationals qualification** | no | yes |
+
+Solo grants **full** CN rather than a reduced rate deliberately: a reduced rate
+would make waiting for players optimal and would punish low-population servers.
+Multiplayer is desirable because everything prestigious is multiplayer-only, not
+because progression requires it.
+
+**[FROZEN]** Account-wide rewards (currency, items) must **never** reuse the
+build-CN relative-intensity formula, because a fresh low-CN build reaches 100%
+relative intensity and ~100% Hill efficiency at trivial absolute weight. The
+actual currency/item formula belongs to economy design and is **not specified
+here**; raw absolute kilograms is explicitly **not** frozen, since it would create
+a heavier-class economic advantage.
+
+### 29.11 Weight class and build interactions
+
+**[FROZEN]**
+
+- Progression is **build-scoped**. Each weight-class build has its own CN.
+- Saved lighter builds **restore exactly**.
+- First-time downward translations follow the frozen transition architecture
+  (RP Preservation: `CN_new = CN_old x ref_new / ref_old`).
+- Meet entry takes a **weigh-in snapshot** (`weighInKg`, `meetClass`, `meetBuild`)
+  frozen until the meet resolves.
+- Bodyweight above 120 kg is **cosmetic**; it confers no additional progression.
+- Muscle determines **bodyweight and physical size only** — never lift strength.
+
+### 29.12 Display precision — three separate concepts
+
+**[FROZEN]** These must not be conflated:
+
+| Concept | Precision |
+|---|---|
+| **Internal CN** | full decimal precision |
+| **Main player-facing CN** | **nearest 0.5 kg** |
+| **Legal meet attempts** | **2.5 kg increments** |
+
+**[FROZEN] Fractional progression is never discarded** merely because it is not
+currently visible. Small passive and daily gains accumulate internally.
+
+**[FROZEN]** Do not show repeated `+0.0 kg`. Aggregate small gains into meaningful
+feedback:
+
+```
+Background Training: +0.5 kg
+Today's Squat Progress: +1.0 kg
+```
+
+For scale, one AFK hour at PP 100% on a 59 kg bench is ~0.048 kg — individually
+invisible at any sane display precision, but ~0.7 kg across a week of full
+utilization.
+
+### 29.13 Pacing target (P4)
+
+**[FROZEN]** The reference engaged player reaches **PP 60% in approximately 8
+weeks**. This is the baseline against which `BaseProgressRate` is solved.
+
+| PP | Time | | PP | Time |
+|---|---|---|---|---|
+| 20% | 1.8 wk | | 90% | 3.9 mo |
+| 40% | 4.7 wk | | 95% | 4.6 mo |
+| **60%** | **8.0 wk** | | 100% | 5.4 mo |
+| 75% | 2.6 mo | | 110% | 7.5 mo |
+| 85% | 3.4 mo | | 125% | 12.7 mo |
+| | | | 150% | **2.58 yr** |
+
+**Record-level CN** (reaching the number, not successfully lifting it) arrives at
+**3.2 to 5.6 months** depending on class and lift — a 1.76x spread. The three
+hardest are **66 kg Bench, 74 kg Squat and 83 kg Deadlift**, whose records sit at
+PP 99.5% because they bound the M2 `k`-fit. This variation is **accepted and
+frozen**; no per-class Hill correction coefficient is applied.
+
+Reaching record-level CN is **not** the same as setting the record. Execution still
+decides whether the lift is made.
+
+### 29.14 Archetype rates — verified
+
+Per-lift progression rate relative to the reference player:
+
+| Archetype | Meets/wk | Rate |
+|---|---|---|
+| Casual | 2 | 0.45x |
+| **Reference** | **5** | **1.00x** |
+| Hardcore | 10 | 1.48x |
+| AFK-heavy | 1 | 0.52x |
+| Meet spammer | 30 | 1.47x |
+| Squat-only specialist | 15 | 1.53x squat / **0.35x** bench+deadlift |
+| Dailies-only | 0 | 0.29x |
+
+Channel ceilings: dailies cap at **0.29x**, AFK caps at **0.25x**. Only the meet
+channel is unbounded, and it is logarithmic.
+
+### 29.15 Constants expected to be recalibrated after playtesting
+
+| Constant | Why |
+|---|---|
+| **`BaseProgressRate`** | solved from an **assumed** success-probability curve; the single largest uncertainty in the model |
+| Failure credit (0.20) | sensitivity testing showed 0.30 inverts optimal play toward reckless spam; keep <= 0.20 |
+| I-A intensity factors | depend on real pass rates |
+| `h` = 0.75, `m` = 5 | `m` = 6 is the lever for a harsher elite grind; affects only players past PP 110% |
+| Competition Budget capacity, regen, `k` | depends on observed meets/week |
+| Training Energy max and regen | depends on observed AFK behaviour |
+| Daily EV values | depends on observed completion rates |
+| 65/20/15 source split | a target, not a guarantee |
+
+**[FROZEN] `BaseProgressRate` must remain a single configurable constant.** Real
+playtest success rates will require recalibration, and it enters the formula as one
+multiplier so rescaling is a one-line change.
 
 Read GAME_DESIGN.md.
 

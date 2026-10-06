@@ -7,11 +7,19 @@
 	Output window on server start, so the curves can be checked by eye against
 	the anchors in GAME_DESIGN.md.
 
-	Set ENABLED to false to silence it, or delete this file once the engine is
-	trusted. Nothing else requires it.
+	OFF BY DEFAULT. SET TO true TO RUN IT.
+
+	The curves it prints have been checked against the anchors and the difficulty
+	engine is in use by all three lifts, so 66 lines of output on every Play is
+	noise rather than information. Turn it on when a curve, an anchor or the
+	resolver changes, then turn it off again.
+
+	Kept rather than deleted: re-deriving these tables by hand to check a future
+	balance change would be far more work than flipping this flag. Nothing else
+	requires it.
 ]]
 
-local ENABLED = true
+local ENABLED = false
 
 if not ENABLED then
 	return
