@@ -798,7 +798,7 @@ Everything here is split into two kinds of rule:
 | Quantity | Definition | Used for |
 |---|---|---|
 | **Competition Number (CN)** | the character's capability, in kg | attempt selection, display |
-| **Progression Reference** | the M2 fitted allometric reference for that lift and class | the denominator of PP |
+| **Progression Reference** | the frozen M2 allometric reference, §29.2b | the denominator of PP |
 | **Real World Record** | the actual record from `ReferenceRecordConfig` | prestige, record eligibility |
 
 ```
@@ -810,6 +810,97 @@ Actual Record Proximity ARP = CN / RealWorldRecord(lift, class)
 record eligibility. **PP 100% is NOT the world record** — the real record sits
 between PP 81.7% and PP 99.5% depending on class and lift.
 
+
+### 29.2b The frozen Progression Reference table — FitVersion 1
+
+**[FROZEN]** Lives in `src/shared/Config/ProgressionReferenceConfig.luau`.
+
+**This is a progression-normalization table. It is NOT a world record table.**
+`ReferenceRecordConfig` holds the real records and drives prestige; this holds
+progression references and drives pacing. They are different quantities with
+different jobs.
+
+| Class | Squat | Bench | Deadlift |
+|---|---|---|---|
+| 59 kg | 294.2668 | 202.0288 | 334.4681 |
+| 66 kg | 317.3189 | 214.5675 | 350.2647 |
+| 74 kg | 342.7050 | 228.1653 | 367.1538 |
+| 83 kg | 370.2130 | 242.6723 | 384.9150 |
+| 93 kg | 399.6555 | 257.9609 | 403.3666 |
+| 105 kg | 433.6515 | 275.3345 | 424.0275 |
+| 120 kg | 474.4075 | 295.8054 | 447.9851 |
+
+> **Displayed to four decimals for readability.** The config stores the full
+> derived double precision, deliberately unrounded, because PP feeds a
+> fifth-power curve and rounding would move it in the fourth significant digit.
+> `295.8054` is the 120 kg Bench **Progression Reference**; do not confuse it
+> with `291.5`, which is the 120+ kg Bench **real world record** and belongs
+> only in `ReferenceRecordConfig`.
+
+#### Provenance
+
+```
+reference = Coefficient x bodyweight ^ Exponent
+
+            Exponent                Coefficient           RawCoefficient
+Squat       0.67269077281080014     18.945475535859227    18.8512194386659
+Bench       0.53706504721053849     22.612599532213689    22.500099037028548
+Deadlift    0.41160160566320991     62.440908240461866    62.130256955683457
+
+HeadroomMultiplier = 1.005
+```
+
+Fitted from the real records in `ReferenceRecordConfig`, capped classes only,
+using the **class upper bounds** 59 / 66 / 74 / 83 / 93 / 105 / 120 as the
+bodyweight x-values. The exponent is a least-squares fit on `log(WR)` against
+`log(bodyweight)` per lift; `RawCoefficient = max(WR / bodyweight^Exponent)` so
+the curve sits at or above every real record; `Coefficient = RawCoefficient x
+HeadroomMultiplier`.
+
+The headroom exists so no real record sits at exactly PP 100%. Because `k` is
+fitted to the maximum, exactly one class per lift is pinned near the reference —
+**74 kg Squat, 66 kg Bench and 83 kg Deadlift all land at PP 99.5%** — and their
+records are therefore the hardest to reach. Accepted and frozen; see §29.13.
+
+#### Changing these values
+
+**[FROZEN] A change to a real world record does NOT change this table.** If
+these were derived live from `ReferenceRecordConfig`, then a record being broken
+in the real world would silently move every existing player's PP, shift their
+Hill soft-cap position and re-pace their character retroactively. That must not
+happen.
+
+So:
+
+- Production runtime treats the frozen literals as **authoritative**.
+- Load-time validation checks **structure only**: all 21 values present, finite,
+  above zero, and strictly ascending with class per lift.
+- Load-time validation deliberately does **not** re-derive from
+  `ReferenceRecordConfig` and compare, because real records may legitimately be
+  updated and that must never fail startup or alter progression.
+- A **dev-only** provenance check (`deriveFromProvenance`, exercised by
+  `CompetitionNumberRewardProbe`) confirms the literals still match the recorded
+  fit. It compares against the stored coefficients, not live records.
+- **Changing the table at all is an explicit progression-version decision**:
+  bump `FIT_VERSION`, and understand that every existing player's pacing moves.
+
+#### 120+ kg is deliberately absent
+
+The unlimited class has no upper bodyweight bound, so the allometric fit has no
+x-value to evaluate at — the formula is **undefined** there, not merely
+unspecified. Its progression basis must be unbounded while becoming
+increasingly difficult, which is a different system, and no finalized rule for
+it exists in this document.
+
+Three things it must **not** be:
+
+- an extrapolation of this fit
+- the 120+ real world record used as a progression reference
+- the C3 capped-class export formula, which is a **translation** rule between
+  classes and not a **growth** rule within one
+
+The reward engine returns an explicit `UnsupportedClass` result for 120+ and
+must never fall back to the 120 kg reference.
 ### 29.3 The core formula
 
 ```
