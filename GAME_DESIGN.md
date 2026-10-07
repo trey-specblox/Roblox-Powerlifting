@@ -1236,28 +1236,607 @@ channel is unbounded, and it is logarithmic.
 playtest success rates will require recalibration, and it enters the formula as one
 multiplier so rescaling is a one-line change.
 
-Read GAME_DESIGN.md.
+## 30. Competition Rewards
 
-This document was copied from Google Docs, so its Markdown formatting may be messy.
+> **Scope.** The preamble below was written for §30, §31 and §32 together, which
+> were designed as one approved system. Only numbering and heading depth were
+> normalized to match this document's conventions — **no rule was changed,
+> reinterpreted or removed**.
 
-Reformat GAME_DESIGN.md into clean, well-organized Markdown WITHOUT changing, removing, summarizing, or inventing any of my game-design ideas.
+This section defines the intended competition reward hierarchy, World Record lifecycle,
+Worlds qualification system, and monthly Sheffield-style championship.
 
-Your job is formatting only.
+These are GAME DESIGN RULES.
 
-Organize the existing content using:
-- Clear headings
-- Subheadings
-- Bullet points
-- Tables where appropriate
-- Code blocks for formulas where helpful
-- Consistent terminology
+Do NOT implement these systems merely because they are documented here.
+Exact economy values, equipment probabilities, meet schedules, and some edge cases
+remain TBD and must be approved before implementation.
 
-Preserve all formulas, numbers, mechanics, notes, and reference-file paths exactly in meaning.
 
-Do not redesign or balance the game yet.
+### 30.1 Competition Reward Philosophy
 
-If something is unclear, leave the original information intact rather than guessing what I meant.
+Competitions provide multiple distinct reward categories:
 
+1. Competition Number progression
+2. Money
+3. Equipment / item reward opportunities
+4. Placement / prestige
+5. World Record progression where eligible
+
+These rewards must NOT all use the same calculation.
+
+Competition Number represents the strength the player demonstrated.
+
+Money and equipment should reward competitive success, placement, meet size,
+and overall meet performance.
+
+World Records and Sheffield qualification are separate prestige/endgame systems.
+
+
+---
+
+### 30.2 Competition Number Rewards
+
+All three attempts on Squat, Bench, and Deadlift contribute individually toward
+Competition Number progression.
+
+A full meet therefore contains up to 9 progression-producing attempts:
+
+- Squat Attempt 1
+- Squat Attempt 2
+- Squat Attempt 3
+- Bench Attempt 1
+- Bench Attempt 2
+- Bench Attempt 3
+- Deadlift Attempt 1
+- Deadlift Attempt 2
+- Deadlift Attempt 3
+
+Successful attempts receive their full intensity-based EV.
+
+Failed attempts receive the currently frozen failure credit:
+
+FailureCredit = 0.20
+
+Therefore, a player who successfully completes 3/3 attempts on a lift will generally
+receive more progression than a player who completes only 1/3 at comparable intensities.
+
+However, attempt difficulty still matters.
+
+A player must not receive a flat CN bonus simply for going 3/3.
+
+Higher-intensity successful attempts should naturally produce greater progression through
+the existing EV system.
+
+Competition Number progression remains governed by:
+
+- Attempt intensity
+- Success/failure
+- Raw EV
+- Competition Budget
+- Progression Percentage
+- Hill soft-cap
+- CompetitionNumberReward
+
+Placement does NOT directly multiply Competition Number progression.
+
+Player count does NOT directly multiply Competition Number progression.
+
+This prevents players from gaining additional permanent strength merely because they
+entered a weak field or a large field.
+
+
+---
+
+### 30.3 Money / Prize Pot
+
+Competition money rewards should use a meet-level Prize Pot.
+
+The Prize Pot increases based on the number of legitimate participating players.
+
+Conceptually:
+
+Prize Pot =
+Base Meet Pot
++ Player Count Contribution
+
+Higher-tier meets may have larger base pots and/or stronger player-count scaling.
+
+Exact values are TBD.
+
+Placement determines how the Prize Pot is distributed.
+
+Higher placement receives a larger share.
+
+First place should receive the largest reward.
+
+Money may also include smaller performance-based bonuses.
+
+Examples may include:
+
+- 9/9 performance
+- exceptional total
+- record performance
+- other approved meet accomplishments
+
+However, placement should remain a major component of competition money rewards.
+
+
+#### Qualified Player Count
+
+Not every player who joins a server should increase the Prize Pot.
+
+Only legitimate meet participants should count.
+
+A player must satisfy server-authoritative participation requirements before they
+contribute toward the Prize Pot.
+
+This exists to prevent alternate-account / fake-player Prize Pot inflation.
+
+Exact qualification requirements are TBD.
+
+
+---
+
+### 30.4 Equipment / Item Rewards
+
+Competitions may provide opportunities to receive lift-improvement equipment.
+
+Examples include:
+
+- Knee Sleeves
+- Wrist Wraps
+- Belt
+
+Equipment should NOT roll independently after every successful attempt.
+
+Instead, equipment rewards should primarily occur at the end of the competition.
+
+Equipment reward chance and/or reward quality may scale from:
+
+- Placement
+- Overall meet performance
+- Successful attempts
+- Meet tier
+- Other approved competitive accomplishments
+
+Exact item pools, rarity tiers, probabilities, and equipment effects are TBD.
+
+Going 9/9 should generally be more rewarding than performing poorly, but players should
+not be encouraged to intentionally choose trivial attempts merely to farm item rolls.
+
+Placement should meaningfully improve competition rewards.
+
+
+---
+
+## 31. World Record System
+
+
+### 31.1 Worlds is the only World Record gateway
+
+A player may ONLY establish or increase a Pending / Unofficial World Record through a
+valid performance at a designated Worlds meet.
+
+Performances from:
+
+- Local meets
+- Qualifying meets
+- Training
+- Normal competitions
+- Debug systems
+- Other non-Worlds activities
+
+must NEVER update the Pending World Record leaderboard.
+
+Even if a player lifts more than the current World Record outside Worlds, the World Record
+leaderboard does not change.
+
+Worlds is the exclusive gateway into the World Record system.
+
+
+---
+
+### 31.2 Total World Record determines Sheffield qualification
+
+Sheffield qualification is based on TOTAL.
+
+Individual Squat, Bench, and Deadlift World Records do NOT qualify a player for Sheffield.
+
+Each weight class tracks a Total World Record.
+
+The Total World Record must represent an actual meet total achieved by one player.
+
+DO NOT calculate Total World Record by adding separate Squat, Bench, and Deadlift records
+that may belong to different players.
+
+
+---
+
+### 31.3 Official World Record
+
+Each weight class has an Official Total World Record.
+
+The Official World Record is FROZEN throughout the active monthly cycle.
+
+It does NOT immediately change when somebody exceeds it at Worlds.
+
+Instead, qualifying performances enter the Pending / Unofficial World Record system.
+
+The frozen Official World Record serves as the established standard for that monthly
+cycle and as the denominator for Sheffield scoring.
+
+
+---
+
+### 31.4 Pending / Unofficial World Record
+
+During the monthly Worlds qualification window, players compete to establish the highest
+Pending Total World Record in their weight class.
+
+Example:
+
+Official 83 kg Total WR = 800 kg
+
+Worlds results:
+
+Player A = 810 kg
+Player B = 820 kg
+Player C = 825 kg
+
+Pending 83 kg WR becomes:
+
+825 kg
+
+The Official WR remains:
+
+800 kg
+
+until the monthly Sheffield cycle is completed.
+
+If another player later totals 827.5 kg at a valid Worlds meet before the cutoff:
+
+Pending WR = 827.5 kg
+
+This creates an active monthly race between players in each weight class.
+
+
+---
+
+### 31.5 World Record ties
+
+Multiple players may hold the same highest Pending Total World Record.
+
+Example:
+
+Player A = 825 kg
+Player B = 825 kg
+
+Both players are recognized as tied Pending WR holders.
+
+Both qualify for Sheffield.
+
+Do NOT resolve Sheffield qualification ties by:
+
+- who achieved the result first
+- bodyweight
+- timestamp
+- arbitrary player ID
+- random selection
+
+If multiple players legitimately share the highest qualifying Total, all tied players
+qualify.
+
+
+---
+
+## 32. Monthly Sheffield Championship
+
+
+### 32.1 Monthly cycle
+
+The intended high-level monthly lifecycle is:
+
+Official WR Snapshot
+        ↓
+Worlds Qualification Window
+        ↓
+Players challenge Pending Total WRs
+        ↓
+Worlds cutoff
+        ↓
+Pending WRs freeze
+        ↓
+Highest Total holder(s) from each class qualify
+        ↓
+Sheffield Championship
+        ↓
+New Official WRs are established
+        ↓
+Next monthly cycle begins
+
+The exact calendar dates/times are TBD.
+
+
+---
+
+### 32.2 Sheffield qualification
+
+At the Worlds cutoff:
+
+The player(s) holding the highest valid Pending Total WR in each eligible weight class
+qualify for Sheffield.
+
+Qualification is PLAYER-BASED and TOTAL-BASED.
+
+Individual lift World Records do not independently grant qualification.
+
+If multiple players are tied for the highest qualifying Total in a class, every tied
+player qualifies.
+
+
+---
+
+### 32.3 Worlds cutoff
+
+Once the monthly Worlds qualification window closes:
+
+Pending WR leaderboards freeze for that cycle.
+
+Additional Worlds results cannot modify that cycle's Sheffield qualification.
+
+Players cannot enter after the cutoff and retroactively qualify for the already scheduled
+Sheffield event.
+
+A new qualification period begins only when the next monthly cycle begins.
+
+
+---
+
+### 32.4 Sheffield scoring baseline
+
+Sheffield uses the Official Total World Record that existed BEFORE the current monthly
+Worlds qualification cycle.
+
+This value is frozen for the entire Sheffield event.
+
+A player's own Worlds qualification performance must NOT increase their Sheffield
+denominator.
+
+The denominator must not change during Sheffield.
+
+
+#### Sheffield Score
+
+For each competitor:
+
+SheffieldRatio =
+SheffieldMeetTotal / FrozenOfficialClassTotalWR
+
+SheffieldPercent =
+SheffieldRatio * 100
+
+Example:
+
+Frozen 59 kg Official Total WR = 700 kg
+
+Player Sheffield Total = 721 kg
+
+721 / 700 = 1.03
+
+Sheffield Percent = 103%
+
+
+Another competitor:
+
+Frozen 120 kg Official Total WR = 1000 kg
+
+Player Sheffield Total = 1020 kg
+
+1020 / 1000 = 1.02
+
+Sheffield Percent = 102%
+
+
+The 59 kg competitor wins:
+
+103% > 102%
+
+even though the 120 kg competitor lifted more absolute weight.
+
+
+---
+
+### 32.5 Sheffield winner
+
+The Sheffield winner is determined by who achieves the highest percentage relative to
+their frozen class Official Total World Record.
+
+Conceptually:
+
+Winner =
+MAX(
+    SheffieldMeetTotal / FrozenOfficialClassTotalWR
+)
+
+This allows lifters from different weight classes to compete against one another through
+relative record performance rather than raw kilograms.
+
+
+---
+
+### 32.6 World Record update after Sheffield
+
+Official World Records update AFTER Sheffield.
+
+For each weight class:
+
+NewOfficialWR =
+MAX(
+    PreviousOfficialWR,
+    HighestValidWorldsPendingTotal,
+    HighestValidSheffieldTotalForThatClass
+)
+
+A player performing worse at Sheffield must NOT erase a stronger valid Worlds result.
+
+Example:
+
+Previous Official WR = 800 kg
+
+Worlds Pending WR = 825 kg
+
+Sheffield Total = 815 kg
+
+New Official WR = 825 kg
+
+
+Example:
+
+Previous Official WR = 800 kg
+
+Worlds Pending WR = 825 kg
+
+Sheffield Total = 832.5 kg
+
+New Official WR = 832.5 kg
+
+
+After the update, this value becomes the frozen Official WR for the next monthly cycle.
+
+
+---
+
+### 32.7 Authoritative weight class
+
+World Record performances must belong to the player's legitimate meet weight class.
+
+At authoritative meet entry / weigh-in, freeze:
+
+- weighInKg
+- meetClass
+- meetBuild
+
+World Record eligibility must use this frozen meet state.
+
+Changing bodyweight or build state after meet entry must not move a result into another
+weight class.
+
+
+---
+
+### 32.8 World Record data separation
+
+There are multiple record/reference concepts in this game and they MUST remain separate.
+
+
+#### Progression Reference
+
+The frozen FitVersion progression reference used for Competition Number progression.
+
+This must NOT change because players break World Records.
+
+
+#### Official Player World Record
+
+The frozen monthly Total WR established by player competition.
+
+Used as the Sheffield scoring baseline for the appropriate cycle.
+
+
+#### Pending / Unofficial World Record
+
+The highest eligible Worlds Total achieved during the active monthly qualification
+window.
+
+Used for Sheffield qualification.
+
+
+#### Live Historical Records
+
+Historical player achievements / record history may be stored separately for prestige,
+leaderboards, profiles, and event history.
+
+
+NEVER automatically derive or modify ProgressionReferenceConfig from player World Records.
+
+
+---
+
+### 32.9 Sheffield rewards
+
+Sheffield should be one of the highest-value competitive events in the game.
+
+Potential reward categories include:
+
+- Very large money rewards
+- Rare / exclusive equipment
+- Exclusive cosmetics
+- Titles
+- Trophies
+- Permanent championship history
+- Prestige / profile recognition
+
+Exact values and reward pools are TBD.
+
+The Sheffield champion should receive exceptional rewards.
+
+However, Sheffield should NOT provide an enormous permanent Competition Number multiplier
+that causes the current champion to snowball uncontrollably into future championships.
+
+
+---
+
+### 32.10 First-cycle bootstrap
+
+The first monthly cycle requires an initial Official Total WR baseline for every eligible
+weight class.
+
+The exact bootstrap source has NOT yet been finalized.
+
+Possible approaches include using a fixed developer-approved reference baseline.
+
+DO NOT automatically assume or implement a bootstrap source until explicitly approved.
+
+
+---
+
+### 32.11 Implementation status
+
+DESIGN DIRECTION FROZEN:
+
+- Worlds is the only gateway for Pending WRs.
+- Sheffield qualification uses Total WR only.
+- Official WR stays frozen during the monthly cycle.
+- Worlds creates/challenges Pending WRs.
+- Highest Pending Total holder(s) per class qualify.
+- Exact ties all qualify.
+- Worlds qualification freezes at cutoff.
+- Sheffield uses the PRE-CYCLE Official Total WR as its denominator.
+- Sheffield winner is highest percentage above/relative to their class baseline.
+- Official WR updates AFTER Sheffield.
+- New Official WR preserves the strongest valid Worlds or Sheffield result.
+- Player count scales normal competition Prize Pots.
+- Placement scales money/equipment rewards.
+- CN progression remains based on individual attempt performance, not placement/player count.
+- Progression References and player World Records remain completely separate.
+
+TBD / REQUIRES FUTURE DESIGN APPROVAL:
+
+- Exact monthly schedule
+- Exact Worlds eligibility requirements
+- Exact Sheffield scheduling/hosting flow
+- Initial first-cycle WR baselines
+- Prize Pot formula
+- Placement payout percentages
+- Minimum participation requirement for Prize Pot contribution
+- Equipment drop rates
+- Equipment rarity tiers
+- Equipment effects
+- Sheffield reward amounts
+- Record-history retention rules
+- Handling disconnected/no-show Sheffield qualifiers
+- Exact handling of 120+ record/scoring behavior
 
 
 
