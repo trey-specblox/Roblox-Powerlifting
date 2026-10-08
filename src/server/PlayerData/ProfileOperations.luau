@@ -247,20 +247,13 @@ end
 	COMPETITION SCALE  (GAME_DESIGN.md section 33)
 	=========================================================================
 
-	READ ONLY, DELIBERATELY. Competition Scale is the heaviest weight the lifter
-	has actually proven in an eligible meet. Only a successful eligible meet
-	attempt may raise it, and no meet system exists, so there is nothing that
-	could legitimately write it yet.
+	Competition Scale is the heaviest weight the lifter has actually proven in an
+	eligible meet. Competition Number is what training built; this is what
+	competition confirmed.
 
-	THE RAISE OPERATION IS NOT HERE, AND ITS ABSENCE IS THE POINT. Section 33.12
-	sequences it as step 4: `raiseCompetitionScale(data, lift, provenKg)`,
-	monotone, taking the maximum and never decreasing. Adding it now, with no
-	caller and no meet to validate against, would be a write path into proven-
-	achievement data that nothing is in a position to justify -- the same reason
-	PlayerDataService still exposes no Competition Number writer.
-
-	When it is built it should read its input from `MeetTotal.bestSuccessful`,
-	which already computes the heaviest successful attempt on one lift.
+	Two readers and one monotone raise live below. The raise is INTERNAL and has
+	NO PRODUCTION CALLERS -- read the boundary note on it before wiring anything
+	to it, because the thing it does not do is the important part.
 ]]
 
 --[[
@@ -297,6 +290,140 @@ end
 function ProfileOperations.isCompetitionScaleProven(data: ProfileData, lift: string): boolean
 	local value = ProfileOperations.getCompetitionScale(data, lift)
 	return value ~= nil and value > PlayerProfileSchema.UNPROVEN_SCALE
+end
+
+--[[
+	What a raise attempt did.
+
+		"Raised"     the stored Scale increased to provenKg
+		"Unchanged"  the input was valid but not heavier than what is stored
+		"Rejected"   the input or the stored value was unusable; nothing written
+
+	"Unchanged" is a SUCCESS, not a failure. A lifter who opens at 150 kg when
+	they have already proven 180 kg made a perfectly legal lift that simply does
+	not move their best. Collapsing that into a boolean alongside "Rejected"
+	would make a routine opener indistinguishable from a malformed request, and
+	a future meet handler needs to tell those apart to log one and alert on the
+	other.
+]]
+export type ScaleRaiseOutcome = "Raised" | "Unchanged" | "Rejected"
+
+--[[
+	THE MONOTONE COMPETITION SCALE RAISE, from GAME_DESIGN.md section 33.7.
+
+		New Scale = max(Old Scale, provenKg)
+
+	=========================================================================
+	SECURITY BOUNDARY -- READ THIS BEFORE GIVING IT A CALLER
+	=========================================================================
+
+	THIS FUNCTION DOES NOT VERIFY THAT A MEET HAPPENED. It cannot. It receives a
+	kilogram number and a lift name, and it has no way to know whether that
+	weight was ever on a bar, whether the attempt was judged a good lift,
+	whether the meet was eligible, or which weight class the lifter was in. It
+	is a low-level data transformation, NOT proof of an achievement.
+
+	Everything it does not check is therefore the CALLER's responsibility, and
+	only one kind of caller may ever exist: a future server-authoritative
+	meet-result handler that has already established all of the following.
+
+	  1. The attempt was actually taken in a meet this server was running.
+	  2. The attempt was judged a GOOD LIFT. A failed attempt may never raise
+	     Scale at any weight (section 33.6). `MeetTotal.bestSuccessful` is the
+	     right source: it filters on result == "GoodLift" and returns the
+	     heaviest, so a failure cannot reach this function through it.
+	  3. The meet was ELIGIBLE under section 33.7. Solo and Official both
+	     qualify; what else does is still [TBD].
+	  4. THE WEIGHT CLASS MATCHES THE BUILD BEING CREDITED. See below.
+
+	NO CLIENT, REMOTE, DEV TRIGGER OR EXISTING GAMEPLAY SYSTEM MAY REACH THIS.
+	A client-supplied weight arriving here would let a player write their own
+	proven strength, which is the single worst thing that could happen to this
+	field. It is not exposed on PlayerDataService, so the gateway every gameplay
+	system actually uses has no path to it.
+
+	=========================================================================
+	WHY IT HAS NO PRODUCTION CALLER YET, AND MUST NOT GET ONE
+	=========================================================================
+
+	Competition Scale is stored FLAT, one value per lift, because the
+	Weight-Class Build Slot system does not exist (section 33.8). A flat store
+	cannot express "proven in the 83 kg class", so a raise written today would
+	credit the player's only build whatever class they weighed in at -- and a
+	Scale proven in one class is NOT proof in another.
+
+	That is unreachable right now because nothing calls this. It becomes
+	reachable the moment a meet can. So section 33.12 step 7 is blocked on
+	class-scoped build storage existing first, and this function must stay
+	caller-free until then. Tested: PlayerDataProbe asserts no gameplay module
+	can reach it.
+
+	=========================================================================
+
+	PURE AND DETERMINISTIC. No clock, no Player, no ProfileStore, no randomness.
+	Same profile and same arguments always give the same result, which is what
+	lets the probe drive every branch in microseconds against the real code.
+
+	Returns (outcome, resultingScaleKg). The number is the Scale AFTER the call
+	for "Raised" and "Unchanged", and nil for "Rejected" -- because a rejection
+	establishes nothing, and handing back a number there invites a caller to
+	treat a refused write as a value worth storing or displaying.
+]]
+function ProfileOperations.raiseCompetitionScale(
+	data: ProfileData,
+	lift: string,
+	provenKg: number
+): (ScaleRaiseOutcome, number?)
+	if not ProgressionConfig.isLift(lift) then
+		return "Rejected", nil
+	end
+
+	--[[
+		A PROVEN WEIGHT MUST BE A REAL WEIGHT: finite, and strictly above zero.
+
+		Zero is rejected rather than treated as a no-op. It is the UNPROVEN
+		sentinel, and no bar is ever loaded to 0 kg, so a 0 arriving here means
+		the caller has a bug -- most likely passing an absent value through.
+		Saying so is more useful than silently doing nothing.
+
+		Negatives, NaN and both infinities are rejected for the same reason.
+		NaN is the dangerous one: `math.max(nan, x)` is implementation-defined
+		and a NaN reaching the profile would poison every later comparison on a
+		field that is supposed to only ever rise.
+	]]
+	if not isFiniteNumber(provenKg) or provenKg <= 0 then
+		return "Rejected", nil
+	end
+
+	local current = ProfileOperations.getCompetitionScale(data, lift)
+
+	--[[
+		A CORRUPT STORED SCALE IS REFUSED, NOT REPAIRED.
+
+		If the stored value is unusable we cannot know whether it was higher
+		than provenKg, so writing would be guessing at a proven achievement.
+		Repair is the migration's job, and it already does exactly this on every
+		load: PlayerProfileSchema.migrations[3] replaces a malformed Scale with
+		UNPROVEN. Doing it here as well would hide the corruption instead of
+		letting a reload clean it up.
+	]]
+	if current == nil then
+		return "Rejected", nil
+	end
+
+	--[[
+		MONOTONE. A lower or equal weight leaves the record exactly as it was.
+		Written as an explicit comparison rather than math.max so that the
+		"nothing was written" case is a real branch that can be asserted,
+		rather than a redundant assignment of the same number.
+	]]
+	if provenKg <= current then
+		return "Unchanged", current
+	end
+
+	(data.competitionScale :: any)[lift] = provenKg
+
+	return "Raised", provenKg
 end
 
 --[[

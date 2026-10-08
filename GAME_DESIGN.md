@@ -2671,11 +2671,13 @@ Current repository reality, verified:
   by a dev probe that defaults to disabled.
 - `PlayerDataService` exposes **no** Competition Number writer at all. The write
   path is deliberately closed pending `awardProgression`.
-- **Competition Scale is STORED but unreachable from gameplay** (schema version 4,
-  §33.12 step 3). The field, its type, the `UNPROVEN_SCALE` sentinel, the v3 to v4
-  migration and two read accessors exist. **Nothing writes it** — there is no raise
-  operation on `ProfileOperations` or `PlayerDataService`, so every Scale in
-  existence is `0`.
+- **Competition Scale is STORED and RAISABLE, but unreachable from gameplay**
+  (schema version 4, steps 3 and 4). The field, its type, the `UNPROVEN_SCALE`
+  sentinel, the v3 to v4 migration, two read accessors and the monotone
+  `raiseCompetitionScale` all exist. **Nothing calls the raise** — it is internal
+  to `ProfileOperations`, which only the gateway and a disabled dev probe require,
+  and `PlayerDataService` exposes no Scale writer at all. So every Competition
+  Scale in existence is still `0`.
 - `ProgressionConfig.FailureCredit = 0.20` has been **removed**, with the dev-probe
   assertions that read it (step 2 below). It was read by nothing in production.
 - Physical difficulty already divides by Competition Number, so §33.4's frozen
@@ -2689,12 +2691,73 @@ none should begin without the decisions it depends on:
 | 1 | This documentation revision | **DONE** |
 | 2 | Remove `FailureCredit` from config together with the probe section that asserts it | **DONE** — constant removed from `ProgressionConfig`, 7 obsolete probe checks removed, two stale comments in `CompetitionBudget` and `ProfileOperations` corrected. No production path touched |
 | 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **DONE** — schema v4: `competitionScale` per lift, `UNPROVEN_SCALE = 0`, `migrations[3]`, two read accessors, no writer. Validated in memory and against a real DataStore on a disposable key |
-| 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | **NEXT** — unblocked by step 3 |
-| 5 | Define and implement the training CN channel | §33.9 training EV rates, §29.6 distribution |
+| 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | **DONE** — on `ProfileOperations`, internal, zero production callers. See the operation contract below |
+| 5 | Define and implement the training CN channel | **NEXT** — blocked on §33.9 training EV rates and the §29.6 distribution |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
 | 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility; **and the weight-class build system, per the class-scoping deadline in §33.8** |
 | 8 | Resolve the Competition Budget | §29.9 |
 
-> Step 4 should be built on `MeetTotal.bestSuccessful`, which already computes
+> Step 7 must be built on `MeetTotal.bestSuccessful`, which already computes
 > "the heaviest successful attempt on one lift" — the exact input §33.7 needs.
 > There is no reason to write a second one.
+
+#### The Competition Scale raise operation — step 4, implemented
+
+```
+ProfileOperations.raiseCompetitionScale(data, lift, provenKg)
+    --> (outcome, resultingScaleKg?)
+```
+
+Pure and deterministic: no clock, no `Player`, no ProfileStore, no randomness, and
+no timestamp parameter. It implements §33.7's `New Scale = max(Old Scale, proven)`
+and nothing else.
+
+| Outcome | When | Second return |
+|---|---|---|
+| `"Raised"` | valid input, strictly heavier than stored | the new Scale |
+| `"Unchanged"` | valid input, at or below stored | the Scale that still stands |
+| `"Rejected"` | input or stored value unusable; **nothing is written** | `nil` |
+
+**`"Unchanged"` is a success, not a failure.** A lifter opening at 150 kg who has
+already proven 180 kg made a legal lift that simply does not move their best. A
+meet handler needs to tell that apart from a malformed request — one is routine,
+the other is a bug worth alerting on.
+
+Rejected inputs: an unknown lift, zero (the `UNPROVEN` sentinel, and no bar is
+loaded to 0 kg), negatives, `NaN`, either infinity, and non-numbers. A **corrupt
+stored Scale is refused rather than repaired**, because the operation cannot know
+whether the corrupt value was higher than the incoming proof; repair belongs to
+`migrations[3]`, which runs on every load.
+
+**[FROZEN] SECURITY RESTRICTION — it does not verify that a meet happened.**
+
+It receives a kilogram number and a lift name. It cannot know whether that weight
+was ever on a bar, whether the attempt was judged a good lift, whether the meet was
+eligible, or which weight class the lifter was in. **It is a low-level data
+transformation, not proof of an achievement.**
+
+Everything it does not check is the caller's responsibility, and only one kind of
+caller may ever exist: a **server-authoritative meet-result handler** that has
+already established all four of —
+
+1. the attempt was taken in a meet this server was running;
+2. the attempt was judged a **GOOD LIFT** (§33.6 — a failure may never raise Scale
+   at any weight). `MeetTotal.bestSuccessful` is the correct source because it
+   filters on `result == "GoodLift"`, so a failed attempt cannot reach the raise
+   through it;
+3. the meet was **eligible** under §33.7 — Solo and Official both qualify, what
+   else does is **[TBD]**;
+4. **the weight class matches the build being credited** — see the class-scoping
+   prerequisite in §33.8.
+
+**[FROZEN] No client, RemoteEvent, dev trigger or existing gameplay system may
+reach it.** A client-supplied weight arriving here would let a player write their
+own proven strength. It is deliberately **not exposed on `PlayerDataService`**, so
+the gateway every gameplay system actually uses has no path to it, and
+`ProfileOperations` lives in `ServerScriptService` and creates no remotes.
+
+**[FROZEN] It must keep zero production callers until class-scoped build storage
+exists.** Flat per-lift storage cannot express "proven in the 83 kg class", so a
+raise written today would credit the player's only build whatever class they
+weighed in at. That is unreachable while nothing calls it, and becomes reachable
+the moment a meet does — which is why step 7 is gated on §33.8.

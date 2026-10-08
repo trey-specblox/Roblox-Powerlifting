@@ -1352,33 +1352,311 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("28. nothing can award Competition Scale yet")
+print("28. no GAMEPLAY path can award Competition Scale")
 do
 	--[[
-		The hard boundary for this checkpoint. Storage and migration only: no
-		gameplay path may raise a Scale, so the write operation must not exist
-		on either layer. Section 33.12 step 4 adds it.
+		THE BOUNDARY CHANGED SHAPE IN STEP 4, IT DID NOT MOVE.
+
+		raiseCompetitionScale now EXISTS on ProfileOperations, so the old
+		assertion that it does not is gone. What must still hold is that nothing
+		a player can reach is able to call it:
+
+		  - PlayerDataService is the gateway every gameplay system uses, and it
+		    exposes no Scale writer, so there is no path through it.
+		  - ProfileOperations is required by exactly two modules: the gateway
+		    and this probe. LiftAttemptService reaches only the gateway.
+		  - ProfileOperations is in ServerScriptService and creates no remotes,
+		    so no client can reach it at all.
 	]]
 	local Service = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 
 	check(
-		"ProfileOperations exposes no raiseCompetitionScale",
-		(ProfileOperations :: any).raiseCompetitionScale == nil
+		"the raise operation exists on ProfileOperations (step 4)",
+		typeof((ProfileOperations :: any).raiseCompetitionScale) == "function"
 	)
 	check(
-		"ProfileOperations exposes no setCompetitionScale",
-		(ProfileOperations :: any).setCompetitionScale == nil
-	)
-	check(
-		"the service exposes no Competition Scale writer",
+		"the SERVICE exposes no Competition Scale writer",
 		(Service :: any).raiseCompetitionScale == nil
 			and (Service :: any).setCompetitionScale == nil
+			and (Service :: any).awardCompetitionScale == nil
+	)
+	check(
+		"ProfileOperations exposes no blind setCompetitionScale",
+		(ProfileOperations :: any).setCompetitionScale == nil
 	)
 	check(
 		"and still exposes no Competition Number writer",
 		(Service :: any).addCompetitionNumber == nil
 			and (Service :: any).applyCompetitionNumberDelta == nil
 	)
+
+	--[[
+		THE LIFT MINIGAMES CANNOT REACH IT. LiftAttemptService owns every lift
+		attempt and all the lifting remotes, so if any gameplay path could award
+		Scale it would be this one. It holds no reference to ProfileOperations
+		and the gateway it does hold has no writer, so the path does not exist.
+	]]
+	local LiftingFolder = script.Parent.Parent:WaitForChild("Lifting")
+	local LiftAttemptService = require(LiftingFolder:WaitForChild("LiftAttemptService"))
+
+	check(
+		"LiftAttemptService exposes no Scale writer of its own",
+		(LiftAttemptService :: any).raiseCompetitionScale == nil
+			and (LiftAttemptService :: any).awardCompetitionScale == nil
+	)
+
+	--[[
+		AND NO MEET SYSTEM EXISTS TO CALL IT. MeetTotal is the only module that
+		knows what a successful attempt is, and it is pure: it computes a number
+		from an attempt history and writes nothing anywhere.
+	]]
+	local SharedMeetFolder = Shared:WaitForChild("Meet")
+	local MeetTotal = require(SharedMeetFolder:WaitForChild("MeetTotal"))
+
+	check(
+		"MeetTotal is pure and holds no profile writer",
+		(MeetTotal :: any).raiseCompetitionScale == nil
+			and (MeetTotal :: any).applyToProfile == nil
+	)
+
+	--[[
+		THE INPUT PATH THAT A FUTURE HANDLER MUST USE IS SUCCESS-ONLY.
+
+		bestSuccessful filters on result == "GoodLift", so a failed attempt's
+		weight cannot reach the raise through it however heavy it was. This is
+		the structural half of the rule that failures never raise Scale.
+	]]
+	local history = {
+		{ weightKg = 180.0, result = "GoodLift" },
+		{ weightKg = 250.0, result = "NoLift" },
+		{ weightKg = 190.0, result = "GoodLift" },
+	}
+
+	local best = MeetTotal.bestSuccessful(history :: any)
+
+	check(
+		"bestSuccessful returns the heaviest MADE lift, 190",
+		best == 190.0,
+		tostring(best)
+	)
+	check("and ignores the heavier FAILED 250", best ~= 250.0)
+
+	local allFailed = {
+		{ weightKg = 200.0, result = "NoLift" },
+		{ weightKg = 210.0, result = "NoLift" },
+	}
+
+	check(
+		"a lift with no successful attempt yields nil, not a weight",
+		MeetTotal.bestSuccessful(allFailed :: any) == nil
+	)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("29. the monotone raise: first proof, then increases")
+do
+	local data = newProfile()
+
+	-- UNPROVEN to first proven weight.
+	check("Squat starts unproven", data.competitionScale.Squat == 0)
+
+	local outcome, value = ProfileOperations.raiseCompetitionScale(data, "Squat", 150.0)
+
+	check("first proof returns Raised", outcome == "Raised", tostring(outcome))
+	check("and returns the new Scale", value == 150.0, tostring(value))
+	check("the stored Scale is 150", near(data.competitionScale.Squat, 150.0), tostring(data.competitionScale.Squat))
+	check("and it now reads as proven", ProfileOperations.isCompetitionScaleProven(data, "Squat"))
+
+	-- Raising an existing proven Scale.
+	local outcome2, value2 = ProfileOperations.raiseCompetitionScale(data, "Squat", 172.5)
+
+	check("a heavier proof returns Raised", outcome2 == "Raised", tostring(outcome2))
+	check("and returns 172.5", value2 == 172.5, tostring(value2))
+	check("the stored Scale is now 172.5", near(data.competitionScale.Squat, 172.5), tostring(data.competitionScale.Squat))
+
+	-- A 2.5 kg increment, the smallest legal meet increase, is exact.
+	local outcome3 = ProfileOperations.raiseCompetitionScale(data, "Squat", 175.0)
+	check("a 2.5 kg increase is accepted", outcome3 == "Raised")
+	check("and stored exactly", data.competitionScale.Squat == 175.0, tostring(data.competitionScale.Squat))
+
+	-- A fractional weight is not rounded away.
+	local fresh = newProfile()
+	ProfileOperations.raiseCompetitionScale(fresh, "Bench", 102.3)
+	check("a fractional proof is stored at full precision", near(fresh.competitionScale.Bench, 102.3), tostring(fresh.competitionScale.Bench))
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("30. SCALE NEVER DECREASES")
+do
+	local data = newProfile()
+	ProfileOperations.raiseCompetitionScale(data, "Deadlift", 220.0)
+
+	-- A LOWER successful weight. The commonest case: a conservative opener.
+	local lower, lowerValue = ProfileOperations.raiseCompetitionScale(data, "Deadlift", 180.0)
+
+	check("a lower proof returns Unchanged, not Rejected", lower == "Unchanged", tostring(lower))
+	check("and reports the Scale that still stands", lowerValue == 220.0, tostring(lowerValue))
+	check("the stored Scale did NOT drop", near(data.competitionScale.Deadlift, 220.0), tostring(data.competitionScale.Deadlift))
+
+	-- An EQUAL weight. Repeating a best is legal and changes nothing.
+	local equal, equalValue = ProfileOperations.raiseCompetitionScale(data, "Deadlift", 220.0)
+
+	check("an equal proof returns Unchanged", equal == "Unchanged", tostring(equal))
+	check("and reports 220", equalValue == 220.0, tostring(equalValue))
+	check("the stored Scale is still 220", near(data.competitionScale.Deadlift, 220.0))
+
+	-- A long run of lighter lifts can never erode it.
+	for _, weight in ipairs({ 100.0, 200.0, 50.0, 219.5, 1.0, 217.5 }) do
+		ProfileOperations.raiseCompetitionScale(data, "Deadlift", weight)
+	end
+
+	check(
+		"six lighter proofs left it at 220",
+		near(data.competitionScale.Deadlift, 220.0),
+		tostring(data.competitionScale.Deadlift)
+	)
+
+	-- IDEMPOTENCE. Repeated identical calls settle on one value.
+	local repeated = newProfile()
+	for _ = 1, 10 do
+		ProfileOperations.raiseCompetitionScale(repeated, "Squat", 165.0)
+	end
+	check("ten identical calls give 165", near(repeated.competitionScale.Squat, 165.0), tostring(repeated.competitionScale.Squat))
+
+	-- ORDER INDEPENDENCE. The max does not care what order proofs arrive in.
+	local ascending = newProfile()
+	for _, w in ipairs({ 120.0, 140.0, 160.0, 180.0 }) do
+		ProfileOperations.raiseCompetitionScale(ascending, "Bench", w)
+	end
+
+	local descending = newProfile()
+	for _, w in ipairs({ 180.0, 160.0, 140.0, 120.0 }) do
+		ProfileOperations.raiseCompetitionScale(descending, "Bench", w)
+	end
+
+	check(
+		"ascending and descending orders agree at 180",
+		near(ascending.competitionScale.Bench, 180.0)
+			and near(descending.competitionScale.Bench, 180.0),
+		string.format("%s vs %s", tostring(ascending.competitionScale.Bench), tostring(descending.competitionScale.Bench))
+	)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("31. invalid input is rejected and writes nothing")
+do
+	local data = newProfile()
+	ProfileOperations.raiseCompetitionScale(data, "Squat", 160.0)
+
+	local rejects: { { label: string, lift: string, weight: any } } = {
+		{ label = "an unknown lift", lift = "Curl", weight = 200.0 },
+		{ label = "an empty lift name", lift = "", weight = 200.0 },
+		{ label = "a zero weight (the UNPROVEN sentinel)", lift = "Squat", weight = 0 },
+		{ label = "a negative weight", lift = "Squat", weight = -200.0 },
+		{ label = "a NaN weight", lift = "Squat", weight = 0 / 0 },
+		{ label = "a +infinity weight", lift = "Squat", weight = math.huge },
+		{ label = "a -infinity weight", lift = "Squat", weight = -math.huge },
+		{ label = "a string weight", lift = "Squat", weight = "500" },
+		{ label = "a nil weight", lift = "Squat", weight = nil },
+	}
+
+	for _, case in ipairs(rejects) do
+		local before = data.competitionScale.Squat
+
+		local outcome, value = ProfileOperations.raiseCompetitionScale(data, case.lift, case.weight :: any)
+
+		check(
+			string.format("%s is Rejected", case.label),
+			outcome == "Rejected",
+			tostring(outcome)
+		)
+		check(
+			string.format("%s returns no value", case.label),
+			value == nil,
+			tostring(value)
+		)
+		check(
+			string.format("%s wrote nothing", case.label),
+			data.competitionScale.Squat == before,
+			string.format("%s, expected %s", tostring(data.competitionScale.Squat), tostring(before))
+		)
+	end
+
+	check("the Scale survived every rejection at 160", near(data.competitionScale.Squat, 160.0), tostring(data.competitionScale.Squat))
+	check("and no NaN reached the profile", data.competitionScale.Squat == data.competitionScale.Squat)
+
+	--[[
+		A CORRUPT STORED SCALE IS REFUSED RATHER THAN REPAIRED, because we
+		cannot know whether it was higher than the incoming proof. Repair is the
+		migration's job and happens on every load.
+	]]
+	local corrupt = newProfile() :: any
+	corrupt.competitionScale.Bench = 0 / 0
+
+	local outcome = ProfileOperations.raiseCompetitionScale(corrupt, "Bench", 120.0)
+	check("a corrupt stored Scale rejects the raise", outcome == "Rejected", tostring(outcome))
+	check("and the raise did not overwrite it", corrupt.competitionScale.Bench ~= 120.0)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("32. lifts are independent, and nothing else in the profile moves")
+do
+	local data = newProfile()
+
+	-- Snapshot everything a raise must not touch.
+	local cnBefore = {
+		Squat = data.competitionNumber.Squat,
+		Bench = data.competitionNumber.Bench,
+		Deadlift = data.competitionNumber.Deadlift,
+	}
+	local budgetBefore = data.competitionBudget.Squat.amount
+	local energyBefore = data.trainingEnergy.amount
+	local techniqueBefore = data.technique.PressPower
+	local bodyweightBefore = data.bodyweight.currentKg
+	local versionBefore = data.version
+
+	ProfileOperations.raiseCompetitionScale(data, "Squat", 190.0)
+
+	check("Squat Scale rose to 190", near(data.competitionScale.Squat, 190.0))
+	check("Bench Scale stayed unproven", data.competitionScale.Bench == 0, tostring(data.competitionScale.Bench))
+	check("Deadlift Scale stayed unproven", data.competitionScale.Deadlift == 0, tostring(data.competitionScale.Deadlift))
+
+	ProfileOperations.raiseCompetitionScale(data, "Bench", 110.0)
+	ProfileOperations.raiseCompetitionScale(data, "Deadlift", 230.0)
+
+	check("all three now hold their own value", near(data.competitionScale.Squat, 190.0)
+		and near(data.competitionScale.Bench, 110.0)
+		and near(data.competitionScale.Deadlift, 230.0))
+
+	-- COMPETITION NUMBER IS UNTOUCHED. Scale is not derived from it and does not feed it.
+	check("Squat CN unchanged", data.competitionNumber.Squat == cnBefore.Squat, tostring(data.competitionNumber.Squat))
+	check("Bench CN unchanged", data.competitionNumber.Bench == cnBefore.Bench)
+	check("Deadlift CN unchanged", data.competitionNumber.Deadlift == cnBefore.Deadlift)
+	check("CN is still the 25 kg starting value", near(data.competitionNumber.Squat, 25.0))
+
+	-- AND NOTHING ELSE MOVED EITHER.
+	check("Competition Budget untouched", near(data.competitionBudget.Squat.amount, budgetBefore))
+	check("Training Energy untouched", near(data.trainingEnergy.amount, energyBefore))
+	check("technique untouched", data.technique.PressPower == techniqueBefore)
+	check("bodyweight untouched", near(data.bodyweight.currentKg, bodyweightBefore))
+	check("schema version untouched", data.version == versionBefore)
+
+	--[[
+		NO TIMESTAMP IS READ OR WRITTEN. The operation is pure: it takes no
+		`nowUnix` and stamps nothing, so unlike a regenerating resource it
+		cannot be made to behave differently by a clock.
+	]]
+	check(
+		"raiseCompetitionScale takes exactly three arguments, none a timestamp",
+		debug.info(ProfileOperations.raiseCompetitionScale, "a") == 3,
+		tostring(debug.info(ProfileOperations.raiseCompetitionScale, "a"))
+	)
+	check("no budget timestamp was stamped", data.competitionBudget.Squat.lastUpdatedUnix == 0)
+	check("no Training Energy timestamp was stamped", data.trainingEnergy.lastUpdatedUnix == 0)
 end
 
 --------------------------------------------------------------------------------
