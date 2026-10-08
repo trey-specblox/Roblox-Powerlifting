@@ -61,12 +61,12 @@ ProgressionConfig.Hill = {
 }
 
 --[[
-	Failed attempts are worth this fraction of the same attempt succeeded.
+	THERE IS DELIBERATELY NO FAILURE CREDIT.
 
-	Sensitivity testing showed 0.30 inverts optimal play toward reckless
-	high-intensity spam, so this should stay at or below 0.20.
+	`FailureCredit = 0.20` was removed per GAME_DESIGN.md section 33.6: a failed
+	attempt now yields zero progression EV, zero Competition Number and no
+	Competition Scale increase. Do not re-add it.
 ]]
-ProgressionConfig.FailureCredit = 0.20
 
 --[[
 	=========================================================================

@@ -329,10 +329,11 @@ end
 	three pools rather than one: see the note in ProgressionConfig.
 
 	The state advances by the RAW EV, never the effective EV, which is what makes
-	overflow actually diminish. Raw EV already encodes success, failure and
-	intensity, so a bombed attempt consumes a fifth as much as the same attempt
-	made, and the effective-per-raw ratio is identical either way. There is still
-	no reason to fail on purpose.
+	overflow actually diminish. Raw EV already encodes whatever the caller
+	decided the event was worth, and the effective-per-raw ratio at a given state
+	does not depend on the magnitude consumed, so an award cannot be gamed by
+	splitting or sizing it. Under GAME_DESIGN.md section 33.6 a failed attempt is
+	worth zero raw EV, so it consumes nothing and awards nothing.
 
 	Nothing here knows what a meet is. No meet or attempt count is read or
 	stored.

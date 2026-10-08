@@ -1458,7 +1458,7 @@ both figures move even though neither channel changed.
 | Constant | Why |
 |---|---|
 | **`BaseProgressRate`** | solved from an **assumed** success-probability curve; the single largest uncertainty in the model. **Now also requires re-solving against the post-section-33 channel mix** (§29.6) |
-| ~~Failure credit (0.20)~~ | **[OBSOLETE]** — superseded by section 33.6. A failed attempt is worth zero. The original note, retained for the record: sensitivity testing showed 0.30 inverts optimal play toward reckless spam; keep <= 0.20. **The code constant `ProgressionConfig.FailureCredit` is deliberately NOT removed yet** — see section 33.12 |
+| ~~Failure credit (0.20)~~ | **[OBSOLETE]** — superseded by section 33.6. A failed attempt is worth zero. The original note, retained for the record: sensitivity testing showed 0.30 inverts optimal play toward reckless spam; keep <= 0.20. **The code constant `ProgressionConfig.FailureCredit` has been removed** (§33.12 step 2) |
 | I-A intensity factors | depend on real pass rates. Still needed wherever relative-intensity EV is used; **which system that is, is now [TBD]** (§33.9) |
 | `h` = 0.75, `m` = 5 | `m` = 6 is the lever for a harsher elite grind; affects only players past PP 110%. **Unaffected by section 33** — the Hill curve still reads `PP = CN / ProgressionReference` |
 | Competition Budget capacity, regen, `k` | ~~depends on observed meets/week~~ — **[TBD]** whether this system survives at all (§29.9) |
@@ -1570,8 +1570,7 @@ only the heaviest success per lift has any effect (§33.7).
 ~~FailureCredit = 0.20~~
 
 > **[OBSOLETE — zero, per §33.6.]** The code constant
-> `ProgressionConfig.FailureCredit = 0.20` is deliberately still present and is
-> scheduled for removal in a later increment (§33.12).
+> `ProgressionConfig.FailureCredit = 0.20` has been removed (§33.12 step 2).
 
 ~~Therefore, a player who successfully completes 3/3 attempts on a lift will generally
 receive more progression than a player who completes only 1/3 at comparable intensities.~~
@@ -2381,11 +2380,10 @@ the grind and competing is the payoff, not both.
 **[OBSOLETE]**. Players must not permanently progress merely for attempting and
 failing a weight.
 
-> The code constant `ProgressionConfig.FailureCredit` is **deliberately retained
-> for now** and is scheduled for removal in a later increment (§33.12). It is read
-> by nothing in production — only by a dev probe that defaults to disabled — so it
-> is inert, but it must be removed together with the probe section that asserts it,
-> not before.
+> **Implemented.** The code constant `ProgressionConfig.FailureCredit` has been
+> **removed**, together with the dev-probe assertions that depended on it
+> (§33.12 step 2). It was read by nothing in production, so no gameplay path
+> changed.
 >
 > Previously affected text: §29.5 EV table, §29.15 recalibration list, §30.2.
 
@@ -2634,19 +2632,19 @@ Current repository reality, verified:
   path is deliberately closed pending `awardProgression`.
 - **Competition Scale does not exist** in any form: no schema field, no type, no
   config, no code.
-- `ProgressionConfig.FailureCredit = 0.20` is **still present**, intentionally. It
-  is read only by a disabled dev probe.
+- `ProgressionConfig.FailureCredit = 0.20` has been **removed**, with the dev-probe
+  assertions that read it (step 2 below). It was read by nothing in production.
 - Physical difficulty already divides by Competition Number, so §33.4's frozen
   half is **already how the game behaves**.
 
 Suggested sequencing, smallest safe steps first. Each leaves the game playable and
 none should begin without the decisions it depends on:
 
-| # | Step | Blocked on |
+| # | Step | Status / blocked on |
 |---|---|---|
-| 1 | This documentation revision | — (done) |
-| 2 | Remove `FailureCredit` from config together with the probe section that asserts it | nothing; §33.6 is frozen |
-| 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | §33.8 starting value and backfill |
+| 1 | This documentation revision | **DONE** |
+| 2 | Remove `FailureCredit` from config together with the probe section that asserts it | **DONE** — constant removed from `ProgressionConfig`, 7 obsolete probe checks removed, two stale comments in `CompetitionBudget` and `ProfileOperations` corrected. No production path touched |
+| 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **NEXT** — blocked on §33.8 starting value and backfill |
 | 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | step 3 |
 | 5 | Define and implement the training CN channel | §33.9 training EV rates, §29.6 distribution |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |

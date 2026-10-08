@@ -50,10 +50,12 @@
 	nothing and so never sink further, turning the curve into a soft plateau.
 
 	The exploit closure from section 29.9 still holds, because raw EV already
-	encodes success, failure and intensity. A failed attempt carries 0.20 of the
-	raw EV of the same attempt succeeded, so it consumes 0.20 as much, and the
-	effective-per-raw ratio at a given state is identical either way. There is
-	still no way to game the ratio and still no reason to fail on purpose.
+	encodes whatever the caller decided the event was worth, and the
+	effective-per-raw ratio at a given state does not depend on the magnitude
+	consumed. There is no way to game the ratio by splitting or sizing an award.
+
+	Under section 33.6 a failed attempt is worth ZERO raw EV, so it consumes
+	nothing and awards nothing. The old failure credit of 0.20 is removed.
 
 	PATH INDEPENDENCE. Because f is a true antiderivative, consuming 1.886 EV in
 	one call and in a hundred small calls yield the same total effective EV and

@@ -705,73 +705,35 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("23. success versus failure EV")
+print("23. delta CN per unit of budget consumed is EV-magnitude independent")
 do
 	--[[
-		The future meet system will convert an attempt into raw EV as
+		THE FAILURE-CREDIT CHECKS THAT USED TO LIVE HERE ARE GONE.
 
-			success: rawEV = intensityFactor
-			failure: rawEV = intensityFactor x FailureCredit
+		They asserted that a failed attempt was worth exactly 20% of the same
+		attempt succeeded, and that a failure still awarded above zero. Both
+		rules were superseded by GAME_DESIGN.md section 33.6: a failed attempt
+		now yields zero EV, so there is no ratio left to assert and nothing above
+		zero to award. `ProgressionConfig.FailureCredit` was removed with them.
 
-		The factors below are the GDD section 29.5 values, used here as TEST
-		INPUTS ONLY. This increment deliberately adds no intensity-factor config:
-		the engine takes authoritative raw EV, and converting attempts into it
-		belongs to the meet-wiring increment.
+		What remains is the part that was never about failure at all. At a fixed
+		budget state, delta CN per unit of budget consumed must not depend on how
+		large the EV amount is -- the engine must not pay a better rate for one
+		big award than for one small one. The two magnitudes below are arbitrary;
+		any two would do.
 	]]
 	local reference = ProgressionReferenceConfig.get("Squat", "83 kg") :: number
 	local cn = reference * 0.60
-	local credit = ProgressionConfig.FailureCredit
 
-	check("FailureCredit is 0.20", near(credit, 0.20))
-
-	local attempts: { { label: string, factor: number } } = {
-		{ label = "safe 85%", factor = 0.70 },
-		{ label = "normal 95-100%", factor = 1.00 },
-		{ label = "aggressive 110%+", factor = 1.20 },
-	}
-
-	print("      attempt          | factor | success dCN | failure dCN | ratio")
-	for _, attempt in ipairs(attempts) do
-		local label = attempt.label
-		local factor = attempt.factor
-
-		local success = CompetitionNumberReward.calculate("Squat", "83 kg", cn, factor, FRESH)
-		local failure = CompetitionNumberReward.calculate("Squat", "83 kg", cn, factor * credit, FRESH)
-
-		if success ~= nil and failure ~= nil then
-			local s = success :: any
-			local f = failure :: any
-
-			print(string.format(
-				"      %-16s | %6.2f | %11.6f | %11.6f | %.3f",
-				label, factor, s.deltaCN, f.deltaCN, f.deltaCN / s.deltaCN
-			))
-
-			check(
-				string.format("%s: a failure is worth exactly 20%% of the success", label),
-				near(f.deltaCN / s.deltaCN, credit, 1e-9),
-				string.format("%.6f", f.deltaCN / s.deltaCN)
-			)
-			check(string.format("%s: a failure still awards above zero", label), f.deltaCN > 0)
-		else
-			check(string.format("%s produced both awards", label), false)
-		end
-	end
-
-	--[[
-		And the exploit closure: EV per unit of budget consumed is identical
-		whether an attempt succeeds or fails, so there is no reason to fail on
-		purpose.
-	]]
-	local s = CompetitionNumberReward.calculate("Squat", "83 kg", cn, 1.0, FRESH) :: any
-	local f = CompetitionNumberReward.calculate("Squat", "83 kg", cn, 0.2, FRESH) :: any
-	local sRatio = s.deltaCN / (s.budgetBefore - s.budgetAfter)
-	local fRatio = f.deltaCN / (f.budgetBefore - f.budgetAfter)
+	local big = CompetitionNumberReward.calculate("Squat", "83 kg", cn, 1.0, FRESH) :: any
+	local small = CompetitionNumberReward.calculate("Squat", "83 kg", cn, 0.2, FRESH) :: any
+	local bigRatio = big.deltaCN / (big.budgetBefore - big.budgetAfter)
+	local smallRatio = small.deltaCN / (small.budgetBefore - small.budgetAfter)
 
 	check(
-		"delta CN per unit of budget consumed is the same either way",
-		near(sRatio, fRatio, 1e-9),
-		string.format("%.10f vs %.10f", sRatio, fRatio)
+		"delta CN per unit of budget consumed is the same at either magnitude",
+		near(bigRatio, smallRatio, 1e-9),
+		string.format("%.10f vs %.10f", bigRatio, smallRatio)
 	)
 end
 
