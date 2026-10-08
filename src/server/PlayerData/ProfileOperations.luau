@@ -244,6 +244,63 @@ end
 
 --[[
 	=========================================================================
+	COMPETITION SCALE  (GAME_DESIGN.md section 33)
+	=========================================================================
+
+	READ ONLY, DELIBERATELY. Competition Scale is the heaviest weight the lifter
+	has actually proven in an eligible meet. Only a successful eligible meet
+	attempt may raise it, and no meet system exists, so there is nothing that
+	could legitimately write it yet.
+
+	THE RAISE OPERATION IS NOT HERE, AND ITS ABSENCE IS THE POINT. Section 33.12
+	sequences it as step 4: `raiseCompetitionScale(data, lift, provenKg)`,
+	monotone, taking the maximum and never decreasing. Adding it now, with no
+	caller and no meet to validate against, would be a write path into proven-
+	achievement data that nothing is in a position to justify -- the same reason
+	PlayerDataService still exposes no Competition Number writer.
+
+	When it is built it should read its input from `MeetTotal.bestSuccessful`,
+	which already computes the heaviest successful attempt on one lift.
+]]
+
+--[[
+	The player's Competition Scale for one lift, in kilograms.
+
+	Returns `PlayerProfileSchema.UNPROVEN_SCALE` (0) when the lift has never
+	been proven, which is every player today. Returns nil only when the lift
+	name is not one of the three or the stored value is unusable.
+
+	A CALLER MUST NOT TREAT 0 AS A WEIGHT. It is the absence of an achievement,
+	not a 0 kg lift. Use isCompetitionScaleProven to tell them apart.
+]]
+function ProfileOperations.getCompetitionScale(data: ProfileData, lift: string): number?
+	if not ProgressionConfig.isLift(lift) then
+		return nil
+	end
+
+	local value = (data.competitionScale :: any)[lift]
+
+	if not isFiniteNumber(value) or value < 0 then
+		return nil
+	end
+
+	return value
+end
+
+--[[
+	Whether this lift has ever been successfully proven in an eligible meet.
+
+	False for a brand new player, for every profile migrated from version 3, and
+	whenever the stored value is unusable. A corrupt Scale reads as unproven
+	rather than as an achievement, because the safe failure is to under-credit.
+]]
+function ProfileOperations.isCompetitionScaleProven(data: ProfileData, lift: string): boolean
+	local value = ProfileOperations.getCompetitionScale(data, lift)
+	return value ~= nil and value > PlayerProfileSchema.UNPROVEN_SCALE
+end
+
+--[[
+	=========================================================================
 	COMPETITION BUDGET  (three pools, account-wide per lift)
 	=========================================================================
 ]]

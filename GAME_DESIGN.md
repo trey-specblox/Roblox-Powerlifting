@@ -2470,33 +2470,71 @@ A player-facing "Proven Total" display, if one is ever wanted, is a **cosmetic
 curiosity** and must be labelled clearly enough that it can never be mistaken for a
 competition total or a record. **[TBD]** whether to have one at all.
 
-**[TBD] The starting Competition Scale for a brand-new lifter.** No value is
-specified. The options and their consequences:
+#### The stored representation — DECIDED AND IMPLEMENTED
 
-| Option | Consequence |
-|---|---|
-| Equal to starting CN | The first attempt at 100% of CN carries a Scale ratio of 1.00, so a new lifter meets no Scale modifier at all until they attempt above their CN. Simplest, and the gentlest onboarding. |
-| A fixed value below starting CN | A new lifter meets the modifier immediately, which teaches the mechanic early but front-loads difficulty on a player who has nothing else working in their favour. |
-| Absent / zero — "never proven" | The most honest representation, and the only one that makes "unproven" a real state the UI can show. Requires an explicit rule for what the modifier does with no Scale (§33.4), since a ratio is undefined. |
+**[FROZEN] A Scale is a weight number only.** One number per lift, in kilograms.
+No meet, class, date or other proof metadata is stored. If a future feature wants
+to show a player *where* a Scale came from, that is a separate record and a
+separate decision; it is not needed to satisfy §33.7.
 
-**[TBD] The migration backfill for existing players.** No player profile currently
-holds any meet history, because the meet system is not implemented, so **there is
-no data from which an existing player's Scale can be derived**. This must be an
-explicit decision, not a default:
+**[FROZEN] UNPROVEN is stored as `0`.** A lift that has never been successfully
+made in an eligible meet holds exactly `0`, exposed as
+`PlayerProfileSchema.UNPROVEN_SCALE`.
 
-| Option | Consequence |
-|---|---|
-| Scale = current CN (grandfather) | Nothing changes for existing players; they meet the modifier only when attempting above CN. Hands out proven strength that was never proven. |
-| Scale = the new-lifter starting value | Consistent with new accounts, but an established player with a well-trained CN would suddenly face the maximum Scale modifier on every attempt. |
-| Scale = absent / "never proven" | Honest, and consistent with the fact that nobody has competed yet. Depends on the §33.4 rule for an absent Scale. |
+`0` is safe as a sentinel because a Scale is a weight that was actually loaded on
+a bar and lifted, and 0 kg is not a liftable weight, so it can never collide with
+a legitimate value. Any value above `0` is a real achievement.
 
-**[TBD] What a stored Scale records.** The minimum that satisfies §33.7 is one
-number per lift. A richer record — the weight plus the weight class, meet and date
-it was proven in — would support showing a player where their Scale came from, and
-would align with §32.7's authoritative weight class. Retrofitting it later is a
-second schema migration, so it is worth deciding once.
+A sentinel is used rather than an absent field because a DataStore stores JSON and
+a Lua table cannot hold a nil value — `{ Squat = nil }` *is* `{}`. After a save and
+load, "absent" and "never written" are indistinguishable, so a fixed-shape record
+with an explicit `0` is the only representation that survives the round trip.
 
-> Persistence is **not yet implemented**. No schema field exists. See §33.12.
+> **`0` IS NOT A PROVEN 0 KG LIFT, AND IT IS NOT 25 KG.** §33.4 may eventually
+> have the Scale challenge modifier substitute 25 kg when no Scale exists. That
+> substitution would belong to the calculation and **must never be written back to
+> storage** — writing it would fabricate a successful meet attempt. A fallback is
+> not an achievement, not a record, and not a persisted Scale.
+
+**[FROZEN] New players and migrated v3 players both start UNPROVEN.**
+
+| | Competition Number | Competition Scale |
+|---|---|---|
+| **New lifter** | 25 kg per lift, from `StartingValuesConfig` | `0` — unproven |
+| **Migrated v3 lifter** | whatever they trained, preserved exactly | `0` — unproven |
+
+A migrating player's Scale is **never** inferred from their Competition Number.
+Someone who trained a 182.5 kg squat and never competed has proven nothing, and
+copying the trained number would hand them an achievement they did not earn and
+silently remove a mechanic from their account. No profile in the DataStore
+contains a record of a successful meet attempt, because no meet system has ever
+existed, so there is no data from which a Scale could honestly be derived.
+
+#### Class scoping is DEFERRED, and that deferral has a deadline
+
+**[FROZEN] Competition Scale is stored flat today, mirroring Competition Number**,
+because the Weight-Class Build Slot system does not exist and §33.8 above forbids
+inventing a `builds` map ahead of it. The two fields sit together under one note in
+the schema and migrate into `builds[classKey]` together or not at all.
+
+Keying Scale by weight class while CN stays flat was considered and **rejected**:
+it would give the profile two different answers to "which build is this", and the
+only class key derivable today is the player's *current* bodyweight class, whereas
+§29.11 makes the authoritative class for a meet the **weigh-in snapshot**. Writing
+under the wrong key would be a silent, permanent error.
+
+> **⚠ CLASS SCOPING MUST EXIST BEFORE ANY MEET AWARDS SCALE**
+>
+> The flat shape does not *enforce* the rule that a Scale proven in one class is
+> not proof in another. That confusion is **unreachable today**, because nothing
+> writes Scale at all — but it becomes reachable the moment meets can raise it.
+>
+> **§33.12 step 7 is blocked on this.** The meet wiring must key the raise off the
+> meet's weigh-in snapshot (§29.11), never off current bodyweight, and the
+> weight-class build system must exist by then. This is a hard prerequisite, not a
+> preference.
+
+> **Implemented in schema version 4.** See §33.12 step 3.
 
 
 ### 33.9 Where Competition Number now comes from
@@ -2579,8 +2617,10 @@ choice.
    per-meet increment cap, is undecided.
 2. **The Scale challenge curve, its cap, and what it modifies** (§33.4). Including
    its behaviour at ratio <= 1.00 and with an absent Scale.
-3. **The starting Competition Scale** (§33.8).
-4. **The migration backfill for existing players** (§33.8).
+3. ~~**The starting Competition Scale**~~ — **DECIDED** (§33.8): unproven, stored
+   as `0`. Implemented in schema v4.
+4. ~~**The migration backfill for existing players**~~ — **DECIDED** (§33.8):
+   unproven, never inferred from Competition Number. Implemented in schema v4.
 5. **Training EV rates**, and the replacement channel distribution they belong to
    (§33.9, §29.6).
 6. **The fate of the Competition Budget** (§29.9, §33.10).
@@ -2588,12 +2628,13 @@ choice.
 8. **The "Compete" daily pillar** — does it award CN, and does completing it
    require entering a meet? (§29.7)
 9. **What "eligible meet" includes** for the purpose of raising Scale (§33.7).
-10. **What a stored Scale records** — a bare number, or weight plus class, meet and
-    date (§33.8).
+10. ~~**What a stored Scale records**~~ — **DECIDED** (§33.8): a per-lift weight
+    number only, no proof metadata. Implemented in schema v4.
 11. **Scale across weight classes.** CN translates between classes by RP
     Preservation (§29.11). Translating Scale would mean inventing a lift that never
     happened; not translating it means a class change resets proven strength.
-    Undecided, and interacts with §33.8's build scoping.
+    Undecided, and **blocks §33.12 step 7** — see the class-scoping deadline in
+    §33.8.
 12. **Scale display precision and presentation** (§29.12), including whether an
     "unproven" state is shown and whether a cosmetic Proven Total exists at all.
 
@@ -2630,8 +2671,11 @@ Current repository reality, verified:
   by a dev probe that defaults to disabled.
 - `PlayerDataService` exposes **no** Competition Number writer at all. The write
   path is deliberately closed pending `awardProgression`.
-- **Competition Scale does not exist** in any form: no schema field, no type, no
-  config, no code.
+- **Competition Scale is STORED but unreachable from gameplay** (schema version 4,
+  §33.12 step 3). The field, its type, the `UNPROVEN_SCALE` sentinel, the v3 to v4
+  migration and two read accessors exist. **Nothing writes it** — there is no raise
+  operation on `ProfileOperations` or `PlayerDataService`, so every Scale in
+  existence is `0`.
 - `ProgressionConfig.FailureCredit = 0.20` has been **removed**, with the dev-probe
   assertions that read it (step 2 below). It was read by nothing in production.
 - Physical difficulty already divides by Competition Number, so §33.4's frozen
@@ -2644,11 +2688,11 @@ none should begin without the decisions it depends on:
 |---|---|---|
 | 1 | This documentation revision | **DONE** |
 | 2 | Remove `FailureCredit` from config together with the probe section that asserts it | **DONE** — constant removed from `ProgressionConfig`, 7 obsolete probe checks removed, two stale comments in `CompetitionBudget` and `ProfileOperations` corrected. No production path touched |
-| 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **NEXT** — blocked on §33.8 starting value and backfill |
-| 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | step 3 |
+| 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **DONE** — schema v4: `competitionScale` per lift, `UNPROVEN_SCALE = 0`, `migrations[3]`, two read accessors, no writer. Validated in memory and against a real DataStore on a disposable key |
+| 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | **NEXT** — unblocked by step 3 |
 | 5 | Define and implement the training CN channel | §33.9 training EV rates, §29.6 distribution |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
-| 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility |
+| 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility; **and the weight-class build system, per the class-scoping deadline in §33.8** |
 | 8 | Resolve the Competition Budget | §29.9 |
 
 > Step 4 should be built on `MeetTotal.bestSuccessful`, which already computes

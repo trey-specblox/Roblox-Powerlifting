@@ -44,7 +44,7 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below.
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 3
+PlayerProfileSchema.CURRENT_VERSION = 4
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -60,6 +60,57 @@ PlayerProfileSchema.CURRENT_VERSION = 3
 ]]
 export type CompetitionNumber = {
 	-- Kilograms. These ARE the lifter's strength; there is no hidden true value.
+	Squat: number,
+	Bench: number,
+	Deadlift: number,
+}
+
+--[[
+	UNPROVEN. The stored Competition Scale of a lift nobody has ever made in an
+	eligible meet, per GAME_DESIGN.md section 33.8.
+
+	WHY A 0 SENTINEL AND NOT AN ABSENT FIELD. A DataStore stores JSON, and a
+	Lua table cannot hold a nil value -- `{ Squat = nil }` IS `{}`. So "absent"
+	and "never written" are indistinguishable after a save/load round trip, and
+	an optional `number?` would force every reader to handle a case the storage
+	layer cannot actually represent. A fixed-shape record with an explicit
+	sentinel survives serialization unchanged and reconciles cleanly.
+
+	WHY 0 IS SAFE AS A SENTINEL. Scale is a weight in kilograms that was
+	actually loaded on a bar and lifted. 0 kg is not a liftable weight, so it
+	can never collide with a legitimate proven value. Any Scale above 0 is a
+	real achievement; exactly 0 means there is none.
+
+	0 IS NOT A PROVEN 0 KG LIFT, AND IT IS NOT 25 KG. A new lifter has
+	Competition Number 25 kg because training gave them that capability, and an
+	unproven Scale because they have never competed. Those are different
+	quantities and the gap between them is the normal state of an untested
+	lifter, not missing data to be filled in.
+
+	A FALLBACK IS NOT A STORED VALUE. Section 33.4 leaves open what the Scale
+	challenge modifier does when no Scale exists, and 25 kg may end up being
+	the number a future calculation substitutes. If it does, that substitution
+	belongs to the calculation and must never be written back here. Writing it
+	would fabricate a successful meet attempt that never happened.
+]]
+PlayerProfileSchema.UNPROVEN_SCALE = 0
+
+--[[
+	Competition Scale, added in version 4. From GAME_DESIGN.md section 33.
+
+	The heaviest weight the lifter has SUCCESSFULLY PROVEN in an eligible meet,
+	per lift, in kilograms. Competition Number is what training built; this is
+	what competition confirmed. They move independently and neither caps the
+	other.
+
+	`UNPROVEN_SCALE` above means the lift has never been proven.
+
+	NOTHING WRITES THIS YET. Section 33.12 sequences the monotone raise
+	operation as step 4 and the meet wiring as step 7, so in this version the
+	field is stored, migrated and read, and is 0 for every player in existence.
+]]
+export type CompetitionScale = {
+	-- Kilograms, or UNPROVEN_SCALE. Never decreases once above 0.
 	Squat: number,
 	Bench: number,
 	Deadlift: number,
@@ -122,21 +173,38 @@ export type ProfileData = {
 	--[[
 		BUILD-SCOPED IN THE FROZEN DESIGN, FLAT FOR NOW.
 
-		Section 29.11 makes Competition Numbers per weight-class build, and the
-		Weight-Class Build Slot system is not built. This field therefore holds
-		the ACTIVE build's numbers, which is every player's only build today.
+		This note covers BOTH fields below. Section 29.11 makes Competition
+		Numbers per weight-class build and section 33.8 says a Competition Scale
+		"travels with that build", and the Weight-Class Build Slot system is not
+		built. These fields therefore hold the ACTIVE build's values, which is
+		every player's only build today.
 
-		The later migration is deterministic and lossless: move this table to
-		`builds[classKey].competitionNumber`, keyed by the class the player is
-		already in, which WeightClass.resolve derives from bodyweight.currentKg.
-		No value is invented and nothing is lost.
+		The later migration is deterministic and lossless: move both tables to
+		`builds[classKey]`, keyed by the class the player is already in, which
+		WeightClass.resolve derives from bodyweight.currentKg. No value is
+		invented and nothing is lost.
 
 		A `builds` map is deliberately NOT created now. Which build is active,
 		how slots are keyed, and how many a player may own are all undecided, and
 		guessing that shape would mean migrating away from the guess. No
-		paid-slot behaviour is implied or implemented here.
+		paid-slot behaviour is implied or implemented here. Section 33.8 is
+		explicit: no `builds` map is to be invented ahead of that system.
+
+		THE TWO FIELDS MUST STAY THE SAME SHAPE AS EACH OTHER. Keying Scale by
+		weight class while Competition Number stays flat would give the profile
+		two different answers to "which build is this", which is exactly the
+		confusion section 33.8's class-scoping rule exists to prevent. They
+		migrate together or not at all.
+
+		CLASS SCOPING IS NOT ENFORCED BY THIS SHAPE, AND CANNOT BE REACHED YET.
+		A Scale proven in one class must never count as proof in another. No
+		code writes competitionScale in this version, so that confusion is
+		unreachable today. Its enforcement point is the WRITE path: the meet
+		wiring of section 33.12 step 7, which must key the raise off the meet's
+		weigh-in snapshot (section 29.11), never off current bodyweight.
 	]]
 	competitionNumber: CompetitionNumber,
+	competitionScale: CompetitionScale,
 
 	technique: Technique,
 	bodyweight: Bodyweight,
@@ -166,6 +234,26 @@ local template: ProfileData = {
 		Squat = StartingValuesConfig.Forecasted.Squat,
 		Bench = StartingValuesConfig.Forecasted.Bench,
 		Deadlift = StartingValuesConfig.Forecasted.Deadlift,
+	},
+
+	--[[
+		A NEW LIFTER HAS PROVEN NOTHING, and that is deliberate.
+
+		They start with Competition Number 25 kg per lift because training is
+		what builds capability, and with no Competition Scale at all because
+		they have never entered a meet. Seeding this from the starting
+		Competition Number would record three successful meet lifts that never
+		happened.
+
+		This value does NOT come from StartingValuesConfig. That file holds
+		balance decisions -- what a lifter begins with -- and "unproven" is not
+		a balance number. It is the storage encoding of an absent achievement,
+		so it belongs with the schema.
+	]]
+	competitionScale = {
+		Squat = PlayerProfileSchema.UNPROVEN_SCALE,
+		Bench = PlayerProfileSchema.UNPROVEN_SCALE,
+		Deadlift = PlayerProfileSchema.UNPROVEN_SCALE,
 	},
 
 	--[[
@@ -376,6 +464,56 @@ migrations[2] = function(data: ProfileData)
 		}
 	elseif typeof(energy.lastUpdatedUnix) ~= "number" then
 		energy.lastUpdatedUnix = 0
+	end
+end
+
+--[[
+	Version 3 to 4: Competition Scale arrives.
+
+	EVERY EXISTING PLAYER MIGRATES TO UNPROVEN, WITH NO EXCEPTIONS.
+
+	Nothing is read from the old save, because there is nothing to read. No meet
+	system has ever existed, so no profile in the DataStore contains a record of
+	a successful meet attempt, and there is no data from which a Scale could
+	honestly be derived.
+
+	IT MUST NOT BE SEEDED FROM COMPETITION NUMBER. A player with a 182.5 kg
+	Squat CN trained that number; they never proved it under competition. Copying
+	it here would fabricate a successful meet attempt, hand them a Scale they did
+	not earn, and -- once the section 33.4 challenge modifier exists -- silently
+	remove a mechanic from their account. GAME_DESIGN.md section 33.8 settles
+	this: migrating players start unproven.
+
+	So this step only guarantees the field exists and is well formed. Reconcile
+	normally does that already from the template; doing it here too means the
+	migration does not depend on Reconcile's behaviour staying the same.
+
+	REPAIR, NEVER OVERWRITE. A value that is already a usable non-negative
+	number is left exactly as found, so running this step twice cannot wipe a
+	Scale that a later version legitimately set. Only a wrong shape -- a missing
+	table, a string, a NaN, a negative -- is replaced with UNPROVEN.
+]]
+migrations[3] = function(data: ProfileData)
+	if typeof(data.competitionScale) ~= "table" then
+		data.competitionScale = {} :: any
+	end
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local saved = (data.competitionScale :: any)[lift]
+
+		--[[
+			A legitimate Scale is a finite number of 0 or more. 0 is the
+			UNPROVEN sentinel and is therefore valid, which is why this accepts
+			it where the Competition Number migration above requires above-zero.
+		]]
+		local usable = typeof(saved) == "number"
+			and saved == saved
+			and saved >= 0
+			and saved < math.huge
+
+		if not usable then
+			(data.competitionScale :: any)[lift] = PlayerProfileSchema.UNPROVEN_SCALE
+		end
 	end
 end
 

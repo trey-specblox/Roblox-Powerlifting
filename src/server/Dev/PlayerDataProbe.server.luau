@@ -140,6 +140,65 @@ local function reconciledV2Save(squat: number, bench: number, deadlift: number):
 	return data
 end
 
+--[[
+	A VERSION-3 SAVE AS IT WOULD ARRIVE FROM A REAL DATASTORE, after Reconcile.
+
+	Version 3 is the shape that is live in production right now, so this is the
+	fixture that matters most for the v4 upgrade: a player with trained
+	Competition Numbers, a part-spent budget and real technique, who has never
+	competed because no meet system has ever existed.
+
+	`competitionScale` ARRIVES FROM THE TEMPLATE, NOT FROM THE SAVE. A genuine v3
+	record has no such field, because it did not exist when the record was
+	written. `newProfile()` below is a copy of the current template, so the field
+	is present and unproven exactly as `Profile:Reconcile` would leave it -- and
+	PlayerDataService runs Reconcile before migrate, so this is the real ordering.
+	Nothing in this fixture writes a Scale.
+
+	Section 27 covers the other half: what happens when the field is absent or
+	malformed and Reconcile has NOT supplied it.
+]]
+local function reconciledV3Save(squat: number, bench: number, deadlift: number): any
+	local data = newProfile() :: any
+
+	-- What the player actually saved under version 3.
+	data.competitionNumber = { Squat = squat, Bench = bench, Deadlift = deadlift }
+
+	data.technique = {
+		SquatControl = 1400,
+		DepthAwareness = 900,
+		StartControl = 500,
+		PressPower = 2200,
+		PullStrength = 350,
+		Lockout = 110,
+	}
+
+	data.bodyweight = { currentKg = 81.5, targetKg = 93 }
+	data.meta = { createdUnix = 1700000000, lastSessionUnix = 1700500000, sessionCount = 77 }
+
+	-- A part-spent Squat pool, so the upgrade has something it could destroy.
+	data.competitionBudget.Squat = { amount = 3.21, lastUpdatedUnix = 1700500000 }
+	data.trainingEnergy = { amount = 45, lastUpdatedUnix = 1700500000 }
+
+	data.version = 3
+
+	return data
+end
+
+--[[
+	What ProfileStore does to a profile between sessions: serialize it, store it,
+	and hand back a structurally identical table on the next load.
+
+	A deep copy is the honest in-process stand-in. It proves a value survives
+	being detached from the live table and reconstructed, which is what catches
+	a field held by reference, a metatable, or a non-serializable value. It does
+	NOT exercise the real DataStore, so the JSON round trip itself still has to
+	be confirmed in Studio -- see the probe's closing note.
+]]
+local function saveAndReload(data: any): any
+	return deepCopy(data)
+end
+
 local HOUR = 3600
 local DAY = 86400
 
@@ -197,7 +256,7 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 3", finalVersion == 3 and data.version == 3)
+	check("migrated to version 4", finalVersion == 4 and data.version == 4)
 	check("Squat preserved at 182.5", near(data.competitionNumber.Squat, 182.5), tostring(data.competitionNumber.Squat))
 	check("Bench preserved at 117.5", near(data.competitionNumber.Bench, 117.5), tostring(data.competitionNumber.Bench))
 	check("Deadlift preserved at 215.0", near(data.competitionNumber.Deadlift, 215.0), tostring(data.competitionNumber.Deadlift))
@@ -223,7 +282,7 @@ do
 	check("Squat still 300 after three passes", near(data.competitionNumber.Squat, 300.0), tostring(data.competitionNumber.Squat))
 	check("Bench still 200", near(data.competitionNumber.Bench, 200.0))
 	check("Deadlift still 350", near(data.competitionNumber.Deadlift, 350.0))
-	check("version still 3", data.version == 3)
+	check("version still 4", data.version == 4)
 	check(
 		"part-spent budget was not silently refilled",
 		near(data.competitionBudget.Squat.amount, spentBudget),
@@ -640,7 +699,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("bonus. a version-1 save reaches version 3 in one pass")
+print("bonus. a version-1 save reaches version 4 in one pass")
 do
 	--[[
 		The two-step path. A v1 save predates both PullStrength and the rename,
@@ -661,7 +720,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 3", finalVersion == 3 and data.version == 3)
+	check("reached version 4", finalVersion == 4 and data.version == 4)
 	check("Squat 140 preserved across two migrations", near(data.competitionNumber.Squat, 140.0), tostring(data.competitionNumber.Squat))
 	check("Bench 95 preserved", near(data.competitionNumber.Bench, 95.0))
 	check("Deadlift 170 preserved", near(data.competitionNumber.Deadlift, 170.0))
@@ -1117,6 +1176,211 @@ do
 		tostring(large.competitionBudget.Squat.amount)
 	)
 end
+--------------------------------------------------------------------------------
+print("")
+print("24. a new profile has proven nothing")
+do
+	local data = newProfile()
+
+	check("competitionScale exists on a new profile", typeof(data.competitionScale) == "table")
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local stored = (data.competitionScale :: any)[lift]
+
+		check(
+			string.format("%s Scale is the UNPROVEN sentinel", lift),
+			stored == PlayerProfileSchema.UNPROVEN_SCALE,
+			tostring(stored)
+		)
+		check(
+			string.format("%s reads as NOT proven", lift),
+			ProfileOperations.isCompetitionScaleProven(data, lift) == false
+		)
+	end
+
+	--[[
+		THE WHOLE POINT OF THIS SECTION. A new lifter has a trained Competition
+		Number and no proven Scale, and the two must not be confused.
+	]]
+	check("the UNPROVEN sentinel is 0", PlayerProfileSchema.UNPROVEN_SCALE == 0)
+	check(
+		"Scale is NOT seeded from the 25 kg starting Competition Number",
+		data.competitionScale.Squat ~= data.competitionNumber.Squat
+	)
+	check("Competition Number is still 25 kg", near(data.competitionNumber.Squat, 25.0))
+	check(
+		"getCompetitionScale returns 0, not nil, for an unproven lift",
+		ProfileOperations.getCompetitionScale(data, "Squat") == 0
+	)
+	check(
+		"an unknown lift is rejected",
+		ProfileOperations.getCompetitionScale(data, "Curl") == nil
+	)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("25. a version-3 player migrates to UNPROVEN, not to their trained number")
+do
+	local data = reconciledV3Save(182.5, 117.5, 215.0)
+	local finalVersion = PlayerProfileSchema.migrate(data, 3)
+
+	check("migrated to version 4", finalVersion == 4 and data.version == 4)
+
+	-- The rule that this whole checkpoint exists to get right.
+	check("Squat Scale is UNPROVEN after migration", data.competitionScale.Squat == 0, tostring(data.competitionScale.Squat))
+	check("Bench Scale is UNPROVEN after migration", data.competitionScale.Bench == 0)
+	check("Deadlift Scale is UNPROVEN after migration", data.competitionScale.Deadlift == 0)
+	check("Squat Scale was NOT set to the trained 182.5", data.competitionScale.Squat ~= 182.5)
+	check("Bench Scale was NOT set to the trained 117.5", data.competitionScale.Bench ~= 117.5)
+	check("Deadlift Scale was NOT set to the trained 215.0", data.competitionScale.Deadlift ~= 215.0)
+	check("no lift reads as proven", not ProfileOperations.isCompetitionScaleProven(data, "Squat")
+		and not ProfileOperations.isCompetitionScaleProven(data, "Bench")
+		and not ProfileOperations.isCompetitionScaleProven(data, "Deadlift"))
+
+	-- EVERYTHING ELSE THE PLAYER OWNED SURVIVES.
+	check("trained Squat CN preserved at 182.5", near(data.competitionNumber.Squat, 182.5), tostring(data.competitionNumber.Squat))
+	check("trained Bench CN preserved at 117.5", near(data.competitionNumber.Bench, 117.5))
+	check("trained Deadlift CN preserved at 215.0", near(data.competitionNumber.Deadlift, 215.0))
+	check("part-spent Squat budget preserved at 3.21", near(data.competitionBudget.Squat.amount, 3.21), tostring(data.competitionBudget.Squat.amount))
+	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
+	check("part-spent Training Energy preserved at 45", near(data.trainingEnergy.amount, 45))
+	check("technique PressPower 2200 preserved", data.technique.PressPower == 2200)
+	check("technique PullStrength 350 preserved", data.technique.PullStrength == 350)
+	check("bodyweight 81.5 kg preserved", near(data.bodyweight.currentKg, 81.5))
+	check("sessionCount 77 preserved", data.meta.sessionCount == 77)
+	check("createdUnix preserved", data.meta.createdUnix == 1700000000)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("26. save and reload preserves both unproven and proven Scale")
+do
+	--[[
+		UNPROVEN SURVIVES AS UNPROVEN. The failure this guards against is a
+		sentinel that does not round-trip -- 0 becoming nil, or an absent field
+		being reconstructed as something else.
+	]]
+	local fresh = newProfile()
+	local reloadedFresh = saveAndReload(fresh)
+
+	check("unproven Squat is still 0 after a reload", reloadedFresh.competitionScale.Squat == 0)
+	check("unproven Bench is still 0", reloadedFresh.competitionScale.Bench == 0)
+	check("unproven Deadlift is still 0", reloadedFresh.competitionScale.Deadlift == 0)
+	check(
+		"still reads as not proven after a reload",
+		ProfileOperations.isCompetitionScaleProven(reloadedFresh, "Squat") == false
+	)
+
+	--[[
+		A PROVEN NUMERIC SCALE SURVIVES TOO.
+
+		Written directly onto the table, because no raise operation exists yet
+		(section 33.12 step 4). This is the fixture standing in for a future
+		successful meet attempt, and it is the only place in this probe that
+		puts a non-zero Scale anywhere. It proves the storage carries a real
+		value, which is the half of the round trip the unproven case cannot
+		cover.
+	]]
+	local proven = newProfile() :: any
+	proven.competitionScale.Squat = 172.5
+	proven.competitionScale.Bench = 102.5
+
+	local reloadedProven = saveAndReload(proven)
+
+	check("proven Squat 172.5 survived the reload", near(reloadedProven.competitionScale.Squat, 172.5), tostring(reloadedProven.competitionScale.Squat))
+	check("proven Bench 102.5 survived", near(reloadedProven.competitionScale.Bench, 102.5))
+	check("the unproven Deadlift stayed unproven", reloadedProven.competitionScale.Deadlift == 0)
+	check("proven Squat reads as proven", ProfileOperations.isCompetitionScaleProven(reloadedProven, "Squat"))
+	check("proven Bench reads as proven", ProfileOperations.isCompetitionScaleProven(reloadedProven, "Bench"))
+	check("unproven Deadlift still reads as not proven", not ProfileOperations.isCompetitionScaleProven(reloadedProven, "Deadlift"))
+	check("a 2.5 kg increment is stored exactly", reloadedProven.competitionScale.Squat == 172.5)
+
+	--[[
+		AND A RE-RUN OF THE MIGRATION MUST NOT WIPE IT. The v3 to v4 step
+		repairs a wrong shape and leaves a usable value alone, so a double
+		migration cannot cost a player a proven lift.
+	]]
+	reloadedProven.version = 3
+	PlayerProfileSchema.migrate(reloadedProven, 3)
+
+	check(
+		"a re-run migration left the proven 172.5 untouched",
+		near(reloadedProven.competitionScale.Squat, 172.5),
+		tostring(reloadedProven.competitionScale.Squat)
+	)
+	check("and left the unproven Deadlift at 0", reloadedProven.competitionScale.Deadlift == 0)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("27. a corrupt Scale repairs to UNPROVEN, never to an achievement")
+do
+	local data = reconciledV3Save(200.0, 130.0, 240.0) :: any
+
+	-- Every way the field can be wrong in a real save.
+	data.competitionScale = {
+		Squat = 0 / 0,
+		Bench = "190",
+		Deadlift = -50,
+	}
+
+	PlayerProfileSchema.migrate(data, 3)
+
+	check("a NaN Scale repaired to 0", data.competitionScale.Squat == 0, tostring(data.competitionScale.Squat))
+	check("no NaN reached the profile", data.competitionScale.Squat == data.competitionScale.Squat)
+	check("a string Scale repaired to 0", data.competitionScale.Bench == 0, tostring(data.competitionScale.Bench))
+	check("a negative Scale repaired to 0", data.competitionScale.Deadlift == 0, tostring(data.competitionScale.Deadlift))
+	check("the player's trained CN was not touched by the repair", near(data.competitionNumber.Squat, 200.0))
+
+	-- A missing table is rebuilt rather than erroring the load.
+	local missing = reconciledV3Save(150.0, 100.0, 180.0) :: any
+	missing.competitionScale = nil
+	PlayerProfileSchema.migrate(missing, 3)
+
+	check("an absent competitionScale table was rebuilt", typeof(missing.competitionScale) == "table")
+	check("and every lift is UNPROVEN", missing.competitionScale.Squat == 0
+		and missing.competitionScale.Bench == 0
+		and missing.competitionScale.Deadlift == 0)
+
+	-- A corrupt stored value must read as unproven, not as a reward.
+	local corrupt = newProfile() :: any
+	corrupt.competitionScale.Squat = 0 / 0
+	check("a NaN Scale reads as nil, not as a number", ProfileOperations.getCompetitionScale(corrupt, "Squat") == nil)
+	check("a NaN Scale does NOT read as proven", ProfileOperations.isCompetitionScaleProven(corrupt, "Squat") == false)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("28. nothing can award Competition Scale yet")
+do
+	--[[
+		The hard boundary for this checkpoint. Storage and migration only: no
+		gameplay path may raise a Scale, so the write operation must not exist
+		on either layer. Section 33.12 step 4 adds it.
+	]]
+	local Service = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
+
+	check(
+		"ProfileOperations exposes no raiseCompetitionScale",
+		(ProfileOperations :: any).raiseCompetitionScale == nil
+	)
+	check(
+		"ProfileOperations exposes no setCompetitionScale",
+		(ProfileOperations :: any).setCompetitionScale == nil
+	)
+	check(
+		"the service exposes no Competition Scale writer",
+		(Service :: any).raiseCompetitionScale == nil
+			and (Service :: any).setCompetitionScale == nil
+	)
+	check(
+		"and still exposes no Competition Number writer",
+		(Service :: any).addCompetitionNumber == nil
+			and (Service :: any).applyCompetitionNumberDelta == nil
+	)
+end
+
 --------------------------------------------------------------------------------
 print("")
 print(string.format("=== %d passed, %d failed ===", passed, failed))
