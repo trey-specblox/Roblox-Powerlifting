@@ -37,6 +37,7 @@ local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig")
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceRegeneration"))
+local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
 
 local PlayerProfileSchema = {}
 
@@ -44,7 +45,7 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below.
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 4
+PlayerProfileSchema.CURRENT_VERSION = 5
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -138,6 +139,73 @@ export type CompetitionBudget = {
 	Deadlift: Resource,
 }
 
+--[[
+	One account-wide daily allowance, added in version 5. From GAME_DESIGN.md
+	section 34.12.
+
+		spentToday         how much of today's allowance has been consumed
+		dayKey             the UTC day that figure belongs to
+		lastUpdatedUnix    the server time it was last written
+
+	THE DAY KEY IS WHAT MAKES THIS WORK WITHOUT A LOOP. Nothing resets these at
+	midnight. A reader compares the stored key against the current one and treats
+	a mismatch as "a new day, nothing spent yet". That is why a server restart, a
+	daily reset landing mid-session, and a player offline for a week all need the
+	same single line of logic and no special cases. Section 34.5 requires the
+	phase to be DERIVED from these counters for exactly this reason.
+
+	FRACTIONAL BY DESIGN. Section 34.7's 80/20 split of a 6.00 point allowance is
+	4.80 and 1.20, and section 34.4's EV accrues continuously, so rounding either
+	counter to an integer would silently discard part of an award. Both are plain
+	numbers, which a DataStore stores as JSON numbers.
+
+	NO CAP IS STORED HERE. The 4.00 EV daily CN cap (section 34.1, decision 2)
+	and the provisional 6.00 raw technique allowance (section 34.7) are config,
+	not profile data. Storing a cap per player would mean a later balance change
+	could never reach anyone who already has a profile.
+]]
+export type DailyAllowance = {
+	spentToday: number,
+	dayKey: string,
+	lastUpdatedUnix: number,
+}
+
+--[[
+	The three per-lift training-time accumulators, added in version 5. From
+	GAME_DESIGN.md section 34.12.
+
+	Hours of station CN training spent on each lift today. These feed the per-lift
+	diminishing-efficiency function H(t) of section 34.4, and they are REQUIRED
+	rather than derivable: H(t) is scoped per lift while the EV cap is scoped per
+	account, so `t` cannot be recovered from either allowance above.
+
+	UNCAPPED, DELIBERATELY. These shape efficiency; they never stop training.
+	Section 34.3 is explicit that there is no hard daily training-hour limit, so
+	nothing bounds them and a reader must not treat a large value as corrupt.
+
+	SWITCHING LIFTS PRESERVES ALL THREE. Section 34.12: a player who trains Squat
+	for two hours, switches to Bench, and later switches back resumes Squat at
+	t = 2.00 rather than at zero. That falls out of storing the hours per lift and
+	resetting only on a day change -- there is no switch handler to get wrong,
+	because there is no switch handler at all.
+
+	ONE SHARED DAY KEY, NOT THREE. The three lifts always roll over together,
+	because they roll over with the calendar and not with anything per-lift. Three
+	keys would permit a state the game cannot produce.
+
+	THE LIFT NAMES SHARE A TABLE WITH `dayKey` AND `lastUpdatedUnix`, which is the
+	flat shape section 34.12 specifies. It is safe because ProgressionConfig.Lifts
+	is Squat, Bench and Deadlift, none of which can collide with a bookkeeping
+	key. A fourth lift would have to respect the same rule.
+]]
+export type TrainingTimeToday = {
+	Squat: number,
+	Bench: number,
+	Deadlift: number,
+	dayKey: string,
+	lastUpdatedUnix: number,
+}
+
 export type Technique = {
 	-- Unbounded raw values. Always read through TechniqueCurve, never directly.
 	SquatControl: number,
@@ -216,6 +284,25 @@ export type ProfileData = {
 	competitionBudget: CompetitionBudget,
 	trainingEnergy: Resource,
 
+	--[[
+		DAILY TRAINING ACCOUNTING, added in version 5. GAME_DESIGN.md section
+		34.12. Five counters in three records, and all three are ACCOUNT-WIDE --
+		not per build slot, not per weight class, not per station, not per
+		server -- so they stay outside the future `builds` map too.
+
+		The two allowances are account-wide in the quantity they bound. The
+		third record holds three PER-LIFT hour counters but is still account
+		state: there is one of it per profile, sharing one day key.
+
+		NOTHING READS OR WRITES THESE YET. Checkpoint 5B.1 is storage only. The
+		config that carries the caps is 5B.2, the H(t) maths is 5B.3, and the
+		reader that compares day keys and spends against these is 5B.4. Until
+		then every counter is zero and every day key is UNSTAMPED.
+	]]
+	cnAllowance: DailyAllowance,
+	techniqueAllowance: DailyAllowance,
+	trainingTimeToday: TrainingTimeToday,
+
 	meta: Meta,
 }
 
@@ -275,6 +362,44 @@ local template: ProfileData = {
 
 	trainingEnergy = {
 		amount = ProgressionConfig.TrainingEnergy.CapacityMinutes,
+		lastUpdatedUnix = 0,
+	},
+
+	--[[
+		A NEW LIFTER HAS SPENT NOTHING AND TRAINED NO HOURS TODAY.
+
+		Zero spent, zero hours, and an UNSTAMPED day key -- the same reasoning as
+		the zero timestamps above. A real day key baked into the template would
+		record the day the SERVER started rather than the day the player first
+		trained, and every profile that server created would share it.
+
+		UNSTAMPED IS NOT A FREE ALLOWANCE. The sentinel matches no real day, so
+		the first read sees a mismatch and resets these counters to zero, which
+		is already their value. A no-op, not a grant, and it is why an unstamped
+		counter needs no special case in the reader.
+
+		THE STARTING VALUES ARE NOT IN StartingValuesConfig, on purpose. That
+		file holds balance decisions -- what a lifter begins with -- and "has not
+		yet trained today" is not a balance number. It is the only value these
+		counters could possibly start at.
+	]]
+	cnAllowance = {
+		spentToday = 0,
+		dayKey = DayKey.UNSTAMPED,
+		lastUpdatedUnix = 0,
+	},
+
+	techniqueAllowance = {
+		spentToday = 0,
+		dayKey = DayKey.UNSTAMPED,
+		lastUpdatedUnix = 0,
+	},
+
+	trainingTimeToday = {
+		Squat = 0,
+		Bench = 0,
+		Deadlift = 0,
+		dayKey = DayKey.UNSTAMPED,
 		lastUpdatedUnix = 0,
 	},
 
@@ -515,6 +640,135 @@ migrations[3] = function(data: ProfileData)
 			(data.competitionScale :: any)[lift] = PlayerProfileSchema.UNPROVEN_SCALE
 		end
 	end
+end
+
+--[[
+	Whether a stored counter is a number this system can safely keep.
+
+	Finite, not NaN, and not negative. Shared by both repairs below so the three
+	version-5 records cannot drift apart in what they accept.
+
+	ZERO IS VALID, and is the normal value. That is why this accepts it where the
+	Competition Number repair in migrations[2] requires above-zero: a spent amount
+	of 0 means "nothing used today", not "missing".
+]]
+local function isUsableCounter(value: any): boolean
+	return typeof(value) == "number"
+		and value == value
+		and value >= 0
+		and value < math.huge
+end
+
+--[[
+	Brings one `{ spentToday, dayKey, lastUpdatedUnix }` record into shape.
+]]
+local function repairDailyAllowance(data: ProfileData, field: string)
+	local record = (data :: any)[field]
+
+	--[[
+		THE DAY KEY IS WHAT GIVES `spentToday` ITS MEANING, so an unusable key
+		resets the record as a UNIT. A spent amount with no day attached cannot be
+		compared against anything, and keeping it beside an UNSTAMPED key would
+		leave the profile in a state the reader never produces.
+
+		THE COST IS ONE EXTRA DAY'S ALLOWANCE, AND THAT IS THE RIGHT DIRECTION.
+		Resetting may hand a corrupted profile an allowance it already used.
+		Stamping today's key instead would freeze whatever `spentToday` happened to
+		hold until tomorrow, which on a corrupt 4.00 locks the player out of
+		training for a day. Corruption is our bug either way, and our bug should
+		not cost a player their day. It is unreachable by any player action: no
+		remote, dev trigger or gameplay system can write these fields.
+	]]
+	if typeof(record) ~= "table" or typeof(record.dayKey) ~= "string" then
+		(data :: any)[field] = {
+			spentToday = 0,
+			dayKey = DayKey.UNSTAMPED,
+			lastUpdatedUnix = 0,
+		}
+		return
+	end
+
+	if not isUsableCounter(record.spentToday) then
+		record.spentToday = 0
+	end
+
+	if not isUsableCounter(record.lastUpdatedUnix) then
+		record.lastUpdatedUnix = 0
+	end
+end
+
+--[[
+	Brings the three per-lift hour counters into shape, under one shared day key.
+
+	Same unit-reset rule as the allowances, and for the same reason: hours with no
+	day attached are not data worth keeping. Resetting hours is the gentler repair
+	of the two, because a lost hour count restores full H(t) efficiency rather
+	than removing anything the player earned.
+]]
+local function repairTrainingTimeToday(data: ProfileData)
+	local record = (data :: any).trainingTimeToday
+
+	if typeof(record) ~= "table" or typeof(record.dayKey) ~= "string" then
+		local fresh: any = {
+			dayKey = DayKey.UNSTAMPED,
+			lastUpdatedUnix = 0,
+		}
+
+		for _, lift in ipairs(ProgressionConfig.Lifts) do
+			fresh[lift] = 0
+		end
+
+		(data :: any).trainingTimeToday = fresh
+		return
+	end
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		if not isUsableCounter((record :: any)[lift]) then
+			(record :: any)[lift] = 0
+		end
+	end
+
+	if not isUsableCounter(record.lastUpdatedUnix) then
+		record.lastUpdatedUnix = 0
+	end
+end
+
+--[[
+	Version 4 to 5: the daily training allowances arrive.
+
+	GAME_DESIGN.md section 34.12. Five counters in three records: the account-wide
+	CN allowance, the account-wide technique allowance, and the three per-lift
+	training-time accumulators that feed H(t).
+
+	NOBODY IS CREDITED FOR TIME THEY DID NOT SPEND AT A STATION.
+
+	Every migrating player arrives with zero spent, zero hours and an UNSTAMPED
+	day key. That is not a grant and not a penalty -- it is the only honest
+	reading of a save that predates the system. No profile in the DataStore
+	records a minute of station training, because no station has ever existed, so
+	there is no data from which a part-spent allowance could be derived.
+
+	AN UNSTAMPED KEY IS NOT A FREE ALLOWANCE. The sentinel matches no real day, so
+	the first read after this migration resets the counters to zero -- which is
+	already their value. The player then has that day's allowance, exactly as they
+	would on any later day. Nothing is backdated and nothing accrued while they
+	were offline, so section 34.2's no-offline-progression rule holds by
+	construction rather than by a check that could be forgotten.
+
+	REPAIR, NEVER OVERWRITE. Same discipline as migrations[3]. A counter that is
+	already usable is left exactly as found, so running this step twice cannot
+	wipe a day's spending and let it be spent again.
+
+	NOTHING IS CLAMPED TO A CAP HERE, deliberately. The 4.00 EV daily cap is a
+	READER's rule (section 34.1, decision 2) and the config carrying it is
+	checkpoint 5B.2. A migration that clamped would silently rewrite a player's
+	spending because a balance constant moved, which is the quiet data edit the
+	repair-never-overwrite rule exists to prevent.
+]]
+migrations[4] = function(data: ProfileData)
+	repairDailyAllowance(data, "cnAllowance")
+	repairDailyAllowance(data, "techniqueAllowance")
+	repairTrainingTimeToday(data)
 end
 
 --[[

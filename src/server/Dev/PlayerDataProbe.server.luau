@@ -30,7 +30,7 @@
 	OFF BY DEFAULT. SET TO true TO RUN IT.
 	=========================================================================
 
-	The foundation has been validated in Studio, so 179 assertions on every Play
+	The foundation has been validated in Studio, so the whole suite on every Play
 	is noise rather than information. Turn it on whenever persistence changes:
 	the schema, a migration, ProfileOperations, ResourceRegeneration or
 	CompetitionBudget. Then turn it off again.
@@ -59,6 +59,7 @@ local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperatio
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
+local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
 
 local BUDGET = ProgressionConfig.CompetitionBudget
 local ENERGY = ProgressionConfig.TrainingEnergy
@@ -186,6 +187,55 @@ local function reconciledV3Save(squat: number, bench: number, deadlift: number):
 end
 
 --[[
+	A VERSION-4 SAVE AS IT WOULD ARRIVE FROM A REAL DATASTORE, after Reconcile.
+
+	Version 4 is the shape that is live in production right now, so this is the
+	fixture that matters most for the version-5 upgrade: a lifter with trained
+	Competition Numbers, a part-spent budget, real technique including
+	PullStrength, and -- unlike any real player today -- a PLANTED Competition
+	Scale.
+
+	THE PLANTED SCALE IS DELIBERATE AND IS NOT A CLAIM ABOUT PRODUCTION. Nothing
+	writes Scale yet, so every real Scale is 0. Planting one here is the only way
+	to prove the version-5 migration does not disturb it: a migration tested only
+	against zeroes cannot distinguish "preserved" from "happened to already be the
+	default".
+
+	The three version-5 records ARRIVE FROM THE TEMPLATE, not from the save, which
+	is what `newProfile()` gives us. A genuine v4 record has no such fields.
+	PlayerDataService runs Reconcile before migrate, so this is the real ordering.
+	Section 37 covers the other half: what happens when they are absent or
+	malformed and Reconcile has NOT supplied them.
+]]
+local function reconciledV4Save(squat: number, bench: number, deadlift: number): any
+	local data = newProfile() :: any
+
+	data.competitionNumber = { Squat = squat, Bench = bench, Deadlift = deadlift }
+
+	-- Planted, per the note above. No real profile holds these.
+	data.competitionScale = { Squat = 177.5, Bench = 105.0, Deadlift = 212.5 }
+
+	data.technique = {
+		SquatControl = 1550,
+		DepthAwareness = 975,
+		StartControl = 525,
+		PressPower = 2350,
+		PullStrength = 410,
+		Lockout = 128,
+	}
+
+	data.bodyweight = { currentKg = 82.4, targetKg = 93 }
+	data.meta = { createdUnix = 1700000000, lastSessionUnix = 1700500000, sessionCount = 103 }
+
+	data.competitionBudget.Squat = { amount = 2.75, lastUpdatedUnix = 1700500000 }
+	data.trainingEnergy = { amount = 61, lastUpdatedUnix = 1700500000 }
+
+	data.version = 4
+
+	return data
+end
+
+--[[
 	What ProfileStore does to a profile between sessions: serialize it, store it,
 	and hand back a structurally identical table on the next load.
 
@@ -256,7 +306,7 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 4", finalVersion == 4 and data.version == 4)
+	check("migrated to version 5", finalVersion == 5 and data.version == 5)
 	check("Squat preserved at 182.5", near(data.competitionNumber.Squat, 182.5), tostring(data.competitionNumber.Squat))
 	check("Bench preserved at 117.5", near(data.competitionNumber.Bench, 117.5), tostring(data.competitionNumber.Bench))
 	check("Deadlift preserved at 215.0", near(data.competitionNumber.Deadlift, 215.0), tostring(data.competitionNumber.Deadlift))
@@ -282,7 +332,7 @@ do
 	check("Squat still 300 after three passes", near(data.competitionNumber.Squat, 300.0), tostring(data.competitionNumber.Squat))
 	check("Bench still 200", near(data.competitionNumber.Bench, 200.0))
 	check("Deadlift still 350", near(data.competitionNumber.Deadlift, 350.0))
-	check("version still 4", data.version == 4)
+	check("version still 5", data.version == 5)
 	check(
 		"part-spent budget was not silently refilled",
 		near(data.competitionBudget.Squat.amount, spentBudget),
@@ -699,7 +749,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("bonus. a version-1 save reaches version 4 in one pass")
+print("bonus. a version-1 save reaches version 5 in one pass")
 do
 	--[[
 		The two-step path. A v1 save predates both PullStrength and the rename,
@@ -720,7 +770,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 4", finalVersion == 4 and data.version == 4)
+	check("reached version 5", finalVersion == 5 and data.version == 5)
 	check("Squat 140 preserved across two migrations", near(data.competitionNumber.Squat, 140.0), tostring(data.competitionNumber.Squat))
 	check("Bench 95 preserved", near(data.competitionNumber.Bench, 95.0))
 	check("Deadlift 170 preserved", near(data.competitionNumber.Deadlift, 170.0))
@@ -1225,7 +1275,7 @@ do
 	local data = reconciledV3Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 3)
 
-	check("migrated to version 4", finalVersion == 4 and data.version == 4)
+	check("migrated to version 5", finalVersion == 5 and data.version == 5)
 
 	-- The rule that this whole checkpoint exists to get right.
 	check("Squat Scale is UNPROVEN after migration", data.competitionScale.Squat == 0, tostring(data.competitionScale.Squat))
@@ -1657,6 +1707,297 @@ do
 	)
 	check("no budget timestamp was stamped", data.competitionBudget.Squat.lastUpdatedUnix == 0)
 	check("no Training Energy timestamp was stamped", data.trainingEnergy.lastUpdatedUnix == 0)
+end
+
+--------------------------------------------------------------------------------
+print("33. a new profile has spent nothing and trained no hours today")
+do
+	local data = newProfile() :: any
+
+	check("cnAllowance exists", typeof(data.cnAllowance) == "table")
+	check("techniqueAllowance exists", typeof(data.techniqueAllowance) == "table")
+	check("trainingTimeToday exists", typeof(data.trainingTimeToday) == "table")
+
+	check("CN allowance spent is 0", data.cnAllowance.spentToday == 0, tostring(data.cnAllowance.spentToday))
+	check("technique allowance spent is 0", data.techniqueAllowance.spentToday == 0)
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		check(
+			string.format("%s training time is 0", lift),
+			data.trainingTimeToday[lift] == 0,
+			tostring(data.trainingTimeToday[lift])
+		)
+	end
+
+	--[[
+		UNSTAMPED, NOT TODAY. A real day key in the template would record the day
+		the SERVER started, and every profile it created would share it.
+	]]
+	check("CN allowance day key is UNSTAMPED", data.cnAllowance.dayKey == DayKey.UNSTAMPED)
+	check("technique allowance day key is UNSTAMPED", data.techniqueAllowance.dayKey == DayKey.UNSTAMPED)
+	check("training time day key is UNSTAMPED", data.trainingTimeToday.dayKey == DayKey.UNSTAMPED)
+
+	check("UNSTAMPED does not read as a real day", DayKey.isStamped(data.cnAllowance.dayKey) == false)
+
+	check("CN allowance timestamp is 0", data.cnAllowance.lastUpdatedUnix == 0)
+	check("technique allowance timestamp is 0", data.techniqueAllowance.lastUpdatedUnix == 0)
+	check("training time timestamp is 0", data.trainingTimeToday.lastUpdatedUnix == 0)
+
+	-- NO CAP IS STORED PER PLAYER. The caps are config, arriving in 5B.2.
+	check("no cap is stored on the CN allowance", (data.cnAllowance :: any).cap == nil)
+	check("no cap is stored on the technique allowance", (data.techniqueAllowance :: any).cap == nil)
+end
+
+--------------------------------------------------------------------------------
+print("34. a version-4 player migrates to zero spent, and loses nothing")
+do
+	local data = reconciledV4Save(195.0, 125.0, 232.5)
+
+	local finalVersion = PlayerProfileSchema.migrate(data, 4)
+
+	check("migrated 4 to 5", finalVersion == 5 and data.version == 5, tostring(data.version))
+
+	--[[
+		NO OFFLINE TRAINING CREDIT. A save that predates the station cannot
+		contain station time, so nothing is backdated and nothing is owed.
+	]]
+	check("CN allowance arrives unspent", data.cnAllowance.spentToday == 0)
+	check("technique allowance arrives unspent", data.techniqueAllowance.spentToday == 0)
+	check("Squat hours arrive at 0", data.trainingTimeToday.Squat == 0)
+	check("Bench hours arrive at 0", data.trainingTimeToday.Bench == 0)
+	check("Deadlift hours arrive at 0", data.trainingTimeToday.Deadlift == 0)
+	check("day keys arrive UNSTAMPED", data.cnAllowance.dayKey == DayKey.UNSTAMPED
+		and data.techniqueAllowance.dayKey == DayKey.UNSTAMPED
+		and data.trainingTimeToday.dayKey == DayKey.UNSTAMPED)
+
+	-- EVERY PRE-EXISTING FIELD SURVIVES. This is the half that can lose data.
+	check("Squat CN preserved", near(data.competitionNumber.Squat, 195.0), tostring(data.competitionNumber.Squat))
+	check("Bench CN preserved", near(data.competitionNumber.Bench, 125.0))
+	check("Deadlift CN preserved", near(data.competitionNumber.Deadlift, 232.5))
+
+	check("Squat Scale preserved", near(data.competitionScale.Squat, 177.5), tostring(data.competitionScale.Squat))
+	check("Bench Scale preserved", near(data.competitionScale.Bench, 105.0))
+	check("Deadlift Scale preserved", near(data.competitionScale.Deadlift, 212.5))
+
+	check("SquatControl preserved", data.technique.SquatControl == 1550)
+	check("DepthAwareness preserved", data.technique.DepthAwareness == 975)
+	check("StartControl preserved", data.technique.StartControl == 525)
+	check("PressPower preserved", data.technique.PressPower == 2350)
+	check("Lockout preserved", data.technique.Lockout == 128)
+
+	--[[
+		PULLSTRENGTH IS STILL HERE, AND THAT IS CORRECT FOR THIS CHECKPOINT.
+		GAME_DESIGN.md section 34.6 removes it from the DESIGN; section 34.14
+		checkpoint 9 removes it from the CODE, together with the Deadlift typing
+		rebase. 5B.1 must not touch it, so this asserts it survived.
+	]]
+	check("PullStrength preserved, pending checkpoint 9", data.technique.PullStrength == 410)
+
+	check("part-spent Squat budget preserved", near(data.competitionBudget.Squat.amount, 2.75))
+	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
+	check("Training Energy preserved", near(data.trainingEnergy.amount, 61))
+	check("Training Energy timestamp preserved", data.trainingEnergy.lastUpdatedUnix == 1700500000)
+	check("bodyweight preserved", near(data.bodyweight.currentKg, 82.4) and near(data.bodyweight.targetKg, 93))
+	check("meta preserved", data.meta.sessionCount == 103 and data.meta.createdUnix == 1700000000)
+end
+
+--------------------------------------------------------------------------------
+print("35. EVERY historical version gap still reaches version 5")
+do
+	--[[
+		The rule this guards is in PlayerProfileSchema: a step must exist for every
+		gap, or migrate() warns and ABANDONS the profile at its old version. A
+		missing step is not a harmless omission, it strands the save -- so each
+		starting version is walked the whole way here, not just the newest one.
+	]]
+	local oneToFive = reconciledV2Save(150.0, 95.0, 180.0)
+	oneToFive.version = 1
+	oneToFive.forecasted = nil
+	oneToFive.technique.PullStrength = nil
+
+	local v1 = PlayerProfileSchema.migrate(oneToFive, 1)
+	check("version 1 reaches 5", v1 == 5 and oneToFive.version == 5, tostring(v1))
+	check("v1 gained PullStrength at 0 on the way", oneToFive.technique.PullStrength == 0)
+	check("v1 gained the CN allowance", typeof(oneToFive.cnAllowance) == "table"
+		and oneToFive.cnAllowance.spentToday == 0)
+	check("v1 gained the training-time record", typeof(oneToFive.trainingTimeToday) == "table"
+		and oneToFive.trainingTimeToday.Deadlift == 0)
+
+	local twoToFive = reconciledV2Save(182.5, 117.5, 215.0)
+	local v2 = PlayerProfileSchema.migrate(twoToFive, 2)
+	check("version 2 reaches 5", v2 == 5 and twoToFive.version == 5, tostring(v2))
+	check("v2 kept its real lifts through four steps", near(twoToFive.competitionNumber.Squat, 182.5))
+	check("v2 gained the technique allowance", typeof(twoToFive.techniqueAllowance) == "table"
+		and twoToFive.techniqueAllowance.dayKey == DayKey.UNSTAMPED)
+
+	local threeToFive = reconciledV3Save(200.0, 130.0, 240.0)
+	local v3 = PlayerProfileSchema.migrate(threeToFive, 3)
+	check("version 3 reaches 5", v3 == 5 and threeToFive.version == 5, tostring(v3))
+	check("v3 is still UNPROVEN, never seeded from CN", threeToFive.competitionScale.Squat == 0,
+		tostring(threeToFive.competitionScale.Squat))
+	check("v3 kept its part-spent budget", near(threeToFive.competitionBudget.Squat.amount, 3.21))
+	check("v3 gained all three version-5 records", typeof(threeToFive.cnAllowance) == "table"
+		and typeof(threeToFive.techniqueAllowance) == "table"
+		and typeof(threeToFive.trainingTimeToday) == "table")
+
+	-- A brand new profile is already current and must skip every step.
+	local fresh = newProfile() :: any
+	local vNew = PlayerProfileSchema.migrate(fresh, 0)
+	check("a new profile is already version 5", vNew == 5 and fresh.version == 5)
+
+	--[[
+		IDEMPOTENT. Running the step again on an already-migrated profile must not
+		wipe a day's spending and let it be spent a second time.
+	]]
+	local spent = reconciledV4Save(210.0, 135.0, 250.0)
+	PlayerProfileSchema.migrate(spent, 4)
+	spent.cnAllowance = { spentToday = 2.5, dayKey = "2026-01-01", lastUpdatedUnix = 1767225600 }
+	spent.trainingTimeToday.Squat = 1.75
+	spent.version = 4
+	PlayerProfileSchema.migrate(spent, 4)
+	check("a second pass preserves spending", near(spent.cnAllowance.spentToday, 2.5),
+		tostring(spent.cnAllowance.spentToday))
+	check("a second pass preserves the day key", spent.cnAllowance.dayKey == "2026-01-01")
+	check("a second pass preserves banked hours", near(spent.trainingTimeToday.Squat, 1.75))
+end
+
+--------------------------------------------------------------------------------
+print("36. a reconnect preserves fractional counters and day keys")
+do
+	local data = reconciledV4Save(188.0, 120.0, 225.0)
+	PlayerProfileSchema.migrate(data, 4)
+
+	--[[
+		The values a real day produces. 4.80 / 1.20 is section 34.7's 80/20 split
+		of the 6.00 point allowance, and 2.8109 is section 34.4's cumulative EV at
+		three hours. If any of these came back rounded, the split would be silently
+		wrong and the EV curve would quantise.
+	]]
+	data.cnAllowance = { spentToday = 2.8109, dayKey = "2026-10-08", lastUpdatedUnix = 1760000000 }
+	data.techniqueAllowance = { spentToday = 4.8, dayKey = "2026-10-08", lastUpdatedUnix = 1760000000 }
+	data.trainingTimeToday = {
+		Squat = 3.0,
+		Bench = 1.25,
+		Deadlift = 0.5,
+		dayKey = "2026-10-08",
+		lastUpdatedUnix = 1760000000,
+	}
+
+	local reloaded = saveAndReload(data)
+
+	check("fractional EV survives the round trip", near(reloaded.cnAllowance.spentToday, 2.8109),
+		tostring(reloaded.cnAllowance.spentToday))
+	check("the 80/20 primary share survives", near(reloaded.techniqueAllowance.spentToday, 4.8))
+	check("fractional hours survive", near(reloaded.trainingTimeToday.Bench, 1.25)
+		and near(reloaded.trainingTimeToday.Deadlift, 0.5))
+	check("day keys survive as strings", reloaded.cnAllowance.dayKey == "2026-10-08"
+		and reloaded.trainingTimeToday.dayKey == "2026-10-08")
+	check("timestamps survive", reloaded.cnAllowance.lastUpdatedUnix == 1760000000)
+
+	--[[
+		DETACHED, NOT SHARED. A field held by reference would make a reload alias
+		the live table, and a later write would appear to travel backwards in time.
+	]]
+	reloaded.cnAllowance.spentToday = 4.0
+	check("the reload is a separate table", near(data.cnAllowance.spentToday, 2.8109))
+
+	-- MIGRATING AN ALREADY-CURRENT PROFILE AGAIN MUST NOT RESET A LIVE DAY.
+	check("reload is still version 5", reloaded.version == 5)
+end
+
+--------------------------------------------------------------------------------
+print("37. the UTC day key, midnight, and corrupt training data")
+do
+	--[[
+		1700000000 is 2023-11-14T22:13:20Z. The absolute assertion is the one that
+		matters: for any observer east of UTC+01:47 the LOCAL date there is already
+		the 15th, so this fails loudly if the UTC prefix is ever dropped.
+	]]
+	local midAfternoon = 1700000000
+	check("a known timestamp maps to its UTC date", DayKey.fromUnix(midAfternoon) == "2023-11-14",
+		DayKey.fromUnix(midAfternoon))
+
+	local startOfThatDay = DayKey.startOfDayUnix(midAfternoon)
+	check("start of day is a UTC midnight", startOfThatDay == 1699920000, tostring(startOfThatDay))
+	check("start of day has the same key", DayKey.fromUnix(startOfThatDay) == "2023-11-14")
+
+	-- SAME DAY, DIFFERENT HOURS: one key, so no reset happens mid-day.
+	check("08:00 and 23:00 on one day share a key",
+		DayKey.fromUnix(startOfThatDay + 8 * HOUR) == DayKey.fromUnix(startOfThatDay + 23 * HOUR))
+
+	-- THE BOUNDARY ITSELF. One second apart, two different days.
+	local lastSecond = startOfThatDay + DAY - 1
+	local firstSecond = startOfThatDay + DAY
+	check("the last second of the day is still the 14th", DayKey.fromUnix(lastSecond) == "2023-11-14",
+		DayKey.fromUnix(lastSecond))
+	check("the first second of the next day is the 15th", DayKey.fromUnix(firstSecond) == "2023-11-15",
+		DayKey.fromUnix(firstSecond))
+	check("midnight changes the key", DayKey.fromUnix(lastSecond) ~= DayKey.fromUnix(firstSecond))
+
+	--[[
+		WHAT THE 5B.4 READER WILL ACTUALLY DO. It has no reader yet, so this proves
+		only the comparison it will perform: a counter stamped yesterday is
+		detectably stale, and one stamped today is not.
+	]]
+	local stored = { spentToday = 4.0, dayKey = DayKey.fromUnix(lastSecond), lastUpdatedUnix = lastSecond }
+	check("a counter stamped yesterday reads as stale", stored.dayKey ~= DayKey.fromUnix(firstSecond))
+	check("a counter stamped today reads as current", stored.dayKey == DayKey.fromUnix(lastSecond - HOUR))
+	check("an UNSTAMPED counter reads as stale against any real day",
+		DayKey.UNSTAMPED ~= DayKey.fromUnix(firstSecond))
+	check("a real key reads as stamped", DayKey.isStamped(stored.dayKey))
+
+	--[[
+		A BAD CLOCK FAILS CLOSED, LOUDLY. Any varying return for a bad input would
+		hand out a fresh allowance on every read, so DayKey asserts instead.
+	]]
+	check("NaN is rejected", not (pcall(DayKey.fromUnix, 0 / 0)))
+	check("infinity is rejected", not (pcall(DayKey.fromUnix, math.huge)))
+	check("a negative time is rejected", not (pcall(DayKey.fromUnix, -1)))
+	check("a string is rejected", not (pcall(DayKey.fromUnix, ("1700000000" :: any))))
+
+	--[[
+		CORRUPTION REPAIRS, AND THE RECORD IS REPAIRED AS A UNIT. A spent amount
+		with no day attached cannot be compared against anything, so the schema
+		discards it rather than leaving a state the reader never produces.
+	]]
+	local corrupt = reconciledV4Save(170.0, 110.0, 205.0)
+	corrupt.cnAllowance = { spentToday = 3.5, dayKey = 12345, lastUpdatedUnix = 1700500000 }
+	corrupt.techniqueAllowance = { spentToday = 0 / 0, dayKey = "2026-10-08", lastUpdatedUnix = 1700500000 }
+	corrupt.trainingTimeToday = nil
+
+	PlayerProfileSchema.migrate(corrupt, 4)
+
+	check("a non-string day key resets its record", corrupt.cnAllowance.dayKey == DayKey.UNSTAMPED
+		and corrupt.cnAllowance.spentToday == 0, tostring(corrupt.cnAllowance.spentToday))
+	check("a NaN spend repairs to 0 but keeps its good day key",
+		corrupt.techniqueAllowance.spentToday == 0
+			and corrupt.techniqueAllowance.dayKey == "2026-10-08")
+	check("a missing training-time record is rebuilt", typeof(corrupt.trainingTimeToday) == "table"
+		and corrupt.trainingTimeToday.Squat == 0
+		and corrupt.trainingTimeToday.dayKey == DayKey.UNSTAMPED)
+
+	local negative = reconciledV4Save(165.0, 108.0, 200.0)
+	negative.trainingTimeToday = {
+		Squat = -5,
+		Bench = math.huge,
+		Deadlift = 2.25,
+		dayKey = "2026-10-08",
+		lastUpdatedUnix = -1,
+	}
+
+	PlayerProfileSchema.migrate(negative, 4)
+
+	check("a negative hour count repairs to 0", negative.trainingTimeToday.Squat == 0)
+	check("an infinite hour count repairs to 0", negative.trainingTimeToday.Bench == 0)
+	check("a GOOD hour count beside them is untouched", near(negative.trainingTimeToday.Deadlift, 2.25),
+		tostring(negative.trainingTimeToday.Deadlift))
+	check("a negative timestamp repairs to 0", negative.trainingTimeToday.lastUpdatedUnix == 0)
+
+	-- AND THE REPAIR TOUCHED NOTHING ELSE.
+	check("repair left CN alone", near(negative.competitionNumber.Squat, 165.0))
+	check("repair left Scale alone", near(negative.competitionScale.Squat, 177.5))
+	check("repair left technique alone", negative.technique.PullStrength == 410)
+	check("repair left the budget alone", near(negative.competitionBudget.Squat.amount, 2.75))
 end
 
 --------------------------------------------------------------------------------
