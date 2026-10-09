@@ -2741,11 +2741,15 @@ Reusable **as-is**, with no modification:
 | RP Preservation on class change (§29.11) | Untouched. |
 
 What is actually needed is **a training event to EV converter** — the training-side
-equivalent of the meet-attempt converter that was never built. The reserved
-`awardProgression(player, lift, effectiveEV)` operation described in
-`PlayerDataService` is the correct home for the write, and it already derives
-kilograms from EV rather than accepting them, so no caller can get the magnitude
-wrong.
+equivalent of the meet-attempt converter that was never built.
+
+> **Implemented in checkpoint 5B.5 — see §34.12, "The training progression
+> award".** The write lives on `PlayerDataService` as
+> `awardTrainingProgression(player, lift, elapsedSeconds)`. It takes observed
+> station **seconds**, not EV and not kilograms, and derives both itself. The
+> earlier reserved name `awardProgression(player, lift, effectiveEV)` was
+> **not** built: accepting EV from a caller would let it skip `H(t)` and the
+> daily allowance.
 
 Two inputs did **not** carry over cleanly. One is now resolved:
 
@@ -2754,10 +2758,13 @@ Two inputs did **not** carry over cleanly. One is now resolved:
   `BaseRate x H(t)` EV and there is nothing to pass or fail. A failed *training
   set* is not a concept this design has, and none should be invented. Success and
   failure belong to **meets**, where failure earns zero (§33.6, §34.8).
-- **Competition Budget -- STILL OPEN.** Whether station EV passes through the three
-  per-lift pools is **[TBD]** (§29.9, §33.10, §34.13 item 7). The §34.1 daily cap
-  does **not** answer this: it is a daily account ceiling, not a weekly per-lift
-  pool.
+- **Competition Budget -- RESOLVED FOR TRAINING: station EV bypasses it.**
+  Approved as checkpoint 5B.5 decision A (§34.12). Training neither spends the
+  three per-lift pools nor is scaled by them; the 4.00 EV daily allowance is its
+  only throttle. The `CompetitionNumberReward` engine gained a budget-free
+  entry point, `calculateTrainingAward`, for this; the budgeted `calculate` is
+  unchanged. **The fate of the budget itself is still [TBD]** (§29.9, §33.10,
+  §34.13 item 7) — this decision says only that training does not use it.
 
 **[FROZEN] `BaseProgressRate` remains a single configurable constant** (§29.15),
 so rescaling stays a one-line change. **It has been re-solved** against the
@@ -2846,7 +2853,8 @@ re-raised as though open:
 
 ### 33.12 Implementation status
 
-**Steps 1 to 4 are implemented. Steps 5 onward are not.** The original note here
+**Steps 1 to 4 and 5A are done, and step 5B is in progress. Steps 6 onward are
+not implemented.** The original note here
 read "nothing in this section is implemented", which was true when it was written
 and is no longer. The step table below is the current status.
 
@@ -2858,8 +2866,10 @@ Current repository reality, verified:
   §33.3 requires no code change to become true.
 - `CompetitionNumberReward` has **zero** production callers. It is exercised only
   by a dev probe that defaults to disabled.
-- `PlayerDataService` exposes **no** Competition Number writer at all. The write
-  path is deliberately closed pending `awardProgression`.
+- `PlayerDataService` exposes **one** Competition Number writer,
+  `awardTrainingProgression` (checkpoint 5B.5), which takes station seconds and
+  derives EV and kilograms itself. It has **no caller** until the gym station of
+  5B.6 exists, and there is still no arbitrary-kilogram writer.
 - **Competition Scale is STORED and RAISABLE, but unreachable from gameplay**
   (schema version 4, steps 3 and 4). The field, its type, the `UNPROVEN_SCALE`
   sentinel, the v3 to v4 migration, two read accessors and the monotone
@@ -2882,7 +2892,7 @@ none should begin without the decisions it depends on:
 | 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **DONE** — schema v4: `competitionScale` per lift, `UNPROVEN_SCALE = 0`, `migrations[3]`, two read accessors, no writer. Validated in memory and against a real DataStore on a disposable key |
 | 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | **DONE** — on `ProfileOperations`, internal, zero production callers. See the operation contract below |
 | 5A | **Define** the training CN channel | **DONE** — approved and documented as **section 34**. The §33.9 rates and the §29.6 distribution that blocked this are both resolved |
-| 5B | **Implement** the training CN channel | **NEXT** — not started. Broken into checkpoints 5B.1 to 5B.7 in §34.14 |
+| 5B | **Implement** the training CN channel | **IN PROGRESS** — 5B.1 to 5B.5 done; 5B.6 next. Checkpoints in §34.14 |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
 | 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility; **and the weight-class build system, per the class-scoping deadline in §33.8** |
 | 8 | Resolve the Competition Budget | §29.9 |
@@ -3654,12 +3664,12 @@ central rule:
 | Safeguard | Why |
 |---|---|
 | The **day key is stamped by the server**, never derived from a client clock or a client-supplied date | a client-chosen day boundary is an unlimited allowance |
-| **Elapsed time is measured server-side** from `lastUpdatedUnix` | a client-reported duration is a client-reported reward |
+| **Elapsed time is ACTIVE, server-observed station time**, measured by the station from its own session-local record of when it last ticked that player — **never** derived from `lastUpdatedUnix` | a client-reported duration is a client-reported reward; and `lastUpdatedUnix` is an **audit stamp** of the last write, so a profile loaded after three days offline carries a three-day-old stamp — measuring from it would credit offline time (§34.2). Losing the session-local record on a server change credits less, never more |
 | **Presence at the station is verified server-side** | §34.3 is otherwise unenforceable |
 | **Elapsed time is attributed only to the lift selected at that moment**, server-side | otherwise a client could bank hours against a lift it was not training and reset `H(t)` at will |
 | All five counters are **rolled over by comparing the stored `dayKey` to the server's current one**, never by a scheduled job | a missed timer must not hand out a second day's allowance, and a rollover must happen even if nobody was online when the day turned |
 | Accrual is **clamped to the remaining allowance** before it is written | a long tick near the cap must not overshoot 4.00 EV |
-| The CN write goes through the single reserved `awardProgression(player, lift, effectiveEV)` operation | it derives kilograms from EV, so no caller can get the magnitude wrong — §33.9 |
+| The CN write goes through the single operation `awardTrainingProgression(player, lift, elapsedSeconds)` | it derives EV from the allowance and kilograms from EV, so no caller can get either magnitude wrong — §33.9 and "The training progression award" below |
 | **No RemoteEvent, RemoteFunction or dev trigger may write CN, Scale or technique directly** | the §33.12 security boundary, applied to the training channel |
 | Technique is stored as a **float** | §34.7's fractional awards |
 | A **monotonic** server clock source is used for elapsed time where available | a backwards clock step must not create negative elapsed time |
@@ -3667,6 +3677,48 @@ central rule:
 **[FINAL] Allowances are never granted retroactively.** A player who was offline
 across a daily reset gets a fresh allowance for the current day and nothing for
 the days missed. Allowances do not stack, bank or roll over.
+
+#### The training progression award — checkpoint 5B.5
+
+**Three decisions approved for checkpoint 5B.5:**
+
+| # | Decision | Status |
+|---|---|---|
+| A | **Training EV bypasses the Competition Budget entirely.** It neither spends the three per-lift pools nor is scaled by them. The 4.00 EV daily allowance is the only throttle on training. The budget data is preserved untouched; its own fate stays **[TBD]** (§34.13 item 7) | **[FINAL]** |
+| B | **The operation is `awardTrainingProgression(player, lift, elapsedSeconds)`.** The caller never supplies earned EV, kilograms or a timestamp. EV comes from the allowance plan (`TrainingAllowance`, `TrainingEfficiency`); kilograms from the §29.3 formula; the clock is `os.time()` read inside the gateway | **[FINAL]** |
+| C | **A weight class with no configured Progression Reference — including 120+ — rejects the whole update.** No CN is awarded and no allowance is spent, not even a pending day rollover | **[FINAL]** |
+
+**The award formula is §29.3's without the budget stage:**
+
+```
+earnedEV = the allowance plan's EV: H(t) per lift, clamped to the 4.00 EV account cap,
+           split at UTC midnight
+deltaCN  = ProgressionReference x BaseProgressRate x earnedEV x Hill(PP before the award)
+```
+
+It uses the **live** `BaseProgressRate` (0.00482389). The §34.11 candidate is
+**not** activated by this checkpoint.
+
+**[FINAL] One write, all or nothing.** The allowance debit and the CN award are
+made together, in one synchronous update to the same profile table, with no
+yield between validation and mutation. A rejected update changes nothing: no CN,
+no counter, no stamp. Because both land in the same profile, a crash before the
+next save loses both together and can never keep one without the other.
+
+| Outcome | Meaning | Written |
+|---|---|---|
+| `Awarded` | EV was earned and bought CN | CN and all three accounting records |
+| `NoProgress` | valid, but nothing earned — cap spent, or zero or negative elapsed time | the accounting records only (rollover and audit stamp); **CN unchanged** |
+| `ClockWentBackward` | a stored day key is later than the interval's start | **nothing** |
+| `Rejected` | bad lift, time, elapsed time, bodyweight, class, CN or accounting data, or a failed invariant | **nothing** |
+
+**Elapsed time must be at most one day per call** and finite. Each call is a
+separate interval; the station of 5B.6 owns the tick period and a tighter
+per-tick bound.
+
+**Implementation:** `ProfileOperations.applyTrainingProgression` (pure, tested
+by `TrainingProgressionProbe`), wrapped by `PlayerDataService.awardTrainingProgression`.
+**It has no caller in 5B.5**: no station, remote or timer invokes it.
 
 ### 34.13 What section 34 does NOT settle
 
@@ -3681,7 +3733,7 @@ choice:
 | 4 | **Whether H(t)'s per-lift scoping is intended**, given the 4.00 h versus 5.44 h result in §34.10. | **[TBD]** |
 | 5 | **How a meet's technique award is split** across a lift's two stats — evenly, or weighted by which phase the attempt tested. | **[TBD]** |
 | 6 | **Whether 8.44 hours is an intended full daily cycle** (§34.14). Four hours already yields 84.7% of the CN cap. | **[TBD]** |
-| 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. | **[TBD]** — §33.12 step 8 |
+| 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. **Training does not use them** — 5B.5 decision A (§34.12) — so that much is settled; what they are for is not. | **[TBD]** — §33.12 step 8 |
 | 8 | **The fate of Training Energy** (§29.8). Superseded as a CN throttle by decision 2 and by "no hard daily training-hour limit", but still persisted in the schema. Retire it, or give it a different job. | **[TBD]** |
 | 9 | Everything still open in **§33.11** — the Scale challenge curve and cap, maximum-risk meet strategy, eligible-meet definition, Scale across weight classes, and Scale display. | **[TBD]** |
 
@@ -3730,7 +3782,7 @@ should begin before the decisions it depends on:
 | 5B.2 | Add the **training EV config**: `BaseRate`, `FullRateHours`, `K`, `DailyCapEV`, and the technique rate and cap, all as named constants | 5B.1; values are [PROVISIONAL] by design |
 | 5B.3 | Implement `H(t)` and the cumulative-EV integral as a pure, tested module | 5B.2 |
 | 5B.4 | Implement the derived-phase allowance reader — spend, clamp, day-key rollover — pure and tested | 5B.1, 5B.2 |
-| 5B.5 | Implement `awardProgression(player, lift, effectiveEV)` on the data gateway, server-only, no remote | 5B.1; §33.9 |
+| 5B.5 | Implement `awardTrainingProgression(player, lift, elapsedSeconds)` on the data gateway, server-only, no remote, budget-free — **DONE**, verified in Studio; see §34.12 | 5B.1, 5B.3, 5B.4; §33.9 |
 | 5B.6 | Wire the gym training station: presence check, lift selection, the accrual tick, the CN-to-technique switch | 5B.3, 5B.4, 5B.5; §34.13 item 4 |
 | 5B.7 | Technique selection and the 80/20 award path, float-stored | 5B.4, 5B.6 |
 | 6 | The Scale challenge modifier | §33.4 curve, cap and target — still **[TBD]** |

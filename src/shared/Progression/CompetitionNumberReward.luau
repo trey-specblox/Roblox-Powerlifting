@@ -30,6 +30,11 @@
 	NOTHING IN GAMEPLAY CALLS THIS YET. No attempt, meet, daily or AFK tick
 	awards Competition Number. This increment proves the arithmetic.
 
+	TWO ENTRY POINTS. `calculate` is the budgeted path above. Gym-station
+	training, which section 34 makes the ONLY source of Competition Number,
+	uses `calculateTrainingAward` instead: the same formula with no Competition
+	Budget stage, because the 4.00 EV daily allowance is its only throttle.
+
 	=========================================================================
 	EVERY INPUT IS SERVER-DERIVED
 	=========================================================================
@@ -231,13 +236,19 @@ end
 	A NEGATIVE BUDGET AMOUNT IS ACCEPTED, because that is harmonic overflow and
 	the magnitude is its depth.
 ]]
-function CompetitionNumberReward.calculate(
+--[[
+	The checks every award makes before any EV is considered: lift, class,
+	reference and the incoming Competition Number, IN THAT ORDER. Shared by
+	calculate and calculateTrainingAward so the two engines can never disagree
+	about which lifter or class is scorable.
+
+	Returns the frozen reference on success, or nil plus a RejectionReason.
+]]
+local function resolveReference(
 	liftName: string,
 	weightClassLabel: string,
-	competitionNumberKg: number,
-	rawEV: number,
-	budgetAmountEV: number
-): (Award?, RejectionReason?)
+	competitionNumberKg: number
+): (number?, RejectionReason?)
 	if not ProgressionConfig.isLift(liftName) then
 		return nil, "InvalidLift"
 	end
@@ -271,6 +282,23 @@ function CompetitionNumberReward.calculate(
 	if not isFiniteNumber(competitionNumberKg) or competitionNumberKg <= 0 then
 		return nil, "InvalidCompetitionNumber"
 	end
+
+	return reference, nil
+end
+
+function CompetitionNumberReward.calculate(
+	liftName: string,
+	weightClassLabel: string,
+	competitionNumberKg: number,
+	rawEV: number,
+	budgetAmountEV: number
+): (Award?, RejectionReason?)
+	local resolved, rejection = resolveReference(liftName, weightClassLabel, competitionNumberKg)
+	if resolved == nil then
+		return nil, rejection
+	end
+
+	local reference: number = resolved
 
 	if not isFiniteNumber(rawEV) or rawEV < 0 then
 		return nil, "InvalidRawEV"
@@ -319,6 +347,100 @@ function CompetitionNumberReward.calculate(
 
 		budgetBefore = budgetAmountEV,
 		budgetAfter = budgetAfter,
+
+		deltaCN = deltaCN,
+		deltaPP = deltaCN / reference,
+	},
+		nil
+end
+
+--[[
+	A station-training award. The same stages as Award minus the budget, because
+	training never touches the Competition Budget. See calculateTrainingAward.
+]]
+export type TrainingAward = {
+	lift: string,
+	weightClassLabel: string,
+
+	progressionReference: number,
+
+	competitionNumberBefore: number,
+	competitionNumberAfter: number,
+
+	progressionProximity: number,
+	hillMultiplier: number,
+
+	-- The EV the daily allowance granted. Already capped; nothing scales it here.
+	earnedEV: number,
+
+	deltaCN: number,
+	deltaPP: number,
+}
+
+--[[
+	Calculates a GYM-STATION TRAINING award without applying it.
+
+		deltaCN = P x BaseProgressRate x earnedEV x Hill(PP)
+
+	THE COMPETITION BUDGET IS BYPASSED ENTIRELY. GAME_DESIGN.md section 34.12,
+	decision A of checkpoint 5B.5: the account-wide 4.00 EV daily allowance is
+	the only throttle on training. Routing training EV through the budget as well
+	would stack a second limiter on the first and make "4.00 EV a day" untrue. So
+	there is no budget parameter, and no budget is read, consumed or scaled.
+
+	Everything else is the formula `calculate` uses -- the same frozen reference,
+	the same live BaseProgressRate, the same Hill soft cap scored on the incoming
+	Competition Number -- and the same lift, class and CN checks, shared through
+	resolveReference.
+
+	`earnedEV` IS NEVER A CALLER'S CLAIM. Its only legitimate source is a
+	TrainingAllowance plan computed on the server from observed station time,
+	which is what ProfileOperations.applyTrainingProgression passes in.
+
+	ZERO EARNED EV IS VALID and yields exactly 0 delta, so a caller can validate
+	that a lifter and class are scorable before any EV exists. Negative,
+	NaN and infinite EV are refused as InvalidRawEV.
+]]
+function CompetitionNumberReward.calculateTrainingAward(
+	liftName: string,
+	weightClassLabel: string,
+	competitionNumberKg: number,
+	earnedEV: number
+): (TrainingAward?, RejectionReason?)
+	local resolved, rejection = resolveReference(liftName, weightClassLabel, competitionNumberKg)
+	if resolved == nil then
+		return nil, rejection
+	end
+
+	local reference: number = resolved
+
+	if not isFiniteNumber(earnedEV) or earnedEV < 0 then
+		return nil, "InvalidRawEV"
+	end
+
+	local progressionProximity = competitionNumberKg / reference
+	local hillMultiplier = CompetitionNumberReward.hill(progressionProximity)
+
+	local deltaCN = reference * ProgressionConfig.BaseProgressRate * earnedEV * hillMultiplier
+
+	-- Guard the product, as calculate does.
+	if not isFiniteNumber(deltaCN) then
+		return nil, "InvalidRawEV"
+	end
+
+	return {
+		lift = liftName,
+		weightClassLabel = weightClassLabel,
+
+		progressionReference = reference,
+
+		competitionNumberBefore = competitionNumberKg,
+		competitionNumberAfter = competitionNumberKg + deltaCN,
+
+		progressionProximity = progressionProximity,
+		hillMultiplier = hillMultiplier,
+
+		earnedEV = earnedEV,
 
 		deltaCN = deltaCN,
 		deltaPP = deltaCN / reference,

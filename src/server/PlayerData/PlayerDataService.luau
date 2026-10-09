@@ -26,8 +26,9 @@
 		PlayerDataService.consumeCompetitionBudget(player, "Squat", 1.886)
 		PlayerDataService.consumeTrainingEnergy(player, 30)
 
-	NOTE that no operation here WRITES a Competition Number. That is deliberate
-	and is explained where such a method would otherwise sit, further down.
+	NOTE that the only operation here that writes a Competition Number is
+	awardTrainingProgression, and it accepts station seconds, never kilograms.
+	Why there is no general CN writer is explained further down.
 
 	Each validates its own arguments, rejects NaN and infinity, enforces the
 	resource's floor and cap, and regenerates a timestamped resource before
@@ -336,8 +337,9 @@ end
 	let alone a client -- could supply one. That is the only reason offline
 	regeneration can be trusted.
 
-	NOTHING IN THE GAME CALLS THESE YET. No attempt awards Competition Number, no
-	meet consumes budget, and no AFK system consumes Training Energy. They exist
+	NOTHING IN THE GAME CALLS THESE YET. No station calls the training award
+	(checkpoint 5B.6 will), no meet consumes budget, and no AFK system consumes
+	Training Energy. They exist
 	so the systems that will do those things have one validated path.
 ]]
 
@@ -379,7 +381,8 @@ function PlayerDataService.getCompetitionNumber(player: Player, lift: string): n
 end
 
 --[[
-	THERE IS DELIBERATELY NO METHOD HERE THAT WRITES A COMPETITION NUMBER.
+	THERE IS DELIBERATELY NO METHOD HERE THAT WRITES AN ARBITRARY COMPETITION
+	NUMBER.
 
 	An earlier draft exposed addCompetitionNumber(player, lift, deltaKg), which
 	let any caller award an arbitrary number of kilograms. The guard against that
@@ -388,28 +391,74 @@ end
 	for a reward -- the real figure is under 3 kg for one attempt -- and too
 	restrictive for a legitimate weight-class translation.
 
-	Removing the constant without removing the door would have left the door
-	open, so the door is closed instead. Two operations will reopen it, each
-	owning its own bound, and neither is built yet:
+	So no kilogram writer exists. Two operations reopen the door, each owning its
+	own bound:
 
-	  1. awardProgression(player, lift, effectiveEV)
-	     Takes EV, never kilograms, and derives the delta from
-	     ProgressionReference x BaseProgressRate x effectiveEV x Hill(PP).
-	     Bounded by construction, so no caller can get the magnitude wrong.
-	     Blocked on the M2 Progression Reference table, which section 29 freezes
-	     but which is not yet in the codebase.
+	  1. awardTrainingProgression(player, lift, elapsedSeconds), below.
+	     Takes observed station SECONDS -- never EV, never kilograms -- and
+	     derives both on the server. Bounded by construction, so no caller can
+	     get the magnitude wrong. Checkpoint 5B.5.
 
 	  2. translateCompetitionNumbers(player, fromClass, toClass)
 	     The authoritative RP Preservation recalculation of section 29.11, whose
-	     legitimate deltas are large.
+	     legitimate deltas are large. Not built yet.
 
-	Both will call ProfileOperations.applyCompetitionNumberDelta, which keeps the
+	Both call ProfileOperations.applyCompetitionNumberDelta, which keeps the
 	validation that is universally true -- finite delta, known lift, a result
 	that remains a positive weight -- and holds no magnitude opinion, because
 	magnitude is the caller's to justify.
-
-	Reading a Competition Number stays available above; only writing is closed.
 ]]
+
+--[[
+	Applies `elapsedSeconds` of gym-station training on `lift`: debits the
+	account's daily allowance and awards the Competition Number it paid for, in
+	one synchronous write to the live profile.
+
+	THE ONLY SOURCE OF COMPETITION NUMBER (section 34.2). SERVER-ONLY: there is
+	no remote for it, and none may ever be added. The caller is the gym training
+	station of checkpoint 5B.6, which does not exist yet, so NOTHING CALLS THIS
+	in 5B.5.
+
+	WHAT THE CALLER SUPPLIES, AND WHAT IT NEVER DOES
+	  - `elapsedSeconds` is ACTIVE training time the server itself observed with
+	    the player present at the station, since that station last ticked them.
+	    It is NEVER time since `lastUpdatedUnix` -- that would credit time spent
+	    offline -- and never a number a client reported.
+	  - The caller never supplies EV, kilograms or a timestamp. The clock is
+	    os.time(), read here; EV comes from TrainingAllowance and
+	    TrainingEfficiency; kilograms from the reward formula.
+
+	Returns the ProfileOperations.TrainingResult, or nil when the player has no
+	active session. A "Rejected" or "ClockWentBackward" result wrote NOTHING.
+	The Competition Budget and Training Energy are never touched (decision A).
+]]
+function PlayerDataService.awardTrainingProgression(
+	player: Player,
+	lift: string,
+	elapsedSeconds: number
+): ProfileOperations.TrainingResult?
+	local data = activeData(player, "awardTrainingProgression")
+	if data == nil then
+		return nil
+	end
+
+	local result = ProfileOperations.applyTrainingProgression(data, lift, os.time(), elapsedSeconds)
+
+	if result.outcome == "Rejected" then
+		warn(string.format(
+			"[PlayerDataService] training update for %s rejected: %s",
+			player.Name,
+			tostring(result.rejectionReason)
+		))
+	elseif result.outcome == "ClockWentBackward" then
+		warn(string.format(
+			"[PlayerDataService] training update for %s skipped: the server clock is behind the saved day",
+			player.Name
+		))
+	end
+
+	return result
+end
 
 --[[
 	One lift's Competition Budget in EV units, including everything that

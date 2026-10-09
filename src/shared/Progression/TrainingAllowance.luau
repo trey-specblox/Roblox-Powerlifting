@@ -198,6 +198,9 @@ local SECONDS_PER_DAY = 86400
 ]]
 local MAX_ELAPSED_SECONDS = SECONDS_PER_DAY
 
+-- Exposed so a caller can refuse an over-long interval cleanly instead of tripping the assert.
+TrainingAllowance.MAX_ELAPSED_SECONDS = MAX_ELAPSED_SECONDS
+
 --[[
 	These two mirror PlayerProfileSchema.DailyAllowance and
 	PlayerProfileSchema.TrainingTimeToday field for field.

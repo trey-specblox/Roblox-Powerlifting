@@ -33,10 +33,10 @@
 
 	WHAT IS NOT HERE YET
 
-	No Competition Number is awarded by any gameplay system at present. There is
-	no reward engine, no EV calculation, no Hill soft cap applied and no budget
-	consumption wired to meets. This module is the foundation those will call,
-	built so they do not each invent their own validation.
+	No Competition Number is awarded by any gameplay system at present. The one
+	sanctioned award path, applyTrainingProgression (checkpoint 5B.5), exists
+	below but has no gameplay caller: the gym station that will drive it is
+	checkpoint 5B.6. No budget consumption is wired to meets.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -48,6 +48,9 @@ local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig")
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceRegeneration"))
 local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
+local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
+local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
+local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
 
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
 
@@ -160,29 +163,27 @@ end
 	may reach this, because it accepts an arbitrary kilogram delta and so cannot
 	by itself tell a 1.4 kg attempt reward from a 300 kg mistake.
 
-	Two separate operations will be built on top of it, each owning its own
-	bound, and neither exists yet:
+	Two separate operations are built on top of it, each owning its own bound:
 
-	  1. NORMAL PROGRESSION AWARD. Takes effective EV, never kilograms, and
-	     derives the delta itself:
+	  1. TRAINING PROGRESSION AWARD -- applyTrainingProgression, below. Takes
+	     observed station seconds, never EV and never kilograms, and derives
+	     both itself:
 
-	         deltaKg = ProgressionReference x BaseProgressRate
-	                   x effectiveEV x Hill(PP)
+	         earnedEV = TrainingAllowance plan (H(t), clamped to the 4.00 EV cap)
+	         deltaKg  = ProgressionReference x BaseProgressRate
+	                    x earnedEV x Hill(PP)
 
-	     Bounded by construction -- one attempt tops out near 2.7 kg and a full
-	     meet's worth per lift near 8.2 kg at the largest reference -- so there
-	     is nothing for a caller to get wrong. This needs the M2 Progression
-	     Reference table, which is frozen in GAME_DESIGN.md section 29 but is not
-	     yet in the codebase.
+	     Bounded by construction, so there is nothing for a caller to get
+	     wrong. Implemented in checkpoint 5B.5.
 
 	  2. WEIGHT-CLASS / BUILD TRANSLATION. A deliberate authoritative
 	     recalculation under RP Preservation (section 29.11), whose legitimate
 	     deltas are LARGE. This is precisely why no universal kilogram cap
 	     belongs here: a cap sized for rewards would refuse a correct
 	     translation, and one sized for translation would not constrain rewards
-	     at all.
+	     at all. Not built yet.
 
-	Until those exist, the only caller is the dev harness.
+	The training award and the dev harness are its only callers.
 
 	Returns whether it was applied and the resulting value. A rejection changes
 	nothing, so a caller cannot half-apply a change.
@@ -611,6 +612,417 @@ function ProfileOperations.consumeTrainingEnergy(
 	)
 
 	return spent, remaining
+end
+
+--[[
+	=========================================================================
+	GYM-STATION TRAINING PROGRESSION  (GAME_DESIGN.md section 34, checkpoint 5B.5)
+	=========================================================================
+
+	The ONLY operation that awards Competition Number. It debits the daily
+	training accounting and awards the CN that debit paid for, together.
+
+	THE COMPETITION BUDGET AND TRAINING ENERGY ARE NOT TOUCHED. Section 34.12,
+	decision A: the account-wide 4.00 EV daily allowance is training's only
+	throttle. The budget pools and Training Energy stay exactly as stored.
+]]
+
+--[[
+	What a training update did.
+
+		"Awarded"            EV was earned: CN rose and the accounting was written
+		"NoProgress"         valid, but nothing was earned -- cap already spent,
+		                     zero or negative elapsed time. CN is unchanged; the
+		                     accounting is still written, so a day rollover and
+		                     the audit stamp land
+		"ClockWentBackward"  a stored day key is later than the interval's start.
+		                     NOTHING is written, and nothing is granted
+		"Rejected"           the request or the stored data was unusable.
+		                     NOTHING is written. `rejectionReason` says why
+]]
+export type TrainingOutcome = "Awarded" | "NoProgress" | "ClockWentBackward" | "Rejected"
+
+export type TrainingRejectionReason =
+	"InvalidLift"
+	| "InvalidTime"
+	| "InvalidElapsed"
+	| "InvalidBodyweight"
+	-- No configured Progression Reference for this lift and class, 120+ included. Decision C.
+	| "UnsupportedClass"
+	| "InvalidCompetitionNumber"
+	| "InvalidAccounting"
+	| "StalePlan"
+	| "InvariantViolated"
+	| "AwardRefused"
+
+export type TrainingResult = {
+	outcome: TrainingOutcome,
+	rejectionReason: TrainingRejectionReason?,
+
+	lift: string,
+	weightClassLabel: string?,
+
+	-- EV the allowance granted this update. Already clamped to the daily cap.
+	earnedEV: number,
+	creditedHours: number,
+	uncreditedSeconds: number,
+	capReached: boolean,
+	daysTouched: number,
+
+	competitionNumberBefore: number?,
+	competitionNumberAfter: number?,
+	deltaCN: number,
+	hillMultiplier: number?,
+}
+
+local TRAINING = ProgressionConfig.DailyTraining
+
+--[[
+	Tolerance for the post-plan invariant checks only. These compare sums of
+	floats the plan produced; they never decide an amount.
+]]
+local INVARIANT_EPSILON = 1e-9
+
+-- A result in which nothing was earned and nothing was written.
+local function unchangedTrainingResult(
+	lift: any,
+	outcome: TrainingOutcome,
+	reason: TrainingRejectionReason?
+): TrainingResult
+	return {
+		outcome = outcome,
+		rejectionReason = reason,
+
+		lift = if typeof(lift) == "string" then lift else tostring(lift),
+		weightClassLabel = nil,
+
+		earnedEV = 0,
+		creditedHours = 0,
+		uncreditedSeconds = 0,
+		capReached = false,
+		daysTouched = 0,
+
+		competitionNumberBefore = nil,
+		competitionNumberAfter = nil,
+		deltaCN = 0,
+		hillMultiplier = nil,
+	}
+end
+
+local function trainingRejection(lift: any, reason: TrainingRejectionReason): TrainingResult
+	return unchangedTrainingResult(lift, "Rejected", reason)
+end
+
+local function isUsableAccountingNumber(value: any): boolean
+	return isFiniteNumber(value) and value >= 0
+end
+
+--[[
+	Every field the plan reads or writes, checked here so a corrupt record is a
+	clean "InvalidAccounting" rather than an assert inside TrainingAllowance.
+	migrations[4] repairs all of these on load, so failing here means something
+	wrote garbage mid-session.
+]]
+local function isUsableAllowanceRecord(record: any): boolean
+	return typeof(record) == "table"
+		and isUsableAccountingNumber(record.spentToday)
+		and typeof(record.dayKey) == "string"
+		and isUsableAccountingNumber(record.lastUpdatedUnix)
+end
+
+local function isUsableTrainingTimeRecord(record: any): boolean
+	if typeof(record) ~= "table" then
+		return false
+	end
+
+	if typeof(record.dayKey) ~= "string" or not isUsableAccountingNumber(record.lastUpdatedUnix) then
+		return false
+	end
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		if not isUsableAccountingNumber(record[lift]) then
+			return false
+		end
+	end
+
+	return true
+end
+
+local function writeAllowanceInPlace(target: PlayerProfileSchema.DailyAllowance, source: TrainingAllowance.DailyAllowance)
+	target.spentToday = source.spentToday
+	target.dayKey = source.dayKey
+	target.lastUpdatedUnix = source.lastUpdatedUnix
+end
+
+local function writeTrainingTimeInPlace(
+	target: PlayerProfileSchema.TrainingTimeToday,
+	source: TrainingAllowance.TrainingTimeToday
+)
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		(target :: any)[lift] = (source :: any)[lift]
+	end
+
+	target.dayKey = source.dayKey
+	target.lastUpdatedUnix = source.lastUpdatedUnix
+end
+
+--[[
+	Applies `elapsedSeconds` of gym-station training on `lift` to a profile:
+	plans the daily allowance, derives the earned EV and the Competition Number
+	it buys, and writes both together.
+
+		data            the live profile
+		lift            "Squat", "Bench" or "Deadlift"
+		nowUnix         SERVER time at the end of the interval
+		elapsedSeconds  ACTIVE, SERVER-OBSERVED station time. Never derived from
+		                lastUpdatedUnix -- a profile's stamp after a day offline
+		                is a day old, and crediting it would be offline
+		                progression (section 34.2). See TrainingAllowance.
+
+	Returns a TrainingResult. Never throws on bad input or bad stored data.
+
+	=========================================================================
+	ATOMIC: ALL OF IT OR NONE OF IT
+	=========================================================================
+
+	The function runs in three phases, and nothing is written until the third.
+
+	  1. VALIDATE. Lift, clock, elapsed time, bodyweight, weight class, the
+	     incoming CN and all three accounting records. Any failure returns
+	     "Rejected" with the profile untouched.
+
+	  2. PLAN. The allowance plan and the CN award are both computed against
+	     the profile AS IT IS NOW, on copies. Then the plan is checked against
+	     the live records (matchesBasis) and against the reward/debit invariant.
+	     Any failure returns with the profile untouched.
+
+	  3. COMMIT. The CN delta first, through applyCompetitionNumberDelta, which
+	     writes nothing when it refuses. Then the three accounting records, as
+	     plain assignments into tables already validated in phase 1, which
+	     cannot fail.
+
+	NO YIELD ANYWHERE. Nothing here waits, calls a DataStore or touches an
+	Instance, so from the first read to the last write no other Lua code can
+	run. That is what makes the basis check meaningful: the plan cannot go
+	stale between being checked and being written.
+
+	ONE PROFILE TABLE. The debit and the award land in the same profile.Data,
+	which ProfileStore saves as one unit. A crash before the next save loses
+	both together; it can never keep one without the other.
+]]
+function ProfileOperations.applyTrainingProgression(
+	data: ProfileData,
+	lift: string,
+	nowUnix: number,
+	elapsedSeconds: number
+): TrainingResult
+	--------------------------------------------------------------------------
+	-- PHASE 1: VALIDATE. Nothing below writes until phase 3.
+	--------------------------------------------------------------------------
+
+	if not ProgressionConfig.isLift(lift) then
+		return trainingRejection(lift, "InvalidLift")
+	end
+
+	if not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return trainingRejection(lift, "InvalidTime")
+	end
+
+	--[[
+		NEGATIVE ELAPSED TIME IS ALLOWED THROUGH and earns nothing: the
+		allowance reader clamps it to zero, the same treatment it gives a
+		backward clock step. NaN, either infinity, a non-number and anything
+		over a day are refused.
+	]]
+	if not isFiniteNumber(elapsedSeconds) or elapsedSeconds > TrainingAllowance.MAX_ELAPSED_SECONDS then
+		return trainingRejection(lift, "InvalidElapsed")
+	end
+
+	local bodyweight = (data :: any).bodyweight
+	local bodyweightKg = if typeof(bodyweight) == "table" then bodyweight.currentKg else nil
+
+	if not isFiniteNumber(bodyweightKg) or bodyweightKg <= 0 then
+		return trainingRejection(lift, "InvalidBodyweight")
+	end
+
+	local weightClassLabel = WeightClass.resolve(bodyweightKg).label
+
+	local competitionNumberBefore = ProfileOperations.getCompetitionNumber(data, lift)
+
+	if competitionNumberBefore == nil or competitionNumberBefore <= 0 then
+		return trainingRejection(lift, "InvalidCompetitionNumber")
+	end
+
+	--[[
+		A ZERO-EV DRY RUN of the award, which validates the class and the CN
+		exactly the way the real award will. Done BEFORE planning so that an
+		unsupported class rejects the whole update -- decision C -- even on a
+		tick that would have earned nothing. A class with no configured
+		reference must not spend allowance it can never turn into CN.
+	]]
+	local _, dryRunRejection = CompetitionNumberReward.calculateTrainingAward(
+		lift,
+		weightClassLabel,
+		competitionNumberBefore,
+		0
+	)
+
+	if dryRunRejection ~= nil then
+		if dryRunRejection == "InvalidCompetitionNumber" then
+			return trainingRejection(lift, "InvalidCompetitionNumber")
+		end
+
+		return trainingRejection(lift, "UnsupportedClass")
+	end
+
+	if
+		not isUsableAllowanceRecord(data.cnAllowance)
+		or not isUsableAllowanceRecord(data.techniqueAllowance)
+		or not isUsableTrainingTimeRecord(data.trainingTimeToday)
+	then
+		return trainingRejection(lift, "InvalidAccounting")
+	end
+
+	--------------------------------------------------------------------------
+	-- PHASE 2: PLAN, against the profile as it is now. Still nothing written.
+	--------------------------------------------------------------------------
+
+	local state: TrainingAllowance.State = {
+		cnAllowance = data.cnAllowance,
+		techniqueAllowance = data.techniqueAllowance,
+		trainingTimeToday = data.trainingTimeToday,
+	}
+
+	--[[
+		planTraining is pure and never touches `state`; pcall turns any assert it
+		still raises into a clean rejection. pcall does not yield.
+	]]
+	local planned, planOrError = pcall(TrainingAllowance.planTraining, state, lift, nowUnix, elapsedSeconds)
+
+	if not planned then
+		return trainingRejection(lift, "InvalidAccounting")
+	end
+
+	local plan: TrainingAllowance.Plan = planOrError
+
+	if plan.clockWentBackward then
+		-- Fail closed: the stored counters stand, nothing is granted or written.
+		local result = unchangedTrainingResult(lift, "ClockWentBackward", nil)
+
+		result.weightClassLabel = weightClassLabel
+		result.competitionNumberBefore = competitionNumberBefore
+		result.competitionNumberAfter = competitionNumberBefore
+
+		return result
+	end
+
+	--[[
+		THE STALE-PLAN GUARD. The plan was computed from these very records a
+		moment ago with nothing in between, so this cannot fail today. It stays
+		because it is the check that keeps holding if someone later puts a yield
+		between planning and committing. A mismatch is refused, never patched.
+	]]
+	if not TrainingAllowance.matchesBasis(state, plan) then
+		return trainingRejection(lift, "StalePlan")
+	end
+
+	--[[
+		THE REWARD/DEBIT INVARIANT. The EV the CN award is paid for must be the
+		EV the allowance was debited by, and the allowance must stay in bounds.
+	]]
+	local earnedEV = plan.earnedEV
+	local nextCN = plan.nextState.cnAllowance
+	local nextHours = plan.nextState.trainingTimeToday
+
+	if not isUsableAccountingNumber(earnedEV) then
+		return trainingRejection(lift, "InvariantViolated")
+	end
+
+	if not isUsableAccountingNumber(nextCN.spentToday) or nextCN.spentToday > TRAINING.DailyCapEV + INVARIANT_EPSILON then
+		return trainingRejection(lift, "InvariantViolated")
+	end
+
+	local expectedSpent = if nextCN.dayKey == data.cnAllowance.dayKey
+		then data.cnAllowance.spentToday + earnedEV
+		else nil
+
+	if expectedSpent ~= nil and math.abs(nextCN.spentToday - expectedSpent) > INVARIANT_EPSILON then
+		-- Same day: the debit must equal the EV earned, exactly up to float noise.
+		return trainingRejection(lift, "InvariantViolated")
+	end
+
+	if expectedSpent == nil and nextCN.spentToday > earnedEV + INVARIANT_EPSILON then
+		-- Rolled over: today's spend can only be what this update earned after midnight.
+		return trainingRejection(lift, "InvariantViolated")
+	end
+
+	for _, liftName in ipairs(ProgressionConfig.Lifts) do
+		if not isUsableAccountingNumber((nextHours :: any)[liftName]) then
+			return trainingRejection(lift, "InvariantViolated")
+		end
+	end
+
+	local award: CompetitionNumberReward.TrainingAward? = nil
+
+	if earnedEV > 0 then
+		local calculated, _ = CompetitionNumberReward.calculateTrainingAward(
+			lift,
+			weightClassLabel,
+			competitionNumberBefore,
+			earnedEV
+		)
+
+		if calculated == nil then
+			return trainingRejection(lift, "AwardRefused")
+		end
+
+		-- Positive EV must buy positive CN, or EV would be spent for nothing.
+		if not (calculated.deltaCN > 0) then
+			return trainingRejection(lift, "InvariantViolated")
+		end
+
+		award = calculated
+	end
+
+	--------------------------------------------------------------------------
+	-- PHASE 3: COMMIT. No yields, and nothing after the CN write can fail.
+	--------------------------------------------------------------------------
+
+	local competitionNumberAfter = competitionNumberBefore
+
+	if award ~= nil then
+		-- Writes nothing when it refuses, so a refusal here leaves the profile untouched.
+		local applied, value = ProfileOperations.applyCompetitionNumberDelta(data, lift, award.deltaCN)
+
+		if not applied or value == nil then
+			return trainingRejection(lift, "AwardRefused")
+		end
+
+		competitionNumberAfter = value
+	end
+
+	writeAllowanceInPlace(data.cnAllowance, plan.nextState.cnAllowance)
+	writeAllowanceInPlace(data.techniqueAllowance, plan.nextState.techniqueAllowance)
+	writeTrainingTimeInPlace(data.trainingTimeToday, plan.nextState.trainingTimeToday)
+
+	return {
+		outcome = if award ~= nil then "Awarded" else "NoProgress",
+		rejectionReason = nil,
+
+		lift = lift,
+		weightClassLabel = weightClassLabel,
+
+		earnedEV = earnedEV,
+		creditedHours = plan.creditedHours,
+		uncreditedSeconds = plan.uncreditedSeconds,
+		capReached = plan.capReached,
+		daysTouched = plan.daysTouched,
+
+		competitionNumberBefore = competitionNumberBefore,
+		competitionNumberAfter = competitionNumberAfter,
+		deltaCN = if award ~= nil then award.deltaCN else 0,
+		hillMultiplier = if award ~= nil then award.hillMultiplier else nil,
+	}
 end
 
 return ProfileOperations

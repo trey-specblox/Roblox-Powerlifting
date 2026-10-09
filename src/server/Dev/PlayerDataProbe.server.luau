@@ -695,10 +695,11 @@ do
 	local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 
 	--[[
-		There is no Competition Number WRITER on the service to check the arity
-		of, and that absence is itself the guarantee: no caller can pass an
-		arbitrary kilogram delta through the service at all. See the note where
-		such a method would otherwise sit in PlayerDataService.
+		There is no ARBITRARY-KILOGRAM Competition Number writer on the service,
+		and that absence is itself the guarantee: no caller can pass a kilogram
+		delta through the service at all. The one CN writer, the 5B.5 training
+		award, takes station seconds and reads the clock itself; its arity is
+		checked below with the others.
 	]]
 	check(
 		"the service exposes NO arbitrary-kilogram Competition Number writer",
@@ -712,6 +713,7 @@ do
 	check("consumeTrainingEnergy takes no timestamp", debug.info(PlayerDataService.consumeTrainingEnergy, "a") == 2)
 	check("getRegeneratedTrainingEnergy takes no timestamp", debug.info(PlayerDataService.getRegeneratedTrainingEnergy, "a") == 1)
 	check("getRegeneratedCompetitionBudget takes no timestamp", debug.info(PlayerDataService.getRegeneratedCompetitionBudget, "a") == 2)
+	check("awardTrainingProgression takes no timestamp", debug.info(PlayerDataService.awardTrainingProgression, "a") == 3)
 
 	-- And no remote exists through which a client could reach any of it.
 	check("PlayerDataService exposes no RemoteEvent", (PlayerDataService :: any).Remote == nil)

@@ -12,14 +12,14 @@
 	capacity and regeneration -- are consumed by anything today. They drive
 	ResourceRegeneration and the persistence foundation.
 
-	BaseProgressRate and the Hill parameters are read by CompetitionNumberReward,
-	which itself has no production callers yet. No attempt, daily or AFK tick
-	awards Competition Number at present.
+	BaseProgressRate and the Hill parameters are read by CompetitionNumberReward.
+	Its training entry point is called by the 5B.5 training award on the data
+	gateway, which itself has no caller yet. No attempt, daily or AFK tick awards
+	Competition Number at present.
 
-	THE WHOLE `DailyTraining` BLOCK IS UNCONSUMED. Checkpoint 5B.2 adds the
-	numbers and nothing else: there is no gym station, no accrual tick, no timer
-	and no writer. Section 34.14 sequences the maths as 5B.3, the allowance
-	reader as 5B.4 and the station itself as 5B.6.
+	THE `DailyTraining` BLOCK is read by TrainingEfficiency (5B.3) and
+	TrainingAllowance (5B.4), which the 5B.5 award uses. There is still no gym
+	station, no accrual tick and no timer: that is checkpoint 5B.6.
 
 	Keeping them in one file now is what stops them being re-derived, slightly
 	differently, by each system that eventually needs them.
