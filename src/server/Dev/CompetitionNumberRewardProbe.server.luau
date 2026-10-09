@@ -819,6 +819,125 @@ do
 end
 
 --------------------------------------------------------------------------------
+print("26. section 34 daily training configuration")
+do
+	local DT = ProgressionConfig.DailyTraining
+
+	--[[
+		THE ONE THAT MATTERS MOST. Checkpoint 5B.2 added a SECOND progression rate
+		to the config, and the only way that could go wrong is the reward engine
+		picking up the wrong one. So this asserts the live value, the proposed
+		value, that they differ, and -- behaviourally -- that an actual award still
+		uses the live one.
+	]]
+	check("live BaseProgressRate is still 0.00482389", near(BPR, 0.00482389, 1e-12),
+		string.format("%.11f", BPR))
+	check("ProposedBaseProgressRate is 0.01113418",
+		near(ProgressionConfig.ProposedBaseProgressRate, 0.01113418, 1e-12),
+		string.format("%.11f", ProgressionConfig.ProposedBaseProgressRate))
+	check("the proposed rate is NOT the live rate",
+		ProgressionConfig.ProposedBaseProgressRate ~= BPR)
+
+	--[[
+		Behavioural, not a restatement. If anything ever reads the candidate by
+		mistake, this award comes out 2.31x too large and this check fails.
+	]]
+	local reference = ProgressionReferenceConfig.get("Squat", "59 kg") :: number
+	local award = CompetitionNumberReward.calculate("Squat", "59 kg", reference * 1e-6, 1.0, FRESH)
+
+	check(
+		"an award still uses the LIVE rate, not the candidate",
+		award ~= nil and near((award :: any).deltaCN, reference * BPR, 1e-6),
+		if award ~= nil
+			then string.format("%.8f, candidate would give %.8f",
+				(award :: any).deltaCN, reference * ProgressionConfig.ProposedBaseProgressRate)
+			else "nil"
+	)
+
+	----------------------------------------------------------------------------
+	-- THE APPROVED VALUES, PINNED. An accidental balancing edit fails here.
+	----------------------------------------------------------------------------
+	check("DailyCapEV is 4.00 [FINAL]", near(DT.DailyCapEV, 4.00), tostring(DT.DailyCapEV))
+	check("BaseRate is 1.00 EV/hour", near(DT.BaseRate, 1.00), tostring(DT.BaseRate))
+	check("FullRateHours is 2.00", near(DT.FullRateHours, 2.00), tostring(DT.FullRateHours))
+	check("K is 2.00", near(DT.K, 2.00), tostring(DT.K))
+	check("TechniqueRawPerHour is 2.00", near(DT.TechniqueRawPerHour, 2.00),
+		tostring(DT.TechniqueRawPerHour))
+	check("DailyCapTechniqueRaw is 6.00", near(DT.DailyCapTechniqueRaw, 6.00),
+		tostring(DT.DailyCapTechniqueRaw))
+	check("TechniquePrimaryShare is 0.80 [FINAL]", near(DT.TechniquePrimaryShare, 0.80),
+		tostring(DT.TechniquePrimaryShare))
+
+	----------------------------------------------------------------------------
+	--[[
+		THE SECONDARY SHARE IS DERIVED, NEVER STORED, so this asserts the
+		derivation rather than a second constant. 80/20 of 6.00 is 4.80 and 1.20,
+		and the fact that those are not integers is exactly why section 34.12
+		requires fractional storage.
+	]]
+	----------------------------------------------------------------------------
+	local secondaryShare = 1 - DT.TechniquePrimaryShare
+
+	check("the derived secondary share is 0.20", near(secondaryShare, 0.20),
+		tostring(secondaryShare))
+	check("the two shares sum to exactly one allowance",
+		near(DT.TechniquePrimaryShare + secondaryShare, 1.0))
+	check("a full technique day splits 4.80 / 1.20",
+		near(DT.TechniquePrimaryShare * DT.DailyCapTechniqueRaw, 4.80)
+			and near(secondaryShare * DT.DailyCapTechniqueRaw, 1.20),
+		string.format("%.4f / %.4f",
+			DT.TechniquePrimaryShare * DT.DailyCapTechniqueRaw,
+			secondaryShare * DT.DailyCapTechniqueRaw))
+	check("neither share is a whole number of points, so storage must be fractional",
+		DT.TechniquePrimaryShare * DT.DailyCapTechniqueRaw % 1 ~= 0)
+
+	----------------------------------------------------------------------------
+	--[[
+		THE TWO RELATIONSHIP INVARIANTS, restated here so a failure is a readable
+		line rather than a startup crash. The config asserts these on module load,
+		which is the real guard; these exist so a reader of this probe can see WHAT
+		is guarded and why.
+	]]
+	----------------------------------------------------------------------------
+	check("the cap is NOT reachable inside the full-rate window, so H(t) engages",
+		DT.DailyCapEV > DT.BaseRate * DT.FullRateHours,
+		string.format("%.4f vs %.4f", DT.DailyCapEV, DT.BaseRate * DT.FullRateHours))
+	check("the full-rate window delivers exactly half the daily cap",
+		near(DT.BaseRate * DT.FullRateHours / DT.DailyCapEV, 0.50))
+	check("the technique allowance is exhaustible within a day",
+		DT.DailyCapTechniqueRaw / DT.TechniqueRawPerHour < 24,
+		string.format("%.2f hours", DT.DailyCapTechniqueRaw / DT.TechniqueRawPerHour))
+	check("the technique allowance takes 3.00 hours",
+		near(DT.DailyCapTechniqueRaw / DT.TechniqueRawPerHour, 3.00))
+
+	----------------------------------------------------------------------------
+	--[[
+		SECTION 34.1 DECISION 3. The per-lift EV cap was removed because the
+		account-wide cap is authoritative and a per-lift ceiling above it could
+		never fire. Asserting its ABSENCE turns the decision into something a
+		future edit cannot quietly undo.
+	]]
+	----------------------------------------------------------------------------
+	check("there is NO per-lift EV cap", (DT :: any).PerLiftCapEV == nil)
+
+	----------------------------------------------------------------------------
+	--[[
+		H(t) ITSELF IS NOT TESTED HERE, and must not be: checkpoint 5B.3 owns the
+		maths and its tests. What this section proves is only that the PARAMETERS
+		are the approved ones and that they are mutually consistent.
+
+		For the record, the values they imply: 5.4366 hours for one lift to exhaust
+		4.00 EV, 4.00 hours if the day is split so no lift exceeds FullRateHours,
+		and a marginal rate of 36.8% of the opening rate by the time the cap is
+		reached. 5B.3 is where those become assertions.
+	]]
+	----------------------------------------------------------------------------
+	check("Hill is untouched by section 34", ProgressionConfig.Hill.h == 0.75
+		and ProgressionConfig.Hill.m == 5)
+	check("the three lifts are untouched", #ProgressionConfig.Lifts == 3)
+end
+
+--------------------------------------------------------------------------------
 print("")
 print(string.format("=== %d passed, %d failed ===", passed, failed))
 
