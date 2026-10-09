@@ -7,7 +7,7 @@ skill check as their second phase.
 |---|---|---|---|---|
 | Squat | Fisch-style Control (`References/FischeGame.md`) | Depth timing check (`References/DBD.md`) | Squat Control | Depth Awareness |
 | Bench | Test Your Might power (`References/testyourmight.md`) | Press timing check (`References/DBD.md`) | Start Control | Press Power |
-| Deadlift | Fluid Typing pull (`References/TypingGame.md`) | Lockout timing check (`References/DBD.md`) | Pull Strength | Lockout |
+| Deadlift | Fluid Typing pull (`References/TypingGame.md`) | Lockout timing check (`References/DBD.md`) | **none** -- see section 34.6 | Lockout |
 
 The Fisch-style control mechanic is **Squat-only**. The Test Your Might mechanic is
 **Bench-only**. The timing check is shared by all three, which is why it was built
@@ -18,6 +18,19 @@ once and is driven entirely from per-phase configuration.
 > Fisch-style mechanic to the Bench. Sections 7 and 9 below, and both reference
 > files, have been corrected to match this table. Where anything in this document
 > still disagrees, this table wins.
+
+> **One exception, and it is the only one: `Pull Strength` is removed as a
+> trainable stat -- see sections 34.6 and 34.9.** The Deadlift's Phase 1 has **no**
+> technique stat and no replacement is created for it. Where this table and section
+> 34 disagree about `Pull Strength`, **section 34 wins**.
+>
+> **Phase 1 itself is unaffected and is still required.** The competition Deadlift
+> remains a **two-phase** lift: the typing pull still gates the attempt and failing
+> it is still a NO LIFT. Only its *stat* is removed, and its difficulty is rebased
+> on attempt intensity and player execution alone (section 34.9).
+>
+> The field is still live in code. Removing it is checkpoint 9 in section 34.14 and
+> must happen in the same change as the Deadlift typing retune (section 34.9).
 
 Failing either phase of a lift is a NO LIFT and the second phase does not run.
 
@@ -134,7 +147,7 @@ Bench:
 Start Control
 Press Power
 Deadlift:
-Pull Strength
+**[REMOVED -- see section 34.6]** Pull Strength
 Lockout
 Modifier layer
 Then modifiers influence the result:
@@ -371,7 +384,7 @@ Deadlift should have its own identity.
 Your unusual idea here could actually make it memorable.
 Phase 1 — Fluid Typing pull
 
-Relevant Stat: Pull Strength
+Relevant Stat: **none.** ~~Pull Strength~~ is removed -- see section 34.6.
 
 A vertical bar rises from the floor toward lockout, driven by ONE authoritative
 progress value. The bar reaching lockout IS the pass; there is no second
@@ -398,10 +411,31 @@ at 80% against 24 at 110%, with sag and mistake cost roughly doubling. The
 required rate only moves from 19 to 36 WPM, under what a modest typist manages.
 This is deliberately not a typing-speed test.
 
-Pull Strength increases progress per character, reduces sag and reduces the
-mistake penalty, so a trained lifter needs FEWER keystrokes rather than faster
-ones. It never reduces the threshold, the window or the cue content, so the pull
-can never become automatic.
+**[OBSOLETE -- SUPERSEDED BY SECTIONS 34.6 AND 34.9]** Pull Strength increases
+progress per character, reduces sag and reduces the mistake penalty, so a trained
+lifter needs FEWER keystrokes rather than faster ones. It never reduces the
+threshold, the window or the cue content, so the pull can never become automatic.
+
+> **`PullStrength` is removed and no replacement typing progression stat is
+> created** (sections 34.6, 34.9). The paragraph above is retained only as the
+> record of what the three typing curves were originally shaped by.
+>
+> **Deadlift typing is now an active skill mechanic whose reward is strictly
+> cosmetic currency** (section 34.9). Cosmetic currency can never raise
+> Competition Number, technique stats or any lifting modifier.
+>
+> **The mechanic itself is unchanged, and it is still Phase 1 of a competition
+> Deadlift** -- the rising bar, the continuous cue line, the sag, the mistake stall
+> and the lockout threshold all stand, and **failing the pull is still a NO LIFT**.
+> The competition Deadlift remains a **two-phase** lift (section 34.9): typing
+> pull, then the Lockout skill check, which still uses the `Lockout` technique
+> stat.
+>
+> Only what **scales** this phase changes: it must be **rebased on attempt
+> difficulty / intensity and the player's own execution alone**, with no trainable
+> stat and no replacement for one. That rebase is **[PROVISIONAL]** -- no curve
+> exists yet -- and it is checkpoint 9 in section 34.14, which must ship in the
+> same change as the schema migration that drops the field.
 
 > **Superseded presentations.** This section first described typing "recognizable
 > original/parody gym phrases or game-created motivational lines", then a giant
@@ -444,8 +478,15 @@ See references/DBD.md for the visual/mechanical reference and implementation dir
 > unchanged and still correct: Competition Squat/Bench/Deadlift build the
 > corresponding Competition Number, and the variations build technique stats.
 >
-> What this section still does **not** specify is **how much**. There are no
-> training EV rates anywhere in this document. **[TBD]** — see section 33.9.
+> **The "how much" is now answered in section 34.** Training EV rates exist:
+> `BaseRate = 1.00 EV per hour` under the per-lift diminishing-efficiency function
+> `H(t)`, against a **4.00 EV account-wide daily cap** (section 34.4). They are
+> **[PROVISIONAL]**, no longer [TBD].
+>
+> **Training is now the ONLY source of Competition Number** (section 34.2).
+> Dailies, login rewards and purchases do not award it either. It is delivered by
+> Auto-Train at an **eligible gym training station**, on **one manually selected
+> lift** at a time (section 34.3).
 
 Training should therefore have a clear matrix.
 Exercise
@@ -468,6 +509,11 @@ Block Deadlifts
 Setup practice
 Lockout / execution
 You gain cosmetic currency through training this.
+
+> **Cosmetic currency is confirmed, and constrained -- see section 34.9.** It is
+> **strictly cosmetic**: it can never increase Competition Number, technique stats
+> or any lifting modifier, and **AFK training awards none of it**. Its rate and
+> daily cap are **[TBD]**.
 
 
 
@@ -775,7 +821,11 @@ Competition Scale S/B/D
 (demonstrated capability — raised only by a successful eligible meet attempt)
 
 TECHNIQUE PROGRESSION
-Squat Control / Depth Awareness / Start Control / Press Power / Pull Strength / Lockout
+Squat Control / Depth Awareness / Start Control / Press Power / Lockout
+
+> **Five trainable technique stats, not six -- see section 34.6.** `Pull Strength`
+> is removed and no replacement is created. The Deadlift has one trainable
+> technique stat, and that asymmetry is accepted.
 
 CAREER PROGRESSION
 Local → National → Worlds
@@ -838,13 +888,24 @@ Forecasted / Competition Numbers grow. Where sections 3, 12, 13 or 14 disagree
 with this section, **this section wins** — except where section 33 overrides it,
 as tabulated above.
 
-Rules in this document carry one of four status markers:
+Rules in this document carry one of six status markers. The first four are the
+original vocabulary; §34 added the last two for the approved Step 5 design.
 
 - **[FROZEN]** — architecture. Changing it changes the design.
 - **[TUNABLE]** — a balance constant. Expected to move after playtesting.
 - **[TBD]** — not yet decided. Must be approved before implementation.
 - **[OBSOLETE]** — superseded. Retained for audit only; **never implement it**.
   Obsolete text is struck through or labelled in place, never silently deleted.
+- **[FINAL]** — an approved **mechanic or rule**. Same force as [FROZEN]; the
+  separate word records that it was decided at the Step 5 design review rather
+  than being original architecture.
+- **[PROVISIONAL]** — an approved mechanic's **unvalidated number**. Same force as
+  [TUNABLE], and deliberately louder: it has never run in a real game, it **will**
+  move, and it must be implemented as named configuration rather than inlined.
+
+> **A [FINAL] mechanic may carry [PROVISIONAL] numbers, and most of §34 does.**
+> The mechanic is settled; the magnitude is not. **Never read a [FINAL] heading as
+> freezing the figures beneath it** — each figure carries its own marker.
 
 ### 29.1 Terminology
 
@@ -983,13 +1044,26 @@ dCN = ProgressionReference x BaseProgressRate x EV x Hill(PP) x BudgetMultiplier
 |---|---|---|
 | `h` (Hill midpoint) | 0.75 | **[TUNABLE]** — recalibrate from telemetry |
 | `m` (Hill exponent) | 5 | **[TUNABLE]** |
-| `BaseProgressRate` | **0.00482389** | **[TUNABLE]** — single config constant |
+| `BaseProgressRate` | **0.00482389** | **[TUNABLE]** — single config constant. **This is the value in the code today.** A **[PROVISIONAL]** Step 5 recalibration to **0.01113418** is proposed in §34.11 and is **not implemented** |
 
 **[FROZEN]** The soft cap is asymptotic. There is **no hard strength cap** at any
 PP. Progression slows without limit and never reaches zero.
 
 `BaseProgressRate` means: one unit-quality attempt grants **0.4824% of that
 lift's Progression Reference**, before the soft cap.
+
+> **Two numbers exist, and only one of them is implemented.**
+>
+> | | Value | Status |
+> |---|---|---|
+> | **In the code today** | **0.00482389** | **[TUNABLE]** — live, and the 0.4824% above follows from it |
+> | **Proposed for Step 5** | **0.01113418** | **[PROVISIONAL]** — a calibration candidate (§34.11). **Not implemented. Not frozen.** |
+>
+> Under the candidate the same sentence would read **1.1134%**. Nothing else moves:
+> **the formula above, the 21 frozen Progression References (§29.2b) and the Hill
+> curve are identical under either value.** `BaseProgressRate` enters as a single
+> multiplier, which is exactly why recalibrating it stays a one-line change
+> (§29.15).
 
 ### 29.4 R2 — reference normalization
 
@@ -1018,12 +1092,17 @@ Consequences, all verified:
 
 ### 29.5 EV — what each event is worth
 
-> **⚠ SUPERSEDED IN PART BY SECTION 33.** Meet attempts no longer grant CN
-> (§33.3) and the failure credit is zero (§33.6). The obsolete rows are **kept,
-> not deleted**, because the meet EV figures are the historical basis of §29.9's
-> capacity and of the §29.13 / §29.14 calculations, which must stay auditable
-> while they are recalibrated. The daily and AFK rows survive; only their
-> **shares** change (§29.6). Each row's status is marked individually.
+> **⚠ SUPERSEDED IN PART BY SECTION 33, AND THE WHOLE CHANNEL LIST IS NOW
+> SUPERSEDED BY SECTION 34.** Meet attempts no longer grant CN (§33.3), the failure
+> credit is zero (§33.6), and under §34.2 **every channel except gym-station
+> training is removed** -- dailies included. The obsolete rows are **kept, not
+> deleted**, because the meet EV figures are the historical basis of §29.9's
+> capacity and of the §29.13 / §29.14 calculations, which must stay auditable.
+> Each row's status is marked individually.
+>
+> ~~The daily and AFK rows survive; only their **shares** change (§29.6).~~ They do
+> not survive, and there are no shares left to move: there is exactly **one** CN
+> channel (§34.2).
 
 **[FROZEN]** EV is reference-independent. Kilograms follow from §29.3.
 
@@ -1032,17 +1111,18 @@ Consequences, all verified:
 | Successful attempt | = intensity factor | **[OBSOLETE as a MEET reward]** — no longer a CN source. Retained as the EV *shape* a training event may reuse |
 | Failed attempt | = intensity factor x **0.20** | **[OBSOLETE]** — superseded by section 33.6. Zero EV, zero CN, no Scale increase |
 | Full 9-attempt meet (Normal strategy) | ~5.658 (~1.886 per lift) | **[OBSOLETE as a CN figure]** — historical reference only |
-| **Compete Daily** | **0.3948 to EACH active S/B/D lift** | **[TUNABLE]** — still a CN source; **share requires recalibration**, and whether "Compete" means a meet is **[TBD]** (§29.7) |
-| **Daily Set completion** | **0.1974 to EACH active S/B/D lift** | **[TUNABLE]** — still a CN source; **share requires recalibration** |
-| AFK training | **0.2591 per hour** | **[TUNABLE]** — still a CN source; **share requires recalibration** |
-| **Training session** | **[TBD]** | **the new primary CN source** — no rate exists in this document yet. See §33.9 |
+| **Compete Daily** | ~~0.3948 to EACH active S/B/D lift~~ | **[OBSOLETE]** — superseded by §34.2. Daily quests award **no CN** |
+| **Daily Set completion** | ~~0.1974 to EACH active S/B/D lift~~ | **[OBSOLETE]** — superseded by §34.2. The bonus survives; its CN component does not |
+| AFK training | ~~0.2591 per hour~~ | **[OBSOLETE RATE]** — superseded by §34.4. The channel became the *only* channel, so the rate was re-derived from scratch rather than retuned |
+| **Gym station training** | **1.00 EV/hour x `H(t)`**, capped at **4.00 EV/day account-wide** | **[PROVISIONAL]** — the **only** CN source. §34.2, §34.3, §34.4 |
 
 > **Daily wording is deliberately explicit.** Both daily rewards are **per lift**,
 > not a total to be divided. A completed Daily Set awards 0.1974 EV to Squat,
 > 0.1974 EV to Bench and 0.1974 EV to Deadlift — 0.5922 EV in total. The
 > alternative reading (0.1974 total, 0.0658 each) yields only a 15.6% daily share
-> and misses the 20% target. *(The per-lift rule stands; the 20% target itself is
-> obsolete — §29.6.)*
+> and misses the 20% target. **[FULLY OBSOLETE under §34.2]** — daily quests now
+> award no CN at all, so there is no per-lift reading left to get right. Retained
+> only as the record of what these figures once meant.
 
 #### Intensity factors (I-A) — **[TUNABLE]**
 
@@ -1073,12 +1153,20 @@ Aggressive by 21% in CN, and this is intended.
 
 **[FROZEN]** Nothing at or below 60% relative intensity awards CN.
 
-> Still true, and now trivially so for meets. Whether a 60% floor should also
-> apply to **training** EV is **[TBD]** (§33.9).
+> Still true, and now trivially so for meets. **The question of whether a 60%
+> floor should also apply to training EV is RESOLVED, and the answer is that it
+> cannot apply:** station training is **time-based** (§34.4), so a training hour has
+> no relative intensity to compare against a floor. The rule survives as a meet
+> rule with nothing left to govern.
 
-### 29.6 Source distribution target — **[OBSOLETE, REQUIRES RECALIBRATION]**
+### 29.6 Source distribution target — **[OBSOLETE — RESOLVED BY SECTION 34.2]**
 
 > **⚠ DO NOT BALANCE AGAINST THIS TABLE.**
+>
+> **✅ The replacement distribution is RESOLVED, and it is trivial: one channel,
+> 100% (§34.2).** Gym-station training is not merely the dominant CN source, it is
+> the only one, so there is no longer a distribution to balance at all. The
+> questions this section left open are answered at the foot of this notice.
 >
 > **The 65 / 20 / 15 split is obsolete.** It is retained as the historical record
 > of what `BaseProgressRate` was solved against, and because §29.13 and §29.14
@@ -1089,13 +1177,20 @@ Aggressive by 21% in CN, and this is intended.
 > **about 35% of what the constant was calibrated for**. That shows the size of
 > the hole; it is **not** a new target.
 >
-> A replacement distribution **[TBD]** must be approved before any CN value is
-> re-tuned, and must answer:
+> The four questions this section raised are now **answered** (§34.2, §34.4,
+> §34.11):
 >
-> - What share does **training** take as the new primary channel? (§33.9)
-> - Do the daily and AFK absolute EV values stay, with only shares moving?
-> - Is `BaseProgressRate` re-solved, or do the training rates absorb the gap?
-> - Does §29.13's pacing target still stand as the anchor, or does it move too?
+> - *What share does training take?* — **100%.** It is the only channel.
+> - *Do the daily and AFK absolute EV values stay?* — **No.** The daily values are
+>   removed with the channel; the AFK rate was re-derived from scratch, not
+>   retuned, because it went from carrying 15% of CN to carrying all of it.
+> - *Is `BaseProgressRate` re-solved, or do the training rates absorb the gap?* —
+>   **`BaseProgressRate` is re-solved.** Candidate **0.01113418**, [PROVISIONAL]
+>   (§34.11). It remains one global constant.
+> - *Does §29.13's pacing target still stand?* — The **shape** stands; the anchor
+>   moved. §34.11 anchors on **combined-CN Record Potential Ratio** rather than on
+>   single-lift PP, because the approved endgame target is an elite three-lift
+>   total. Both tables in this section remain outputs and remain stale.
 
 **[OBSOLETE PLAYER MODEL — "meets/week" is no longer a CN variable]** For the
 **reference engaged player** (~5 days/week, ~5 meets/week, ~70% daily completion,
@@ -1104,9 +1199,9 @@ Aggressive by 21% in CN, and this is intended.
 | Source | Share | EV/week per lift |
 |---|---|---|
 | Meets | **0%** — channel removed; was 65% | — *(was 9.430)* |
-| Dailies | **[OBSOLETE SHARE]** — channel survives; was 20% | 2.902 |
-| AFK | **[OBSOLETE SHARE]** — channel survives; was 15% | 2.176 |
-| Training | **[TBD]** — new primary channel | **[TBD]** |
+| Dailies | **0%** — channel **removed** by §34.2; was 20% | — *(was 2.902)* |
+| AFK, as a side channel | **0%** — absorbed into station training; was 15% | — *(was 2.176)* |
+| **Gym station training** | **100%** (§34.2) | **up to 28.00 EV/week across all three lifts** -- 4.00 EV/day account-wide, §34.4 |
 
 ~~**[FROZEN] hierarchy: MEETS > DAILIES > AFK.**~~ **[OBSOLETE]** — meets are no
 longer a CN channel, so the hierarchy is void. The percentages were always a
@@ -1114,31 +1209,27 @@ balancing target, not a guarantee for any individual player.
 
 ### 29.7 Daily architecture
 
-> **⚠ The "Compete" pillar needs a decision — [TBD].** If completing it requires
-> **entering a meet**, then it awards CN for a meet, which section 33.3 forbids.
-> If it means training, it is misnamed. Three ways out, none chosen:
+> **✅ RESOLVED BY SECTION 34.2 — the "Compete" pillar awards no Competition
+> Number.** The three options once open here are moot. **Daily quests are not a CN
+> source**, so whether completing Compete requires entering a meet no longer
+> affects CN at all, and the section 33.3 loophole it threatened cannot open.
 >
-> - **Compete stops awarding CN** and awards placement/prestige/economy instead,
->   with its CN moved to the Develop pillar.
-> - **Compete is renamed** to reflect that it is a training objective.
-> - **Compete keeps CN as a daily-completion reward**, on the grounds that the CN
->   is paid for *completing the daily*, not for the attempts inside the meet.
+> Compete awards placement, prestige and economy rewards. Its former CN allocation
+> is **not relocated to the Develop pillar** -- it is removed. The only CN channel
+> is gym-station training (§34.2, §34.3).
 >
-> The third reading is the narrowest and preserves the most existing design, but
-> it is the one most likely to be read later as a loophole in section 33.3, so it
-> needs to be stated explicitly if it is chosen. See section 33.11.
->
-> The **Daily Set completion** bonus is unaffected either way: it is a consistency
-> reward for engaging all three pillars, not a competition reward.
+> The **Daily Set completion** bonus survives as a daily reward and **loses its CN
+> component** for the same reason. It remains a consistency reward for engaging all
+> three pillars, paid in other currencies.
 
 **[FROZEN]** Three daily pillars, three different reward types:
 
 | Daily | Awards |
 |---|---|
-| **Compete** | CN progression — **[TBD]**, see the notice above |
+| **Compete** | ~~CN progression~~ — **no CN** (§34.2). Placement, prestige, economy |
 | **Develop** | Technique / Muscle |
 | **World** | economy (money, items) |
-| **Daily Set completion** | additional CN consistency bonus |
+| **Daily Set completion** | ~~additional CN consistency bonus~~ — **no CN** (§34.2). A consistency reward in other currencies |
 
 **[FROZEN] Cooking and trading never grant Squat/Bench/Deadlift CN directly.**
 The Set bonus is a *consistency* reward for engaging all three pillars, not
@@ -1151,10 +1242,31 @@ the gain PP-equivalent regardless of class, that choice is cosmetic.
 
 ### 29.8 AFK progression and Training Energy
 
-**[FROZEN]** Training Energy limits **passive AFK CN only**.
+> **⚠ SUPERSEDED AS A CN THROTTLE BY SECTION 34. THE WHOLE OF §29.8 IS NOW
+> HISTORICAL.** Two approved decisions remove its job:
+>
+> - **§34.1 decision 2** -- the CN limit is a **4.00 EV account-wide daily cap**,
+>   not a minute allowance.
+> - **§34.3** -- there is **no hard daily training-hour limit at all**. A player may
+>   stand at the station indefinitely. What runs out is EV, not time.
+>
+> A 120-minute allowance and "no hour limit" cannot both be live rules, so the
+> allowance is the one that goes. Within-day pacing is handled instead by the
+> per-lift diminishing-efficiency function `H(t)` (§34.4), which **slows** a lift
+> rather than stopping it.
+>
+> **The field is still persisted in the player schema**, so its fate is an open
+> implementation decision: retire it in a later schema version, or give it a
+> different job. **[TBD]** -- §34.13 item 8. Do **not** quietly repurpose it.
+>
+> Everything below is retained unchanged as the record of the original model. The
+> one rule that is **not** superseded is called out in place.
 
-**[FROZEN] Training Energy never limits Muscle.** Muscle progresses
-independently and continues when Training Energy is empty.
+**[FROZEN — HISTORICAL]** Training Energy limits **passive AFK CN only**.
+
+**[FROZEN — STILL LIVE] Training Energy never limits Muscle.** Muscle progresses
+independently and continues when Training Energy is empty. This rule survives
+§34's supersession intact, whatever becomes of the resource itself.
 
 | Parameter | Baseline | Status |
 |---|---|---|
@@ -1202,6 +1314,21 @@ rate, so AFK-only progression is ~4x slower.
 > question section 33 creates: the pools are **already persisted** (schema v3) and
 > already have a specified presentation, so leaving them attached to nothing is
 > the one outcome to avoid.
+>
+> **Section 34 did NOT resolve this, and the 4.00 EV daily cap must not be
+> confused with it.** They are different scopes doing different jobs:
+>
+> | | Scope | Period | Quantity |
+> |---|---|---|---|
+> | **§34.1 daily CN cap** | whole account | per day | **4.00 EV** |
+> | **These three budgets** | one per lift | per week | **9.43 EV** each |
+>
+> The daily cap bounds how much CN a day can produce. These pools were built to
+> bound how hard one lift could be farmed within a week, and that is still
+> attached to nothing. **[TBD]** -- §34.13 item 7. Note also that the "rehome to
+> training" option below refers to a Training Energy overlap that §34 has since
+> superseded (§29.8), so only two of the three options there are still live as
+> written.
 >
 > Three options, none chosen:
 >
@@ -1394,6 +1521,14 @@ utilization.
 >
 > The **1.76x class spread** is a *reference-table* property, not a channel
 > property: the spread is unaffected and only the absolute months move.
+>
+> **§34.11 now carries the approved pacing projection, and it is anchored
+> differently.** This section measures single-lift **Progression Proximity**;
+> §34.11 measures **combined-CN Record Potential Ratio** against the class total
+> benchmark, because the approved endgame target is an elite three-lift total
+> rather than any one lift. Both tables below remain outputs of the old channel mix
+> and remain stale. Use §34.11 for pacing; use this section for the *shape* of the
+> curve and for the class-spread reasoning, which are unaffected.
 
 **[FROZEN — target only; see the notice above for the table]** The reference
 engaged player reaches **PP 60% in approximately 8 weeks**. This is the baseline
@@ -1423,7 +1558,8 @@ decides whether the lift is made.
 >
 > **Every row below is keyed on meets per week**, and meets no longer produce CN.
 > This table needs **re-authoring against training volume**, not re-tuning, once
-> §29.6 and §33.9 are settled. Three things to carry into the replacement:
+> §29.6 and §33.9 are settled -- **both now are** (§34.2, §34.4), so this table is
+> ready to be re-authored. Three things to carry into the replacement:
 >
 > - **"Meet spammer"** loses its meaning. Whether a "training spammer" needs the
 >   same logarithmic brake depends on §29.9, and the answer is not obviously yes —
@@ -1435,6 +1571,14 @@ decides whether the lift is made.
 >
 > The **spread** is the part worth preserving: the intent was that the most
 > dedicated player lands near 1.5x the reference and not 10x. That is unaffected.
+>
+> **§34 supplies the replacement independent variable: station hours per day.** It
+> also bounds the spread by construction rather than by a logarithmic brake -- the
+> **4.00 EV account-wide daily cap** (§34.1) means the most dedicated player cannot
+> exceed **1.00x** the capped rate however long they stand there, and §34.4's
+> accrual curve sets the rest of the table: one hour is 0.25x a full day, two hours
+> 0.50x, four hours 0.85x. "Meet spammer" has no successor, because meets no longer
+> produce CN at all. This table still needs re-authoring on that key.
 
 Per-lift progression rate relative to the reference player:
 
@@ -1457,17 +1601,20 @@ both figures move even though neither channel changed.
 
 | Constant | Why |
 |---|---|
-| **`BaseProgressRate`** | solved from an **assumed** success-probability curve; the single largest uncertainty in the model. **Now also requires re-solving against the post-section-33 channel mix** (§29.6) |
+| **`BaseProgressRate`** | solved from an **assumed** success-probability curve; the single largest uncertainty in the model. **Re-solved against the single-channel model: candidate 0.01113418, [PROVISIONAL]** (§34.11) |
 | ~~Failure credit (0.20)~~ | **[OBSOLETE]** — superseded by section 33.6. A failed attempt is worth zero. The original note, retained for the record: sensitivity testing showed 0.30 inverts optimal play toward reckless spam; keep <= 0.20. **The code constant `ProgressionConfig.FailureCredit` has been removed** (§33.12 step 2) |
-| I-A intensity factors | depend on real pass rates. Still needed wherever relative-intensity EV is used; **which system that is, is now [TBD]** (§33.9) |
+| I-A intensity factors | depend on real pass rates. **No live system uses them**: meets award no CN (§33.3) and station training is time-based, not intensity-scored (§34.4). Retained for any future relative-intensity EV channel; nothing to calibrate until one exists |
 | `h` = 0.75, `m` = 5 | `m` = 6 is the lever for a harsher elite grind; affects only players past PP 110%. **Unaffected by section 33** — the Hill curve still reads `PP = CN / ProgressionReference` |
 | Competition Budget capacity, regen, `k` | ~~depends on observed meets/week~~ — **[TBD]** whether this system survives at all (§29.9) |
-| Training Energy max and regen | depends on observed AFK behaviour. **Scope now [TBD]**: it may need to govern active training rather than only passive AFK (§29.8) |
-| Daily EV values | depends on observed completion rates |
+| Training Energy max and regen | ~~depends on observed AFK behaviour~~ — **[SUPERSEDED as a CN throttle]** by §34.1 decision 2 and §34.3. Still persisted; retire it or re-task it. **[TBD]** (§29.8, §34.13 item 8) |
+| ~~Daily EV values~~ | **[OBSOLETE]** — daily quests award no CN (§34.2). Nothing left to calibrate |
 | ~~65/20/15 source split~~ | **[OBSOLETE]** — a target, not a guarantee, and now a target for a channel mix that no longer exists. **Requires recalibration** (§29.6) |
 | **Scale Challenge Ratio curve and cap** | **[TBD]** — new in section 33.4. No values exist |
-| **Training EV rates** | **[TBD]** — new in section 33.9. No values exist |
-| **Starting Competition Scale** | **[TBD]** — new in section 33.8 |
+| **Station training EV rates** | **[PROVISIONAL]** — `BaseRate` 1.00 EV/hour, `FullRateHours` 2.00, `K` 2.00, `DailyCapEV` 4.00. Section 34.4. Not validated in a running game |
+| **AFK technique rates** | **[PROVISIONAL]** — 2.00 raw points/hour, 6.00 raw/day account-wide. Section 34.7 |
+| **Meet technique rates** | **[PROVISIONAL]** — 4.00 raw per successful attempt, 60.00 raw/day account-wide. **Blocked on meet duration, which does not exist** (section 34.8) |
+| **Cosmetic currency rate and cap** | **[TBD]** — new in section 34.9. No values exist |
+| ~~**Starting Competition Scale**~~ | **DECIDED, NOT A CONSTANT TO TUNE** — unproven, stored as `0` (section 33.8). Implemented in schema v4 |
 
 **[FROZEN] `BaseProgressRate` must remain a single configurable constant.** Real
 playtest success rates will require recalibration, and it enters the formula as one
@@ -1595,9 +1742,18 @@ the governing list for TRAINING-driven CN, not for meets]**
 - Hill soft-cap
 - CompetitionNumberReward
 
-> **The pipeline above is still correct; only its trigger moved** — see §33.9.
-> The two entries that do not carry over cleanly are **Success/failure** (an
-> undefined concept for training) and **Competition Budget** (**[TBD]**, §29.9).
+> **The pipeline above is still correct; only its trigger moved** — see §33.9 and
+> §34.2. **Three entries do not carry over**, because station training is
+> time-based rather than attempt-based (§34.4):
+>
+> - **Attempt intensity** -- there is no attempt. The station's analogue is the
+>   per-lift diminishing-efficiency function `H(t)`.
+> - **Success/failure** -- an undefined concept for training, and deliberately so
+>   (§33.9). Nothing is passed or failed at a station.
+> - **Competition Budget** -- **[TBD]** (§29.9, §34.13 item 7).
+>
+> **Raw EV, Progression Percentage, the Hill soft cap and `CompetitionNumberReward`
+> all carry over unchanged.** That is the half of the pipeline worth keeping.
 
 **Placement does NOT directly multiply Competition Number progression.**
 
@@ -2149,10 +2305,17 @@ TBD / REQUIRES FUTURE DESIGN APPROVAL:
 > question of *where Competition Number comes from*, and the addition of a second
 > per-lift quantity.
 >
+> **§34 is authoritative over this section on the training channel.** This section
+> established that training is where CN comes from and left *how much* open.
+> §34 answers it, and also narrows the channel further than this section did:
+> dailies and AFK-as-a-side-channel are gone too, and **gym-station training is the
+> only CN source**. Where §33.9 and §34.2 differ, **§34 wins**.
+>
 > **Do NOT implement these systems merely because they are documented here.** The
-> Scale challenge curve and cap, the starting Scale, the migration backfill, the
-> training EV rates and the fate of the Competition Budget are all **[TBD]** and
-> must be approved before implementation. See §33.11 and §33.12.
+> Scale challenge curve and cap and the fate of the Competition Budget are still
+> **[TBD]** and must be approved before implementation. The starting Scale and the
+> migration backfill are **decided and implemented** (schema v4), and the training
+> EV rates are now **[PROVISIONAL]** in §34.4. See §33.11 and §33.12.
 
 The design principle in one line:
 
@@ -2173,7 +2336,7 @@ The revised model separates the two.
 
 | Quantity | What it is | How it changes | What it drives |
 |---|---|---|---|
-| **Competition Number (CN)** | the strength the character has **developed through training**, in kg | training (and dailies / AFK — §33.9) | **physical difficulty**, attempt selection, display, Progression Proximity |
+| **Competition Number (CN)** | the strength the character has **developed through training**, in kg | **gym-station training only** — §34.2 | **physical difficulty**, attempt selection, display, Progression Proximity |
 | **Competition Scale** | the heaviest weight the character has **successfully proven in competition**, per lift, in kg | a successful eligible meet attempt, and nothing else | the **Scale challenge modifier** (§33.4) |
 
 Both are **per lift**: Squat, Bench and Deadlift each have their own CN and their
@@ -2539,16 +2702,25 @@ under the wrong key would be a silent, permanent error.
 
 ### 33.9 Where Competition Number now comes from
 
-**[FROZEN] Training is the primary source of Competition Number.** Section 12's
-training matrix is unchanged and still correct — Competition Squat builds the
-Squat CN, Competition Bench builds the Bench CN, Competition Deadlift builds the
-Deadlift CN, and the variations build technique stats. Dailies and AFK training
-remain CN sources on their existing terms (§29.5, §29.7, §29.8).
+> **✅ ANSWERED IN FULL BY SECTION 34. Read §34 for the live rules; this subsection
+> is now the bridge to it.** The two things it left open are both settled:
+>
+> | This section said | §34 says |
+> |---|---|
+> | Training is the **primary** CN source; dailies and AFK remain sources on their existing terms | Gym-station training is the **only** CN source. Dailies, logins and purchases award **none** (§34.2) |
+> | The training EV rates are **[TBD]** and no value exists | `BaseRate` 1.00 EV/hour under `H(t)`, capped at 4.00 EV/day account-wide -- **[PROVISIONAL]** (§34.4) |
 
-**[TBD] The training EV rates.** No training EV value exists anywhere in this
-document, and none is invented here. This is the single largest gap the revised
-model creates, because training must now carry the share meets used to carry. It
-cannot be settled without §29.6's replacement distribution.
+**[FROZEN] Training is the source of Competition Number.** Section 12's training
+matrix is unchanged and still correct — Competition Squat builds the Squat CN,
+Competition Bench builds the Bench CN, Competition Deadlift builds the Deadlift
+CN, and the variations build technique stats.
+
+**[FINAL] It is the *only* source**, and it is delivered by Auto-Train at an
+eligible gym training station on one manually selected lift (§34.2, §34.3).
+
+**[PROVISIONAL] The training EV rates now exist** — §34.4. They are balancing
+candidates, not validated balance, and must be implemented as named configurable
+constants.
 
 #### The existing reward engine is reusable — for training, not for meets
 
@@ -2575,16 +2747,21 @@ equivalent of the meet-attempt converter that was never built. The reserved
 kilograms from EV rather than accepting them, so no caller can get the magnitude
 wrong.
 
-Two inputs do **not** carry over cleanly and need design:
+Two inputs did **not** carry over cleanly. One is now resolved:
 
-- **Success / failure.** A meaningful notion of a failed *training* set, if there
-  is to be one, is undefined. **[TBD]**
-- **Competition Budget.** Whether training EV passes through the budget at all is
-  **[TBD]** (§29.9, §33.10).
+- **Success / failure -- RESOLVED, and the answer is that there is no such notion.**
+  Station training is **time-based** (§34.4): an hour at the station yields
+  `BaseRate x H(t)` EV and there is nothing to pass or fail. A failed *training
+  set* is not a concept this design has, and none should be invented. Success and
+  failure belong to **meets**, where failure earns zero (§33.6, §34.8).
+- **Competition Budget -- STILL OPEN.** Whether station EV passes through the three
+  per-lift pools is **[TBD]** (§29.9, §33.10, §34.13 item 7). The §34.1 daily cap
+  does **not** answer this: it is a daily account ceiling, not a weekly per-lift
+  pool.
 
-**[FROZEN] `BaseProgressRate` remains a single configurable constant** (§29.15), so
-whatever the new channel mix turns out to be, rescaling stays a one-line change.
-**It must be re-solved** against that mix (§29.6).
+**[FROZEN] `BaseProgressRate` remains a single configurable constant** (§29.15),
+so rescaling stays a one-line change. **It has been re-solved** against the
+single-channel model: candidate **0.01113418**, **[PROVISIONAL]** (§34.11).
 
 
 ### 33.10 What this leaves unresolved in section 29
@@ -2595,18 +2772,24 @@ collected here so the list is in one spot.
 | System | Where | Status |
 |---|---|---|
 | **The three Competition Budgets** | §29.9 | **[TBD]** — the system exists to throttle meet-derived CN and now throttles nothing. Rehome to training, repoint at Scale, or retire. Note that the consumption rule "proportional to the CN actually awarded" does **not** survive being repointed at Scale, because a Scale increase is a kilogram jump and not an EV amount. The pools are already persisted, so leaving them attached to nothing is the one outcome to avoid. |
-| **Training Energy scope** | §29.8 | **[TBD]** — it was written to limit *passive AFK* CN while active play went unthrottled. Training is now the primary active channel, and whether a 120-minute daily allowance should govern it is a materially larger decision than the one originally made. Its **[FROZEN]** rule that it never limits Muscle is unaffected. |
-| **Channel distribution and everything derived from it** | §29.6, §29.13, §29.14 | **Requires recalibration** — the 65 / 20 / 15 split, the PP-to-time pacing table and the archetype rate table were all computed with meets as the dominant channel. The pacing *target* may well stand; the *tables* are outputs and will move. |
+| **Training Energy scope** | §29.8 | **SUPERSEDED as a CN throttle, FATE [TBD]** — §34.1 decision 2 replaces it with a 4.00 EV account-wide daily cap, and §34.3 removes any hard training-hour limit. The 120-minute allowance is therefore not a live rule. The **field is still persisted**, so it must be retired in a later schema version or given a different job — §34.13 item 8. Its **[FROZEN]** rule that it never limits Muscle is unaffected. |
+| **Channel distribution and everything derived from it** | §29.6, §29.13, §29.14 | **RESOLVED by §34.2** — there is one channel at 100%, so there is no distribution to balance. `BaseProgressRate` has been re-solved against it (candidate 0.01113418, §34.11) and §34.11 carries the approved pacing projection. The §29.13 and §29.14 **tables remain stale outputs** and still need re-authoring; the pacing *target* survives in a re-anchored form. |
 
 **Unchanged and still fully authoritative**, for the avoidance of doubt: §29.1,
 §29.2, §29.2b, §29.3, §29.4, §29.11, §29.12, and the whole of §31 and §32 except
-the two items marked in place.
+the two items marked in place. **§34 does not disturb any of them** — it specifies
+the EV producer only.
+
+**Two further §29 systems were superseded by §34 after this list was written**, and
+are marked in place: §29.5's channel table and §29.7's "Compete" pillar CN award,
+both removed by §34.2.
 
 
 ### 33.11 Open design questions — [TBD]
 
 Collected so none is lost. None of these should be answered by implementation
-choice.
+choice. **Section 34 closed items 5, 7 and 8 and opened nine more of its own --
+see §34.13.**
 
 1. **What stops maximum-risk meet strategy?** With failures costing zero (§33.6)
    and Scale being a maximum (§33.7), the optimal meet strategy is to attempt the
@@ -2621,12 +2804,16 @@ choice.
    as `0`. Implemented in schema v4.
 4. ~~**The migration backfill for existing players**~~ — **DECIDED** (§33.8):
    unproven, never inferred from Competition Number. Implemented in schema v4.
-5. **Training EV rates**, and the replacement channel distribution they belong to
-   (§33.9, §29.6).
+5. ~~**Training EV rates**, and the replacement channel distribution they belong
+   to~~ — **DECIDED** (§34.2, §34.4). One channel at 100%; `BaseRate` 1.00 EV/hour
+   under `H(t)`, 4.00 EV/day account-wide. **[PROVISIONAL]** values, not [TBD].
 6. **The fate of the Competition Budget** (§29.9, §33.10).
-7. **Training Energy's scope** now that training is the primary channel (§29.8).
-8. **The "Compete" daily pillar** — does it award CN, and does completing it
-   require entering a meet? (§29.7)
+7. ~~**Training Energy's scope**~~ — **DECIDED as a throttle** (§34.1 decision 2,
+   §34.3): it no longer limits CN, and there is no hard training-hour limit. Its
+   **fate as a persisted field remains [TBD]** — §34.13 item 8.
+8. ~~**The "Compete" daily pillar**~~ — **DECIDED** (§34.2): it awards **no CN**, and
+   neither does the Daily Set completion bonus. The question of whether completing
+   it requires a meet no longer affects CN.
 9. **What "eligible meet" includes** for the purpose of raising Scale (§33.7).
 10. ~~**What a stored Scale records**~~ — **DECIDED** (§33.8): a per-lift weight
     number only, no proof metadata. Implemented in schema v4.
@@ -2659,7 +2846,9 @@ re-raised as though open:
 
 ### 33.12 Implementation status
 
-**NOTHING IN THIS SECTION IS IMPLEMENTED. This is a documentation-only revision.**
+**Steps 1 to 4 are implemented. Steps 5 onward are not.** The original note here
+read "nothing in this section is implemented", which was true when it was written
+and is no longer. The step table below is the current status.
 
 Current repository reality, verified:
 
@@ -2692,7 +2881,8 @@ none should begin without the decisions it depends on:
 | 2 | Remove `FailureCredit` from config together with the probe section that asserts it | **DONE** — constant removed from `ProgressionConfig`, 7 obsolete probe checks removed, two stale comments in `CompetitionBudget` and `ProfileOperations` corrected. No production path touched |
 | 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **DONE** — schema v4: `competitionScale` per lift, `UNPROVEN_SCALE = 0`, `migrations[3]`, two read accessors, no writer. Validated in memory and against a real DataStore on a disposable key |
 | 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | **DONE** — on `ProfileOperations`, internal, zero production callers. See the operation contract below |
-| 5 | Define and implement the training CN channel | **NEXT** — blocked on §33.9 training EV rates and the §29.6 distribution |
+| 5A | **Define** the training CN channel | **DONE** — approved and documented as **section 34**. The §33.9 rates and the §29.6 distribution that blocked this are both resolved |
+| 5B | **Implement** the training CN channel | **NEXT** — not started. Broken into checkpoints 5B.1 to 5B.7 in §34.14 |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
 | 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility; **and the weight-class build system, per the class-scoping deadline in §33.8** |
 | 8 | Resolve the Competition Budget | §29.9 |
@@ -2761,3 +2951,833 @@ exists.** Flat per-lift storage cannot express "proven in the 83 kg class", so a
 raise written today would credit the player's only build whatever class they
 weighed in at. That is unreachable while nothing calls it, and becomes reachable
 the moment a meet does — which is why step 7 is gated on §33.8.
+
+
+## 34. Training, AFK Gym Stations and Technique Progression — APPROVED STEP 5 DESIGN
+
+> **This section is authoritative where it disagrees with sections 3, 11, 12, 28,
+> 29 or 33.** It answers the questions section 33 deliberately left open: where
+> training Competition Number comes from, how much of it there is, how technique
+> is trained, and what the station does once a daily allowance is exhausted.
+>
+> **It does not supersede section 29's mathematics.** The 21 frozen Progression
+> References (§29.2b), `PP = CN / ProgressionReference` (§29.2), the Hill soft cap
+> (§29.3), R2 reference normalization (§29.4) and RP Preservation on class change
+> (§29.11) are all **unchanged**. Only the EV **producer** is specified here.
+>
+> **Status discipline — read this before implementing anything below.** Every rule
+> carries one of three markers:
+>
+> | Marker | Meaning |
+> |---|---|
+> | **[FINAL]** | Approved. Implement as written. Do not re-open without a decision. |
+> | **[PROVISIONAL]** | A balancing candidate. Not validated in a running game, and it **will** move. Implement only as a named, configurable constant — never inlined, never assumed stable. |
+> | **[TBD]** | No approved value exists. **Must not be implemented.** |
+>
+> A [PROVISIONAL] number is safe to build *against* and unsafe to build *into*.
+>
+> These map onto the document-wide legend in §29: **[FINAL] carries the force of
+> [FROZEN]** and **[PROVISIONAL] carries the force of [TUNABLE]**. The distinct
+> words exist to mark which review approved a rule, not to create a new tier.
+>
+> **A [FINAL] heading does not freeze the numbers under it.** Where a mechanic is
+> approved but its constants are not — which is most of this section — the
+> heading says so and each figure is marked in place.
+
+### 34.1 The approved decision set — [FINAL]
+
+These five decisions override every earlier proposal in this document, including
+proposals made during the section 29 and section 33 audits.
+
+| # | Decision | Overrides |
+|---|---|---|
+| 1 | **Auto-Train CN efficiency is 100%.** There is **no** AFK discount — not 55%, not any other figure. | the proposed AFK efficiency discount |
+| 2 | **The daily CN progression cap is 4.00 EV, shared across the whole account.** | §29.8's 120-minute Training Energy allowance as a CN throttle |
+| 3 | **There is no per-lift EV cap.** The proposed 4.20 per-lift cap is **removed**; the account-wide cap is the only authority. | the proposed dual-cap model |
+| 4 | **Squat and Bench AFK technique splits 80% primary / 20% secondary.** Deliberate, even though the secondary develops slowly. | the proposed 70/30 split |
+| 5 | **The configured 74 kg total-record benchmark stays at 891.5 kg.** | the proposal to adjust it to close the pacing window |
+
+**Decision 1 is the one with teeth.** A discount below roughly 95% would make the
+4.00 EV daily cap **unreachable**, because efficiency multiplies the hourly rate
+while the cap stays fixed: at 55% a full day of training on one lift tops out
+around 2.3 EV. A discount would therefore not *slow* the CN economy, it would
+**halve** it and turn the cap into decoration. Auto-Train at a station **is** the
+intended training system, not a lesser substitute for a faster manual one, so it
+runs at full rate.
+
+**Decision 3 removes a cap that could never have fired anyway.** With one lift per
+station and an account cap of 4.00 EV, a per-lift ceiling of 4.20 EV is
+unreachable by construction. Keeping it would have left a constant in the config
+that no test could ever exercise.
+
+**Decision 5 is a rule about process, not about one number.** Record values are
+balancing *inputs*, not outputs. They are never adjusted to make a progression
+target land where a simulation would prefer. The consequence — one weight class
+sitting outside the pacing window — is documented honestly in §34.11 instead of
+being tuned away.
+
+### 34.2 Competition Number has exactly one source — [FINAL]
+
+**[FINAL]** Competition Number is awarded **only** by training at an eligible gym
+training station.
+
+**[FINAL]** Specifically prohibited as CN sources:
+
+- **meets** of every type — already absolute under §33.3
+- **daily quests**, including the Compete pillar and the Daily Set completion bonus
+- **login rewards** and login streaks
+- **purchases** of any kind, Robux or in-game currency
+- cooking, trading, jobs, and every other economy activity
+
+> **This closes three open questions at once.**
+>
+> - **§29.7's "Compete" pillar [TBD] is resolved: it awards no CN.** The three ways
+>   out listed there are moot. Compete awards placement, prestige and economy
+>   rewards; its former CN allocation is not relocated, it is removed.
+> - **§29.5's Compete Daily (0.3948 EV per lift) and Daily Set (0.1974 EV per lift)
+>   rows are [OBSOLETE].** Both were quest rewards.
+> - **§29.6's replacement channel distribution is resolved trivially.** There is no
+>   distribution left to balance. Training is not merely the dominant channel; it is
+>   the **only** channel, at 100% of CN.
+
+**[FINAL] The Daily Set completion bonus survives as a daily reward and loses its
+CN component.** §29.7's frozen rule that cooking and trading never grant CN
+directly is unaffected, and is now a special case of the general rule above.
+
+**[FINAL] No offline progression.** CN accrues only while the player is connected
+and at the station. A disconnect stops accrual; it does not bank, refund or
+back-pay it. That is what makes the station a place in the world rather than an
+idle timer.
+
+### 34.3 The gym training station — [FINAL]
+
+| Rule | Detail |
+|---|---|
+| Where | **An eligible gym training station only.** Auto-Train runs nowhere else in the world. |
+| Offline | **Never.** §34.2. |
+| Daily training-hour limit | **None.** A player may stand at the station indefinitely. The limits are on **EV and technique points**, not on hours. |
+| Lift selection | The player **manually selects ONE** CN lift: Squat, Bench or Deadlift. |
+| What is trained | **Only** the selected lift's CN. |
+| Automatic rotation | **Never.** The station does not rotate between CN lifts on its own, at a daily reset, or on any other trigger. |
+| End of CN for the day | When the **account** reaches 4.00 EV. |
+| What happens then | The station **automatically switches to technique training** (§34.5, §34.7). |
+| At the next daily reset | CN training resumes on the **same** selected lift, provided the player is still connected and still at the station. |
+| Changing selection | Permitted at any time, manually, by the player. |
+| What a change never does | **Changing lifts, technique stats, stations or servers never resets either daily allowance.** §34.12. |
+| Accounting | **Server-authoritative** timestamps and allowance accounting. §34.12. |
+
+**[FINAL] "No automatic rotation" and "no hard hour limit" are a deliberate pair.**
+Removing the hour limit is what makes a long session worth standing through;
+forbidding automatic rotation is what keeps a long session a **choice** rather
+than a schedule the game runs on the player's behalf. Together they put the whole
+CN allocation decision in the player's hands, which is the point of §34.10.
+
+### 34.4 Per-lift diminishing efficiency — H(t) — [PROVISIONAL]
+
+**[PROVISIONAL]** Within a single day, a lift's CN efficiency decays with the
+hours already spent **on that lift** today:
+
+```
+H(t) = 1 / (1 + max(0, t - FullRateHours) / K)
+
+    t              = hours of station CN training on THIS lift today
+    FullRateHours  = 2.00      full efficiency for the first two hours
+    K              = 2.00      harmonic softness
+    BaseRate       = 1.00      EV per hour at H = 1
+    DailyCapEV     = 4.00      account-wide (section 34.1, decision 2)
+```
+
+Cumulative EV on one lift is the integral of that rate:
+
+```
+EV(t) = BaseRate * t                                     for t <= 2
+EV(t) = BaseRate * (2 + K * ln(1 + (t - 2) / K))         for t >  2
+```
+
+**[PROVISIONAL] Time for a single lift to exhaust the 4.00 EV daily cap:**
+
+```
+t* = 2 + K * (e^((DailyCapEV / BaseRate - 2) / K) - 1)
+   = 2 + 2 * (e - 1)
+   = 5.4366 hours
+```
+
+| Hour | H(t) | EV this hour | Cumulative EV | % of the daily cap |
+|---|---|---|---|---|
+| 1 | 1.0000 | 1.0000 | 1.0000 | 25.0% |
+| 2 | 1.0000 | 1.0000 | 2.0000 | **50.0%** |
+| 3 | 0.6667 | 0.8109 | 2.8109 | 70.3% |
+| 4 | 0.5000 | 0.5754 | 3.3863 | 84.7% |
+| 5 | 0.4000 | 0.4463 | 3.8326 | 95.8% |
+| 5.4366 | 0.3679 | 0.1674 | **4.0000** | **100.0%** |
+
+**The shape is the useful part, and it is strongly front-loaded.** The first two
+hours deliver **half** the daily cap. Four hours deliver **84.7%**. The final
+0.44 hours deliver **4.2%**. A player with one hour to spare collects a quarter of
+a full day's progression; a player who stands there the whole 5.44 hours is
+collecting a thin tail. That is the intended relationship between session length
+and reward, and it is why no hard hour limit is needed.
+
+> **Why the harmonic form rather than an exponential or a cliff.** It is the same
+> model as §29.9's Competition Budget overflow, for the same reason: it never
+> hard-zeroes, so a player at the keyboard is never told their time is worth
+> literally nothing, while the marginal rate still falls fast enough — 36.8% of
+> the opening rate by the time the cap is reached — that grinding one lift all day
+> is poor value. Reusing a shape already proven elsewhere in this document is
+> deliberate.
+
+**[FINAL] H(t) is scoped per lift and the cap is scoped per account.** These are
+different scopes on purpose, and §34.10 is the consequence.
+
+**[PROVISIONAL] `FullRateHours`, `K` and `BaseRate` are candidates, not settled
+balance.** Note in particular that `BaseRate = 1.00 EV/hour` is **3.86x** §29.5's
+old AFK figure of 0.2591 EV/hour. The old rate was calibrated for a background
+trickle worth 15% of CN and this one carries 100% of it, so the two are not
+comparable and the old figure is **[OBSOLETE]** rather than merely retuned.
+
+### 34.5 The station state machine
+
+The station has two training phases and one daily boundary. **Nothing here is
+stored as session state.** Every transition is a consequence of persisted
+counters, which is what makes it survive a server change (§34.12).
+
+```
+        player arrives at station, CN lift already selected
+                             |
+                             v
+    +------------------- CN TRAINING -------------------+
+    |  trains the SELECTED lift only                    |
+    |  rate = BaseRate * H(hours on this lift today)    |
+    |  accrues toward the 4.00 EV ACCOUNT cap           |
+    +---------------------------------------------------+
+                             |
+                   account EV reaches 4.00
+                             |
+                             v
+    +--------------- TECHNIQUE TRAINING ----------------+
+    |  trains the SELECTED lift's technique stats       |
+    |  Squat / Bench -> 80% primary, 20% secondary      |
+    |  Deadlift      -> 100% Lockout                    |
+    |  accrues toward the 6.00 raw/day ACCOUNT cap      |
+    +---------------------------------------------------+
+                             |
+                 technique allowance reaches 6.00
+                             |
+                             v
+    +------------------- IDLE AT STATION ---------------+
+    |  no further AFK progression until the next reset  |
+    +---------------------------------------------------+
+                             |
+                       daily reset
+                             |
+                             v
+          back to CN TRAINING on the SAME selected lift
+             (if still connected and still at the station)
+```
+
+| Transition | Trigger | What carries over |
+|---|---|---|
+| CN to technique | account CN EV reaches **4.00** | the selected lift is unchanged; the technique primary choice is unchanged |
+| technique to idle | account technique reaches **6.00 raw** | both counters stay at their caps |
+| idle to CN | the **daily reset** | the **same** selected CN lift, the same technique primary |
+| any to any, mid-session | the player changes lift, stat or station, or the server changes | **nothing resets.** Both counters are account-scoped and day-keyed |
+
+**[FINAL] The phase is derived, never stored.** A station reads the account's
+spent-today counters and computes which phase it is in. There is no stored phase
+field and no event that can be missed, which is why the four awkward cases below
+need no special handling at all:
+
+| Case | Behaviour |
+|---|---|
+| The player changes the selected CN lift **mid-session** | The target changes immediately. **Neither allowance resets.** Technique points already banked on the previous lift's stats stay banked. H(t) for the newly selected lift reflects **that lift's** hours today — see §34.10. |
+| The 4.00 EV cap is reached **during a server update or shutdown** | The phase is a function of `spentToday >= 4.00`, so the switch is a property of the data rather than an event. Whichever server the player lands on computes the same phase. |
+| A **daily reset** lands in the middle of technique training | The next read sees a new server-stamped day key, both allowances reset to zero, and the station resumes CN training on the same selected lift. No special case. |
+| The player **changes server** | Nothing lives in session state, so there is nothing to lose or to duplicate. This is the whole reason for the derived-phase design. |
+
+### 34.6 Exactly five trainable technique stats — [FINAL]
+
+**[FINAL]** There are **five** trainable technique stats, and no others:
+
+| Lift | Trainable technique stats |
+|---|---|
+| **Squat** | `SquatControl`, `DepthAwareness` |
+| **Bench** | `StartControl`, `PressPower` |
+| **Deadlift** | `Lockout` — **one only** |
+
+**[FINAL] `PullStrength` is not a trainable stat.** It is removed from the design.
+
+**[FINAL] No replacement stat is created for it.** The Deadlift has one trainable
+technique stat and that asymmetry is accepted. Inventing a sixth stat to restore
+symmetry would reintroduce the thing being removed under a new name.
+
+> **The code still contains `PullStrength`, and that is correct for now.** Verified
+> live in five places:
+>
+> | File | What it holds |
+> |---|---|
+> | `PlayerProfileSchema.luau` | the `technique.PullStrength` type field, the template default, and the v1 and v2 migration repair steps |
+> | `StartingValuesConfig.luau` | `PullStrength = 0`, the starting value |
+> | `TypingPhaseConfig.luau` | `techniqueStat = "PullStrength"` and the three curves it drives -- progress per character, sag, and the mistake penalty |
+> | `PlayerDataProbe.server.luau` | migration and preservation assertions that read the field |
+> | *(read path)* `LiftAttemptService.luau` | reads it by name out of the technique snapshot |
+>
+> Removing it is a **later implementation checkpoint** (§34.14) and requires four
+> things in one change:
+>
+> 1. a **schema migration** dropping the field, and the starting value with it;
+> 2. **Deadlift typing difficulty retuned** independently of it (§34.9);
+> 3. the dev-probe assertions that read it updated or removed;
+> 4. the design-document references in the mechanic-assignment table, §3, §11 and
+>    §28 brought into line.
+>
+> It must **not** be deleted from code as part of documenting this decision.
+> `LiftAttemptService` reads the technique snapshot with an `or 0` fallback, so an
+> absent `PullStrength` would silently read as the curve's base anchor rather than
+> raising an error — meaning a partial removal would **quietly** retune the
+> Deadlift instead of failing loudly. That is precisely why the retune has to be
+> deliberate and in the same checkpoint.
+
+### 34.7 AFK technique specialization — [FINAL rule, PROVISIONAL rates]
+
+**[FINAL]** Once the 4.00 EV daily CN cap is reached, the station trains the
+technique stats **of the currently selected CN lift**.
+
+**[FINAL]** Distribution:
+
+| Selected lift | Player choice | Award |
+|---|---|---|
+| **Squat** | `SquatControl` **or** `DepthAwareness` as primary | **80%** to primary, **20%** to the other Squat stat |
+| **Bench** | `StartControl` **or** `PressPower` as primary | **80%** to primary, **20%** to the other Bench stat |
+| **Deadlift** | none — there is one stat | **100%** to `Lockout` |
+
+**[FINAL] The 80 / 20 split is deliberate, and the secondary develops slowly.**
+This was chosen with the consequence known: at 20% of a 6.00 raw/day allowance the
+secondary receives 1.20 raw points a day, and on the log-space technique curve
+that is a small effective gain even over a season. The decision is that AFK
+technique should express a **clear** specialization, and that the secondary's job
+is to not be frozen at zero rather than to keep pace. Players who want balanced
+technique have the right tool for it, and it is meets (§34.8), not the station.
+
+**[PROVISIONAL] Candidate AFK technique rates:**
+
+| Parameter | Candidate |
+|---|---|
+| Rate | **2.00 raw technique points per hour**, total across the split |
+| Daily allowance | **6.00 raw technique points**, **account-wide** |
+| Time to exhaust | **3.00 hours** |
+| Fractional awards | **required** — see below |
+
+**[FINAL] Fractional raw technique awards must be preserved.** 80 / 20 of a 6.00
+allowance is 4.80 and 1.20. Rounding to integers would discard up to 20% of the
+secondary's daily award and would make the split silently wrong. The technique
+curve is continuous over raw points, so storing a non-integer costs nothing.
+
+**[FINAL]** After the technique allowance is exhausted, **no further AFK technique
+progression is earned until the next daily reset.** The station goes idle: it does
+not fall back to CN, overflow into another stat, or continue at a reduced rate.
+
+### 34.8 Meets remain the main technique progression activity — [PROVISIONAL]
+
+**[FINAL] Meets must remain the primary source of technique progression.** This is
+the counterweight that stops the game being solved by standing still. CN is
+AFK-only, so technique is where active play has to pay better.
+
+**[PROVISIONAL] Candidate meet technique rates:**
+
+| Parameter | Candidate |
+|---|---|
+| Per **successful eligible** lift attempt | **4.00 raw technique points** |
+| Daily cap | **60.00 raw meet-technique points**, account-wide |
+| Failed attempt | **zero** |
+| Bare participation, bombing, an empty entry | **zero** |
+
+**[FINAL] Zero technique for failed attempts and for empty participation.** This
+mirrors §33.6 and closes a farm: an award for merely entering is an award for
+bombing out quickly and re-entering, which pays better per hour than competing
+properly. Awarding only on a good lift makes the fastest technique route also the
+honest one.
+
+> **⚠ These values must be tested against real meet duration before
+> implementation.** Meet duration **does not exist anywhere in this document or in
+> the code**, and the whole active-versus-AFK ratio depends on it. 4.00 points per
+> successful attempt is 36.00 for a 9-for-9 meet, and the 60.00 daily cap binds
+> partway into a second one — but whether that is generous or stingy is unknowable
+> until a meet takes a measurable number of minutes. **[TBD]** — §34.13.
+
+**[FINAL] Meets award no Competition Number.** §33.3, restated here because this
+is the section that gives meets a progression reward, and the two must not be
+allowed to blur.
+
+**[FINAL] Official meet totals and records come from successful eligible lifting
+performances.** They are **never** derived from combined Competition Number, from
+summed Competition Scales, or from any historical high-water mark. §31 and §32
+remain authoritative. See §34.11 for why this has to be stated explicitly.
+
+### 34.9 Deadlift typing and cosmetic currency — [FINAL mechanic, PROVISIONAL numbers]
+
+**[FINAL] The competition Deadlift remains a TWO-PHASE lift.** Removing
+`PullStrength` removes a **stat**, not a phase.
+
+| Phase | Mechanic | Required for a good lift? | Trainable stat | Difficulty scales with |
+|---|---|---|---|---|
+| **1** | Typing-based pull (§11) | **Yes** | **none** | attempt difficulty / intensity, and real player execution |
+| **2** | Lockout skill check (§11) | **Yes** | **`Lockout`** | attempt difficulty, and effective `Lockout` |
+
+**[FINAL] Phase 1 is still required for a successful Deadlift.** Failing it is a
+NO LIFT and Phase 2 does not run, exactly as before. Nothing about removing the
+stat makes the pull optional, automatic or skippable.
+
+**[FINAL] Phase 1 uses no trainable stat, and no replacement is created.** Its
+difficulty is rebased on **attempt difficulty / intensity plus the player's own
+execution** — nothing else (§34.6).
+
+**[FINAL] Phase 1 may reward cosmetic currency**, under a separately balanced
+reward system.
+
+**[FINAL] Phase 2 is unchanged.** It uses the `Lockout` technique stat, which is
+one of the five trainable stats (§34.6), and it is still required to complete the
+lift.
+
+> **The resulting asymmetry, stated plainly so nobody has to discover it later.**
+> Squat Phase 1 scales with `SquatControl`; Bench Phase 1 scales with
+> `StartControl`. **Deadlift Phase 1 scales with no trainable stat at all** — only
+> with the weight on the bar and the player at the keyboard.
+>
+> The Deadlift's character progression therefore lives entirely in two places:
+> **Competition Number**, which sets the attempt's physical difficulty (§33.4),
+> and **`Lockout`**, which governs Phase 2. Both are fully intact.
+>
+> This is a deliberate consequence of the five-stat decision, not an oversight.
+> The typing pull is the game's one pure player-skill gate, and §1's premise that
+> character progression and player skill are **separate** inputs is what makes
+> that acceptable.
+
+**[FINAL] Cosmetic currency is strictly cosmetic:**
+
+| Rule | Status |
+|---|---|
+| Cannot increase Competition Number | **[FINAL]** |
+| Cannot increase any technique stat | **[FINAL]** |
+| Cannot increase any lifting modifier or lifting performance | **[FINAL]** |
+| AFK training awards **none** of it | **[FINAL]** — §34.3 |
+| No `PullStrength`, and no replacement trainable typing stat | **[FINAL]** — §34.6 |
+
+**Why cosmetic-only is load-bearing.** Typing speed is a real-world player
+attribute that the character cannot train and that no in-game progression should
+be able to buy. Paying it in strength or technique would make a fast typist
+permanently stronger than a slow one with the same character, which contradicts
+§1's premise that character progression and player skill are separate inputs.
+Paying it in cosmetics rewards the skill without pricing it into competition.
+
+**[PROVISIONAL] Two quantities are approved in direction and uncalibrated in
+magnitude. Neither may be implemented until it is calibrated:**
+
+| Quantity | Status |
+|---|---|
+| The **typing difficulty rebase** — how Phase 1's character count, sag and mistake penalty derive from attempt intensity alone | **[PROVISIONAL]** — the approach is approved; **no curve exists yet**. Checkpoint 9, §34.14 |
+| The **cosmetic currency reward quantities** — per-attempt award, rate and daily cap | **[PROVISIONAL]** — the approach is approved; **no value exists yet**. Checkpoint 11, §34.14 |
+
+**§12's note that Deadlift training yields cosmetic currency is consistent with
+this and survives.**
+
+### 34.10 The manual lift-selection tradeoff — [FINAL mechanic, PROVISIONAL figures]
+
+> **What is [FINAL] here and what is not.** Path independence, and the existence of
+> a time-for-concentration tradeoff, are **[FINAL]**: they are properties of the
+> Hill formula and of `H(t)`'s per-lift scoping, not balance choices, and they hold
+> whatever the constants turn out to be.
+>
+> **Every day count and hour count in this section is [PROVISIONAL].** All of them
+> are outputs of `BaseProgressRate = 0.01113418` (§34.11) and of `H(t)`'s three
+> candidate parameters (§34.4). When those move, these move.
+
+**[FINAL] Rotation order is mathematically irrelevant. The hours are not.**
+
+The progression derivative is
+
+```
+d(CN_i) / d(E_i) = Reference_i * BaseProgressRate * Hill(CN_i / Reference_i)
+```
+
+whose right-hand side is a function of **`CN_i` alone**. A lift's CN therefore
+depends only on the **cumulative EV that lift has received**, never on when it
+arrived. This is the same path-independence property §29.9 proves for the
+Competition Budget, and it has three consequences worth stating plainly:
+
+| Consequence | Detail |
+|---|---|
+| **There is no ordering to discover** | A daily Squat → Bench → Deadlift rotation gives **identical** results to a perfectly even split at every multiple of three days. Verified: 872.5 kg combined at day 75 by both routes, 83 kg class. |
+| **Between the multiples, rotation is very slightly behind** | Worst case **5.63 kg, or 0.65%**, at the one-day remainder. The over-fed lift converts its surplus EV at a worse Hill rate than the two under-fed lifts lose — a small concavity penalty, not a design problem. |
+| **There is no schedule exploit** | No rotation pattern beats any other at equal cumulative EV per lift. The CN channel cannot be gamed by sequencing. |
+
+**[FINAL] What the player is actually trading is time, not progression rate.**
+Because `H(t)` is per lift while the cap is per account (§34.4), the hours needed
+to reach the 4.00 EV cap depend on how many lifts the day is spread across.
+
+**[PROVISIONAL] The hour figures below** follow from `FullRateHours`, `K` and
+`BaseRate`, all three of which are candidates (§34.4). The **direction** is final;
+the **magnitudes** are not:
+
+| Allocation | Hours to exhaust 4.00 EV | Where the EV lands |
+|---|---|---|
+| One lift all day | **5.4366 h** | 4.00 EV to one lift |
+| Two lifts, 2.00 h each | **4.0000 h** | 2.00 EV to each |
+| Three lifts, 1.33 h each | **4.0000 h** | 1.33 EV to each |
+
+**Any split that keeps every lift at or under two hours reaches the cap in exactly
+4.00 hours.** Concentrating on one lift costs **1.44 extra hours** for the same
+4.00 EV. That is the tradeoff: a player who wants everything in one lift pays for
+it in wall-clock time at the station, and a balanced trainer is rewarded with a
+36% shorter day. No specialization penalty is applied to the CN itself.
+
+> **⚠ Confirm this is intended.** It follows directly from H(t) being per lift and
+> the cap being per account, and it is a pleasing result — soft anti-specialization
+> pressure that costs the specialist nothing in progression. But it does mean the
+> **fastest** route to the daily cap is to switch lifts at the two-hour mark, which
+> is worth knowing before the station UI is designed. The alternative, making H(t)
+> account-wide, would make all allocations cost 5.44 hours and remove the tradeoff
+> entirely. **[TBD]** if the per-lift scoping is not what was wanted.
+
+**[FINAL] Specialization is correctly priced with no artificial penalty.**
+Verified across all seven classes: the optimal uneven allocation beats an even
+split by **under 2% in every class** (1.7% to 2.1%), because `Hill` falls roughly
+as the fifth power of Progression Proximity and so crashes a concentrated lift's
+own marginal yield. A pure single-lift trainer plateaus around **517 kg of an
+890 kg total** — that is arithmetic, not a punishment. A lifter who cannot bench
+cannot total.
+
+**Strategy comparison — days for combined CN to reach 100% of the total-record
+benchmark:**
+
+| Class | Rotate S-B-D | S-S-B-D | D-D-S-B | 7 days Squat, then B, D | Pure single lift |
+|---|---|---|---|---|---|
+| 59 kg | **64** | 68 | 64 | 108 | **never** |
+| 66 kg | **80** | 84 | 82 | 132 | never |
+| 74 kg | **96** | 100 | 98 | 154 | never |
+| 83 kg | **80** | 86 | 84 | 134 | never |
+| 93 kg | **78** | 82 | 80 | 126 | never |
+| 105 kg | **76** | 80 | 80 | 122 | never |
+| 120 kg | **68** | 70 | 72 | 108 | never |
+
+**The real risk in a manual-selection design is forgetting, not min-maxing.** A
+mild skew costs 2 to 6 days. Leaving one lift selected for a week before switching
+costs **44 to 58 days** — a 1.6x to 1.7x slowdown. That is not an exploit; it is a
+**usability trap**, and it falls hardest on the casual player who checks in weekly
+rather than daily. See §34.13.
+
+### 34.11 CN calibration — the approved projection — [PROVISIONAL]
+
+**[FINAL] What is preserved:**
+
+- the existing **21 frozen lift references** (§29.2b), FitVersion 1
+- the existing **Hill curve**, `h = 0.75`, `m = 5` (§29.3)
+- **one global `BaseProgressRate`** (§29.15) — a single configurable constant
+- **training-only** CN progression (§34.2)
+- **no artificial specialization penalty** (§34.10)
+- **no per-class multiplier or per-class Hill correction**
+
+**[PROVISIONAL] Candidate `BaseProgressRate = 0.01113418`. NOT FINAL, AND NOT
+IMPLEMENTED.**
+
+| | Value | Status |
+|---|---|---|
+| **In the code today** | **0.00482389** | **[TUNABLE]** — live in the progression config, unchanged by this section (§29.3) |
+| **Proposed for Step 5** | **0.01113418** | **[PROVISIONAL]** — a calibration candidate. Not implemented, not frozen, and expected to move |
+
+Adopting the candidate changes **nothing structural**: not the §29.3 formula, not
+the 21 frozen Progression References (§29.2b), not the Hill curve, not `h` or
+`m`. It is one multiplier, and every number in this section scales with it.
+
+With the configured 74 kg total-record benchmark retained at 891.5 kg (§34.1
+decision 5), the manual Squat → Bench → Deadlift rotation reaches 100% Record
+Potential Ratio in **64 to 96 days** across the seven classes:
+
+| Class | Day 30 | Day 60 | Day 75 | Day 90 | Day 120 | 95% RPR | **100% RPR** | 105% RPR |
+|---|---|---|---|---|---|---|---|---|
+| 59 kg | 433 | 663 | 730 | 781 | 856 | 56 | **64** | 70 |
+| 66 kg | 456 | 703 | 774 | 828 | 908 | 70 | **80** | 90 |
+| 74 kg | 481 | 745 | 822 | 880 | 965 | 84 | **96** | 110 |
+| 83 kg | 507 | 790 | 873 | 935 | 1026 | 72 | **80** | 92 |
+| 93 kg | 535 | 838 | 926 | 993 | 1090 | 68 | **78** | 88 |
+| 105 kg | 567 | 893 | 988 | 1059 | 1163 | 68 | **76** | 86 |
+| 120 kg | 605 | 958 | 1060 | 1137 | 1249 | 62 | **68** | 76 |
+
+*(Combined CN in kg, three lifts summed. RPR is combined CN divided by the class
+total-record benchmark in `ReferenceRecordConfig`.)*
+
+Per-lift CN at day 90:
+
+| Class | Squat | Bench | Deadlift | Combined | RPR |
+|---|---|---|---|---|---|
+| 59 kg | 276.4 | 191.6 | 313.3 | 781.3 | 116.7% |
+| 66 kg | 297.5 | 203.2 | 327.8 | 828.5 | 105.9% |
+| 74 kg | 320.9 | 215.7 | 343.3 | 879.8 | 98.7% |
+| 83 kg | 346.1 | 229.0 | 359.6 | 934.7 | 105.0% |
+| 93 kg | 373.1 | 243.0 | 376.5 | 992.7 | 107.0% |
+| 105 kg | 404.3 | 259.0 | 395.5 | 1058.8 | 108.0% |
+| 120 kg | 441.7 | 277.8 | 417.5 | 1137.0 | 113.7% |
+
+**[FINAL] The DECISION is approved: accept this projection and keep the 74 kg
+benchmark at 891.5 kg. [PROVISIONAL] The completion times themselves are not
+approved balance** — they are simulation output and move with `BaseProgressRate`.
+Six of seven classes
+land inside the 60 to 90 day contention window. **The 74 kg class sits outside it
+at 96 days**, because its configured total benchmark of 891.5 kg is the lowest
+sum-of-three-to-total ratio in the table (1.011 against 1.040 to 1.067 elsewhere).
+Per decision 5 this is **not** corrected by changing the record, by adding a
+per-class multiplier, or by re-solving the formula. It is a known, bounded,
+documented deviation of six days.
+
+> **Why `BaseProgressRate` should not be retuned to hide it.** Re-solving the
+> constant so the slowest class lands at exactly 90 days gives `B` near 0.01188
+> and a 60 to 90 day window — but it reaches that by making **every other class**
+> faster to compensate for one benchmark value. That is curve-fitting to a single
+> data point, and it would have to be undone the moment the 74 kg benchmark is
+> ever revisited. The honest 64 to 96 day range is the better record.
+
+**[FINAL] Record-contender CN potential and an achieved meet total are separate
+concepts.** Summing the three Competition Numbers gives a lifter's **potential** —
+"this character could contend at this total". It is **never** a total, a record, or
+a result. An official total comes from three successful eligible attempts under
+§31 and §32, and nothing else. The RPR column above measures potential, which is
+why a class can exceed 100% long before any player has set anything.
+
+> **Three summable-looking per-lift quantities now exist** — Competition Number,
+> Competition Scale, and the best successful attempts of a single meet — and only
+> the third of them produces an official total.
+>
+> **[FROZEN] An official meet total is the best successful Squat, Bench and
+> Deadlift attempts from the SAME eligible meet** (§31, §32, and what `MeetTotal`
+> computes). **Historical Competition Scales must never be substituted for it.** A
+> Scale is a high-water mark that may have been set in three different meets months
+> apart, so summing three Scales describes a total nobody ever lifted.
+>
+> **This is NOT a prohibition on a cosmetic display, and it resolves nothing that
+> was open.** §33.8 permits a player-facing "Proven Total" as a clearly-labelled
+> **cosmetic curiosity**, and whether to have one at all is still **[TBD]** (§33.8,
+> §33.11 item 12). That question is untouched here. The rule above governs what
+> counts as an **official** total, not what may be shown on a profile.
+
+### 34.12 Server-side allowance accounting and safeguards — [FINAL]
+
+**[FINAL]** All allowance accounting is **server-authoritative**. The client may
+request to start training, to change lift, or to change technique primary; it
+never supplies elapsed time, accrued EV, technique points, or a day boundary.
+
+**[FINAL] FIVE counters are persisted: two account-wide allowances and three
+per-lift training-time accumulators.** All five are server-authoritative and
+day-keyed.
+
+**The two account-wide allowances:**
+
+```
+cnAllowance = {
+    spentToday      = <number>,   -- EV spent today, 0.00 to 4.00
+    dayKey          = <string>,   -- SERVER-stamped day identifier
+    lastUpdatedUnix = <number>,   -- SERVER clock
+}
+
+techniqueAllowance = {
+    spentToday      = <number>,   -- raw technique points today, 0.00 to 6.00
+    dayKey          = <string>,
+    lastUpdatedUnix = <number>,
+}
+```
+
+**[FINAL] The three per-lift training-time accumulators are REQUIRED.** `H(t)`
+(§34.4) is scoped **per lift**, so `t` cannot be derived from either account
+allowance. Three separate daily accumulators are needed:
+
+```
+trainingTimeToday = {
+    Squat    = <number>,          -- hours of station CN training on Squat today
+    Bench    = <number>,          -- hours on Bench today
+    Deadlift = <number>,          -- hours on Deadlift today
+
+    dayKey          = <string>,   -- SERVER-stamped, shared by all three
+    lastUpdatedUnix = <number>,   -- SERVER clock
+}
+```
+
+Each lift's accumulator feeds `H(t)` for **that lift and nothing else**. The
+account-wide daily CN allowance remains **4.00 EV** and is **not** per lift.
+
+| Counter | Scope | Cap |
+|---|---|---|
+| `cnAllowance.spentToday` | **whole account** | **4.00 EV/day** — **[FINAL]** |
+| `techniqueAllowance.spentToday` | **whole account** | **6.00 raw/day** — [PROVISIONAL], §34.7 |
+| `trainingTimeToday.Squat` | **that lift only** | **uncapped** — it shapes `H(t)`, it never stops training |
+| `trainingTimeToday.Bench` | **that lift only** | uncapped |
+| `trainingTimeToday.Deadlift` | **that lift only** | uncapped |
+
+**[FINAL] Switching the selected lift preserves everything.** It does **not**
+reset:
+
+- the account-wide **EV** already spent today;
+- the account-wide **technique points** already spent today;
+- **any** of the three per-lift time accumulators, including the one belonging to
+  the lift just left.
+
+A player who trains Squat for two hours, switches to Bench, and later switches
+back to Squat resumes Squat at **`t` = 2.00**, not at `t` = 0. **Returning to a
+lift does not restore its full efficiency, and leaving a lift does not forfeit the
+time already banked against it.** Switching is a choice about where the next EV
+goes, never a way to re-open a lift's full-rate window.
+
+**[FINAL] None of the five counters is scoped to a build slot, a weight class, a
+station or a server.** They are account state, day-keyed, and nothing else.
+
+**[FINAL] All five are persisted and must be safe across:**
+
+| Event | Required behaviour |
+|---|---|
+| **A reconnect** | every counter reloads from the profile at the value it held. No reset, no re-grant, no back-pay for the time offline (§34.2) |
+| **A server change** | identical, because nothing lives in session state (§34.5). The new server reads the same five counters and derives the same phase and the same `H(t)` for every lift |
+| **A daily reset** | a new server-stamped `dayKey` zeroes **all five** on the next read — the two allowances **and** all three time accumulators. `H(t)` returns to full efficiency for every lift |
+| **A mid-session shutdown or crash** | the counters were already written on each tick, so nothing is lost beyond the unwritten remainder of the tick in progress |
+
+**[FINAL] CN lift selection stays manual.** None of this changes §34.3: the
+station never rotates on its own, and the per-lift accumulators exist to **price**
+the player's own choice (§34.10), never to make it for them.
+
+**[FINAL] Computed on read.** A station recomputes the current allowance state
+from the persisted counters on every read, rather than reacting to events. This is
+what delivers the §34.5 transition guarantees, and it is the mechanism behind the
+central rule:
+
+> **[FINAL] Changing the selected lift, the technique primary, the station or the
+> server NEVER resets either daily allowance.** There is nothing to reset, because
+> neither counter is scoped to any of those things.
+
+**[FINAL] Required safeguards:**
+
+| Safeguard | Why |
+|---|---|
+| The **day key is stamped by the server**, never derived from a client clock or a client-supplied date | a client-chosen day boundary is an unlimited allowance |
+| **Elapsed time is measured server-side** from `lastUpdatedUnix` | a client-reported duration is a client-reported reward |
+| **Presence at the station is verified server-side** | §34.3 is otherwise unenforceable |
+| **Elapsed time is attributed only to the lift selected at that moment**, server-side | otherwise a client could bank hours against a lift it was not training and reset `H(t)` at will |
+| All five counters are **rolled over by comparing the stored `dayKey` to the server's current one**, never by a scheduled job | a missed timer must not hand out a second day's allowance, and a rollover must happen even if nobody was online when the day turned |
+| Accrual is **clamped to the remaining allowance** before it is written | a long tick near the cap must not overshoot 4.00 EV |
+| The CN write goes through the single reserved `awardProgression(player, lift, effectiveEV)` operation | it derives kilograms from EV, so no caller can get the magnitude wrong — §33.9 |
+| **No RemoteEvent, RemoteFunction or dev trigger may write CN, Scale or technique directly** | the §33.12 security boundary, applied to the training channel |
+| Technique is stored as a **float** | §34.7's fractional awards |
+| A **monotonic** server clock source is used for elapsed time where available | a backwards clock step must not create negative elapsed time |
+
+**[FINAL] Allowances are never granted retroactively.** A player who was offline
+across a daily reset gets a fresh allowance for the current day and nothing for
+the days missed. Allowances do not stack, bank or roll over.
+
+### 34.13 What section 34 does NOT settle
+
+Recorded so none of it is lost, and so none of it is answered by an implementation
+choice:
+
+| # | Open item | Status |
+|---|---|---|
+| 1 | **Meet duration.** Unspecified in this document and absent from the code. It blocks the active-versus-AFK reward ratio and therefore the validation of every §34.8 number. | **[TBD]** — highest-value missing decision |
+| 2 | **The Deadlift typing difficulty rebase**, and the **cosmetic currency reward quantities** for it (§34.9). The two-phase structure and the cosmetic-only rule are **[FINAL]**; both sets of numbers are **[PROVISIONAL]** and do not exist yet. | **[PROVISIONAL]**, no values |
+| 3 | **The forgetfulness mitigation.** §34.10 shows weekly switching costs 44 to 58 days. Candidates: a persistent indicator of which lift is selected and for how long; a one-tap switch at the station; or an **opt-in**, player-configured rotating routine — which would not violate §34.3, since what is forbidden is the station rotating on its own, not the player choosing a rotation. | **[TBD]** |
+| 4 | **Whether H(t)'s per-lift scoping is intended**, given the 4.00 h versus 5.44 h result in §34.10. | **[TBD]** |
+| 5 | **How a meet's technique award is split** across a lift's two stats — evenly, or weighted by which phase the attempt tested. | **[TBD]** |
+| 6 | **Whether 8.44 hours is an intended full daily cycle** (§34.14). Four hours already yields 84.7% of the CN cap. | **[TBD]** |
+| 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. | **[TBD]** — §33.12 step 8 |
+| 8 | **The fate of Training Energy** (§29.8). Superseded as a CN throttle by decision 2 and by "no hard daily training-hour limit", but still persisted in the schema. Retire it, or give it a different job. | **[TBD]** |
+| 9 | Everything still open in **§33.11** — the Scale challenge curve and cap, maximum-risk meet strategy, eligible-meet definition, Scale across weight classes, and Scale display. | **[TBD]** |
+
+**Not open, for the avoidance of doubt:** the five decisions in §34.1, the single
+CN source in §34.2, the station rules in §34.3, the two-phase Deadlift and the
+five-stat set in §34.6 and §34.9, the 80/20 split in §34.7, the zero-for-failure
+rule in §34.8, and the accounting model in §34.12.
+
+**And, equally for the avoidance of doubt, NOT FROZEN.** Every constant below is
+**[PROVISIONAL]** or **[TBD]**, must be implemented as named configuration, and is
+expected to move:
+
+| Constant | Candidate | Where |
+|---|---|---|
+| `BaseProgressRate` | 0.01113418 | §34.11 — the code still holds 0.00482389 |
+| `BaseRate`, `FullRateHours`, `K` | 1.00 EV/h, 2.00 h, 2.00 | §34.4 |
+| AFK technique rate and daily cap | 2.00 raw/h, 6.00 raw/day | §34.7 |
+| Meet technique award and daily cap | 4.00 raw, 60.00 raw/day | §34.8 — also blocked on meet duration |
+| Deadlift typing difficulty rebase | **no curve exists** | §34.9 |
+| Cosmetic currency rate and cap | **no value exists** | §34.9 |
+| Every day count and every hour count | — | §34.4, §34.10, §34.11 |
+
+**The 4.00 EV daily CN cap is the one number in §34 that is [FINAL]**, because it
+was approved as a design decision rather than derived as a calibration (§34.1
+decision 2).
+
+### 34.14 Implementation dependencies and recommended checkpoints
+
+**Station occupancy per full daily cycle, for reference:**
+
+| Phase | Hours |
+|---|---|
+| CN, one lift, 0 to 4.00 EV | **5.4366** |
+| CN, split across two or more lifts, none over 2 h | **4.0000** |
+| Technique, 6.00 raw at 2.00/hour | **3.0000** |
+| **Full cycle, concentrated** | **8.4366** |
+| **Full cycle, split** | **7.0000** |
+
+**Recommended checkpoints, smallest safe step first.** These refine §33.12 step 5
+and add the steps this section creates. Each leaves the game playable, and none
+should begin before the decisions it depends on:
+
+| # | Checkpoint | Depends on |
+|---|---|---|
+| 5B.1 | Add the two day-keyed allowance records to the player schema with a migration, written by nothing | nothing — §34.12 shape is [FINAL] |
+| 5B.2 | Add the **training EV config**: `BaseRate`, `FullRateHours`, `K`, `DailyCapEV`, and the technique rate and cap, all as named constants | 5B.1; values are [PROVISIONAL] by design |
+| 5B.3 | Implement `H(t)` and the cumulative-EV integral as a pure, tested module | 5B.2 |
+| 5B.4 | Implement the derived-phase allowance reader — spend, clamp, day-key rollover — pure and tested | 5B.1, 5B.2 |
+| 5B.5 | Implement `awardProgression(player, lift, effectiveEV)` on the data gateway, server-only, no remote | 5B.1; §33.9 |
+| 5B.6 | Wire the gym training station: presence check, lift selection, the accrual tick, the CN-to-technique switch | 5B.3, 5B.4, 5B.5; §34.13 item 4 |
+| 5B.7 | Technique selection and the 80/20 award path, float-stored | 5B.4, 5B.6 |
+| 6 | The Scale challenge modifier | §33.4 curve, cap and target — still **[TBD]** |
+| 7 | Wire meets to raise Scale | a meet system; §33.7 eligibility; **and the class-scoped build system** per §33.8 |
+| 8 | Resolve the Competition Budget | §29.9, §34.13 item 7 |
+| 9 | **Remove `PullStrength`** — schema-version migration, `TypingPhaseConfig` rebase, test updates, and the §3 / §11 / §28 / mechanic-table documentation. **See the migration requirements below** | §34.6, §34.9. Must be **one controlled change**, because a partial removal degrades silently |
+| 10 | Meet technique awards | §34.8; blocked on meet duration, §34.13 item 1 |
+| 11 | Cosmetic currency for Deadlift typing | §34.9; blocked on §34.13 item 2 |
+
+> **Checkpoint 9 is the one with a trap in it.** `PullStrength` is read through
+> `attempt.techniqueSnapshot[techniqueStatName] or 0`
+> (`LiftAttemptService.luau:173`), and `TechniqueCurve.toEffective(0)` returns the
+> curve's base anchor of **10** rather than raising an error -- verified: its assert
+> accepts `raw >= 0`, and `TechniqueConfig.EffectivenessCurve` has an explicit
+> `{ x = 0, y = 10 }` anchor.
+>
+> So a migration that drops the field **without** rebasing the typing curves
+> produces a Deadlift that still runs, never errors, and is quietly wrong -- every
+> lifter silently pinned to the weakest technique the curve can express. That is
+> the worst possible failure mode: no crash, no log line, no test failure, and a
+> real balance change. The schema change and the rebase must ship together.
+
+#### The `PullStrength` removal — migration requirements
+
+**Do not implement any of this now.** This is the specification for checkpoint 9.
+
+The intended game has exactly five technique stats (§34.6, §34.9). Removing the
+sixth is a **schema-version migration**, not a field deletion, and the schema's
+own rule is what makes that distinction load-bearing:
+
+> **A migration step must exist for every historical version gap.** `migrate()`
+> warns and abandons the profile at its old version if it finds no step for a gap,
+> so a missing entry is not a harmless omission — it strands the save.
+
+| # | Requirement |
+|---|---|
+| 1 | **Preserve a migration step for every historical version gap.** The chain must stay unbroken for the oldest profile the DataStore can still hold |
+| 2 | **Do NOT simply delete `migrations[1]`.** It is the version-1-to-2 step, and its *purpose* was to add `PullStrength`, so that purpose disappears — but **the step itself must remain**, as a no-op if nothing else, or every version-1 save is abandoned at version 1 |
+| 3 | **Audit and remove obsolete `PullStrength` references from the historical migration bodies** where strict typing and schema correctness require it. Once the `ProfileData` field and the starting-value entry are gone, any surviving reference to them is a `--!strict` type error, so the historical bodies **must** be edited. Edit the **references**; never edit the **version boundaries** |
+| 4 | **Preserve valid conversion of historical profiles through the full version chain.** A version-1 profile must still arrive at the new current version with everything else intact: Competition Number, Competition Scale, the five surviving technique stats, the Competition Budgets and their timestamps, Training Energy, bodyweight and meta |
+| 5 | **Add a new forward migration that removes the obsolete `PullStrength` field** from profiles that still carry it. Dropping it from the template is **not** sufficient — a saved profile keeps whatever was written to it, so the field must be explicitly removed |
+| 6 | **Update the migration tests to validate a final five-stat profile.** The dev probe currently asserts the opposite in several places, including that the version-1 step adds the field at 0. Those assertions become false **by design** and must be retargeted to assert the field is **absent** after migration |
+| 7 | **Rebase Deadlift typing difficulty in the same controlled checkpoint** (§34.9), before the removal is treated as complete |
+
+**The order inside the checkpoint matters, and doing part of it is worse than
+doing none of it.** The new forward migration is what makes the removal real for
+existing saves. The historical-body audit is what makes the code compile. The
+rebase is what stops the removal from silently changing gameplay. A checkpoint
+that ships any two of the three leaves the game running and wrong, which is the
+one outcome the §34.6 note exists to prevent.
