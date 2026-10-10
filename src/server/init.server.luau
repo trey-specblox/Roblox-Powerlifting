@@ -13,6 +13,9 @@ local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataServi
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptService = require(LiftingFolder:WaitForChild("LiftAttemptService"))
 
+local TrainingFolder = script:WaitForChild("Training")
+local TrainingStationService = require(TrainingFolder:WaitForChild("TrainingStationService"))
+
 -- Player data comes first. Nothing that touches a player's stats can run safely
 -- before the gateway is listening for joins.
 PlayerDataService.start()
@@ -23,3 +26,9 @@ PlayerDataService.start()
 	server property and a client cannot ask for a phase directly.
 ]]
 LiftAttemptService.start()
+
+--[[
+	Gym training racks: the only source of Competition Number. Starts after
+	player data, because every tick goes through the data gateway.
+]]
+TrainingStationService.start()

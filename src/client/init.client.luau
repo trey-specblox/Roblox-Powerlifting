@@ -14,6 +14,12 @@ local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptCon
 -- presents and reports raw inputs; it decides nothing.
 LiftAttemptController.start()
 
+-- The training rack menu. The server opens it when the player holds E at a rack;
+-- it only sends requests and shows what the server says.
+local TrainingFolder = script:WaitForChild("Training")
+local TrainingMenuController = require(TrainingFolder:WaitForChild("TrainingMenuController"))
+TrainingMenuController.start()
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

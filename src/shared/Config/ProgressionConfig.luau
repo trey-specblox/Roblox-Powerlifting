@@ -14,12 +14,12 @@
 
 	BaseProgressRate and the Hill parameters are read by CompetitionNumberReward.
 	Its training entry point is called by the 5B.5 training award on the data
-	gateway, which itself has no caller yet. No attempt, daily or AFK tick awards
-	Competition Number at present.
+	gateway, whose only caller is the gym training rack (TrainingStationService,
+	5B.6). No attempt or daily reward awards Competition Number.
 
 	THE `DailyTraining` BLOCK is read by TrainingEfficiency (5B.3) and
-	TrainingAllowance (5B.4), which the 5B.5 award uses. There is still no gym
-	station, no accrual tick and no timer: that is checkpoint 5B.6.
+	TrainingAllowance (5B.4), which the 5B.5 award uses. The rack's accrual tick
+	(5B.6) lives in TrainingStationConfig, not here.
 
 	Keeping them in one file now is what stops them being re-derived, slightly
 	differently, by each system that eventually needs them.
@@ -305,8 +305,10 @@ ProgressionConfig.DailyTraining = {
 		**[PROVISIONAL]** -- section 34.7. Raw technique points per hour, TOTAL
 		across the primary/secondary split rather than per stat.
 
-		Earned only after the EV cap is reached, when the station switches to
-		technique training (section 34.5).
+		Earned when the player MANUALLY selects technique training at a rack
+		(section 34.5). Rack technique rewards arrive in checkpoint 5B.7; whether
+		they also require the day's CN cap to be reached first is decided there.
+		Automatic CN-to-technique switching is a future Game Pass feature only.
 	]]
 	TechniqueRawPerHour = 2.00,
 

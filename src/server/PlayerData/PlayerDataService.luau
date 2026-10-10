@@ -46,10 +46,11 @@
 	SERVER AUTHORITY
 
 	This module is in ServerScriptService and is unreachable from the client. It
-	creates no RemoteEvents and no RemoteFunctions, so right now there is no path
-	by which a client can read or write persistent data at all. When replication is
-	added later, it must send derived values the client needs for display, and must
-	never accept a value from the client as truth.
+	creates no RemoteEvents and no RemoteFunctions. The only client-facing path
+	near it is the training rack menu (TrainingStationService): a client may
+	REQUEST a training mode, lift and stat, never a value, and receives derived
+	display values back. Any future replication must likewise send derived values
+	for display and never accept a value from the client as truth.
 ]]
 
 local Players = game:GetService("Players")
@@ -337,10 +338,10 @@ end
 	let alone a client -- could supply one. That is the only reason offline
 	regeneration can be trusted.
 
-	NOTHING IN THE GAME CALLS THESE YET. No station calls the training award
-	(checkpoint 5B.6 will), no meet consumes budget, and no AFK system consumes
-	Training Energy. They exist
-	so the systems that will do those things have one validated path.
+	The training award is called by TrainingStationService (checkpoint 5B.6)
+	and by nothing else. No meet consumes budget yet, and no AFK system consumes
+	Training Energy. Those operations exist so the systems that will do those
+	things have one validated path.
 ]]
 
 --[[
@@ -415,9 +416,8 @@ end
 	one synchronous write to the live profile.
 
 	THE ONLY SOURCE OF COMPETITION NUMBER (section 34.2). SERVER-ONLY: there is
-	no remote for it, and none may ever be added. The caller is the gym training
-	station of checkpoint 5B.6, which does not exist yet, so NOTHING CALLS THIS
-	in 5B.5.
+	no remote for it, and none may ever be added. The ONLY caller is the gym
+	training station, TrainingStationService (checkpoint 5B.6).
 
 	WHAT THE CALLER SUPPLIES, AND WHAT IT NEVER DOES
 	  - `elapsedSeconds` is ACTIVE training time the server itself observed with
