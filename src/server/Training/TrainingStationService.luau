@@ -3,10 +3,11 @@
 	TrainingStationService
 	Server / Training
 
-	The universal gym training racks of checkpoint 5B.6 (GAME_DESIGN.md section
-	34.3, 34.5 and 34.12). The ONLY caller of
-	PlayerDataService.awardTrainingProgression, and therefore the only place
-	Competition Number is ever earned (section 34.2).
+	The universal gym training racks of checkpoints 5B.6 and 5B.7
+	(GAME_DESIGN.md section 34.3, 34.5, 34.7 and 34.12). The ONLY caller of
+	PlayerDataService.awardTrainingProgression and
+	PlayerDataService.awardTechniqueTraining, and therefore the only place
+	Competition Number (section 34.2) or rack technique is ever earned.
 
 	=========================================================================
 	HOW A PLAYER USES A RACK
@@ -37,23 +38,30 @@
 		   failure ends the occupancy with NO credit for the interval.
 		2. Otherwise settle the interval through TrainingStationRules: measured
 		   with os.clock() from this player's last tick, clamped to
-		   MaxCreditSecondsPerTick, credited ONLY if CN training is running and
-		   CN can still be earned today.
+		   MaxCreditSecondsPerTick, and credited to what is selected NOW --
+		   CN (only while CN can still be earned today) or technique (always:
+		   technique has no earning cap and runs across midnight).
 
-	At the 4.00 EV cap a FREE player's training STOPS: no more CN, no
+	At the 4.00 EV cap a FREE player's CN training STOPS: no more CN, no
 	technique, no change of mode or lift. The rack stays theirs and they are
-	told "Daily CN Limit Reached -- Training Stopped". Automatic switching to
-	technique is a FUTURE Game Pass feature and is not implemented here.
+	told "Daily CN Limit Reached -- Training Stopped". They may MANUALLY pick
+	technique. Automatic switching to technique is a FUTURE Game Pass feature
+	and is not implemented here.
+
+	CN eligibility (the zero-second CN award, which refuses the 120+ class) is
+	checked when CN is STARTED, not when the menu opens, so every lifter can
+	use a rack for technique.
 
 	The gateway never yields, so nothing interleaves: a tick, a switch and a
 	Stop can never credit the same seconds twice.
 
 	=========================================================================
-	WHAT 5B.6 DELIBERATELY DOES NOT DO
+	WHAT THE RACKS DELIBERATELY DO NOT DO
 	=========================================================================
 
-	- No technique points. Technique can be selected and is shown as "available
-	  in Step 5B.7"; its time is discarded.
+	- No technique cap, no technique allowance, no raw-rate slowdown.
+	- No training buffs yet (TechniqueTraining.rawPointsFor is where an
+	  approved one would go).
 	- No Game Pass, no MarketplaceService, no automatic fallback.
 	- No anti-idle measures. Roblox's idle kick disconnects the player, which
 	  ends accrual like any other disconnect. No offline progression, ever.
@@ -71,6 +79,10 @@ local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig")
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
+local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
+
+local DifficultyFolder = Shared:WaitForChild("Difficulty")
+local TechniqueCurve = require(DifficultyFolder:WaitForChild("TechniqueCurve"))
 
 local TrainingFolder = Shared:WaitForChild("Training")
 local TrainingStationRules = require(TrainingFolder:WaitForChild("TrainingStationRules"))
@@ -125,16 +137,26 @@ local function readCN(player: Player): TrainingStationRules.CNStatus
 	return TrainingStationRules.cnStatus(data.cnAllowance, os.time())
 end
 
-local function cnReaderFor(player: Player): TrainingStationRules.CNReader
-	return function()
-		return readCN(player)
-	end
-end
-
-local function awardFor(player: Player): TrainingStationRules.AwardFunction
-	return function(lift: string, elapsedSeconds: number)
-		return PlayerDataService.awardTrainingProgression(player, lift, elapsedSeconds)
-	end
+--[[
+	The four gateway functions the rules need, bound to one player. These are
+	the ONLY calls into the two award operations anywhere in the game.
+]]
+local function gatewayFor(player: Player): TrainingStationRules.Gateway
+	return {
+		readCN = function()
+			return readCN(player)
+		end,
+		checkCN = function(lift: string)
+			-- Zero seconds: earns nothing, writes at most a day rollover.
+			return PlayerDataService.awardTrainingProgression(player, lift, 0)
+		end,
+		awardCN = function(lift: string, elapsedSeconds: number)
+			return PlayerDataService.awardTrainingProgression(player, lift, elapsedSeconds)
+		end,
+		awardTechnique = function(lift: string, primary: string, elapsedSeconds: number)
+			return PlayerDataService.awardTechniqueTraining(player, lift, primary, elapsedSeconds)
+		end,
+	}
 end
 
 local function aliveHumanoid(character: Model?): Humanoid?
@@ -248,6 +270,29 @@ local function sendState(player: Player, notice: string?)
 		liftHours = hours
 	end
 
+	--[[
+		Every trainable stat, raw and effective. Effective is computed HERE, on
+		read, through the one curve -- the award never touches it. A stat that
+		is not a usable number is simply left out of the display.
+	]]
+	local techniqueStats: { [string]: TrainingRemotes.TechniqueStatView } = {}
+	local technique = if data ~= nil then (data :: any).technique else nil
+
+	if typeof(technique) == "table" then
+		for _, lift in ipairs(ProgressionConfig.Lifts) do
+			for _, stat in ipairs(TechniqueTraining.statsFor(lift) or {}) do
+				local raw = technique[stat]
+				if typeof(raw) == "number" and raw == raw and raw >= 0 and raw < math.huge then
+					local curveRead, effective = pcall(TechniqueCurve.toEffective, raw)
+					techniqueStats[stat] = {
+						raw = raw,
+						effective = if curveRead then effective else nil,
+					}
+				end
+			end
+		end
+	end
+
 	local state: TrainingRemotes.MenuState = {
 		open = session ~= nil and session.menuOpen,
 		occupying = session ~= nil,
@@ -262,6 +307,10 @@ local function sendState(player: Player, notice: string?)
 		evToday = evToday,
 		evCap = ProgressionConfig.DailyTraining.DailyCapEV,
 		liftHoursToday = liftHours,
+		techniqueRawPerHour = TechniqueTraining.baseRawPerHour(),
+		techniquePrimaryShare = ProgressionConfig.DailyTraining.TechniquePrimaryShare,
+		techniqueStats = techniqueStats,
+		sessionGains = if session then table.clone(session.techniqueGains) else {},
 	}
 
 	set.menuState:FireClient(player, state)
@@ -348,6 +397,18 @@ local function logCredit(player: Player, report: TrainingStationRules.CreditRepo
 		return
 	end
 
+	if report.mode == "Technique" then
+		local parts: { string } = {}
+		local gains: { any } = result.gains or {}
+		local after: { [string]: number } = result.after or {}
+		for _, gain in ipairs(gains) do
+			table.insert(parts, string.format("+%.5f %s -> %.4f", gain.raw, gain.stat, after[gain.stat] or 0))
+		end
+		log("%s %s technique tick: %.1f s credited, %s, %s", player.Name, tostring(report.lift),
+			report.creditedSeconds, tostring(result.outcome), table.concat(parts, ", "))
+		return
+	end
+
 	log(
 		"%s %s tick: %.1f s credited, %s, +%.5f EV, CN %.3f -> %.3f%s",
 		player.Name,
@@ -370,7 +431,14 @@ local function handleCredit(player: Player, report: TrainingStationRules.CreditR
 		local reason = if typeof(report.result) == "table"
 			then tostring(report.result.rejectionReason)
 			else "no active data session"
-		endTraining(player, "training rejected: " .. reason, "Training is unavailable right now.")
+		--[[
+			A corrupt technique stat is REFUSED, never repaired: the award wrote
+			nothing, and the session ends so it does not retry every tick.
+		]]
+		local notice = if report.mode == "Technique" and reason == "InvalidTechnique"
+			then "Technique training stopped: your saved technique stats could not be read. Nothing was changed."
+			else "Training is unavailable right now."
+		endTraining(player, "training rejected: " .. reason, notice)
 		return false
 	end
 
@@ -422,25 +490,11 @@ local function onPromptTriggered(player: Player, station: Station)
 		return
 	end
 
-	local reserving = TrainingStationRules.sessionOf(registry, player) == nil
-
-	if reserving then
-		--[[
-			A ZERO-SECOND CHECK through the real gateway before reserving. It
-			earns nothing; it only confirms this player can train at all (for
-			example, a weight class with no Progression Reference is refused
-			here once, with a reason). A successful check writes at most a day
-			rollover.
-		]]
-		local check = PlayerDataService.awardTrainingProgression(player, ProgressionConfig.Lifts[1], 0)
-		if TrainingStationRules.isFatalResult(check) then
-			log("%s refused at %s: cannot train (%s)", player.Name, station.stationId,
-				if check then tostring(check.rejectionReason) else "no active data session")
-			sendState(player, "Training is unavailable for your profile right now.")
-			return
-		end
-	end
-
+	--[[
+		No CN check here (moved in 5B.7): CN eligibility is checked when CN is
+		STARTED, so a lifter the CN award refuses -- the 120+ class -- can still
+		open the menu and train technique.
+	]]
 	local openRefusal, outcome = TrainingStationRules.openMenu(registry, player, station.stationId, presence, os.clock())
 	if openRefusal ~= nil then
 		sendState(player, MENU_REFUSAL_TEXT[openRefusal])
@@ -466,6 +520,7 @@ local SELECT_NOTICE: { [string]: string } = {
 	Cooldown = "Please wait a moment before changing again.",
 	CNCapReached = CAP_NOTICE,
 	CNUnavailable = "Competition Number training is unavailable right now.",
+	CNIneligible = TrainingStationRules.CN_INELIGIBLE_MESSAGE,
 	Invalid = "That training choice is not valid.",
 	NotAuthorized = "Hold E at a rack to open the menu.",
 }
@@ -480,8 +535,7 @@ local function onStart(player: Player, session: TrainingStationRules.Session, se
 		os.clock(),
 		TrainingStationConfig.SelectionCooldownSeconds,
 		TrainingStationConfig.MaxCreditSecondsPerTick,
-		cnReaderFor(player),
-		awardFor(player)
+		gatewayFor(player)
 	)
 
 	local credit = report.credit
@@ -497,9 +551,6 @@ local function onStart(player: Player, session: TrainingStationRules.Session, se
 	if report.decision == "Started" then
 		log("%s started %s %s%s on %s", player.Name, selection.mode, selection.lift,
 			if selection.primary then " (" .. selection.primary .. ")" else "", session.stationId)
-		if selection.mode == "Technique" then
-			notice = TrainingStationRules.TECHNIQUE_PENDING_MESSAGE
-		end
 	elseif report.decision ~= "Unchanged" then
 		log("%s selection refused: %s", player.Name, report.decision)
 	end
@@ -564,8 +615,7 @@ local function onMenuRequest(player: Player, ...: any)
 			os.clock(),
 			true,
 			TrainingStationConfig.MaxCreditSecondsPerTick,
-			cnReaderFor(player),
-			awardFor(player)
+			gatewayFor(player)
 		)
 		if credit then
 			logCredit(player, credit)
@@ -613,8 +663,7 @@ local function tickOccupants()
 			player,
 			now,
 			TrainingStationConfig.MaxCreditSecondsPerTick,
-			cnReaderFor(player),
-			awardFor(player)
+			gatewayFor(player)
 		)
 
 		if report.status == "Credited" or report.status == "CNCapReached" or report.status == "CNUnavailable" then

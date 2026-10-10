@@ -23,9 +23,10 @@
 
 	Only a REQUEST for a mode, a lift and a technique primary stat. It never
 	sends a station id (the server knows which rack the player holds), a
-	position, a duration, a timestamp, EV, CN or a Game Pass entitlement, and
-	a request carrying any extra field is refused. There is no remote that
-	reaches PlayerDataService.awardTrainingProgression.
+	position, a duration, a timestamp, EV, CN, technique points or a Game Pass
+	entitlement, and a request carrying any extra field is refused. There is no
+	remote that reaches PlayerDataService.awardTrainingProgression or
+	PlayerDataService.awardTechniqueTraining.
 
 	The menu itself is only OPENED by the server, after the player holds E at a
 	rack and the server has checked their presence and the rack's availability.
@@ -52,6 +53,12 @@ export type RemoteSet = {
 	The shape of a TrainingMenuState message. Display only: the client renders
 	it and decides nothing from it.
 ]]
+export type TechniqueStatView = {
+	raw: number,
+	-- Through TechniqueCurve, on the server. nil if it could not be computed.
+	effective: number?,
+}
+
 export type MenuState = {
 	-- Whether the server currently authorizes this player's menu.
 	open: boolean,
@@ -63,12 +70,20 @@ export type MenuState = {
 	lift: string?,
 	primary: string?,
 	statusLine: string,
-	-- A one-off message: a refusal, the cap notice, the 5B.7 notice.
+	-- A one-off message: a refusal, the CN cap notice, a data error.
 	notice: string?,
 	cnAvailable: boolean,
 	evToday: number?,
 	evCap: number,
 	liftHoursToday: { [string]: number }?,
+	-- Technique (5B.7). There is no technique cap, so there is no "today" or
+	-- "remaining" figure for technique -- only rates, values and session gains.
+	techniqueRawPerHour: number,
+	techniquePrimaryShare: number,
+	-- Every trainable stat's current raw and effective value.
+	techniqueStats: { [string]: TechniqueStatView },
+	-- Raw points earned per stat during THIS rack session. Never saved.
+	sessionGains: { [string]: number },
 }
 
 local function collect(folder: Instance, wait: boolean): RemoteSet

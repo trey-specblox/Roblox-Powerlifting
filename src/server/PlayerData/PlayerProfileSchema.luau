@@ -154,15 +154,19 @@ export type CompetitionBudget = {
 	same single line of logic and no special cases. Section 34.5 requires the
 	phase to be DERIVED from these counters for exactly this reason.
 
-	FRACTIONAL BY DESIGN. Section 34.7's 80/20 split of a 6.00 point allowance is
-	4.80 and 1.20, and section 34.4's EV accrues continuously, so rounding either
-	counter to an integer would silently discard part of an award. Both are plain
-	numbers, which a DataStore stores as JSON numbers.
+	FRACTIONAL BY DESIGN. Section 34.4's EV accrues continuously, so rounding a
+	counter to an integer would silently discard part of an award. Both are
+	plain numbers, which a DataStore stores as JSON numbers.
 
 	NO CAP IS STORED HERE. The 4.00 EV daily CN cap (section 34.1, decision 2)
-	and the provisional 6.00 raw technique allowance (section 34.7) are config,
-	not profile data. Storing a cap per player would mean a later balance change
-	could never reach anyone who already has a profile.
+	is config, not profile data. Storing a cap per player would mean a later
+	balance change could never reach anyone who already has a profile.
+
+	THE TECHNIQUE ALLOWANCE IS LEGACY DATA (checkpoint 5B.7). Technique training
+	has no earning cap, so nothing spends `techniqueAllowance` or reads a limit
+	from it. It is kept -- not removed, renamed or migrated -- so every saved
+	profile loads unchanged, and the CN plan still rolls and stamps it exactly
+	as before.
 ]]
 export type DailyAllowance = {
 	spentToday: number,
@@ -294,10 +298,9 @@ export type ProfileData = {
 		third record holds three PER-LIFT hour counters but is still account
 		state: there is one of it per profile, sharing one day key.
 
-		NOTHING READS OR WRITES THESE YET. Checkpoint 5B.1 is storage only. The
-		config that carries the caps is 5B.2, the H(t) maths is 5B.3, and the
-		reader that compares day keys and spends against these is 5B.4. Until
-		then every counter is zero and every day key is UNSTAMPED.
+		Written only by the CN training award (5B.5, driven by the 5B.6 racks).
+		`techniqueAllowance` is LEGACY since 5B.7: technique has no cap, so it
+		is never spent; the CN award still rolls and stamps it unchanged.
 	]]
 	cnAllowance: DailyAllowance,
 	techniqueAllowance: DailyAllowance,

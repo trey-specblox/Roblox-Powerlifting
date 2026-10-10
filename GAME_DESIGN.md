@@ -1611,7 +1611,7 @@ both figures move even though neither channel changed.
 | ~~65/20/15 source split~~ | **[OBSOLETE]** — a target, not a guarantee, and now a target for a channel mix that no longer exists. **Requires recalibration** (§29.6) |
 | **Scale Challenge Ratio curve and cap** | **[TBD]** — new in section 33.4. No values exist |
 | **Station training EV rates** | **[PROVISIONAL]** — `BaseRate` 1.00 EV/hour, `FullRateHours` 2.00, `K` 2.00, `DailyCapEV` 4.00. Section 34.4. Not validated in a running game |
-| **AFK technique rates** | **[PROVISIONAL]** — 2.00 raw points/hour, 6.00 raw/day account-wide. Section 34.7 |
+| **AFK technique rates** | **[PROVISIONAL]** — 2.00 raw points/hour. **No technique earning cap** (checkpoint 5B.7; the former 6.00 raw/day allowance is obsolete). Section 34.7 |
 | **Meet technique rates** | **[PROVISIONAL]** — 4.00 raw per successful attempt, 60.00 raw/day account-wide. **Blocked on meet duration, which does not exist** (section 34.8) |
 | **Cosmetic currency rate and cap** | **[TBD]** — new in section 34.9. No values exist |
 | ~~**Starting Competition Scale**~~ | **DECIDED, NOT A CONSTANT TO TUNE** — unproven, stored as `0` (section 33.8). Implemented in schema v4 |
@@ -2892,7 +2892,7 @@ none should begin without the decisions it depends on:
 | 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **DONE** — schema v4: `competitionScale` per lift, `UNPROVEN_SCALE = 0`, `migrations[3]`, two read accessors, no writer. Validated in memory and against a real DataStore on a disposable key |
 | 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | **DONE** — on `ProfileOperations`, internal, zero production callers. See the operation contract below |
 | 5A | **Define** the training CN channel | **DONE** — approved and documented as **section 34**. The §33.9 rates and the §29.6 distribution that blocked this are both resolved |
-| 5B | **Implement** the training CN channel | **IN PROGRESS** — 5B.1 to 5B.5 done; 5B.6 implemented (revised), awaiting Studio verification. Checkpoints in §34.14 |
+| 5B | **Implement** the training CN channel | **IN PROGRESS** — 5B.1 to 5B.6 done; 5B.7 (uncapped technique) implemented, awaiting Studio verification. Checkpoints in §34.14 |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
 | 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility; **and the weight-class build system, per the class-scoping deadline in §33.8** |
 | 8 | Resolve the Competition Budget | §29.9 |
@@ -3065,7 +3065,7 @@ idle timer.
 |---|---|
 | Where | **An eligible gym training rack only.** Every rack is a **universal** station (§34.12, checkpoint 5B.6). Auto-Train runs nowhere else in the world. |
 | Offline | **Never.** §34.2. |
-| Daily training-hour limit | **None.** A player may stand at the station indefinitely. The limits are on **EV and technique points**, not on hours. |
+| Daily training-hour limit | **None.** A player may stand at the station indefinitely. The only daily limit is on **CN EV** (4.00). **Technique has no earning limit at all** (§34.7, checkpoint 5B.7). |
 | Selection | The player holds E at a rack and **manually selects** in the Training Selection menu either **Competition Number for ONE lift** (Squat, Bench or Deadlift) or **Technique** for one lift with a primary stat (§34.7). |
 | What is trained | **Only** what is selected: the selected lift's CN, or (from 5B.7) the selected technique stats. |
 | Automatic rotation | **Never.** The station does not rotate between lifts or change mode on its own, at the cap, at a daily reset, or on any other trigger. |
@@ -3073,7 +3073,7 @@ idle timer.
 | What happens then | **Free players: training STOPS.** No more CN, no technique, no change of mode or lift. The rack stays occupied and shows "Daily CN Limit Reached — Training Stopped." The player may **manually** select Technique to keep training. *(Revised in 5B.6: the earlier automatic switch to technique is now a **future Game Pass** feature only, §34.12.)* |
 | At the next daily reset | CN can be earned again, but a session stopped at the cap **waits for the player to press Start**, and a manually selected technique mode is **never overridden**. *(Revised in 5B.6: CN no longer resumes automatically.)* |
 | Changing selection | Permitted at any time, manually, by the player, through the rack menu. |
-| What a change never does | **Changing lifts, technique stats, stations or servers never resets either daily allowance.** §34.12. |
+| What a change never does | **Changing lifts, technique stats, stations or servers never resets the daily CN allowance, the per-lift hours or any technique stat.** §34.12. |
 | Accounting | **Server-authoritative** timestamps and allowance accounting. §34.12. |
 
 **[FINAL] "No automatic rotation" and "no hard hour limit" are a deliberate pair.**
@@ -3153,8 +3153,8 @@ comparable and the old figure is **[OBSOLETE]** rather than merely retuned.
 > mode is **manual**. The automatic CN-to-technique switch survives only as a
 > **future Game Pass** feature (§34.12) and is not implemented.
 
-**Two kinds of state, kept apart on purpose.** The **allowances** — EV and
-technique spent today, per-lift hours — are persisted, day-keyed account
+**Two kinds of state, kept apart on purpose.** The **allowances** — CN EV
+spent today and the per-lift hours (technique has no allowance since 5B.7) — are persisted, day-keyed account
 counters (§34.12); they are never session state, so a server change, a lift
 switch or a rejoin can neither lose nor duplicate them. The **rack session** —
 which rack, which selection, whether it is stopped — lives only while the player
@@ -3173,9 +3173,9 @@ holds the rack (5B.6 decision 10) and is never trusted for an amount.
     |  SELECTED lift only  |     |  Squat / Bench: 80% primary,       |
     |  BaseRate * H(t)     |     |    20% the other stat              |
     |  toward 4.00 EV      |     |  Deadlift: 100% Lockout            |
-    |  ACCOUNT cap         |     |  toward 6.00 raw/day ACCOUNT cap   |
-    +----------------------+     |  (earns from 5B.7; 5B.6 shows      |
-           |                     |   "available in Step 5B.7")        |
+    |  ACCOUNT cap         |     |  2.00 raw/hour, NO CAP: never      |
+    +----------------------+     |  stops on its own, keeps running   |
+           |                     |  across UTC midnight (5B.7)        |
   account EV reaches 4.00        +------------------------------------+
            |
            v
@@ -3194,7 +3194,7 @@ holds the rack (5B.6 decision 10) and is never trusted for an amount.
 |---|---|---|
 | Selecting to Training | the player presses Start | nothing is credited for the time spent choosing |
 | CN to Stopped | account CN EV reaches **4.00** | the selection is left exactly as chosen; nothing switches |
-| Stopped to Training | the player presses Start: Technique at any time, CN once the UTC reset has restored the allowance | per-lift hours and both allowances, unchanged |
+| Stopped to Training | the player presses Start: Technique at any time, CN once the UTC reset has restored the allowance | per-lift hours, the CN allowance and every technique stat, unchanged |
 | any selection to another | the player changes lift, mode or primary stat | the old selection is credited up to now; **nothing resets** |
 | leaving | Stop, death, respawn, leaving range, disconnect, or the server changes | the rack session ends; the persisted counters are untouched |
 
@@ -3204,9 +3204,9 @@ stored "capped" field and no event that can be missed:
 
 | Case | Behaviour |
 |---|---|
-| The player changes the selected CN lift **mid-session** | The target changes immediately. **Neither allowance resets.** H(t) for the newly selected lift reflects **that lift's** hours today — see §34.10. |
+| The player changes the selected CN lift **mid-session** | The target changes immediately. **The CN allowance does not reset.** H(t) for the newly selected lift reflects **that lift's** hours today — see §34.10. |
 | The 4.00 EV cap is reached **during a server update or shutdown** | Eligibility is a function of `spentToday >= 4.00`, so whichever server the player lands on computes the same answer, and Start CN is refused there too. |
-| A **daily reset** lands while the player is at a rack | The next read sees a new server-stamped day key and both allowances reset to zero. A stopped session stays stopped until the player presses Start; a technique selection stays technique. **The reset never changes a selection.** |
+| A **daily reset** lands while the player is at a rack | The next read sees a new server-stamped day key; the CN allowance and the per-lift hours reset to zero. A session stopped at the CN cap stays stopped until the player presses Start. A **running technique session simply keeps earning**: technique has no daily allowance and no day boundary (5B.7). **The reset never changes a selection.** |
 | The player **changes server** | The rack session is lost by design (the player re-selects); the allowances live in the profile, so nothing is lost or duplicated. |
 
 ### 34.6 Exactly five trainable technique stats — [FINAL]
@@ -3257,9 +3257,31 @@ symmetry would reintroduce the thing being removed under a new name.
 **[FINAL] Technique is trained only when the player MANUALLY selects it** at a
 rack: a lift, and for the Squat or Bench a primary stat. *(Revised in 5B.6: it
 no longer starts automatically at the CN cap. Automatic CN-to-technique fallback
-is a future Game Pass feature only, §34.12.)* **Whether technique can also be
-earned before the day's CN cap is reached is [TBD] for checkpoint 5B.7**; in
-5B.6 it can be selected at any time but earns nothing.
+is a future Game Pass feature only, §34.12.)* **[FINAL] Technique may be selected
+and earned at any time, whether or not CN allowance remains** (checkpoint 5B.7,
+which settled the question this paragraph used to leave open).
+
+**[FINAL] There is NO technique earning cap** (checkpoint 5B.7): no daily,
+weekly, lifetime or per-lift limit, no maximum training duration, and no
+slowdown of the RAW earning rate. A player earns technique for as long as they
+are connected, legitimately occupying a rack and training technique, including
+straight across a UTC midnight. The former 6.00 raw/day allowance is
+**obsolete**; its saved `techniqueAllowance` record is kept only as unused
+legacy data (§34.12).
+
+**[FINAL] Unlimited RAW earning is not unlimited EFFECTIVE technique.** The two
+are separate and must not be confused:
+
+| | Raw technique (stored) | Effective technique (read) |
+|---|---|---|
+| What it is | the number in `technique.<Stat>` | `TechniqueCurve.toEffective(raw)`, what a lift actually uses |
+| How it grows from rack training | **linearly**, 2.00 raw/hour, forever | with **diminishing returns**: 10 at raw 0, ~19.5 at 180, ~41.5 at 1,095, ~52.8 at 2,190, never above 99.5 |
+| Where the limit lives | nowhere — there is none | in the log-space curve, applied **on read** |
+
+The award never calls the curve, and the curve never feeds back into the earning
+rate. Future approved training buffs (`ModifierChannel.TrainingEffectiveness`)
+would scale the one raw-earning calculation, `TechniqueTraining.rawPointsFor`;
+none exists yet.
 
 **[FINAL]** Distribution:
 
@@ -3270,9 +3292,9 @@ earned before the day's CN cap is reached is [TBD] for checkpoint 5B.7**; in
 | **Deadlift** | none — there is one stat | **100%** to `Lockout` |
 
 **[FINAL] The 80 / 20 split is deliberate, and the secondary develops slowly.**
-This was chosen with the consequence known: at 20% of a 6.00 raw/day allowance the
-secondary receives 1.20 raw points a day, and on the log-space technique curve
-that is a small effective gain even over a season. The decision is that AFK
+This was chosen with the consequence known: at 20% of 2.00 raw/hour the
+secondary receives 0.40 raw points an hour, and on the log-space technique curve
+that is a small effective gain. The decision is that AFK
 technique should express a **clear** specialization, and that the secondary's job
 is to not be frozen at zero rather than to keep pace. Players who want balanced
 technique have the right tool for it, and it is meets (§34.8), not the station.
@@ -3282,19 +3304,24 @@ technique have the right tool for it, and it is meets (§34.8), not the station.
 | Parameter | Candidate |
 |---|---|
 | Rate | **2.00 raw technique points per hour**, total across the split |
-| Daily allowance | **6.00 raw technique points**, **account-wide** |
-| Time to exhaust | **3.00 hours** |
+| Earning cap | **none** — **[FINAL]**, checkpoint 5B.7 |
 | Fractional awards | **required** — see below |
 
-**[FINAL] Fractional raw technique awards must be preserved.** 80 / 20 of a 6.00
-allowance is 4.80 and 1.20. Rounding to integers would discard up to 20% of the
-secondary's daily award and would make the split silently wrong. The technique
-curve is continuous over raw points, so storing a non-integer costs nothing.
+**[FINAL] Fractional raw technique awards must be preserved.** A 10-second rack
+tick is 0.00556 raw points, split 0.00444 / 0.00111. Rounding to integers would
+discard every award. The technique curve is continuous over raw points, so
+storing a non-integer costs nothing. The secondary's share is computed as
+`total − primary`, so the two parts always add up to the award exactly.
 
-**[FINAL]** After the technique allowance is exhausted, **no further AFK technique
-progression is earned until the next daily reset.** The technique session stops
-earning: it does not fall back to CN, overflow into another stat, or continue at a
-reduced rate.
+**[FINAL] What technique training never does:** it never awards CN, never
+spends CN allowance or per-lift CN hours, never raises `PullStrength` or any
+typing stat, and never starts on its own — not at the CN cap, not at midnight.
+
+**Implementation (checkpoint 5B.7):** the pure `TechniqueTraining` module, the
+atomic `ProfileOperations.applyTechniqueTraining`, and the server-only
+`PlayerDataService.awardTechniqueTraining(player, lift, primary, elapsedSeconds)`,
+called only by the rack tick (§34.12). The pairing table is
+`ProgressionConfig.TrainableTechnique`.
 
 ### 34.8 Meets remain the main technique progression activity — [PROVISIONAL]
 
@@ -3584,11 +3611,19 @@ why a class can exceed 100% long before any player has set anything.
 request to start training, to change lift, or to change technique primary; it
 never supplies elapsed time, accrued EV, technique points, or a day boundary.
 
-**[FINAL] FIVE counters are persisted: two account-wide allowances and three
+**[FINAL] FIVE counters are persisted: two account-wide records and three
 per-lift training-time accumulators.** All five are server-authoritative and
 day-keyed.
 
-**The two account-wide allowances:**
+> **Revised in checkpoint 5B.7: `techniqueAllowance` is LEGACY DATA.** Technique
+> training has no earning cap (§34.7), so nothing spends this record and nothing
+> reads a limit from it. It is **kept** — not removed, renamed or migrated — so
+> every saved profile loads unchanged, and the CN award still rolls and stamps
+> it exactly as before, which keeps CN accounting byte-for-byte identical. Only
+> the **CN** allowance is a live limit. Removing the record is left to a later
+> cleanup checkpoint with its own migration.
+
+**The two account-wide records:**
 
 ```
 cnAllowance = {
@@ -3597,8 +3632,8 @@ cnAllowance = {
     lastUpdatedUnix = <number>,   -- SERVER clock
 }
 
-techniqueAllowance = {
-    spentToday      = <number>,   -- raw technique points today, 0.00 to 6.00
+techniqueAllowance = {           -- LEGACY since 5B.7: never spent, never a limit
+    spentToday      = <number>,   -- stays as stored (0 in every real save)
     dayKey          = <string>,
     lastUpdatedUnix = <number>,
 }
@@ -3625,7 +3660,7 @@ account-wide daily CN allowance remains **4.00 EV** and is **not** per lift.
 | Counter | Scope | Cap |
 |---|---|---|
 | `cnAllowance.spentToday` | **whole account** | **4.00 EV/day** — **[FINAL]** |
-| `techniqueAllowance.spentToday` | **whole account** | **6.00 raw/day** — [PROVISIONAL], §34.7 |
+| `techniqueAllowance.spentToday` | whole account | **none — legacy, unused** since 5B.7. Technique earning is uncapped, §34.7 |
 | `trainingTimeToday.Squat` | **that lift only** | **uncapped** — it shapes `H(t)`, it never stops training |
 | `trainingTimeToday.Bench` | **that lift only** | uncapped |
 | `trainingTimeToday.Deadlift` | **that lift only** | uncapped |
@@ -3634,7 +3669,7 @@ account-wide daily CN allowance remains **4.00 EV** and is **not** per lift.
 reset:
 
 - the account-wide **EV** already spent today;
-- the account-wide **technique points** already spent today;
+- any **technique stat** already earned (technique has no daily allowance since 5B.7);
 - **any** of the three per-lift time accumulators, including the one belonging to
   the lift just left.
 
@@ -3653,7 +3688,7 @@ station or a server.** They are account state, day-keyed, and nothing else.
 |---|---|
 | **A reconnect** | every counter reloads from the profile at the value it held. No reset, no re-grant, no back-pay for the time offline (§34.2) |
 | **A server change** | identical for the allowances, because none of them lives in session state (§34.5). The new server reads the same five counters and derives the same CN eligibility and the same `H(t)` for every lift; only the rack selection must be chosen again |
-| **A daily reset** | a new server-stamped `dayKey` zeroes **all five** on the next read — the two allowances **and** all three time accumulators. `H(t)` returns to full efficiency for every lift |
+| **A daily reset** | a new server-stamped `dayKey` zeroes **all five** on the next read — the CN allowance, the legacy technique record **and** all three time accumulators. `H(t)` returns to full efficiency for every lift. Technique stats are never reset, and running technique keeps earning (5B.7) |
 | **A mid-session shutdown or crash** | the counters were already written on each tick, so nothing is lost beyond the unwritten remainder of the tick in progress |
 
 **[FINAL] CN lift selection stays manual.** None of this changes §34.3: the
@@ -3666,8 +3701,8 @@ what delivers the §34.5 transition guarantees, and it is the mechanism behind t
 central rule:
 
 > **[FINAL] Changing the selected lift, the technique primary, the station or the
-> server NEVER resets either daily allowance.** There is nothing to reset, because
-> neither counter is scoped to any of those things.
+> server NEVER resets the daily CN allowance or any earned technique.** There is nothing to reset, because
+> none of it is scoped to any of those things.
 
 **[FINAL] Required safeguards:**
 
@@ -3678,15 +3713,15 @@ central rule:
 | **Presence at the station is verified server-side** | §34.3 is otherwise unenforceable |
 | **Elapsed time is attributed only to the lift selected at that moment**, server-side | otherwise a client could bank hours against a lift it was not training and reset `H(t)` at will |
 | All five counters are **rolled over by comparing the stored `dayKey` to the server's current one**, never by a scheduled job | a missed timer must not hand out a second day's allowance, and a rollover must happen even if nobody was online when the day turned |
-| Accrual is **clamped to the remaining allowance** before it is written | a long tick near the cap must not overshoot 4.00 EV |
+| CN accrual is **clamped to the remaining CN allowance** before it is written. (Technique has no allowance to clamp to; it is bounded only by the rack's server-measured, 30-second-per-tick time) | a long tick near the cap must not overshoot 4.00 EV |
 | The CN write goes through the single operation `awardTrainingProgression(player, lift, elapsedSeconds)` | it derives EV from the allowance and kilograms from EV, so no caller can get either magnitude wrong — §33.9 and "The training progression award" below |
 | **No RemoteEvent, RemoteFunction or dev trigger may write CN, Scale or technique directly** | the §33.12 security boundary, applied to the training channel |
 | Technique is stored as a **float** | §34.7's fractional awards |
 | A **monotonic** server clock source is used for elapsed time where available | a backwards clock step must not create negative elapsed time |
 
-**[FINAL] Allowances are never granted retroactively.** A player who was offline
+**[FINAL] The CN allowance is never granted retroactively.** A player who was offline
 across a daily reset gets a fresh allowance for the current day and nothing for
-the days missed. Allowances do not stack, bank or roll over.
+the days missed. Allowances do not stack, bank or roll over. Technique, which has no allowance, is likewise never back-paid: offline or absent time earns nothing (§34.2).
 
 #### The training progression award — checkpoint 5B.5
 
@@ -3746,7 +3781,7 @@ listed below so no contradictory rule survives.
 | 4 | **One player per rack; one rack per player** | **[FINAL]** |
 | 5 | **Free players STOP at the 4.00 EV daily CN cap.** No more CN, **no technique points**, no change of mode or lift. The rack stays occupied and shows **"Daily CN Limit Reached — Training Stopped."** The player must manually select Technique Stats to keep training | **[FINAL]** |
 | 6 | At the **UTC reset** CN becomes available again (as `TrainingAllowance` already specifies), but a session stopped at the cap **stays stopped until the player presses Start**, and a manually selected technique mode is **never overridden** | **[FINAL]** |
-| 7 | Technique can be **selected** in 5B.6 but earns **nothing** until 5B.7. The menu and sign say so ("rewards are available in Step 5B.7"); the time is discarded | **[FINAL]** for 5B.6 |
+| 7 | ~~Technique can be selected in 5B.6 but earns nothing until 5B.7~~ — **superseded by checkpoint 5B.7**: selected technique **earns**, 2.00 raw/hour split 80/20 (or 100% Lockout), with **no cap**, at any time (§34.7). See "Technique at the racks — checkpoint 5B.7" below | **[FINAL]** |
 | 8 | A small purpose-built remote interface (`TrainingRemotes`): one client-to-server request event and one server-to-client state event. See the security model below | **[FINAL]** |
 | 9 | **Presence is verified server-side** on menu authorization, on every request and on every tick. The character is **not** anchored | **[FINAL]** |
 | 10 | The selection is remembered **only while the player holds the rack**. No schema change, no cross-session persistence | **[FINAL]** for 5B.6 |
@@ -3776,10 +3811,12 @@ credits the interval so far (if the player is still present) and frees the rack.
 before anything else** (so the same seconds can never be counted twice, and time
 spent Selecting or Stopped is never paid later), clamps the interval to the
 per-tick maximum, and reads CN eligibility from the saved allowance record **at
-the end of the interval**. Only a Training session in CN mode calls
+the end of the interval**. A Training session in CN mode calls
 `awardTrainingProgression`; the gateway itself caps the partial tick at 4.00 EV
 and splits a UTC midnight. If CN is capped — before the call, or because that
-call reached the cap — the session becomes StoppedAtCNCap.
+call reached the cap — the session becomes StoppedAtCNCap. A Training session in
+Technique mode calls `awardTechniqueTraining` with the same clamped seconds
+(checkpoint 5B.7); it has no cap and no day boundary, so nothing stops it.
 
 | Event | Behaviour |
 |---|---|
@@ -3790,7 +3827,8 @@ call reached the cap — the session becomes StoppedAtCNCap.
 | Death, respawn, leaving range, disconnect | the occupancy ends with **no credit** for the unfinished interval |
 | A second player at an occupied rack | refused |
 | One player at a second rack | refused until they stop at the first |
-| A whole-update rejection (e.g. the 120+ class) | refused at reservation by a zero-second gateway check; mid-session it ends the occupancy |
+| A whole-update rejection (e.g. the 120+ class) | **CN only** (revised in 5B.7): refused when **CN is started**, by a zero-second CN gateway check, with "CN training isn't available for your weight class — Technique training is." The rack and technique stay open to that player. Mid-session any rejected award ends the occupancy |
+| A corrupt technique stat (NaN, negative, non-number) | the technique award is refused with **nothing written**, and the session ends with a clear message. The stat is **not** repaired (5B.7) |
 
 **Security model.** A client may only **request**: Start with `{ mode, lift,
 primary? }`, Stop, or Close. It never sends a station id (the server knows which
@@ -3815,7 +3853,7 @@ only by the server.
 | What it unlocks | When a pass owner's CN training reaches the 4.00 EV daily cap, the rack **automatically** switches to technique training on the **same lift**, using a **primary stat the player configured in advance** | **[TBD]** — later checkpoint |
 | Example | Selected CN Squat, preferred primary Depth Awareness → at the cap: 80% Depth Awareness, 20% Squat Control | design intent |
 | Conditions | Only while the player is still connected and occupying a valid rack. No offline progression | **[FINAL]** when built |
-| What it never does | It never raises the 4.00 EV cap, never changes the progression rate or H(t), and never grants technique beyond the normal technique allowance | **[FINAL]** when built |
+| What it never does | It never raises the 4.00 EV cap, never changes the CN progression rate or H(t), and never changes the technique earning rate (2.00 raw/hour). It automates only the **choice**; the free player can make the same choice by hand | **[FINAL]** when built |
 | Ownership | Checked on the **server** only; a client-reported entitlement is never trusted | **[FINAL]** when built |
 
 **Implementation:** `TrainingStationRules` (pure, tested by
@@ -3823,6 +3861,36 @@ only by the server.
 request validation, presence, the tick), `TrainingRemotes`,
 `TrainingStationConfig`, the client `TrainingMenuController`, and the temporary
 `PlaceholderStations`.
+
+#### Technique at the racks — checkpoint 5B.7
+
+**Approved decisions:**
+
+| # | Decision | Status |
+|---|---|---|
+| A | **No technique earning cap** of any kind; the raw rate never slows (§34.7) | **[FINAL]** |
+| B | Free players stopped at the CN cap stay stopped at midnight until they press Start; **technique that is already running keeps running across midnight** | **[FINAL]** |
+| C | 2.00 raw/hour; the raw-to-effective curve is unchanged; no buffs yet, but the earning calculation is centralised (`TechniqueTraining.rawPointsFor`) for future approved ones | rate **[PROVISIONAL]** |
+| D | Pairings as §34.7, from `ProgressionConfig.TrainableTechnique`; never PullStrength or a typing stat | **[FINAL]** |
+| E | The 120+ class may train technique; only CN needs a Progression Reference | **[FINAL]** |
+| F | Technique can be chosen at any time, whatever CN allowance remains | **[FINAL]** |
+| — | `techniqueAllowance` stays as unused legacy data; no migration | **[FINAL]** |
+| — | Corrupt technique stats are refused (no partial write) and end the session; never silently repaired | **[FINAL]** |
+
+**The award is atomic and server-only.** `applyTechniqueTraining` validates the
+lift, the primary, the interval (finite, at most a day) and both target stats
+(finite, not negative) before computing anything; computes the raw points and
+the new values on locals and refuses any non-finite or decreasing result, or
+parts that do not sum to the total; and only then writes both stats with plain
+assignments, in one profile, with no yield. It never takes points, EV, CN or a
+timestamp, and no remote reaches it.
+
+**The menu shows** the selected primary and secondary, their 80/20 split (or
+100% Lockout), the total and per-stat raw rate, every stat's current raw value
+(four decimals) and effective value, the raw points earned on each stat **this
+rack session** (server-kept, never saved, reset on leaving), and "INCREASING
+NOW" while technique runs. It shows **no** technique daily figure, remaining
+allowance or countdown. The CN daily allowance line is unchanged.
 
 ### 34.13 What section 34 does NOT settle
 
@@ -3836,7 +3904,7 @@ choice:
 | 3 | **The forgetfulness mitigation.** §34.10 shows weekly switching costs 44 to 58 days. Candidates: a persistent indicator of which lift is selected and for how long; a one-tap switch at the station; or an **opt-in**, player-configured rotating routine — which would not violate §34.3, since what is forbidden is the station rotating on its own, not the player choosing a rotation. | **[TBD]** |
 | 4 | **Whether H(t)'s per-lift scoping is intended**, given the 4.00 h versus 5.44 h result in §34.10. | **[TBD]** |
 | 5 | **How a meet's technique award is split** across a lift's two stats — evenly, or weighted by which phase the attempt tested. | **[TBD]** |
-| 6 | **Whether 8.44 hours is an intended full daily cycle** (§34.14). Four hours already yields 84.7% of the CN cap. | **[TBD]** |
+| 6 | ~~Whether 8.44 hours is an intended full daily cycle~~ — **moot since 5B.7**: technique has no cap, so there is no fixed "full cycle". Four hours already yields 84.7% of the CN cap. | **[RESOLVED]** |
 | 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. **Training does not use them** — 5B.5 decision A (§34.12) — so that much is settled; what they are for is not. | **[TBD]** — §33.12 step 8 |
 | 8 | **The fate of Training Energy** (§29.8). Superseded as a CN throttle by decision 2 and by "no hard daily training-hour limit", but still persisted in the schema. Retire it, or give it a different job. | **[TBD]** |
 | 9 | Everything still open in **§33.11** — the Scale challenge curve and cap, maximum-risk meet strategy, eligible-meet definition, Scale across weight classes, and Scale display. | **[TBD]** |
@@ -3854,7 +3922,7 @@ expected to move:
 |---|---|---|
 | `BaseProgressRate` | 0.01113418 | §34.11 — the code still holds 0.00482389 |
 | `BaseRate`, `FullRateHours`, `K` | 1.00 EV/h, 2.00 h, 2.00 | §34.4 |
-| AFK technique rate and daily cap | 2.00 raw/h, 6.00 raw/day | §34.7 |
+| AFK technique rate | 2.00 raw/h (no cap: **[FINAL]**, 5B.7) | §34.7 |
 | Meet technique award and daily cap | 4.00 raw, 60.00 raw/day | §34.8 — also blocked on meet duration |
 | Deadlift typing difficulty rebase | **no curve exists** | §34.9 |
 | Cosmetic currency rate and cap | **no value exists** | §34.9 |
@@ -3866,15 +3934,13 @@ decision 2).
 
 ### 34.14 Implementation dependencies and recommended checkpoints
 
-**Station occupancy per full daily cycle, for reference:**
+**Rack time to reach the daily CN cap, for reference:**
 
 | Phase | Hours |
 |---|---|
 | CN, one lift, 0 to 4.00 EV | **5.4366** |
 | CN, split across two or more lifts, none over 2 h | **4.0000** |
-| Technique, 6.00 raw at 2.00/hour | **3.0000** |
-| **Full cycle, concentrated** | **8.4366** |
-| **Full cycle, split** | **7.0000** |
+| Technique | **no daily cycle** — uncapped at 2.00 raw/hour (5B.7). The former "technique 3.00 h / full cycle 8.44 h or 7.00 h" figures are obsolete |
 
 **Recommended checkpoints, smallest safe step first.** These refine §33.12 step 5
 and add the steps this section creates. Each leaves the game playable, and none
@@ -3883,12 +3949,12 @@ should begin before the decisions it depends on:
 | # | Checkpoint | Depends on |
 |---|---|---|
 | 5B.1 | Add the two day-keyed allowance records to the player schema with a migration, written by nothing | nothing — §34.12 shape is [FINAL] |
-| 5B.2 | Add the **training EV config**: `BaseRate`, `FullRateHours`, `K`, `DailyCapEV`, and the technique rate and cap, all as named constants | 5B.1; values are [PROVISIONAL] by design |
+| 5B.2 | Add the **training EV config**: `BaseRate`, `FullRateHours`, `K`, `DailyCapEV`, and the technique rate and cap, all as named constants (the technique cap was later removed in 5B.7) | 5B.1; values are [PROVISIONAL] by design |
 | 5B.3 | Implement `H(t)` and the cumulative-EV integral as a pure, tested module | 5B.2 |
 | 5B.4 | Implement the derived-phase allowance reader — spend, clamp, day-key rollover — pure and tested | 5B.1, 5B.2 |
 | 5B.5 | Implement `awardTrainingProgression(player, lift, elapsedSeconds)` on the data gateway, server-only, no remote, budget-free — **DONE**, verified in Studio; see §34.12 | 5B.1, 5B.3, 5B.4; §33.9 |
-| 5B.6 | Wire the universal gym training racks: hold-E Training Selection menu, server-validated requests, presence check, manual CN lift selection, the accrual tick, **stop at the CN cap** for free players — **IMPLEMENTED (revised design)** with placeholder racks, awaiting Studio verification; see §34.12 | 5B.3, 5B.4, 5B.5; §34.13 item 4 |
-| 5B.7 | Technique rewards for the manually selected technique mode, the 80/20 award path, float-stored. Decide whether technique may earn before the CN cap | 5B.4, 5B.6 |
+| 5B.6 | Wire the universal gym training racks: hold-E Training Selection menu, server-validated requests, presence check, manual CN lift selection, the accrual tick, **stop at the CN cap** for free players — **DONE (revised design)**, verified in Studio; see §34.12 | 5B.3, 5B.4, 5B.5; §34.13 item 4 |
+| 5B.7 | Technique rewards for the manually selected technique mode: the 80/20 (or 100% Lockout) award path, float-stored, **no cap**, 120+ eligible, legacy `techniqueAllowance` kept — **IMPLEMENTED**, awaiting Studio verification; see §34.7 and §34.12 | 5B.4, 5B.6 |
 | later | **Game Pass:** automatic CN-to-technique fallback with a player-configured primary stat (§34.12). Never raises a cap or a rate | 5B.7; a monetization decision |
 | 6 | The Scale challenge modifier | §33.4 curve, cap and target — still **[TBD]** |
 | 7 | Wire meets to raise Scale | a meet system; §33.7 eligibility; **and the class-scoped build system** per §33.8 |

@@ -863,33 +863,33 @@ do
 	check("K is 2.00", near(DT.K, 2.00), tostring(DT.K))
 	check("TechniqueRawPerHour is 2.00", near(DT.TechniqueRawPerHour, 2.00),
 		tostring(DT.TechniqueRawPerHour))
-	check("DailyCapTechniqueRaw is 6.00", near(DT.DailyCapTechniqueRaw, 6.00),
-		tostring(DT.DailyCapTechniqueRaw))
+	check("there is NO technique earning cap (5B.7): DailyCapTechniqueRaw is gone",
+		(DT :: any).DailyCapTechniqueRaw == nil)
 	check("TechniquePrimaryShare is 0.80 [FINAL]", near(DT.TechniquePrimaryShare, 0.80),
 		tostring(DT.TechniquePrimaryShare))
 
 	----------------------------------------------------------------------------
 	--[[
 		THE SECONDARY SHARE IS DERIVED, NEVER STORED, so this asserts the
-		derivation rather than a second constant. 80/20 of 6.00 is 4.80 and 1.20,
-		and the fact that those are not integers is exactly why section 34.12
-		requires fractional storage.
+		derivation rather than a second constant. 80/20 of an hour's 2.00 raw
+		points is 1.60 and 0.40, and the fact that those are not integers is
+		exactly why section 34.12 requires fractional storage.
 	]]
 	----------------------------------------------------------------------------
 	local secondaryShare = 1 - DT.TechniquePrimaryShare
 
 	check("the derived secondary share is 0.20", near(secondaryShare, 0.20),
 		tostring(secondaryShare))
-	check("the two shares sum to exactly one allowance",
+	check("the two shares sum to exactly one whole award",
 		near(DT.TechniquePrimaryShare + secondaryShare, 1.0))
-	check("a full technique day splits 4.80 / 1.20",
-		near(DT.TechniquePrimaryShare * DT.DailyCapTechniqueRaw, 4.80)
-			and near(secondaryShare * DT.DailyCapTechniqueRaw, 1.20),
+	check("an hour of technique splits 1.60 / 0.40",
+		near(DT.TechniquePrimaryShare * DT.TechniqueRawPerHour, 1.60)
+			and near(secondaryShare * DT.TechniqueRawPerHour, 0.40),
 		string.format("%.4f / %.4f",
-			DT.TechniquePrimaryShare * DT.DailyCapTechniqueRaw,
-			secondaryShare * DT.DailyCapTechniqueRaw))
+			DT.TechniquePrimaryShare * DT.TechniqueRawPerHour,
+			secondaryShare * DT.TechniqueRawPerHour))
 	check("neither share is a whole number of points, so storage must be fractional",
-		DT.TechniquePrimaryShare * DT.DailyCapTechniqueRaw % 1 ~= 0)
+		DT.TechniquePrimaryShare * DT.TechniqueRawPerHour % 1 ~= 0)
 
 	----------------------------------------------------------------------------
 	--[[
@@ -904,11 +904,6 @@ do
 		string.format("%.4f vs %.4f", DT.DailyCapEV, DT.BaseRate * DT.FullRateHours))
 	check("the full-rate window delivers exactly half the daily cap",
 		near(DT.BaseRate * DT.FullRateHours / DT.DailyCapEV, 0.50))
-	check("the technique allowance is exhaustible within a day",
-		DT.DailyCapTechniqueRaw / DT.TechniqueRawPerHour < 24,
-		string.format("%.2f hours", DT.DailyCapTechniqueRaw / DT.TechniqueRawPerHour))
-	check("the technique allowance takes 3.00 hours",
-		near(DT.DailyCapTechniqueRaw / DT.TechniqueRawPerHour, 3.00))
 
 	----------------------------------------------------------------------------
 	--[[

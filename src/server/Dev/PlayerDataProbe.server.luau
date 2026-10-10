@@ -714,6 +714,14 @@ do
 	check("getRegeneratedTrainingEnergy takes no timestamp", debug.info(PlayerDataService.getRegeneratedTrainingEnergy, "a") == 1)
 	check("getRegeneratedCompetitionBudget takes no timestamp", debug.info(PlayerDataService.getRegeneratedCompetitionBudget, "a") == 2)
 	check("awardTrainingProgression takes no timestamp", debug.info(PlayerDataService.awardTrainingProgression, "a") == 3)
+	check("awardTechniqueTraining takes (player, lift, primary, seconds) -- no points, no timestamp",
+		debug.info(PlayerDataService.awardTechniqueTraining, "a") == 4)
+	check(
+		"the service exposes NO direct technique-stat writer",
+		(PlayerDataService :: any).setTechnique == nil
+			and (PlayerDataService :: any).addTechnique == nil
+			and (PlayerDataService :: any).applyTechniqueTraining == nil
+	)
 
 	-- And no remote exists through which a client could reach any of it.
 	check("PlayerDataService exposes no RemoteEvent", (PlayerDataService :: any).Remote == nil)

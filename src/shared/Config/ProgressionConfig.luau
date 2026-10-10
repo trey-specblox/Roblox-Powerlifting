@@ -305,20 +305,16 @@ ProgressionConfig.DailyTraining = {
 		**[PROVISIONAL]** -- section 34.7. Raw technique points per hour, TOTAL
 		across the primary/secondary split rather than per stat.
 
-		Earned when the player MANUALLY selects technique training at a rack
-		(section 34.5). Rack technique rewards arrive in checkpoint 5B.7; whether
-		they also require the day's CN cap to be reached first is decided there.
+		Earned while the player has MANUALLY selected technique training at a rack
+		(section 34.5), at any time, whether or not CN allowance remains.
 		Automatic CN-to-technique switching is a future Game Pass feature only.
+
+		THERE IS NO TECHNIQUE EARNING CAP (checkpoint 5B.7): no daily, weekly,
+		lifetime or per-lift limit, and the RAW rate never slows down. Diminishing
+		returns happen only when a raw stat is READ, through TechniqueCurve's
+		effective value. The old 6.00 raw/day allowance is obsolete.
 	]]
 	TechniqueRawPerHour = 2.00,
-
-	--[[
-		**[PROVISIONAL]** -- section 34.7. Raw technique points, ACCOUNT-WIDE, per
-		UTC day. Exhausted in 3.00 hours at the rate above, after which the station
-		goes idle: it does not fall back to Competition Number, overflow into
-		another stat, or continue at a reduced rate.
-	]]
-	DailyCapTechniqueRaw = 6.00,
 
 	--[[
 		**[FINAL]** -- section 34.1, decision 4.
@@ -329,23 +325,42 @@ ProgressionConfig.DailyTraining = {
 
 		THE SECONDARY SHARE IS DERIVED, NOT STORED: 1 - this. Storing both would
 		let them drift to 0.8 and 0.3 and silently stop summing to a whole
-		allowance.
+		award.
 
 		THE SECONDARY DEVELOPING SLOWLY IS THE DECISION, NOT A SIDE EFFECT. At 20%
-		of a 6.00 allowance the secondary receives 1.20 raw points a day, which on
-		the log-space technique curve is a small effective gain even over a season.
-		AFK technique is meant to express a clear specialisation; the secondary's
-		job is to not be frozen at zero rather than to keep pace. Balanced
-		technique comes from meets (section 34.8), not from the station.
+		of 2.00 raw/hour the secondary receives 0.40 raw points an hour, a small
+		effective gain on the log-space technique curve. AFK technique is meant to
+		express a clear specialisation; the secondary's job is to not be frozen at
+		zero rather than to keep pace. Balanced technique comes from meets
+		(section 34.8), not from the station.
 	]]
 	TechniquePrimaryShare = 0.80,
 
 	--[[
-		FRACTIONAL AWARDS ARE REQUIRED, NOT OPTIONAL. 80/20 of 6.00 is 4.80 and
-		1.20, and EV accrues continuously, so rounding either counter to an integer
-		would discard up to a fifth of the secondary's daily award. The schema
-		stores both as plain numbers for this reason (section 34.12).
+		FRACTIONAL AWARDS ARE REQUIRED, NOT OPTIONAL. A 10 s rack tick is 0.0056
+		raw points, split 0.00444 / 0.00111, and EV accrues continuously, so
+		rounding either to an integer would discard every award. The schema stores
+		both as plain numbers for this reason (section 34.12).
 	]]
+}
+
+--[[
+	**[FINAL]** -- section 34.6. THE AUTHORITATIVE TECHNIQUE PAIRING TABLE: which
+	raw technique stats each lift's rack training raises, in menu order.
+
+		Squat     SquatControl, DepthAwareness   (the chosen primary gets
+		Bench     StartControl, PressPower        TechniquePrimaryShare, the
+		                                          other stat the rest)
+		Deadlift  Lockout                        (100%)
+
+	PullStrength is NEVER trainable, and the Deadlift's typing phase has no
+	trainable stat. Every other module -- the award, the rack rules, the menu --
+	reads this table rather than keeping its own copy.
+]]
+ProgressionConfig.TrainableTechnique = {
+	Squat = { "SquatControl", "DepthAwareness" },
+	Bench = { "StartControl", "PressPower" },
+	Deadlift = { "Lockout" },
 }
 
 --[[
@@ -407,7 +422,6 @@ requirePositiveFinite("DailyTraining.DailyCapEV", dailyTraining.DailyCapEV)
 requirePositiveFinite("DailyTraining.BaseRate", dailyTraining.BaseRate)
 requirePositiveFinite("DailyTraining.K", dailyTraining.K)
 requirePositiveFinite("DailyTraining.TechniqueRawPerHour", dailyTraining.TechniqueRawPerHour)
-requirePositiveFinite("DailyTraining.DailyCapTechniqueRaw", dailyTraining.DailyCapTechniqueRaw)
 
 --[[
 	Zero is legal here, unlike the values above: it means H(t) starts decaying
@@ -444,22 +458,6 @@ assert(
 )
 
 --[[
-	THE TECHNIQUE ALLOWANCE MUST BE EXHAUSTIBLE WITHIN A DAY.
-
-	Same class of bug as the one above. An allowance that took more than 24 hours
-	to spend could never be reached before the daily reset zeroed it, so it would
-	be decorative rather than a limit. At the approved values it takes 3.00 hours.
-]]
-assert(
-	dailyTraining.DailyCapTechniqueRaw / dailyTraining.TechniqueRawPerHour < 24,
-	string.format(
-		"[ProgressionConfig] the technique allowance takes %.2f hours to exhaust, which is "
-			.. "more than a day, so the daily reset would make it unreachable",
-		dailyTraining.DailyCapTechniqueRaw / dailyTraining.TechniqueRawPerHour
-	)
-)
-
---[[
 	A PRIMARY THAT IS NOT A MAJORITY IS NOT A PRIMARY. Above 0.5 and at most 1.0.
 	1.0 is legal and means the secondary receives nothing, which is already how
 	the Deadlift behaves with its single trainable stat.
@@ -487,5 +485,47 @@ assert(
 	"[ProgressionConfig] section 34.1 decision 3 removed the per-lift EV cap: the "
 		.. "account-wide DailyCapEV is authoritative. Do not re-add it."
 )
+
+--[[
+	CHECKPOINT 5B.7: TECHNIQUE TRAINING HAS NO EARNING CAP. Same idea as the
+	per-lift EV cap above: the removed constant stays removed loudly.
+]]
+assert(
+	(dailyTraining :: any).DailyCapTechniqueRaw == nil,
+	"[ProgressionConfig] checkpoint 5B.7 removed the technique earning cap. Do not re-add it."
+)
+
+--[[
+	THE PAIRING TABLE MUST NAME ONLY THE FIVE TRAINABLE STATS (section 34.6):
+	one or two per lift, every lift covered, no stat listed twice, never
+	PullStrength.
+]]
+do
+	local trainable = {
+		SquatControl = true,
+		DepthAwareness = true,
+		StartControl = true,
+		PressPower = true,
+		Lockout = true,
+	}
+	local seen: { [string]: boolean } = {}
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local stats: any = (ProgressionConfig.TrainableTechnique :: any)[lift]
+		assert(
+			typeof(stats) == "table" and #stats >= 1 and #stats <= 2,
+			string.format("[ProgressionConfig] TrainableTechnique.%s must list one or two stats", lift)
+		)
+
+		for _, stat: string in ipairs(stats :: { string }) do
+			assert(
+				trainable[stat] == true,
+				string.format("[ProgressionConfig] %s is not a trainable technique stat", tostring(stat))
+			)
+			assert(not seen[stat], string.format("[ProgressionConfig] %s is listed under two lifts", stat))
+			seen[stat] = true
+		end
+	end
+end
 
 return ProgressionConfig

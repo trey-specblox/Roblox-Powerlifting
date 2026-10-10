@@ -162,8 +162,14 @@
 	Its state type contains the three accounting records and nothing else, so
 	there is no field through which it could modify a Competition Number, a
 	technique stat or a Competition Scale even by accident. Awarding Competition
-	Number is 5B.5; awarding technique points is 5B.7. Here the technique
-	allowance is READ-ONLY -- remaining and rollover only.
+	Number is 5B.5; awarding technique points is 5B.7, in TechniqueTraining and
+	ProfileOperations.applyTechniqueTraining, and it does not use this module.
+
+	THE TECHNIQUE ALLOWANCE RECORD IS LEGACY DATA. Checkpoint 5B.7 removed the
+	technique earning cap, so nothing spends `techniqueAllowance` and nothing
+	reads a limit from it. It stays in the profile (no migration) and the CN
+	plan below still rolls and stamps it exactly as before, so CN accounting is
+	unchanged byte for byte.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -245,8 +251,8 @@ export type State = {
 	all three records WHOLESALE rather than applying a delta, so applying a stale
 	plan does not merely double-spend -- it REVERTS anything another writer changed
 	in between. A plan computed while Bench held 0 hours would, applied late, write
-	Bench back to 0 and erase an hour someone else had just banked. The same is
-	true of a technique spend made by the 5B.7 path.
+	Bench back to 0 and erase an hour someone else had just banked. (The legacy
+	technique record is covered too, although since 5B.7 nothing else writes it.)
 
 	So the rule is simply: THE BASIS COVERS EVERY FIELD THE PLAN WRITES. That is
 	what makes it minimal as well as robust -- there is nothing here that the plan
@@ -443,31 +449,6 @@ function TrainingAllowance.remainingCN(cnAllowance: DailyAllowance, nowUnix: num
 
 	local spent = TrainingAllowance.spentToday(cnAllowance, nowUnix)
 	local remaining = TRAINING.DailyCapEV - spent
-
-	if remaining < 0 then
-		return 0
-	end
-
-	return remaining
-end
-
---[[
-	Remaining account-wide AFK technique raw points for today.
-
-	READ-ONLY IN THIS CHECKPOINT. Awarding technique is 5B.7; this exists so the
-	station can tell whether the technique phase still has anything to give, and
-	so the rollover is tested on the same code path as the CN allowance.
-]]
-function TrainingAllowance.remainingTechnique(techniqueAllowance: DailyAllowance, nowUnix: number): number
-	requireAllowanceRecord("techniqueAllowance", techniqueAllowance)
-
-	-- Same fail-closed rule as the CN allowance above.
-	if TrainingAllowance.dayStatus(techniqueAllowance, nowUnix) == "Future" then
-		return 0
-	end
-
-	local spent = TrainingAllowance.spentToday(techniqueAllowance, nowUnix)
-	local remaining = TRAINING.DailyCapTechniqueRaw - spent
 
 	if remaining < 0 then
 		return 0

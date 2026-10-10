@@ -3,16 +3,16 @@
 	TrainingStationRules
 	Shared / Training
 
-	The decisions behind the universal gym training racks of checkpoint 5B.6
-	(GAME_DESIGN.md section 34.3, 34.5 and 34.12), kept PURE so they can be
-	tested without a server, a character or a real profile.
+	The decisions behind the universal gym training racks of checkpoints 5B.6
+	and 5B.7 (GAME_DESIGN.md section 34.3, 34.5, 34.7 and 34.12), kept PURE so
+	they can be tested without a server, a character or a real profile.
 
 	This module holds no Instances, reads no clock and touches no DataStore. The
-	caller passes in the time and two small functions -- one that reads whether
-	CN can still be earned today, one that calls the progression gateway -- and
-	everything else is decided here. TrainingStationService supplies the real
-	ones; the TrainingStationProbe supplies synthetic ones against a throwaway
-	profile.
+	caller passes in the time and a small Gateway of functions -- read whether
+	CN can still be earned today, check CN eligibility, award CN, award
+	technique -- and everything else is decided here. TrainingStationService
+	supplies the real ones; the TrainingStationProbe supplies synthetic ones
+	against a throwaway profile.
 
 	=========================================================================
 	THE SESSION
@@ -24,8 +24,10 @@
 		"Selecting"        menu open, nothing started yet. Earns nothing.
 		"Training"         a selection is running:
 		                     CN        -> the selected lift earns CN
-		                     Technique -> SELECTED ONLY. Earns nothing until
-		                                  checkpoint 5B.7 adds technique rewards
+		                     Technique -> the selected lift's technique stats
+		                                  earn raw points (80/20, or 100%
+		                                  Lockout). NO CAP: it never stops on
+		                                  its own, and it runs across midnight
 		"StoppedAtCNCap"   CN training hit the 4.00 EV daily cap and STOPPED.
 		                   The rack stays occupied; nothing is earned; the mode
 		                   is NOT changed. The player must pick Technique (or,
@@ -38,9 +40,10 @@
 
 	The registry remembers, ONLY WHILE THE PLAYER IS AT THE RACK: who occupies
 	which rack, the state, the selection, whether the menu is open, the
-	os.clock() of the last tick and of the last selection. It never stores EV,
-	CN, hours or an allowance. Those live in the profile and change ONLY
-	through the gateway.
+	os.clock() of the last tick and of the last selection, and the raw technique
+	points earned THIS rack session (display only, never saved, forgotten on
+	leaving). It never stores EV, CN, hours, allowances or technique stats.
+	Those live in the profile and change ONLY through the gateway.
 
 	=========================================================================
 	THE NO-DOUBLE-COUNT RULE
@@ -62,6 +65,7 @@ local TrainingStationConfig = require(ConfigFolder:WaitForChild("TrainingStation
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
+local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
 
 local TrainingStationRules = {}
 
@@ -103,6 +107,8 @@ export type Session = {
 	lastTickClock: number,
 	-- os.clock() of the last accepted selection, for the cooldown.
 	lastSelectionClock: number,
+	-- Raw technique points earned per stat during THIS rack session. Display only.
+	techniqueGains: { [string]: number },
 }
 
 --[[
@@ -159,13 +165,12 @@ export type CreditStatus =
 	"NoSession"
 	-- Selecting, or stopped at the cap: the time is discarded.
 	| "NotTraining"
-	-- Technique is selected. 5B.6 discards the time; 5B.7 will award it.
-	| "TechniquePending"
 	-- CN selected but the cap is reached: the session stops here.
 	| "CNCapReached"
 	| "CNUnavailable"
-	-- CN, but the interval measured nothing to credit.
+	-- The interval measured nothing to credit.
 	| "NothingToCredit"
+	-- The gateway was called: CN or technique, as `mode` says.
 	| "Credited"
 
 export type CreditReport = {
@@ -193,6 +198,10 @@ export type SelectDecision =
 	-- (apart from the old interval having been settled).
 	| "CNCapReached"
 	| "CNUnavailable"
+	-- CN was requested but the CN award refuses this player outright (for
+	-- example the 120+ class, which has no Progression Reference). Nothing
+	-- changed and nothing was settled; technique remains available.
+	| "CNIneligible"
 	| "Started"
 
 export type SelectReport = {
@@ -204,7 +213,23 @@ export type SelectReport = {
 }
 
 export type CNReader = () -> CNStatus
-export type AwardFunction = (lift: string, elapsedSeconds: number) -> any
+
+--[[
+	Everything the rules need from the outside world, bundled so a call site
+	cannot pass the CN award where the technique award belongs.
+
+		readCN          CN eligibility as of now, from the saved allowance
+		checkCN         a ZERO-SECOND CN award: earns nothing, but returns
+		                "Rejected" if this player cannot earn CN at all
+		awardCN         PlayerDataService.awardTrainingProgression
+		awardTechnique  PlayerDataService.awardTechniqueTraining
+]]
+export type Gateway = {
+	readCN: CNReader,
+	checkCN: (lift: string) -> any,
+	awardCN: (lift: string, elapsedSeconds: number) -> any,
+	awardTechnique: (lift: string, primary: string, elapsedSeconds: number) -> any,
+}
 
 local function isFiniteNumber(value: any): boolean
 	return typeof(value) == "number" and value == value and value > -math.huge and value < math.huge
@@ -217,8 +242,8 @@ end
 TrainingStationRules.CAP_REACHED_MESSAGE = "Daily CN Limit Reached \u{2014} Training Stopped."
 TrainingStationRules.CAP_REACHED_HINT =
 	"Choose Technique Stats and press Start Training to keep training. CN returns at 00:00 UTC."
-TrainingStationRules.TECHNIQUE_PENDING_MESSAGE =
-	"Technique selected \u{2014} rewards are available in Step 5B.7. Nothing is earned yet."
+TrainingStationRules.CN_INELIGIBLE_MESSAGE =
+	"Competition Number training isn't available for your weight class. Technique training is."
 TrainingStationRules.SELECTING_MESSAGE = "Choose what to train, then press Start Training."
 
 --------------------------------------------------------------------------------
@@ -310,43 +335,20 @@ end
 --------------------------------------------------------------------------------
 
 --[[
-	Whether `primary` is a technique stat this lift can train at a rack.
+	Whether `primary` is a technique stat this lift can train at a rack. The
+	pairing table is ProgressionConfig.TrainableTechnique, through
+	TechniqueTraining; PullStrength is never valid.
 ]]
 function TrainingStationRules.isValidPrimary(lift: any, primary: any): boolean
-	if typeof(lift) ~= "string" or typeof(primary) ~= "string" then
-		return false
-	end
-
-	local stats = (TrainingStationConfig.TechniqueStats :: any)[lift]
-	if stats == nil then
-		return false
-	end
-
-	return table.find(stats, primary) ~= nil
+	return TechniqueTraining.isValidPrimary(lift, primary)
 end
 
 --[[
-	The technique split a selection WOULD receive, primary first, for display:
-	80/20 for Squat and Bench, 100% Lockout for the Deadlift. nil if the
-	combination is invalid. No technique is awarded in 5B.6.
+	The technique split a selection receives, primary first: 80/20 for Squat
+	and Bench, 100% Lockout for the Deadlift. nil if the combination is invalid.
 ]]
-function TrainingStationRules.techniqueSplit(lift: string, primary: string): { { stat: string, share: number } }?
-	if not TrainingStationRules.isValidPrimary(lift, primary) then
-		return nil
-	end
-
-	local stats = (TrainingStationConfig.TechniqueStats :: any)[lift] :: { string }
-	if #stats == 1 then
-		return { { stat = primary, share = 1 } }
-	end
-
-	local primaryShare = ProgressionConfig.DailyTraining.TechniquePrimaryShare
-	local secondary = if stats[1] == primary then stats[2] else stats[1]
-
-	return {
-		{ stat = primary, share = primaryShare },
-		{ stat = secondary, share = 1 - primaryShare },
-	}
+function TrainingStationRules.techniqueSplit(lift: string, primary: string): { TechniqueTraining.Share }?
+	return TechniqueTraining.split(lift, primary)
 end
 
 local SELECTION_FIELDS = { mode = true, lift = true, primary = true }
@@ -603,6 +605,7 @@ function TrainingStationRules.openMenu(
 		menuOpen = true,
 		lastTickClock = nowClock,
 		lastSelectionClock = -math.huge,
+		techniqueGains = {},
 	}
 
 	return nil, "Reserved"
@@ -683,19 +686,40 @@ local function emptyReport(status: CreditStatus): CreditReport
 end
 
 --[[
+	Adds an awarded technique result to the session's "This Session" display
+	counters. Display only: the profile already holds the real values.
+]]
+local function recordTechniqueGains(session: Session, result: any)
+	if typeof(result) ~= "table" or result.outcome ~= "Awarded" or typeof(result.gains) ~= "table" then
+		return
+	end
+
+	local gains: { any } = result.gains
+	for _, gain in ipairs(gains) do
+		if typeof(gain) == "table" and typeof(gain.stat) == "string" and isFiniteNumber(gain.raw) then
+			session.techniqueGains[gain.stat] = (session.techniqueGains[gain.stat] or 0) + gain.raw
+		end
+	end
+end
+
+--[[
 	Settles the time since the player's last tick. The caller must already
 	have verified presence.
 
 	  1. Measure the interval and MOVE THE CLOCK FORWARD FIRST, in every
 	     state, so these seconds can never be counted twice.
-	  2. Only a "Training" session with CN selected can earn. Selecting,
-	     Stopped and Technique (until 5B.7) discard the time.
-	  3. Read the CN status at the END of the interval. Reading at the end is
-	     what makes a midnight work: the gateway itself splits an interval
-	     that straddles 00:00 UTC and pays only the part after it.
-	  4. If CN is capped -- before the gateway, or because this very award
+	  2. Only a "Training" session earns. Selecting and Stopped discard the
+	     time.
+	  3. TECHNIQUE: the clamped interval goes to the technique award. There
+	     is no cap and no day boundary, so nothing here can stop it; it runs
+	     across midnight exactly as at any other time.
+	  4. CN: read the CN status at the END of the interval. Reading at the
+	     end is what makes a midnight work: the gateway itself splits an
+	     interval that straddles 00:00 UTC and pays only the part after it.
+	     If CN is capped -- before the gateway, or because this very award
 	     reached the cap -- the session STOPS: state "StoppedAtCNCap". The
-	     selection is left exactly as the player chose it. Nothing switches.
+	     selection is left exactly as the player chose it. Nothing switches,
+	     and technique is NEVER started on the player's behalf.
 
 	Nothing in here yields, so two settlements can never interleave.
 ]]
@@ -704,8 +728,7 @@ function TrainingStationRules.creditSession(
 	playerKey: any,
 	nowClock: number,
 	maxCreditSeconds: number,
-	readCN: CNReader,
-	award: AwardFunction
+	gateway: Gateway
 ): CreditReport
 	local session = registry.sessionByPlayer[playerKey]
 	if session == nil then
@@ -729,13 +752,22 @@ function TrainingStationRules.creditSession(
 	report.mode = selection.mode
 	report.lift = selection.lift
 
-	if selection.mode ~= "CN" then
-		-- Technique: 5B.7 awards here. Until then the time is discarded.
-		report.status = "TechniquePending"
+	if selection.mode == "Technique" then
+		if credited <= 0 then
+			report.status = "NothingToCredit"
+			return report
+		end
+
+		local primary = selection.primary :: string
+		report.result = gateway.awardTechnique(selection.lift, primary, credited)
+		report.status = "Credited"
+		report.creditedSeconds = credited
+		report.discardedSeconds = discarded
+		recordTechniqueGains(session, report.result)
 		return report
 	end
 
-	local status = readCN()
+	local status = gateway.readCN()
 
 	if status == "CapReached" then
 		session.state = "StoppedAtCNCap"
@@ -754,12 +786,12 @@ function TrainingStationRules.creditSession(
 		return report
 	end
 
-	report.result = award(selection.lift, credited)
+	report.result = gateway.awardCN(selection.lift, credited)
 	report.status = "Credited"
 	report.creditedSeconds = credited
 	report.discardedSeconds = discarded
 
-	if readCN() == "CapReached" then
+	if gateway.readCN() == "CapReached" then
 		session.state = "StoppedAtCNCap"
 		report.stoppedAtCap = true
 	end
@@ -770,15 +802,19 @@ end
 --[[
 	Starts or changes training, MANUALLY, at the player's request. The menu
 	must be open (authorized by the server at a rack the player occupies).
+	Technique may be chosen at any time, whatever CN allowance remains.
 
 	Whatever was running is settled FIRST, to the OLD selection (section
-	34.12: time goes to the lift selected at that moment). Nothing is reset:
-	per-lift hours and the allowances are account state in the profile.
+	34.12: time goes to what was selected at that moment). Nothing is reset:
+	per-lift hours, allowances and technique stats are account state in the
+	profile.
 
 		"NotAuthorized"  no rack, or the menu was not opened by the server
 		"Invalid"        not a valid selection
 		"Unchanged"      exactly this is already training; nothing happens
 		"Cooldown"       too soon after the last selection; nothing happens
+		"CNIneligible"   CN requested, but the CN award refuses this player
+		                 outright (e.g. 120+). Nothing changes, nothing settled
 		"CNCapReached"   CN requested at the cap; the selection is NOT applied
 		"CNUnavailable"  CN requested while the record is unreadable
 		"Started"        old interval settled, new selection running from now
@@ -790,8 +826,7 @@ function TrainingStationRules.selectTraining(
 	nowClock: number,
 	cooldownSeconds: number,
 	maxCreditSeconds: number,
-	readCN: CNReader,
-	award: AwardFunction
+	gateway: Gateway
 ): SelectReport
 	local session = registry.sessionByPlayer[playerKey]
 
@@ -814,10 +849,20 @@ function TrainingStationRules.selectTraining(
 		return { decision = "Cooldown", previous = previous, credit = nil }
 	end
 
-	local credit = TrainingStationRules.creditSession(registry, playerKey, nowClock, maxCreditSeconds, readCN, award)
+	--[[
+		CN ELIGIBILITY, checked BEFORE anything is settled. A zero-second CN
+		award earns nothing; a "Rejected" answer means this player cannot earn
+		CN at all (no Progression Reference for their class), so the request is
+		refused and whatever was running carries on untouched.
+	]]
+	if validated.mode == "CN" and TrainingStationRules.isFatalResult(gateway.checkCN(validated.lift)) then
+		return { decision = "CNIneligible", previous = previous, credit = nil }
+	end
+
+	local credit = TrainingStationRules.creditSession(registry, playerKey, nowClock, maxCreditSeconds, gateway)
 
 	if validated.mode == "CN" then
-		local status = readCN()
+		local status = gateway.readCN()
 		if status == "CapReached" then
 			return { decision = "CNCapReached", previous = previous, credit = credit }
 		elseif status ~= "Available" then
@@ -846,8 +891,7 @@ function TrainingStationRules.stopTraining(
 	nowClock: number,
 	present: boolean,
 	maxCreditSeconds: number,
-	readCN: CNReader,
-	award: AwardFunction
+	gateway: Gateway
 ): (string?, CreditReport?)
 	if registry.sessionByPlayer[playerKey] == nil then
 		return nil, nil
@@ -855,10 +899,17 @@ function TrainingStationRules.stopTraining(
 
 	local credit: CreditReport? = nil
 	if present then
-		credit = TrainingStationRules.creditSession(registry, playerKey, nowClock, maxCreditSeconds, readCN, award)
+		credit = TrainingStationRules.creditSession(registry, playerKey, nowClock, maxCreditSeconds, gateway)
 	end
 
 	return TrainingStationRules.release(registry, playerKey), credit
+end
+
+--[[
+	The menu's name for a technique stat, e.g. "Depth Awareness".
+]]
+function TrainingStationRules.statName(stat: string): string
+	return (TrainingStationConfig.TechniqueStatNames :: any)[stat] or stat
 end
 
 --[[
@@ -887,7 +938,11 @@ function TrainingStationRules.statusLine(session: Session?): string
 		return string.format("Training %s \u{2014} Competition Number", selection.lift)
 	end
 
-	return TrainingStationRules.TECHNIQUE_PENDING_MESSAGE
+	return string.format(
+		"Training %s \u{2014} Technique (%s primary)",
+		selection.lift,
+		TrainingStationRules.statName(selection.primary or "?")
+	)
 end
 
 return TrainingStationRules

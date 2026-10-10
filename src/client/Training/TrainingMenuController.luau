@@ -3,8 +3,13 @@
 	TrainingMenuController
 	Client / Training
 
-	TEMPORARY FUNCTIONAL INTERFACE for the training racks of checkpoint 5B.6.
-	Plain frames and buttons built in code; final styling comes later.
+	TEMPORARY FUNCTIONAL INTERFACE for the training racks of checkpoints 5B.6
+	and 5B.7. Plain frames and buttons built in code; final styling comes later.
+
+	Technique has NO earning cap, so the menu never shows a technique "today",
+	"remaining" or countdown -- only the rate, the split, the current raw and
+	effective values, and what this rack session has earned. The CN daily
+	allowance line stays, because CN does have a daily cap.
 
 	It DECIDES NOTHING. The server opens the menu (after the player holds E at a
 	rack it has validated), and every button press is only a request:
@@ -23,8 +28,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
-local TrainingStationConfig = require(ConfigFolder:WaitForChild("TrainingStationConfig"))
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
+
+local ProgressionFolder = Shared:WaitForChild("Progression")
+local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
 
 local TrainingFolder = Shared:WaitForChild("Training")
 local TrainingRemotes = require(TrainingFolder:WaitForChild("TrainingRemotes"))
@@ -39,6 +46,7 @@ local COLOR_START = Color3.fromRGB(60, 150, 80)
 local COLOR_STOP = Color3.fromRGB(170, 70, 60)
 local COLOR_TEXT = Color3.fromRGB(240, 240, 240)
 local COLOR_NOTICE = Color3.fromRGB(255, 210, 90)
+local COLOR_TECHNIQUE = Color3.fromRGB(150, 220, 170)
 
 local NOTICE_SECONDS = 8
 
@@ -52,11 +60,12 @@ local wasOpen = false
 local noticeToken = 0
 
 local function statName(stat: string): string
-	return (TrainingStationConfig.TechniqueStatNames :: any)[stat] or stat
+	return TrainingStationRules.statName(stat)
 end
 
+-- From ProgressionConfig.TrainableTechnique, the one pairing table.
 local function techniqueStatsFor(lift: string): { string }
-	return (TrainingStationConfig.TechniqueStats :: any)[lift] or {}
+	return TechniqueTraining.statsFor(lift) or {}
 end
 
 local function splitText(lift: string, primary: string): string
@@ -154,6 +163,7 @@ local primaryButtons: { TextButton } = {}
 local choiceLabel: TextLabel
 local currentLabel: TextLabel
 local todayLabel: TextLabel
+local techniqueLabel: TextLabel
 local noticeLabel: TextLabel
 local startButton: TextButton
 local stopButton: TextButton
@@ -204,7 +214,7 @@ local function buildGui(player: Player)
 	panel.Name = "Panel"
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromOffset(440, 520)
+	panel.Size = UDim2.fromOffset(500, 640)
 	panel.BackgroundColor3 = COLOR_PANEL
 	panel.BackgroundTransparency = 0.05
 	panel.Visible = false
@@ -266,10 +276,14 @@ local function buildGui(player: Player)
 	todayLabel = makeLabel(panel, "", 36, 10)
 	todayLabel.TextSize = 14
 
-	noticeLabel = makeLabel(panel, "", 54, 11)
+	techniqueLabel = makeLabel(panel, "", 96, 11)
+	techniqueLabel.TextSize = 14
+	techniqueLabel.TextColor3 = COLOR_TECHNIQUE
+
+	noticeLabel = makeLabel(panel, "", 44, 12)
 	noticeLabel.TextColor3 = COLOR_NOTICE
 
-	local actionRow = makeRow(panel, 40, 12)
+	local actionRow = makeRow(panel, 40, 13)
 	startButton = makeButton(actionRow, "Start Training", 0.4, 1)
 	startButton.BackgroundColor3 = COLOR_START
 	stopButton = makeButton(actionRow, "Stop Training", 0.35, 2)
@@ -297,7 +311,7 @@ local function buildGui(player: Player)
 	statusBar.Name = "TrainingStatusBar"
 	statusBar.AnchorPoint = Vector2.new(0.5, 0)
 	statusBar.Position = UDim2.new(0.5, 0, 0, 8)
-	statusBar.Size = UDim2.fromOffset(520, 44)
+	statusBar.Size = UDim2.fromOffset(620, 64)
 	statusBar.BackgroundColor3 = COLOR_PANEL
 	statusBar.BackgroundTransparency = 0.2
 	statusBar.TextColor3 = COLOR_TEXT
@@ -331,6 +345,71 @@ local function todayText(state: TrainingRemotes.MenuState): string
 	)
 end
 
+local function isTrainingTechnique(state: TrainingRemotes.MenuState): boolean
+	return state.sessionState == "Training" and state.mode == "Technique"
+end
+
+--[[
+	The technique panel: rate, split, current raw and effective values, and this
+	session's gains, for the lift being trained (or, if none, the lift chosen in
+	the menu). Deliberately NO "today", "remaining" or countdown: technique has
+	no earning cap. Raw values show four decimals so a 10 s tick's gain is
+	visible.
+]]
+local function techniqueText(state: TrainingRemotes.MenuState): string
+	local training = isTrainingTechnique(state)
+	local lift = if training and state.lift then state.lift else chosenLift
+	local primary = if training then state.primary else chosenPrimary
+
+	local lines: { string } = {}
+
+	table.insert(lines, string.format(
+		"Technique: %.2f raw/h total, no limit%s",
+		state.techniqueRawPerHour,
+		if training then string.format("  \u{2014}  %s INCREASING NOW", lift) else ""
+	))
+
+	local rates: { [string]: number } = {}
+	local shares: { [string]: number } = {}
+	if primary ~= nil then
+		for _, rate in ipairs(TechniqueTraining.ratesFor(lift, primary) or {}) do
+			rates[rate.stat] = rate.raw
+		end
+		for _, share in ipairs(TechniqueTraining.split(lift, primary) or {}) do
+			shares[share.stat] = share.share
+		end
+	end
+
+	for _, stat in ipairs(techniqueStatsFor(lift)) do
+		local view = state.techniqueStats[stat]
+		local raw = if view then string.format("%.4f", view.raw) else "?"
+		local effective = if view and view.effective then string.format("%.2f", view.effective) else "?"
+		local gained = state.sessionGains[stat] or 0
+		local share = shares[stat]
+
+		table.insert(lines, string.format(
+			"%s%s: raw %s (effective %s)  |  %s  |  this session +%.4f",
+			statName(stat),
+			if share then string.format(" %d%%", math.floor(share * 100 + 0.5)) else "",
+			raw,
+			effective,
+			if rates[stat] then string.format("+%.2f/h", rates[stat]) else "pick a primary",
+			gained
+		))
+	end
+
+	return table.concat(lines, "\n")
+end
+
+-- "+0.0123 Depth Awareness, +0.0031 Squat Control this session"
+local function sessionGainsText(state: TrainingRemotes.MenuState): string
+	local parts: { string } = {}
+	for _, stat in ipairs(techniqueStatsFor(state.lift or chosenLift)) do
+		table.insert(parts, string.format("+%.4f %s", state.sessionGains[stat] or 0, statName(stat)))
+	end
+	return table.concat(parts, ", ") .. " this session"
+end
+
 refreshMenu = function()
 	local state = lastState
 
@@ -354,7 +433,6 @@ refreshMenu = function()
 
 	local choice = describeChoice(chosenMode, chosenLift, if technique then chosenPrimary else nil)
 	choiceLabel.Text = "Your choice: " .. choice
-		.. if technique then "\n(Technique rewards arrive in Step 5B.7 \u{2014} nothing is earned yet.)" else ""
 
 	if state then
 		titleLabel.Text = if state.stationId
@@ -365,6 +443,8 @@ refreshMenu = function()
 				then describeChoice(state.mode, state.lift, state.primary)
 				else state.statusLine)
 		todayLabel.Text = todayText(state)
+		techniqueLabel.Text = techniqueText(state)
+		techniqueLabel.Visible = technique or isTrainingTechnique(state)
 		stopButton.Visible = state.occupying
 	end
 
@@ -403,10 +483,11 @@ local function onState(state: TrainingRemotes.MenuState)
 
 	statusBar.Visible = state.occupying and not state.open
 	statusBar.Text = string.format(
-		"%s\nCN today: %s / %.2f EV  \u{2014}  hold [E] at your rack for the menu",
+		"%s\n%sCN today: %s / %.2f EV  \u{2014}  hold [E] at your rack for the menu",
 		if state.sessionState == "Training"
 			then describeChoice(state.mode, state.lift, state.primary)
 			else state.statusLine,
+		if isTrainingTechnique(state) then "Technique increasing: " .. sessionGainsText(state) .. "\n" else "",
 		if state.evToday then string.format("%.3f", state.evToday) else "?",
 		state.evCap
 	)

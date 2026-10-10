@@ -3,8 +3,8 @@
 	TrainingStationProbe
 	Server / Dev
 
-	DEV TOOL, NOT GAMEPLAY. Exercises the universal training racks of checkpoint
-	5B.6 -- TrainingStationRules, driven exactly the way TrainingStationService
+	DEV TOOL, NOT GAMEPLAY. Exercises the universal training racks of checkpoints
+	5B.6 and 5B.7 -- TrainingStationRules, driven exactly the way TrainingStationService
 	drives it -- on server start, and prints a pass/fail line per check to the
 	Studio Output window.
 
@@ -110,10 +110,19 @@ local CN_BENCH: TrainingStationRules.Selection = { mode = "CN", lift = "Bench" }
 local CN_DEADLIFT: TrainingStationRules.Selection = { mode = "CN", lift = "Deadlift" }
 local TECH_SQUAT_DEPTH: TrainingStationRules.Selection = { mode = "Technique", lift = "Squat", primary = "DepthAwareness" }
 
+local TECH_SQUAT_CONTROL: TrainingStationRules.Selection = { mode = "Technique", lift = "Squat", primary = "SquatControl" }
+local TECH_BENCH_PRESS: TrainingStationRules.Selection = { mode = "Technique", lift = "Bench", primary = "PressPower" }
+local TECH_DEADLIFT: TrainingStationRules.Selection = { mode = "Technique", lift = "Deadlift", primary = "Lockout" }
+
+-- 2.00 raw points per hour, the live provisional rate. Repeated, like the values above.
+local RAW_PER_HOUR = 2.00
+
 --[[
 	ONE SIMULATED PLAYER: a throwaway profile, a synthetic os.clock() and a
-	synthetic server time that advance together, and the same two functions the
-	service builds -- a CN reader and a gateway call -- pointed at them.
+	synthetic server time that advance together, and the same Gateway the
+	service builds, pointed at them. `award` is the CN award on its own, and
+	`awardCalls` / `secondsAwarded` count CN awards only; technique awards are
+	counted separately. The CN eligibility check is NOT counted as an award.
 ]]
 type Sim = {
 	data: PlayerProfileSchema.ProfileData,
@@ -122,8 +131,11 @@ type Sim = {
 	awardCalls: number,
 	secondsAwarded: number,
 	cnGainedReported: number,
+	techniqueCalls: number,
+	techniqueSecondsAwarded: number,
 	readCN: TrainingStationRules.CNReader,
-	award: TrainingStationRules.AwardFunction,
+	award: (lift: string, elapsedSeconds: number) -> any,
+	gateway: TrainingStationRules.Gateway,
 }
 
 local function newSim(startUnix: number): Sim
@@ -134,8 +146,11 @@ local function newSim(startUnix: number): Sim
 		awardCalls = 0,
 		secondsAwarded = 0,
 		cnGainedReported = 0,
+		techniqueCalls = 0,
+		techniqueSecondsAwarded = 0,
 		readCN = nil :: any,
 		award = nil :: any,
+		gateway = nil :: any,
 	}
 
 	sim.readCN = function()
@@ -149,6 +164,19 @@ local function newSim(startUnix: number): Sim
 		sim.cnGainedReported += result.deltaCN
 		return result
 	end
+
+	sim.gateway = {
+		readCN = sim.readCN,
+		checkCN = function(lift: string)
+			return ProfileOperations.applyTrainingProgression(sim.data, lift, sim.unix, 0)
+		end,
+		awardCN = sim.award,
+		awardTechnique = function(lift: string, primary: string, elapsedSeconds: number)
+			sim.techniqueCalls += 1
+			sim.techniqueSecondsAwarded += elapsedSeconds
+			return ProfileOperations.applyTechniqueTraining(sim.data, lift, primary, elapsedSeconds)
+		end,
+	}
 
 	return sim
 end
@@ -166,7 +194,7 @@ local function newRegistry(): TrainingStationRules.Registry
 end
 
 local function tick(registry: TrainingStationRules.Registry, playerKey: string, sim: Sim): TrainingStationRules.CreditReport
-	return TrainingStationRules.creditSession(registry, playerKey, sim.clock, MAX_CREDIT, sim.readCN, sim.award)
+	return TrainingStationRules.creditSession(registry, playerKey, sim.clock, MAX_CREDIT, sim.gateway)
 end
 
 local function choose(
@@ -176,7 +204,7 @@ local function choose(
 	sim: Sim
 ): TrainingStationRules.SelectReport
 	return TrainingStationRules.selectTraining(
-		registry, playerKey, selection, sim.clock, COOLDOWN, MAX_CREDIT, sim.readCN, sim.award)
+		registry, playerKey, selection, sim.clock, COOLDOWN, MAX_CREDIT, sim.gateway)
 end
 
 -- Opens the menu at a rack as a player standing on it, then starts `selection`.
@@ -229,6 +257,15 @@ local function techniqueUnchanged(data: PlayerProfileSchema.ProfileData): boolea
 		end
 	end
 	return data.techniqueAllowance.spentToday == 0
+end
+
+local function raw(data: PlayerProfileSchema.ProfileData, stat: string): number
+	return (data.technique :: any)[stat]
+end
+
+-- Expected raw points for `seconds` of technique training, total across the split.
+local function rawFor(seconds: number): number
+	return RAW_PER_HOUR * seconds / HOUR
 end
 
 print("=== TrainingStationProbe ===")
@@ -333,7 +370,7 @@ do
 	check("rack B stays free", TrainingStationRules.occupantOf(registry, "B") == nil)
 	check("Alice is still on A", sessionOf(registry, "Alice").stationId == "A")
 
-	TrainingStationRules.stopTraining(registry, "Alice", sim.clock, true, MAX_CREDIT, sim.readCN, sim.award)
+	TrainingStationRules.stopTraining(registry, "Alice", sim.clock, true, MAX_CREDIT, sim.gateway)
 	check("after stopping, Alice may use rack B",
 		TrainingStationRules.openMenu(registry, "Alice", "B", nil, sim.clock) == nil
 			and TrainingStationRules.occupantOf(registry, "A") == nil)
@@ -616,15 +653,15 @@ do
 	check("the mode is still CN, never switched to Technique", sessionOf(registry, "P").selection.mode == "CN")
 	check("the lift is still Bench, never rotated", sessionOf(registry, "P").selection.lift == "Bench")
 	check("no primary stat was chosen for the player", sessionOf(registry, "P").selection.primary == nil)
-	check("no tick ever reported technique activity",
-		statuses.TechniquePending == nil and statuses.Credited == nil)
+	check("no tick credited anything after the stop", statuses.Credited == nil)
+	check("the technique award was never called for the player", sim.techniqueCalls == 0)
 	check("no technique stat moved and no technique allowance was spent", techniqueUnchanged(sim.data))
 	check("Squat and Deadlift were never touched",
 		sim.data.trainingTimeToday.Squat == 0 and sim.data.trainingTimeToday.Deadlift == 0)
 end
 
 --------------------------------------------------------------------------------
-print("-- 10. technique is selectable but visibly earns nothing until 5B.7")
+print("-- 10. technique earns after a MANUAL selection, with no cap")
 --------------------------------------------------------------------------------
 
 do
@@ -635,36 +672,54 @@ do
 
 	advance(sim, 2)
 	local technique = choose(registry, "P", TECH_SQUAT_DEPTH, sim)
-	check("after the cap the player can MANUALLY select Technique", technique.decision == "Started")
+	check("after the CN cap the player can MANUALLY select Technique", technique.decision == "Started")
 	check("the session runs Technique, Squat, primary Depth Awareness",
 		sessionOf(registry, "P").state == "Training" and sessionOf(registry, "P").selection.mode == "Technique"
 			and sessionOf(registry, "P").selection.primary == "DepthAwareness")
-	check("the status says rewards come in Step 5B.7",
-		TrainingStationRules.statusLine(sessionOf(registry, "P")) == TrainingStationRules.TECHNIQUE_PENDING_MESSAGE
-			and string.find(TrainingStationRules.TECHNIQUE_PENDING_MESSAGE, "5B.7", 1, true) ~= nil)
+	check("the status names the technique and its primary",
+		TrainingStationRules.statusLine(sessionOf(registry, "P")) == "Training Squat \u{2014} Technique (Depth Awareness primary)",
+		TrainingStationRules.statusLine(sessionOf(registry, "P")))
 
 	local callsBefore = sim.awardCalls
 	local cnBefore = sim.data.competitionNumber.Squat
+	local legacyBefore = deepCopy(sim.data.techniqueAllowance)
 	local report: TrainingStationRules.CreditReport? = nil
-	for _ = 1, 60 do
+
+	-- Six hours: twice the old 3-hour "cap". Nothing may stop it.
+	for _ = 1, 6 * 360 do
 		advance(sim, TICK)
 		report = tick(registry, "P", sim)
 	end
 
-	check("technique ticks report TechniquePending", report ~= nil and (report :: any).status == "TechniquePending")
-	check("and discard their time", report ~= nil and (report :: any).creditedSeconds == 0
-		and (report :: any).discardedSeconds == TICK)
-	check("no gateway call, no CN", sim.awardCalls == callsBefore and sim.data.competitionNumber.Squat == cnBefore)
-	check("no technique points and no technique allowance in 5B.6", techniqueUnchanged(sim.data))
+	check("technique ticks are Credited", report ~= nil and (report :: any).status == "Credited"
+		and (report :: any).mode == "Technique")
+	check("six hours earn 9.60 raw Depth Awareness (80%)", near(raw(sim.data, "DepthAwareness"), 0.8 * rawFor(6 * HOUR), 1e-9),
+		string.format("%.10f", raw(sim.data, "DepthAwareness")))
+	check("and 2.40 raw Squat Control (20%)", near(raw(sim.data, "SquatControl"), 0.2 * rawFor(6 * HOUR), 1e-9),
+		string.format("%.10f", raw(sim.data, "SquatControl")))
+	check("12.00 raw in total: no technique cap at 6.00", near(raw(sim.data, "DepthAwareness") + raw(sim.data, "SquatControl"), 12, 1e-9))
+	check("the session is still Training: technique never stops on its own",
+		sessionOf(registry, "P").state == "Training")
+	check("This Session gains match the stats exactly",
+		near(sessionOf(registry, "P").techniqueGains.DepthAwareness or 0, raw(sim.data, "DepthAwareness"), 1e-9)
+			and near(sessionOf(registry, "P").techniqueGains.SquatControl or 0, raw(sim.data, "SquatControl"), 1e-9))
+	check("no CN call and no CN", sim.awardCalls == callsBefore and sim.data.competitionNumber.Squat == cnBefore)
+	check("the legacy technique allowance record is untouched",
+		sim.data.techniqueAllowance.spentToday == legacyBefore.spentToday
+			and sim.data.techniqueAllowance.dayKey == legacyBefore.dayKey
+			and sim.data.techniqueAllowance.lastUpdatedUnix == legacyBefore.lastUpdatedUnix)
+	check("Bench, Deadlift and PullStrength stats untouched",
+		raw(sim.data, "StartControl") == 0 and raw(sim.data, "PressPower") == 0 and raw(sim.data, "Lockout") == 0
+			and raw(sim.data, "PullStrength") == TEMPLATE.technique.PullStrength)
 
 	local fresh = newSim(DAY_START + 10 * HOUR)
 	local freshRegistry = newRegistry()
-	local early = occupyAndStart(freshRegistry, "Q", "B", { mode = "Technique", lift = "Deadlift", primary = "Lockout" }, fresh)
+	local early = occupyAndStart(freshRegistry, "Q", "B", TECH_DEADLIFT, fresh)
 	advance(fresh, TICK)
 	tick(freshRegistry, "Q", fresh)
-	check("Technique selected BEFORE the cap also earns nothing in 5B.6 (no CN either)",
-		early.decision == "Started" and fresh.awardCalls == 0 and fresh.data.cnAllowance.spentToday == 0
-			and techniqueUnchanged(fresh.data))
+	check("Technique may be chosen BEFORE the CN cap, and earns: Lockout +100%",
+		early.decision == "Started" and near(raw(fresh.data, "Lockout"), rawFor(TICK), 1e-12))
+	check("choosing technique spends no CN allowance", fresh.awardCalls == 0 and fresh.data.cnAllowance.spentToday == 0)
 end
 
 --------------------------------------------------------------------------------
@@ -683,9 +738,13 @@ do
 	choose(registry, "P", TECH_SQUAT_DEPTH, sim)
 
 	local callsBefore = sim.awardCalls
+	local beforeMidnight: number? = nil
 	while sim.unix <= midnight + 60 do
 		advance(sim, TICK)
 		tick(registry, "P", sim)
+		if beforeMidnight == nil and sim.unix > midnight - TICK then
+			beforeMidnight = raw(sim.data, "DepthAwareness")
+		end
 	end
 
 	check("after midnight CN is available again", sim.readCN() == "Available")
@@ -693,6 +752,11 @@ do
 		sessionOf(registry, "P").selection.mode == "Technique" and sessionOf(registry, "P").selection.lift == "Squat"
 			and sessionOf(registry, "P").selection.primary == "DepthAwareness")
 	check("and no CN was earned behind the player's back", sim.awardCalls == callsBefore)
+	check("running technique KEPT EARNING across midnight",
+		beforeMidnight ~= nil and raw(sim.data, "DepthAwareness") > (beforeMidnight :: number)
+			and sessionOf(registry, "P").state == "Training")
+	check("every technique second was paid, none lost at midnight",
+		near(raw(sim.data, "DepthAwareness") + raw(sim.data, "SquatControl"), rawFor(sim.techniqueSecondsAwarded), 1e-9))
 
 	-- (b) Stopped at the cap, held across midnight: stays stopped until the player acts.
 	local stopped = newSim(DAY_START + 12 * HOUR)
@@ -773,7 +837,7 @@ do
 	advance(sim, 6)
 	callsBefore = sim.awardCalls
 	local stationId, credit = TrainingStationRules.stopTraining(registry, "P", sim.clock, false, MAX_CREDIT,
-		sim.readCN, sim.award)
+		sim.gateway)
 	check("leaving range (not present) frees the rack with no credit",
 		stationId == "A" and credit == nil and sim.awardCalls == callsBefore)
 
@@ -818,7 +882,7 @@ do
 	check("and does not call the gateway", sim.awardCalls == callsAfterFirst)
 
 	-- os.clock() can never run backward, but if a caller passed an older time it must not pay.
-	local backward = TrainingStationRules.creditSession(registry, "P", sim.clock - 50, MAX_CREDIT, sim.readCN, sim.award)
+	local backward = TrainingStationRules.creditSession(registry, "P", sim.clock - 50, MAX_CREDIT, sim.gateway)
 	check("a tick with an earlier clock credits nothing", backward.creditedSeconds == 0
 		and sim.awardCalls == callsAfterFirst)
 	advance(sim, TICK)
@@ -829,6 +893,19 @@ do
 	advance(sim, 100)
 	local lagged = tick(registry, "P", sim)
 	check("a 100 s server stall credits only 30 s", lagged.creditedSeconds == 30 and lagged.discardedSeconds == 70)
+
+	-- The same 30 s ceiling applies to technique, which has no other limit.
+	local techSim = newSim(DAY_START + 10 * HOUR)
+	local techRegistry = newRegistry()
+	occupyAndStart(techRegistry, "T", "A", TECH_DEADLIFT, techSim)
+	advance(techSim, 100)
+	local techLagged = tick(techRegistry, "T", techSim)
+	check("a 100 s stall during technique credits only 30 s too",
+		techLagged.creditedSeconds == 30 and techLagged.discardedSeconds == 70
+			and near(raw(techSim.data, "Lockout"), rawFor(30), 1e-12))
+	local techRepeat = tick(techRegistry, "T", techSim)
+	check("and an overlapping technique tick at the same moment pays nothing",
+		techRepeat.status == "NothingToCredit" and techSim.techniqueCalls == 1)
 	check("the EV/hours invariant holds", invariantHolds(sim.data))
 end
 
@@ -892,6 +969,8 @@ do
 		{ mode = "CN", lift = "Squat", timestamp = 0 },
 		{ mode = "CN", lift = "Squat", position = "0,0,0" },
 		{ mode = "CN", lift = "Squat", gamePass = true },
+		{ mode = "Technique", lift = "Squat", primary = "SquatControl", rawPoints = 999 },
+		{ mode = "Technique", lift = "Squat", primary = "SquatControl", elapsedSeconds = 3600 },
 	}
 
 	local allRefused = true
@@ -901,7 +980,7 @@ do
 			allRefused = false
 		end
 	end
-	check("Start carrying EV, CN, seconds, a timestamp, a position or a Game Pass is refused", allRefused)
+	check("Start carrying EV, CN, technique points, seconds, a timestamp, a position or a Game Pass is refused", allRefused)
 
 	local request = TrainingStationRules.parseRequest("Start", { mode = "Technique", lift = "Bench", primary = "PressPower" }, 2)
 	local onlyKnownKeys = request ~= nil
@@ -956,12 +1035,12 @@ do
 	advance(sim, 4)
 	local callsBefore = sim.awardCalls
 	local stationId, credit = TrainingStationRules.stopTraining(registry, "P", sim.clock, true, MAX_CREDIT,
-		sim.readCN, sim.award)
+		sim.gateway)
 	check("Stop credits the last 4 s while present, then frees the rack",
 		stationId == "A" and credit ~= nil and (credit :: any).creditedSeconds == 4
 			and sim.awardCalls == callsBefore + 1 and TrainingStationRules.occupantOf(registry, "A") == nil)
 	check("stopping again does nothing",
-		({ TrainingStationRules.stopTraining(registry, "P", sim.clock, true, MAX_CREDIT, sim.readCN, sim.award) })[1] == nil)
+		({ TrainingStationRules.stopTraining(registry, "P", sim.clock, true, MAX_CREDIT, sim.gateway) })[1] == nil)
 
 	local capped = newSim(DAY_START + 1 * HOUR)
 	local cappedRegistry = newRegistry()
@@ -971,9 +1050,138 @@ do
 		TrainingStationRules.closeMenu(cappedRegistry, "Q") == "Closed"
 			and TrainingStationRules.occupantOf(cappedRegistry, "B") == "Q")
 	local cappedCalls = capped.awardCalls
-	TrainingStationRules.stopTraining(cappedRegistry, "Q", capped.clock + 5, true, MAX_CREDIT, capped.readCN, capped.award)
+	TrainingStationRules.stopTraining(cappedRegistry, "Q", capped.clock + 5, true, MAX_CREDIT, capped.gateway)
 	check("Stop at the cap frees the rack and pays nothing",
 		TrainingStationRules.occupantOf(cappedRegistry, "B") == nil and capped.awardCalls == cappedCalls)
+end
+
+--------------------------------------------------------------------------------
+print("-- 17. manual CN / Technique switching with no double credit")
+--------------------------------------------------------------------------------
+
+do
+	local sim = newSim(DAY_START + 10 * HOUR)
+	local registry = newRegistry()
+	occupyAndStart(registry, "P", "A", CN_SQUAT, sim)
+
+	advance(sim, TICK)
+	tick(registry, "P", sim)
+
+	advance(sim, 4)
+	local toTechnique = choose(registry, "P", TECH_BENCH_PRESS, sim)
+	check("CN Squat -> Technique Bench (Press Power) is Started", toTechnique.decision == "Started")
+	check("the 4 s before the switch went to CN Squat, not technique",
+		toTechnique.credit ~= nil and (toTechnique.credit :: any).mode == "CN"
+			and (toTechnique.credit :: any).creditedSeconds == 4 and sim.techniqueCalls == 0)
+
+	-- 0.5 s after that switch: inside the 1 s cooldown.
+	advance(sim, 0.5)
+	local early = choose(registry, "P", TECH_SQUAT_CONTROL, sim)
+	check("a switch inside the cooldown is refused and settles nothing",
+		early.decision == "Cooldown" and early.credit == nil and sim.techniqueCalls == 0)
+
+	advance(sim, TICK - 0.5)
+	tick(registry, "P", sim)
+	check("the next tick raises Press Power 80% and Start Control 20% for the full 10 s",
+		near(raw(sim.data, "PressPower"), 0.8 * rawFor(TICK), 1e-12)
+			and near(raw(sim.data, "StartControl"), 0.2 * rawFor(TICK), 1e-12))
+	check("and earns no CN for Bench", sim.data.competitionNumber.Bench == TEMPLATE.competitionNumber.Bench)
+
+	advance(sim, 1.5)
+	local toSquatTechnique = choose(registry, "P", TECH_SQUAT_CONTROL, sim)
+	check("Technique Bench -> Technique Squat (Squat Control) credits 1.5 s to BENCH first",
+		toSquatTechnique.decision == "Started"
+			and near(raw(sim.data, "PressPower"), 0.8 * rawFor(TICK + 1.5), 1e-12)
+			and raw(sim.data, "SquatControl") == 0)
+
+	advance(sim, TICK)
+	tick(registry, "P", sim)
+	advance(sim, 3)
+	local backToCN = choose(registry, "P", CN_SQUAT, sim)
+	check("Technique Squat -> CN Squat credits 3 s to Squat Control first",
+		backToCN.decision == "Started"
+			and near(raw(sim.data, "SquatControl"), 0.8 * rawFor(TICK + 3), 1e-12))
+
+	advance(sim, TICK)
+	tick(registry, "P", sim)
+
+	local elapsed = TICK + 4 + 0.5 + (TICK - 0.5) + 1.5 + TICK + 3 + TICK
+	check("every second was paid exactly once, to exactly one award",
+		near(sim.secondsAwarded + sim.techniqueSecondsAwarded, elapsed, 1e-9),
+		string.format("CN %.2f + technique %.2f vs %.2f", sim.secondsAwarded, sim.techniqueSecondsAwarded, elapsed))
+	check("CN Squat hours are only the CN seconds (24 s), never reset",
+		near(sim.data.trainingTimeToday.Squat, 24 / HOUR, 1e-12))
+	check("total raw technique equals the technique seconds, exactly",
+		near(raw(sim.data, "PressPower") + raw(sim.data, "StartControl") + raw(sim.data, "SquatControl")
+			+ raw(sim.data, "DepthAwareness"), rawFor(sim.techniqueSecondsAwarded), 1e-12))
+	check("the EV/hours invariant holds", invariantHolds(sim.data))
+end
+
+--------------------------------------------------------------------------------
+print("-- 18. the 120+ class can train technique but not CN")
+--------------------------------------------------------------------------------
+
+do
+	local heavy = newSim(DAY_START + 10 * HOUR)
+	heavy.data.bodyweight.currentKg = 130
+	local registry = newRegistry()
+
+	local refusal, outcome = TrainingStationRules.openMenu(registry, "H", "A", nil, heavy.clock)
+	check("a 120+ lifter may open the rack menu", refusal == nil and outcome == "Reserved")
+
+	local cn = choose(registry, "H", CN_SQUAT, heavy)
+	check("starting CN is refused CNIneligible", cn.decision == "CNIneligible")
+	check("which changes nothing and settles nothing",
+		sessionOf(registry, "H").state == "Selecting" and cn.credit == nil and heavy.awardCalls == 0)
+	check("the refusal message points to technique",
+		string.find(TrainingStationRules.CN_INELIGIBLE_MESSAGE, "Technique", 1, true) ~= nil)
+
+	advance(heavy, 2)
+	local technique = choose(registry, "H", TECH_SQUAT_CONTROL, heavy)
+	check("starting technique is allowed", technique.decision == "Started")
+
+	advance(heavy, TICK)
+	local report = tick(registry, "H", heavy)
+	check("and earns: Squat Control +80%, Depth Awareness +20%",
+		report.status == "Credited" and not TrainingStationRules.isFatalResult(report.result)
+			and near(raw(heavy.data, "SquatControl"), 0.8 * rawFor(TICK), 1e-12)
+			and near(raw(heavy.data, "DepthAwareness"), 0.2 * rawFor(TICK), 1e-12))
+
+	advance(heavy, 2)
+	local cnAgain = choose(registry, "H", CN_BENCH, heavy)
+	check("asking for CN mid-technique is refused and technique keeps running",
+		cnAgain.decision == "CNIneligible" and sessionOf(registry, "H").selection.mode == "Technique"
+			and sessionOf(registry, "H").state == "Training")
+	check("no CN for any lift", heavy.data.competitionNumber.Squat == TEMPLATE.competitionNumber.Squat
+		and heavy.data.competitionNumber.Bench == TEMPLATE.competitionNumber.Bench
+		and heavy.data.cnAllowance.spentToday == 0)
+end
+
+--------------------------------------------------------------------------------
+print("-- 19. corrupt technique data is refused, never repaired")
+--------------------------------------------------------------------------------
+
+do
+	local sim = newSim(DAY_START + 10 * HOUR)
+	local registry = newRegistry()
+	occupyAndStart(registry, "P", "A", TECH_SQUAT_DEPTH, sim)
+	advance(sim, TICK)
+	tick(registry, "P", sim)
+
+	local depthBefore = raw(sim.data, "DepthAwareness");
+	(sim.data.technique :: any).SquatControl = 0 / 0
+
+	advance(sim, TICK)
+	local report = tick(registry, "P", sim)
+	check("the tick's award is Rejected InvalidTechnique",
+		report.status == "Credited" and typeof(report.result) == "table"
+			and report.result.outcome == "Rejected" and report.result.rejectionReason == "InvalidTechnique")
+	check("which the rack treats as fatal (the service ends the session)",
+		TrainingStationRules.isFatalResult(report.result))
+	check("NO partial write: Depth Awareness did not move", raw(sim.data, "DepthAwareness") == depthBefore)
+	check("the corrupt value was not silently repaired", raw(sim.data, "SquatControl") ~= raw(sim.data, "SquatControl"))
+	check("the session's gains did not count the refused tick",
+		near(sessionOf(registry, "P").techniqueGains.DepthAwareness or 0, depthBefore, 1e-12))
 end
 
 print(string.format("=== %d passed, %d failed ===", passed, failed))

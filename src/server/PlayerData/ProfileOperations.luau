@@ -31,12 +31,13 @@
 	no function should ever be given one: see the clock notes in
 	ResourceRegeneration.
 
-	WHAT IS NOT HERE YET
+	THE TWO TRAINING AWARDS
 
-	No Competition Number is awarded by any gameplay system at present. The one
-	sanctioned award path, applyTrainingProgression (checkpoint 5B.5), exists
-	below but has no gameplay caller: the gym station that will drive it is
-	checkpoint 5B.6. No budget consumption is wired to meets.
+	applyTrainingProgression (checkpoint 5B.5) is the only Competition Number
+	award; applyTechniqueTraining (checkpoint 5B.7) is the only rack technique
+	award. Their only gameplay caller is the gym training rack
+	(TrainingStationService, through PlayerDataService). No budget consumption
+	is wired to meets yet.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -50,6 +51,7 @@ local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceReg
 local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
 local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
+local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
 local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
 
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
@@ -1022,6 +1024,218 @@ function ProfileOperations.applyTrainingProgression(
 		competitionNumberAfter = competitionNumberAfter,
 		deltaCN = if award ~= nil then award.deltaCN else 0,
 		hillMultiplier = if award ~= nil then award.hillMultiplier else nil,
+	}
+end
+
+--[[
+	=========================================================================
+	TECHNIQUE TRAINING -- checkpoint 5B.7
+	=========================================================================
+
+	The ONLY operation that awards rack technique points. It raises the raw
+	technique stats of the selected lift -- the primary and its secondary
+	together -- and NOTHING ELSE.
+
+	UNTOUCHED, ALWAYS: Competition Number, the CN allowance, the per-lift CN
+	hours, Competition Scale, the legacy `techniqueAllowance` record (5B.7
+	removed the technique cap; the record is unused legacy data) and
+	PullStrength (never trainable, section 34.6).
+
+	NO WEIGHT-CLASS CHECK. Technique needs no Progression Reference, so a 120+
+	lifter, refused by the CN award, may train technique.
+
+	NO CLOCK. Technique has no daily allowance and no day boundary, so an
+	interval across UTC midnight is simply credited. `elapsedSeconds` is still
+	the rack's own server-observed measurement, never derived from a stamp.
+]]
+
+--[[
+	What a technique update did.
+
+		"Awarded"     raw points were added to the selected stats
+		"NoProgress"  valid, but the interval was zero or negative. Nothing written
+		"Rejected"    the request or the stored stats were unusable. NOTHING is
+		              written. `rejectionReason` says why
+]]
+export type TechniqueOutcome = "Awarded" | "NoProgress" | "Rejected"
+
+export type TechniqueRejectionReason =
+	"InvalidLift"
+	| "InvalidPrimary"
+	| "InvalidElapsed"
+	-- The technique table, or one of the stats this award would raise, is missing,
+	-- not a number, NaN, infinite or negative. Not repaired: refused.
+	| "InvalidTechnique"
+	| "InvariantViolated"
+
+export type TechniqueResult = {
+	outcome: TechniqueOutcome,
+	rejectionReason: TechniqueRejectionReason?,
+
+	lift: string,
+	primary: string,
+
+	-- Total raw points awarded across the split. 0 unless "Awarded".
+	totalRaw: number,
+	-- Raw points per stat, primary first. Empty unless "Awarded".
+	gains: { TechniqueTraining.Gain },
+	-- The raw value of each awarded stat after the write.
+	after: { [string]: number },
+}
+
+local function techniqueRejection(lift: any, primary: any, reason: TechniqueRejectionReason): TechniqueResult
+	return {
+		outcome = "Rejected",
+		rejectionReason = reason,
+		lift = if typeof(lift) == "string" then lift else tostring(lift),
+		primary = if typeof(primary) == "string" then primary else tostring(primary),
+		totalRaw = 0,
+		gains = {},
+		after = {},
+	}
+end
+
+--[[
+	Relative tolerance for the "parts sum to the total" check. The secondary is
+	computed as total - primary, so the two differ from the total only by float
+	rounding; anything larger is a real defect.
+]]
+local TECHNIQUE_SUM_EPSILON = 1e-9
+
+--[[
+	Applies `elapsedSeconds` of rack technique training to a profile.
+
+		data            the live profile
+		lift            "Squat", "Bench" or "Deadlift"
+		primary         a stat ProgressionConfig.TrainableTechnique lists for that lift
+		elapsedSeconds  ACTIVE, SERVER-OBSERVED rack time
+
+	Returns a TechniqueResult. Never throws on bad input or bad stored data.
+
+	ATOMIC, the same three phases as applyTrainingProgression:
+
+	  1. VALIDATE the lift, the primary, the interval and every stat this award
+	     would raise. Any failure returns "Rejected" with the profile untouched.
+	  2. COMPUTE the raw points and the new values on locals. Every new value
+	     must be finite and not below the old one, and the parts must add up to
+	     the total, or the update is refused -- nothing has been written yet,
+	     so an overflow to infinity can never reach the profile.
+	  3. COMMIT with plain assignments into stats already validated, which
+	     cannot fail. Primary and secondary land together in the same
+	     profile.Data, which ProfileStore saves as one unit.
+
+	NO YIELD ANYWHERE.
+]]
+function ProfileOperations.applyTechniqueTraining(
+	data: ProfileData,
+	lift: string,
+	primary: string,
+	elapsedSeconds: number
+): TechniqueResult
+	--------------------------------------------------------------------------
+	-- PHASE 1: VALIDATE. Nothing below writes until phase 3.
+	--------------------------------------------------------------------------
+
+	if not ProgressionConfig.isLift(lift) then
+		return techniqueRejection(lift, primary, "InvalidLift")
+	end
+
+	if not TechniqueTraining.isValidPrimary(lift, primary) then
+		return techniqueRejection(lift, primary, "InvalidPrimary")
+	end
+
+	--[[
+		Same bounds as the CN award: NaN, either infinity, a non-number and
+		anything over a day are refused. A negative interval earns nothing.
+	]]
+	if not isFiniteNumber(elapsedSeconds) or elapsedSeconds > TrainingAllowance.MAX_ELAPSED_SECONDS then
+		return techniqueRejection(lift, primary, "InvalidElapsed")
+	end
+
+	local technique = (data :: any).technique
+	if typeof(technique) ~= "table" then
+		return techniqueRejection(lift, primary, "InvalidTechnique")
+	end
+
+	local split = TechniqueTraining.split(lift, primary)
+	if split == nil then
+		return techniqueRejection(lift, primary, "InvalidPrimary")
+	end
+
+	for _, entry in ipairs(split) do
+		local current = technique[entry.stat]
+		if not isFiniteNumber(current) or current < 0 then
+			return techniqueRejection(lift, primary, "InvalidTechnique")
+		end
+	end
+
+	--------------------------------------------------------------------------
+	-- PHASE 2: COMPUTE, on locals only.
+	--------------------------------------------------------------------------
+
+	local totalRaw = TechniqueTraining.rawPointsFor(elapsedSeconds)
+
+	if not isFiniteNumber(totalRaw) or totalRaw < 0 then
+		return techniqueRejection(lift, primary, "InvariantViolated")
+	end
+
+	if totalRaw == 0 then
+		return {
+			outcome = "NoProgress",
+			rejectionReason = nil,
+			lift = lift,
+			primary = primary,
+			totalRaw = 0,
+			gains = {},
+			after = {},
+		}
+	end
+
+	local gains = TechniqueTraining.allocate(lift, primary, totalRaw)
+	if gains == nil then
+		return techniqueRejection(lift, primary, "InvariantViolated")
+	end
+
+	local sum = 0
+	local after: { [string]: number } = {}
+
+	for _, gain in ipairs(gains) do
+		if not isFiniteNumber(gain.raw) or gain.raw < 0 then
+			return techniqueRejection(lift, primary, "InvariantViolated")
+		end
+
+		local before = technique[gain.stat] :: number
+		local value = before + gain.raw
+
+		-- Overflow to infinity, or a value that went down, never reaches the profile.
+		if not isFiniteNumber(value) or value < before then
+			return techniqueRejection(lift, primary, "InvariantViolated")
+		end
+
+		sum += gain.raw
+		after[gain.stat] = value
+	end
+
+	if math.abs(sum - totalRaw) > TECHNIQUE_SUM_EPSILON * math.max(1, totalRaw) then
+		return techniqueRejection(lift, primary, "InvariantViolated")
+	end
+
+	--------------------------------------------------------------------------
+	-- PHASE 3: COMMIT. No yields, and nothing here can fail.
+	--------------------------------------------------------------------------
+
+	for stat, value in pairs(after) do
+		technique[stat] = value
+	end
+
+	return {
+		outcome = "Awarded",
+		rejectionReason = nil,
+		lift = lift,
+		primary = primary,
+		totalRaw = totalRaw,
+		gains = gains,
+		after = after,
 	}
 end
 

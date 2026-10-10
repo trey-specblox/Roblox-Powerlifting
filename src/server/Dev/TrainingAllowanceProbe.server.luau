@@ -141,9 +141,8 @@ end
 
 print("=== Training allowance probe (section 34.12) ===")
 print(string.format(
-	"  DailyCapEV %.2f  |  DailyCapTechniqueRaw %.2f  |  BaseRate %.2f  |  F %.2f  |  K %.2f",
+	"  DailyCapEV %.2f  |  BaseRate %.2f  |  F %.2f  |  K %.2f  |  (no technique cap since 5B.7)",
 	TRAINING.DailyCapEV,
-	TRAINING.DailyCapTechniqueRaw,
 	TRAINING.BaseRate,
 	TRAINING.FullRateHours,
 	TRAINING.K
@@ -176,8 +175,8 @@ do
 	check("spent today is 0", TrainingAllowance.spentToday(state.cnAllowance, now) == 0)
 	check("the full 4.00 EV remains", near(TrainingAllowance.remainingCN(state.cnAllowance, now), 4.00),
 		tostring(TrainingAllowance.remainingCN(state.cnAllowance, now)))
-	check("the full 6.00 technique points remain",
-		near(TrainingAllowance.remainingTechnique(state.techniqueAllowance, now), 6.00))
+	check("the legacy technique record reads 0 spent",
+		TrainingAllowance.spentToday(state.techniqueAllowance, now) == 0)
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
 		check(string.format("%s has 0 banked hours", lift),
@@ -298,7 +297,7 @@ do
 	-- Repeated READS of the derived values are equally inert.
 	for _ = 1, 5 do
 		TrainingAllowance.remainingCN(state.cnAllowance, now)
-		TrainingAllowance.remainingTechnique(state.techniqueAllowance, now)
+		TrainingAllowance.spentToday(state.techniqueAllowance, now)
 		TrainingAllowance.hoursOnLift(state.trainingTimeToday, "Squat", now)
 	end
 
@@ -679,60 +678,43 @@ do
 end
 
 --------------------------------------------------------------------------------
-print("12. the technique allowance: remaining and rollover, read-only")
+print("12. the LEGACY technique record: kept, rolled by CN plans, never a limit")
 do
+	--[[
+		Checkpoint 5B.7 removed the technique earning cap. The record stays in
+		every profile as legacy data, and the CN plan still rolls and stamps it
+		exactly as before -- that is what keeps CN accounting unchanged.
+	]]
 	local state = unstampedState()
 	local now = DAY_START + 11 * HOUR
 	local dayKey = DayKey.fromUnix(now)
 
-	check("a fresh account has the full 6.00 raw points",
-		near(TrainingAllowance.remainingTechnique(state.techniqueAllowance, now), 6.00))
+	check("there is no technique remaining-allowance reader any more",
+		(TrainingAllowance :: any).remainingTechnique == nil)
+	check("and no technique cap constant", (TRAINING :: any).DailyCapTechniqueRaw == nil)
 
-	--[[
-		4.80 is section 34.7's 80% primary share of a full day. A fractional
-		remainder must survive, which is why the schema stores these as plain
-		numbers.
-	]]
+	-- A legacy value from an older save survives, fractional, as stored.
 	state.techniqueAllowance = { spentToday = 4.80, dayKey = dayKey, lastUpdatedUnix = now }
 
-	check("after the 4.80 primary share, 1.20 remains",
-		near(TrainingAllowance.remainingTechnique(state.techniqueAllowance, now), 1.20),
-		string.format("%.8f", TrainingAllowance.remainingTechnique(state.techniqueAllowance, now)))
+	check("a stored legacy value reads back exactly",
+		near(TrainingAllowance.spentToday(state.techniqueAllowance, now), 4.80))
 
-	state.techniqueAllowance.spentToday = 6.00
-
-	check("a fully spent technique allowance leaves 0",
-		TrainingAllowance.remainingTechnique(state.techniqueAllowance, now) == 0)
-
-	-- A stored value above the cap reports zero rather than a negative.
-	state.techniqueAllowance.spentToday = 99
-
-	check("an over-cap stored value reports 0 remaining, never negative",
-		TrainingAllowance.remainingTechnique(state.techniqueAllowance, now) == 0)
-
-	state.techniqueAllowance.spentToday = 6.00
+	local sameDay = TrainingAllowance.planTraining(state, "Squat", now + 600, 600)
+	check("a same-day CN plan leaves the legacy spend exactly as stored",
+		sameDay.nextState.techniqueAllowance.spentToday == 4.80
+			and sameDay.nextState.techniqueAllowance.dayKey == dayKey)
 
 	-- IT ROLLS OVER ON THE SAME DAY KEY AS THE OTHERS.
 	local tomorrow = now + DAY
 
-	check("the technique allowance is stale on the new day",
+	check("the legacy record is stale on the new day",
 		TrainingAllowance.isStale(state.techniqueAllowance, tomorrow))
-	check("and reads a full 6.00 again",
-		near(TrainingAllowance.remainingTechnique(state.techniqueAllowance, tomorrow), 6.00))
 
-	--[[
-		A CN PLAN ROLLS THE TECHNIQUE RECORD TOO, because they share the calendar.
-		It never SPENDS it: awarding technique is checkpoint 5B.7.
-	]]
 	local plan = TrainingAllowance.planTraining(state, "Squat", tomorrow, HOUR)
 
-	check("a CN plan rolls the technique record onto the new day",
+	check("a CN plan rolls the legacy record onto the new day",
 		plan.nextState.techniqueAllowance.dayKey == DayKey.fromUnix(tomorrow))
-	check("and zeroes its spend", plan.nextState.techniqueAllowance.spentToday == 0)
-	check("while never spending any of it",
-		plan.nextState.techniqueAllowance.spentToday == 0
-			and TrainingAllowance.remainingTechnique(plan.nextState.techniqueAllowance, tomorrow)
-				== TRAINING.DailyCapTechniqueRaw)
+	check("and zeroes it, never spending it", plan.nextState.techniqueAllowance.spentToday == 0)
 
 	-- An over-cap CN allowance likewise reports zero remaining.
 	local overspent = unstampedState()
@@ -947,8 +929,8 @@ do
 	check("remainingCN fails closed at 0, not at cap minus spend",
 		TrainingAllowance.remainingCN(state.cnAllowance, dayD) == 0,
 		string.format("%.8f", TrainingAllowance.remainingCN(state.cnAllowance, dayD)))
-	check("remainingTechnique fails closed at 0",
-		TrainingAllowance.remainingTechnique(state.techniqueAllowance, dayD) == 0)
+	check("the legacy technique record is PRESERVED too",
+		near(TrainingAllowance.spentToday(state.techniqueAllowance, dayD), 4.80))
 	check("the stored hours are PRESERVED",
 		near(TrainingAllowance.hoursOnLift(state.trainingTimeToday, "Squat", dayD), 2.50))
 

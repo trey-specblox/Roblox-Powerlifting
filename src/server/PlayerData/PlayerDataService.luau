@@ -338,8 +338,8 @@ end
 	let alone a client -- could supply one. That is the only reason offline
 	regeneration can be trusted.
 
-	The training award is called by TrainingStationService (checkpoint 5B.6)
-	and by nothing else. No meet consumes budget yet, and no AFK system consumes
+	The two training awards -- Competition Number (5B.5) and technique (5B.7) --
+	are called by TrainingStationService and by nothing else. No meet consumes budget yet, and no AFK system consumes
 	Training Energy. Those operations exist so the systems that will do those
 	things have one validated path.
 ]]
@@ -454,6 +454,53 @@ function PlayerDataService.awardTrainingProgression(
 		warn(string.format(
 			"[PlayerDataService] training update for %s skipped: the server clock is behind the saved day",
 			player.Name
+		))
+	end
+
+	return result
+end
+
+--[[
+	Applies `elapsedSeconds` of rack technique training on `lift` with `primary`
+	as the primary stat: raises that lift's raw technique stats (80/20, or 100%
+	Lockout) in one synchronous write to the live profile. Checkpoint 5B.7.
+
+	THE ONLY SOURCE OF RACK TECHNIQUE POINTS. SERVER-ONLY: there is no remote
+	for it, and none may ever be added. The ONLY caller is the gym training
+	rack, TrainingStationService.
+
+	WHAT THE CALLER SUPPLIES, AND WHAT IT NEVER DOES
+	  - `elapsedSeconds` is ACTIVE rack time the server itself observed, the
+	    same measurement the CN award receives. Never offline time, never a
+	    number a client reported.
+	  - The caller never supplies points. The amount comes from
+	    TechniqueTraining.rawPointsFor; the split from ProgressionConfig.
+
+	NO EARNING CAP, NO CLOCK: technique has no daily allowance (5B.7), so this
+	reads no time at all. CN, every allowance record, the per-lift CN hours,
+	Competition Scale and PullStrength are never touched.
+
+	Returns the ProfileOperations.TechniqueResult, or nil when the player has
+	no active session. A "Rejected" result wrote NOTHING.
+]]
+function PlayerDataService.awardTechniqueTraining(
+	player: Player,
+	lift: string,
+	primary: string,
+	elapsedSeconds: number
+): ProfileOperations.TechniqueResult?
+	local data = activeData(player, "awardTechniqueTraining")
+	if data == nil then
+		return nil
+	end
+
+	local result = ProfileOperations.applyTechniqueTraining(data, lift, primary, elapsedSeconds)
+
+	if result.outcome == "Rejected" then
+		warn(string.format(
+			"[PlayerDataService] technique update for %s rejected: %s",
+			player.Name,
+			tostring(result.rejectionReason)
 		))
 	end
 

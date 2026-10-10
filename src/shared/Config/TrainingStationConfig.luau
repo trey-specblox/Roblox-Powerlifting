@@ -17,6 +17,8 @@
 	=========================================================================
 ]]
 
+local ProgressionConfig = require(script.Parent.ProgressionConfig)
+
 local TrainingStationConfig = {}
 
 --[[
@@ -77,22 +79,10 @@ TrainingStationConfig.RequestLimit = 8
 TrainingStationConfig.RequestWindowSeconds = 4
 
 --[[
-	THE TECHNIQUE STATS EACH LIFT CAN TRAIN, in menu order (section 34.6, 34.7).
-
-	The chosen primary gets ProgressionConfig.DailyTraining.TechniquePrimaryShare
-	(80%) and the other stat of the same lift gets the rest (20%). The Deadlift
-	has only Lockout, which takes 100%: its typing phase has no trainable stat,
-	and PullStrength is never trained at a rack.
-
-	In 5B.6 these can be SELECTED but earn nothing; technique rewards are 5B.7.
+	What the menu calls each technique stat. WHICH stats a lift trains, and the
+	80/20 split, are NOT here: ProgressionConfig.TrainableTechnique is the one
+	authoritative pairing table (checkpoint 5B.7).
 ]]
-TrainingStationConfig.TechniqueStats = {
-	Squat = { "SquatControl", "DepthAwareness" },
-	Bench = { "StartControl", "PressPower" },
-	Deadlift = { "Lockout" },
-}
-
--- What the menu calls each technique stat.
 TrainingStationConfig.TechniqueStatNames = {
 	SquatControl = "Squat Control",
 	DepthAwareness = "Depth Awareness",
@@ -180,13 +170,9 @@ assert(
 		.. "or a player could open the menu from a spot the next tick rejects"
 )
 
-for lift, stats in pairs(TrainingStationConfig.TechniqueStats :: { [string]: { string } }) do
-	assert(
-		#stats >= 1 and #stats <= 2,
-		string.format("[TrainingStationConfig] TechniqueStats.%s must list one or two stats", lift)
-	)
+-- Every stat the authoritative pairing table can train needs a menu name.
+for _, stats in pairs(ProgressionConfig.TrainableTechnique :: { [string]: { string } }) do
 	for _, stat in ipairs(stats) do
-		assert(stat ~= "PullStrength", "[TrainingStationConfig] PullStrength is never trained at a rack")
 		assert(
 			(TrainingStationConfig.TechniqueStatNames :: any)[stat] ~= nil,
 			string.format("[TrainingStationConfig] technique stat %s has no display name", stat)
