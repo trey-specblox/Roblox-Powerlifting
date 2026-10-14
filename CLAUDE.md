@@ -105,6 +105,18 @@ After implementation:
 
 Do not claim something was tested in Roblox Studio unless it was actually tested there.
 
+## Development Status Handoff
+
+At the end of every completed development checkpoint, update DEVELOPMENT_STATUS.md to reflect the latest verified commit, completed work, current task, blockers, uncommitted files and next action. Before updating it, verify Git status and do not claim that work is committed unless it actually is. Read DEVELOPMENT_STATUS.md when starting a new development session.
+
+## Documentation
+
+- `D:\Powerlifting Roblox` is the user's active Obsidian vault. Obsidian edits these same files, so re-read a document before relying on it.
+- GAME_DESIGN.md is the authoritative source for approved gameplay mechanics. Update it when the user approves a new or changed gameplay decision. Never silently reinterpret or replace an approved decision.
+- DEVELOPMENT_STATUS.md tracks implementation progress and next steps. Update it at checkpoint completion and session handoff.
+- Verify Git status before claiming anything is committed.
+- Do not create duplicate design documents, and do not synchronize, copy or link folders unless the user asks.
+
 ## Git Safety
 
 Do not delete or overwrite large portions of the project unnecessarily.

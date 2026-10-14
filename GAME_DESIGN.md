@@ -2892,7 +2892,7 @@ none should begin without the decisions it depends on:
 | 3 | Add Competition Scale to the player schema as a stored but unread field, with a migration | **DONE** — schema v4: `competitionScale` per lift, `UNPROVEN_SCALE = 0`, `migrations[3]`, two read accessors, no writer. Validated in memory and against a real DataStore on a disposable key |
 | 4 | A pure, monotone `raiseCompetitionScale` operation, with no callers | **DONE** — on `ProfileOperations`, internal, zero production callers. See the operation contract below |
 | 5A | **Define** the training CN channel | **DONE** — approved and documented as **section 34**. The §33.9 rates and the §29.6 distribution that blocked this are both resolved |
-| 5B | **Implement** the training CN channel | **IN PROGRESS** — 5B.1 to 5B.6 done; 5B.7 (uncapped technique) implemented, awaiting Studio verification. Checkpoints in §34.14 |
+| 5B | **Implement** the training CN channel | **DONE** — 5B.1 to 5B.7 done and verified in Studio; 5B.7 (uncapped technique) committed as `5999fa1`. The Game Pass fallback is a later, separate item. Checkpoints in §34.14 |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
 | 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility; **and the weight-class build system, per the class-scoping deadline in §33.8** |
 | 8 | Resolve the Competition Budget | §29.9 |
@@ -3954,7 +3954,7 @@ should begin before the decisions it depends on:
 | 5B.4 | Implement the derived-phase allowance reader — spend, clamp, day-key rollover — pure and tested | 5B.1, 5B.2 |
 | 5B.5 | Implement `awardTrainingProgression(player, lift, elapsedSeconds)` on the data gateway, server-only, no remote, budget-free — **DONE**, verified in Studio; see §34.12 | 5B.1, 5B.3, 5B.4; §33.9 |
 | 5B.6 | Wire the universal gym training racks: hold-E Training Selection menu, server-validated requests, presence check, manual CN lift selection, the accrual tick, **stop at the CN cap** for free players — **DONE (revised design)**, verified in Studio; see §34.12 | 5B.3, 5B.4, 5B.5; §34.13 item 4 |
-| 5B.7 | Technique rewards for the manually selected technique mode: the 80/20 (or 100% Lockout) award path, float-stored, **no cap**, 120+ eligible, legacy `techniqueAllowance` kept — **IMPLEMENTED**, awaiting Studio verification; see §34.7 and §34.12 | 5B.4, 5B.6 |
+| 5B.7 | Technique rewards for the manually selected technique mode: the 80/20 (or 100% Lockout) award path, float-stored, **no cap**, 120+ eligible, legacy `techniqueAllowance` kept — **DONE**, verified in Studio (TechniqueTrainingProbe 73/0, TrainingStationProbe 205/0), committed as `5999fa1`; see §34.7 and §34.12 | 5B.4, 5B.6 |
 | later | **Game Pass:** automatic CN-to-technique fallback with a player-configured primary stat (§34.12). Never raises a cap or a rate | 5B.7; a monetization decision |
 | 6 | The Scale challenge modifier | §33.4 curve, cap and target — still **[TBD]** |
 | 7 | Wire meets to raise Scale | a meet system; §33.7 eligibility; **and the class-scoped build system** per §33.8 |
