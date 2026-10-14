@@ -15,8 +15,16 @@ local LiftAttemptService = require(LiftingFolder:WaitForChild("LiftAttemptServic
 
 local TrainingFolder = script:WaitForChild("Training")
 local TrainingStationService = require(TrainingFolder:WaitForChild("TrainingStationService"))
+local PowerRackSetup = require(TrainingFolder:WaitForChild("PowerRackSetup"))
 
--- Player data comes first. Nothing that touches a player's stats can run safely
+--[[
+	TEMPORARY (6D.1): sets up the hand-placed Workspace.PowerRack_01 first, so
+	its parts are anchored before anything below can yield and let physics
+	move them, and so it is tagged before TrainingStationService looks for racks.
+]]
+PowerRackSetup.configure()
+
+-- Of the game systems, player data comes first. Nothing that touches a player's stats can run safely
 -- before the gateway is listening for joins.
 PlayerDataService.start()
 

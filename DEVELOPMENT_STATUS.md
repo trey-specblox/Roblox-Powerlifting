@@ -5,10 +5,10 @@ against `git status` / `git log` before acting. Last updated: 2026-10-14.
 
 ## 1. Latest Verified Commit
 
-- Step 6B/6C art and docs: "Add verified Blender power rack assets and development
-  docs" (hash: see `git log -1`; recorded here after the commit).
-- Latest gameplay code commit: `5999fa1` Add unlimited gym technique stat
-  progression (Step 5B.7). No gameplay code has changed since.
+- Step 6D.1: "Integrate Blender power rack with training stations" (hash: see
+  `git log -1`; recorded here after the commit).
+- `27a3214` Add verified Blender power rack assets and development docs (6B/6C).
+- `5999fa1` Add unlimited gym technique stat progression (Step 5B.7).
 
 ## 2. Completed Checkpoints
 
@@ -18,6 +18,8 @@ against `git status` / `git log` before acting. Last updated: 2026-10-14.
   `ScaleTest_2StudCube_v2.fbx` imported at 2 x 2 x 2 studs with no resizing.
 - **Step 6C PASSED**: `PowerRack_01` modeled, exported and imported into Studio.
   User confirmed: dimensions correct, rack upright, main components visible.
+- **Step 6D.1 PASSED** (user's Studio multiplayer test, 2026-10-14): the
+  hand-imported `PowerRack_01` works as a training station. See section 6.
 
 ## 3. Reference
 
@@ -32,84 +34,81 @@ against `git status` / `git log` before acting. Last updated: 2026-10-14.
   numbers as studs. Scale 0.01 makes the stored numbers equal stud sizes. Side
   effect: Blender re-imports these files 100x too small. That is expected.
 
-**PowerRack_01:**
-- Source: `art/blender/PowerRack_01.blend` (collection `PowerRack_01`)
-- Export: `art/exports/PowerRack_01.fbx` (21 meshes, rack parts only)
-- Build script: `art/scripts/build_power_rack_01.py`. It builds the parts into the
-  open scene. It does not clear the scene, save or export.
-- Size 6.06 W x 6.54 D x 8.0 H studs; fits the 8 x 8 placeholder platform.
-- Blender: Z-up, origin (0,0,0) = footprint centre at floor level, front (J-cup
-  side) faces -Y, "Left" = -X. Each part's origin is its own bounds centre;
-  rotation 0, scale 1. In the FBX/Roblox: height is +Y, the J-cup side is +Z.
-- Parts: `Upright_*` x4 (14 recessed holes per front/back face), `Crossbar_*` x4,
-  `BaseRail_Left/Right/Back` (front open), `JCup_*`, `JCupLiner_*`, `JCupPin_*`,
-  `SafetyBar_*`, `SafetyPins`, `FrameBolts`.
-- Materials (one per part): `Steel_BlackPainted`, `Rubber_Black`, `Steel_Hardware`.
-- 1,904 vertices, 3,620 triangles.
-- J-cup height (z 4.3) and safety height (z 2.7) are provisional visuals.
+**PowerRack_01 (art):** source `art/blender/PowerRack_01.blend`, export
+`art/exports/PowerRack_01.fbx` (21 meshes), build script
+`art/scripts/build_power_rack_01.py`. Size 6.06 W x 6.54 D x 8.0 H studs. In
+Roblox: height +Y, J-cup (front) side +Z. Parts: `Upright_*` x4, `Crossbar_*` x4,
+`BaseRail_Left/Right/Back`, `JCup_*`, `JCupLiner_*`, `JCupPin_*`, `SafetyBar_*`,
+`SafetyPins`, `FrameBolts`. One material per part. J-cup/safety heights provisional.
 
-**Design rules:**
-- 1 Blender unit = 1 Roblox stud. Model at real stud size with scale 1 and
-  transforms applied. Never "fix" scale by resizing models.
-- One material per Blender object (one material per Roblox MeshPart).
-- Name every object/file specifically (e.g. `Barbell`, never `Cube.001`).
-- Art: `art/blender/` (.blend), `art/exports/` (.fbx), `art/scripts/` (build scripts).
-- Art work must not edit gameplay scripts.
-- The rack belongs to the universal gym rack training station (Step 5B,
-  `96b16b7`). Design: `GAME_DESIGN.md` section 34; Starter Gym layout: section 27.
+**Station mechanics (TrainingStationService, unchanged):** racks register by tag
+`GymTrainingStation` + string attribute `StationId` (Part or Model, anywhere in the
+DataModel; duplicate IDs ignored). For a Model, presence is measured from
+`GetPivot()` (radius 12), and the prompt (+3 studs, reach 8) and sign (+7) hang on
+`PrimaryPart`. The rack title shows only the LAST character of StationId.
+
+**Design rules:** 1 Blender unit = 1 stud; never fix scale by resizing. One
+material per object. Specific names (never `Cube.001`). Art work must not edit
+gameplay scripts. Rack design: `GAME_DESIGN.md` section 34; layout: section 27.
 
 ## 4. Uncommitted Work
 
-Committed in the Step 6 commit (section 1): `ScaleTest.blend`, `PowerRack_01.blend`,
-`ScaleTest_2StudCube_v2.fbx`, `PowerRack_01.fbx`, `build_power_rack_01.py`,
-`DEVELOPMENT_STATUS.md`, and the approved `CLAUDE.md` / `GAME_DESIGN.md` updates.
-
 Deliberately left uncommitted (keep, never discard):
 - `art/exports/ScaleTest_2StudCube.fbx`: v1, the failed 200-stud test. Local reference only.
-- `art/blender/PowerRack_01.blend1`: Blender's automatic backup. Ignored by the
-  local `.gitignore` rule `*.blend1`, which is itself not committed yet.
-- If `DEVELOPMENT_STATUS.md` shows as modified right after the Step 6 commit, the
+- `art/blender/PowerRack_01.blend1`: Blender's automatic backup, ignored by the
+  local `.gitignore` rule `*.blend1`.
+- `.gitignore` (adds `ClaudeLogs/` and `*.blend1`), `.claude/hooks/Export-ClaudeLog.ps1`
+  and `.claude/settings.json`: the conversation-log tooling. Not staged unless the user asks.
+- `References/DBD.md`: line endings only, no content change. Do not edit.
+- If `DEVELOPMENT_STATUS.md` shows as modified right after the 6D.1 commit, the
   only change is the commit hash recorded in section 1.
-
-Tooling (not gameplay, not committed):
-- `.gitignore` adds `ClaudeLogs/` and `*.blend1`; `.claude/hooks/Export-ClaudeLog.ps1`
-  and `.claude/settings.json` (untracked) write those logs. Do not stage the
-  `.claude/` logging setup with Step 6 unless the user asks.
-
-`References/DBD.md` shows as modified but has no content change (line endings).
-Do not edit it as part of Step 6.
 
 ## 5. Current Limitations
 
-- The imported rack is not anchored, not placed in the game world, not tagged as a
-  training station, and not connected to any script.
-- The placeholder racks (`src/server/Training/PlaceholderStations.luau`, config in
-  `TrainingStationConfig.PlaceholderStations`) are still the live stations.
-- Rack materials/colours in Studio have not been tuned.
-- No barbell, plates or gym environment yet.
+- **The rack model is not in Git.** `Workspace.PowerRack_01` exists only in the
+  user's saved Studio place (imported by hand). `PowerRackSetup` configures it at
+  server start but cannot recreate it; if the place loses it, it is skipped.
+- Only ONE modeled rack; the setup is hardcoded to `PowerRack_01`.
+- The placeholder racks (`PlaceholderStations.luau`) are still live alongside it.
+- Rack materials/colours in Studio have not been tuned. No barbell, plates or gym yet.
+- Pre-existing luau-lsp type errors in untouched files: LiftAttemptService,
+  PlayerDataService:318, LiftAttemptConfig, LiftingRemotes, CompetitionNumberReward.
 
-## 6. Current Checkpoint: Step 6D (functional rack integration)
+## 6. Step 6D: Functional Rack Integration
 
-**Status: read-only audit DONE and the plan APPROVED by the user (2026-10-14).
-Nothing implemented yet: no code or Studio changes.**
+**6D.1: DONE.** Hand-imported rack configured automatically at server start.
+- `src/server/Training/PowerRackSetup.luau` (temporary bridge, replaced by 6D.2).
+  It finds the single direct Workspace child `PowerRack_01` and checks for all 21
+  named MeshParts. It anchors everything, sets CanTouch off, and leaves CanCollide
+  on for the 4 posts only. It creates or reuses an invisible `StandPoint` (2 x 0.2 x 2)
+  at the posts' floor centre as PrimaryPart (pivot checked), sets
+  `StationId = PowerRack_01`, and adds the tag LAST. It fails closed (warning, no tag),
+  and on duplicate names prints read-only diagnostics for every candidate. Runtime
+  only: it never edits the saved place.
+- `src/server/init.server.luau` calls `PowerRackSetup.configure()` before any system
+  starts, so the rack is anchored early and tagged before the service reads tags.
+- No change to progression, TrainingStationService/Rules/Config, placeholders or Rojo.
+- Checks: luau-lsp analyze 0 errors in both files; `rojo build` OK; diff check clean.
+- Studio history: test 1 FAILED (2 copies of `PowerRack_01` in the place; setup
+  refused, unanchored rack collapsed). The user removed the duplicate in Studio.
 
-Audit findings (code at `5999fa1`):
-- Racks register via tag `GymTrainingStation` + string attribute `StationId`, on
-  a Part or Model, anywhere in the DataModel (also ServerStorage). Duplicate IDs
-  are ignored with a warning. Tag removal/destroy unregisters; the occupant is
-  released on the next tick with no credit.
-- Model racks: presence is measured from `Model:GetPivot()` (radius 12). The
-  prompt and status sign go on `PrimaryPart` (fallback: the first BasePart
-  found). Prompt at +3 studs, sign at +7 studs, prompt reach 8, no line of sight.
-- So `StandPoint` must be the PrimaryPart with PivotOffset 0, or the presence point and
-  prompt land in the wrong place. No code change is needed for one rack.
-- The rack title shows only the LAST character of StationId ("Training Rack 1").
-- The Studio place is not in the repo (`/Powerlifting Roblox.rbxlx` is gitignored
-  and absent), so a hand-placed rack lives only in the cloud place.
+**User-verified in Studio (2 players):** the rack stays standing; hold-E works;
+the menu opens; Player 1 occupies it; Player 2 is refused while it is occupied;
+Player 1 walks away and releases it; Player 2 can then occupy it.
 
-Proposed plan: 6D.1 = configure one rack by hand in Studio (zero code), test.
-6D.2 (later, needs approval) = Git-tracked template + config-driven spawner.
+**NOT yet verified at the modeled rack (regression cases still open):**
+- CN training raising Competition Number, and Technique training raising the
+  chosen stats (both proven at the placeholders in 5B, not re-run here).
+- One player trying to use two racks ("already using another rack").
+- Release by reset/death and by leaving the game (walk-away is verified).
+- No double credit (one tick line per player per ~10 s).
+- Placeholder racks still working alongside the modeled rack.
+- A fresh Play session re-running the setup with one prompt and one sign.
+- Collision feel (walk in through the open front, posts solid, no snagging).
 
-Next action: start 6D.1. Guide the user through the manual Studio setup
-(StandPoint as PrimaryPart, tag, StationId `PowerRack_01`, collision: posts only,
-position (0, 0, -18)), then run the 6D.1 Studio test checklist.
+**Next checkpoint: Step 6D.2 (NOT started, needs a plan and approval).**
+A Git-tracked rack template (no tag or StationId in the file), mapped through Rojo
+(a `default.project.json` change, which needs approval), plus a config-driven
+spawner that gives each copy a unique StationId and tags it last. It replaces
+`PowerRackSetup.luau` and, later, the placeholders. Open items: the rack title
+shows only the last ID character; the sign sits at +7 studs, slightly low.
