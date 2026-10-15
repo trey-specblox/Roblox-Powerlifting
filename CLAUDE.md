@@ -105,6 +105,30 @@ After implementation:
 
 Do not claim something was tested in Roblox Studio unless it was actually tested there.
 
+## Automation-First Workflow
+
+The user wants as little manual Roblox Studio work as possible: fewer human configuration mistakes, and development that is automated, reproducible and Git-tracked.
+
+1. Before asking the user to do a repetitive or error-prone action in Studio, check whether it can be done automatically through Claude Code, VS Code and Luau scripts, Rojo, Blender MCP, Studio Command Bar scripts, existing project scripts or configuration, or other already available, authorized development tools.
+2. Prefer reproducible project code, configuration and version-controlled assets over manual Studio changes.
+3. For one-time Studio operations with no direct automation, provide a safe, temporary Command Bar script.
+4. Every Command Bar script must:
+   - explain exactly what it will do;
+   - touch only specific, explicitly named instances;
+   - verify all prerequisites before modifying anything, and change nothing if a check fails;
+   - never delete or overwrite existing objects (a separate, user-approved cleanup script is the only exception);
+   - be idempotent where possible;
+   - print clear success and failure messages;
+   - stay separate from production gameplay code. Keep them in `tools/studio/`, which Rojo does not sync into the game.
+5. Do read-only checks automatically whenever possible: object counts and names, model hierarchy, MeshIds, dimensions, anchoring and collision, duplicates, tags and attributes, Rojo mapping and Git status.
+6. Do not ask the user to inspect many objects by hand (for example 21 MeshParts) when a script can check all of them more accurately.
+7. Do not ask the user to do repetitive positioning, renaming, tagging or property setup if a safe script can do it.
+8. Use manual Studio work only when it is genuinely needed: visual inspection of rendered models, gameplay and multiplayer testing, Studio operations that available tools cannot safely automate, and approving or reviewing potentially destructive changes.
+9. Never claim a Studio operation was done unless it was actually executed and verified.
+10. Never claim a model looks correct just because its dimensions and MeshIds are valid. Appearance needs the user's visual check.
+11. All existing Git safety rules still apply: no unapproved commits or pushes, no deleting existing game assets without approval, no changes to unrelated code, and no changes to approved gameplay mechanics without approval.
+12. GAME_DESIGN.md stays authoritative for approved gameplay decisions. DEVELOPMENT_STATUS.md stays current with actual progress and test results.
+
 ## Development Status Handoff
 
 At the end of every completed development checkpoint, update DEVELOPMENT_STATUS.md to reflect the latest verified commit, completed work, current task, blockers, uncommitted files and next action. Before updating it, verify Git status and do not claim that work is committed unless it actually is. Read DEVELOPMENT_STATUS.md when starting a new development session.
