@@ -2,7 +2,7 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-17
-(Step 6D.2b completed and committed).
+(Step 6D.2c completed and committed).
 
 ## 0. NEXT ACTION (start here)
 
@@ -18,9 +18,23 @@ Studio, the hand-placed rack is removed and the cloud place saved (user,
 "Replace the hand-placed power rack with a spawned rack (Step 6D.2b)" and
 pushed to `origin/main` (`git log -1` for the hash). See section 6.
 
+**Step 6D.2c (retire the placeholder stations) is COMPLETE**: passed in Studio
+(user, 2026-10-17) and committed with user approval on 2026-10-17 as "Replace
+the placeholder training stations with spawned racks (Step 6D.2c)", pushed to
+`origin/main` (`git log -1` for the hash). See section 6. No Studio place
+change was needed (the placeholders only ever existed at runtime).
+
 1. Read `CLAUDE.md`, then this file. Check `git status` against section 4:
    only the deliberately uncommitted files listed there should remain.
-2. Step 6D.2c: start ONLY when the user asks.
+2. Next milestone: NOT chosen yet. Do not begin Step 6E, gym construction or
+   sign polish until the user approves the next milestone.
+
+**Long-term design note (user, 2026-10-17):** the final game is intended to
+have a LARGE gym, potentially supporting about 30 players per server. The
+current four-rack layout (`GymRack_01`-`04`) is TEMPORARY development
+infrastructure, NOT the approved final gym layout. Rack count and positions
+stay in `TrainingStationConfig.GymRacks` so the layout can grow without code
+changes. Not yet a GAME_DESIGN decision.
 
 **Studio place:** the game is the CLOUD place `96814269062063` (universe
 `10769034794`), not a local file. Always open it from Studio's Recent /
@@ -31,7 +45,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- (2026-10-17) Replace the hand-placed power rack with a spawned rack (Step 6D.2b).
+- (2026-10-17) Replace the placeholder training stations with spawned racks (Step 6D.2c).
+- `e4e5f53` Replace the hand-placed power rack with a spawned rack (Step 6D.2b).
 - `9f4fdb0` Spawn gym racks automatically from the rack template (Step 6D.2a).
 - `2555c49` Add Git-tracked power rack template synced by Rojo (Step 6D.2 Phase 0).
 - `4efb75c` Integrate Blender power rack with training stations (Step 6D.1).
@@ -110,7 +125,8 @@ the luau-lsp analyzer bundled in the VS Code extension
 
 **Design rules:** 1 Blender unit = 1 stud; never fix scale by resizing. One
 material per object. Specific names (never `Cube.001`). Art work must not edit
-gameplay scripts. Rack design: `GAME_DESIGN.md` section 34; layout: section 27.
+gameplay scripts. Rack design: `GAME_DESIGN.md` section 34. There is NO approved
+gym layout yet (GAME_DESIGN has no section 27; an older note here pointed to one).
 
 ## 4. Uncommitted Work
 
@@ -156,13 +172,30 @@ Step 6D.2b files (9 entries, COMMITTED 2026-10-17; listed for reference):
   `DEVELOPMENT_STATUS.md`.
 - Keep OUT: the same unrelated files as above.
 
+Step 6D.2c files (7 entries, COMMITTED 2026-10-17; listed for reference):
+- Deleted: `src/server/Training/PlaceholderStations.luau`.
+- Changed: `src/shared/Config/TrainingStationConfig.luau`,
+  `src/server/Training/TrainingStationService.luau`,
+  `src/server/Training/RackSpawner.luau`, `tools/studio/Step6D2a_VerifyRacks.luau`,
+  `GAME_DESIGN.md` (§34.12 decision 12 + implementation note), `DEVELOPMENT_STATUS.md`.
+- Keep OUT: the same unrelated files as above.
+
 ## 5. Current Limitations
 
 - Every modeled rack now exists only at runtime, from the template. Spawned racks need `ServerStorage.RackTemplates` in the running place. In
   Studio, Rojo provides it. A PUBLISHED game only has it if the place was
   saved/published while Rojo had synced it; otherwise RackSpawner skips every
   gym rack with a warning (the game still runs).
-- The placeholder racks (`PlaceholderStations.luau`) are still live alongside it.
+- Since 6D.2c the placeholder platforms are retired; ALL training
+  stations are now spawned racks. If the template were missing from a running
+  place, there would be NO training stations (before 6D.2c the placeholders
+  still worked). The saved cloud place had the template at the 6D.2b check.
+- Rack positions are provisional (no approved gym layout). The 4-rack layout is
+  temporary development infrastructure; the intended final gym is large
+  (about 30 players per server). `GymRack_02`'s open front faces +Z, i.e. away
+  from the spawn (it keeps the old hand-placed spot).
+- Training signs work, but their visual design needs improvement (user,
+  2026-10-17). Sign polish is deferred until the user asks.
 - Rack materials/colours in Studio have not been tuned. No barbell, plates or gym yet.
 - Pre-existing luau-lsp type errors in untouched files: LiftAttemptService,
   PlayerDataService:318, LiftAttemptConfig, LiftingRemotes, CompetitionNumberReward,
@@ -364,7 +397,43 @@ Phase B1 implemented 2026-10-17:
   `git diff --check` clean; no progression, player-data, training-rules,
   placeholder, template or Rojo-mapping file changed.
 
-**Must stay untouched:** the placeholder racks, the rack template, the place
+**Step 6D.2c: retire the placeholder stations (approved 2026-10-17). COMPLETE:
+passed in Studio (user, 2026-10-17), committed and pushed 2026-10-17.**
+- Approved decisions: retire `PlaceholderStationA`/`B`; add `GymRack_03` at
+  (-14, 0, -18) and `GymRack_04` at (14, 0, -18), facing 0 (the placeholders'
+  spots); keep `GymRack_01`/`02`; no sign-height change; positions stay
+  configurable (no approved layout); document the retirement in GAME_DESIGN.
+- Changes: `TrainingStationConfig` (2 GymRacks lines added, PlaceholderStations
+  list removed, "positions are provisional" note); `PlaceholderStations.luau`
+  deleted (recoverable from `e4e5f53`); `TrainingStationService` (require +
+  build call removed, comment); `RackSpawner` (placeholder-ID reservation
+  removed, comments); `Step6D2a_VerifyRacks` (expects exactly 4 gym racks, no
+  TrainingStations folder, no PlaceholderStation* instance or ID, no
+  PlaceholderStations config list); GAME_DESIGN §34.12 decision 12 marked
+  [RETIRED] 6D.2c, implementation note updated.
+- Not changed: progression, player data, training rules, registration, menu,
+  ticks, the template, the Rojo mapping, `GymRack_01`/`02`. Two harmless text
+  mentions remain: `TrainingStationProbe.server.luau:387` (the made-up ID
+  "PlaceholderStationZ" in an unknown-station test) and a comment example in
+  `TrainingStationRules.luau:918`.
+- Source checks by Claude (2026-10-17): luau-lsp 0 errors in the changed and
+  dependent files; `rojo build` OK; built place has no PlaceholderStations
+  module, 4 GymRack entries, no PlaceholderStations in config or service,
+  template 1 Model / 21 MeshParts; `git diff --check` clean.
+- Footprint math (template is 6.06 x 6.54, footprint X -3.03..3.03, Z -3.34..3.20
+  around its floor centre; facing 0): no overlaps. Closest racks: 01-03 and
+  01-04, 9.64 studs apart (centres 18.44; prompt reach 8, so prompts never
+  overlap). SpawnLocation (16 Oct snapshot): centre (0, 0.5, -6), 12 x 12,
+  i.e. X -6..6, Z -12..0; nearest racks 03/04 about 5.7 studs away, 02 8.7,
+  01 14.8. All inside the Baseplate.
+- Studio results (user-verified 2026-10-17, real cloud place, Local Server):
+  `Step6D2a_VerifyRacks` ALL CHECKS PASSED; four automatically spawned racks
+  present; hold-E interaction and training progression work at `GymRack_03`
+  and `GymRack_04`; placeholder platforms gone; all racks upright and
+  separated, no obvious collisions or overlaps; training signs work (visual
+  design to be improved later, not in 6D.2c).
+
+**Must stay untouched:** the rack template, the place
 backups, the unexplained `PowerRack_01.blend` change (investigate separately), and
 the unrelated Git changes in section 4.
 

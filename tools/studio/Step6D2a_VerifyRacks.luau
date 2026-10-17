@@ -1,5 +1,5 @@
 --[[
-	Step6D2a_VerifyRacks  (Step 6D.2a, updated for 6D.2b; TEMPORARY Command Bar script)
+	Step6D2a_VerifyRacks  (Step 6D.2a, updated for 6D.2b and 6D.2c; TEMPORARY Command Bar script)
 
 	READ-ONLY. Changes nothing. Run while PLAYING, from the SERVER view
 	(Test tab -> "Current: Client" button switches it to "Current: Server"),
@@ -14,8 +14,10 @@
 	    sign shows the full rack number.
 	And overall:
 	  - every tagged rack has a unique StationId (lists them all);
-	  - the registered racks are exactly the configured gym racks and both
-	    placeholders (6D.2b: the hand-placed rack is no longer set up);
+	  - the registered racks are exactly the configured gym racks (6D.2c: four;
+	    the placeholders are retired and the hand-placed rack is gone);
+	  - no placeholder platforms: no Workspace.TrainingStations folder and no
+	    PlaceholderStation* instance or StationId anywhere;
 	  - if the hand-placed Workspace.PowerRack_01 is still in the place (before
 	    its removal), it is inert: no tag, no StationId, no prompt, no sign;
 	  - the template in ServerStorage is still untagged, ID-free and 21 MeshParts.
@@ -156,10 +158,8 @@ local function run()
 	end
 	check(#duplicates == 0, "all tagged racks have unique StationIds"
 		.. (if #duplicates > 0 then " (duplicates: " .. table.concat(duplicates, ", ") .. ")" else ""))
+	check(#gymRacks == 4, string.format("config lists 4 gym racks (found %d)", #gymRacks))
 	local expectedIds = {}
-	for _, entry in ipairs(config.PlaceholderStations) do
-		table.insert(expectedIds, entry.stationId)
-	end
 	for _, entry in ipairs(gymRacks) do
 		table.insert(expectedIds, entry.stationId)
 	end
@@ -169,6 +169,20 @@ local function run()
 	local tagged = #CollectionService:GetTagged(tag)
 	check(tagged == #expectedIds, string.format("%d tagged racks in total (expected %d)", tagged, #expectedIds))
 	check(ids["PowerRack_01"] == nil, "the hand-placed rack's old StationId PowerRack_01 is not registered")
+
+	-- 6D.2c: the placeholder platforms are retired.
+	local placeholderLeftovers = 0
+	for _, d in ipairs(workspace:GetDescendants()) do
+		local stationId = d:GetAttribute("StationId")
+		if string.find(d.Name, "PlaceholderStation", 1, true)
+			or (typeof(stationId) == "string" and string.find(stationId, "PlaceholderStation", 1, true)) then
+			placeholderLeftovers += 1
+		end
+	end
+	check(workspace:FindFirstChild("TrainingStations") == nil and placeholderLeftovers == 0,
+		string.format("no placeholder platforms (TrainingStations folder: %s, placeholder instances: %d)",
+			if workspace:FindFirstChild("TrainingStations") then "present" else "none", placeholderLeftovers))
+	check((config :: any).PlaceholderStations == nil, "TrainingStationConfig has no PlaceholderStations list")
 
 	-- 6D.2b: until it is removed from the place, the hand-placed rack must be inert decoration.
 	local handPlaced = workspace:FindFirstChild("PowerRack_01")

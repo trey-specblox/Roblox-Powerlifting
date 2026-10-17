@@ -21,8 +21,8 @@
 	     registers it like any other rack: same prompt, menu, rules, progression.
 
 	FAILS CLOSED PER RACK: a bad entry or template is skipped with a warning and
-	any half-built clone is destroyed. Other racks, the placeholders and every
-	other system carry on.
+	any half-built clone is destroyed. Other racks and every other system
+	carry on.
 
 	Runtime only: the racks exist only while the server runs, so nothing is
 	saved into the place and a fresh Play session builds the same racks again.
@@ -64,8 +64,7 @@ local function isFinite(value: number): boolean
 end
 
 --[[
-	StationIds that are already taken or will be: anything tagged already and
-	the placeholders, which TrainingStationService builds later.
+	StationIds that are already taken: anything tagged already.
 ]]
 local function reservedStationIds(): { [string]: string }
 	local reserved: { [string]: string } = {}
@@ -74,9 +73,6 @@ local function reservedStationIds(): { [string]: string }
 		if typeof(id) == "string" then
 			reserved[id] = instance:GetFullName()
 		end
-	end
-	for _, entry in ipairs(TrainingStationConfig.PlaceholderStations) do
-		reserved[entry.stationId] = "placeholder rack"
 	end
 	return reserved
 end

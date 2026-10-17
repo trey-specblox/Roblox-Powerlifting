@@ -3786,7 +3786,7 @@ listed below so no contradictory rule survives.
 | 9 | **Presence is verified server-side** on menu authorization, on every request and on every tick. The character is **not** anchored | **[FINAL]** |
 | 10 | The selection is remembered **only while the player holds the rack**. No schema change, no cross-session persistence | **[FINAL]** for 5B.6 |
 | 11 | **Roblox's idle kick is accepted.** It ends accrual like any disconnect. No offline progression and no anti-idle workaround. Whether multi-hour idle training needs a different answer before release is open | **[FINAL]** for 5B.6; release question **[TBD]** |
-| 12 | **Two temporary placeholder racks** (plain Parts near spawn). Real models come after 5B.7 | **[FINAL]** for 5B.6 |
+| 12 | ~~**Two temporary placeholder racks** (plain Parts near spawn). Real models come after 5B.7~~ — **retired in checkpoint 6D.2c** (approved 2026-10-17): the placeholders were replaced by modeled power racks `GymRack_03` and `GymRack_04`, spawned at the same spots from the Git-tracked rack template like every other rack. Rack positions stay configurable in `TrainingStationConfig.GymRacks` until a gym layout is approved. No station rule changed | **[FINAL]** for 5B.6; **[RETIRED]** 6D.2c |
 | 13 | Lift attempts stay **independent** of the racks | **[FINAL]** for 5B.6 |
 | 14 | Tick **10 s**, at most **30 s** credited per tick, **12 stud** presence radius, **1 s** selection cooldown, **8 requests per 4 s** spam limit | **[PROVISIONAL]** — `TrainingStationConfig` |
 
@@ -3859,8 +3859,9 @@ only by the server.
 **Implementation:** `TrainingStationRules` (pure, tested by
 `TrainingStationProbe`), `TrainingStationService` (prompt, menu authorization,
 request validation, presence, the tick), `TrainingRemotes`,
-`TrainingStationConfig`, the client `TrainingMenuController`, and the temporary
-`PlaceholderStations`.
+`TrainingStationConfig`, the client `TrainingMenuController`, and (since 6D.2a)
+`RackSpawner` / `RackConfigurator`, which build every rack from the template.
+The temporary `PlaceholderStations` was removed in 6D.2c.
 
 #### Technique at the racks — checkpoint 5B.7
 

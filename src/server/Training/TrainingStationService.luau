@@ -89,7 +89,6 @@ local TrainingStationRules = require(TrainingFolder:WaitForChild("TrainingStatio
 local TrainingRemotes = require(TrainingFolder:WaitForChild("TrainingRemotes"))
 
 local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
-local PlaceholderStations = require(script.Parent.PlaceholderStations)
 
 local TrainingStationService = {}
 
@@ -808,9 +807,9 @@ end
 --------------------------------------------------------------------------------
 
 --[[
-	Creates the remotes, builds the placeholder racks, registers every tagged
-	rack and starts the tick loop. Call once, from the server entry point,
-	AFTER PlayerDataService.start().
+	Creates the remotes, registers every tagged rack (spawned earlier by
+	RackSpawner) and starts the tick loop. Call once, from the server entry
+	point, AFTER PlayerDataService.start().
 ]]
 function TrainingStationService.start()
 	assert(not started, "[TrainingStationService] start() must only be called once")
@@ -819,8 +818,6 @@ function TrainingStationService.start()
 	local set = TrainingRemotes.createOnServer(ReplicatedStorage)
 	remotes = set
 	set.menuRequest.OnServerEvent:Connect(onMenuRequest)
-
-	PlaceholderStations.build(TrainingStationConfig.PlaceholderStations, TrainingStationConfig.StationTag)
 
 	local tag = TrainingStationConfig.StationTag
 	CollectionService:GetInstanceAddedSignal(tag):Connect(registerStation)

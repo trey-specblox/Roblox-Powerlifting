@@ -99,22 +99,6 @@ TrainingStationConfig.TechniqueStatNames = {
 TrainingStationConfig.StationTag = "GymTrainingStation"
 
 --[[
-	TEMPORARY PLACEHOLDER RACKS, built from basic Parts by PlaceholderStations.
-
-	Two, so the one-player-per-rack and one-rack-per-player rules can be tested
-	for real. Positions are the centre of each platform on the Baseplate (whose
-	top surface is at Y = 0), a short walk from the default spawn.
-
-	Delete these entries, and PlaceholderStations, when real rack models exist.
-	Real racks are registered the same way, through the tag, so nothing in the
-	progression system changes.
-]]
-TrainingStationConfig.PlaceholderStations = {
-	{ stationId = "PlaceholderStationA", position = Vector3.new(-14, 0, -18) },
-	{ stationId = "PlaceholderStationB", position = Vector3.new(14, 0, -18) },
-}
-
---[[
 	GYM RACKS, spawned at server start by RackSpawner (checkpoint 6D.2a) from a
 	Git-tracked template in ServerStorage.RackTemplates (art/roblox/*.rbxmx).
 
@@ -129,6 +113,9 @@ TrainingStationConfig.PlaceholderStations = {
 	Adding a rack = adding a line here. RackSpawner checks every entry and
 	SKIPS a bad one with a warning, so one typo never stops the other racks or
 	the rest of the game.
+
+	Positions are PROVISIONAL: no final gym layout is approved yet, so racks
+	are moved by editing these lines, never by hand in Studio.
 ]]
 export type GymRackEntry = {
 	stationId: string,
@@ -142,6 +129,9 @@ TrainingStationConfig.GymRacks = {
 	-- 6D.2b: replaces the hand-placed Workspace.PowerRack_01, at its exact spot
 	-- (read from the saved place: all 21 parts match the template's, unrotated).
 	{ stationId = "GymRack_02", template = "PowerRack_01", position = Vector3.new(-1.3, 0, 12), facingDegrees = 0 },
+	-- 6D.2c: replace the retired placeholder platforms A and B, at their spots.
+	{ stationId = "GymRack_03", template = "PowerRack_01", position = Vector3.new(-14, 0, -18), facingDegrees = 0 },
+	{ stationId = "GymRack_04", template = "PowerRack_01", position = Vector3.new(14, 0, -18), facingDegrees = 0 },
 } :: { GymRackEntry }
 
 --[[
