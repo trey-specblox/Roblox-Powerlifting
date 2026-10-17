@@ -219,7 +219,7 @@ end
 --------------------------------------------------------------------------------
 
 local function stationTitle(station: Station): string
-	return string.format("Training Rack %s", string.sub(station.stationId, -1))
+	return TrainingStationRules.rackTitle(station.stationId)
 end
 
 local function refreshSign(station: Station)

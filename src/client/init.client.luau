@@ -28,3 +28,8 @@ TrainingMenuController.start()
 local DevFolder = script:WaitForChild("Dev")
 local LiftAttemptDebugTrigger = require(DevFolder:WaitForChild("LiftAttemptDebugTrigger"))
 LiftAttemptDebugTrigger.start()
+
+-- TEMPORARY (6D.2a). Studio only, and only while the server's GymRackWatchProbe is ENABLED:
+-- shows its PASS/FAIL results on screen. Display only; it sends nothing to the server.
+local GymRackWatchDisplay = require(DevFolder:WaitForChild("GymRackWatchDisplay"))
+GymRackWatchDisplay.start()

@@ -436,7 +436,7 @@ refreshMenu = function()
 
 	if state then
 		titleLabel.Text = if state.stationId
-			then string.format("Training Rack %s", string.sub(state.stationId, -1))
+			then TrainingStationRules.rackTitle(state.stationId)
 			else "Training Rack"
 		currentLabel.Text = "Current training: "
 			.. (if state.sessionState == "Training"

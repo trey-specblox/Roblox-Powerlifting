@@ -913,6 +913,16 @@ function TrainingStationRules.statName(stat: string): string
 end
 
 --[[
+	The rack's title on its sign and in the menu. The whole trailing number is
+	shown ("GymRack_01" -> "Training Rack 01"); an ID without one keeps its last
+	character ("PlaceholderStationA" -> "Training Rack A").
+]]
+function TrainingStationRules.rackTitle(stationId: string): string
+	local number = string.match(stationId, "%d+$")
+	return string.format("Training Rack %s", number or string.sub(stationId, -1))
+end
+
+--[[
 	One line describing what the session is doing, for the rack sign and the
 	menu. Pure, so the probe can check the exact wording players see.
 ]]

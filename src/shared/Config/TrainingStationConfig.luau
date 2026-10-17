@@ -115,6 +115,33 @@ TrainingStationConfig.PlaceholderStations = {
 }
 
 --[[
+	GYM RACKS, spawned at server start by RackSpawner (checkpoint 6D.2a) from a
+	Git-tracked template in ServerStorage.RackTemplates (art/roblox/*.rbxmx).
+
+	  stationId      "GymRack_" + at least two digits, unique. Also the rack's
+	                 name in Workspace.GymRacks. The sign and menu show the
+	                 trailing number: "Training Rack 01".
+	  template       name of the Model in ServerStorage.RackTemplates.
+	  position       floor centre of the rack (the Baseplate top is Y = 0).
+	  facingDegrees  turn about the vertical axis. 0 = the J-cup (front) side
+	                 faces +Z, as modelled; 90 = it faces +X.
+
+	Adding a rack = adding a line here. RackSpawner checks every entry and
+	SKIPS a bad one with a warning, so one typo never stops the other racks or
+	the rest of the game.
+]]
+export type GymRackEntry = {
+	stationId: string,
+	template: string,
+	position: Vector3,
+	facingDegrees: number,
+}
+
+TrainingStationConfig.GymRacks = {
+	{ stationId = "GymRack_01", template = "PowerRack_01", position = Vector3.new(0, 0, -30), facingDegrees = 0 },
+} :: { GymRackEntry }
+
+--[[
 	=========================================================================
 	CONFIGURATION INTEGRITY -- CHECKED AT STARTUP
 	=========================================================================
