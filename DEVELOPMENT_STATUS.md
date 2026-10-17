@@ -2,7 +2,7 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-17
-(Step 6D.2a completed and committed).
+(Step 6D.2b completed and committed).
 
 ## 0. NEXT ACTION (start here)
 
@@ -12,10 +12,15 @@ racks automatically from the rack template (Step 6D.2a)" and pushed to
 `origin/main` (run `git log -1` for the hash; the file does not hold its own
 commit's hash).
 
+**Step 6D.2b (remove the hand-placed rack dependency) is COMPLETE**: passed in
+Studio, the hand-placed rack is removed and the cloud place saved (user,
+2026-10-17), and the code was committed with user approval on 2026-10-17 as
+"Replace the hand-placed power rack with a spawned rack (Step 6D.2b)" and
+pushed to `origin/main` (`git log -1` for the hash). See section 6.
+
 1. Read `CLAUDE.md`, then this file. Check `git status` against section 4:
    only the deliberately uncommitted files listed there should remain.
-2. Next checkpoint: Step 6D.2b (remove hand-placed `Workspace.PowerRack_01` and
-   `PowerRackSetup`). Start it ONLY when the user asks.
+2. Step 6D.2c: start ONLY when the user asks.
 
 **Studio place:** the game is the CLOUD place `96814269062063` (universe
 `10769034794`), not a local file. Always open it from Studio's Recent /
@@ -26,7 +31,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- (2026-10-17) Spawn gym racks automatically from the rack template (Step 6D.2a).
+- (2026-10-17) Replace the hand-placed power rack with a spawned rack (Step 6D.2b).
+- `9f4fdb0` Spawn gym racks automatically from the rack template (Step 6D.2a).
 - `2555c49` Add Git-tracked power rack template synced by Rojo (Step 6D.2 Phase 0).
 - `4efb75c` Integrate Blender power rack with training stations (Step 6D.1).
 - `27a3214` Add verified Blender power rack assets and development docs (6B/6C).
@@ -47,6 +53,9 @@ with `print(game.PlaceId)` before working or saving.
   Temporary test model cleaned up and verified. See section 6.
 - **Step 6D.2a PASSED and committed** (all Studio tests user-verified 2026-10-14
   to 2026-10-17; committed and pushed 2026-10-17). See section 6.
+- **Step 6D.2b PASSED and committed** (user-verified in Studio 2026-10-17):
+  hand-placed rack replaced by the spawned `GymRack_02`, removed from the cloud
+  place and saved; code committed and pushed 2026-10-17. See section 6.
 
 ## 3. Reference
 
@@ -114,7 +123,8 @@ Deliberately left uncommitted (keep, never discard):
 - `PlaceBackup_ServerSnapshot_20261016.rbxl` (project root): exact copy (SHA-256
   checked) of Studio's Local Server snapshot `%LOCALAPPDATA%\Roblox\server.rbxl`
   from 2026-10-16 23:53, made 2026-10-17. Contains `Workspace.PowerRack_01`
-  (21 MeshParts). Safety copy only. Never commit.
+  (21 MeshParts). Safety copy only. Never commit. Since 6D.2b it is also a
+  restore source for the removed hand-placed rack.
 - `art/exports/ScaleTest_2StudCube.fbx`: v1, the failed 200-stud test. Local reference only.
 - `art/blender/PowerRack_01.blend1`: Blender's automatic backup, ignored by the
   local `.gitignore` rule `*.blend1`.
@@ -137,11 +147,18 @@ Step 6D.2a files (14, COMMITTED 2026-10-17; listed for reference):
   `PlaceBackup_ServerSnapshot_20261016.rbxl`, `ScaleTest_2StudCube.fbx`,
   `.gitignore`, `.claude/`, `References/DBD.md` (above).
 
+Step 6D.2b files (9 entries, COMMITTED 2026-10-17; listed for reference):
+- Deleted: `src/server/Training/PowerRackSetup.luau`.
+- New: `tools/studio/Step6D2b_RemoveHandPlacedRack.luau`.
+- Changed: `src/server/init.server.luau`, `src/shared/Config/TrainingStationConfig.luau`,
+  `src/server/Training/RackSpawner.luau`, `src/server/Training/RackConfigurator.luau`,
+  `tools/studio/Step6D2a_VerifyRacks.luau`, `tools/studio/Step6D2a_VerifyEditModeClean.luau`,
+  `DEVELOPMENT_STATUS.md`.
+- Keep OUT: the same unrelated files as above.
+
 ## 5. Current Limitations
 
-- The hand-imported `Workspace.PowerRack_01` (only in the user's saved place)
-  is still configured by the temporary `PowerRackSetup` until 6D.2b.
-- Spawned racks need `ServerStorage.RackTemplates` in the running place. In
+- Every modeled rack now exists only at runtime, from the template. Spawned racks need `ServerStorage.RackTemplates` in the running place. In
   Studio, Rojo provides it. A PUBLISHED game only has it if the place was
   saved/published while Rojo had synced it; otherwise RackSpawner skips every
   gym rack with a warning (the game still runs).
@@ -303,9 +320,52 @@ user-verified; committed and pushed 2026-10-17 with user approval.**
 - Data isolation: use a Local Server test (Player1/Player2, negative test
   UserIds), not Play Solo, so the user's real account data is untouched.
 
-**Must stay untouched:** `Workspace.PowerRack_01` (hand-placed working rack),
-`PowerRackSetup.luau`, the placeholder racks, the rack template, the place
-backup, the unexplained `PowerRack_01.blend` change (investigate separately), and
+**Step 6D.2b: remove the hand-placed rack dependency (Option B approved 2026-10-17).
+COMPLETE: passed in Studio, cloud place saved, committed and pushed 2026-10-17.**
+Phase B1 implemented 2026-10-17:
+- `TrainingStationConfig.GymRacks` gains `GymRack_02` at (-1.3, 0, 12), facing 0.
+  Read from `PlaceBackup_ServerSnapshot_20261016.rbxl` (read-only binary decode,
+  validated against the template's .rbxmx): all 21 parts of the hand-placed rack
+  have exactly the template's CFrames and sizes (0 studs, 0 rotation difference),
+  unrotated, all anchored. Template floor centre vs config: 1e-6 studs.
+- `src/server/init.server.luau`: PowerRackSetup require and call removed.
+- `src/server/Training/PowerRackSetup.luau`: deleted (recoverable from `9f4fdb0`).
+- `RackSpawner.luau`, `RackConfigurator.luau`: comments only.
+- `tools/studio/Step6D2a_VerifyRacks.luau`: expects exactly the gym racks +
+  placeholders registered, PowerRack_01 NOT registered, and the hand-placed
+  rack (if still present) inert.
+- `tools/studio/Step6D2a_VerifyEditModeClean.luau`: expects NO
+  Workspace.PowerRack_01 and exactly 1 intact template.
+- New `tools/studio/Step6D2b_RemoveHandPlacedRack.luau` (NOT run): guarded,
+  undoable removal; refuses unless Edit mode, PlaceId 96814269062063, exactly
+  one untagged 21-MeshPart Workspace.PowerRack_01 whose every part matches the
+  template's position, and the template is present. Never saves.
+- Source checks: luau-lsp 0 errors in changed files; `rojo build` OK, no
+  PowerRackSetup in the build, both GymRack entries present, template 21
+  MeshParts; `git diff --check` clean. No progression, rules, placeholder,
+  player-data, template or Rojo-mapping change.
+
+**6D.2b Studio results (user-verified 2026-10-17, real cloud place):**
+- `GymRack_01` and `GymRack_02` both spawned correctly.
+- `Step6D2a_VerifyRacks` (updated for 6D.2b): ALL CHECKS PASSED.
+- Technique training at `GymRack_02` worked.
+- The hand-placed `Workspace.PowerRack_01` was removed with the approved,
+  guarded `Step6D2b_RemoveHandPlacedRack` script.
+- `Step6D2a_VerifyEditModeClean` (updated): ALL CHECKS PASSED; template intact
+  with 21 MeshParts.
+- Studio confirmed: "Saved new changes in "Powerlifting: Road to Elite" to Roblox".
+- Rollback for the model if ever needed: Studio place Version History, or copy
+  it from `PlaceBackup_ServerSnapshot_20261016.rbxl`. Code: `PowerRackSetup.luau`
+  is in `9f4fdb0`.
+- Final source checks (2026-10-17, no code changes after the Studio tests):
+  luau-lsp with sourcemap 0 errors in all 8 6D.2b Luau files (errors only in
+  the untouched files of section 5); `rojo build` OK, no PowerRackSetup in the
+  build, template 1 Model / 21 MeshParts, watcher still ENABLED = false;
+  `git diff --check` clean; no progression, player-data, training-rules,
+  placeholder, template or Rojo-mapping file changed.
+
+**Must stay untouched:** the placeholder racks, the rack template, the place
+backups, the unexplained `PowerRack_01.blend` change (investigate separately), and
 the unrelated Git changes in section 4.
 
 Approved design, as implemented:
@@ -332,5 +392,6 @@ Approved design, as implemented:
   (sign) and `TrainingMenuController` (menu): one line changed in each.
 - Unchanged in 6D.2a: working rack, PowerRackSetup, placeholders, progression,
   training rules, Rojo mapping.
-- 6D.2b (later): user deletes `Workspace.PowerRack_01`; `PowerRackSetup` removed.
+- 6D.2b (done 2026-10-17): `Workspace.PowerRack_01` removed from the cloud place
+  and replaced by `GymRack_02`; `PowerRackSetup` removed.
 - Open item: the sign sits at +7 studs, slightly low.

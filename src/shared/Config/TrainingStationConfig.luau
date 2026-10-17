@@ -139,6 +139,9 @@ export type GymRackEntry = {
 
 TrainingStationConfig.GymRacks = {
 	{ stationId = "GymRack_01", template = "PowerRack_01", position = Vector3.new(0, 0, -30), facingDegrees = 0 },
+	-- 6D.2b: replaces the hand-placed Workspace.PowerRack_01, at its exact spot
+	-- (read from the saved place: all 21 parts match the template's, unrotated).
+	{ stationId = "GymRack_02", template = "PowerRack_01", position = Vector3.new(-1.3, 0, 12), facingDegrees = 0 },
 } :: { GymRackEntry }
 
 --[[

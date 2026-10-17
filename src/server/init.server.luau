@@ -15,20 +15,11 @@ local LiftAttemptService = require(LiftingFolder:WaitForChild("LiftAttemptServic
 
 local TrainingFolder = script:WaitForChild("Training")
 local TrainingStationService = require(TrainingFolder:WaitForChild("TrainingStationService"))
-local PowerRackSetup = require(TrainingFolder:WaitForChild("PowerRackSetup"))
 local RackSpawner = require(TrainingFolder:WaitForChild("RackSpawner"))
-
---[[
-	TEMPORARY (6D.1): sets up the hand-placed Workspace.PowerRack_01 first, so
-	its parts are anchored before anything below can yield and let physics
-	move them, and so it is tagged before TrainingStationService looks for racks.
-]]
-PowerRackSetup.configure()
 
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the
 	Git-tracked templates and tagged before TrainingStationService looks for racks.
-	After PowerRackSetup, so its StationId is already taken when IDs are checked.
 ]]
 RackSpawner.spawnAll()
 

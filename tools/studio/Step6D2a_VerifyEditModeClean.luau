@@ -1,13 +1,12 @@
 --[[
-	Step6D2a_VerifyEditModeClean  (Step 6D.2a, TEMPORARY Command Bar script)
+	Step6D2a_VerifyEditModeClean  (Step 6D.2a, updated for 6D.2b; TEMPORARY Command Bar script)
 
 	READ-ONLY. Changes nothing. Run in Studio EDIT mode (after stopping Play)
 	to prove a Play session left nothing behind in the saved place:
 	  - no Workspace.GymRacks folder and no GymRack_* instance anywhere;
 	  - no instance carries the GymTrainingStation tag in Edit mode;
-	  - the hand-placed Workspace.PowerRack_01 is still exactly one Model with
-	    21 MeshParts and none of the runtime-only setup (no StandPoint, no
-	    StationId, no prompt or sign);
+	  - 6D.2b: the hand-placed Workspace.PowerRack_01 is GONE (run this only
+	    after Step6D2b_RemoveHandPlacedRack);
 	  - the template in ServerStorage is unchanged (21 MeshParts, no tag/ID).
 	Racks are built fresh by each Play session; this shows none were saved.
 ]]
@@ -46,33 +45,19 @@ local function run()
 	local tagged = #CollectionService:GetTagged(TAG)
 	check(tagged == 0, string.format("nothing tagged %s in Edit mode (found %d)", TAG, tagged))
 
-	local racks = {}
-	for _, child in ipairs(workspace:GetChildren()) do
-		if child.Name == "PowerRack_01" then
-			table.insert(racks, child)
+	local handPlaced = 0
+	for _, d in ipairs(workspace:GetDescendants()) do
+		if d.Name == "PowerRack_01" then
+			handPlaced += 1
 		end
 	end
-	check(#racks == 1 and racks[1]:IsA("Model"), string.format("exactly 1 Workspace.PowerRack_01 Model (found %d)", #racks))
-	if #racks == 1 then
-		local rack = racks[1]
-		local meshParts, runtimeOnly = 0, {}
-		for _, d in ipairs(rack:GetDescendants()) do
-			if d:IsA("MeshPart") then
-				meshParts += 1
-			elseif d.Name == "StandPoint" or d:IsA("ProximityPrompt") or d:IsA("BillboardGui") then
-				table.insert(runtimeOnly, d.ClassName .. " " .. d.Name)
-			end
-		end
-		check(meshParts == 21, string.format("Workspace.PowerRack_01 has 21 MeshParts (found %d)", meshParts))
-		check(#runtimeOnly == 0 and rack:GetAttribute("StationId") == nil,
-			"Workspace.PowerRack_01 has no saved runtime setup (StandPoint, StationId, prompt, sign)"
-				.. (if #runtimeOnly > 0 then " -- found: " .. table.concat(runtimeOnly, ", ") else ""))
-	end
+	check(handPlaced == 0, string.format("no hand-placed PowerRack_01 left in Workspace (found %d)", handPlaced))
 
 	local folder = ServerStorage:FindFirstChild("RackTemplates")
 	local template = folder and folder:FindFirstChild("PowerRack_01")
-	check(template ~= nil and #template:GetDescendants() == 21,
-		"template ServerStorage.RackTemplates.PowerRack_01 still has exactly 21 parts")
+	local templateCount = if folder then #folder:GetChildren() else 0
+	check(template ~= nil and template:IsA("Model") and templateCount == 1 and #template:GetDescendants() == 21,
+		string.format("exactly 1 template ServerStorage.RackTemplates.PowerRack_01 with 21 parts (folder holds %d)", templateCount))
 	if template then
 		check(not CollectionService:HasTag(template, TAG) and template:GetAttribute("StationId") == nil,
 			"template has no tag and no StationId")

@@ -21,8 +21,8 @@
 	     registers it like any other rack: same prompt, menu, rules, progression.
 
 	FAILS CLOSED PER RACK: a bad entry or template is skipped with a warning and
-	any half-built clone is destroyed. Other racks, the hand-placed
-	Workspace.PowerRack_01, the placeholders and every other system carry on.
+	any half-built clone is destroyed. Other racks, the placeholders and every
+	other system carry on.
 
 	Runtime only: the racks exist only while the server runs, so nothing is
 	saved into the place and a fresh Play session builds the same racks again.
@@ -64,8 +64,7 @@ local function isFinite(value: number): boolean
 end
 
 --[[
-	StationIds that are already taken or will be: anything tagged already (the
-	hand-placed PowerRack_01 is tagged by PowerRackSetup before this runs) and
+	StationIds that are already taken or will be: anything tagged already and
 	the placeholders, which TrainingStationService builds later.
 ]]
 local function reservedStationIds(): { [string]: string }

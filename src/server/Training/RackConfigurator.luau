@@ -12,10 +12,8 @@
 	does that, LAST, once the rack is fully placed. It never parents, moves or
 	destroys the Model, so it is safe to run on an unparented clone.
 
-	The checks and settings are a deliberate COPY of PowerRackSetup's (6D.1).
-	PowerRackSetup keeps configuring the hand-placed Workspace.PowerRack_01
-	unchanged until checkpoint 6D.2b deletes it, so the working rack carries no
-	risk from this module.
+	The checks and settings were first written for the hand-placed rack (6D.1,
+	PowerRackSetup, removed in 6D.2b); every modelled rack is now set up here.
 ]]
 
 local RackConfigurator = {}

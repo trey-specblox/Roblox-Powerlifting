@@ -1,5 +1,5 @@
 --[[
-	Step6D2a_VerifyRacks  (Step 6D.2a, TEMPORARY Command Bar script)
+	Step6D2a_VerifyRacks  (Step 6D.2a, updated for 6D.2b; TEMPORARY Command Bar script)
 
 	READ-ONLY. Changes nothing. Run while PLAYING, from the SERVER view
 	(Test tab -> "Current: Client" button switches it to "Current: Server"),
@@ -14,7 +14,10 @@
 	    sign shows the full rack number.
 	And overall:
 	  - every tagged rack has a unique StationId (lists them all);
-	  - the hand-placed Workspace.PowerRack_01 and both placeholders are registered;
+	  - the registered racks are exactly the configured gym racks and both
+	    placeholders (6D.2b: the hand-placed rack is no longer set up);
+	  - if the hand-placed Workspace.PowerRack_01 is still in the place (before
+	    its removal), it is inert: no tag, no StationId, no prompt, no sign;
 	  - the template in ServerStorage is still untagged, ID-free and 21 MeshParts.
 ]]
 
@@ -50,7 +53,7 @@ end
 
 local function run()
 	if not (RunService:IsRunning() and RunService:IsServer()) then
-		warn("[6D.2a verify] Not run: press Play, then switch the Command Bar to the SERVER view (Test tab).")
+		warn("[6D.2b verify] Not run: press Play, then switch the Command Bar to the SERVER view (Test tab).")
 		return
 	end
 
@@ -153,7 +156,7 @@ local function run()
 	end
 	check(#duplicates == 0, "all tagged racks have unique StationIds"
 		.. (if #duplicates > 0 then " (duplicates: " .. table.concat(duplicates, ", ") .. ")" else ""))
-	local expectedIds = { "PowerRack_01" }
+	local expectedIds = {}
 	for _, entry in ipairs(config.PlaceholderStations) do
 		table.insert(expectedIds, entry.stationId)
 	end
@@ -165,6 +168,24 @@ local function run()
 	end
 	local tagged = #CollectionService:GetTagged(tag)
 	check(tagged == #expectedIds, string.format("%d tagged racks in total (expected %d)", tagged, #expectedIds))
+	check(ids["PowerRack_01"] == nil, "the hand-placed rack's old StationId PowerRack_01 is not registered")
+
+	-- 6D.2b: until it is removed from the place, the hand-placed rack must be inert decoration.
+	local handPlaced = workspace:FindFirstChild("PowerRack_01")
+	if handPlaced == nil then
+		table.insert(lines, "  INFO  no hand-placed Workspace.PowerRack_01 in this place")
+	else
+		local runtimeOnly = 0
+		for _, d in ipairs(handPlaced:GetDescendants()) do
+			if d:IsA("ProximityPrompt") or d:IsA("BillboardGui") or d.Name == "StandPoint" then
+				runtimeOnly += 1
+			end
+		end
+		check(not CollectionService:HasTag(handPlaced, tag) and handPlaced:GetAttribute("StationId") == nil
+			and runtimeOnly == 0,
+			string.format("hand-placed Workspace.PowerRack_01 is inert (no tag, StationId, prompt, sign or StandPoint; found %d runtime parts)",
+				runtimeOnly))
+	end
 
 	-- Template untouched.
 	local templateFolder = ServerStorage:FindFirstChild("RackTemplates")
@@ -180,11 +201,11 @@ end
 
 local ok, err = pcall(run)
 if not ok then
-	warn("[6D.2a verify] SCRIPT ERROR: " .. tostring(err))
+	warn("[6D.2b verify] SCRIPT ERROR: " .. tostring(err))
 elseif #lines > 0 then
 	local header = if failures == 0
-		then "[6D.2a verify] ALL CHECKS PASSED"
-		else string.format("[6D.2a verify] %d CHECK(S) FAILED", failures)
+		then "[6D.2b verify] ALL CHECKS PASSED"
+		else string.format("[6D.2b verify] %d CHECK(S) FAILED", failures)
 	local report = header .. "\n" .. table.concat(lines, "\n")
 	if failures == 0 then
 		print(report)
