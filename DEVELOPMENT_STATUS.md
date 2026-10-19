@@ -1,9 +1,9 @@
 # Development Status
 
 Short handoff between Claude Code sessions. Read this first, then verify it
-against `git status` / `git log` before acting. Last updated: 2026-10-18
-(ComboRack_01 detailed, imported, swapped in as every gym station, bench hiding
-per lift; user-tested in Studio; committed and pushed).
+against `git status` / `git log` before acting. Last updated: 2026-10-19
+(Barbell_01 + station barbells + lifter positioning per lift, user-tested in
+Studio; committed and pushed. Next: rep animations).
 
 ## 0. NEXT ACTION (start here)
 
@@ -47,8 +47,35 @@ STUDIO, COMMITTED AND PUSHED** (user-approved 2026-10-18 as "Use ComboRack_01 fo
   test list: racks look like the Blender model, verify script, bench hiding
   per lift, J-cups moving, training still counting, collisions. The verify
   script's output text itself was not shared.
-- NEXT: plan
-  player poses (not started; needs its own plan and approval).
+- Player poses: plan approved by the user 2026-10-19 (recorded in GAME_DESIGN
+  §34.12 decision 15): Blender keyframe animations on an R15 rig imported into
+  Studio; slow repeating reps while training; barbell model first. Order:
+  (1) `Barbell_01` model (bar + IPF-colour plates, same pipeline as the rack);
+  (2) server positions/holds the character per lift and marks it with the lift;
+  a client script plays the pose for every character (placeholder pose first);
+  (3) the real animations; (4) polish. Each step Studio-tested before the next.
+- Step (1) DONE 2026-10-19: `Barbell_01` (bar, 7 IPF plates, lock collar)
+  built, plates enlarged after the user's reference photos (450 mm = 2.0
+  studs, 0.225 m/stud), approved in Blender, imported with
+  `tools/studio/Barbell01_PrepareImport.luau`, saved as
+  `art/roblox/Barbell_01.rbxmx`, Rojo-mapped to
+  `ServerStorage.BarbellTemplates.Barbell_01` (needed the reconnect; 10/10
+  meshes confirmed).
+- Step (2) DONE 2026-10-19 (positioning; no animations yet): every station gets
+  a loaded barbell (`TrainingStationConfig.BarbellDisplayLoadPerSide`, 2x25 per
+  side + collar) that follows the lift (J-cups at bench/squat height, floor
+  for deadlift); `StationPoses` anchors and places the lifter (Squat: walked
+  out under the bar facing the open front; Bench: face up on the bench, head
+  under the bar; Deadlift: behind the floor bar FACING THE RACK, user choice),
+  sets the character attribute `StationPose`, and on release puts them on
+  their feet at the exit spot. Positions live in `StationLayout`. User-tested
+  in Studio 2026-10-19 (2 players): "It all worked" (barbells, the three
+  positions, bar moves, Stop release, reset, Player2 view, training counting);
+  then deadlift turned to face the rack and re-tested: correct. The verify
+  script output was not shared.
+- NEXT: step (3), the rep animations (Blender keyframes on an R15 rig,
+  imported into Studio) and a client script that plays them from the
+  `StationPose` attribute for every character. Needs its own plan first.
 
 **Long-term design note (user, 2026-10-17):** the final game is intended to
 have a LARGE gym, potentially supporting about 30 players per server. The
@@ -66,7 +93,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- (2026-10-18, pushed) Use ComboRack_01 for every gym station and hide the bench per lift.
+- (2026-10-19, pushed) Add Barbell_01 and place the barbell and lifter per lift at every station.
+- `363118b` (2026-10-18, pushed) Use ComboRack_01 for every gym station and hide the bench per lift.
 - `a816769` (2026-10-18, pushed) Add ComboRack_01 station blockout model (black combo rack with bench).
 - `0eadd1a` Replace the placeholder training stations with spawned racks (Step 6D.2c).
 - `e4e5f53` Replace the hand-placed power rack with a spawned rack (Step 6D.2b).
@@ -143,6 +171,10 @@ tall posts' centre line at floor level, open front -Y (in Roblox: J-cup side
   Studio copy had blank MeshIds, so every part rendered as a plain box of its
   Size; Disconnect + Connect with Sync Fallback ON fixed it). After any template
   change, check in the Command Bar that every template MeshPart has a MeshId.
+  It happened again on 2026-10-19 with the NEW Barbell_01 template (0 of 10
+  meshes after the first sync), so: a brand-new MeshPart template needs a
+  Rojo Disconnect + Connect after its first sync. Manual fallback: delete
+  Rojo's copy in Studio, then right-click the folder -> Insert from File.
 - Bench parts (2, hideable): `Bench_Pad` (black vinyl), `Bench_Frame`.
 - Provisional heights (studs): bench pad top 1.2; bar rest 3.52 at bench height
   (J-cups modelled there), 4.22 at the squat hole; safety arm top 2.0; inner
@@ -245,6 +277,23 @@ ComboRack_01 station swap (COMMITTED and pushed 2026-10-18; Studio-tested; liste
   ComboRack_01 26 MeshParts, PowerRack_01 21); `git diff --check` clean.
 - `tools/studio/Step6D2a_VerifyRacks.luau` now reports failures (it expects
   PowerRack_01's 21 parts); `ComboRack01_VerifyRacks.luau` replaces it.
+- Keep OUT: the same unrelated files as above.
+
+Barbell + station positioning (COMMITTED and pushed 2026-10-19 as "Add Barbell_01 and place the barbell and lifter per lift at every station"; Studio-tested):
+- New: `art/scripts/build_barbell_01.py`, `art/blender/Barbell_01.blend`,
+  `art/exports/Barbell_01.fbx`, `art/roblox/Barbell_01.rbxmx`,
+  `src/server/Training/StationLayout.luau`, `src/server/Training/StationPoses.luau`,
+  `tools/studio/Barbell01_PrepareImport.luau`.
+- Changed: `src/server/Training/StationVisuals.luau` (barbell, positions from
+  StationLayout), `src/server/Training/TrainingStationService.luau` (one
+  StationPoses call in refreshSign), `src/shared/Config/TrainingStationConfig.luau`
+  (BarbellDisplayLoadPerSide), `default.project.json` (BarbellTemplates),
+  `art/scripts/build_combo_rack_01.py` (clearance check uses the bigger
+  plates; geometry unchanged, re-run: CLEARANCE OK), `tools/studio/ComboRack01_VerifyRacks.luau`
+  (barbell and pose checks), `GAME_DESIGN.md` (decision 15: poses approved,
+  deadlift faces the rack), `DEVELOPMENT_STATUS.md`.
+- Checks by Claude: luau-lsp 0 errors in every changed Luau file; `rojo build`
+  OK (BarbellTemplates/Barbell_01 10 MeshParts); `git diff --check` clean.
 - Keep OUT: the same unrelated files as above.
 
 Step 6D.2a files (14, COMMITTED 2026-10-17; listed for reference):

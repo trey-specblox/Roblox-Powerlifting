@@ -24,6 +24,12 @@
         "ComboRack_01": {
           "$path": "art/roblox/ComboRack_01.rbxmx"
         }
+      },
+      "BarbellTemplates": {
+        "$className": "Folder",
+        "Barbell_01": {
+          "$path": "art/roblox/Barbell_01.rbxmx"
+        }
       }
     },
 

@@ -90,6 +90,7 @@ local TrainingRemotes = require(TrainingFolder:WaitForChild("TrainingRemotes"))
 
 local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
 local StationVisuals = require(script.Parent.StationVisuals)
+local StationPoses = require(script.Parent.StationPoses)
 
 local TrainingStationService = {}
 
@@ -223,15 +224,18 @@ local function stationTitle(station: Station): string
 end
 
 --[[
-	Updates the rack's sign and its look (bench, J-cups) to its current occupant
-	and lift. Called on every occupancy or selection change.
+	Updates the rack's sign, its look (bench, J-cups, barbell) and its lifter's
+	position to its current occupant and lift. Called on every occupancy or
+	selection change.
 ]]
 local function refreshSign(station: Station)
 	local occupant = TrainingStationRules.occupantOf(registry, station.stationId)
 	local session = if occupant ~= nil then TrainingStationRules.sessionOf(registry, occupant) else nil
 
 	local selection = if session ~= nil then session.selection else nil
-	StationVisuals.show(station.instance, if selection ~= nil then selection.lift else nil)
+	local lift = if selection ~= nil then selection.lift else nil
+	StationVisuals.show(station.instance, lift)
+	StationPoses.update(station.instance, if session ~= nil then occupant else nil, lift)
 
 	if occupant == nil or session == nil then
 		station.statusLabel.Text = string.format("%s\nFree\nHold [E] to train", stationTitle(station))

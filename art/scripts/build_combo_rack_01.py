@@ -312,7 +312,9 @@ print("triangles: total", sum(tris.values()), "| largest", max(tris.items(), key
 # ---------------------------------------------------------------- clearance checks (read-only)
 # Keep-out boxes for a future barbell and lifter. They are only tested, never added to the scene.
 # A barbell's plate sleeves must start at least 3.2 studs from its centre (plates outside the J-cups).
-BAR_R, SLEEVE_X, PLATE_X1, PLATE_R = 0.10, 3.20, 4.20, 0.65
+# Plate size and sleeve end follow art/scripts/build_barbell_01.py (450 mm plates = 2.0 studs
+# across, sleeves to 4.95; revised 2026-10-19).
+BAR_R, SLEEVE_X, PLATE_X1, PLATE_R = 0.10, 3.20, 4.95, 1.00
 BAR_Y = F - SEAT_Y / 2 - 0.03              # bar centre when racked, inside the J-cup
 BENCH_BAR_Z = SEAT_Z + BAR_R               # bar centre racked at bench height
 SQUAT_BAR_Z = BENCH_BAR_Z + (SQUAT_HOLE - BENCH_HOLE)

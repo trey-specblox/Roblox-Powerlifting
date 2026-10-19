@@ -22,15 +22,23 @@
 	And overall: the four racks are the only tagged racks, and the template in
 	ServerStorage is untouched (26 MeshParts, no tag, StationId or RackTemplate).
 
-	It also prints each rack's current LOOK (bench shown/hidden, J-cups at bench
-	or squat height). Run it again while a player trains Squat, Bench or
-	Deadlift to confirm the look follows the lift:
-	  free or Bench -> bench shown, J-cups at bench height
-	  Squat         -> bench hidden, J-cups at squat height
-	  Deadlift      -> bench hidden, J-cups at bench height
+	Each rack's "Barbell" Model (2026-10-19) is left out of the part checks and
+	checked on its own: bar + display load + collars, anchored, not solid or
+	queryable, plates outside the J-cups, and the bar where the look puts it.
+
+	It also prints each rack's current LOOK (bench, J-cups, bar). Run it again
+	while a player trains Squat, Bench or Deadlift to confirm it follows the lift:
+	  free or Bench -> bench shown, J-cups at bench height, bar in the J-cups
+	  Squat         -> bench hidden, J-cups and bar at squat height
+	  Deadlift      -> bench hidden, J-cups at bench height, bar on the floor
+	And for every player in a station pose (StationPose attribute): their root
+	is anchored, and they lie face up on the bench (Bench), stand facing the
+	rack's open front at the squat spot, or stand behind the floor bar facing
+	the rack (Deadlift). Players not posed must be free.
 ]]
 
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local CollectionService = game:GetService("CollectionService")
@@ -141,7 +149,11 @@ local function run()
 		local meshParts, unanchored, wrongCollision, misplaced = 0, 0, {}, {}
 		local jCupRaise: number? = nil
 		local jCupsConsistent = true
+		local barbellModel = rack:FindFirstChild("Barbell")
 		for _, d in ipairs(rack:GetDescendants()) do
+			if barbellModel ~= nil and d:IsDescendantOf(barbellModel) then
+				continue -- the station's barbell is checked separately below
+			end
 			if d:IsA("BasePart") and not d.Anchored then
 				unanchored += 1
 			end
@@ -211,14 +223,101 @@ local function run()
 		check(prompts == 1, string.format("%s: exactly 1 prompt (found %d)", id, prompts))
 		check(signs == 1, string.format("%s: exactly 1 sign (found %d)", id, signs))
 
-		table.insert(lines, string.format("  LOOK  %s: bench %s, J-cups at %s height | sign: %s", id,
+		-- The station's barbell: where it should be for this look.
+		local barWhere = "MISSING"
+		local shaft = barbellModel and barbellModel:FindFirstChild("Bar_Shaft") :: BasePart?
+		check(barbellModel ~= nil and shaft ~= nil, id .. ": has its Barbell (with Bar_Shaft)")
+		if barbellModel and shaft then
+			local loadSize = #config.BarbellDisplayLoadPerSide
+			local barParts, solidOrQueryable, unanchoredBar, insidePlates = 0, 0, 0, 0
+			for _, d in ipairs(barbellModel:GetDescendants()) do
+				if d:IsA("BasePart") then
+					barParts += 1
+					if d.CanCollide or d.CanQuery then
+						solidOrQueryable += 1
+					end
+					if not d.Anchored then
+						unanchoredBar += 1
+					end
+					if string.sub(d.Name, 1, 6) == "Plate_"
+						and math.abs(floorCF:PointToObjectSpace(d.Position).X) < 3.31 then
+						insidePlates += 1
+					end
+				end
+			end
+			check(barParts == 2 + 2 * (loadSize + 1),
+				string.format("%s: barbell has bar + %d plates and a collar per side (%d parts)", id, loadSize, barParts))
+			check(solidOrQueryable == 0 and unanchoredBar == 0,
+				string.format("%s: barbell anchored, not solid, not queryable", id))
+			check(insidePlates == 0, string.format("%s: all plates outside the J-cups", id))
+
+			local at = floorCF:PointToObjectSpace(shaft.Position)
+			local function near(v: Vector3): boolean
+				return (at - v).Magnitude <= POSITION_TOLERANCE
+			end
+			local expected = if benchHidden and atBench then "floor"
+				elseif atSquat then "squat"
+				else "bench"
+			barWhere = if near(Vector3.new(0, 3.49, -0.28)) then "bench"
+				elseif near(Vector3.new(0, 4.19, -0.28)) then "squat"
+				elseif math.abs(at.X) <= POSITION_TOLERANCE and math.abs(at.Z + 4.2) <= POSITION_TOLERANCE then "floor"
+				else "UNKNOWN " .. fmtV(at)
+			check(barWhere == expected, string.format("%s: bar at %s position (expected %s)", id, barWhere, expected))
+		end
+
+		table.insert(lines, string.format("  LOOK  %s: bench %s, J-cups at %s height, bar %s | sign: %s", id,
 			if benchHidden then "HIDDEN" else "shown",
 			if atSquat then "SQUAT" elseif atBench then "bench" else "UNKNOWN",
+			barWhere,
 			(string.gsub(signText, "\n", " | "))))
 	end
 
 	local tagged = CollectionService:GetTagged(tag)
 	check(#tagged == #gymRacks, string.format("%d tagged racks in total (expected %d)", #tagged, #gymRacks))
+
+	-- Lifters held in a station pose: anchored, and where their lift puts them on the nearest rack.
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local poseName = character and character:GetAttribute("StationPose")
+		if character == nil or root == nil then
+			table.insert(lines, "  INFO  " .. player.Name .. ": no character")
+			continue
+		end
+		if poseName == nil then
+			check(not root.Anchored, player.Name .. ": not posed and free to move")
+			continue
+		end
+		local nearest, nearestDistance = nil, math.huge
+		for _, rack in ipairs(folder:GetChildren()) do
+			if rack:IsA("Model") then
+				local distance = (rack:GetPivot().Position - root.Position).Magnitude
+				if distance < nearestDistance then
+					nearest, nearestDistance = rack, distance
+				end
+			end
+		end
+		check(root.Anchored, string.format("%s: posed for %s and held (root anchored)", player.Name, tostring(poseName)))
+		if nearest then
+			local frame = nearest:GetPivot() * CFrame.new(0, -STAND_HALF_HEIGHT, 0)
+			local at = frame:PointToObjectSpace(root.Position)
+			local faceUp = frame:VectorToObjectSpace(root.CFrame.LookVector).Y > 0.99
+			local facingFront = frame:VectorToObjectSpace(root.CFrame.LookVector).Z < -0.99
+			if poseName == "Bench" then
+				check(faceUp and at.Z < 0 and at.Z > -3.4, string.format("%s: lying face up on %s's bench at %s",
+					player.Name, nearest.Name, fmtV(at)))
+			elseif poseName == "Squat" then
+				check(facingFront and math.abs(at.Z + 1.0) <= 0.05 and math.abs(at.X) <= 0.05,
+					string.format("%s: standing for Squat at %s on %s, facing the open front", player.Name,
+						fmtV(at), nearest.Name))
+			else
+				local facingRack = frame:VectorToObjectSpace(root.CFrame.LookVector).Z > 0.99
+				check(facingRack and math.abs(at.Z + 4.8) <= 0.05 and math.abs(at.X) <= 0.05,
+					string.format("%s: standing for %s behind the bar at %s on %s, facing the rack", player.Name,
+						tostring(poseName), fmtV(at), nearest.Name))
+			end
+		end
+	end
 end
 
 local ok, err = pcall(run)
