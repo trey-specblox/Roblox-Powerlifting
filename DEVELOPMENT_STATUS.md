@@ -1,8 +1,8 @@
 # Development Status
 
 Short handoff between Claude Code sessions. Read this first, then verify it
-against `git status` / `git log` before acting. Last updated: 2026-10-17
-(Step 6D.2c completed and committed).
+against `git status` / `git log` before acting. Last updated: 2026-10-18
+(ComboRack_01 station blockout built, exported and committed; kept as a blockout by the user).
 
 ## 0. NEXT ACTION (start here)
 
@@ -29,6 +29,27 @@ change was needed (the placeholders only ever existed at runtime).
 2. Next milestone: NOT chosen yet. Do not begin Step 6E, gym construction or
    sign polish until the user approves the next milestone.
 
+**ComboRack_01 (new station model, 2026-10-18): BLOCKOUT BUILT, EXPORTED AND
+COMMITTED** (with user approval on 2026-10-18 as "Add ComboRack_01 station
+blockout model (black combo rack with bench)", NOT pushed; `git log` for the
+hash). Plan approved by the user 2026-10-18 (with silver inner tubes
+on the tall posts, like the photo). Implements the model half of GAME_DESIGN
+§34.12 decision 15. Details: section 3 "ComboRack_01 (art)".
+The user viewed it in Blender (2026-10-18). It looks blocky because it is a
+blockout: sharp-edged boxes and placeholder colours. The user chose to KEEP THE
+BLOCKOUT FOR NOW and polish later. The look is NOT final or approved.
+Deferred detail pass (Blender): rounded tube edges, rounded and thicker bench
+pad, better J-cup and spotter-post hook shapes, small brackets, foot caps. Keep
+the same part names, sizes and clearances. Phone budget: the blockout is about
+2,960 tris; a temporary test with heavy bevels (3 segments) reached about 31,800,
+too heavy. Aim for about 8,000-12,000. Roblox materials (painted metal, zinc,
+vinyl, diamond plate) come later, at the Studio template step.
+Later steps, each needing approval: push, the detail pass, Studio import + `ComboRack_01.rbxmx`
+template, RackConfigurator/RackSpawner support for its part list (they are
+hard-wired to PowerRack_01's 21 parts and 4 `Upright_*` posts), swapping the
+live template, hiding `Bench_*` per lift, player poses. PowerRack_01 is unchanged
+and still live.
+
 **Long-term design note (user, 2026-10-17):** the final game is intended to
 have a LARGE gym, potentially supporting about 30 players per server. The
 current four-rack layout (`GymRack_01`-`04`) is TEMPORARY development
@@ -45,7 +66,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- (2026-10-17) Replace the placeholder training stations with spawned racks (Step 6D.2c).
+- (2026-10-18, not pushed) Add ComboRack_01 station blockout model (black combo rack with bench).
+- `0eadd1a` Replace the placeholder training stations with spawned racks (Step 6D.2c).
 - `e4e5f53` Replace the hand-placed power rack with a spawned rack (Step 6D.2b).
 - `9f4fdb0` Spawn gym racks automatically from the rack template (Step 6D.2a).
 - `2555c49` Add Git-tracked power rack template synced by Rojo (Step 6D.2 Phase 0).
@@ -91,6 +113,35 @@ with `print(game.PlaceId)` before working or saving.
 Roblox: height +Y, J-cup (front) side +Z. Parts: `Upright_*` x4, `Crossbar_*` x4,
 `BaseRail_Left/Right/Back`, `JCup_*`, `JCupLiner_*`, `JCupPin_*`, `SafetyBar_*`,
 `SafetyPins`, `FrameBolts`. One material per part. J-cup/safety heights provisional.
+
+**ComboRack_01 (art, 2026-10-18, blockout, committed, not pushed):** black combo rack with a
+bench, the planned model for every station (GAME_DESIGN §34.12 decision 15;
+reference `References/Visual Style/Images/Rack_ERCombo_Bench.webp`, simplified,
+no brand text). Build script `art/scripts/build_combo_rack_01.py` (run in an
+empty file), source `art/blender/ComboRack_01.blend`, export
+`art/exports/ComboRack_01.fbx` (25 meshes, project FBX settings above; re-import
+checked: 25 named meshes, 7.8 W x 5.35 D x 7.0 H studs). Blender origin = tall
+posts' centre line at floor level, open front -Y (in Roblox: J-cup side +Z, as
+PowerRack_01).
+- Rack parts (23): `Upright_Left/Right` (black sleeves), `UprightInsert_Left/Right`
+  (silver, J-cup holes z 3.10-6.60 every 0.35), `InsertLockPins`,
+  `SpotterPost_Left/Right`, `SafetyArm_Left/Right`, `SafetyPins`,
+  `BaseRail_Left/Right/Back`, `BaseFoot_Left/Right`, `SpotterDeck`,
+  `JCup_*`, `JCupLiner_*`, `JCupPin_*` (Left/Right), `FrameBolts`.
+- Bench parts (2, hideable): `Bench_Pad` (black vinyl), `Bench_Frame`.
+- Provisional heights (studs): bench pad top 1.2; bar rest 3.52 at bench height
+  (J-cups modelled there), 4.22 at the squat hole; safety arm top 2.0; inner
+  gap between posts 5.4. Deadlift bar spot: 4.2 studs in front of the posts.
+- Barbell rule for later: plate sleeves must start >= 3.2 studs from the bar's
+  centre (plates hang outside the J-cups).
+- The script ends with read-only clearance checks (bench bar path to the chest,
+  plates, a lying lifter, squat bar and walkout, deadlift bar and lifter):
+  CLEARANCE OK. Negative tests confirmed the check catches a short bar and a
+  deadlift bar placed inside the rack.
+- Blender session note: before building, the unsaved open `PowerRack_01.blend`
+  session was saved as a COPY to the Claude scratchpad
+  (`PowerRack_01_session_backup_20261018.blend`); `PowerRack_01.blend` itself
+  was not saved or changed.
 
 **Roblox rack template (Step 6D.2 Phase 0):** `art/roblox/PowerRack_01.rbxmx`,
 exported from Studio (Edit mode, "Save to File"). Rojo maps it to
@@ -147,6 +198,11 @@ Deliberately left uncommitted (keep, never discard):
 - `.gitignore` (adds `ClaudeLogs/` and `*.blend1`), `.claude/hooks/Export-ClaudeLog.ps1`
   and `.claude/settings.json`: the conversation-log tooling. Not staged unless the user asks.
 - `References/DBD.md`: line endings only, no content change. Do not edit.
+
+ComboRack_01 blockout files (4, COMMITTED 2026-10-18, not pushed; listed for reference):
+- New: `art/scripts/build_combo_rack_01.py`, `art/blender/ComboRack_01.blend`,
+  `art/exports/ComboRack_01.fbx`. Changed: `DEVELOPMENT_STATUS.md`.
+- Keep OUT: the same unrelated files as above.
 
 Step 6D.2a files (14, COMMITTED 2026-10-17; listed for reference):
 - New: `src/server/Training/RackConfigurator.luau`, `src/server/Training/RackSpawner.luau`,
