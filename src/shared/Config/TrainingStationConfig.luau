@@ -111,12 +111,11 @@ TrainingStationConfig.StationTag = "GymTrainingStation"
 	                 faces -Z, as modelled; 90 = it faces -X. (Checked from both
 	                 templates' .rbxmx files 2026-10-18; older notes said +Z.)
 
-	Adding a rack = adding a line here. RackSpawner checks every entry and
-	SKIPS a bad one with a warning, so one typo never stops the other racks or
-	the rest of the game.
+	The list is built from GymLayout below (2026-10-19). RackSpawner checks
+	every entry and SKIPS a bad one with a warning, so one bad entry never
+	stops the other racks or the rest of the game.
 
-	Positions are PROVISIONAL: no final gym layout is approved yet, so racks
-	are moved by editing these lines, never by hand in Studio.
+	Racks are moved by editing GymLayout, never by hand in Studio.
 ]]
 export type GymRackEntry = {
 	stationId: string,
@@ -126,21 +125,68 @@ export type GymRackEntry = {
 }
 
 --[[
-	2026-10-18: every station uses ComboRack_01 (GAME_DESIGN §34.12 decision 15),
-	at the same spots the PowerRack_01 racks used. Its position is the floor
-	centre between the two tall posts; the rack reaches 3.0 studs to the front
-	(-Z at facing 0), 2.05 to the back and 3.95 to each side, and the lifter
-	deadlifts in front of it. PowerRack_01 still has a profile and template, so
-	a line can switch back by changing its template name.
+	STARTER GYM FLOOR PLAN (GAME_DESIGN §27, "Option B: three rows", approved
+	2026-10-19). Rows of racks, every rack's open front facing the entrance.
+	The entrance and lobby are at the -Z end, around the place's SpawnLocation
+	(Z -12 to 0); the rows go back from there toward +Z.
+
+	Every station uses ComboRack_01 (GAME_DESIGN §34.12 decision 15). A rack's
+	position is the floor centre between its two tall posts; it reaches 3.0
+	studs to the front (-Z at facing 0), 2.05 to the back and 3.95 to each side,
+	the loaded bar reaches about 4.9 to each side, and the lifter needs about
+	7 studs in front (deadlift spot and exit). So:
+	  rackSpacingStuds 12  leaves about 2 studs between neighbouring bars;
+	  rowSpacingStuds  21  leaves about 12 studs of walkway between the
+	                       lifting space of one row and the back of the next.
+
+	The numbers are PROVISIONAL (to be tuned after the stress test). Racks are
+	numbered from the entrance: row 1 is GymRack_01-10, left to right as you
+	walk in (walking toward +Z, your left is +X), row 2 is 11-20, and so on.
 ]]
-TrainingStationConfig.GymRacks = {
-	{ stationId = "GymRack_01", template = "ComboRack_01", position = Vector3.new(0, 0, -30), facingDegrees = 0 },
-	-- 6D.2b: replaced the hand-placed Workspace.PowerRack_01, at its exact spot.
-	{ stationId = "GymRack_02", template = "ComboRack_01", position = Vector3.new(-1.3, 0, 12), facingDegrees = 0 },
-	-- 6D.2c: replaced the retired placeholder platforms A and B, at their spots.
-	{ stationId = "GymRack_03", template = "ComboRack_01", position = Vector3.new(-14, 0, -18), facingDegrees = 0 },
-	{ stationId = "GymRack_04", template = "ComboRack_01", position = Vector3.new(14, 0, -18), facingDegrees = 0 },
-} :: { GymRackEntry }
+export type GymLayout = {
+	template: string,
+	rows: number,
+	racksPerRow: number,
+	rackSpacingStuds: number,
+	rowSpacingStuds: number,
+	firstRowZ: number,
+	rowCentreX: number,
+	facingDegrees: number,
+}
+
+TrainingStationConfig.GymLayout = {
+	template = "ComboRack_01",
+	rows = 3,
+	racksPerRow = 10,
+	rackSpacingStuds = 12,
+	rowSpacingStuds = 21,
+	firstRowZ = 25, -- the row nearest the entrance
+	rowCentreX = 0, -- the middle of every row
+	facingDegrees = 0, -- open front toward the entrance (-Z)
+} :: GymLayout
+
+local function buildGymRacks(layout: GymLayout): { GymRackEntry }
+	local entries: { GymRackEntry } = {}
+	local halfRow = (layout.racksPerRow - 1) / 2 * layout.rackSpacingStuds
+	for row = 0, layout.rows - 1 do
+		for index = 0, layout.racksPerRow - 1 do
+			table.insert(entries, {
+				stationId = string.format("GymRack_%02d", row * layout.racksPerRow + index + 1),
+				template = layout.template,
+				position = Vector3.new(
+					layout.rowCentreX + halfRow - index * layout.rackSpacingStuds,
+					0,
+					layout.firstRowZ + row * layout.rowSpacingStuds
+				),
+				facingDegrees = layout.facingDegrees,
+			})
+		end
+	end
+	return entries
+end
+
+-- Built from GymLayout above. RackSpawner still checks every entry.
+TrainingStationConfig.GymRacks = buildGymRacks(TrainingStationConfig.GymLayout)
 
 --[[
 	The plates on every station's barbell, per side, inside to outside, before

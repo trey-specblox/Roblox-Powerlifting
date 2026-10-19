@@ -803,6 +803,26 @@ Comp max testing
 > deadlift areas. The exact number and positions of stations are not approved
 > yet; they stay in `TrainingStationConfig.GymRacks`.
 
+> **Starter Gym floor plan: Option B, "three rows" (approved 2026-10-19).**
+> Chosen by the user from three drawn options (A: two wall rows of 15; B: three
+> rows of 10; C: two back-to-back islands of 16).
+> - **30 racks** (one per player on a full ~30-player server) in **three rows
+>   of 10**, all facing the same way: the open front of every rack faces the
+>   entrance and lobby.
+> - Between rows there is a walkway (about 12 studs past each rack's lifting
+>   space). Along a row, the racks stand 12 studs apart (centre to centre),
+>   so the loaded bars of neighbouring racks do not touch.
+> - **Lobby with the spawn** at the entrance end. The **decoration rooms**
+>   (warm-up, lockers, NPC coach, comp max testing; §27 above) are a strip
+>   along one side wall, on the right as you walk in.
+> - Racks are numbered from the entrance: row 1 (nearest) holds Training Racks
+>   01-10, left to right as you walk in; row 2 holds 11-20; row 3 holds 21-30.
+> - Provisional size: about 166 x 89 studs (37 x 20 m at 0.225 m per stud).
+>   The exact numbers (spacing, walkways, rooms, wall positions) are
+>   **[PROVISIONAL]** and live in `TrainingStationConfig.GymLayout`, so they
+>   can be tuned after the stress test and play-testing without a design change.
+>   Adding a fourth row later is a config change.
+
 Local meet venue:
 Competition platform
 Judges

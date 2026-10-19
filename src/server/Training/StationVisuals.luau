@@ -41,12 +41,37 @@ type Barbell = {
 	plateRadius: number,
 }
 
--- Each moving part's modelled (bench-height) CFrame, remembered the first time the rack is shown.
-local baseCFrames: { [BasePart]: CFrame } = setmetatable({}, { __mode = "k" }) :: any
+--[[
+	Ordinary (strong) tables, NOT weak ones. Roblox may drop an Instance key from
+	a weak table while the Instance still exists (once no script holds its Lua
+	handle). A forgotten base CFrame was then re-read from the already lowered
+	J-cups, which dropped them a second time (GymRack_28 at -0.70 in the
+	2026-10-19 stress test). Entries are removed when the rack is destroyed.
+]]
+-- Each moving part's modelled (squat-hole) CFrame, remembered the first time the rack is shown.
+local baseCFrames: { [BasePart]: CFrame } = {}
 -- The look each rack last got, so repeated sign refreshes change nothing.
-local lastLook: { [Instance]: string } = setmetatable({}, { __mode = "k" }) :: any
-local barbells: { [Instance]: Barbell } = setmetatable({}, { __mode = "k" }) :: any
+local lastLook: { [Instance]: string } = {}
+local barbells: { [Instance]: Barbell } = {}
+local watchedRacks: { [Instance]: boolean } = {}
 local warnedMissingTemplate = false
+
+local function forgetWhenDestroyed(rack: Model)
+	if watchedRacks[rack] then
+		return
+	end
+	watchedRacks[rack] = true
+	rack.Destroying:Connect(function()
+		watchedRacks[rack] = nil
+		lastLook[rack] = nil
+		barbells[rack] = nil
+		for part in pairs(baseCFrames) do
+			if part:IsDescendantOf(rack) then
+				baseCFrames[part] = nil
+			end
+		end
+	end)
+end
 
 local function findPart(rack: Instance, name: string): BasePart?
 	local part = rack:FindFirstChild(name, true)
@@ -150,6 +175,7 @@ function StationVisuals.show(rack: Instance, lift: string?)
 		return
 	end
 	lastLook[rack] = look
+	forgetWhenDestroyed(rack)
 
 	local benchVisible = lift ~= "Squat" and lift ~= "Deadlift"
 	for _, name in ipairs(layout.benchParts) do

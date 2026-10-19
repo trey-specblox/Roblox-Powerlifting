@@ -2,8 +2,8 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-19
-(station rep animations for squat, bench and deadlift, user-tested in
-Studio; committed and pushed).
+(Starter Gym milestone: floor plan Option B approved; 30-rack stress test
+passed in Studio after a J-cup fix; committed and pushed).
 
 ## 0. NEXT ACTION (start here)
 
@@ -27,8 +27,8 @@ change was needed (the placeholders only ever existed at runtime).
 
 1. Read `CLAUDE.md`, then this file. Check `git status` against section 4:
    only the deliberately uncommitted files listed there should remain.
-2. Next milestone: NOT chosen yet. Do not begin Step 6E, gym construction or
-   sign polish until the user approves the next milestone.
+2. Current milestone (approved 2026-10-19): build the real Starter Gym. See
+   "CURRENT MILESTONE" below. Step 6E and sign polish are still not started.
 
 **ComboRack_01 station (GAME_DESIGN §34.12 decision 15), 2026-10-18: PASSED IN
 STUDIO, COMMITTED AND PUSHED** (user-approved 2026-10-18 as "Use ComboRack_01 for every gym station and hide the bench per lift"; `git log` for the hash). All steps approved by the user 2026-10-18.
@@ -100,9 +100,66 @@ STUDIO, COMMITTED AND PUSHED** (user-approved 2026-10-18 as "Use ComboRack_01 fo
   StationVisuals). StationPoses also sets the character attribute `StationRack`.
   User-tested in Studio 2026-10-19 (2 players): all three reps animate, bar
   follows the hands, Player2 sees it, Stop puts everything back.
-- NEXT: no milestone chosen. Possible follow-ups: lighter plates for a big gym
-  (a loaded bar is ~16k tris), squat/bench walk-out and re-rack animation,
-  avatars with other proportions (hands may sit slightly off the bar).
+- Later follow-ups (not scheduled): squat/bench walk-out and re-rack
+  animation, avatars with other proportions (hands may sit slightly off the
+  bar). Lighter plates only if the stress test below asks for it (measured in
+  Blender 2026-10-19: the station's loaded bar is 5,012 tris, the rack 7,176,
+  so ~12.2k per station; the older "~16k per loaded bar" note was wrong).
+
+**CURRENT MILESTONE: build the real Starter Gym (user-approved 2026-10-19).**
+Plan, each step Studio-tested before the next:
+(1) floor plan; (2) 30-rack stress test; (3) gym shell (floor, walls,
+ceiling, entrance) from Git-tracked files; (4) spawn and racks fitted to the
+shell; (5) lighting; (6) props and decoration rooms; (7) phone performance
+and polish.
+- Step (1) DONE 2026-10-19: the user chose **Option B, three rows of 10**
+  from three drawn options (A two wall rows, C back-to-back islands; Claude
+  had recommended C). Recorded in GAME_DESIGN §27. 30 racks, open fronts
+  toward the entrance/lobby at -Z (the place's SpawnLocation, Z -12..0, sits
+  in the lobby), decoration rooms along the side wall on the right as you walk
+  in (-X), about 166 x 89 studs.
+- Step (2) DONE (details and test results below): `TrainingStationConfig.GymRacks` is now BUILT from
+  the new `TrainingStationConfig.GymLayout` (3 rows x 10, 12 studs apart,
+  rows 21 apart, row 1 at Z 25, X from +54 to -54, facing 0); GymRack_01-10
+  is the row nearest the entrance. The old 4 positions are gone. Station IDs
+  are not stored in player data (checked), so nothing migrates.
+  `ComboRack01_VerifyRacks` now also checks the rack count and minimum
+  spacing, and prints only FAIL/LOOK/INFO lines (PASS lines counted). New
+  read-only `tools/studio/GymStressTest_SceneStats.luau` (client view):
+  object counts, full-detail triangles of the gym racks, 5 s frame rate.
+  Checks by Claude: luau-lsp 0 errors in the changed and dependent files
+  (only the known errors of section 5); `rojo build` OK; `git diff --check`
+  clean. NOT yet tested in Studio. NOT committed.
+  Studio result 1 (user, 2026-10-19 17:43, Local Server, 1 player, client
+  view, user's PC; screenshot): 30 racks, 1073 parts (1039 MeshParts),
+  0 lights, 30 signs, 30 prompts, ~365,640 full-detail triangles, average
+  57 FPS over 5 s, slowest frame 67 ms (probably the frame the script itself
+  ran in). Where the player stood was not stated.
+  Studio result 2 (user, 17:46, server view): `ComboRack01_VerifyRacks`
+  666 passed, 1 FAILED: "GymRack_28: J-cups together at bench or squat
+  height (raise -0.700)", i.e. the -0.35 bench drop applied twice. Cause
+  (code trace; only StationVisuals moves J-cups): its remembered "base"
+  J-cup CFrames lived in a WEAK-keyed table; Roblox can drop an Instance key
+  from a weak table while the Instance still exists, so the base was re-read
+  from the already lowered J-cups. Fix (not yet Studio-tested): strong tables
+  with cleanup on `Destroying` in `StationVisuals` (base CFrames, last look,
+  barbells), `StationPoses` (posedAt: a lost entry could leave a lifter
+  anchored) and the client `StationPoseAnimator` (bars). luau-lsp 0 errors
+  in these files (only the known errors of section 5), `rojo build` OK.
+  Studio result 3 (user, 17:59, after the fix): `ComboRack01_VerifyRacks`
+  ALL 667 CHECKS PASSED (whether before or after training: not stated).
+  Studio result 4 (user, 18:01, client view, back row; screenshot): same
+  counts and triangles, average 52 FPS over 5 s, slowest frame 67.9 ms. Both
+  runs had one ~67 ms frame, most likely the script's own Workspace scan;
+  the script now skips its first frame. Conclusion: no lighter plates needed
+  on PC; phones are checked in step 7.
+  Studio result 5 (user, 2026-10-19): training at a back-row rack works
+  (animation, bar, Stop), and the verify ALSO passed after a few minutes of
+  training, so the weak-table fix holds.
+  **Step (2) DONE 2026-10-19** (user-tested in Studio). COMMITTED and pushed
+  2026-10-19 with user approval as "Lay out 30 gym racks in three rows and
+  fix J-cups dropping twice (Starter Gym steps 1-2)" (`git log` for the hash).
+  NEXT ACTION: step (3), the gym shell (plan its approach with the user first).
 
 **Long-term design note (user, 2026-10-17):** the final game is intended to
 have a LARGE gym, potentially supporting about 30 players per server. The
@@ -120,7 +177,9 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- (2026-10-19, pushed) Add station rep animations for squat, bench and deadlift.
+- (2026-10-19, pushed) Lay out 30 gym racks in three rows and fix J-cups dropping twice (Starter Gym steps 1-2).
+- `dbdacc4` (2026-10-19, pushed) Add the Visual Style reference note.
+- `e64b0de` (2026-10-19, pushed) Add station rep animations for squat, bench and deadlift.
 - `2168230` (2026-10-19, pushed) Add Barbell_01 and place the barbell and lifter per lift at every station.
 - `363118b` (2026-10-18, pushed) Use ComboRack_01 for every gym station and hide the bench per lift.
 - `a816769` (2026-10-18, pushed) Add ComboRack_01 station blockout model (black combo rack with bench).
@@ -292,6 +351,17 @@ Deliberately left uncommitted (keep, never discard):
   2026-10-19 with user approval as "Add the Visual Style reference note"
   (`git log` for the hash). Its two image embeds stay local (above).
 
+Starter Gym steps 1-2 (Studio-tested; COMMITTED and pushed 2026-10-19; listed for reference):
+- New: `tools/studio/GymStressTest_SceneStats.luau`.
+- Changed: `src/shared/Config/TrainingStationConfig.luau` (GymLayout, GymRacks
+  built from it), `src/server/Training/StationVisuals.luau`,
+  `src/server/Training/StationPoses.luau`,
+  `src/client/Training/StationPoseAnimator.luau` (weak tables -> strong,
+  the GymRack_28 J-cup fix), `tools/studio/ComboRack01_VerifyRacks.luau` (count and
+  spacing checks, PASS lines counted), `GAME_DESIGN.md` (§27 floor plan),
+  `DEVELOPMENT_STATUS.md`.
+- Keep OUT: the same unrelated files as above.
+
 ComboRack_01 blockout files (4, COMMITTED `a816769` and pushed 2026-10-18; for reference):
 - New: `art/scripts/build_combo_rack_01.py`, `art/blender/ComboRack_01.blend`,
   `art/exports/ComboRack_01.fbx`. Changed: `DEVELOPMENT_STATUS.md`.
@@ -393,10 +463,11 @@ Step 6D.2c files (7 entries, COMMITTED 2026-10-17; listed for reference):
   stations are now spawned racks. If the template were missing from a running
   place, there would be NO training stations (before 6D.2c the placeholders
   still worked). The saved cloud place had the template at the 6D.2b check.
-- Rack positions are provisional (no approved gym layout). The 4-rack layout is
-  temporary development infrastructure; the intended final gym is large
-  (about 30 players per server). All four racks face 0, i.e. their open J-cup
-  front faces -Z (corrected 2026-10-18; older notes said +Z). ComboRack_01
+- Since 2026-10-19 the racks follow the approved floor plan (GAME_DESIGN §27,
+  Option B, 30 racks); its exact numbers are provisional, in
+  `TrainingStationConfig.GymLayout`. There are no gym walls or floor yet.
+  All racks face 0, i.e. their open J-cup front faces -Z (corrected
+  2026-10-18; older notes said +Z). ComboRack_01
   reaches 3.0 studs to the front, 2.05 to the back and 3.95 to each side of
   its position; the deadlift spot is about 4.2 studs in front.
 - Training signs work, but their visual design needs improvement (user,

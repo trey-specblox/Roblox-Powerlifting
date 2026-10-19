@@ -19,8 +19,14 @@
 	    which sit either as modelled (squat hole) or exactly 0.35 lower (bench hole);
 	  - the J-cups are on the rack's front (-Z at facing 0);
 	  - it has exactly one prompt and one sign.
-	And overall: the four racks are the only tagged racks, and the template in
-	ServerStorage is untouched (26 MeshParts, no tag, StationId or RackTemplate).
+	And overall: the configured racks are the only tagged racks, and the template
+	in ServerStorage is untouched (26 MeshParts, no tag, StationId or RackTemplate).
+
+	2026-10-19 (Starter Gym Option B, 30 racks): also checks that the config
+	holds GymLayout.rows x racksPerRow racks and that no two racks stand closer
+	than GymLayout.rackSpacingStuds. With 30 racks the full list is long, so
+	PASS lines are only counted (set SHOW_PASSES = true to print them); FAIL,
+	LOOK and INFO lines are always printed.
 
 	Each rack's "Barbell" Model (2026-10-19) is left out of the part checks and
 	checked on its own: bar + display load + collars, anchored, not solid or
@@ -54,11 +60,19 @@ local BENCH_JCUP_DROP = -0.35   -- StationLayout benchJCupDrop (J-cups are model
 local POSITION_TOLERANCE = 0.01
 local STAND_HALF_HEIGHT = 0.1
 
+local SHOW_PASSES = false
+
 local lines = {}
 local failures = 0
+local passes = 0
 
 local function check(passed: boolean, label: string)
-	if not passed then
+	if passed then
+		passes += 1
+		if not SHOW_PASSES then
+			return
+		end
+	else
 		failures += 1
 	end
 	table.insert(lines, (if passed then "  PASS  " else "  FAIL  ") .. label)
@@ -97,6 +111,24 @@ local function run()
 	local config = require(ReplicatedStorage.Shared.Config.TrainingStationConfig)
 	local tag = config.StationTag
 	local gymRacks = config.GymRacks
+
+	-- The floor plan: the expected number of racks, and no two too close together.
+	local layout = config.GymLayout
+	check(#gymRacks == layout.rows * layout.racksPerRow,
+		string.format("config holds %d racks (%d rows x %d)", #gymRacks, layout.rows, layout.racksPerRow))
+	local closest, closestPair = math.huge, ""
+	for i = 1, #gymRacks do
+		for j = i + 1, #gymRacks do
+			local distance = (gymRacks[i].position - gymRacks[j].position).Magnitude
+			if distance < closest then
+				closest, closestPair = distance, gymRacks[i].stationId .. " / " .. gymRacks[j].stationId
+			end
+		end
+	end
+	if #gymRacks > 1 then
+		check(closest >= layout.rackSpacingStuds - POSITION_TOLERANCE,
+			string.format("closest racks %.2f studs apart (%s), minimum %g", closest, closestPair, layout.rackSpacingStuds))
+	end
 
 	local templateFolder = ServerStorage:FindFirstChild("RackTemplates")
 	local template = templateFolder and templateFolder:FindFirstChild(TEMPLATE_NAME)
@@ -325,8 +357,8 @@ if not ok then
 	warn("[ComboRack_01 verify] SCRIPT ERROR: " .. tostring(err))
 elseif #lines > 0 then
 	local header = if failures == 0
-		then "[ComboRack_01 verify] ALL CHECKS PASSED"
-		else string.format("[ComboRack_01 verify] %d CHECK(S) FAILED", failures)
+		then string.format("[ComboRack_01 verify] ALL %d CHECKS PASSED", passes)
+		else string.format("[ComboRack_01 verify] %d CHECK(S) FAILED, %d passed", failures, passes)
 	local report = header .. "\n" .. table.concat(lines, "\n")
 	if failures == 0 then
 		print(report)

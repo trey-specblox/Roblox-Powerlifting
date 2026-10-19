@@ -40,8 +40,26 @@ local RACK_ATTRIBUTE = "StationRack"
 
 type Posed = { player: Player, lift: string }
 
--- Who is posed at each rack, and in which lift.
-local posedAt: { [Instance]: Posed } = setmetatable({}, { __mode = "k" }) :: any
+--[[
+	Who is posed at each rack, and in which lift. An ordinary (strong) table, not
+	a weak one: Roblox may drop an Instance key from a weak table while the rack
+	still exists, and a forgotten entry would never release its lifter (they
+	would stay anchored). Same fix as StationVisuals, 2026-10-19. The entry is
+	removed when the rack is destroyed.
+]]
+local posedAt: { [Instance]: Posed } = {}
+local watchedRacks: { [Instance]: boolean } = {}
+
+local function forgetWhenDestroyed(rack: Model)
+	if watchedRacks[rack] then
+		return
+	end
+	watchedRacks[rack] = true
+	rack.Destroying:Connect(function()
+		watchedRacks[rack] = nil
+		posedAt[rack] = nil
+	end)
+end
 
 -- Face up, head toward the rack (+Z), feet toward the open front.
 local LYING = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, Vector3.zAxis)
@@ -145,6 +163,7 @@ function StationPoses.update(rack: Instance, occupant: any, lift: string?)
 	end
 	if player ~= nil and lift ~= nil and pose(player, rack, layout, lift) then
 		posedAt[rack] = { player = player, lift = lift }
+		forgetWhenDestroyed(rack)
 	end
 end
 

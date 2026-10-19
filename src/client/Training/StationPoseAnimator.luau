@@ -117,7 +117,10 @@ type BarState = {
 	moved: boolean,
 }
 
-local bars: { [Instance]: BarState } = setmetatable({}, { __mode = "k" }) :: any
+-- An ordinary (strong) table, not a weak one: Roblox may drop an Instance key
+-- from a weak table while the barbell still exists (same fix as the server's
+-- StationVisuals, 2026-10-19). The entry is removed when the barbell is destroyed.
+local bars: { [Instance]: BarState } = {}
 
 local function barStateOf(barbell: Instance): BarState?
 	local state = bars[barbell]
@@ -136,6 +139,9 @@ local function barStateOf(barbell: Instance): BarState?
 		end
 	end
 	bars[barbell] = newState
+	barbell.Destroying:Connect(function()
+		bars[barbell] = nil
+	end)
 	return newState
 end
 
