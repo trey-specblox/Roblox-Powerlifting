@@ -2,8 +2,8 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-19
-(Barbell_01 + station barbells + lifter positioning per lift, user-tested in
-Studio; committed and pushed. Next: rep animations).
+(station rep animations for squat, bench and deadlift, user-tested in
+Studio; committed and pushed).
 
 ## 0. NEXT ACTION (start here)
 
@@ -73,9 +73,36 @@ STUDIO, COMMITTED AND PUSHED** (user-approved 2026-10-18 as "Use ComboRack_01 fo
   positions, bar moves, Stop release, reset, Player2 view, training counting);
   then deadlift turned to face the rack and re-tested: correct. The verify
   script output was not shared.
-- NEXT: step (3), the rep animations (Blender keyframes on an R15 rig,
-  imported into Studio) and a client script that plays them from the
-  `StationPose` attribute for every character. Needs its own plan first.
+- Step (3) DONE 2026-10-19: rep animations. `art/scripts/station_animations.py`
+  (run in Blender) holds all three reps as joint angles over a 6 s loop, on
+  the exact Roblox R15 block rig measured from `art/animations/R15_BlockRig.rbxmx`
+  (saved from Studio's Rig Builder; its joints are AnimationConstraints +
+  rig attachments). It previews them in Blender (rack + loaded bar, all three
+  side by side) and writes `art/animations/Station_<Lift>.rbxmx`
+  KeyframeSequences (61 keyframes, Action priority, looped). Hands are placed
+  on the bar by a small arm solver; feet stay planted. User-reviewed changes:
+  squat faces the rack, more upright, wide stance, toes out; bench wide grip,
+  straight-arm lockout with elbows out, flared elbows at the touch; deadlift
+  faces the rack, bar path straight up in front of the legs, lockout with
+  straight knees and shoulders back. J-cup heights set from the rig: bench
+  hole 3.45 (bar 3.14), squat hole 3.80 (bar 3.49) (`StationLayout`).
+  Published in Studio and listed in `src/shared/Config/StationAnimationConfig.luau`.
+  **The game is owned by Group 529442797: every animation (and any future
+  asset the game loads) must be published with that group as Creator.** User-
+  owned copies fail with "experience doesn't have access permission" even
+  after sharing. Studio's Insert from File silently failed for the
+  KeyframeSequence files; temporarily mapping them in `default.project.json`
+  (ServerStorage.AnimationSources) worked, and the mapping was removed again.
+  `src/client/Training/StationPoseAnimator.luau` plays the rep on the local
+  player's own character (replicates to everyone) and moves every posed
+  lifter's rack barbell to the midpoint of their hands while held (deadlift:
+  1.6-4.3 s), else to the Barbell's `RestCFrame` attribute (set by
+  StationVisuals). StationPoses also sets the character attribute `StationRack`.
+  User-tested in Studio 2026-10-19 (2 players): all three reps animate, bar
+  follows the hands, Player2 sees it, Stop puts everything back.
+- NEXT: no milestone chosen. Possible follow-ups: lighter plates for a big gym
+  (a loaded bar is ~16k tris), squat/bench walk-out and re-rack animation,
+  avatars with other proportions (hands may sit slightly off the bar).
 
 **Long-term design note (user, 2026-10-17):** the final game is intended to
 have a LARGE gym, potentially supporting about 30 players per server. The
@@ -93,7 +120,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- (2026-10-19, pushed) Add Barbell_01 and place the barbell and lifter per lift at every station.
+- (2026-10-19, pushed) Add station rep animations for squat, bench and deadlift.
+- `2168230` (2026-10-19, pushed) Add Barbell_01 and place the barbell and lifter per lift at every station.
 - `363118b` (2026-10-18, pushed) Use ComboRack_01 for every gym station and hide the bench per lift.
 - `a816769` (2026-10-18, pushed) Add ComboRack_01 station blockout model (black combo rack with bench).
 - `0eadd1a` Replace the placeholder training stations with spawned racks (Step 6D.2c).
@@ -294,6 +322,23 @@ Barbell + station positioning (COMMITTED and pushed 2026-10-19 as "Add Barbell_0
   deadlift faces the rack), `DEVELOPMENT_STATUS.md`.
 - Checks by Claude: luau-lsp 0 errors in every changed Luau file; `rojo build`
   OK (BarbellTemplates/Barbell_01 10 MeshParts); `git diff --check` clean.
+- Keep OUT: the same unrelated files as above.
+
+Station rep animations (COMMITTED and pushed 2026-10-19 as "Add station rep animations for squat, bench and deadlift"; Studio-tested):
+- New: `art/scripts/station_animations.py`, `art/animations/R15_BlockRig.rbxmx`
+  (reference rig), `art/animations/Station_Squat.rbxmx`, `Station_Bench.rbxmx`,
+  `Station_Deadlift.rbxmx`, `src/shared/Config/StationAnimationConfig.luau`,
+  `src/client/Training/StationPoseAnimator.luau`.
+- Changed: `src/client/init.client.luau` (starts StationPoseAnimator),
+  `src/server/Training/StationPoses.luau` (squat faces the rack; StationRack
+  attribute), `src/server/Training/StationVisuals.luau` (J-cup heights per
+  lift; RestCFrame attribute), `src/server/Training/StationLayout.luau`
+  (benchJCupDrop), `art/scripts/build_combo_rack_01.py` (clearance check at
+  the new J-cup heights; geometry unchanged, CLEARANCE OK),
+  `tools/studio/ComboRack01_VerifyRacks.luau` (new J-cup heights, squat
+  facing), `GAME_DESIGN.md` (decision 15), `DEVELOPMENT_STATUS.md`.
+- Checks by Claude: luau-lsp 0 errors in every changed Luau file; `rojo build`
+  OK; `default.project.json` unchanged from the last commit.
 - Keep OUT: the same unrelated files as above.
 
 Step 6D.2a files (14, COMMITTED 2026-10-17; listed for reference):

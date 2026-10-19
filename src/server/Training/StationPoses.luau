@@ -7,19 +7,22 @@
 	§34.12, decision 15) and holds them there; lets them go when they stop,
 	switch to "no lift", leave the rack, die or leave the game.
 
-	  Squat     standing under the bar, walked out in front of the posts
+	  Squat     bar on the back, walked out in front of the posts, facing the rack
 	  Bench     lying face up on the bench, head under the racked bar
 	  Deadlift  standing behind the bar on the floor in front of the rack,
-	            facing the rack (user choice, 2026-10-19)
+	            facing the rack
+	(Facing the rack for squat and deadlift: user choices, 2026-10-19.)
 
-	For squat the lifter faces the rack's open front (-Z). They are held by
+	They are held by
 	anchoring their HumanoidRootPart; released lifters are put back on their
 	feet at the layout's exit spot, in front of the rack.
 
-	It also marks the character with the attribute StationPose = the lift (nil
-	when released), so a client animation script can play that lift's
-	animation for EVERY character. Until those animations exist, the character
-	keeps its normal idle animation.
+	It also marks the character with the attributes StationPose = the lift and
+	StationRack = the rack's name (both nil when released). The client's
+	StationPoseAnimator plays the rep animation on its own character (Roblox
+	shows it to everyone) and moves the rack's barbell with the lifter's hands.
+	Until a lift's animation is published (StationAnimationConfig), the
+	character keeps its normal idle animation in the station position.
 
 	Visual only. The server decides everything here; clients send nothing.
 	Positions come from StationLayout; racks without a layout are skipped.
@@ -32,6 +35,8 @@ local StationLayout = require(script.Parent.StationLayout)
 local StationPoses = {}
 
 local POSE_ATTRIBUTE = "StationPose"
+-- The rack's name in Workspace.GymRacks, so clients can find its barbell.
+local RACK_ATTRIBUTE = "StationRack"
 
 type Posed = { player: Player, lift: string }
 
@@ -66,7 +71,8 @@ end
 
 local function poseFrame(body: Body, layout: StationLayout.Layout, lift: string): CFrame?
 	if lift == "Squat" then
-		return CFrame.new(0, standingHeight(body), layout.squatStandZ)
+		-- Walked out, turned round to face the rack (user choice, 2026-10-19).
+		return CFrame.new(0, standingHeight(body), layout.squatStandZ) * CFrame.Angles(0, math.pi, 0)
 	elseif lift == "Deadlift" then
 		-- Behind the bar, turned round to face the rack.
 		return CFrame.new(0, standingHeight(body), layout.deadliftStandZ) * CFrame.Angles(0, math.pi, 0)
@@ -89,6 +95,7 @@ local function release(entry: Posed, rack: Model, layout: StationLayout.Layout)
 		return
 	end
 	body.character:SetAttribute(POSE_ATTRIBUTE, nil)
+	body.character:SetAttribute(RACK_ATTRIBUTE, nil)
 	if body.root.Anchored then
 		body.character:PivotTo(StationLayout.floorFrame(rack) * CFrame.new(0, standingHeight(body), layout.exitZ))
 		body.root.Anchored = false
@@ -106,6 +113,7 @@ local function pose(player: Player, rack: Model, layout: StationLayout.Layout, l
 	end
 	body.root.Anchored = true
 	body.character:PivotTo(StationLayout.floorFrame(rack) * localFrame)
+	body.character:SetAttribute(RACK_ATTRIBUTE, rack.Name)
 	body.character:SetAttribute(POSE_ATTRIBUTE, lift)
 	return true
 end

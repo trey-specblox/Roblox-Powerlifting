@@ -20,6 +20,10 @@ local TrainingFolder = script:WaitForChild("Training")
 local TrainingMenuController = require(TrainingFolder:WaitForChild("TrainingMenuController"))
 TrainingMenuController.start()
 
+-- Station rep animations and the bar following the lifter's hands. Visual only.
+local StationPoseAnimator = require(TrainingFolder:WaitForChild("StationPoseAnimator"))
+StationPoseAnimator.start()
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

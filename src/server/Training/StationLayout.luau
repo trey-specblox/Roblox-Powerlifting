@@ -25,18 +25,19 @@ export type Layout = {
 	benchParts: { string },
 	-- Moved together between the bench and squat holes.
 	jCupParts: { string },
-	-- Studs from the bench hole (as modelled) up to the squat hole.
-	squatRaise: number,
-	-- Bar centre resting in the J-cups at bench height (as modelled).
+	-- J-cup offset from where they are modelled (the squat hole) to the bench hole,
+	-- used for bench, deadlift and a free rack. Squat uses the modelled hole.
+	benchJCupDrop: number,
+	-- Bar centre resting in the J-cups as modelled (squat height).
 	barRest: Vector3,
 	-- Z of the bar on the floor for deadlift (its height comes from the plates).
 	deadliftBarZ: number,
 	-- Top of the bench pad, and the Z the lying lifter's head sits at (under the bar).
 	benchPadTop: number,
 	benchHeadZ: number,
-	-- Z where the lifter stands for squat (walked out, facing the open front, -Z),
-	-- for deadlift (behind the bar, FACING THE RACK, +Z; user choice 2026-10-19),
-	-- and where a released lifter is put back on their feet (facing -Z).
+	-- Z where the lifter stands for squat (walked out) and deadlift (behind the
+	-- floor bar), both FACING THE RACK (+Z; user choices 2026-10-19), and where a
+	-- released lifter is put back on their feet (facing -Z).
 	squatStandZ: number,
 	deadliftStandZ: number,
 	exitZ: number,
@@ -47,8 +48,11 @@ local LAYOUTS: { [string]: Layout } = {
 	ComboRack_01 = {
 		benchParts = { "Bench_Pad", "Bench_Frame" },
 		jCupParts = { "JCup_Left", "JCup_Right", "JCupLiner_Left", "JCupLiner_Right", "JCupPin_Left", "JCupPin_Right" },
-		-- BENCH_HOLE 3.80 -> SQUAT_HOLE 4.50
-		squatRaise = 0.70,
+		-- J-cups modelled at the 3.80 hole (squat, bar 3.49: just under an R15
+		-- avatar's 3.75 bar-on-back height); bench uses the 3.45 hole (bar 3.14:
+		-- just under its 3.25 lockout lying on the bench). Measured 2026-10-19 with
+		-- art/scripts/station_animations.py on the Roblox R15 block rig.
+		benchJCupDrop = -0.35,
 		-- J-cup seat at z 3.42 + bar shaft radius 0.07; seat centre 0.28 in front of the posts
 		barRest = Vector3.new(0, 3.49, -0.28),
 		-- the rack's clearance check keeps the floor 4.2 studs in front of the posts free

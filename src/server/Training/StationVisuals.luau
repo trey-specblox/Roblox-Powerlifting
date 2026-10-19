@@ -7,9 +7,9 @@
 	§34.12, decision 15). Visual only: it changes no rule, credit, presence or
 	collision, and every station stays universal.
 
-	  free / no lift yet   bench shown, J-cups at bench height, bar in the J-cups
-	  Bench                bench shown, J-cups at bench height, bar in the J-cups
-	  Squat                bench hidden, J-cups and bar raised to the squat hole
+	  free / no lift yet   bench shown, J-cups at the bench hole, bar in the J-cups
+	  Bench                bench shown, J-cups at the bench hole, bar in the J-cups
+	  Squat                bench hidden, J-cups and bar at the squat hole (as modelled)
 	  Deadlift             bench hidden, bar on the floor in front of the rack
 
 	Every rack with a layout gets its own barbell (a "Barbell" Model inside the
@@ -126,6 +126,12 @@ local function placeBarbell(barbell: Barbell, rack: Model, centre: Vector3)
 	for _, entry in ipairs(barbell.parts) do
 		entry.part.CFrame = frame * entry.offset
 	end
+	-- Where the bar rests, for clients: StationPoseAnimator moves the bar with the
+	-- lifter's hands locally and puts it back here when it is not in the hands.
+	local model = barbell.parts[1].part.Parent
+	if model then
+		model:SetAttribute("RestCFrame", frame)
+	end
 end
 
 --[[
@@ -154,7 +160,7 @@ function StationVisuals.show(rack: Instance, lift: string?)
 		end
 	end
 
-	local raise = if lift == "Squat" then layout.squatRaise else 0
+	local raise = if lift == "Squat" then 0 else layout.benchJCupDrop
 	-- Up along the rack's own vertical (its StandPoint pivot), so a turned rack works too.
 	local up = rack:GetPivot().UpVector
 	for _, name in ipairs(layout.jCupParts) do

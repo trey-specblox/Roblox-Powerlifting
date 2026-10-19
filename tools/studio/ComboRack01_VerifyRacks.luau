@@ -16,7 +16,7 @@
 	  - its floor centre and facing match the config;
 	  - every part sits where the template puts it, relative to the floor
 	    centre (so nothing is shifted, rotated or mirrored), except the J-cups,
-	    which may be raised by exactly the squat amount (0.70);
+	    which sit either as modelled (squat hole) or exactly 0.35 lower (bench hole);
 	  - the J-cups are on the rack's front (-Z at facing 0);
 	  - it has exactly one prompt and one sign.
 	And overall: the four racks are the only tagged racks, and the template in
@@ -32,9 +32,9 @@
 	  Squat         -> bench hidden, J-cups and bar at squat height
 	  Deadlift      -> bench hidden, J-cups at bench height, bar on the floor
 	And for every player in a station pose (StationPose attribute): their root
-	is anchored, and they lie face up on the bench (Bench), stand facing the
-	rack's open front at the squat spot, or stand behind the floor bar facing
-	the rack (Deadlift). Players not posed must be free.
+	is anchored, and they lie face up on the bench (Bench), or stand facing the
+	rack at the squat spot (Squat) or behind the floor bar (Deadlift). Players
+	not posed must be free.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -50,7 +50,7 @@ local JCUP_PARTS = {
 	JCup_Left = true, JCup_Right = true, JCupLiner_Left = true, JCupLiner_Right = true,
 	JCupPin_Left = true, JCupPin_Right = true,
 }
-local SQUAT_RAISE = 0.70
+local BENCH_JCUP_DROP = -0.35   -- StationLayout benchJCupDrop (J-cups are modelled at the squat hole)
 local POSITION_TOLERANCE = 0.01
 local STAND_HALF_HEIGHT = 0.1
 
@@ -197,8 +197,8 @@ local function run()
 			if #misplaced > 0 then " (" .. table.concat(misplaced, ", ") .. ")" else ""))
 
 		local raise = jCupRaise or -1
-		local atBench = math.abs(raise) <= POSITION_TOLERANCE
-		local atSquat = math.abs(raise - SQUAT_RAISE) <= POSITION_TOLERANCE
+		local atBench = math.abs(raise - BENCH_JCUP_DROP) <= POSITION_TOLERANCE
+		local atSquat = math.abs(raise) <= POSITION_TOLERANCE
 		check(jCupsConsistent and (atBench or atSquat),
 			string.format("%s: J-cups together at bench or squat height (raise %.3f)", id, raise))
 		check(benchConsistent, id .. ": Bench_Pad and Bench_Frame are both shown or both hidden")
@@ -258,8 +258,8 @@ local function run()
 			local expected = if benchHidden and atBench then "floor"
 				elseif atSquat then "squat"
 				else "bench"
-			barWhere = if near(Vector3.new(0, 3.49, -0.28)) then "bench"
-				elseif near(Vector3.new(0, 4.19, -0.28)) then "squat"
+			barWhere = if near(Vector3.new(0, 3.14, -0.28)) then "bench"
+				elseif near(Vector3.new(0, 3.49, -0.28)) then "squat"
 				elseif math.abs(at.X) <= POSITION_TOLERANCE and math.abs(at.Z + 4.2) <= POSITION_TOLERANCE then "floor"
 				else "UNKNOWN " .. fmtV(at)
 			check(barWhere == expected, string.format("%s: bar at %s position (expected %s)", id, barWhere, expected))
@@ -302,13 +302,13 @@ local function run()
 			local frame = nearest:GetPivot() * CFrame.new(0, -STAND_HALF_HEIGHT, 0)
 			local at = frame:PointToObjectSpace(root.Position)
 			local faceUp = frame:VectorToObjectSpace(root.CFrame.LookVector).Y > 0.99
-			local facingFront = frame:VectorToObjectSpace(root.CFrame.LookVector).Z < -0.99
 			if poseName == "Bench" then
 				check(faceUp and at.Z < 0 and at.Z > -3.4, string.format("%s: lying face up on %s's bench at %s",
 					player.Name, nearest.Name, fmtV(at)))
 			elseif poseName == "Squat" then
-				check(facingFront and math.abs(at.Z + 1.0) <= 0.05 and math.abs(at.X) <= 0.05,
-					string.format("%s: standing for Squat at %s on %s, facing the open front", player.Name,
+				local facingRack = frame:VectorToObjectSpace(root.CFrame.LookVector).Z > 0.99
+				check(facingRack and math.abs(at.Z + 1.0) <= 0.05 and math.abs(at.X) <= 0.05,
+					string.format("%s: standing for Squat at %s on %s, facing the rack", player.Name,
 						fmtV(at), nearest.Name))
 			else
 				local facingRack = frame:VectorToObjectSpace(root.CFrame.LookVector).Z > 0.99
