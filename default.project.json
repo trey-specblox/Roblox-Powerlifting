@@ -20,6 +20,9 @@
         "$className": "Folder",
         "PowerRack_01": {
           "$path": "art/roblox/PowerRack_01.rbxmx"
+        },
+        "ComboRack_01": {
+          "$path": "art/roblox/ComboRack_01.rbxmx"
         }
       }
     },

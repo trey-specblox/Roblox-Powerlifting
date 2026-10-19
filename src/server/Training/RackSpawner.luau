@@ -16,7 +16,8 @@
 	  4. configure the clone with RackConfigurator while it is still unparented,
 	     so it is anchored before it ever enters Workspace;
 	  5. move and turn it to its configured spot, and check it landed there;
-	  6. set its StationId, parent it into Workspace.GymRacks;
+	  6. set its StationId and RackTemplate attributes, parent it into
+	     Workspace.GymRacks;
 	  7. add the station tag LAST. From that moment TrainingStationService
 	     registers it like any other rack: same prompt, menu, rules, progression.
 
@@ -139,10 +140,14 @@ local function findTemplate(templateName: string): (Model?, string?)
 		return nil, string.format("template %s has a StationId attribute", templateName)
 	end
 
+	local expectedCount = RackConfigurator.expectedPartCount(templateName)
+	if expectedCount == nil then
+		return nil, string.format("template %s has no rack profile in RackConfigurator", templateName)
+	end
 	local descendants = template:GetDescendants()
-	if #descendants ~= RackConfigurator.ExpectedPartCount then
+	if #descendants ~= expectedCount then
 		return nil, string.format("template %s has %d descendants, expected exactly %d MeshParts",
-			templateName, #descendants, RackConfigurator.ExpectedPartCount)
+			templateName, #descendants, expectedCount)
 	end
 	for _, descendant in ipairs(descendants) do
 		if not descendant:IsA("MeshPart") then
@@ -194,7 +199,7 @@ local function spawnRack(entry: TrainingStationConfig.GymRackEntry, folder: Fold
 	end
 	clone.Name = entry.stationId
 
-	local configured, configureProblem = RackConfigurator.configure(clone)
+	local configured, configureProblem = RackConfigurator.configure(clone, entry.template)
 	if not configured then
 		clone:Destroy()
 		return nil, configureProblem
@@ -213,6 +218,8 @@ local function spawnRack(entry: TrainingStationConfig.GymRackEntry, folder: Fold
 	end
 
 	clone:SetAttribute("StationId", entry.stationId)
+	-- Which template it came from, for StationVisuals (what moves or hides per lift).
+	clone:SetAttribute("RackTemplate", entry.template)
 	clone.Parent = folder
 
 	-- LAST: from here on TrainingStationService can register it.

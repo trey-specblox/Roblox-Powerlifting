@@ -3,10 +3,14 @@
 	RackConfigurator
 	Server / Training
 
-	Prepares ONE PowerRack_01-style rack Model (checkpoint 6D.2a) so the training
-	service can use it: checks its 21 named MeshParts, anchors everything, makes
-	only the four posts solid, and gives it an invisible StandPoint floor marker
-	as its PrimaryPart (and therefore its pivot).
+	Prepares ONE rack Model cloned from a known template so the training service
+	can use it: checks the template's named MeshParts, anchors everything, makes
+	only the template's posts solid, and gives it an invisible StandPoint floor
+	marker as its PrimaryPart (and therefore its pivot).
+
+	Every template the game can spawn has a profile in RACK_PROFILES below: its
+	parts, which of them are solid, and which posts mark the rack's centre. A
+	template without a profile is refused.
 
 	It does NOT set a StationId and does NOT add the station tag: RackSpawner
 	does that, LAST, once the rack is fully placed. It never parents, moves or
@@ -27,36 +31,55 @@ local STAND_POINT_NAME = "StandPoint"
 ]]
 RackConfigurator.StandPointSize = Vector3.new(2, 0.2, 2)
 
--- The four posts: the only rack parts a player collides with.
-local UPRIGHTS = {
-	"Upright_FrontLeft",
-	"Upright_FrontRight",
-	"Upright_BackLeft",
-	"Upright_BackRight",
+type RackProfile = {
+	-- The only rack parts a player collides with.
+	solid: { string },
+	-- Every other part of the template. Players pass through these.
+	nonColliding: { string },
+	-- Posts whose average centre is the rack's centre (StandPoint goes below it, on the floor).
+	centrePosts: { string },
 }
 
--- Every other part of PowerRack_01 (art/scripts/build_power_rack_01.py). Players pass through these.
-local NON_COLLIDING_PARTS = {
-	"Crossbar_Front",
-	"Crossbar_Back",
-	"Crossbar_Left",
-	"Crossbar_Right",
-	"BaseRail_Left",
-	"BaseRail_Right",
-	"BaseRail_Back",
-	"JCup_Left",
-	"JCup_Right",
-	"JCupLiner_Left",
-	"JCupLiner_Right",
-	"JCupPin_Left",
-	"JCupPin_Right",
-	"SafetyBar_Left",
-	"SafetyBar_Right",
-	"SafetyPins",
-	"FrameBolts",
+local RACK_PROFILES: { [string]: RackProfile } = {
+	-- art/scripts/build_power_rack_01.py: four-post cage, StandPoint in the middle.
+	PowerRack_01 = {
+		solid = { "Upright_FrontLeft", "Upright_FrontRight", "Upright_BackLeft", "Upright_BackRight" },
+		nonColliding = {
+			"Crossbar_Front", "Crossbar_Back", "Crossbar_Left", "Crossbar_Right",
+			"BaseRail_Left", "BaseRail_Right", "BaseRail_Back",
+			"JCup_Left", "JCup_Right", "JCupLiner_Left", "JCupLiner_Right", "JCupPin_Left", "JCupPin_Right",
+			"SafetyBar_Left", "SafetyBar_Right", "SafetyPins", "FrameBolts",
+		},
+		centrePosts = { "Upright_FrontLeft", "Upright_FrontRight", "Upright_BackLeft", "Upright_BackRight" },
+	},
+	-- art/scripts/build_combo_rack_01.py: combo rack with a bench, StandPoint between
+	-- the two tall posts (under the racked bar). The bench is not solid, so it can
+	-- be hidden per lift (StationVisuals) without changing what blocks players.
+	ComboRack_01 = {
+		solid = { "Upright_Left", "Upright_Right", "SpotterPost_Left", "SpotterPost_Right" },
+		nonColliding = {
+			"UprightInsert_Left", "UprightInsert_Right", "InsertLockPins",
+			"SafetyArm_Left", "SafetyArm_Right", "SafetyPins",
+			"BaseRail_Left", "BaseRail_Right", "BaseRail_Back", "BaseFoot_Left", "BaseFoot_Right",
+			"SpotterDeck", "FootCaps",
+			"JCup_Left", "JCup_Right", "JCupLiner_Left", "JCupLiner_Right", "JCupPin_Left", "JCupPin_Right",
+			"FrameBolts", "Bench_Pad", "Bench_Frame",
+		},
+		centrePosts = { "Upright_Left", "Upright_Right" },
+	},
 }
 
-RackConfigurator.ExpectedPartCount = #UPRIGHTS + #NON_COLLIDING_PARTS
+--[[
+	How many MeshParts a template must hold, exactly. nil = no profile, so the
+	template cannot be spawned.
+]]
+function RackConfigurator.expectedPartCount(templateName: string): number?
+	local profile = RACK_PROFILES[templateName]
+	if profile == nil then
+		return nil
+	end
+	return #profile.solid + #profile.nonColliding
+end
 
 -- How far the posts may lean from one another before the rack is treated as broken.
 local MIN_POST_ALIGNMENT = 0.999
@@ -65,12 +88,12 @@ local MIN_POST_ALIGNMENT = 0.999
 	Finds every expected rack part inside the Model, by name. Refuses a missing
 	part, a doubled name, or a name on something that is not a MeshPart.
 ]]
-local function collectParts(rack: Model): ({ [string]: MeshPart }?, string?)
+local function collectParts(rack: Model, profile: RackProfile): ({ [string]: MeshPart }?, string?)
 	local expected: { [string]: boolean } = {}
-	for _, name in ipairs(UPRIGHTS) do
+	for _, name in ipairs(profile.solid) do
 		expected[name] = true
 	end
-	for _, name in ipairs(NON_COLLIDING_PARTS) do
+	for _, name in ipairs(profile.nonColliding) do
 		expected[name] = true
 	end
 
@@ -98,11 +121,11 @@ local function collectParts(rack: Model): ({ [string]: MeshPart }?, string?)
 end
 
 --[[
-	Where StandPoint goes, from the posts as they are placed now: the average of
-	the four post centres is the frame's centre, and half a post's height down
-	its own long axis is the floor. Oriented like the posts.
+	Where StandPoint goes, from the parts as they are placed now: the average of
+	the centre posts is the rack's centre, and the lowest point of any rack part,
+	measured along the posts' own long axis, is the floor. Oriented like the posts.
 ]]
-local function standPointCFrame(posts: { MeshPart }): (CFrame?, string?)
+local function standPointCFrame(posts: { MeshPart }, allParts: { [string]: MeshPart }): (CFrame?, string?)
 	local reference = posts[1]
 	local up = reference.CFrame.UpVector
 	local centreSum = Vector3.zero
@@ -118,20 +141,37 @@ local function standPointCFrame(posts: { MeshPart }): (CFrame?, string?)
 		centreSum += post.Position
 	end
 
+	-- Lowest point of the whole rack along `up` (a part's half-extent along `up`
+	-- comes from its size and how it is turned).
+	local floorHeight = math.huge
+	for _, part in pairs(allParts) do
+		local cf, half = part.CFrame, part.Size / 2
+		local reach = math.abs(cf.RightVector:Dot(up)) * half.X
+			+ math.abs(cf.UpVector:Dot(up)) * half.Y
+			+ math.abs(cf.LookVector:Dot(up)) * half.Z
+		floorHeight = math.min(floorHeight, part.Position:Dot(up) - reach)
+	end
+
 	local frameCentre = centreSum / #posts
-	local floor = frameCentre - up * (reference.Size.Y / 2)
+	local floor = frameCentre - up * (frameCentre:Dot(up) - floorHeight)
 	local position = floor + up * (RackConfigurator.StandPointSize.Y / 2)
 
 	return CFrame.fromMatrix(position, reference.CFrame.RightVector, up), nil
 end
 
 --[[
-	Configures the rack Model in place. Returns true, or false and the reason.
-	On false the Model may be partly configured and must not be used; it is
-	never tagged here, so it can never register by accident.
+	Configures the rack Model in place, using the profile of the template it was
+	cloned from. Returns true, or false and the reason. On false the Model may be
+	partly configured and must not be used; it is never tagged here, so it can
+	never register by accident.
 ]]
-function RackConfigurator.configure(rack: Model): (boolean, string?)
-	local parts, partsProblem = collectParts(rack)
+function RackConfigurator.configure(rack: Model, templateName: string): (boolean, string?)
+	local profile = RACK_PROFILES[templateName]
+	if profile == nil then
+		return false, "no rack profile for template " .. templateName
+	end
+
+	local parts, partsProblem = collectParts(rack, profile)
 	if parts == nil then
 		return false, partsProblem or "its parts could not be read"
 	end
@@ -143,22 +183,23 @@ function RackConfigurator.configure(rack: Model): (boolean, string?)
 	end
 
 	local posts: { MeshPart } = {}
-	for _, name in ipairs(UPRIGHTS) do
+	for _, name in ipairs(profile.centrePosts) do
 		table.insert(posts, parts[name])
 	end
 
-	local standCFrame, standProblem = standPointCFrame(posts)
+	local standCFrame, standProblem = standPointCFrame(posts, parts)
 	if standCFrame == nil then
 		return false, standProblem or "the stand point could not be placed"
 	end
 
 	-- Anchoring and collision. Position, size, materials and colours are not touched.
-	for _, post in ipairs(posts) do
-		post.Anchored = true
-		post.CanTouch = false
-		post.CanCollide = true
+	for _, name in ipairs(profile.solid) do
+		local part = parts[name]
+		part.Anchored = true
+		part.CanTouch = false
+		part.CanCollide = true
 	end
-	for _, name in ipairs(NON_COLLIDING_PARTS) do
+	for _, name in ipairs(profile.nonColliding) do
 		local part = parts[name]
 		part.Anchored = true
 		part.CanTouch = false

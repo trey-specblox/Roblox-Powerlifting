@@ -2,7 +2,8 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-18
-(ComboRack_01 station blockout built, exported and committed; kept as a blockout by the user).
+(ComboRack_01 detailed, imported, swapped in as every gym station, bench hiding
+per lift; user-tested in Studio; committed and pushed).
 
 ## 0. NEXT ACTION (start here)
 
@@ -29,26 +30,25 @@ change was needed (the placeholders only ever existed at runtime).
 2. Next milestone: NOT chosen yet. Do not begin Step 6E, gym construction or
    sign polish until the user approves the next milestone.
 
-**ComboRack_01 (new station model, 2026-10-18): BLOCKOUT BUILT, EXPORTED AND
-COMMITTED** (with user approval on 2026-10-18 as "Add ComboRack_01 station
-blockout model (black combo rack with bench)", NOT pushed; `git log` for the
-hash). Plan approved by the user 2026-10-18 (with silver inner tubes
-on the tall posts, like the photo). Implements the model half of GAME_DESIGN
-§34.12 decision 15. Details: section 3 "ComboRack_01 (art)".
-The user viewed it in Blender (2026-10-18). It looks blocky because it is a
-blockout: sharp-edged boxes and placeholder colours. The user chose to KEEP THE
-BLOCKOUT FOR NOW and polish later. The look is NOT final or approved.
-Deferred detail pass (Blender): rounded tube edges, rounded and thicker bench
-pad, better J-cup and spotter-post hook shapes, small brackets, foot caps. Keep
-the same part names, sizes and clearances. Phone budget: the blockout is about
-2,960 tris; a temporary test with heavy bevels (3 segments) reached about 31,800,
-too heavy. Aim for about 8,000-12,000. Roblox materials (painted metal, zinc,
-vinyl, diamond plate) come later, at the Studio template step.
-Later steps, each needing approval: push, the detail pass, Studio import + `ComboRack_01.rbxmx`
-template, RackConfigurator/RackSpawner support for its part list (they are
-hard-wired to PowerRack_01's 21 parts and 4 `Upright_*` posts), swapping the
-live template, hiding `Bench_*` per lift, player poses. PowerRack_01 is unchanged
-and still live.
+**ComboRack_01 station (GAME_DESIGN §34.12 decision 15), 2026-10-18: PASSED IN
+STUDIO, COMMITTED AND PUSHED** (user-approved 2026-10-18 as "Use ComboRack_01 for every gym station and hide the bench per lift"; `git log` for the hash). All steps approved by the user 2026-10-18.
+- Blockout committed `a816769` and pushed to `origin/main` (user-approved).
+- Detail pass (rounded edges etc.) built, exported, approved by the user in Blender.
+- Imported into Studio, prepared with `tools/studio/ComboRack01_PrepareImport.luau`,
+  saved as `art/roblox/ComboRack_01.rbxmx`, synced by Rojo into
+  `ServerStorage.RackTemplates.ComboRack_01` (PowerRack_01 template kept).
+- Rack code: per-template profiles in RackConfigurator; RackSpawner checks
+  each template against its profile and sets a `RackTemplate` attribute.
+- Swap: all four `GymRacks` entries use `ComboRack_01` (same spots, facing 0).
+- New `StationVisuals` (called from TrainingStationService `refreshSign`):
+  Squat hides the bench and raises the J-cups 0.70 to the squat hole; Deadlift
+  hides the bench; Bench / free shows it. Visual only, no rule change.
+- Studio result (user, 2026-10-18, Local Server): "Everything worked" after the
+  test list: racks look like the Blender model, verify script, bench hiding
+  per lift, J-cups moving, training still counting, collisions. The verify
+  script's output text itself was not shared.
+- NEXT: plan
+  player poses (not started; needs its own plan and approval).
 
 **Long-term design note (user, 2026-10-17):** the final game is intended to
 have a LARGE gym, potentially supporting about 30 players per server. The
@@ -66,7 +66,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- (2026-10-18, not pushed) Add ComboRack_01 station blockout model (black combo rack with bench).
+- (2026-10-18, pushed) Use ComboRack_01 for every gym station and hide the bench per lift.
+- `a816769` (2026-10-18, pushed) Add ComboRack_01 station blockout model (black combo rack with bench).
 - `0eadd1a` Replace the placeholder training stations with spawned racks (Step 6D.2c).
 - `e4e5f53` Replace the hand-placed power rack with a spawned rack (Step 6D.2b).
 - `9f4fdb0` Spawn gym racks automatically from the rack template (Step 6D.2a).
@@ -110,24 +111,38 @@ with `print(game.PlaceId)` before working or saving.
 **PowerRack_01 (art):** source `art/blender/PowerRack_01.blend`, export
 `art/exports/PowerRack_01.fbx` (21 meshes), build script
 `art/scripts/build_power_rack_01.py`. Size 6.06 W x 6.54 D x 8.0 H studs. In
-Roblox: height +Y, J-cup (front) side +Z. Parts: `Upright_*` x4, `Crossbar_*` x4,
+Roblox: height +Y, J-cup (front) side **-Z**, Blender "Left" at +X (corrected
+2026-10-18 from the template's .rbxmx CFrames; older notes said +Z). Parts: `Upright_*` x4, `Crossbar_*` x4,
 `BaseRail_Left/Right/Back`, `JCup_*`, `JCupLiner_*`, `JCupPin_*`, `SafetyBar_*`,
 `SafetyPins`, `FrameBolts`. One material per part. J-cup/safety heights provisional.
 
-**ComboRack_01 (art, 2026-10-18, blockout, committed, not pushed):** black combo rack with a
-bench, the planned model for every station (GAME_DESIGN §34.12 decision 15;
-reference `References/Visual Style/Images/Rack_ERCombo_Bench.webp`, simplified,
-no brand text). Build script `art/scripts/build_combo_rack_01.py` (run in an
-empty file), source `art/blender/ComboRack_01.blend`, export
-`art/exports/ComboRack_01.fbx` (25 meshes, project FBX settings above; re-import
-checked: 25 named meshes, 7.8 W x 5.35 D x 7.0 H studs). Blender origin = tall
-posts' centre line at floor level, open front -Y (in Roblox: J-cup side +Z, as
-PowerRack_01).
-- Rack parts (23): `Upright_Left/Right` (black sleeves), `UprightInsert_Left/Right`
+**ComboRack_01 (art, 2026-10-18; the model every gym station uses):** black
+combo rack with a bench (GAME_DESIGN §34.12 decision 15; reference
+`References/Visual Style/Images/Rack_ERCombo_Bench.webp`, simplified, no brand
+text). Build script `art/scripts/build_combo_rack_01.py` (run in an empty
+file; the blockout version is in `a816769`), source `art/blender/ComboRack_01.blend`,
+export `art/exports/ComboRack_01.fbx` (26 meshes, project FBX settings above;
+re-import checked: 26 named meshes, 7.9 W x 5.4 D x 7.0 H studs, 7,176 tris).
+Detail pass: bmesh-baked bevels, smooth shading with sharp edges > 50 degrees
+and a Weighted Normal modifier (applied by the FBX export). Blender origin =
+tall posts' centre line at floor level, open front -Y (in Roblox: J-cup side
+-Z, "Left" at +X, same as PowerRack_01).
+- Rack parts (24): `Upright_Left/Right` (black sleeves), `UprightInsert_Left/Right`
   (silver, J-cup holes z 3.10-6.60 every 0.35), `InsertLockPins`,
-  `SpotterPost_Left/Right`, `SafetyArm_Left/Right`, `SafetyPins`,
-  `BaseRail_Left/Right/Back`, `BaseFoot_Left/Right`, `SpotterDeck`,
-  `JCup_*`, `JCupLiner_*`, `JCupPin_*` (Left/Right), `FrameBolts`.
+  `SpotterPost_Left/Right` (with top cradles), `SafetyArm_Left/Right` (with
+  brackets), `SafetyPins`, `BaseRail_Left/Right/Back`, `BaseFoot_Left/Right`,
+  `SpotterDeck`, `FootCaps` (rubber), `JCup_*`, `JCupLiner_*`, `JCupPin_*`
+  (Left/Right), `FrameBolts`.
+- Roblox template `art/roblox/ComboRack_01.rbxmx`: 1 Model + 26 MeshParts with
+  uploaded meshes, all anchored, CanCollide/CanTouch off (RackConfigurator sets
+  collision at runtime: solid = the 2 tall + 2 short posts), looks from the
+  prepare script (Metal black steel / zinc inserts / grey hardware, Rubber caps
+  and liners, Leather pad, DiamondPlate deck). `RenderFidelity = Precise` on
+  FootCaps, FrameBolts, SafetyPins, InsertLockPins (edited in the .rbxmx).
+- **Rojo can drop MeshIds when it syncs a MeshPart template** (2026-10-18: the
+  Studio copy had blank MeshIds, so every part rendered as a plain box of its
+  Size; Disconnect + Connect with Sync Fallback ON fixed it). After any template
+  change, check in the Command Bar that every template MeshPart has a MeshId.
 - Bench parts (2, hideable): `Bench_Pad` (black vinyl), `Bench_Frame`.
 - Provisional heights (studs): bench pad top 1.2; bar rest 3.52 at bench height
   (J-cups modelled there), 4.22 at the squat hole; safety arm top 2.0; inner
@@ -160,6 +175,14 @@ View Changes means a change FAILED to apply. The first live-sync attempt failed
 (cause not captured); the second succeeded. If it fails again, read the
 `[Rojo-Warn]` lines and `rojo serve -vv` output. The plugin's Log Level
 dropdown offered only Error/Warning/Info for the user.
+
+**Station visuals (2026-10-18):** `StationVisuals.show(rack, lift)` runs from
+TrainingStationService `refreshSign` on every occupancy/selection change; it
+uses the rack's `RackTemplate` attribute (set by RackSpawner) to find a visuals
+profile (only ComboRack_01 has one). Rack profiles (parts, solid posts, centre
+posts) live in RackConfigurator; StandPoint = centre posts' average at the
+rack's lowest point. `TrainingStationConfig` facing note corrected: 0 = J-cup
+side faces -Z.
 
 **Station mechanics (TrainingStationService, unchanged):** racks register by tag
 `GymTrainingStation` + string attribute `StationId` (Part or Model, anywhere in the
@@ -199,9 +222,29 @@ Deliberately left uncommitted (keep, never discard):
   and `.claude/settings.json`: the conversation-log tooling. Not staged unless the user asks.
 - `References/DBD.md`: line endings only, no content change. Do not edit.
 
-ComboRack_01 blockout files (4, COMMITTED 2026-10-18, not pushed; listed for reference):
+ComboRack_01 blockout files (4, COMMITTED `a816769` and pushed 2026-10-18; for reference):
 - New: `art/scripts/build_combo_rack_01.py`, `art/blender/ComboRack_01.blend`,
   `art/exports/ComboRack_01.fbx`. Changed: `DEVELOPMENT_STATUS.md`.
+
+ComboRack_01 station swap (COMMITTED and pushed 2026-10-18; Studio-tested; listed for reference):
+- New: `art/roblox/ComboRack_01.rbxmx`, `src/server/Training/StationVisuals.luau`,
+  `tools/studio/ComboRack01_PrepareImport.luau`, `tools/studio/ComboRack01_VerifyRacks.luau`,
+  `tools/studio/ComboRack01_PreviewTemplate.luau` (diagnostic).
+- Changed: `art/scripts/build_combo_rack_01.py`, `art/blender/ComboRack_01.blend`,
+  `art/exports/ComboRack_01.fbx` (detail pass), `default.project.json` (template
+  mapping), `src/server/Training/RackConfigurator.luau`,
+  `src/server/Training/RackSpawner.luau`, `src/server/Training/TrainingStationService.luau`
+  (StationVisuals call only), `src/shared/Config/TrainingStationConfig.luau`,
+  `DEVELOPMENT_STATUS.md`, `GAME_DESIGN.md` (decision 15 status cell; the file
+  also holds the 2026-10-18 approved decisions written earlier: §27 layout
+  direction and §34.12 decision 15).
+- Not changed: progression, player data, training rules, registration, menu,
+  ticks, PowerRack_01 template and profile.
+- Checks by Claude: luau-lsp with sourcemap 0 errors in every changed Luau file
+  (errors only in the untouched files of section 5); `rojo build` OK (templates
+  ComboRack_01 26 MeshParts, PowerRack_01 21); `git diff --check` clean.
+- `tools/studio/Step6D2a_VerifyRacks.luau` now reports failures (it expects
+  PowerRack_01's 21 parts); `ComboRack01_VerifyRacks.luau` replaces it.
 - Keep OUT: the same unrelated files as above.
 
 Step 6D.2a files (14, COMMITTED 2026-10-17; listed for reference):
@@ -248,11 +291,14 @@ Step 6D.2c files (7 entries, COMMITTED 2026-10-17; listed for reference):
   still worked). The saved cloud place had the template at the 6D.2b check.
 - Rack positions are provisional (no approved gym layout). The 4-rack layout is
   temporary development infrastructure; the intended final gym is large
-  (about 30 players per server). `GymRack_02`'s open front faces +Z, i.e. away
-  from the spawn (it keeps the old hand-placed spot).
+  (about 30 players per server). All four racks face 0, i.e. their open J-cup
+  front faces -Z (corrected 2026-10-18; older notes said +Z). ComboRack_01
+  reaches 3.0 studs to the front, 2.05 to the back and 3.95 to each side of
+  its position; the deadlift spot is about 4.2 studs in front.
 - Training signs work, but their visual design needs improvement (user,
   2026-10-17). Sign polish is deferred until the user asks.
-- Rack materials/colours in Studio have not been tuned. No barbell, plates or gym yet.
+- ComboRack_01 has first-pass Roblox materials/colours (prepare script); not
+  yet reviewed in final gym lighting. No barbell, plates, player poses or gym yet.
 - Pre-existing luau-lsp type errors in untouched files: LiftAttemptService,
   PlayerDataService:318, LiftAttemptConfig, LiftingRemotes, CompetitionNumberReward,
   and `src/client/Lifting/ControlInput.luau:44-45` (Enum.UserInputType; file

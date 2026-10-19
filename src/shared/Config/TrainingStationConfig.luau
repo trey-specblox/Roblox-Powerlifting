@@ -108,7 +108,8 @@ TrainingStationConfig.StationTag = "GymTrainingStation"
 	  template       name of the Model in ServerStorage.RackTemplates.
 	  position       floor centre of the rack (the Baseplate top is Y = 0).
 	  facingDegrees  turn about the vertical axis. 0 = the J-cup (front) side
-	                 faces +Z, as modelled; 90 = it faces +X.
+	                 faces -Z, as modelled; 90 = it faces -X. (Checked from both
+	                 templates' .rbxmx files 2026-10-18; older notes said +Z.)
 
 	Adding a rack = adding a line here. RackSpawner checks every entry and
 	SKIPS a bad one with a warning, so one typo never stops the other racks or
@@ -124,14 +125,21 @@ export type GymRackEntry = {
 	facingDegrees: number,
 }
 
+--[[
+	2026-10-18: every station uses ComboRack_01 (GAME_DESIGN §34.12 decision 15),
+	at the same spots the PowerRack_01 racks used. Its position is the floor
+	centre between the two tall posts; the rack reaches 3.0 studs to the front
+	(-Z at facing 0), 2.05 to the back and 3.95 to each side, and the lifter
+	deadlifts in front of it. PowerRack_01 still has a profile and template, so
+	a line can switch back by changing its template name.
+]]
 TrainingStationConfig.GymRacks = {
-	{ stationId = "GymRack_01", template = "PowerRack_01", position = Vector3.new(0, 0, -30), facingDegrees = 0 },
-	-- 6D.2b: replaces the hand-placed Workspace.PowerRack_01, at its exact spot
-	-- (read from the saved place: all 21 parts match the template's, unrotated).
-	{ stationId = "GymRack_02", template = "PowerRack_01", position = Vector3.new(-1.3, 0, 12), facingDegrees = 0 },
-	-- 6D.2c: replace the retired placeholder platforms A and B, at their spots.
-	{ stationId = "GymRack_03", template = "PowerRack_01", position = Vector3.new(-14, 0, -18), facingDegrees = 0 },
-	{ stationId = "GymRack_04", template = "PowerRack_01", position = Vector3.new(14, 0, -18), facingDegrees = 0 },
+	{ stationId = "GymRack_01", template = "ComboRack_01", position = Vector3.new(0, 0, -30), facingDegrees = 0 },
+	-- 6D.2b: replaced the hand-placed Workspace.PowerRack_01, at its exact spot.
+	{ stationId = "GymRack_02", template = "ComboRack_01", position = Vector3.new(-1.3, 0, 12), facingDegrees = 0 },
+	-- 6D.2c: replaced the retired placeholder platforms A and B, at their spots.
+	{ stationId = "GymRack_03", template = "ComboRack_01", position = Vector3.new(-14, 0, -18), facingDegrees = 0 },
+	{ stationId = "GymRack_04", template = "ComboRack_01", position = Vector3.new(14, 0, -18), facingDegrees = 0 },
 } :: { GymRackEntry }
 
 --[[

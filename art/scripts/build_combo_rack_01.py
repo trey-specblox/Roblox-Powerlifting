@@ -9,6 +9,11 @@
 # The bench is two separate parts, Bench_Pad and Bench_Frame, so the game can hide
 # them for squat and deadlift (GAME_DESIGN.md section 34.12, decision 15).
 # Run in an otherwise empty file: parts are replaced by name on every run.
+#
+# Detail pass (2026-10-18): edges are rounded in the mesh itself (bmesh bevel, not a
+# modifier), faces are shaded smooth with sharp edges above 50 degrees, and a
+# Weighted Normal modifier keeps the flat sides flat. Phone budget: about 8-12k
+# triangles for the whole station (printed at the end of a run).
 import bpy, bmesh, math
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -36,7 +41,13 @@ SAFETY_Y0, SAFETY_Y1 = -SLEEVE_T / 2, -2.95
 RAIL_Y0, RAIL_Y1 = -2.90, 1.95                       # side base rails (Y extent)
 
 # Bench (feet toward -Y, head under the bar)
-PAD_W, PAD_Y0, PAD_Y1, PAD_TOP, PAD_THICK = 1.24, -3.40, 0.60, 1.20, 0.22
+PAD_W, PAD_Y0, PAD_Y1, PAD_TOP, PAD_THICK = 1.24, -3.40, 0.60, 1.20, 0.30
+
+# Rounding (bevel width, segments) per kind of part
+TUBE_BEVEL = (0.03, 2)
+SMALL_BEVEL = (0.02, 2)
+PAD_BEVEL = (0.09, 3)
+SHARP_ANGLE = math.radians(50)
 
 # ---------------------------------------------------------------- materials
 def material(name, color, metallic, roughness):
@@ -62,7 +73,8 @@ if coll is None:
     bpy.context.scene.collection.children.link(coll)
 
 def finish(name, bm, mat):
-    """Turns a bmesh into a named object whose origin sits at its own bounds centre."""
+    """Turns a bmesh into a named object whose origin sits at its own bounds centre.
+    Shading: smooth, sharp above SHARP_ANGLE, flat sides kept flat by weighted normals."""
     bm.normal_update()
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     old = bpy.data.objects.get(name)
@@ -79,19 +91,29 @@ def finish(name, bm, mat):
     centre = (lo + hi) / 2
     mesh.transform(Matrix.Translation(-centre))
     mesh.materials.append(mat)
+    mesh.polygons.foreach_set("use_smooth", [True] * len(mesh.polygons))
+    mesh.set_sharp_from_angle(angle=SHARP_ANGLE)
     obj = bpy.data.objects.new(name, mesh)
     obj.location = centre
+    wn = obj.modifiers.new("WeightedNormal", "WEIGHTED_NORMAL")
+    wn.mode = "FACE_AREA"
+    wn.keep_sharp = True
     coll.objects.link(obj)
     return obj
 
-def add_box(bm, x0, x1, y0, y1, z0, z1):
+def add_box(bm, x0, x1, y0, y1, z0, z1, bevel=None):
+    """Box from bounds; bevel = (width, segments) rounds all 12 edges."""
     c = ((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)
     m = Matrix.Translation(c) @ Matrix.Diagonal((x1 - x0, y1 - y0, z1 - z0, 1.0))
-    bmesh.ops.create_cube(bm, size=1.0, matrix=m)
+    verts = bmesh.ops.create_cube(bm, size=1.0, matrix=m)["verts"]
+    if bevel:
+        edges = list({e for v in verts for e in v.link_edges})
+        bmesh.ops.bevel(bm, geom=edges, offset=bevel[0], segments=bevel[1], profile=0.5,
+                        affect="EDGES", clamp_overlap=True)
 
-def box_object(name, mat, *bounds):
+def box_object(name, mat, bevel, *bounds):
     bm = bmesh.new()
-    add_box(bm, *bounds)
+    add_box(bm, *bounds, bevel=bevel)
     return finish(name, bm, mat)
 
 def add_cylinder(bm, centre, axis, radius, length, segments):
@@ -116,10 +138,13 @@ def add_profile_extrusion(bm, profile, axis, a0, a1):
         bm.faces.new((start[i], start[j], end[j], end[i]))
     bmesh.ops.triangulate(bm, faces=caps, quad_method="BEAUTY", ngon_method="EAR_CLIP")
 
-def post(name, mat, cx, cy, size, z0, z1, hole_zs, hole, hole_depth):
-    """Square tube from z0 to z1 with square holes punched into its front and back faces."""
-    bm = bmesh.new()
-    add_box(bm, cx - size / 2, cx + size / 2, cy - size / 2, cy + size / 2, z0, z1)
+def arc(cy, cz, r, a0, a1, n):
+    """Points on a circle arc in the (y, z) plane, from angle a0 to a1 (degrees), n steps."""
+    return [(cy + r * math.cos(math.radians(a0 + (a1 - a0) * i / n)),
+             cz + r * math.sin(math.radians(a0 + (a1 - a0) * i / n))) for i in range(n + 1)]
+
+def punch_holes(bm, name, cx, hole_zs, hole, hole_depth):
+    """Square holes in the front and back (Y-facing) flat faces of a tube centred on x = cx."""
     geom = lambda: bm.verts[:] + bm.edges[:] + bm.faces[:]
     for z in hole_zs:
         for zz in (z - hole / 2, z + hole / 2):
@@ -137,7 +162,13 @@ def post(name, mat, cx, cy, size, z0, z1, hole_zs, hole, hole_depth):
     assert len(hole_faces) == len(hole_zs) * 2, (name, len(hole_faces))
     bmesh.ops.inset_individual(bm, faces=hole_faces, thickness=0.0, depth=-hole_depth,
                                use_even_offset=True)
-    return finish(name, bm, mat)
+
+def post_mesh(cx, cy, size, z0, z1, hole_zs, hole, hole_depth, name, bevel=TUBE_BEVEL):
+    """Rounded square tube from z0 to z1 with holes in its front and back faces (open bmesh)."""
+    bm = bmesh.new()
+    add_box(bm, cx - size / 2, cx + size / 2, cy - size / 2, cy + size / 2, z0, z1, bevel=bevel)
+    punch_holes(bm, name, cx, hole_zs, hole, hole_depth)
+    return bm
 
 SIDES = (("Left", -1), ("Right", 1))
 parts = []
@@ -145,69 +176,103 @@ parts = []
 # ---------------------------------------------------------------- tall posts
 for side, sx in SIDES:
     cx = sx * UX
-    parts.append(post("Upright_" + side, MAT_STEEL, cx, 0.0, SLEEVE_T, BASE_H, SLEEVE_TOP,
-                      SLEEVE_HOLES, 0.12, 0.06))
-    parts.append(post("UprightInsert_" + side, MAT_ZINC, cx, 0.0, INSERT_T, INSERT_Z0, INSERT_TOP,
-                      INSERT_HOLES, 0.09, 0.05))
+    name = "Upright_" + side
+    parts.append(finish(name, post_mesh(cx, 0.0, SLEEVE_T, BASE_H, SLEEVE_TOP,
+                                        SLEEVE_HOLES, 0.12, 0.06, name), MAT_STEEL))
+    name = "UprightInsert_" + side
+    parts.append(finish(name, post_mesh(cx, 0.0, INSERT_T, INSERT_Z0, INSERT_TOP,
+                                        INSERT_HOLES, 0.09, 0.05, name, SMALL_BEVEL), MAT_ZINC))
 
 bm = bmesh.new()   # pull-pin that locks each insert, on the sleeve's outer side near its top
 for side, sx in SIDES:
     x = sx * (UX + SLEEVE_T / 2)
     add_cylinder(bm, (x + sx * 0.03, 0.0, SLEEVE_TOP - 0.15), "X", 0.035, 0.06, 8)
-    add_cylinder(bm, (x + sx * 0.075, 0.0, SLEEVE_TOP - 0.15), "X", 0.06, 0.03, 8)
+    add_cylinder(bm, (x + sx * 0.075, 0.0, SLEEVE_TOP - 0.15), "X", 0.06, 0.03, 10)
 parts.append(finish("InsertLockPins", bm, MAT_HARDWARE))
 
 # ---------------------------------------------------------------- spotter posts + safety arms
+# Each short post carries a small open cradle on top, like the hooks in the reference photo.
+CRADLE_Z0, CRADLE_BACK = SPOT_TOP, 0.20
 for side, sx in SIDES:
     cx = sx * UX
-    parts.append(post("SpotterPost_" + side, MAT_STEEL, cx, SPOT_Y, SPOT_T, BASE_H, SPOT_TOP,
-                      SPOT_HOLES, 0.10, 0.05))
-    parts.append(box_object("SafetyArm_" + side, MAT_STEEL,
-                            cx - SAFETY_T / 2, cx + SAFETY_T / 2, SAFETY_Y1, SAFETY_Y0,
-                            SAFETY_Z - SAFETY_T / 2, SAFETY_Z + SAFETY_T / 2))
+    name = "SpotterPost_" + side
+    bm = post_mesh(cx, SPOT_Y, SPOT_T, BASE_H, SPOT_TOP, SPOT_HOLES, 0.10, 0.05, name)
+    yf, yb = SPOT_Y - SPOT_T / 2, SPOT_Y + CRADLE_BACK      # front wall / back lip (outer faces)
+    cradle = ([(yb, CRADLE_Z0), (yb, CRADLE_Z0 + 0.15)]
+              + arc(yb - 0.025, CRADLE_Z0 + 0.15, 0.025, 0, 180, 3)[1:]   # rounded lip top
+              + [(yb - 0.05, CRADLE_Z0 + 0.08)]
+              + arc(yf + 0.11, CRADLE_Z0 + 0.13, 0.05, 270, 180, 3)       # rounded seat
+              + [(yf + 0.06, CRADLE_Z0 + 0.32)]
+              + arc(yf + 0.03, CRADLE_Z0 + 0.32, 0.03, 0, 180, 3)[1:]     # rounded front wall top
+              + [(yf, CRADLE_Z0)])
+    add_profile_extrusion(bm, cradle, "X", cx - SPOT_T / 2, cx + SPOT_T / 2)
+    parts.append(finish(name, bm, MAT_STEEL))
+
+    bm = bmesh.new()
+    add_box(bm, cx - SAFETY_T / 2, cx + SAFETY_T / 2, SAFETY_Y1, SAFETY_Y0,
+            SAFETY_Z - SAFETY_T / 2, SAFETY_Z + SAFETY_T / 2, bevel=SMALL_BEVEL)
+    BR = SAFETY_T / 2 + 0.04     # bracket sleeve where the arm meets the tall post
+    add_box(bm, cx - BR, cx + BR, SAFETY_Y0 - 0.22, SAFETY_Y0, SAFETY_Z - BR, SAFETY_Z + BR,
+            bevel=SMALL_BEVEL)
+    parts.append(finish("SafetyArm_" + side, bm, MAT_STEEL))
 
 bm = bmesh.new()   # lock pins on the outer side of both safety-arm supports, level with the arm
 for side, sx in SIDES:
     for half, y in ((SLEEVE_T / 2, 0.0), (SPOT_T / 2, SPOT_Y)):
         x = sx * (UX + half)
         add_cylinder(bm, (x + sx * 0.03, y, SAFETY_Z), "X", 0.03, 0.06, 8)
-        add_cylinder(bm, (x + sx * 0.07, y, SAFETY_Z), "X", 0.05, 0.025, 8)
+        add_cylinder(bm, (x + sx * 0.07, y, SAFETY_Z), "X", 0.05, 0.025, 10)
 parts.append(finish("SafetyPins", bm, MAT_HARDWARE))
 
 # ---------------------------------------------------------------- base
 OUT_X, IN_X = UX + SLEEVE_T / 2, UX - SLEEVE_T / 2      # 3.0 / 2.7
 BACK_Y0 = RAIL_Y1 - SLEEVE_T
+FOOT_X1 = 3.90
 parts += [
-    box_object("BaseRail_Left", MAT_STEEL, -OUT_X, -IN_X, RAIL_Y0, RAIL_Y1, 0.0, BASE_H),
-    box_object("BaseRail_Right", MAT_STEEL, IN_X, OUT_X, RAIL_Y0, RAIL_Y1, 0.0, BASE_H),
-    box_object("BaseRail_Back", MAT_STEEL, -IN_X, IN_X, BACK_Y0, RAIL_Y1, 0.0, BASE_H),
-    box_object("BaseFoot_Left", MAT_STEEL, -3.90, -OUT_X, -0.15, 0.15, 0.0, 0.20),
-    box_object("BaseFoot_Right", MAT_STEEL, OUT_X, 3.90, -0.15, 0.15, 0.0, 0.20),
-    box_object("SpotterDeck", MAT_STEEL, -IN_X, IN_X, 0.75, BACK_Y0, 0.0, 0.15),
+    box_object("BaseRail_Left", MAT_STEEL, TUBE_BEVEL, -OUT_X, -IN_X, RAIL_Y0, RAIL_Y1, 0.0, BASE_H),
+    box_object("BaseRail_Right", MAT_STEEL, TUBE_BEVEL, IN_X, OUT_X, RAIL_Y0, RAIL_Y1, 0.0, BASE_H),
+    box_object("BaseRail_Back", MAT_STEEL, TUBE_BEVEL, -IN_X, IN_X, BACK_Y0, RAIL_Y1, 0.0, BASE_H),
+    box_object("BaseFoot_Left", MAT_STEEL, TUBE_BEVEL, -FOOT_X1, -OUT_X, -0.15, 0.15, 0.0, 0.20),
+    box_object("BaseFoot_Right", MAT_STEEL, TUBE_BEVEL, OUT_X, FOOT_X1, -0.15, 0.15, 0.0, 0.20),
+    box_object("SpotterDeck", MAT_STEEL, SMALL_BEVEL, -IN_X, IN_X, 0.75, BACK_Y0, 0.0, 0.15),
 ]
+
+bm = bmesh.new()   # rubber end caps on the open tube ends of the base
+CAP = 0.05
+for sx in (-1, 1):
+    x0, x1 = sorted((sx * FOOT_X1, sx * (FOOT_X1 + CAP)))
+    add_box(bm, x0, x1, -0.16, 0.16, 0.0, 0.21, bevel=(0.015, 1))
+    for y0, y1 in ((RAIL_Y0 - CAP, RAIL_Y0), (RAIL_Y1, RAIL_Y1 + CAP)):
+        add_box(bm, sx * UX - 0.16, sx * UX + 0.16, y0, y1, 0.0, BASE_H + 0.01, bevel=(0.015, 1))
+parts.append(finish("FootCaps", bm, MAT_RUBBER))
 
 # ---------------------------------------------------------------- J-cups (on the insert's front face)
 F = -INSERT_T / 2
 PLATE, SEAT_Y, HOOK_T, LIP_T = 0.06, 0.34, 0.07, 0.07
 Z_BOT, Z_TOP, LIP_TOP = JCUP_Z - 0.45, JCUP_Z + 0.15, JCUP_Z - 0.20
-JCUP_PROFILE = [
-    (F, Z_TOP), (F, Z_BOT), (F - SEAT_Y, Z_BOT), (F - SEAT_Y, LIP_TOP),
-    (F - SEAT_Y + LIP_T, LIP_TOP), (F - SEAT_Y + LIP_T, Z_BOT + HOOK_T),
-    (F - PLATE, Z_BOT + HOOK_T), (F - PLATE, Z_TOP),
-]
-LINER_T, LINER_TOP = 0.03, JCUP_Z - 0.10
 SEAT_Z = Z_BOT + HOOK_T
+YF, YFI, YPI = F - SEAT_Y, F - SEAT_Y + LIP_T, F - PLATE     # front outer / lip inner / plate inner
+R_OUT, R_IN = 0.08, 0.04
+JCUP_PROFILE = ([(F, Z_TOP), (F, Z_BOT)]
+                + arc(YF + R_OUT, Z_BOT + R_OUT, R_OUT, 270, 180, 4)       # rounded bottom-front
+                + [(YF, LIP_TOP)]
+                + arc(YF + LIP_T / 2, LIP_TOP, LIP_T / 2, 180, 0, 3)[1:-1] # rounded lip top
+                + [(YFI, LIP_TOP)]
+                + arc(YFI + R_IN, SEAT_Z + R_IN, R_IN, 180, 270, 3)        # lip-to-seat
+                + arc(YPI - R_IN, SEAT_Z + R_IN, R_IN, 270, 360, 3)        # seat-to-plate
+                + [(YPI, Z_TOP)])
+LINER_T, LINER_TOP = 0.03, JCUP_Z - 0.10
 for side, sx in SIDES:
     cx = sx * UX
     bm = bmesh.new()
     add_profile_extrusion(bm, JCUP_PROFILE, "X", cx - 0.15, cx + 0.15)
     parts.append(finish("JCup_" + side, bm, MAT_STEEL))
     bm = bmesh.new()
-    add_box(bm, cx - 0.13, cx + 0.13, F - SEAT_Y + LIP_T, F - PLATE, SEAT_Z, SEAT_Z + LINER_T)
-    add_box(bm, cx - 0.13, cx + 0.13, F - PLATE - LINER_T, F - PLATE, SEAT_Z + LINER_T, LINER_TOP)
+    add_box(bm, cx - 0.13, cx + 0.13, YFI + R_IN, YPI - R_IN, SEAT_Z, SEAT_Z + LINER_T)
+    add_box(bm, cx - 0.13, cx + 0.13, YPI - LINER_T, YPI, SEAT_Z + R_IN, LINER_TOP)
     parts.append(finish("JCupLiner_" + side, bm, MAT_RUBBER))
     bm = bmesh.new()   # pull-pin knob on the J-cup face, level with its hole
-    add_cylinder(bm, (cx, F - PLATE - 0.02, JCUP_Z), "Y", 0.035, 0.04, 8)
+    add_cylinder(bm, (cx, YPI - 0.02, JCUP_Z), "Y", 0.035, 0.04, 10)
     parts.append(finish("JCupPin_" + side, bm, MAT_HARDWARE))
 
 # ---------------------------------------------------------------- frame bolts
@@ -225,22 +290,24 @@ parts.append(finish("FrameBolts", bm, MAT_HARDWARE))
 
 # ---------------------------------------------------------------- bench (separate, hideable)
 PAD_BOT = PAD_TOP - PAD_THICK
-hw = PAD_W / 2
-PAD_PROFILE = [(-hw, PAD_BOT), (hw, PAD_BOT), (hw, PAD_TOP - 0.06), (hw - 0.06, PAD_TOP),
-               (-hw + 0.06, PAD_TOP), (-hw, PAD_TOP - 0.06)]
 bm = bmesh.new()
-add_profile_extrusion(bm, PAD_PROFILE, "Y", PAD_Y0, PAD_Y1)
+add_box(bm, -PAD_W / 2, PAD_W / 2, PAD_Y0, PAD_Y1, PAD_BOT, PAD_TOP, bevel=PAD_BEVEL)
 parts.append(finish("Bench_Pad", bm, MAT_VINYL))
 
-SPINE_Z0 = PAD_BOT - 0.18
+SPINE_Z0 = PAD_BOT - 0.16
 bm = bmesh.new()
-add_box(bm, -0.20, 0.20, PAD_Y0 + 0.20, PAD_Y1 - 0.20, SPINE_Z0, PAD_BOT)       # spine under the pad
+add_box(bm, -0.22, 0.22, PAD_Y0 + 0.25, PAD_Y1 - 0.25, SPINE_Z0, PAD_BOT, bevel=SMALL_BEVEL)  # pad rail
 for y in (PAD_Y0 + 0.50, PAD_Y1 - 0.45):
-    add_box(bm, -0.09, 0.09, y - 0.09, y + 0.09, 0.15, SPINE_Z0)              # leg post
-    add_box(bm, -0.75, 0.75, y - 0.10, y + 0.10, 0.0, 0.15)                   # foot tube
+    add_box(bm, -0.09, 0.09, y - 0.09, y + 0.09, 0.14, SPINE_Z0, bevel=SMALL_BEVEL)    # leg post
+    add_box(bm, -0.75, 0.75, y - 0.10, y + 0.10, 0.0, 0.15, bevel=TUBE_BEVEL)          # foot tube
 parts.append(finish("Bench_Frame", bm, MAT_STEEL))
 
 print("built", len(parts), "parts:", [p.name for p in parts])
+
+# ---------------------------------------------------------------- triangle budget (read-only)
+bpy.context.view_layer.update()   # new objects' matrix_world is only valid after this
+tris = {p.name: sum(len(f.vertices) - 2 for f in p.data.polygons) for p in parts}
+print("triangles: total", sum(tris.values()), "| largest", max(tris.items(), key=lambda kv: kv[1]))
 
 # ---------------------------------------------------------------- clearance checks (read-only)
 # Keep-out boxes for a future barbell and lifter. They are only tested, never added to the scene.
@@ -291,7 +358,6 @@ def inside(obj, xs, ys, zs):
             return True
     return False
 
-bpy.context.view_layer.update()   # new objects' matrix_world is only valid after this
 part_trees = {p.name: bvh_of_object(p) for p in parts}
 problems = []
 for label, (xs, ys, zs, allowed_prefixes) in KEEP_OUT.items():

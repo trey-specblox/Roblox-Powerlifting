@@ -790,6 +790,19 @@ Warm-up area
 Locker area
 NPC coach area
 Comp max testing
+
+> **Starter Gym layout direction (approved 2026-10-18).** The Starter Gym is **one
+> big open gym floor full of equipment**, not split into sections. The other
+> Starter Gym rooms above (warm-up, locker, NPC coach, comp max testing) are
+> **decoration only for now**, with no gameplay; some may become interactive
+> rooms later. The **local meet venue** and the **trading area** stay
+> **separate places**, outside the gym. Visual style: bright and clean, see
+> `References/Visual Style/Visual Style.md`. Station visuals: §34.12, decision 15.
+> **One station type:** every training station is a black ER-style combo rack
+> with a bench (§34.12, decision 15). There are no separate squat, bench and
+> deadlift areas. The exact number and positions of stations are not approved
+> yet; they stay in `TrainingStationConfig.GymRacks`.
+
 Local meet venue:
 Competition platform
 Judges
@@ -3789,6 +3802,7 @@ listed below so no contradictory rule survives.
 | 12 | ~~**Two temporary placeholder racks** (plain Parts near spawn). Real models come after 5B.7~~ — **retired in checkpoint 6D.2c** (approved 2026-10-17): the placeholders were replaced by modeled power racks `GymRack_03` and `GymRack_04`, spawned at the same spots from the Git-tracked rack template like every other rack. Rack positions stay configurable in `TrainingStationConfig.GymRacks` until a gym layout is approved. No station rule changed | **[FINAL]** for 5B.6; **[RETIRED]** 6D.2c |
 | 13 | Lift attempts stay **independent** of the racks | **[FINAL]** for 5B.6 |
 | 14 | Tick **10 s**, at most **30 s** credited per tick, **12 stud** presence radius, **1 s** selection cooldown, **8 requests per 4 s** spam limit | **[PROVISIONAL]** — `TrainingStationConfig` |
+| 15 | **Station visuals match the selected lift** (approved 2026-10-18). Every station stays universal (decision 1 unchanged); only what the player **sees** changes. **Every station is the same model: a black ER-style combo rack with a bench** (reference photo `References/Visual Style/Images/Rack_ERCombo_Bench.webp`); the current four-post `PowerRack_01` is to be replaced by it. **Squat:** the bench is hidden, so the lifter never squats through a bench. **Bench:** the lifter lies on the bench, feet on the ground, and the barbell never passes through the rack. **Deadlift:** the bench is hidden and the lifter stands slightly away from the rack, for room to pull. Visual only: no effect on CN, technique or any station rule | **[FINAL]** rule; implementation **partly done** (2026-10-18, user-tested in Studio): every gym station uses the `ComboRack_01` model; its bench is hidden for squat and deadlift, and its J-cups move to the squat hole for squat (`StationVisuals`). Player poses/animations **[TBD]** |
 
 **Decisions replaced from the first 5B.6 implementation:**
 
