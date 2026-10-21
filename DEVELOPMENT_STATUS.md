@@ -159,7 +159,139 @@ and polish.
   **Step (2) DONE 2026-10-19** (user-tested in Studio). COMMITTED and pushed
   2026-10-19 with user approval as "Lay out 30 gym racks in three rows and
   fix J-cups dropping twice (Starter Gym steps 1-2)" (`git log` for the hash).
-  NEXT ACTION: step (3), the gym shell (plan its approach with the user first).
+- Step (3) BUILT, NOT YET STUDIO-TESTED, NOT committed (approach approved by
+  the user 2026-10-19): new `src/server/World/StarterGymBuilder.luau` builds
+  `Workspace.StarterGym` (Floors: Floor_Gym rubber, Floor_Lobby concrete,
+  Floor_Rooms tiles; Walls: front with a 12 x 10 entrance in line with the
+  rows, back, Wall_Left (+X), Wall_Right (-X), Wall_Rooms with one 8 x 9
+  doorway per room, 3 room dividers; each wall = dark band 3 studs + painted
+  wall, 20 studs high) at server start, called from `init.server.luau`
+  before RackSpawner. Sizes worked out from `GymLayout` plus margins in the
+  new `src/shared/Config/StarterGymConfig.luau`: gym floor X -70..70,
+  Z 6..73.05; lobby Z -16..6; rooms X -97..-71. No ceiling (comes with the
+  lights in step 5). `GymLayout.floorY = 0.05`: floor tops and racks sit
+  0.05 above the Baseplate (no z-fighting). Fails closed (warning, no shell)
+  and only builds for facing 0. New read-only
+  `tools/studio/StarterGym_VerifyShell.luau` (Play, either view): parts
+  anchored/solid, floor tops at floorY, every rack + bar + lifting space on
+  Floor_Gym and clear of walls, entrance and doorways open, spawn in lobby.
+  Checks by Claude: luau-lsp 0 errors in the new and changed files,
+  `rojo build` OK, `git diff --check` clean.
+  Studio result 1 (user, Play): `StarterGym_VerifyShell` 15 passed, 1 FAILED:
+  "Workspace.SpawnLocation at (1.0, 0.5, 2.0) is inside the lobby". The
+  spawn is NOT where the 16 Oct snapshot note said (0, 0.5, -6); at Z 2 a
+  12-stud pad reaches Z 8, past the lobby's back edge (Z 6). Everything else
+  passed (shell parts, floor heights, racks on the floor and clear of
+  walls, entrance and doorways).
+  Response (2026-10-21): the shell maths moved into
+  `StarterGymConfig.footprint(layout)` (used by the builder and scripts; same
+  numbers). New guarded one-time `tools/studio/StarterGym_MoveSpawnToLobby.luau`
+  (Edit mode, place 96814269062063, exactly one Workspace.SpawnLocation, still
+  at (1, 0.5, 2), must fit): moves ONLY its X/Z to the lobby centre (0, Y, -5),
+  one Undo step; the user then saves the place. NOT yet run.
+  User look in Studio (2026-10-21, screenshot): likes the rack colours; the
+  gym feels TOO SMALL and TOO CROWDED; the floating "Training Rack" sign
+  above every rack is bad; the shell is too basic and the four rooms in a
+  strip on one side feel unplanned. Whether the spawn-move script was run:
+  not stated.
+  Response: Claude recommends getting the shell right (size, building shape,
+  room placement, ceiling style) before any details, and replacing the
+  floating signs (proposal, not approved yet). Shell references 11-15 and a
+  tick list were added to `References/Visual Style/Visual Style.md` for the
+  user to mark what they like.
+  User picks (2026-10-21, recorded in Visual Style.md): a roof with
+  skylights like the Gymshark Lifting Club (not flat); TWO FLOORS, all racks
+  downstairs, bright Academia-2.0-style training rooms upstairs; a
+  Gymshark-like entrance with reception desk, gym-name wall and glass doors;
+  wall decoration later; more space between racks; high ceilings.
+  Claude's redesign drawn in chat (NOT approved yet, nothing built):
+  racks 16 apart, rows 28 apart (about 184 x 115 studs); a double-height
+  rack hall (eaves 28, ridge 44) under a pitched roof with skylight strips;
+  a 2-floor front block 30 deep: ground = lockers, lobby (glass doors,
+  reception desk, gym-name wall, spawn, glass wall to the hall), stairs,
+  office; upper (floor at 14) = balcony with glass railing over the hall,
+  warm-up room, max testing room, stairs, coach room, glass fronts.
+  Open questions: roof shape (one big pitched roof vs sawtooth vs curved);
+  removing the floating rack signs (unanswered).
+  User reply (2026-10-21): pitched roof APPROVED. Wants the gym BIGGER and
+  rooms NOT all on one side, "plenty of rooms scattered across the gym" like
+  Academia 2.0, because they plan to put plenty of NPCs in them (NPCs: a
+  future idea, no design yet). Signs question still unanswered.
+  Redesign v2 drawn in chat (NOT approved yet, nothing built): about
+  250 x 132 studs (56 x 30 m). Central double-height rack hall (188 x 100,
+  racks 16 apart, rows 28 apart, ~18-stud side aisles, ~21-stud open area
+  in front of row 1) under the pitched roof with skylights. Two-floor room
+  blocks on the LEFT, RIGHT and FRONT, every room with a glass front:
+  ground = left Physio/Massage/Recovery/Office, right Shop/Coach/Sauna/
+  Storage, front Stairs/Lockers/Lobby (glass doors, reception, name wall,
+  spawn)/Cafe/Stairs; upper = Rooms 1-8 on the sides, Warm-up/Max testing/
+  Studio at the front, stairs in both front corners, a U-shaped balcony
+  walkway with glass railing around three sides of the hall. Room names are
+  placeholders. 21 rooms in total.
+  User (2026-10-21): v2 APPROVED, and the floating rack signs to be REMOVED
+  (prompt only up close). Recorded in GAME_DESIGN §27 ("Starter Gym building,
+  version 2" and "Rack signs").
+  v2 STAGE 1: Studio checks passed (below); COMMITTED and pushed 2026-10-21
+  with user approval as "Build the Starter Gym version 2, stage 1, and replace
+  rack signs with the prompt" (`git log` for the hash). What it contains:
+  - `TrainingStationConfig.GymLayout`: rackSpacingStuds 16, rowSpacingStuds 28.
+  - `StarterGymConfig` rewritten for v2: hall margins (side/back aisle 14,
+    front open area 21), side blocks 30 deep, front block 32 deep, storeys
+    14 (upper floor top Y 14.05, block roofs Y 28.05), lobby 70 wide with a
+    46-wide opening to the hall, entrance 16 x 10, room doors 6 x 9, glass
+    look, the room name lists (placeholders), `footprint()` with every edge.
+    Numbers: hall X -94..94, Z -3..97.05; building X -126..126, Z -37..98.05.
+  - `StarterGymBuilder` rewritten: Floors (Floor_Hall, Floor_Lobby, room
+    floors, Slab_* upper floors), Roofs (flat roofs of the 3 room blocks; the
+    hall is still open to the sky until stage 2), Walls (outer walls with
+    band, lobby glass front with the entrance, glass fronts with one door per
+    room on both floors, room dividers), Rooms (26 invisible region parts
+    Room_<Name> with Floor, DoorCentre, DoorAlongX attributes). The front
+    corner rooms (the drawing's stairs places) get a door into the next front
+    room; stairs and balcony are stage 3, so upstairs is NOT reachable yet.
+  - Rack signs: `TrainingStationService` no longer makes the BillboardGui;
+    the prompt's ObjectText is the rack title and its ActionText "Train" /
+    "In use". `GymRackWatchProbe` (disabled dev probe) reads the prompt
+    instead of the sign. `ComboRack01_VerifyRacks` expects NO sign.
+  - `StarterGym_VerifyShell` rewritten for v2 (folders, solid parts, floor
+    heights, racks clear, all 26 rooms once with open doors, entrance, spawn
+    in Room_Lobby). `StarterGym_MoveSpawnToLobby` now targets the v2 lobby
+    centre (0, Y, -20) and accepts the pad at (1, 0.5, 2) or (0, 0.5, -5).
+  - Checks by Claude: luau-lsp 0 errors in every changed file, `rojo build`
+    OK, `git diff --check` clean.
+  - Rooms with roofs will look dark inside: Lighting.Ambient is black; the
+    lights come in a later stage.
+  Move script run 1 (user, 18:27, Edit): "SCRIPT ERROR ... CommandBar:69:
+  attempt to perform arithmetic (sub) on nil and number" (nothing changed).
+  Cause: the Command Bar caches every required module for the Studio session,
+  so it still had the OLD StarterGymConfig (no hallFrontZ) from the first
+  script version. Fix: the script now requires fresh copies from an
+  unparented clone of ReplicatedStorage.Shared.Config (nothing enters the
+  place) and stops with a clear message if the config is still old.
+  LESSON for every Edit-mode Command Bar script: never trust require() of a
+  module that may have changed in this Studio session; use a fresh clone.
+  Studio results (user, 2026-10-21 18:39, after the fixed move script):
+  `StarterGym_VerifyShell` ALL 12 CHECKS PASSED (so the spawn is in the v2
+  lobby; whether the place was saved afterwards: not stated);
+  `ComboRack01_VerifyRacks` ALL 667 CHECKS PASSED (racks at the new spacing,
+  no signs). Not yet reported: the visual look, walking around, the new
+  prompt, training once, and the answer on open staircases in the hall's
+  front corners.
+  User look (2026-10-21, 2 screenshots: hall seen from above the lobby, and
+  from the lobby opening): stage 1 renders as built (two floors of glass
+  fronts around the hall, racks at the new spacing, open sky). No problems
+  reported. Stairs decision (user): two staircases coming out of the hall's
+  two front corners right as you walk in, up to the second floor; recorded
+  in GAME_DESIGN §27. Added by the user: the staircases are GLASS, and the
+  rooms behind them must stay reachable (also in §27). Doors near the front
+  corners: Lockers / Cafe on the hall's front glass (X +/-64.5) and the side
+  blocks' front rooms Office / Storage (X +/-94.5, Z about 9.5). Design notes
+  for stage 3: the stairs must sit inside the balcony line (the 14-stud side
+  aisle may need to widen), and the verify script must check a clear
+  walking zone in front of every room door (no stair or railing part in it).
+  OLD NEXT ACTION (done above): user runs the move script (Edit mode) and saves, then tests
+  in Studio: StarterGym_VerifyShell, ComboRack01_VerifyRacks, walk around,
+  racks' prompts. Then stage 2 (hall roof with skylights).
 
 **Long-term design note (user, 2026-10-17):** the final game is intended to
 have a LARGE gym, potentially supporting about 30 players per server. The
@@ -350,6 +482,21 @@ Deliberately left uncommitted (keep, never discard):
   referenced by GAME_DESIGN.md and the build scripts. COMMITTED and pushed
   2026-10-19 with user approval as "Add the Visual Style reference note"
   (`git log` for the hash). Its two image embeds stay local (above).
+
+Starter Gym step 3, gym shell v1 + v2 stage 1 (Studio-tested; COMMITTED and pushed 2026-10-21; listed for reference):
+- New: `src/server/World/StarterGymBuilder.luau`,
+  `src/shared/Config/StarterGymConfig.luau`, `tools/studio/StarterGym_VerifyShell.luau`,
+  `tools/studio/StarterGym_MoveSpawnToLobby.luau`.
+- Changed: `src/server/init.server.luau` (builds the shell),
+  `src/shared/Config/TrainingStationConfig.luau` (GymLayout.floorY 0.05,
+  racks at that height; v2: spacing 16 / 28),
+  `src/server/Training/TrainingStationService.luau` (no rack sign; prompt text),
+  `src/server/Dev/GymRackWatchProbe.server.luau` (reads the prompt),
+  `tools/studio/ComboRack01_VerifyRacks.luau` (expects no sign),
+  `GAME_DESIGN.md` (§27 v2 building, rack signs),
+  `References/Visual Style/Visual Style.md` (shell references and the user's picks),
+  `DEVELOPMENT_STATUS.md`.
+- Keep OUT: the same unrelated files as above.
 
 Starter Gym steps 1-2 (Studio-tested; COMMITTED and pushed 2026-10-19; listed for reference):
 - New: `tools/studio/GymStressTest_SceneStats.luau`.

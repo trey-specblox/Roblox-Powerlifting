@@ -809,19 +809,47 @@ Comp max testing
 > - **30 racks** (one per player on a full ~30-player server) in **three rows
 >   of 10**, all facing the same way: the open front of every rack faces the
 >   entrance and lobby.
-> - Between rows there is a walkway (about 12 studs past each rack's lifting
->   space). Along a row, the racks stand 12 studs apart (centre to centre),
->   so the loaded bars of neighbouring racks do not touch.
-> - **Lobby with the spawn** at the entrance end. The **decoration rooms**
->   (warm-up, lockers, NPC coach, comp max testing; §27 above) are a strip
->   along one side wall, on the right as you walk in.
+> - ~~Racks 12 studs apart, rows with a 12-stud walkway, the decoration rooms
+>   in a strip along one side wall, about 166 x 89 studs~~ — **superseded on
+>   2026-10-21 by the Starter Gym building below** (the user found it too
+>   small, too crowded and too basic). The three rows of 10 stay.
 > - Racks are numbered from the entrance: row 1 (nearest) holds Training Racks
 >   01-10, left to right as you walk in; row 2 holds 11-20; row 3 holds 21-30.
-> - Provisional size: about 166 x 89 studs (37 x 20 m at 0.225 m per stud).
->   The exact numbers (spacing, walkways, rooms, wall positions) are
->   **[PROVISIONAL]** and live in `TrainingStationConfig.GymLayout`, so they
->   can be tuned after the stress test and play-testing without a design change.
->   Adding a fourth row later is a config change.
+
+> **Starter Gym building, "version 2" (approved 2026-10-21).** Chosen by the
+> user after seeing references (`References/Visual Style/Visual Style.md`,
+> refs 11-15) and two drawn redesigns.
+> - **Size:** about 250 x 132 studs (56 x 30 m), bigger than the first shell.
+> - **Rack hall:** all 30 racks downstairs, in the middle, in a double-height
+>   hall under a **pitched roof with skylights** (not a flat ceiling). Racks
+>   16 studs apart, rows 28 apart, wide side aisles and an open area in front
+>   of row 1 for later equipment.
+> - **Two floors of rooms on three sides** of the hall (left, right and
+>   front), not all on one side: "plenty of rooms scattered across the gym",
+>   like Academia 2.0. Every room has a **glass front** onto the hall (bright
+>   rooms, and you can see the gym). About 21 rooms. They are **decoration
+>   only for now**; the user plans to put **plenty of NPCs** in them later
+>   (no NPC design yet). Room names are placeholders until then.
+> - **Upstairs:** reached by **two open staircases in the rack hall's two
+>   front corners**, right where you walk in from the lobby, going up to the
+>   balcony (user, 2026-10-21; this replaces the drawing's stairs rooms, which
+>   did not connect to the hall, so the two front-corner rooms stay rooms).
+>   The staircases are **glass** (user, 2026-10-21), and they must leave
+>   **every room behind or beside them reachable**: no stair may block a
+>   room's door or the way to it. A
+>   U-shaped **balcony walkway** with a glass railing runs around three sides
+>   of the hall and leads to every upstairs room.
+> - **Entrance** (in the front block): **glass doors**, a lobby with the
+>   **spawn**, a **reception desk** and a **gym-name wall**, and a glass wall
+>   with a wide opening into the rack hall.
+> - Wall decoration (mirrors, graphics, the gym name) comes later.
+> - The exact numbers are **[PROVISIONAL]**: rack spacing in
+>   `TrainingStationConfig.GymLayout`, the building in `StarterGymConfig`.
+
+> **Rack signs (user decision, 2026-10-21).** Racks have **no floating sign**
+> above them. A rack's name and whether it is free ("Train" / "In use") show
+> only in its hold-E prompt, which appears when the player is close. The
+> occupant sees their own training status in their menu.
 
 Local meet venue:
 Competition platform

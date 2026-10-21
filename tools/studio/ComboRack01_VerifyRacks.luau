@@ -18,7 +18,7 @@
 	    centre (so nothing is shifted, rotated or mirrored), except the J-cups,
 	    which sit either as modelled (squat hole) or exactly 0.35 lower (bench hole);
 	  - the J-cups are on the rack's front (-Z at facing 0);
-	  - it has exactly one prompt and one sign.
+	  - it has exactly one prompt and (since 2026-10-21) no floating sign.
 	And overall: the configured racks are the only tagged racks, and the template
 	in ServerStorage is untouched (26 MeshParts, no tag, StationId or RackTemplate).
 
@@ -242,18 +242,18 @@ local function run()
 				id .. ": J-cups on the rack's front (-Z at facing 0)")
 		end
 
+		-- Since 2026-10-21 racks have no floating sign: the prompt carries the name and Train / In use.
 		local prompts, signs, signText = 0, 0, ""
 		for _, d in ipairs(rack:GetDescendants()) do
 			if d:IsA("ProximityPrompt") then
 				prompts += 1
-			elseif d:IsA("BillboardGui") and d.Name == "TrainingStatus" then
+				signText = d.ObjectText .. " / " .. d.ActionText
+			elseif d:IsA("BillboardGui") then
 				signs += 1
-				local label = d:FindFirstChildWhichIsA("TextLabel")
-				signText = if label then label.Text else ""
 			end
 		end
 		check(prompts == 1, string.format("%s: exactly 1 prompt (found %d)", id, prompts))
-		check(signs == 1, string.format("%s: exactly 1 sign (found %d)", id, signs))
+		check(signs == 0, string.format("%s: no floating sign (found %d)", id, signs))
 
 		-- The station's barbell: where it should be for this look.
 		local barWhere = "MISSING"
@@ -297,7 +297,7 @@ local function run()
 			check(barWhere == expected, string.format("%s: bar at %s position (expected %s)", id, barWhere, expected))
 		end
 
-		table.insert(lines, string.format("  LOOK  %s: bench %s, J-cups at %s height, bar %s | sign: %s", id,
+		table.insert(lines, string.format("  LOOK  %s: bench %s, J-cups at %s height, bar %s | prompt: %s", id,
 			if benchHidden then "HIDDEN" else "shown",
 			if atSquat then "SQUAT" elseif atBench then "bench" else "UNKNOWN",
 			barWhere,

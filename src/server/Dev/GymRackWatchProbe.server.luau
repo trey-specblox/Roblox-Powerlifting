@@ -161,12 +161,12 @@ local function watchFor(name: string): Watch
 	return w
 end
 
+-- The rack's prompt text (racks have no floating sign since 2026-10-21): "Train" when free.
 local function signText(): string
 	local folder = Workspace:FindFirstChild("GymRacks")
 	local rack = folder and folder:FindFirstChild(WATCH_STATION)
-	local sign = rack and rack:FindFirstChild("TrainingStatus", true)
-	local label = sign and sign:FindFirstChildWhichIsA("TextLabel")
-	return if label then label.Text else "(no sign found)"
+	local prompt = rack and rack:FindFirstChild("TrainingPrompt", true)
+	return if prompt and prompt:IsA("ProximityPrompt") then prompt.ActionText else "(no prompt found)"
 end
 
 -- A tick line for a player who is NOT holding WATCH_STATION right now.
@@ -298,8 +298,8 @@ local function onTraining(line: string)
 
 		task.delay(0.5, function()
 			local text = signText()
-			report(string.find(text, "Free", 1, true) ~= nil,
-				string.format("%s sign reads Free after %s left (sign: \"%s\")", WATCH_STATION, lName,
+			report(text == "Train",
+				string.format("%s prompt reads Train (free) after %s left (prompt: \"%s\")", WATCH_STATION, lName,
 					(string.gsub(text, "\n", " | "))))
 		end)
 		local releasedAt = now

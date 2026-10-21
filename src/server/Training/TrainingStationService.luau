@@ -13,7 +13,8 @@
 	HOW A PLAYER USES A RACK
 	=========================================================================
 
-	Every rack is identical: one ProximityPrompt, "Train", held E for
+	Every rack is identical: one ProximityPrompt (its name, and "Train" or
+	"In use"; racks have no floating sign since 2026-10-21), held E for
 	PromptHoldSeconds. The prompt fires on the SERVER with the Player who held
 	it. The server checks the player is really standing there and the rack is
 	free, RESERVES it for them, and tells their client to open the Training
@@ -101,9 +102,16 @@ type Station = {
 	stationId: string,
 	instance: Instance,
 	prompt: ProximityPrompt,
-	sign: BillboardGui,
-	statusLabel: TextLabel,
 }
+
+--[[
+	What the rack's prompt says. Racks have NO floating sign (removed
+	2026-10-21, user decision: 30 signs cluttered the gym); the prompt only
+	shows within PromptMaxDistanceStuds, so a rack's name and whether it is
+	free appear only up close. The occupant's own status is in their menu.
+]]
+local PROMPT_FREE_TEXT = "Train"
+local PROMPT_IN_USE_TEXT = "In use"
 
 local stations: { [string]: Station } = {}
 local registry = TrainingStationRules.newRegistry()
@@ -224,9 +232,9 @@ local function stationTitle(station: Station): string
 end
 
 --[[
-	Updates the rack's sign, its look (bench, J-cups, barbell) and its lifter's
-	position to its current occupant and lift. Called on every occupancy or
-	selection change.
+	Updates the rack's prompt text, its look (bench, J-cups, barbell) and its
+	lifter's position to its current occupant and lift. Called on every
+	occupancy or selection change. (The name is kept from when racks had a sign.)
 ]]
 local function refreshSign(station: Station)
 	local occupant = TrainingStationRules.occupantOf(registry, station.stationId)
@@ -237,17 +245,8 @@ local function refreshSign(station: Station)
 	StationVisuals.show(station.instance, lift)
 	StationPoses.update(station.instance, if session ~= nil then occupant else nil, lift)
 
-	if occupant == nil or session == nil then
-		station.statusLabel.Text = string.format("%s\nFree\nHold [E] to train", stationTitle(station))
-		return
-	end
-
-	station.statusLabel.Text = string.format(
-		"%s \u{2014} %s\n%s",
-		stationTitle(station),
-		(occupant :: Player).Name,
-		TrainingStationRules.statusLine(session)
-	)
+	station.prompt.ObjectText = stationTitle(station)
+	station.prompt.ActionText = if occupant == nil or session == nil then PROMPT_FREE_TEXT else PROMPT_IN_USE_TEXT
 end
 
 --[[
@@ -711,28 +710,6 @@ end
 -- RACK REGISTRATION
 --------------------------------------------------------------------------------
 
-local function makeStatusSign(parent: Instance): (BillboardGui, TextLabel)
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "TrainingStatus"
-	billboard.Size = UDim2.fromOffset(340, 80)
-	billboard.StudsOffset = Vector3.new(0, 7, 0)
-	billboard.MaxDistance = 80
-	billboard.AlwaysOnTop = false
-
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 0.3
-	label.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-	label.TextColor3 = Color3.fromRGB(240, 240, 240)
-	label.TextScaled = true
-	label.Font = Enum.Font.GothamMedium
-	label.Text = ""
-	label.Parent = billboard
-
-	billboard.Parent = parent
-	return billboard, label
-end
-
 --[[
 	Makes a tagged Part or Model a rack. Every rack gets the same single prompt
 	and the same rules; nothing here is specific to one rack.
@@ -767,8 +744,8 @@ local function registerStation(instance: Instance)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "TrainingPrompt"
-	prompt.ActionText = "Train"
-	prompt.ObjectText = "Training Rack"
+	prompt.ActionText = PROMPT_FREE_TEXT
+	prompt.ObjectText = TrainingStationRules.rackTitle(stationId)
 	prompt.KeyboardKeyCode = TrainingStationConfig.PromptKeyboardKey
 	prompt.GamepadKeyCode = TrainingStationConfig.PromptGamepadKey
 	prompt.HoldDuration = TrainingStationConfig.PromptHoldSeconds
@@ -776,14 +753,10 @@ local function registerStation(instance: Instance)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = promptAnchor
 
-	local sign, label = makeStatusSign(promptParent)
-
 	local station: Station = {
 		stationId = stationId,
 		instance = instance,
 		prompt = prompt,
-		sign = sign,
-		statusLabel = label,
 	}
 	stations[stationId] = station
 
@@ -808,7 +781,6 @@ local function unregisterStation(instance: Instance)
 			if anchor then
 				anchor:Destroy()
 			end
-			station.sign:Destroy()
 			log("unregistered rack %s", stationId)
 		end
 	end

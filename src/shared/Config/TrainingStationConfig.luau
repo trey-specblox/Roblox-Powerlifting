@@ -106,7 +106,8 @@ TrainingStationConfig.StationTag = "GymTrainingStation"
 	                 name in Workspace.GymRacks. The sign and menu show the
 	                 trailing number: "Training Rack 01".
 	  template       name of the Model in ServerStorage.RackTemplates.
-	  position       floor centre of the rack (the Baseplate top is Y = 0).
+	  position       floor centre of the rack (Y = GymLayout.floorY, the gym
+	                 floor's top; the Baseplate top is Y = 0).
 	  facingDegrees  turn about the vertical axis. 0 = the J-cup (front) side
 	                 faces -Z, as modelled; 90 = it faces -X. (Checked from both
 	                 templates' .rbxmx files 2026-10-18; older notes said +Z.)
@@ -125,21 +126,23 @@ export type GymRackEntry = {
 }
 
 --[[
-	STARTER GYM FLOOR PLAN (GAME_DESIGN §27, "Option B: three rows", approved
-	2026-10-19). Rows of racks, every rack's open front facing the entrance.
-	The entrance and lobby are at the -Z end, around the place's SpawnLocation
-	(Z -12 to 0); the rows go back from there toward +Z.
+	STARTER GYM FLOOR PLAN (GAME_DESIGN §27: "Option B: three rows", approved
+	2026-10-19; spacing widened for the "version 2" building, 2026-10-21).
+	Rows of racks in the middle of the rack hall, every rack's open front facing
+	the entrance at the -Z end; the rows go back toward +Z. StarterGymConfig
+	works the building out from these numbers.
 
 	Every station uses ComboRack_01 (GAME_DESIGN §34.12 decision 15). A rack's
 	position is the floor centre between its two tall posts; it reaches 3.0
 	studs to the front (-Z at facing 0), 2.05 to the back and 3.95 to each side,
 	the loaded bar reaches about 4.9 to each side, and the lifter needs about
 	7 studs in front (deadlift spot and exit). So:
-	  rackSpacingStuds 12  leaves about 2 studs between neighbouring bars;
-	  rowSpacingStuds  21  leaves about 12 studs of walkway between the
+	  rackSpacingStuds 16  leaves about 6 studs between neighbouring bars;
+	  rowSpacingStuds  28  leaves about 19 studs of walkway between the
 	                       lifting space of one row and the back of the next.
+	(The first layout, 12 and 21, felt too crowded in Studio.)
 
-	The numbers are PROVISIONAL (to be tuned after the stress test). Racks are
+	The numbers are PROVISIONAL. Racks are
 	numbered from the entrance: row 1 is GymRack_01-10, left to right as you
 	walk in (walking toward +Z, your left is +X), row 2 is 11-20, and so on.
 ]]
@@ -151,6 +154,7 @@ export type GymLayout = {
 	rowSpacingStuds: number,
 	firstRowZ: number,
 	rowCentreX: number,
+	floorY: number,
 	facingDegrees: number,
 }
 
@@ -158,10 +162,13 @@ TrainingStationConfig.GymLayout = {
 	template = "ComboRack_01",
 	rows = 3,
 	racksPerRow = 10,
-	rackSpacingStuds = 12,
-	rowSpacingStuds = 21,
+	rackSpacingStuds = 16,
+	rowSpacingStuds = 28,
 	firstRowZ = 25, -- the row nearest the entrance
 	rowCentreX = 0, -- the middle of every row
+	-- Top of the gym floor (StarterGymBuilder), where the racks stand: just above
+	-- the Baseplate (Y 0) so the two surfaces never flicker against each other.
+	floorY = 0.05,
 	facingDegrees = 0, -- open front toward the entrance (-Z)
 } :: GymLayout
 
@@ -175,7 +182,7 @@ local function buildGymRacks(layout: GymLayout): { GymRackEntry }
 				template = layout.template,
 				position = Vector3.new(
 					layout.rowCentreX + halfRow - index * layout.rackSpacingStuds,
-					0,
+					layout.floorY,
 					layout.firstRowZ + row * layout.rowSpacingStuds
 				),
 				facingDegrees = layout.facingDegrees,

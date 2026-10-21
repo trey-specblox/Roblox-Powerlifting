@@ -17,6 +17,15 @@ local TrainingFolder = script:WaitForChild("Training")
 local TrainingStationService = require(TrainingFolder:WaitForChild("TrainingStationService"))
 local RackSpawner = require(TrainingFolder:WaitForChild("RackSpawner"))
 
+local WorldFolder = script:WaitForChild("World")
+local StarterGymBuilder = require(WorldFolder:WaitForChild("StarterGymBuilder"))
+
+--[[
+	The Starter Gym's floors and walls (Starter Gym step 3), around the rack rows.
+	Visual and physical only; if it fails, everything else still starts.
+]]
+StarterGymBuilder.build()
+
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the
 	Git-tracked templates and tagged before TrainingStationService looks for racks.

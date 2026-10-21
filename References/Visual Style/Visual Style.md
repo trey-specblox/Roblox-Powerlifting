@@ -70,6 +70,57 @@ Roblox has to run this on phones too, so the goal is the **feel** of these refer
 10. **"Gym Build" by Warlords** (Roblox case study): https://warlords-portfolio.lovable.app/work/gym-build
     A realistic gym built in Roblox Studio with PBR materials and modular walls. It's a clean commercial gym, not gritty. Look at: how realistic Roblox can get, the modular wall approach and materials.
 
+### Gym building (shell) references — added 2026-10-21
+
+> Found by Claude through web search after the first Studio look at the shell ("too small, too crowded, too basic, the rooms feel unplanned"). Claude could only read the page text, not see the photos, so open each link and judge the pictures yourself.
+
+11. **Academia 2.0, Espinho, Portugal** (architecture article): https://www.metalocus.es/en/news/openness-and-clarity-academia-20-gym-studioworkers
+    Two old warehouses turned into one bright white training hall. Look at: the high pitched roof with skylights, the glass wall between reception and the training hall (you see the gym from the entrance), changing rooms and offices lined up along the hall, classrooms upstairs.
+12. **Gymshark Lifting Club, Solihull, UK** (design case study): https://www.oktra.co.uk/our-work/the-gymshark-lifting-club/
+    A huge former warehouse. Look at: the mezzanine (upper floor) built through the warehouse, the scale of the hall, the outdoor strongman yard.
+13. **Great Northern Warehouse gym concept, Manchester** (news article): https://leisureopportunities.co.uk/news/WGP-Architects-reveal-gym-design-for-historic-Manchester-railway-warehouse/336906
+    An old railway warehouse. Look at: the vaulted steel and brick structure, and the concrete "runway" walkway that runs through the whole space.
+14. **Alphaland, Texas** (magazine feature): https://www.texasmonthly.com/arts-entertainment/welcome-to-alphaland-the-disney-world-for-body-builders/
+    One complex with three different gyms (a luxury one, the original one, a smaller hardcore one). Not for the Starter Gym itself, but an idea for later gyms the player can progress to.
+15. **The most famous gyms in the world** (BarBend list): https://barbend.com/most-famous-gyms-in-the-world/
+    Gold's Gym Venice, Westside Barbell and others. Browse for photos of what a "legendary" gym looks like.
+
+#### Tick what you like (Obsidian checkboxes), or just say it in chat
+
+Building:
+- [ ] A big warehouse hall with a high pitched roof and skylights, bright daylight (ref 11)
+- [ ] A flat, high ceiling with exposed black steel beams and long rows of lights
+- [ ] Brick walls and steel arches, an older industrial look (ref 13)
+- [ ] Painted block walls like Iron Built (the current direction, ref 1)
+
+Where the other rooms go:
+- [ ] At the front, by the entrance, behind glass walls, so you see the gym from reception (ref 11)
+- [ ] Upstairs on a mezzanine along one side, with a balcony looking down on the racks (ref 12)
+- [ ] Along one side as now, but different sizes, with glass fronts
+
+Entrance:
+- [ ] A reception desk and a big gym-name wall right inside the entrance
+- [ ] Big glass front doors and windows
+
+Details that make it feel like a real gym (later, step 6):
+- [ ] Mirrors on the wall
+- [ ] Big wall graphics, the gym's name, murals
+- [ ] A walkway strip (a different floor colour) through the middle of the gym
+- [ ] Plate trees, chalk stands and benches between the rows
+
+Space:
+- [ ] More space between racks and between rows
+- [ ] A higher ceiling
+
+#### Your picks (said in chat, 2026-10-21)
+
+- **Roof:** like the Gymshark Lifting Club's roof with skylights. Not a flat ceiling.
+- **Two floors:** all the racks downstairs. Nice, bright training rooms upstairs, like Academia 2.0.
+- **Entrance:** like Gymshark's, with a reception desk, a gym-name wall and glass doors.
+- **Walls:** things on the walls later (step 6).
+- **Space:** more room between the racks, and two floors with high ceilings.
+- **Follow-up (2026-10-21):** pitched roof approved. Make the gym bigger. Don't put every room on one side: like Academia 2.0, plenty of rooms spread around the gym. Plan: lots of NPCs in those rooms later.
+
 ## Saved images
 
 Add your favorites here. Drag the image into the `Images` folder, then embed it like this:
