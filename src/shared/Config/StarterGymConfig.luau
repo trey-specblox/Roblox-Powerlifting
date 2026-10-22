@@ -15,8 +15,9 @@
 	Built in stages. Stage 1: floors, upper floor slabs, the room blocks'
 	ceilings, every wall and glass front, the rooms. Stage 2: one pitched roof
 	over the whole building with skylights over the hall, gable walls and steel
-	roof beams. Stage 3: the balcony and the two glass staircases. Later: the
-	reception desk and gym-name wall, lights.
+	roof beams. Stage 3: the balcony and the two glass staircases. Stage 4:
+	the reception desk, the gym-name wall and the outside name sign. Later:
+	lights.
 
 	The building's size is WORKED OUT from GymLayout, so adding racks or rows
 	moves the walls with it. Directions (as in GymLayout): the entrance is at
@@ -53,7 +54,9 @@ StarterGymConfig.WallBandHeightStuds = 3 -- the dark strip along the bottom of t
 StarterGymConfig.FloorThicknessStuds = 1
 
 -- Openings.
-StarterGymConfig.LobbyWidthStuds = 70 -- the lobby, in the middle of the front block
+-- The lobby, in the middle of the front block. 90 since 2026-10-21 (was 70):
+-- the user asked for a bigger entrance so the reception desk can be bigger.
+StarterGymConfig.LobbyWidthStuds = 90
 StarterGymConfig.LobbyOpeningWidthStuds = 46 -- the wide opening from the lobby into the hall
 StarterGymConfig.LobbyOpeningHeightStuds = 10
 StarterGymConfig.EntranceWidthStuds = 16 -- in the glass front of the lobby
@@ -115,6 +118,92 @@ StarterGymConfig.TreadThicknessStuds = 0.4
 StarterGymConfig.StairBottomFromSideStuds = 30
 
 --[[
+	The gym's name and the reception (stage 4; GAME_DESIGN §27, user
+	2026-10-21), styled after the Academia 2.0 reception photo: a white
+	counter with a glowing base, a computer, entrance gates, linear lights.
+
+	  - the name wall: a dark sign on the lobby's left wall (as you walk in),
+	    standing off the wall with a glowing halo round its edges, above the
+	    reception desk in front of it;
+	  - the outside sign: the same, on the front of the building above the
+	    entrance, lit by two spotlights;
+	  - the desk: a white counter (raised front ledge, work surface behind,
+	    LED glow along its base), monitor, keyboard and card reader;
+	  - entrance gates across the lobby, in front of the hall: turnstiles and
+	    steel railings, with a wide free lane in the middle. Decoration only:
+	    the turnstile arms are not solid, so nobody is ever blocked;
+	  - a merch wall (shelves with shirts and shakers) opposite the desk;
+	  - a white lobby ceiling with long LED strips and a light bar over the desk.
+]]
+StarterGymConfig.GymName = "ELITE PREP GYM"
+StarterGymConfig.SignThicknessStuds = 0.3
+StarterGymConfig.SignStandOffStuds = 0.6 -- the gap between a sign and its wall, where the halo glows
+StarterGymConfig.SignHaloStuds = 0.25 -- how far the halo shows round the sign's edges
+StarterGymConfig.NameWallHeightStuds = 7
+StarterGymConfig.NameWallBottomStuds = 5 -- above the lobby floor, so the desk does not hide it
+StarterGymConfig.FrontSignWidthStuds = 60
+StarterGymConfig.FrontSignHeightStuds = 8
+StarterGymConfig.FrontSignBottomStuds = 15 -- above the floor, on the wall above the lobby's glass front
+-- The desk: in front of the name wall (which is as long as the desk), facing the middle of the lobby.
+StarterGymConfig.DeskLengthStuds = 22
+StarterGymConfig.DeskDepthStuds = 3.5
+StarterGymConfig.DeskCounterHeightStuds = 4.4 -- the front ledge customers lean on
+StarterGymConfig.DeskWorkHeightStuds = 3 -- the work surface behind it
+StarterGymConfig.DeskGapToWallStuds = 6 -- room behind the desk for the receptionist (an NPC later)
+StarterGymConfig.DeskCentreFromFrontStuds = 15 -- the desk's middle, from the lobby's front wall
+-- An uploaded image cut into pieces (Roblox shrinks images wider than 1024
+-- pixels), shown side by side, left to right, as one picture.
+export type ImagePiece = { image: string, widthPixels: number }
+
+-- The desk's whole front as ONE picture (user, 2026-10-21): their "SBD
+-- Central" logo banner on a white background with chrome trim, a black band
+-- with red lines behind the letters and red and black speed slashes. Drawn by
+-- `art/scripts/build_desk_front.ps1` (22 x 4.1 studs, 3072 x 573 pixels) and
+-- cut into `art/logos/EPG_DeskFront_1-3.png`, because the same details drawn
+-- in Roblox had jagged edges and flickered. Each piece uploaded with the
+-- game's group as creator; IDs as "rbxassetid://<number>", left to right.
+-- Any piece empty = a plain white desk front.
+StarterGymConfig.DeskFrontPieces = {
+	{ image = "rbxassetid://133447969053464", widthPixels = 1024 }, -- EPG_DeskFront_1 (left end)
+	{ image = "rbxassetid://126387502452428", widthPixels = 1024 }, -- EPG_DeskFront_2
+	{ image = "rbxassetid://116605252867039", widthPixels = 1024 }, -- EPG_DeskFront_3 (right end)
+} :: { ImagePiece }
+-- The gym-name signs' background art behind "ELITE PREP GYM" (user,
+-- 2026-10-21: a muscular back; the name stays big in the middle, over it).
+-- Name wall: the user's 2170 x 725 artwork cropped to the wall's 22 x 7
+-- (2170 x 690) and cut into `art/logos/EPG_NameWallArt_1-3.png`; its
+-- see-through edges fade into the dark panel. Any image ID empty = a plain
+-- dark sign.
+StarterGymConfig.NameSignArt = {
+	{ image = "rbxassetid://79949429252377", widthPixels = 723 }, -- EPG_NameWallArt_1 (left end)
+	{ image = "rbxassetid://95378292317440", widthPixels = 723 }, -- EPG_NameWallArt_2
+	{ image = "rbxassetid://98882870153735", widthPixels = 724 }, -- EPG_NameWallArt_3 (right end)
+} :: { ImagePiece }
+StarterGymConfig.NameSignArtHeightPixels = 690
+-- Outside sign (60 x 8, 7.5 times wider than tall): the same art made wide
+-- by `art/scripts/build_front_sign_art.ps1` so it fills the WHOLE sign
+-- (user, 2026-10-21): the sharp figure in the middle on a blurred, darkened,
+-- enlarged copy of itself. Cut into `art/logos/EPG_FrontSignArt_1-4.png`.
+StarterGymConfig.FrontSignArt = {
+	{ image = "rbxassetid://82111432062100", widthPixels = 960 }, -- EPG_FrontSignArt_1 (left end)
+	{ image = "rbxassetid://111820337142904", widthPixels = 960 }, -- EPG_FrontSignArt_2
+	{ image = "rbxassetid://79408703692167", widthPixels = 960 }, -- EPG_FrontSignArt_3
+	{ image = "rbxassetid://118298598117791", widthPixels = 960 }, -- EPG_FrontSignArt_4 (right end)
+} :: { ImagePiece }
+StarterGymConfig.FrontSignArtHeightPixels = 512
+-- The gates: a line across the lobby this far in front of the hall's glass.
+StarterGymConfig.GateLineFromHallStuds = 5
+StarterGymConfig.GateFreeLaneStuds = 16 -- the open middle lane (as wide as the entrance)
+StarterGymConfig.GateLaneStuds = 4 -- each turnstile lane
+StarterGymConfig.TurnstilesPerSide = 2
+-- The lights.
+StarterGymConfig.CeilingStripCount = 4
+StarterGymConfig.CeilingStripWidthStuds = 0.4
+StarterGymConfig.SignTextColor = Color3.fromRGB(255, 255, 255)
+StarterGymConfig.SignAccentColor = Color3.fromRGB(200, 32, 40) -- the red of the 25 kg plates
+StarterGymConfig.LightColor = Color3.fromRGB(255, 250, 240) -- a clean, slightly warm white
+
+--[[
 	The rooms (GAME_DESIGN §27: names are PLACEHOLDERS until the NPCs are
 	designed; a name here is only the room's name in Workspace). Each becomes an
 	invisible region part "Room_<Name>" in Workspace.StarterGym.Rooms, with its
@@ -135,7 +224,7 @@ StarterGymConfig.Rooms = {
 	CornerUpper = { Left = "CornerLeftUpper", Right = "CornerRightUpper" },
 }
 
-export type Look = { material: Enum.Material, color: Color3, transparency: number? }
+export type Look = { material: Enum.Material, color: Color3, transparency: number?, reflectance: number? }
 
 -- Bright and clean, black rubber under the racks (References/Visual Style).
 StarterGymConfig.Looks = {
@@ -144,13 +233,31 @@ StarterGymConfig.Looks = {
 	RoomFloor = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(205, 205, 200) },
 	WallPaint = { material = Enum.Material.Plaster, color = Color3.fromRGB(228, 228, 224) },
 	WallBand = { material = Enum.Material.Concrete, color = Color3.fromRGB(62, 62, 66) },
-	Glass = { material = Enum.Material.Glass, color = Color3.fromRGB(196, 218, 230), transparency = 0.7 },
+	-- Not the Glass material: Roblox hides see-through things behind Glass,
+	-- signs included, so the lobby's logos were invisible from outside
+	-- (user, 2026-10-21). Clear plastic with a little shine instead.
+	Glass = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(196, 218, 230), transparency = 0.7,
+		reflectance = 0.15 },
 	-- The pitched roof is seen from below in the hall, so it stays light (bright and clean).
 	HallRoof = { material = Enum.Material.Metal, color = Color3.fromRGB(212, 214, 218) },
 	Skylight = { material = Enum.Material.Glass, color = Color3.fromRGB(205, 228, 240), transparency = 0.55 },
 	SteelBeam = { material = Enum.Material.Metal, color = Color3.fromRGB(38, 38, 42) },
 	-- Glass steps: less see-through than the walls, so players can see where to step.
 	StairGlass = { material = Enum.Material.Glass, color = Color3.fromRGB(200, 224, 236), transparency = 0.35 },
+	-- Reception: a white desk, dark name signs with white letters, steel gates.
+	DeskBody = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(242, 242, 240) },
+	DeskWork = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(222, 222, 220) },
+	DeskPlinth = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(28, 28, 30) },
+	SignPanel = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(22, 22, 24) },
+	Gadget = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(18, 18, 20) }, -- monitor, keyboard
+	Stainless = { material = Enum.Material.Metal, color = Color3.fromRGB(200, 202, 206) },
+	TurnstileBody = { material = Enum.Material.Metal, color = Color3.fromRGB(42, 42, 46) },
+	Ceiling = { material = Enum.Material.Plaster, color = Color3.fromRGB(246, 246, 244) },
+	GlowWhite = { material = Enum.Material.Neon, color = Color3.fromRGB(255, 250, 240) },
+	GlowGreen = { material = Enum.Material.Neon, color = Color3.fromRGB(60, 220, 110) },
+	ShirtBlack = { material = Enum.Material.Fabric, color = Color3.fromRGB(26, 26, 28) },
+	ShirtWhite = { material = Enum.Material.Fabric, color = Color3.fromRGB(235, 235, 232) },
+	ShirtRed = { material = Enum.Material.Fabric, color = Color3.fromRGB(190, 30, 38) },
 } :: { [string]: Look }
 
 --[[

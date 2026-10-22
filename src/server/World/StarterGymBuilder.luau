@@ -27,7 +27,10 @@
 	          left, front and right sides, glass railing, steel columns.
 	  Stairs  two glass staircases from the hall's front corners up to the
 	          side balconies (upstairs is now reachable).
-	Later stages: reception desk and gym-name wall, lights.
+	STAGE 4:
+	  Reception the reception desk and the gym-name wall in the lobby, and
+	          the name sign outside above the entrance ("ELITE PREP GYM").
+	Later stages: lights.
 
 	Visual and physical only: no gameplay rule, credit or player data changes.
 	FAILS CLOSED: if anything goes wrong the half-built gym is removed with a
@@ -65,6 +68,7 @@ local function placed(parent: Instance, name: string, size: Vector3, cframe: CFr
 	part.Material = look.material
 	part.Color = look.color
 	part.Transparency = look.transparency or 0
+	part.Reflectance = look.reflectance or 0
 	part.Size = size
 	part.CFrame = cframe
 	part.Parent = parent
@@ -448,6 +452,414 @@ local function buildBalconyAndStairs(model: Model, plan: StarterGymConfig.Footpr
 	return steps
 end
 
+-- True when every piece of an uploaded image (StarterGymConfig.ImagePiece) has its ID.
+local function piecesReady(pieces: { StarterGymConfig.ImagePiece }): boolean
+	if #pieces == 0 then
+		return false
+	end
+	for _, piece in ipairs(pieces) do
+		if piece.image == "" then
+			return false
+		end
+	end
+	return true
+end
+
+-- The pieces side by side in `frame`, left to right, each as wide as its share
+-- of the picture, so together they fill the frame as one image.
+local function addImagePieces(frame: GuiObject, pieces: { StarterGymConfig.ImagePiece })
+	local totalPixels = 0
+	for _, piece in ipairs(pieces) do
+		totalPixels += piece.widthPixels
+	end
+	local before = 0
+	for index, piece in ipairs(pieces) do
+		local image = Instance.new("ImageLabel")
+		image.Name = string.format("Piece_%d", index)
+		image.Position = UDim2.fromScale(before / totalPixels, 0)
+		image.Size = UDim2.fromScale(piece.widthPixels / totalPixels, 1)
+		image.BackgroundTransparency = 1
+		image.Image = piece.image
+		image.ScaleType = Enum.ScaleType.Stretch
+		image.Parent = frame
+		before += piece.widthPixels
+	end
+end
+
+--[[
+	The gym's name on one face of a sign panel: big white letters with a short
+	red line under them, over the panel's background art when it has any
+	(`art`, `artHeightPixels` tall: at the panel's full height, in the middle,
+	as wide as its shape allows up to the panel's width; the letters then get
+	a black outline to stand out from it). The sign ignores the room's light
+	(LightInfluence 0), so it stays readable in the dim lobby and at night.
+]]
+local function nameOnPanel(panel: BasePart, face: Enum.NormalId, text: string, art: { StarterGymConfig.ImagePiece }?,
+	artHeightPixels: number?)
+	local cfg = StarterGymConfig
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "GymName"
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 25
+	gui.LightInfluence = 0
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.Parent = panel
+
+	local hasArt = art ~= nil and artHeightPixels ~= nil and piecesReady(art)
+	if art and artHeightPixels and hasArt then
+		-- The face's size in studs: Left/Right faces run along Z, Front/Back along X.
+		local width = if face == Enum.NormalId.Left or face == Enum.NormalId.Right then panel.Size.Z else panel.Size.X
+		local artPixels = 0
+		for _, piece in ipairs(art) do
+			artPixels += piece.widthPixels
+		end
+		local artWidth = math.min(width, panel.Size.Y * artPixels / artHeightPixels)
+		local background = Instance.new("Frame")
+		background.Name = "Art"
+		background.AnchorPoint = Vector2.new(0.5, 0.5)
+		background.Position = UDim2.fromScale(0.5, 0.5)
+		background.Size = UDim2.fromScale(artWidth / width, 1)
+		background.BackgroundTransparency = 1
+		background.ZIndex = 1
+		background.Parent = gui
+		addImagePieces(background, art)
+	end
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Name"
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.44)
+	label.Size = UDim2.fromScale(0.88, 0.5)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = cfg.SignTextColor
+	label.TextScaled = true
+	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	label.ZIndex = 2
+	label.Parent = gui
+	if hasArt then
+		local outline = Instance.new("UIStroke")
+		outline.Color = Color3.fromRGB(0, 0, 0)
+		outline.Thickness = 3
+		outline.Parent = label
+	end
+
+	local accent = Instance.new("Frame")
+	accent.Name = "Accent"
+	accent.AnchorPoint = Vector2.new(0.5, 0.5)
+	accent.Position = UDim2.fromScale(0.5, 0.8)
+	accent.Size = UDim2.fromScale(0.3, 0.045)
+	accent.BorderSizePixel = 0
+	accent.BackgroundColor3 = cfg.SignAccentColor
+	accent.ZIndex = 2
+	accent.Parent = gui
+end
+
+--[[
+	STAGE 4: the reception and the gym's name (GAME_DESIGN §27), styled after
+	the Academia 2.0 reception photo the user picked. See StarterGymConfig for
+	the list. The name wall stands on the lobby's left wall (+X, your left as
+	you walk in), with the desk in front of it facing the middle of the lobby.
+]]
+
+-- A light-giving face on a part (SurfaceLight), in the gym's clean white.
+local function surfaceLight(part: BasePart, face: Enum.NormalId, range: number, brightness: number, angle: number)
+	local light = Instance.new("SurfaceLight")
+	light.Face = face
+	light.Range = range
+	light.Brightness = brightness
+	light.Angle = angle
+	light.Color = StarterGymConfig.LightColor
+	light.Shadows = false
+	light.Parent = part
+end
+
+-- Small decoration (items on shelves and desks, cables, turnstile arms): not
+-- solid, so it never snags a player, and ignored by spatial checks.
+local function decor(part: BasePart): BasePart
+	part.CanCollide = false
+	part.CanQuery = false
+	part:SetAttribute("Decor", true)
+	return part
+end
+
+-- The check-in screen on the reception monitor (facing the receptionist).
+local function checkInScreen(screen: BasePart, face: Enum.NormalId)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "CheckInScreen"
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 100
+	gui.LightInfluence = 0
+	gui.Parent = screen
+	local background = Instance.new("Frame")
+	background.Size = UDim2.fromScale(1, 1)
+	background.BorderSizePixel = 0
+	background.BackgroundColor3 = Color3.fromRGB(16, 24, 40)
+	background.Parent = gui
+	local function line(text: string, y: number, height: number, color: Color3)
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Position = UDim2.fromScale(0.08, y)
+		label.Size = UDim2.fromScale(0.84, height)
+		label.Text = text
+		label.TextColor3 = color
+		label.TextScaled = true
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold)
+		label.Parent = background
+	end
+	line(StarterGymConfig.GymName, 0.1, 0.16, Color3.fromRGB(255, 255, 255))
+	line("Member check-in", 0.32, 0.11, Color3.fromRGB(160, 175, 200))
+	line("Ready", 0.62, 0.12, Color3.fromRGB(80, 220, 120))
+end
+
+--[[
+	The desk's front: one picture covering the whole face (the user's logo and
+	its background, drawn by art/scripts/build_desk_front.ps1), from the
+	uploaded pieces in StarterGymConfig.DeskFrontPieces. Nothing is added
+	(a plain white front) until every piece's image ID is set.
+]]
+local function deskFront(front: BasePart, face: Enum.NormalId)
+	local cfg = StarterGymConfig
+	if not piecesReady(cfg.DeskFrontPieces) then
+		return
+	end
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "DeskFront"
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 100
+	gui.LightInfluence = 0
+	gui.Parent = front
+
+	local picture = Instance.new("Frame")
+	picture.Name = "Picture"
+	picture.Size = UDim2.fromScale(1, 1)
+	picture.BackgroundTransparency = 1
+	picture.Parent = gui
+	addImagePieces(picture, cfg.DeskFrontPieces)
+end
+
+--[[
+	A sign that stands off its wall with a glowing halo behind it. `out` is the
+	unit direction from the wall into the room or street; `face` is the sign
+	face that points that way. The panel and halo are given by their centre,
+	width (along the wall) and height.
+]]
+local function haloSign(parent: Instance, name: string, wallPoint: Vector3, out: Vector3, alongWall: Vector3,
+	width: number, height: number, face: Enum.NormalId, art: { StarterGymConfig.ImagePiece }?,
+	artHeightPixels: number?): BasePart
+	local cfg = StarterGymConfig
+	local function slab(partName: string, fromWall: number, toWall: number, w: number, h: number,
+		look: StarterGymConfig.Look): BasePart
+		local a = wallPoint + out * fromWall - alongWall * (w / 2) - Vector3.new(0, h / 2, 0)
+		local b = wallPoint + out * toWall + alongWall * (w / 2) + Vector3.new(0, h / 2, 0)
+		local low = Vector3.new(math.min(a.X, b.X), math.min(a.Y, b.Y), math.min(a.Z, b.Z))
+		local high = Vector3.new(math.max(a.X, b.X), math.max(a.Y, b.Y), math.max(a.Z, b.Z))
+		return box(parent, partName, low, high, look)
+	end
+	local halo = slab(name .. "_Halo", 0.05, cfg.SignStandOffStuds - 0.05, width + 2 * cfg.SignHaloStuds,
+		height + 2 * cfg.SignHaloStuds, cfg.Looks.GlowWhite)
+	local glow = Instance.new("PointLight")
+	glow.Range = 10
+	glow.Brightness = 1
+	glow.Color = cfg.LightColor
+	glow.Shadows = false
+	glow.Parent = halo
+	local panel = slab(name, cfg.SignStandOffStuds, cfg.SignStandOffStuds + cfg.SignThicknessStuds, width, height,
+		cfg.Looks.SignPanel)
+	nameOnPanel(panel, face, cfg.GymName, art, artHeightPixels)
+	return panel
+end
+
+local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
+	local cfg = StarterGymConfig
+	local looks = cfg.Looks
+	local t = cfg.WallThicknessStuds
+	local cx, floorY = plan.centreX, plan.floorY
+	local lobbyHalf = plan.lobbyHalfWidth
+	local lobbyFrontZ, lobbyBackZ = plan.frontZ, plan.hallFrontZ - t
+	local ceilingY = plan.upperSlabBottomY
+	local leftWallX, rightWallX = cx + lobbyHalf - t / 2, cx - lobbyHalf + t / 2 -- the lobby walls' inner faces
+
+	local reception = Instance.new("Folder")
+	reception.Name = "Reception"
+	reception.Parent = model
+
+	-- ---------------------------------------------------------------- the desk
+	local deskZ = lobbyFrontZ + cfg.DeskCentreFromFrontStuds
+	local z0, z1 = deskZ - cfg.DeskLengthStuds / 2, deskZ + cfg.DeskLengthStuds / 2
+	local backX = leftWallX - cfg.DeskGapToWallStuds
+	local frontX = backX - cfg.DeskDepthStuds -- the side customers stand at (-X)
+	local counterY, workY = floorY + cfg.DeskCounterHeightStuds, floorY + cfg.DeskWorkHeightStuds
+
+	-- A dark plinth set back under the desk, with a glowing strip along the front: the desk seems to float.
+	box(reception, "Desk_Plinth", Vector3.new(frontX + 0.5, floorY, z0 + 0.3), Vector3.new(backX - 0.2, floorY + 0.3, z1 - 0.3),
+		looks.DeskPlinth)
+	local baseGlow = box(reception, "Desk_BaseGlow", Vector3.new(frontX + 0.45, floorY, z0 + 0.3),
+		Vector3.new(frontX + 0.6, floorY + 0.25, z1 - 0.3), looks.GlowWhite)
+	surfaceLight(baseGlow, Enum.NormalId.Left, 6, 1.5, 150)
+	local frontPanel = box(reception, "Desk_Front", Vector3.new(frontX, floorY + 0.3, z0), Vector3.new(frontX + 0.6, counterY, z1),
+		looks.DeskBody)
+	deskFront(frontPanel, Enum.NormalId.Left) -- Left = -X, the customers' side
+	box(reception, "Desk_Ledge", Vector3.new(frontX - 0.15, counterY, z0), Vector3.new(frontX + 1.4, counterY + 0.2, z1),
+		looks.DeskBody)
+	box(reception, "Desk_Cabinet", Vector3.new(frontX + 0.6, floorY + 0.3, z0 + 0.5), Vector3.new(backX, workY - 0.2, z1 - 0.5),
+		looks.DeskBody)
+	box(reception, "Desk_Work", Vector3.new(frontX + 0.6, workY - 0.2, z0), Vector3.new(backX + 0.3, workY, z1), looks.DeskWork)
+	-- The end panels start behind the front panel: sharing its face made the picture flicker.
+	box(reception, "Desk_End_1", Vector3.new(frontX + 0.6, floorY + 0.3, z0), Vector3.new(backX, counterY, z0 + 0.5),
+		looks.DeskBody)
+	box(reception, "Desk_End_2", Vector3.new(frontX + 0.6, floorY + 0.3, z1 - 0.5), Vector3.new(backX, counterY, z1),
+		looks.DeskBody)
+
+	-- On the desk: a monitor and keyboard for the receptionist, a card reader on the ledge.
+	local m = deskZ - 3
+	decor(box(reception, "Monitor_Base", Vector3.new(backX - 1.3, workY, m - 0.4), Vector3.new(backX - 0.5, workY + 0.08, m + 0.4),
+		looks.Gadget))
+	decor(box(reception, "Monitor_Neck", Vector3.new(backX - 1.0, workY, m - 0.08), Vector3.new(backX - 0.85, workY + 1.0, m + 0.08),
+		looks.Gadget))
+	local screen = decor(box(reception, "Monitor_Screen", Vector3.new(backX - 1.15, workY + 0.8, m - 1.2),
+		Vector3.new(backX - 1.0, workY + 2.2, m + 1.2), looks.Gadget))
+	checkInScreen(screen, Enum.NormalId.Right) -- Right = +X, toward the receptionist
+	decor(box(reception, "Keyboard", Vector3.new(backX - 0.6, workY, m - 0.9), Vector3.new(backX - 0.25, workY + 0.07, m + 0.9),
+		looks.Gadget))
+	local reader = deskZ + 6
+	decor(box(reception, "CardReader", Vector3.new(frontX + 0.1, counterY + 0.2, reader - 0.3),
+		Vector3.new(frontX + 0.6, counterY + 0.35, reader + 0.3), looks.Gadget))
+	decor(box(reception, "CardReader_Screen", Vector3.new(frontX + 0.2, counterY + 0.35, reader - 0.15),
+		Vector3.new(frontX + 0.5, counterY + 0.37, reader + 0.15), looks.GlowGreen))
+
+	-- A light bar hanging over the desk on two thin cables.
+	local barX = frontX + 1.8
+	local barY = counterY + 5.4
+	local bar = box(reception, "Desk_LightBar", Vector3.new(barX - 0.2, barY, z0 + 2), Vector3.new(barX + 0.2, barY + 0.2, z1 - 2),
+		looks.GlowWhite)
+	surfaceLight(bar, Enum.NormalId.Bottom, 10, 1.3, 120)
+	for index, z in ipairs({ z0 + 4, z1 - 4 }) do
+		decor(box(reception, string.format("Desk_LightCable_%d", index), Vector3.new(barX - 0.04, barY + 0.2, z - 0.04),
+			Vector3.new(barX + 0.04, ceilingY - 0.2, z + 0.04), looks.Stainless))
+	end
+
+	-- ---------------------------------------------------------------- the name wall
+	-- As long as the desk, high enough to be seen over it.
+	haloSign(reception, "NameWall",
+		Vector3.new(leftWallX, floorY + cfg.NameWallBottomStuds + cfg.NameWallHeightStuds / 2, deskZ),
+		-Vector3.xAxis, Vector3.zAxis, cfg.DeskLengthStuds, cfg.NameWallHeightStuds, Enum.NormalId.Left, cfg.NameSignArt,
+		cfg.NameSignArtHeightPixels)
+
+	-- ---------------------------------------------------------------- the ceiling and its lights
+	box(reception, "Lobby_Ceiling", Vector3.new(rightWallX, ceilingY - 0.2, lobbyFrontZ), Vector3.new(leftWallX, ceilingY, lobbyBackZ),
+		looks.Ceiling)
+	local stripSpacing = 2 * lobbyHalf / cfg.CeilingStripCount
+	for index = 1, cfg.CeilingStripCount do
+		local x = cx - lobbyHalf + (index - 0.5) * stripSpacing
+		local half = cfg.CeilingStripWidthStuds / 2
+		local strip = decor(box(reception, string.format("Lobby_LightStrip_%d", index),
+			Vector3.new(x - half, ceilingY - 0.3, lobbyFrontZ + 2), Vector3.new(x + half, ceilingY - 0.2, lobbyBackZ - 2),
+			looks.GlowWhite))
+		surfaceLight(strip, Enum.NormalId.Bottom, 16, 1, 160)
+	end
+
+	-- ---------------------------------------------------------------- the entrance gates
+	-- Across the lobby, in front of the hall: a free middle lane, then per side
+	-- turnstiles with lanes, then a railing to the wall (on the desk's side, to
+	-- the desk's front, leaving the receptionist's way behind the desk open).
+	local gateZ = lobbyBackZ - cfg.GateLineFromHallStuds
+	local function railing(name: string, xa: number, xb: number)
+		local x0, x1 = math.min(xa, xb), math.max(xa, xb)
+		local posts = math.max(1, math.ceil((x1 - x0) / 6))
+		for index = 0, posts do
+			local x = x0 + (x1 - x0) * index / posts
+			box(reception, string.format("%s_Post_%d", name, index), Vector3.new(x - 0.15, floorY, gateZ - 0.15),
+				Vector3.new(x + 0.15, floorY + 3.4, gateZ + 0.15), looks.Stainless)
+		end
+		box(reception, name .. "_TopRail", Vector3.new(x0, floorY + 3.2, gateZ - 0.1), Vector3.new(x1, floorY + 3.4, gateZ + 0.1),
+			looks.Stainless)
+		box(reception, name .. "_MidRail", Vector3.new(x0, floorY + 1.6, gateZ - 0.08), Vector3.new(x1, floorY + 1.75, gateZ + 0.08),
+			looks.Stainless)
+	end
+	for _, sign in ipairs({ 1, -1 }) do
+		local label = if sign == 1 then "Left" else "Right"
+		local offset = cfg.GateFreeLaneStuds / 2
+		for index = 1, cfg.TurnstilesPerSide do
+			local a, b = cx + sign * offset, cx + sign * (offset + 1)
+			local x0, x1 = math.min(a, b), math.max(a, b)
+			local prefix = string.format("Turnstile_%s_%d", label, index)
+			box(reception, prefix, Vector3.new(x0, floorY, gateZ - 0.6), Vector3.new(x1, floorY + 3.2, gateZ + 0.6),
+				looks.TurnstileBody)
+			box(reception, prefix .. "_Cap", Vector3.new(x0 - 0.05, floorY + 3.2, gateZ - 0.65),
+				Vector3.new(x1 + 0.05, floorY + 3.35, gateZ + 0.65), looks.Stainless)
+			decor(box(reception, prefix .. "_Light", Vector3.new(x0 + 0.3, floorY + 3.35, gateZ - 0.15),
+				Vector3.new(x1 - 0.3, floorY + 3.42, gateZ + 0.15), looks.GlowGreen))
+			-- The arm reaches across its lane; it is not solid, so the lane is always open.
+			local armA, armB = cx + sign * (offset + 1), cx + sign * (offset + 1 + cfg.GateLaneStuds - 0.6)
+			decor(box(reception, prefix .. "_Arm", Vector3.new(math.min(armA, armB), floorY + 2.7, gateZ - 0.07),
+				Vector3.new(math.max(armA, armB), floorY + 2.85, gateZ + 0.07), looks.Stainless))
+			offset += 1 + cfg.GateLaneStuds
+		end
+		local railEnd = if sign == 1 then frontX - 0.5 else rightWallX
+		railing("GateRailing_" .. label, cx + sign * offset, railEnd)
+	end
+
+	-- ---------------------------------------------------------------- the merch wall
+	-- Opposite the desk: a dark back panel, three white shelves lit from below,
+	-- shakers on top, folded shirts below.
+	local merchZ = deskZ
+	box(reception, "Merch_Back", Vector3.new(rightWallX, floorY + 2.5, merchZ - 7), Vector3.new(rightWallX + 0.2, floorY + 9.5, merchZ + 7),
+		looks.SignPanel)
+	local shirtLooks = { looks.ShirtBlack, looks.ShirtWhite, looks.ShirtRed }
+	for shelf, height in ipairs({ 7.5, 5.5, 3.5 }) do
+		local y = floorY + height
+		box(reception, string.format("Merch_Shelf_%d", shelf), Vector3.new(rightWallX + 0.2, y, merchZ - 6),
+			Vector3.new(rightWallX + 1.5, y + 0.2, merchZ + 6), looks.DeskBody)
+		decor(box(reception, string.format("Merch_ShelfGlow_%d", shelf), Vector3.new(rightWallX + 0.3, y - 0.06, merchZ - 5.8),
+			Vector3.new(rightWallX + 1.3, y, merchZ + 5.8), looks.GlowWhite))
+		for item = 0, 5 do
+			local z = merchZ - 5 + item * 2
+			if shelf == 1 then
+				-- A cylinder runs along its X axis, so it is turned upright.
+				local shaker: any = decor(placed(reception, string.format("Merch_Shaker_%d", item + 1),
+					Vector3.new(0.9, 0.45, 0.45), CFrame.new(rightWallX + 0.85, y + 0.2 + 0.45, z) * CFrame.Angles(0, 0, math.pi / 2),
+					if item % 2 == 0 then looks.Gadget else looks.ShirtRed))
+				shaker.Shape = Enum.PartType.Cylinder
+			else
+				for fold = 0, 2 do
+					decor(box(reception, string.format("Merch_Shirt_%d_%d_%d", shelf, item + 1, fold + 1),
+						Vector3.new(rightWallX + 0.35, y + 0.2 + fold * 0.3, z - 0.7),
+						Vector3.new(rightWallX + 1.35, y + 0.2 + (fold + 1) * 0.3 - 0.02, z + 0.7),
+						shirtLooks[(item + fold + shelf) % 3 + 1]))
+				end
+			end
+		end
+	end
+
+	-- ---------------------------------------------------------------- outside
+	-- The name sign on the front wall above the entrance, with its halo and two spotlights.
+	local outsideZ = plan.frontZ - t
+	local signY = floorY + cfg.FrontSignBottomStuds + cfg.FrontSignHeightStuds / 2
+	haloSign(reception, "FrontSign", Vector3.new(cx, signY, outsideZ), -Vector3.zAxis, Vector3.xAxis,
+		cfg.FrontSignWidthStuds, cfg.FrontSignHeightStuds, Enum.NormalId.Front, cfg.FrontSignArt,
+		cfg.FrontSignArtHeightPixels)
+	for index, x in ipairs({ cx - cfg.FrontSignWidthStuds / 4, cx + cfg.FrontSignWidthStuds / 4 }) do
+		local lampY = signY + cfg.FrontSignHeightStuds / 2 + 1.4
+		decor(box(reception, string.format("FrontSign_LampArm_%d", index), Vector3.new(x - 0.08, lampY - 0.08, outsideZ - 2.2),
+			Vector3.new(x + 0.08, lampY + 0.08, outsideZ), looks.Stainless))
+		-- Tilted so its bottom face looks down and back onto the sign.
+		local lamp = decor(placed(reception, string.format("FrontSign_Lamp_%d", index), Vector3.new(0.8, 0.5, 0.8),
+			CFrame.new(x, lampY, outsideZ - 2.4) * CFrame.Angles(math.rad(-35), 0, 0), looks.Gadget))
+		local spot = Instance.new("SpotLight")
+		spot.Face = Enum.NormalId.Bottom
+		spot.Angle = 70
+		spot.Range = 14
+		spot.Brightness = 2
+		spot.Color = cfg.LightColor
+		spot.Parent = lamp
+	end
+end
+
 -- Builds the gym into `model` and returns a one-line summary for the Output.
 local function buildGym(model: Model): string
 	local cfg = StarterGymConfig
@@ -620,6 +1032,7 @@ local function buildGym(model: Model): string
 
 	local skylights = buildRoof(roofs, plan)
 	local steps = buildBalconyAndStairs(model, plan)
+	buildReception(model, plan)
 
 	for name, value in pairs({
 		HallMin = Vector3.new(cx - hallHalf, floorY, hallFrontZ),

@@ -849,6 +849,24 @@ Comp max testing
 > - **Entrance** (in the front block): **glass doors**, a lobby with the
 >   **spawn**, a **reception desk** and a **gym-name wall**, and a glass wall
 >   with a wide opening into the rack hall.
+> - **Gym name: "ELITE PREP GYM"** (user, 2026-10-21). It is shown on the
+>   **name wall behind the reception desk** (the lobby's left wall as you
+>   walk in) and **on the front of the building outside, above the
+>   entrance**.
+> - **Reception style** (user, 2026-10-21, from the Academia 2.0 reception
+>   photo): a bigger lobby and a better-built desk with a computer and other
+>   reception things, entrance gates, lights and glowing sign effects.
+>   Decoration only: the gates never block anyone and nothing here has
+>   gameplay yet (the receptionist can become an NPC later).
+> - **Desk logo** (user, 2026-10-21): the user's own **"SBD Central"** logo
+>   on the front of the white reception desk, as uploaded images owned by
+>   the game's group: the wide version (a barbell over "SBD CENTRAL" on one
+>   line), as big as the desk front allows. The desk front is not bare: white
+>   marble, chrome trim, a black band with red lines behind the letters, and
+>   red and black speed slashes at both ends.
+> - **Name wall art** (user, 2026-10-21): the "ELITE PREP GYM" sign behind
+>   the desk gets background artwork of a **muscular back** behind the
+>   letters (made by the user, uploaded by the game's group).
 > - Wall decoration (mirrors, graphics, the gym name) comes later.
 > - The exact numbers are **[PROVISIONAL]**: rack spacing in
 >   `TrainingStationConfig.GymLayout`, the building in `StarterGymConfig`.

@@ -19,6 +19,13 @@
 	    column or stair in the 4 studs in front of it); both glass staircases
 	    have every step, end level with the balcony, land on it with nothing in
 	    the way, and can be stepped onto;
+	  - stage 4: the gym's name is on the name wall and the outside sign; the
+	    monitor's check-in screen and the reception lights exist; the desk
+	    front picture (DeskFrontPieces) with no part sharing its face; the
+	    back art (NameSignArt) on both name signs; no Glass material on walls
+	    or windows (it hides the signs from outside); the way from
+	    the entrance through the gates into the hall is clear; the spawn does
+	    not overlap the reception;
 	  - stage 2: the whole hall is under the roof (upward rays all hit it),
 	    seen from above the whole building is the pitched roof (no flat roof
 	    tops), and the skylights exist;
@@ -77,22 +84,23 @@ local function run()
 		return
 	end
 	local folders = {}
-	for _, name in ipairs({ "Floors", "Roofs", "Walls", "Rooms", "Balcony", "Stairs" }) do
+	for _, name in ipairs({ "Floors", "Roofs", "Walls", "Rooms", "Balcony", "Stairs", "Reception" }) do
 		folders[name] = model:FindFirstChild(name)
 	end
 	local allFolders = folders.Floors and folders.Roofs and folders.Walls and folders.Rooms and folders.Balcony
-		and folders.Stairs
-	check(allFolders ~= nil, "it has Floors, Roofs, Walls, Rooms, Balcony and Stairs")
+		and folders.Stairs and folders.Reception
+	check(allFolders ~= nil, "it has Floors, Roofs, Walls, Rooms, Balcony, Stairs and Reception")
 	if not allFolders then
 		return
 	end
 
 	-- Solid parts.
 	local partCount, loose = 0, 0
-	for _, f in ipairs({ folders.Floors, folders.Roofs, folders.Walls, folders.Balcony, folders.Stairs }) do
+	for _, f in ipairs({ folders.Floors, folders.Roofs, folders.Walls, folders.Balcony, folders.Stairs, folders.Reception }) do
 		for _, d in ipairs(f:GetDescendants()) do
-			-- The glass steps are for looks only (players walk on the stairs' ramps).
-			if d:IsA("BasePart") and not string.find(d.Name, "_Tread_", 1, true) then
+			-- The glass steps are for looks only (players walk on the stairs' ramps), and
+			-- small decoration (attribute Decor: shelf items, cables, turnstile arms) is not solid on purpose.
+			if d:IsA("BasePart") and not string.find(d.Name, "_Tread_", 1, true) and d:GetAttribute("Decor") ~= true then
 				partCount += 1
 				if not (d.Anchored and d.CanCollide) then
 					loose += 1
@@ -120,9 +128,9 @@ local function run()
 	-- (railings, columns) and the stairs.
 	local wallParams = OverlapParams.new()
 	wallParams.FilterType = Enum.RaycastFilterType.Include
-	wallParams.FilterDescendantsInstances = { folders.Walls, folders.Balcony, folders.Stairs }
+	wallParams.FilterDescendantsInstances = { folders.Walls, folders.Balcony, folders.Stairs, folders.Reception }
 	-- The same without the stairs' ramps: a ramp is the way ONTO its stairs, not in the way.
-	local notRamps: { Instance } = { folders.Walls, folders.Balcony }
+	local notRamps: { Instance } = { folders.Walls, folders.Balcony, folders.Reception }
 	for _, part in ipairs(folders.Stairs:GetChildren()) do
 		if string.sub(part.Name, -5) ~= "_Ramp" then
 			table.insert(notRamps, part)
@@ -348,7 +356,120 @@ local function run()
 	check(#entranceHits == 0, string.format("entrance open (%g wide, %g high)%s", gym.EntranceWidthStuds,
 		gym.EntranceHeightStuds, if #entranceHits > 0 then " (blocked by " .. table.concat(entranceHits, ", ") .. ")" else ""))
 
-	-- Spawns: in the lobby.
+	-- Stage 4: the gym's name twice (name wall, outside sign), the check-in
+	-- screen, and the lights (ceiling strips, desk glow and light bar, two sign
+	-- halos, two spotlights).
+	local names, rightNames = 0, 0
+	for _, d in ipairs(folders.Reception:GetDescendants()) do
+		if d:IsA("SurfaceGui") and d.Name == "GymName" then
+			names += 1
+			local label = d:FindFirstChild("Name")
+			if label and label:IsA("TextLabel") and label.Text == gym.GymName then
+				rightNames += 1
+			end
+		end
+	end
+	check(names == 2 and rightNames == 2, string.format("the name \"%s\" is on the name wall and the outside sign (%d of 2)",
+		gym.GymName, rightNames))
+	local screens, lights = 0, 0
+	for _, d in ipairs(folders.Reception:GetDescendants()) do
+		if d:IsA("SurfaceGui") and d.Name == "CheckInScreen" then
+			screens += 1
+		elseif d:IsA("Light") then
+			lights += 1
+		end
+	end
+	local expectedLights = gym.CeilingStripCount + 6
+	check(screens == 1 and lights == expectedLights, string.format(
+		"reception: the monitor's check-in screen (%d) and %d lights (%d found)", screens, expectedLights, lights))
+	-- Uploaded pictures (StarterGymConfig.ImagePiece lists): how many of the
+	-- pieces sit in `holder` as Piece_<n> with their image, and how many IDs
+	-- are still empty in the config.
+	local function piecesIn(holder: Instance?, pieces: { any }): (number, number)
+		local right, empty = 0, 0
+		for index, piece in ipairs(pieces) do
+			if piece.image == "" then
+				empty += 1
+			else
+				local image = holder and holder:FindFirstChild(string.format("Piece_%d", index))
+				if image and image:IsA("ImageLabel") and image.Image == piece.image then
+					right += 1
+				end
+			end
+		end
+		return right, empty
+	end
+
+	-- The desk's front, facing the customers (-X): one picture (logo and
+	-- background), every uploaded piece in order.
+	local deskFront = folders.Reception:FindFirstChild("Desk_Front") :: BasePart?
+	local deskGui = deskFront and deskFront:FindFirstChild("DeskFront")
+	local deskRight, deskEmpty = piecesIn(deskGui and deskGui:FindFirstChild("Picture"),
+		gym.DeskFrontPieces)
+	check(deskEmpty == 0 and deskGui ~= nil and deskGui:IsA("SurfaceGui") and deskGui.Face == Enum.NormalId.Left
+		and deskRight == #gym.DeskFrontPieces, string.format(
+			"the desk front picture faces the lobby (%d of %d pieces right, %d image IDs still empty in DeskFrontPieces)",
+			deskRight, #gym.DeskFrontPieces, deskEmpty))
+	-- No other part shares the desk front's face (that made it flicker).
+	local sharing = {}
+	if deskFront then
+		local frontLow, frontHigh = bounds(deskFront)
+		for _, part in ipairs(folders.Reception:GetChildren()) do
+			if part:IsA("BasePart") and part ~= deskFront then
+				local low, high = bounds(part)
+				if math.abs(low.X - frontLow.X) < 0.01 and low.Z < frontHigh.Z and high.Z > frontLow.Z
+					and low.Y < frontHigh.Y and high.Y > frontLow.Y then
+					table.insert(sharing, part.Name)
+				end
+			end
+		end
+	end
+	check(deskFront ~= nil and #sharing == 0, string.format("no other part shares the desk front's face%s",
+		if #sharing > 0 then " (" .. table.concat(sharing, ", ") .. ")" else ""))
+
+	-- The back-muscle art behind the gym's name: on the name wall, and the wide
+	-- version filling the whole outside sign.
+	for _, sign in ipairs({ { name = "NameWall", art = gym.NameSignArt }, { name = "FrontSign", art = gym.FrontSignArt } }) do
+		local panel = folders.Reception:FindFirstChild(sign.name)
+		local nameGui = panel and panel:FindFirstChild("GymName")
+		local artFrame = nameGui and nameGui:FindFirstChild("Art")
+		local right, empty = piecesIn(artFrame, sign.art)
+		local fills = artFrame ~= nil and artFrame:IsA("GuiObject") and artFrame.Size.X.Scale > 0.99
+		check(empty == 0 and right == #sign.art and fills, string.format(
+			"%s's background art fills it (%d of %d pieces right, %d image IDs empty)", sign.name, right,
+			#sign.art, empty))
+	end
+
+	-- Roblox hides see-through things behind the Glass material (signs too),
+	-- so no wall or window uses it: the lobby's signs must show from outside.
+	local glassMaterial = {}
+	for _, d in ipairs(folders.Walls:GetDescendants()) do
+		if d:IsA("BasePart") and d.Material == Enum.Material.Glass then
+			table.insert(glassMaterial, d.Name)
+		end
+	end
+	check(#glassMaterial == 0, string.format("no wall or window uses the Glass material (%d do%s)", #glassMaterial,
+		if #glassMaterial > 0 then ": " .. table.concat(glassMaterial, ", ", 1, math.min(#glassMaterial, 5)) else ""))
+	local frontSign = folders.Reception:FindFirstChild("FrontSign") :: BasePart?
+	check(frontSign ~= nil and frontSign.Position.Z < plan.frontZ - thickness,
+		"the outside name sign is on the outside of the front wall")
+	-- The straight way from the entrance, through the lobby, into the hall is clear (desk included).
+	local halfWay = gym.EntranceWidthStuds / 2 - 0.1
+	local way = wallsIn(Vector3.new(plan.centreX - halfWay, layout.floorY + 0.3, plan.frontZ + 0.1),
+		Vector3.new(plan.centreX + halfWay, layout.floorY + 8, plan.hallFrontZ - thickness - 0.1))
+	check(#way == 0, string.format("the way from the entrance through the lobby into the hall is clear%s",
+		if #way > 0 then " (" .. table.concat(way, ", ") .. ")" else ""))
+
+	-- Spawns: in the lobby, and not on the reception desk.
+	local deskParams = OverlapParams.new()
+	deskParams.FilterType = Enum.RaycastFilterType.Include
+	deskParams.FilterDescendantsInstances = { folders.Reception }
+	for _, d in ipairs(workspace:GetDescendants()) do
+		if d:IsA("SpawnLocation") then
+			local touching = workspace:GetPartsInPart(d, deskParams)
+			check(#touching == 0, string.format("%s does not overlap the reception (%d parts)", d:GetFullName(), #touching))
+		end
+	end
 	local lobby = folders.Rooms:FindFirstChild("Room_" .. gym.Rooms.FrontGround[2]) :: BasePart?
 	local spawns = 0
 	for _, d in ipairs(workspace:GetDescendants()) do

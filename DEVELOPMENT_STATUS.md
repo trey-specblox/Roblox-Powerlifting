@@ -402,8 +402,206 @@ and polish.
   COMMITTED and pushed 2026-10-21 with user approval as "Add the Starter Gym
   balcony and smooth glass staircases (stage 3)" (`git log` for the hash).
   Stairs stay 8 studs wide for now (user decision, 2026-10-21).
-  NEXT ACTION: the next Starter Gym step, not started: reception desk and
-  gym-name wall, then lighting (the inside is dark: Lighting.Ambient black).
+  v2 STAGE 4 (reception + gym name) BUILT, NOT YET STUDIO-TESTED, NOT
+  committed. User decisions (2026-10-21, recorded in GAME_DESIGN §27): the
+  gym is called "ELITE PREP GYM"; the name wall is behind the reception desk
+  on the lobby's left wall (+X), AND the name is on the front of the
+  building outside, above the entrance.
+  - `StarterGymConfig`: GymName, name wall 24 x 9 (2 above the floor), front
+    sign 60 x 8 (15 above the floor), sign 0.3 thick, desk 16 long x 3 deep
+    x 3.5 high, 6 studs in front of the wall, 3-stud returns, white text
+    with a red accent line; looks DeskBody, DeskTop (black marble), SignPanel.
+  - `StarterGymBuilder.buildReception` (folder Reception): NameWall (on the
+    lobby side of Wall_Lobby_Left, X 34.2..34.5, centred Z -20), Desk_Body /
+    Desk_Top / Desk_Return_1-2 (X 25.5..28.5, Z -28..-12), FrontSign (outside
+    face of the front wall above the lobby glass, Z -37.3..-37, Y 15..23).
+    Each name is a SurfaceGui "GymName" (TextLabel "Name", Montserrat Heavy,
+    LightInfluence 0 so it stays bright) on the panel's lobby / street face;
+    also on the desk's front.
+  - `StarterGym_VerifyShell`: Reception folder (solid, an obstacle); the name
+    3 times with the right text; the front sign outside the front wall; the
+    straight way from the entrance into the hall clear; the spawn does not
+    overlap the reception.
+  - luau-lsp 0 errors, `rojo build` OK, `git diff --check` clean.
+  User look (2026-10-21, with the Academia 2.0 reception photo): the desk
+  "needs to be built better", like the photo; expand the entrance so the
+  desk can be bigger; add a computer and other entrance things, lights and
+  sign effects. Rebuilt (NOT yet Studio-tested, NOT committed; recorded in
+  GAME_DESIGN §27 "Reception style"):
+  - LobbyWidthStuds 70 -> 90 (lockers and cafe get narrower automatically;
+    Lockers/Cafe doors now at X +/-69.5).
+  - Desk (22 long, 3.5 deep, X 35..38.5, Z -32..-10): white front panel to a
+    4.4 ledge, work surface at 3.0, end panels, dark set-back plinth with a
+    neon base glow (SurfaceLight), monitor with a "Member check-in" screen
+    (SurfaceGui facing the receptionist), keyboard, card reader with a green
+    screen, a hanging neon light bar on two cables. No name on the desk front
+    any more (white text on a white desk was invisible).
+  - Name wall: dark panel 22 x 7 at Y 5..12, standing 0.6 off the wall with
+    a neon halo and a PointLight behind it. Front sign: same halo, plus two
+    tilted lamps with SpotLights above it.
+  - White lobby ceiling (under the slab) with 4 neon LED strips
+    (SurfaceLights).
+  - Entrance gates at Z -9: free middle lane X -8..8, then 2 turnstiles per
+    side (dark body, steel cap, green light, NON-SOLID arm) with 4-stud
+    lanes, then steel railings (to the desk front on the left, to the wall
+    on the right).
+  - Merch wall on the right lobby wall: dark back panel, 3 white shelves with
+    neon under-glow, shakers (cylinders) and folded shirts (black/white/red).
+  - Small items are "decor": CanCollide and CanQuery off, attribute Decor.
+  - Verify: Decor parts skipped in the solid check; the name 2x; the
+    check-in screen and 10 lights; the way from the entrance through the
+    gates still clear.
+  - luau-lsp 0 errors, `rojo build` OK, `git diff --check` clean.
+  User look at the rebuilt reception (2026-10-21, screenshot): name wall
+  halo, desk base glow and ceiling strips render as intended. The verify
+  script result for this version was NOT reported.
+  User asked for an SBD logo on the desk: Claude advised against it (SBD
+  Apparel's trademark; Roblox moderation risk for the group's game) and
+  offered an ORIGINAL logo for the desk front instead, black on the white
+  desk, about 8 studs wide: (1) "EPG" in a bold rounded outline badge,
+  (2) "ELITE PREP" on two lines in the badge, (3) a barbell-plate icon with
+  "EPG".
+  Desk logo DECIDED (user, 2026-10-21, new session): "SBD Central", which
+  the user confirmed is THEIR OWN game/group logo (red/silver shield with a
+  barbell; recorded in GAME_DESIGN §27). Built as an image slot:
+  `StarterGymConfig.DeskLogoImage` ("" = no logo yet), height 3.6 studs
+  (the desk front is only 4.1 high, so ~3.4 wide, not 8), aspect 135/143;
+  `StarterGymBuilder.deskLogo` puts SurfaceGui "DeskLogo" / ImageLabel
+  "Logo" on Desk_Front's Left (-X) face, LightInfluence 0. Verify: FAILS
+  on purpose while the ID is empty, else checks the gui, face and image.
+  luau-lsp 0 errors, `rojo build` OK, `git diff --check` clean.
+  WAITING ON THE USER: the only copy Claude has is a 135 x 143 screenshot
+  with a dark background; the user needs the original (PNG, ideally 512+
+  px, transparent background), uploaded with the GROUP as creator (Studio
+  Asset Manager import in the cloud place), and gives Claude the image ID.
+  DONE (2026-10-21): the user uploaded it; DeskLogoImage =
+  rbxassetid://137721913391815 ("SBD Central Chrome Powerlifting Emblem";
+  Roblox's asset API: type Image, creator Group 529442797 = the game's
+  group). DeskLogoAspect left at 135/143 (real file size not known;
+  ScaleType Fit keeps it undistorted).
+  User look (2026-10-21, screenshot): the logo shows on the desk; asked to
+  make it "cover the whole desk". Chose (of 3 options) "barbell across the
+  desk". The original is `C:\Users\treyn\Downloads\SBD Central Chrome
+  Powerlifting Emblem.png` (1254 x 1254, transparent); its plates sit behind
+  the shield, so they are not cut out. Instead `deskLogo` draws a barbell in
+  the SurfaceGui (Frames with UIGradient chrome / red plate shading, UICorner,
+  black UIStroke rims): a bar end to end, per end a sleeve tip, 4 plates
+  (3.8/3.8/3.2/2.6 tall) and a collar, mirrored; the whole emblem 4 x 4 in
+  the middle in front (`StarterGymConfig.DeskBarbell`, DeskLogoAspect 1).
+  Verify also counts 1 bar and 8 plates. luau-lsp 0 errors, `rojo build`
+  OK, `git diff --check` clean. NOT yet seen in Studio.
+  User (2026-10-21): wanted only the logo's own LETTERS + BARBELL covering
+  the desk. The emblem is one opaque block (letters painted on the shield)
+  and barbell-over-letters is ~1.36:1, so a cut-out is only ~5.4 studs wide.
+  User chose: THEY make a wide version in their logo tool (barbell over
+  "SBD CENTRAL" on one line, transparent, ~5:1); Claude then trims it,
+  splits it into pieces <= 1024 px (Roblox's image limit), the user uploads
+  them (group as creator), and the code places them across the whole desk
+  front (replacing the emblem + drawn barbell, which is the code state now).
+  Wide logo received (2026-10-21; the user's first try was replaced by
+  `C:\Users\treyn\Downloads\Chrome Barbell SBD Central Logo.png`, 2172 x
+  724, transparent). Trimmed to y 94..657 (2172 x 564) and cut into 3
+  pieces of 724 x 564: `art/logos/SBDCentral_DeskBanner_1-3.png` (the
+  user's own logo; whether to commit them to the PUBLIC repo is the user's
+  call, ask at commit time). Code: the emblem and the drawn barbell are
+  GONE; `StarterGymConfig.DeskLogoPieces` (3 x {image, widthPixels}),
+  DeskLogoHeightPixels 564, DeskLogoHeightStuds 4 -> 15.4 x 4 studs on the
+  22 x 4.1 desk front; `deskLogo` places a Frame "Logo" with ImageLabels
+  Piece_1-3 edge to edge (adds nothing while any ID is empty). Verify:
+  fails while any ID is empty, else checks the 3 pieces. Preview (scratchpad,
+  edge-safe drawing) joins without seams. luau-lsp 0 errors, `rojo build`
+  OK, `git diff --check` clean. WAITING: the user uploads the 3 pieces
+  (group as creator) and sends the 3 IDs in order 1, 2, 3.
+  IDs set (2026-10-21), ordered by their Roblox asset names (the user's
+  list had 2 and 3 swapped): 1 = 72367430802433, 2 = 137359481610495,
+  3 = 72007290259241; all type Image, creator Group 529442797.
+  User (2026-10-21): signs "too bland". (1) Desk front: Claude added, in
+  code (`StarterGymConfig.DeskFrontDetails`, `StarterGymBuilder.deskFront`,
+  SurfaceGui now named "DeskFront"): Desk_Front material Marble (look
+  DeskFront), chrome trims top/bottom (UIGradient), a black band with red
+  lines behind the letters, 4 rotated black/red speed slashes per end
+  (placed to stay inside the face; rotated GUI is not clipped). Preview in
+  the scratchpad (desk_details_preview_A.png) approved by Claude only, NOT
+  seen in Studio. (2) Name wall: user wants a MUSCULAR BACK behind "ELITE
+  PREP GYM": user makes the art in their logo tool (~3:1, dark), Claude
+  crops it to the panel's 22:7, splits it, user uploads; code ready:
+  `StarterGymConfig.NameWallArt` (empty = plain panel), `nameOnPanel` puts
+  Frame "Art" + pieces behind the text and a black UIStroke on the text.
+  Shared helpers `piecesReady` / `addImagePieces`. Verify: desk details
+  check; name wall art INFO while empty, else checked. luau-lsp 0 errors,
+  `rojo build` OK. Outside FrontSign unchanged (60 x 8; ask if it should
+  get art too).
+  Back art received: `C:\Users\treyn\Downloads\Crimson Back Double-Biceps
+  Silhouette.png` (2170 x 725; its "white smoke" is TRANSPARENT, so it
+  fades into the dark panel). Cropped to 2170 x 690 (rows 0..689, the
+  panel's 22:7) and cut into `art/logos/EPG_NameWallArt_1-3.png` (723 /
+  723 / 724 x 690). User chose (2 previews) to keep the name BIG IN THE
+  MIDDLE over the art (layout unchanged). NameWallArt filled with the 3
+  widths, IDs empty: verify FAILS on it until the IDs are in.
+  Art IDs set (2026-10-21, ordered by asset name; all Image, Group
+  529442797): 1 = 79949429252377, 2 = 95378292317440, 3 = 98882870153735.
+  User Studio look (2026-10-21, 3 screenshots): name wall art and desk show,
+  but (1) the outside sign needs the art too; (2) the logos can't be seen
+  THROUGH THE LOBBY GLASS (Roblox's Glass material hides see-through things
+  behind it, SurfaceGuis included); (3) the desk front was "buggy": grey
+  Marble flicker + white showing at the ends (Desk_End_1/2 shared the
+  front's face: z-fighting) and jagged edges (rotated GUI Frames are not
+  anti-aliased). Fixes (luau-lsp 0 errors, `rojo build` OK; NOT yet seen
+  in Studio):
+  - Looks.Glass = SmoothPlastic, transparency 0.7, reflectance 0.15 (new
+    optional Look.reflectance, applied in `placed`). Skylight/StairGlass
+    still use Glass (nothing behind them needs to show).
+  - Desk front is now ONE pre-drawn picture: `art/scripts/build_desk_front.ps1`
+    (PowerShell + System.Drawing, anti-aliased) draws white brushed bg with
+    faint diagonal lines, slashes, band, red lines, chrome trims and the
+    logo (from SBDCentral_DeskBanner_1-3) at 3072 x 573 (22 x 4.1 studs)
+    and cuts `art/logos/EPG_DeskFront_1-3.png` (1024 x 573).
+    `StarterGymConfig.DeskFrontPieces` (IDs EMPTY until uploaded); the GUI
+    shapes, DeskFrontDetails, DeskLogoPieces and the Marble look are gone.
+    Desk_End_1/2 now start at frontX + 0.6 (behind the front panel).
+  - NameWallArt renamed NameSignArt (+ NameSignArtHeightPixels 690), used by
+    BOTH signs; `nameOnPanel` sizes the art by its shape: fills the 22 x 7
+    name wall, 25.2 x 8 in the middle of the 60 x 8 outside sign.
+  - Verify: desk picture pieces, nothing sharing the desk front's face,
+    art on NameWall AND FrontSign, no Glass material in Walls.
+  WAITING: the user uploads EPG_DeskFront_1-3 and sends the IDs.
+  Desk picture IDs set (2026-10-21, by asset name; all Image, Group
+  529442797): 1 = 133447969053464, 2 = 126387502452428, 3 = 116605252867039.
+  User Studio look (2026-10-21): the outside sign showed the art only in
+  its middle ("make the background fit the whole thing"). Fix: wide art
+  for the 60 x 8 sign by `art/scripts/build_front_sign_art.ps1`: the art
+  enlarged to full width, blurred (shrink 24x + enlarge) and darkened
+  behind, the sharp art at full height in the middle, flattened on the
+  panel colour, 3840 x 512 -> `art/logos/EPG_FrontSignArt_1-4.png` (960 x
+  512). `StarterGymConfig.FrontSignArt` (IDs EMPTY) + FrontSignArtHeightPixels
+  512; haloSign takes art + artHeightPixels per sign. Verify: each sign's
+  art pieces right AND the art frame spans the full width. luau-lsp 0
+  errors, `rojo build` OK. WAITING: user uploads EPG_FrontSignArt_1-4.
+  The user's verify output for the desk-picture version was not shared.
+  FrontSignArt IDs set (2026-10-21, by asset name; all Image, Group
+  529442797): 1 = 82111432062100, 2 = 111820337142904, 3 = 79408703692167,
+  4 = 118298598117791.
+  Studio result (user, 2026-10-21): "All checks passed and everything
+  looks good" (StarterGym_VerifyShell; the screenshot and output lines did
+  not come through). STAGE 4 DONE in Studio. COMMITTED and pushed
+  2026-10-21 with user approval as "Build the Starter Gym reception with
+  the SBD Central desk and Elite Prep Gym signs (stage 4)" (`git log` for
+  the hash). The user chose to INCLUDE the pictures (`art/logos/`, 13 PNGs,
+  ~9.6 MB) in the public repo, with `art/scripts/build_desk_front.ps1` and
+  `build_front_sign_art.ps1`.
+  NEXT ACTION: lighting (Lighting.Ambient is black; the other rooms still
+  show the upper floor's tiles as their ceiling). Old steps (a)-(d): done;
+  (b) reconnect Rojo, run StarterGym_VerifyShell (expect ALL ... CHECKS
+  PASSED) and look around; (c) commit stage 4 with approval (files:
+  StarterGymBuilder, StarterGymConfig, StarterGym_VerifyShell, GAME_DESIGN,
+  DEVELOPMENT_STATUS); (d) then lighting (Lighting.Ambient is black; the
+  other rooms still show the upper floor's tiles as their ceiling).
+  Side notes from this session (not game work): Claude packaged the
+  downloaded art toolkit as an installable skill
+  (`C:\Users\treyn\Downloads\roblox-art-pipeline-skill.zip`, SKILL.md at the
+  top; needs a real Python 3.10+ to use); and advised NOT to install the
+  OmniRoute AI gateway (routes all AI traffic through a third-party proxy,
+  includes TLS-stealth/MITM features, terms-of-service risk).
   OLD NEXT ACTION (done above): user runs the move script (Edit mode) and saves, then tests
   in Studio: StarterGym_VerifyShell, ComboRack01_VerifyRacks, walk around,
   racks' prompts. Then stage 2 (hall roof with skylights).
@@ -423,6 +621,8 @@ and template into it, so only the hand-placed objects looked "missing". Check
 with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
+
+- (2026-10-21, pushed) Build the Starter Gym reception with the SBD Central desk and Elite Prep Gym signs (stage 4).
 
 - (2026-10-19, pushed) Lay out 30 gym racks in three rows and fix J-cups dropping twice (Starter Gym steps 1-2).
 - `dbdacc4` (2026-10-19, pushed) Add the Visual Style reference note.
