@@ -289,6 +289,64 @@ and polish.
   for stage 3: the stairs must sit inside the balcony line (the 14-stud side
   aisle may need to widen), and the verify script must check a clear
   walking zone in front of every room door (no stair or railing part in it).
+  v2 STAGE 2 (hall roof) BUILT, NOT YET STUDIO-TESTED, NOT committed
+  (user said 2026-10-21: commit stage 1, then start stage 2):
+  - `StarterGymConfig`: RoofRiseStuds 16 (ridge Y 44.05, about 18 degrees),
+    thickness 1, overhang 1, skylight band 0.30-0.75 of each slope with 6
+    skylights per slope and 6-stud gaps, 9 steel beam bays (beam 1 x 1.5);
+    looks HallRoof (light metal), Skylight (glass 0.55), SteelBeam (dark metal).
+  - `StarterGymBuilder.buildHallRoof`: ridge along X over the hall's middle
+    (Z 47.025), slopes from the eaves at Z -4 (front glass wall) and 98.05
+    (back wall) at Y 28.05; per slope: lower and upper solid panels, the
+    band of gaps and skylights (CastShadow off); a ridge cap; two WedgePart
+    gables per side on the side glass line (X +/-94.5); RoofBeams folder
+    (rafters under each slope + a tie beam per bay, one ridge beam).
+  - `StarterGym_VerifyShell`: 60 upward rays over the hall must all hit the
+    roof; 12 skylights expected.
+  - Checks by Claude: luau-lsp 0 errors in the changed files, `rojo build`
+    OK, `git diff --check` clean.
+  - Expected side effect: with the roof on, the hall gets much darker
+    (Lighting.Ambient is black; only the skylights and glass let light in).
+  User look at stage 2 (2026-10-21, screenshot from outside): did NOT like
+  the flat roofs around the pitched hall roof. Decision (user): ONE pitched
+  roof over the WHOLE building, NO flat roof tops (recorded in GAME_DESIGN
+  §27). Reworked (NOT yet Studio-tested, NOT committed):
+  - Roof over the whole building: eaves on the front and back outer walls
+    (Z -37 and 98.05, Y 28.05), ridge along X at Z 30.525, RoofRiseStuds 21
+    (ridge Y 49.05, about 17 degrees), overhang 1 past the outer gables.
+    Parts are named Roof_* (Roof_Front/Back_Lower/Upper/BandLeft/BandRight/
+    Gap_n/Skylight_n, Roof_RidgeCap).
+  - Skylights over the hall only, symmetric about the ridge: from 6 to 27
+    studs from the ridge on each slope (config SkylightStartFromRidgeStuds,
+    SkylightDepthStuds), 6 per slope.
+  - The blocks' flat roofs are now Ceiling_* (white, hidden under the roof).
+  - Gables on the outer side walls (Gable_Left/Right, wedges); inside,
+    HallWall_Left/Right/Front close the hall off up to the roof's underside
+    so the space over the rooms is not seen from the hall.
+  - Beams over the hall only (rafters from the hall's edge to the ridge).
+  - Verify: new check, 96 rays straight down over the whole building must
+    all first hit a Roof_ part (no flat roof visible).
+  - luau-lsp 0 errors, `rojo build` OK, `git diff --check` clean.
+  Studio result (user, 2026-10-21, screenshot): the WHOLE BUILDING IS MISSING
+  (racks, spawn and baseplate only). So StarterGymBuilder failed and removed
+  its half-built gym (fail-closed; racks still spawn because the builder runs
+  in xpcall before RackSpawner). Cause not known yet: the code reads
+  consistently (luau-lsp 0 errors; every Looks entry used exists). One
+  possibility: Studio got a mix of an old and a new file from Rojo. The
+  builder now uses xpcall with debug.traceback so its warning names the line.
+  RESOLVED (user, 2026-10-21): after a Rojo reconnect the building is back
+  and "the roof looks good". So the cause was Studio holding a mix of old and
+  new synced files (most likely the new StarterGymConfig without the old
+  `Roof` look, with the old builder still using it). LESSON: when several
+  files changed and Studio misbehaves, reconnect Rojo before debugging.
+  Studio result (user, 2026-10-21 19:05): `StarterGym_VerifyShell` ALL 15
+  CHECKS PASSED (hall roofed, whole building seen from above is the pitched
+  roof, 12 skylights, rooms, doors, entrance, spawn). The user said the roof
+  looks good. STAGE 2 DONE; COMMITTED and pushed 2026-10-21 with user
+  approval as "Put one pitched roof with skylights over the whole Starter Gym
+  (stage 2)" (`git log` for the hash).
+  NEXT ACTION: stage 3: glass staircases in the hall's front corners and the
+  balcony (rooms beside them must stay reachable).
   OLD NEXT ACTION (done above): user runs the move script (Edit mode) and saves, then tests
   in Studio: StarterGym_VerifyShell, ComboRack01_VerifyRacks, walk around,
   racks' prompts. Then stage 2 (hall roof with skylights).

@@ -821,7 +821,10 @@ Comp max testing
 > refs 11-15) and two drawn redesigns.
 > - **Size:** about 250 x 132 studs (56 x 30 m), bigger than the first shell.
 > - **Rack hall:** all 30 racks downstairs, in the middle, in a double-height
->   hall under a **pitched roof with skylights** (not a flat ceiling). Racks
+>   hall under a **pitched roof with skylights** (not a flat ceiling).
+> - **One roof over the whole building** (user, 2026-10-21): the pitched roof
+>   covers the entire building, room blocks included. There are **no flat
+>   roof tops** anywhere on the outside. Racks
 >   16 studs apart, rows 28 apart, wide side aisles and an open area in front
 >   of row 1 for later equipment.
 > - **Two floors of rooms on three sides** of the hall (left, right and

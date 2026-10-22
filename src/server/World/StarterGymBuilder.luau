@@ -11,16 +11,19 @@
 	STAGE 1 (this file, now):
 	  Floors  Floor_Hall (rubber, under the racks), Floor_Lobby, the rooms'
 	          floors, the upper floor slabs (Slab_*).
-	  Roofs   the room blocks' flat roofs (Roof_*). The rack hall stays open to
-	          the sky until stage 2 adds its pitched roof with skylights.
+	  Roofs   the room blocks' ceilings (Ceiling_*, hidden under the roof).
+	          STAGE 2: ONE pitched roof over the whole building (Roof_*, with
+	          Roof_*_Skylight_* glass over the hall), the gables on the outer
+	          side walls (Gable_*), walls closing the hall off up to the roof
+	          (HallWall_*) and the steel beams over the hall (RoofBeams).
 	  Walls   outer walls (dark band + painted wall), the lobby's glass front
 	          with the entrance, the glass fronts between the hall and every
 	          room (one door per room, both floors), and the walls between rooms.
 	  Rooms   one invisible, non-solid region part per room, "Room_<Name>",
 	          with attributes Floor (1 or 2), DoorCentre and DoorAlongX, for
 	          NPCs, signs and checks later.
-	Later stages: hall roof and skylights, stairs and balcony (upstairs is not
-	reachable yet), reception desk and gym-name wall, lights.
+	Later stages: the glass stairs and balcony (upstairs is not reachable yet),
+	reception desk and gym-name wall, lights.
 
 	Visual and physical only: no gameplay rule, credit or player data changes.
 	FAILS CLOSED: if anything goes wrong the half-built gym is removed with a
@@ -45,8 +48,10 @@ type WallKind = "Outer" | "Paint" | "Glass"
 
 local built = false
 
-local function box(parent: Instance, name: string, low: Vector3, high: Vector3, look: StarterGymConfig.Look): Part
-	local part = Instance.new("Part")
+-- An anchored, solid part of `size` at `cframe` (a Part, or a WedgePart for the gables).
+local function placed(parent: Instance, name: string, size: Vector3, cframe: CFrame, look: StarterGymConfig.Look,
+	className: string?): BasePart
+	local part = Instance.new(className or "Part") :: BasePart
 	part.Name = name
 	part.Anchored = true
 	part.CanCollide = true
@@ -56,10 +61,15 @@ local function box(parent: Instance, name: string, low: Vector3, high: Vector3, 
 	part.Material = look.material
 	part.Color = look.color
 	part.Transparency = look.transparency or 0
-	part.Size = high - low
-	part.CFrame = CFrame.new((low + high) / 2)
+	part.Size = size
+	part.CFrame = cframe
 	part.Parent = parent
 	return part
+end
+
+-- An axis-aligned box between two corners.
+local function box(parent: Instance, name: string, low: Vector3, high: Vector3, look: StarterGymConfig.Look): BasePart
+	return placed(parent, name, high - low, CFrame.new((low + high) / 2), look)
 end
 
 --[[
@@ -133,6 +143,156 @@ local function room(parent: Instance, name: string, floorNumber: number, low: Ve
 	part:SetAttribute("DoorAlongX", doorAlongX)
 end
 
+--[[
+	STAGE 2: ONE pitched roof over the WHOLE building (GAME_DESIGN §27: no flat
+	roof tops, user 2026-10-21). The ridge runs along X over the middle of the
+	building; each slope runs from its eave (the front or back outer wall's top)
+	up to the ridge. A slope is described by where its eave is, the unit
+	direction up the slope (`along`) and its outward normal.
+]]
+type Slope = { name: string, eaveY: number, eaveZ: number, along: Vector3, normal: Vector3, length: number }
+
+-- The frame of a point in a slope: `x` along the ridge, `s` up the slope from
+-- the eave, `offset` out of the slope's underside (negative = below it).
+-- Its X axis runs along the ridge and its Y axis is the slope's normal.
+local function slopeFrame(slope: Slope, x: number, s: number, offset: number): CFrame
+	local position = Vector3.new(x, slope.eaveY, slope.eaveZ) + slope.along * s + slope.normal * offset
+	return CFrame.fromMatrix(position, Vector3.xAxis, slope.normal)
+end
+
+local function buildRoof(roofs: Folder, plan: StarterGymConfig.Footprint): number
+	local cfg = StarterGymConfig
+	local looks = cfg.Looks
+	local t = cfg.WallThicknessStuds
+	local thickness = cfg.RoofThicknessStuds
+	local cx, hallHalf, outerHalf = plan.centreX, plan.hallHalfWidth, plan.outerHalfWidth
+
+	-- The eaves sit on the front and back outer walls.
+	local eaveY = plan.roofY
+	local frontEaveZ, backEaveZ = plan.frontZ - t, plan.hallBackZ + t
+	local ridgeZ = (frontEaveZ + backEaveZ) / 2
+	local run, rise = ridgeZ - frontEaveZ, cfg.RoofRiseStuds
+	local ridgeY = eaveY + rise
+	local length = math.sqrt(run * run + rise * rise)
+	local xMin = cx - outerHalf - t - cfg.RoofOverhangStuds
+	local xMax = cx + outerHalf + t + cfg.RoofOverhangStuds
+	local hallMinX, hallMaxX = cx - hallHalf, cx + hallHalf
+
+	-- How high the roof's underside is above the eaves at depth z.
+	local function heightAt(z: number): number
+		return rise * (1 - math.abs(z - ridgeZ) / run)
+	end
+
+	local slopes: { Slope } = {
+		{ name = "Front", eaveY = eaveY, eaveZ = frontEaveZ, along = Vector3.new(0, rise, run).Unit,
+			normal = Vector3.new(0, run, -rise).Unit, length = length },
+		{ name = "Back", eaveY = eaveY, eaveZ = backEaveZ, along = Vector3.new(0, rise, -run).Unit,
+			normal = Vector3.new(0, run, rise).Unit, length = length },
+	}
+	-- How far up a slope (from its eave) depth z is.
+	local function slopeDistance(slope: Slope, z: number): number
+		return math.abs(z - slope.eaveZ) / run * length
+	end
+
+	local skylights = 0
+	local function panel(slope: Slope, name: string, x0: number, x1: number, s0: number, s1: number,
+		look: StarterGymConfig.Look): BasePart
+		return placed(roofs, string.format("Roof_%s_%s", slope.name, name),
+			Vector3.new(x1 - x0, thickness, s1 - s0),
+			slopeFrame(slope, (x0 + x1) / 2, (s0 + s1) / 2, thickness / 2), look)
+	end
+
+	for _, slope in ipairs(slopes) do
+		-- The skylight band: over the hall only, the same distance from the ridge on both slopes.
+		local towardEave = if slope.name == "Front" then -1 else 1
+		local bandNearZ = ridgeZ + towardEave * cfg.SkylightStartFromRidgeStuds
+		local bandFarZ = bandNearZ + towardEave * cfg.SkylightDepthStuds
+		assert(bandFarZ > plan.hallFrontZ and bandFarZ < plan.hallBackZ,
+			"the skylight band reaches past the rack hall; make SkylightDepthStuds smaller")
+		local bandStart, bandEnd = slopeDistance(slope, bandFarZ), slopeDistance(slope, bandNearZ)
+
+		panel(slope, "Lower", xMin, xMax, 0, bandStart, looks.HallRoof)
+		panel(slope, "Upper", xMin, xMax, bandEnd, length, looks.HallRoof)
+		-- Beside the band, over the side blocks: plain roof.
+		panel(slope, "BandLeft", hallMaxX, xMax, bandStart, bandEnd, looks.HallRoof)
+		panel(slope, "BandRight", xMin, hallMinX, bandStart, bandEnd, looks.HallRoof)
+		-- Over the hall: gap, skylight, gap, skylight, ..., gap.
+		local count, gap = cfg.SkylightsPerSlope, cfg.SkylightGapStuds
+		local skylightLength = ((hallMaxX - hallMinX) - (count + 1) * gap) / count
+		assert(skylightLength > 0, "the skylights do not fit along the hall")
+		local x = hallMinX
+		for index = 1, count do
+			panel(slope, string.format("Gap_%d", index), x, x + gap, bandStart, bandEnd, looks.HallRoof)
+			x += gap
+			local glass = panel(slope, string.format("Skylight_%d", index), x, x + skylightLength, bandStart, bandEnd,
+				looks.Skylight)
+			glass.CastShadow = false -- let the sunlight through
+			skylights += 1
+			x += skylightLength
+		end
+		panel(slope, string.format("Gap_%d", count + 1), x, hallMaxX, bandStart, bandEnd, looks.HallRoof)
+	end
+
+	-- A cap along the ridge, over the seam where the two slopes meet.
+	box(roofs, "Roof_RidgeCap", Vector3.new(xMin, ridgeY, ridgeZ - thickness),
+		Vector3.new(xMax, ridgeY + thickness * 1.2, ridgeZ + thickness), looks.HallRoof)
+
+	--[[
+		Walls up to the roof's underside, between eave height and the roof.
+		A WedgePart is full height at its back (+Z) and zero at its front; a
+		piece whose high end is toward -Z is turned round.
+	]]
+	local function underRoof(name: string, line: number, z0: number, z1: number)
+		local pieces = if z0 < ridgeZ and z1 > ridgeZ then { { z0, ridgeZ }, { ridgeZ, z1 } } else { { z0, z1 } }
+		for index, piece in ipairs(pieces) do
+			local za, zb = piece[1], piece[2]
+			local ha, hb = heightAt(za), heightAt(zb)
+			local low, high = math.min(ha, hb), math.max(ha, hb)
+			local middleZ = (za + zb) / 2
+			if low > 0.01 then
+				box(roofs, string.format("%s_%d_Base", name, index), Vector3.new(line - t / 2, eaveY, za),
+					Vector3.new(line + t / 2, eaveY + low, zb), looks.WallPaint)
+			end
+			local turn = if hb >= ha then CFrame.identity else CFrame.Angles(0, math.pi, 0)
+			placed(roofs, string.format("%s_%d", name, index), Vector3.new(t, high - low, zb - za),
+				CFrame.new(line, eaveY + low + (high - low) / 2, middleZ) * turn, looks.WallPaint, "WedgePart")
+		end
+	end
+
+	-- The gables: the two outer side walls, closed up to the roof.
+	underRoof("Gable_Left", cx + outerHalf + t / 2, frontEaveZ, backEaveZ)
+	underRoof("Gable_Right", cx - outerHalf - t / 2, frontEaveZ, backEaveZ)
+	-- Inside: close the hall off from the space under the roof over the rooms,
+	-- above the side glass fronts and above the front block's glass front.
+	underRoof("HallWall_Left", cx + hallHalf + t / 2, plan.hallFrontZ - t, plan.hallBackZ)
+	underRoof("HallWall_Right", cx - hallHalf - t / 2, plan.hallFrontZ - t, plan.hallBackZ)
+	box(roofs, "HallWall_Front", Vector3.new(hallMinX - t, eaveY, plan.hallFrontZ - t),
+		Vector3.new(hallMaxX + t, eaveY + heightAt(plan.hallFrontZ), plan.hallFrontZ), looks.WallPaint)
+
+	-- Exposed steel over the hall: per bay, a rafter under each slope (only
+	-- above the hall) and a tie beam across; one ridge beam along the hall.
+	local beams = Instance.new("Folder")
+	beams.Name = "RoofBeams"
+	beams.Parent = roofs
+	local beamWidth, beamDepth = cfg.RoofBeamWidthStuds, cfg.RoofBeamDepthStuds
+	local bayWidth = 2 * hallHalf / cfg.RoofBeamCount
+	for index = 1, cfg.RoofBeamCount do
+		local x = hallMinX + (index - 0.5) * bayWidth
+		for _, slope in ipairs(slopes) do
+			local hallEdgeZ = if slope.name == "Front" then plan.hallFrontZ else plan.hallBackZ
+			local s0 = slopeDistance(slope, hallEdgeZ)
+			placed(beams, string.format("Rafter_%s_%d", slope.name, index), Vector3.new(beamWidth, beamDepth, length - s0),
+				slopeFrame(slope, x, (s0 + length) / 2, -beamDepth / 2), looks.SteelBeam)
+		end
+		box(beams, string.format("TieBeam_%d", index), Vector3.new(x - beamWidth / 2, eaveY - beamDepth, plan.hallFrontZ),
+			Vector3.new(x + beamWidth / 2, eaveY, plan.hallBackZ), looks.SteelBeam)
+	end
+	box(beams, "RidgeBeam", Vector3.new(hallMinX, ridgeY - 2 * beamDepth, ridgeZ - beamWidth / 2),
+		Vector3.new(hallMaxX, ridgeY - beamDepth / 2, ridgeZ + beamWidth / 2), looks.SteelBeam)
+
+	return skylights
+end
+
 -- Builds the gym into `model` and returns a one-line summary for the Output.
 local function buildGym(model: Model): string
 	local cfg = StarterGymConfig
@@ -174,7 +334,8 @@ local function buildGym(model: Model): string
 	box(floors, "Floor_RightBlock", Vector3.new(cx - outerHalf, floorLow, hallFrontZ),
 		Vector3.new(cx - hallHalf - t, floorY, hallBackZ), looks.RoomFloor)
 
-	-- The upper floor and the flat roof of each room block (they reach under the walls).
+	-- The upper floor and the ceiling of each room block (they reach under the walls).
+	-- The ceilings are hidden under the one pitched roof: no flat roof shows outside.
 	local blocks = {
 		{ name = "LeftBlock", low = Vector2.new(cx + hallHalf, hallFrontZ), high = Vector2.new(cx + outerHalf + t, hallBackZ) },
 		{ name = "RightBlock", low = Vector2.new(cx - outerHalf - t, hallFrontZ), high = Vector2.new(cx - hallHalf, hallBackZ) },
@@ -183,8 +344,8 @@ local function buildGym(model: Model): string
 	for _, block in ipairs(blocks) do
 		box(floors, "Slab_" .. block.name, Vector3.new(block.low.X, upperSlabBottom, block.low.Y),
 			Vector3.new(block.high.X, upperY, block.high.Y), looks.RoomFloor)
-		box(roofs, "Roof_" .. block.name, Vector3.new(block.low.X, roofSlabBottom, block.low.Y),
-			Vector3.new(block.high.X, roofY, block.high.Y), looks.Roof)
+		box(roofs, "Ceiling_" .. block.name, Vector3.new(block.low.X, roofSlabBottom, block.low.Y),
+			Vector3.new(block.high.X, roofY, block.high.Y), looks.WallPaint)
 	end
 
 	-- ---------------------------------------------------------------- outer walls
@@ -302,6 +463,8 @@ local function buildGym(model: Model): string
 			Vector3.new(dividerX, upperY + doorHeight / 2, middleZ + doorWidth), false)
 	end
 
+	local skylights = buildRoof(roofs, plan)
+
 	for name, value in pairs({
 		HallMin = Vector3.new(cx - hallHalf, floorY, hallFrontZ),
 		HallMax = Vector3.new(cx + hallHalf, floorY, hallBackZ),
@@ -310,9 +473,10 @@ local function buildGym(model: Model): string
 	}) do
 		model:SetAttribute(name, value)
 	end
-	return string.format("hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms",
+	return string.format(
+		"hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms, hall roof with %d skylights",
 		cx - hallHalf, cx + hallHalf, hallFrontZ, hallBackZ, outerMinX, outerMaxX, frontZ - t, hallBackZ + t,
-		#walls:GetChildren(), #rooms:GetChildren())
+		#walls:GetChildren(), #rooms:GetChildren(), skylights)
 end
 
 --[[
@@ -337,7 +501,8 @@ function StarterGymBuilder.build(): Model?
 
 	local model = Instance.new("Model")
 	model.Name = MODEL_NAME
-	local ok, result = pcall(buildGym, model)
+	-- xpcall with a traceback, so a failure says exactly which line went wrong.
+	local ok, result = xpcall(buildGym, debug.traceback, model)
 	if not ok then
 		model:Destroy()
 		warn("[StarterGymBuilder] gym NOT built: " .. tostring(result))

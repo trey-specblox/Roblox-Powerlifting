@@ -12,9 +12,10 @@
 	    with a glass front onto the hall (decoration only for now; NPCs later);
 	  - the ENTRANCE in the front block: glass front, lobby with the spawn.
 
-	Built in stages. Stage 1 (now): floors, upper floor slabs, the room blocks'
-	flat roofs, every wall and glass front, the rooms. Later stages: the hall's
-	pitched roof with skylights, the stairs and balcony, reception desk and
+	Built in stages. Stage 1: floors, upper floor slabs, the room blocks'
+	ceilings, every wall and glass front, the rooms. Stage 2: one pitched roof
+	over the whole building with skylights over the hall, gable walls and steel
+	roof beams. Later stages: the glass stairs and balcony, reception desk and
 	gym-name wall, lights.
 
 	The building's size is WORKED OUT from GymLayout, so adding racks or rows
@@ -58,6 +59,34 @@ StarterGymConfig.RoomDoorWidthStuds = 6
 StarterGymConfig.RoomDoorHeightStuds = 9
 
 --[[
+	The roof (stage 2; GAME_DESIGN §27): ONE pitched roof over the WHOLE
+	building, no flat roof tops (user, 2026-10-21). The ridge runs left to right
+	(X) over the middle of the building; the two slopes come down to the front
+	and back outer walls (the eaves, at the walls' top). The left and right ends
+	are closed by triangular gable walls on the outer side walls.
+
+	Under the roof, the room blocks keep flat CEILINGS over their upper rooms
+	(hidden by the roof), and walls above the hall's glass fronts close the
+	hall off from the space under the roof over the rooms.
+]]
+StarterGymConfig.RoofRiseStuds = 21 -- the ridge above the eaves (about 17 degrees)
+StarterGymConfig.RoofThicknessStuds = 1
+StarterGymConfig.RoofOverhangStuds = 1 -- past the gable walls at each end
+-- Skylights: only over the rack hall (the rooms have ceilings). On each slope a
+-- band that starts SkylightStartFromRidgeStuds from the ridge and reaches
+-- SkylightDepthStuds further toward the eave (measured front to back), split
+-- into separate windows along the ridge.
+StarterGymConfig.SkylightStartFromRidgeStuds = 6
+StarterGymConfig.SkylightDepthStuds = 21
+StarterGymConfig.SkylightsPerSlope = 6
+StarterGymConfig.SkylightGapStuds = 6 -- solid roof between two skylights
+-- Exposed steel roof beams, evenly spaced along the hall: two rafters under
+-- the slopes and a tie beam across at eave height each, and one ridge beam.
+StarterGymConfig.RoofBeamCount = 9
+StarterGymConfig.RoofBeamWidthStuds = 1
+StarterGymConfig.RoofBeamDepthStuds = 1.5
+
+--[[
 	The rooms (GAME_DESIGN §27: names are PLACEHOLDERS until the NPCs are
 	designed; a name here is only the room's name in Workspace). Each becomes an
 	invisible region part "Room_<Name>" in Workspace.StarterGym.Rooms, with its
@@ -88,7 +117,10 @@ StarterGymConfig.Looks = {
 	WallPaint = { material = Enum.Material.Plaster, color = Color3.fromRGB(228, 228, 224) },
 	WallBand = { material = Enum.Material.Concrete, color = Color3.fromRGB(62, 62, 66) },
 	Glass = { material = Enum.Material.Glass, color = Color3.fromRGB(196, 218, 230), transparency = 0.7 },
-	Roof = { material = Enum.Material.Concrete, color = Color3.fromRGB(150, 150, 150) },
+	-- The pitched roof is seen from below in the hall, so it stays light (bright and clean).
+	HallRoof = { material = Enum.Material.Metal, color = Color3.fromRGB(212, 214, 218) },
+	Skylight = { material = Enum.Material.Glass, color = Color3.fromRGB(205, 228, 240), transparency = 0.55 },
+	SteelBeam = { material = Enum.Material.Metal, color = Color3.fromRGB(38, 38, 42) },
 } :: { [string]: Look }
 
 --[[

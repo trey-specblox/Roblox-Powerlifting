@@ -15,6 +15,9 @@
 	    front, lies on Floor_Hall and touches no wall;
 	  - every room listed in StarterGymConfig.Rooms exists once, and its door
 	    is open (no wall part in it);
+	  - stage 2: the whole hall is under the roof (upward rays all hit it),
+	    seen from above the whole building is the pitched roof (no flat roof
+	    tops), and the skylights exist;
 	  - the entrance is open, and every SpawnLocation stands in the lobby.
 ]]
 
@@ -173,6 +176,55 @@ local function run()
 		if #doubled > 0 then " (twice: " .. table.concat(doubled, ", ") .. ")" else ""))
 	check(#shut == 0, string.format("every room's door is open%s",
 		if #shut > 0 then " (blocked: " .. table.concat(shut, "; ") .. ")" else ""))
+
+	-- Stage 2: the hall is roofed. Rays straight up from a grid over the hall
+	-- floor must all hit the roof (solid roof, skylight glass or a beam), so no
+	-- part of the hall is open to the sky; the skylights must exist.
+	local roofParams = RaycastParams.new()
+	roofParams.FilterType = Enum.RaycastFilterType.Include
+	roofParams.FilterDescendantsInstances = { folders.Roofs }
+	local open, rays = 0, 0
+	for i = 0, 9 do
+		for j = 0, 5 do
+			local x = plan.hallMinX + (i + 0.5) * (plan.hallMaxX - plan.hallMinX) / 10
+			local z = plan.hallFrontZ + (j + 0.5) * (plan.hallBackZ - plan.hallFrontZ) / 6
+			rays += 1
+			if workspace:Raycast(Vector3.new(x, layout.floorY + 2, z), Vector3.new(0, 80, 0), roofParams) == nil then
+				open += 1
+			end
+		end
+	end
+	check(open == 0, string.format("hall roofed: %d of %d upward rays hit the roof (%d open to the sky)", rays - open, rays, open))
+	-- One pitched roof over EVERYTHING (user, 2026-10-21: no flat roof tops):
+	-- rays straight down over the whole building must all first hit a Roof_ part.
+	local topParams = RaycastParams.new()
+	topParams.FilterType = Enum.RaycastFilterType.Include
+	topParams.FilterDescendantsInstances = { model }
+	local outerHalf = plan.outerHalfWidth
+	local backZ = plan.hallBackZ
+	local notRoof, downRays = {}, 0
+	for i = 0, 11 do
+		for j = 0, 7 do
+			local x = plan.centreX - outerHalf + (i + 0.5) * (2 * outerHalf) / 12
+			local z = plan.frontZ + (j + 0.5) * (backZ - plan.frontZ) / 8
+			downRays += 1
+			local hit = workspace:Raycast(Vector3.new(x, 150, z), Vector3.new(0, -160, 0), topParams)
+			if hit == nil or string.sub(hit.Instance.Name, 1, 5) ~= "Roof_" then
+				table.insert(notRoof, string.format("(%.0f, %.0f) %s", x, z, if hit then hit.Instance.Name else "nothing"))
+			end
+		end
+	end
+	check(#notRoof == 0, string.format("seen from above, all %d spots are the pitched roof%s", downRays,
+		if #notRoof > 0 then " (not roof: " .. table.concat(notRoof, "; ", 1, math.min(#notRoof, 6)) .. ")" else ""))
+
+	local skylights = 0
+	for _, d in ipairs(folders.Roofs:GetDescendants()) do
+		if d:IsA("BasePart") and string.find(d.Name, "_Skylight_", 1, true) then
+			skylights += 1
+		end
+	end
+	check(skylights == 2 * gym.SkylightsPerSlope, string.format("%d skylights (expected %d)", skylights,
+		2 * gym.SkylightsPerSlope))
 
 	-- The entrance, in the lobby's glass front.
 	local halfEntrance = gym.EntranceWidthStuds / 2 - 0.1
