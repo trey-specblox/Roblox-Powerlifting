@@ -22,8 +22,12 @@
 	  Rooms   one invisible, non-solid region part per room, "Room_<Name>",
 	          with attributes Floor (1 or 2), DoorCentre and DoorAlongX, for
 	          NPCs, signs and checks later.
-	Later stages: the glass stairs and balcony (upstairs is not reachable yet),
-	reception desk and gym-name wall, lights.
+	STAGE 3:
+	  Balcony the U-shaped walkway at the upper floor's level round the hall's
+	          left, front and right sides, glass railing, steel columns.
+	  Stairs  two glass staircases from the hall's front corners up to the
+	          side balconies (upstairs is now reachable).
+	Later stages: reception desk and gym-name wall, lights.
 
 	Visual and physical only: no gameplay rule, credit or player data changes.
 	FAILS CLOSED: if anything goes wrong the half-built gym is removed with a
@@ -293,6 +297,157 @@ local function buildRoof(roofs: Folder, plan: StarterGymConfig.Footprint): numbe
 	return skylights
 end
 
+--[[
+	A straight part from point `a` to point `b` (both in one vertical plane):
+	`height` across the line, pointing up, and `thickness` out of the plane,
+	raised `lift` above the line (negative = below it). For the stairs' sloped
+	railings, handrails and stringers.
+]]
+local function between(parent: Instance, name: string, a: Vector3, b: Vector3, height: number, thickness: number,
+	lift: number, look: StarterGymConfig.Look): BasePart
+	local offset = b - a
+	local length = offset.Magnitude
+	local direction = offset / length
+	local side = direction:Cross(Vector3.yAxis)
+	side = if side.Magnitude < 1e-6 then Vector3.zAxis else side.Unit
+	local up = side:Cross(direction).Unit
+	if up.Y < 0 then
+		up = -up
+	end
+	local centre = (a + b) / 2 + up * (lift + height / 2)
+	return placed(parent, name, Vector3.new(length, height, thickness), CFrame.fromMatrix(centre, direction, up), look)
+end
+
+--[[
+	STAGE 3: the balcony and the two glass staircases (GAME_DESIGN §27). The
+	balcony is the upper floor's level carried round the hall's left, front and
+	right sides, in front of every upstairs room, with a glass railing and steel
+	columns under its inner edge. Each staircase starts in the hall's front
+	area, runs toward its front corner just behind the front balcony, and lands
+	on the side balcony. Returns the number of steps per staircase.
+]]
+local function buildBalconyAndStairs(model: Model, plan: StarterGymConfig.Footprint): number
+	local cfg = StarterGymConfig
+	local looks = cfg.Looks
+	local cx, hallHalf = plan.centreX, plan.hallHalfWidth
+	local floorY, upperY, slabBottom = plan.floorY, plan.upperFloorY, plan.upperSlabBottomY
+	local depth = cfg.BalconyDepthStuds
+	local frontEdgeZ = plan.hallFrontZ + depth -- the front balcony's inner edge
+	local innerHalf = hallHalf - depth -- the side balconies' inner edge, from the middle
+	local railHeight, railThickness, hand = cfg.RailingHeightStuds, cfg.RailingThicknessStuds, cfg.HandrailSizeStuds
+
+	local stairZ0, stairZ1 = frontEdgeZ, frontEdgeZ + cfg.StairWidthStuds
+	local steps = math.round((upperY - floorY) / cfg.StairStepRiseStuds)
+	local rise = (upperY - floorY) / steps
+	local bottomOffset, topOffset = hallHalf - cfg.StairBottomFromSideStuds, innerHalf
+	assert(topOffset > bottomOffset, "the staircase has no length: StairBottomFromSideStuds must exceed BalconyDepthStuds")
+	local run = (topOffset - bottomOffset) / steps
+
+	local balcony = Instance.new("Folder")
+	balcony.Name = "Balcony"
+	balcony.Parent = model
+	local stairs = Instance.new("Folder")
+	stairs.Name = "Stairs"
+	stairs.Parent = model
+
+	-- The walkway, level with the upper floor.
+	box(balcony, "Balcony_Front", Vector3.new(cx - hallHalf, slabBottom, plan.hallFrontZ),
+		Vector3.new(cx + hallHalf, upperY, frontEdgeZ), looks.RoomFloor)
+	box(balcony, "Balcony_Left", Vector3.new(cx + innerHalf, slabBottom, frontEdgeZ),
+		Vector3.new(cx + hallHalf, upperY, plan.hallBackZ), looks.RoomFloor)
+	box(balcony, "Balcony_Right", Vector3.new(cx - hallHalf, slabBottom, frontEdgeZ),
+		Vector3.new(cx - innerHalf, upperY, plan.hallBackZ), looks.RoomFloor)
+
+	-- A straight glass railing with a steel handrail on top, along the balcony's inner edge.
+	local function railing(name: string, alongX: boolean, line: number, from: number, to: number)
+		if to - from < 0.01 then
+			return
+		end
+		local half = railThickness / 2
+		local glassTop = upperY + railHeight - hand
+		local function corners(low: number, high: number, halfWidth: number): (Vector3, Vector3)
+			if alongX then
+				return Vector3.new(from, low, line - halfWidth), Vector3.new(to, high, line + halfWidth)
+			end
+			return Vector3.new(line - halfWidth, low, from), Vector3.new(line + halfWidth, high, to)
+		end
+		local glassLow, glassHigh = corners(upperY, glassTop, half)
+		box(balcony, name, glassLow, glassHigh, looks.Glass)
+		local railLow, railHigh = corners(glassTop, upperY + railHeight, hand / 2)
+		box(balcony, name .. "_Handrail", railLow, railHigh, looks.SteelBeam)
+	end
+	railing("Railing_Front", true, frontEdgeZ - railThickness / 2, cx - innerHalf, cx + innerHalf)
+	for _, sign in ipairs({ 1, -1 }) do
+		local label = if sign == 1 then "Left" else "Right"
+		-- Open where the staircase lands (stairZ0..stairZ1), closed behind it.
+		railing("Railing_" .. label, false, cx + sign * (innerHalf + railThickness / 2), stairZ1, plan.hallBackZ)
+	end
+
+	-- Steel columns under the inner edge: between the side rooms' doors, and
+	-- under the front upper rooms' dividers.
+	local column = cfg.ColumnSizeStuds
+	local sideDepth = (plan.hallBackZ - plan.hallFrontZ) / 4
+	for _, sign in ipairs({ 1, -1 }) do
+		local label = if sign == 1 then "Left" else "Right"
+		local x = cx + sign * (innerHalf + column / 2)
+		for k = 1, 3 do
+			local z = plan.hallFrontZ + k * sideDepth
+			box(balcony, string.format("Column_%s_%d", label, k), Vector3.new(x - column / 2, floorY, z - column / 2),
+				Vector3.new(x + column / 2, slabBottom, z + column / 2), looks.SteelBeam)
+		end
+		local frontX = cx + sign * hallHalf / 3
+		box(balcony, "Column_Front_" .. label, Vector3.new(frontX - column / 2, floorY, frontEdgeZ - column),
+			Vector3.new(frontX + column / 2, slabBottom, frontEdgeZ), looks.SteelBeam)
+	end
+
+	-- The two glass staircases.
+	for _, sign in ipairs({ 1, -1 }) do
+		local label = if sign == 1 then "Left" else "Right"
+		for index = 1, steps do
+			local a, b = cx + sign * (bottomOffset + (index - 1) * run), cx + sign * (bottomOffset + index * run)
+			local top = floorY + index * rise
+			local tread = box(stairs, string.format("Stairs_%s_Tread_%02d", label, index),
+				Vector3.new(math.min(a, b), top - cfg.TreadThicknessStuds, stairZ0),
+				Vector3.new(math.max(a, b), top, stairZ1), looks.StairGlass)
+			-- The steps are only for looks: a character hops up separate steps, which
+			-- felt choppy (user, 2026-10-21). They walk on the ramp below instead.
+			tread.CanCollide = false
+		end
+		-- The steps' front edges, first to last: railings follow this line.
+		local firstX = cx + sign * bottomOffset
+		local lastX = cx + sign * (bottomOffset + (steps - 1) * run)
+
+		--[[
+			The walking surface: an invisible ramp whose top runs through every
+			step's front edge, from the floor one step before the first step up
+			to the top step's front edge (level with the balcony; the top step and
+			the balcony are flat from there). It is solid, so raycasts and
+			spatial queries still see it (Roblox only honours CanQuery = false on
+			parts that are not solid); the verify script leaves it out where a
+			ramp is meant to be walked on.
+		]]
+		local zMiddle = (stairZ0 + stairZ1) / 2
+		local ramp = between(stairs, string.format("Stairs_%s_Ramp", label),
+			Vector3.new(cx + sign * (bottomOffset - run), floorY, zMiddle), Vector3.new(lastX, upperY, zMiddle),
+			1, stairZ1 - stairZ0, -1, looks.StairGlass)
+		ramp.Transparency = 1
+		ramp.CastShadow = false
+		for _, edge in ipairs({ { name = "Front", z = stairZ0 + 0.3 }, { name = "Back", z = stairZ1 - 0.3 } }) do
+			local a = Vector3.new(firstX, floorY + rise, edge.z)
+			local b = Vector3.new(lastX, upperY, edge.z)
+			local prefix = string.format("Stairs_%s_%s", label, edge.name)
+			between(stairs, prefix .. "_Railing", a, b, railHeight - hand, railThickness, 0, looks.Glass)
+			between(stairs, prefix .. "_Handrail", a, b, hand, hand, railHeight - hand, looks.SteelBeam)
+			-- A steel stringer under the steps' ends.
+			between(stairs, prefix .. "_Stringer", Vector3.new(firstX, floorY, edge.z),
+				Vector3.new(cx + sign * topOffset, upperY - cfg.TreadThicknessStuds, edge.z), 0.8, 0.4, -0.8,
+				looks.SteelBeam)
+		end
+	end
+
+	return steps
+end
+
 -- Builds the gym into `model` and returns a one-line summary for the Output.
 local function buildGym(model: Model): string
 	local cfg = StarterGymConfig
@@ -464,6 +619,7 @@ local function buildGym(model: Model): string
 	end
 
 	local skylights = buildRoof(roofs, plan)
+	local steps = buildBalconyAndStairs(model, plan)
 
 	for name, value in pairs({
 		HallMin = Vector3.new(cx - hallHalf, floorY, hallFrontZ),
@@ -474,9 +630,9 @@ local function buildGym(model: Model): string
 		model:SetAttribute(name, value)
 	end
 	return string.format(
-		"hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms, hall roof with %d skylights",
+		"hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms, roof with %d skylights, 2 glass staircases of %d steps",
 		cx - hallHalf, cx + hallHalf, hallFrontZ, hallBackZ, outerMinX, outerMaxX, frontZ - t, hallBackZ + t,
-		#walls:GetChildren(), #rooms:GetChildren(), skylights)
+		#walls:GetChildren(), #rooms:GetChildren(), skylights, steps)
 end
 
 --[[

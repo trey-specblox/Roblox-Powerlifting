@@ -819,7 +819,8 @@ Comp max testing
 > **Starter Gym building, "version 2" (approved 2026-10-21).** Chosen by the
 > user after seeing references (`References/Visual Style/Visual Style.md`,
 > refs 11-15) and two drawn redesigns.
-> - **Size:** about 250 x 132 studs (56 x 30 m), bigger than the first shell.
+> - **Size:** about 250 x 145 studs (56 x 33 m), bigger than the first shell
+>   (it grew 9 studs deeper with the wider balcony).
 > - **Rack hall:** all 30 racks downstairs, in the middle, in a double-height
 >   hall under a **pitched roof with skylights** (not a flat ceiling).
 > - **One roof over the whole building** (user, 2026-10-21): the pitched roof
@@ -839,9 +840,12 @@ Comp max testing
 >   did not connect to the hall, so the two front-corner rooms stay rooms).
 >   The staircases are **glass** (user, 2026-10-21), and they must leave
 >   **every room behind or beside them reachable**: no stair may block a
->   room's door or the way to it. A
+>   room's door or the way to it. Walking up them must feel **smooth** (user,
+>   2026-10-21; built as an invisible ramp under the glass steps). A
 >   U-shaped **balcony walkway** with a glass railing runs around three sides
->   of the hall and leads to every upstairs room.
+>   of the hall and leads to every upstairs room. It must be **wide enough
+>   for 2-3 Roblox characters side by side, including bulkier future
+>   players** (user, 2026-10-21; 12 studs wide).
 > - **Entrance** (in the front block): **glass doors**, a lobby with the
 >   **spawn**, a **reception desk** and a **gym-name wall**, and a glass wall
 >   with a wide opening into the rack hall.

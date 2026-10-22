@@ -164,7 +164,9 @@ TrainingStationConfig.GymLayout = {
 	racksPerRow = 10,
 	rackSpacingStuds = 16,
 	rowSpacingStuds = 28,
-	firstRowZ = 25, -- the row nearest the entrance
+	-- The row nearest the entrance. 34 since the wider balcony (2026-10-21): it
+	-- moved back with StarterGymConfig.FrontOpenAreaStuds, so the lobby stays put.
+	firstRowZ = 34,
 	rowCentreX = 0, -- the middle of every row
 	-- Top of the gym floor (StarterGymBuilder), where the racks stand: just above
 	-- the Baseplate (Y 0) so the two surfaces never flicker against each other.

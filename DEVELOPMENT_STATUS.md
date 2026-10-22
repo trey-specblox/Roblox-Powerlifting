@@ -345,8 +345,65 @@ and polish.
   looks good. STAGE 2 DONE; COMMITTED and pushed 2026-10-21 with user
   approval as "Put one pitched roof with skylights over the whole Starter Gym
   (stage 2)" (`git log` for the hash).
-  NEXT ACTION: stage 3: glass staircases in the hall's front corners and the
-  balcony (rooms beside them must stay reachable).
+  v2 STAGE 3 (balcony + glass staircases) BUILT, NOT YET STUDIO-TESTED, NOT
+  committed (user said 2026-10-21: commit stage 2, then start stage 3):
+  - `StarterGymConfig`: BalconyDepthStuds 6, railing 3.5 high / 0.3 thick,
+    handrail 0.4, columns 1, StairWidthStuds 8, StairStepRiseStuds 1 (14
+    steps), TreadThicknessStuds 0.4, StairBottomFromSideStuds 24; look
+    StairGlass (glass, 0.35 transparent).
+  - `StarterGymBuilder.buildBalconyAndStairs`: Balcony folder: Balcony_Front
+    (Z -3..3 across the hall), Balcony_Left/Right (X +/-88..94, Z 3..97.05),
+    tops at the upper floor (Y 14.05); glass railings with steel handrails on
+    the inner edges (the side ones open at Z 3..11 where the stairs land);
+    steel columns under the inner edge between the side rooms' doors
+    (Z 22, 47, 72) and at X +/-31.3 on the front. Stairs folder: per side 14
+    glass treads from X +/-70 to +/-88 at Z 3..11 (just behind the front
+    balcony, rising toward the front corner), two sloped glass railings with
+    handrails and two steel stringers. New helper `between` for sloped parts.
+  - Rooms near the stairs: Lockers/Cafe doors (X +/-64.5 on the front glass)
+    stay clear (stairs start at X +/-70); Office/Storage doors (X +/-94.5,
+    Z 9.5) open under the side balcony beside the stair tops.
+  - `StarterGym_VerifyShell`: Balcony and Stairs folders; walls/railings/
+    columns/stairs all count as obstacles; NEW: the 4 studs in front of every
+    room door must be clear; 28 treads with both top steps level with the
+    balcony; landing onto the balcony clear; the way onto each first step clear.
+  - Checks by Claude: luau-lsp 0 errors, `rojo build` OK, `git diff --check` clean.
+  User test (2026-10-21): walking up the stairs is "very choppy" (the
+  character hops up each 1-stud step); wants a smooth walk. Fix (NOT yet
+  Studio-tested): the glass treads are now visual only (CanCollide off), and
+  each staircase has an invisible, solid, non-queryable ramp
+  (Stairs_Left/Right_Ramp, 1 thick, 8 wide) whose top runs through every
+  step's front edge, from the floor one step before the first step to the
+  top step's front edge at balcony level. The verify skips treads in the
+  solid check and checks: no solid tread, 2 ramps, solid, invisible, top at
+  the balcony's level, bottom at or below the floor. luau-lsp 0 errors,
+  `rojo build` OK.
+  Studio result (user, 19:16): verify 19 passed, 3 FAILED, all faults in the
+  CHECK, not the stairs: (1) the ramp check measured tilted ramps with
+  Position +/- Size/2 (wrong for rotated parts) -> `bounds()` now uses the
+  8 world corners; (2)+(3) "the way onto the first step" found the ramps,
+  which start one step in front of the stairs on purpose -> that check now
+  leaves the ramps out. Also learned: CanQuery = false only works on parts
+  with CanCollide off, so the ramp's CanQuery line was removed and its
+  comment corrected. Smoothness itself not reported yet.
+  User (2026-10-21): the stairs ARE SMOOTH now. Request: make the balcony
+  wider, for 2-3 Roblox characters side by side, bulkier future players
+  included (recorded in GAME_DESIGN §27, with "smooth stairs"). Change (NOT
+  yet Studio-tested): BalconyDepthStuds 6 -> 12 (side balconies X +/-82..94,
+  front balcony Z -3..9); stairs moved with it (Z 9..17, X +/-64 -> +/-82;
+  StairBottomFromSideStuds 24 -> 30, same 18-stud run); to keep a 10-stud
+  walkway before row 1, FrontOpenAreaStuds 21 -> 30 and GymLayout.firstRowZ
+  25 -> 34 together, so hallFrontZ (-3), the lobby and the spawn do not
+  move; the hall and building grow 9 studs deeper (hall back Z 106.05).
+  luau-lsp 0 errors, `rojo build` OK. Whether the earlier verify fix passed
+  (22 checks) was not reported.
+  Studio result (user, 2026-10-21): "All checks pass" (StarterGym_VerifyShell
+  and ComboRack01_VerifyRacks; exact lines not shared). STAGE 3 DONE;
+  COMMITTED and pushed 2026-10-21 with user approval as "Add the Starter Gym
+  balcony and smooth glass staircases (stage 3)" (`git log` for the hash).
+  Stairs stay 8 studs wide for now (user decision, 2026-10-21).
+  NEXT ACTION: the next Starter Gym step, not started: reception desk and
+  gym-name wall, then lighting (the inside is dark: Lighting.Ambient black).
   OLD NEXT ACTION (done above): user runs the move script (Edit mode) and saves, then tests
   in Studio: StarterGym_VerifyShell, ComboRack01_VerifyRacks, walk around,
   racks' prompts. Then stage 2 (hall roof with skylights).

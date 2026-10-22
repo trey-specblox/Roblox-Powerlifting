@@ -15,8 +15,8 @@
 	Built in stages. Stage 1: floors, upper floor slabs, the room blocks'
 	ceilings, every wall and glass front, the rooms. Stage 2: one pitched roof
 	over the whole building with skylights over the hall, gable walls and steel
-	roof beams. Later stages: the glass stairs and balcony, reception desk and
-	gym-name wall, lights.
+	roof beams. Stage 3: the balcony and the two glass staircases. Later: the
+	reception desk and gym-name wall, lights.
 
 	The building's size is WORKED OUT from GymLayout, so adding racks or rows
 	moves the walls with it. Directions (as in GymLayout): the entrance is at
@@ -37,7 +37,10 @@ StarterGymConfig.RackBackReachStuds = 2.05
 -- The rack hall around the rows.
 StarterGymConfig.SideAisleStuds = 14 -- beyond the outermost rack's half-spacing, each side
 StarterGymConfig.BackAisleStuds = 14 -- behind the last row's racks
-StarterGymConfig.FrontOpenAreaStuds = 21 -- in front of row 1's lifting space, for later equipment
+-- In front of row 1's lifting space: the front balcony (12) and the stairs
+-- behind it (8) stand here, with a 10-stud walkway left before the racks.
+-- Kept in step with GymLayout.firstRowZ so the lobby does not move.
+StarterGymConfig.FrontOpenAreaStuds = 30
 
 -- The room blocks.
 StarterGymConfig.SideBlockDepthStuds = 30 -- left and right blocks, across (X)
@@ -87,6 +90,31 @@ StarterGymConfig.RoofBeamWidthStuds = 1
 StarterGymConfig.RoofBeamDepthStuds = 1.5
 
 --[[
+	The balcony and the glass staircases (stage 3; GAME_DESIGN §27). The balcony
+	is a U-shaped walkway on the upper floor's level around the left, front and
+	right sides of the hall, in front of every upstairs room, with a glass
+	railing. Two glass staircases rise from the hall's front corners, right
+	where you walk in from the lobby: each runs along the front of the hall,
+	just behind the balcony, up toward its corner and lands on the side
+	balcony. They must leave every room door clear (checked by
+	StarterGym_VerifyShell).
+]]
+-- Wide enough for 2-3 characters side by side, bulkier future players
+-- included (user, 2026-10-21): a bulky character is about 3 studs wide.
+StarterGymConfig.BalconyDepthStuds = 12
+StarterGymConfig.RailingHeightStuds = 3.5
+StarterGymConfig.RailingThicknessStuds = 0.3
+StarterGymConfig.HandrailSizeStuds = 0.4
+StarterGymConfig.ColumnSizeStuds = 1 -- steel columns under the balcony's inner edge
+StarterGymConfig.StairWidthStuds = 8
+StarterGymConfig.StairStepRiseStuds = 1 -- StoreyHeightStuds / this = the number of steps
+StarterGymConfig.TreadThicknessStuds = 0.4
+-- Where a staircase starts, measured in from the hall's side wall. It ends at
+-- the side balcony (BalconyDepthStuds in), so it is this minus the balcony
+-- long: 30 - 12 = 18 studs for the 14-stud climb.
+StarterGymConfig.StairBottomFromSideStuds = 30
+
+--[[
 	The rooms (GAME_DESIGN §27: names are PLACEHOLDERS until the NPCs are
 	designed; a name here is only the room's name in Workspace). Each becomes an
 	invisible region part "Room_<Name>" in Workspace.StarterGym.Rooms, with its
@@ -121,6 +149,8 @@ StarterGymConfig.Looks = {
 	HallRoof = { material = Enum.Material.Metal, color = Color3.fromRGB(212, 214, 218) },
 	Skylight = { material = Enum.Material.Glass, color = Color3.fromRGB(205, 228, 240), transparency = 0.55 },
 	SteelBeam = { material = Enum.Material.Metal, color = Color3.fromRGB(38, 38, 42) },
+	-- Glass steps: less see-through than the walls, so players can see where to step.
+	StairGlass = { material = Enum.Material.Glass, color = Color3.fromRGB(200, 224, 236), transparency = 0.35 },
 } :: { [string]: Look }
 
 --[[

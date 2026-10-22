@@ -15,6 +15,10 @@
 	    front, lies on Floor_Hall and touches no wall;
 	  - every room listed in StarterGymConfig.Rooms exists once, and its door
 	    is open (no wall part in it);
+	  - stage 3: the way out of every room's door is clear (no wall, railing,
+	    column or stair in the 4 studs in front of it); both glass staircases
+	    have every step, end level with the balcony, land on it with nothing in
+	    the way, and can be stepped onto;
 	  - stage 2: the whole hall is under the roof (upward rays all hit it),
 	    seen from above the whole building is the pitched roof (no flat roof
 	    tops), and the skylights exist;
@@ -39,8 +43,20 @@ local function check(passed: boolean, label: string)
 	table.insert(lines, (if passed then "  PASS  " else "  FAIL  ") .. label)
 end
 
+-- The lowest and highest corner of a part's box in the world, also when it is tilted.
 local function bounds(part: BasePart): (Vector3, Vector3)
-	return part.Position - part.Size / 2, part.Position + part.Size / 2
+	local half = part.Size / 2
+	local low = Vector3.new(math.huge, math.huge, math.huge)
+	local high = -low
+	for _, x in ipairs({ -1, 1 }) do
+		for _, y in ipairs({ -1, 1 }) do
+			for _, z in ipairs({ -1, 1 }) do
+				local corner = part.CFrame:PointToWorldSpace(Vector3.new(x * half.X, y * half.Y, z * half.Z))
+				low, high = low:Min(corner), high:Max(corner)
+			end
+		end
+	end
+	return low, high
 end
 
 local function run()
@@ -61,20 +77,22 @@ local function run()
 		return
 	end
 	local folders = {}
-	for _, name in ipairs({ "Floors", "Roofs", "Walls", "Rooms" }) do
+	for _, name in ipairs({ "Floors", "Roofs", "Walls", "Rooms", "Balcony", "Stairs" }) do
 		folders[name] = model:FindFirstChild(name)
 	end
-	check(folders.Floors and folders.Roofs and folders.Walls and folders.Rooms,
-		"it has Floors, Roofs, Walls and Rooms")
-	if not (folders.Floors and folders.Roofs and folders.Walls and folders.Rooms) then
+	local allFolders = folders.Floors and folders.Roofs and folders.Walls and folders.Rooms and folders.Balcony
+		and folders.Stairs
+	check(allFolders ~= nil, "it has Floors, Roofs, Walls, Rooms, Balcony and Stairs")
+	if not allFolders then
 		return
 	end
 
 	-- Solid parts.
 	local partCount, loose = 0, 0
-	for _, f in ipairs({ folders.Floors, folders.Roofs, folders.Walls }) do
+	for _, f in ipairs({ folders.Floors, folders.Roofs, folders.Walls, folders.Balcony, folders.Stairs }) do
 		for _, d in ipairs(f:GetDescendants()) do
-			if d:IsA("BasePart") then
+			-- The glass steps are for looks only (players walk on the stairs' ramps).
+			if d:IsA("BasePart") and not string.find(d.Name, "_Tread_", 1, true) then
 				partCount += 1
 				if not (d.Anchored and d.CanCollide) then
 					loose += 1
@@ -98,12 +116,24 @@ local function run()
 	check(#wrongHeight == 0, string.format("ground floors at Y %.2f, upper floors at Y %.2f%s", layout.floorY,
 		plan.upperFloorY, if #wrongHeight > 0 then " (" .. table.concat(wrongHeight, "; ") .. ")" else ""))
 
+	-- "Walls" here means anything a player could bump into: walls, the balcony
+	-- (railings, columns) and the stairs.
 	local wallParams = OverlapParams.new()
 	wallParams.FilterType = Enum.RaycastFilterType.Include
-	wallParams.FilterDescendantsInstances = { folders.Walls }
-	local function wallsIn(low: Vector3, high: Vector3): { string }
+	wallParams.FilterDescendantsInstances = { folders.Walls, folders.Balcony, folders.Stairs }
+	-- The same without the stairs' ramps: a ramp is the way ONTO its stairs, not in the way.
+	local notRamps: { Instance } = { folders.Walls, folders.Balcony }
+	for _, part in ipairs(folders.Stairs:GetChildren()) do
+		if string.sub(part.Name, -5) ~= "_Ramp" then
+			table.insert(notRamps, part)
+		end
+	end
+	local noRampParams = OverlapParams.new()
+	noRampParams.FilterType = Enum.RaycastFilterType.Include
+	noRampParams.FilterDescendantsInstances = notRamps
+	local function wallsIn(low: Vector3, high: Vector3, params: OverlapParams?): { string }
 		local names = {}
-		for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new((low + high) / 2), high - low, wallParams)) do
+		for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new((low + high) / 2), high - low, params or wallParams)) do
 			table.insert(names, part.Name)
 		end
 		return names
@@ -176,6 +206,90 @@ local function run()
 		if #doubled > 0 then " (twice: " .. table.concat(doubled, ", ") .. ")" else ""))
 	check(#shut == 0, string.format("every room's door is open%s",
 		if #shut > 0 then " (blocked: " .. table.concat(shut, "; ") .. ")" else ""))
+
+	-- Stage 3 (user: the rooms behind the staircases must stay reachable): the
+	-- 4 studs in front of every door, on the hall side, are clear of walls,
+	-- the balcony's railings and columns, and the stairs.
+	local blockedFront = {}
+	for _, room in ipairs(folders.Rooms:GetChildren()) do
+		local centre = room:GetAttribute("DoorCentre")
+		local alongX = room:GetAttribute("DoorAlongX")
+		if typeof(centre) == "Vector3" and typeof(alongX) == "boolean" then
+			-- Doors in the front block's glass face the hall (+Z); the others face the middle.
+			local outward = if alongX then Vector3.zAxis else Vector3.new(math.sign(plan.centreX - centre.X), 0, 0)
+			local across = if alongX then Vector3.xAxis else Vector3.zAxis
+			local nearPoint = centre + outward * (thickness / 2 + 0.05)
+			local farPoint = centre + outward * (thickness / 2 + 4)
+			local spread = across * halfDoor + Vector3.new(0, halfHeight, 0)
+			local a, b = nearPoint - spread, farPoint + spread
+			local low = Vector3.new(math.min(a.X, b.X), math.min(a.Y, b.Y), math.min(a.Z, b.Z))
+			local high = Vector3.new(math.max(a.X, b.X), math.max(a.Y, b.Y), math.max(a.Z, b.Z))
+			local hits = wallsIn(low, high)
+			if #hits > 0 then
+				table.insert(blockedFront, room.Name .. " (" .. table.concat(hits, ", ") .. ")")
+			end
+		end
+	end
+	check(#blockedFront == 0, string.format("the way out of every room's door is clear%s",
+		if #blockedFront > 0 then " (blocked: " .. table.concat(blockedFront, "; ") .. ")" else ""))
+
+	-- The staircases: all steps there, the top step level with the balcony,
+	-- the landing onto the balcony open, and the way onto the first step clear.
+	local steps = math.round((plan.upperFloorY - plan.floorY) / gym.StairStepRiseStuds)
+	local treads, topOk = 0, 0
+	for _, part in ipairs(folders.Stairs:GetChildren()) do
+		if part:IsA("BasePart") and string.find(part.Name, "_Tread_", 1, true) then
+			treads += 1
+			local _, high = bounds(part)
+			if math.abs(high.Y - plan.upperFloorY) <= 0.01 then
+				topOk += 1
+			end
+		end
+	end
+	check(treads == 2 * steps and topOk == 2, string.format(
+		"2 staircases of %d glass steps, top steps level with the balcony (%d steps, %d level)", steps, treads, topOk))
+
+	-- Smooth stairs (user, 2026-10-21): the steps do not collide; each staircase
+	-- has one solid, invisible ramp from the floor up to the balcony's level.
+	local solidTreads, ramps, goodRamps = 0, 0, 0
+	for _, part in ipairs(folders.Stairs:GetChildren()) do
+		if part:IsA("BasePart") then
+			if string.find(part.Name, "_Tread_", 1, true) and part.CanCollide then
+				solidTreads += 1
+			elseif string.sub(part.Name, -5) == "_Ramp" then
+				ramps += 1
+				local low, high = bounds(part)
+				if part.CanCollide and part.Transparency >= 1 and math.abs(high.Y - plan.upperFloorY) <= 0.05
+					and low.Y <= plan.floorY then
+					goodRamps += 1
+				end
+			end
+		end
+	end
+	check(solidTreads == 0 and ramps == 2 and goodRamps == 2, string.format(
+		"smooth stairs: steps not solid (%d solid), 2 invisible solid ramps from the floor to the balcony (%d found, %d right)",
+		solidTreads, ramps, goodRamps))
+	local stairZ0 = plan.hallFrontZ + gym.BalconyDepthStuds
+	local stairZ1 = stairZ0 + gym.StairWidthStuds
+	local innerHalf = plan.hallHalfWidth - gym.BalconyDepthStuds
+	local bottomOffset = plan.hallHalfWidth - gym.StairBottomFromSideStuds
+	for _, sign in ipairs({ 1, -1 }) do
+		local label = if sign == 1 then "left" else "right"
+		local function span(o1: number, o2: number): (number, number)
+			local x1, x2 = plan.centreX + sign * o1, plan.centreX + sign * o2
+			return math.min(x1, x2), math.max(x1, x2)
+		end
+		local landX0, landX1 = span(innerHalf - 0.6, innerHalf + 0.6)
+		local landing = wallsIn(Vector3.new(landX0, plan.upperFloorY + 0.3, stairZ0 + 0.6),
+			Vector3.new(landX1, plan.upperFloorY + 3, stairZ1 - 0.6))
+		check(#landing == 0, string.format("%s staircase lands on the balcony with nothing in the way%s", label,
+			if #landing > 0 then " (" .. table.concat(landing, ", ") .. ")" else ""))
+		local footX0, footX1 = span(bottomOffset - 4, bottomOffset - 0.1)
+		local foot = wallsIn(Vector3.new(footX0, layout.floorY + 0.3, stairZ0 + 0.6),
+			Vector3.new(footX1, layout.floorY + 5, stairZ1 - 0.6), noRampParams)
+		check(#foot == 0, string.format("the way onto the %s staircase's first step is clear%s", label,
+			if #foot > 0 then " (" .. table.concat(foot, ", ") .. ")" else ""))
+	end
 
 	-- Stage 2: the hall is roofed. Rays straight up from a grid over the hall
 	-- floor must all hit the roof (solid roof, skylight glass or a beam), so no
