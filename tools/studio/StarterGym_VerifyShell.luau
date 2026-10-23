@@ -33,7 +33,11 @@
 	  - the automatic sliding doors (2026-10-23) in the entrance and in the
 	    lobby's opening into the hall: tagged, with a sensor; panels that fill
 	    the opening when closed, and when open clear it, hit no wall or
-	    reception part and do not run into each other.
+	    reception part and do not run into each other;
+	  - stage 5 (lighting): the Lighting service uses Future lighting, a
+	    bright ambient and daytime; looking up in every room and under the
+	    balcony you see a white ceiling (not tiles); every room but the lobby
+	    has its light panel; the hall has all its light bars.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -443,6 +447,78 @@ local function run()
 				if #problems > 0 then "; " .. table.concat(problems, "; ") elseif not doorsShut then "; not closed" else ""))
 		end
 	end
+
+	-- Stage 5: lighting. The Lighting service (set by Rojo from default.project.json).
+	local lighting = game:GetService("Lighting")
+	local ambient = lighting.Ambient
+	local readTechnology, technology = pcall(function()
+		return lighting.Technology
+	end)
+	local technologyName = if readTechnology then technology.Name else "unreadable"
+	check(technologyName == "Future" and math.min(ambient.R, ambient.G, ambient.B) >= 0.3
+		and lighting.ClockTime >= 8 and lighting.ClockTime <= 17, string.format(
+			"Lighting: Future (%s), ambient not dark (%.2f, %.2f, %.2f), daytime (ClockTime %.1f)",
+			technologyName, ambient.R, ambient.G, ambient.B, lighting.ClockTime))
+	-- Looking straight up in every room you see a ceiling, not the floor tiles above;
+	-- every room but the lobby has its LED panel with a light.
+	local upParams = RaycastParams.new()
+	upParams.FilterType = Enum.RaycastFilterType.Include
+	upParams.FilterDescendantsInstances = { model }
+	local lightsFolder = model:FindFirstChild("Lights")
+	local lobbyRoom = "Room_" .. gym.Rooms.FrontGround[2]
+	local noCeiling, noLight = {}, {}
+	for _, room in ipairs(folders.Rooms:GetChildren()) do
+		if room:IsA("BasePart") then
+			local bottom = room.Position.Y - room.Size.Y / 2
+			local hit = workspace:Raycast(Vector3.new(room.Position.X, bottom + 2, room.Position.Z), Vector3.new(0, 30, 0), upParams)
+			local seen = if hit then hit.Instance.Name else "nothing"
+			if not (string.sub(seen, 1, 8) == "Ceiling_" or seen == "Lobby_Ceiling") then
+				table.insert(noCeiling, room.Name .. " sees " .. seen)
+			end
+			if room.Name ~= lobbyRoom then
+				local panel = lightsFolder and lightsFolder:FindFirstChild("RoomLight_" .. string.sub(room.Name, 6))
+				if not (panel and panel:FindFirstChildOfClass("SurfaceLight")) then
+					table.insert(noLight, room.Name)
+				end
+			end
+		end
+	end
+	check(#noCeiling == 0, string.format("every room has a white ceiling overhead%s",
+		if #noCeiling > 0 then " (" .. table.concat(noCeiling, "; ") .. ")" else ""))
+	check(#noLight == 0, string.format("every room but the lobby has its ceiling light%s",
+		if #noLight > 0 then " (missing: " .. table.concat(noLight, ", ") .. ")" else ""))
+	-- Under the balcony: the white soffit, not the walkway's tiles.
+	local underBalcony = {}
+	local depthHalf = gym.BalconyDepthStuds / 2
+	for i = 0, 9 do
+		local x = plan.hallMinX + (i + 0.5) * (plan.hallMaxX - plan.hallMinX) / 10
+		table.insert(underBalcony, Vector3.new(x, layout.floorY + 2, plan.hallFrontZ + depthHalf))
+	end
+	for i = 0, 5 do
+		local z = plan.hallFrontZ + gym.BalconyDepthStuds + (i + 0.5) * (plan.hallBackZ - plan.hallFrontZ - gym.BalconyDepthStuds) / 6
+		table.insert(underBalcony, Vector3.new(plan.hallMaxX - depthHalf, layout.floorY + 2, z))
+		table.insert(underBalcony, Vector3.new(plan.hallMinX + depthHalf, layout.floorY + 2, z))
+	end
+	local notSoffit = {}
+	for _, point in ipairs(underBalcony) do
+		local hit = workspace:Raycast(point, Vector3.new(0, 30, 0), upParams)
+		if hit == nil or string.sub(hit.Instance.Name, 1, 7) ~= "Soffit_" then
+			table.insert(notSoffit, string.format("(%.0f, %.0f) %s", point.X, point.Z, if hit then hit.Instance.Name else "nothing"))
+		end
+	end
+	check(#notSoffit == 0, string.format("under the balcony, all %d spots see the white ceiling%s", #underBalcony,
+		if #notSoffit > 0 then " (" .. table.concat(notSoffit, "; ", 1, math.min(#notSoffit, 6)) .. ")" else ""))
+	-- The hall's light bars: every segment under every beam, each with its light.
+	local hallLights = 0
+	if lightsFolder then
+		for _, part in ipairs(lightsFolder:GetChildren()) do
+			if part:IsA("BasePart") and string.match(part.Name, "^HallLight_%d+_%d+$") and part:FindFirstChildOfClass("SurfaceLight") then
+				hallLights += 1
+			end
+		end
+	end
+	local expectedHall = gym.RoofBeamCount * gym.HallLightSegmentsPerRow
+	check(hallLights == expectedHall, string.format("%d hall light bars with lights (%d found)", expectedHall, hallLights))
 
 	-- Stage 4: the gym's name twice (name wall, outside sign), the check-in
 	-- screen, and the lights (ceiling strips, desk glow and light bar, two sign

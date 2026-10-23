@@ -33,7 +33,11 @@
 	  Doors   automatic sliding glass doors (2026-10-23) in the entrance and
 	          in the lobby's opening into the hall, moved by the client's
 	          AutoDoorAnimator.
-	Later stages: lights.
+	STAGE 5:
+	  Lights  white ceilings under the ground-floor rooms (Ceiling_Room_*)
+	          and the balcony (Soffit_*), LED bars under the hall's beams and
+	          an LED panel in every room. The Lighting service's settings
+	          are in default.project.json.
 
 	Visual and physical only: no gameplay rule, credit or player data changes.
 	FAILS CLOSED: if anything goes wrong the half-built gym is removed with a
@@ -973,6 +977,91 @@ local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
 		cfg.LobbyOpeningWidthStuds, cfg.LobbyOpeningHeightStuds, cfg.HallDoorPanelsPerSide)
 end
 
+--[[
+	STAGE 5: ceilings and lights (StarterGymConfig "Lighting"; the Lighting
+	service's own settings are in default.project.json). White ceilings under
+	the ground-floor rooms and the balcony, LED bars hanging under the hall's
+	steel beams, and one LED panel per room (not the lobby: it has its own
+	strips). Returns the number of lights added.
+]]
+local function buildLights(model: Model, plan: StarterGymConfig.Footprint): number
+	local cfg = StarterGymConfig
+	local looks = cfg.Looks
+	local cx, hallHalf = plan.centreX, plan.hallHalfWidth
+	local slabBottom = plan.upperSlabBottomY
+	local thickness = cfg.CeilingThicknessStuds
+	local roofs = model:FindFirstChild("Roofs") :: Folder
+	local balcony = model:FindFirstChild("Balcony") :: Folder
+	local rooms = model:FindFirstChild("Rooms") :: Folder
+	local lights = Instance.new("Folder")
+	lights.Name = "Lights"
+	lights.Parent = model
+	local count = 0
+	local function shining(part: BasePart, range: number, brightness: number, angle: number)
+		surfaceLight(part, Enum.NormalId.Bottom, range, brightness, angle)
+		count += 1
+	end
+
+	-- Under the balcony: a white ceiling instead of the walkway's tiles.
+	local frontEdgeZ = plan.hallFrontZ + cfg.BalconyDepthStuds
+	local innerHalf = hallHalf - cfg.BalconyDepthStuds
+	local soffitLow, soffitHigh = slabBottom - thickness, slabBottom
+	box(balcony, "Soffit_Front", Vector3.new(cx - hallHalf, soffitLow, plan.hallFrontZ),
+		Vector3.new(cx + hallHalf, soffitHigh, frontEdgeZ), looks.Ceiling)
+	box(balcony, "Soffit_Left", Vector3.new(cx + innerHalf, soffitLow, frontEdgeZ),
+		Vector3.new(cx + hallHalf, soffitHigh, plan.hallBackZ), looks.Ceiling)
+	box(balcony, "Soffit_Right", Vector3.new(cx - hallHalf, soffitLow, frontEdgeZ),
+		Vector3.new(cx - innerHalf, soffitHigh, plan.hallBackZ), looks.Ceiling)
+
+	-- The rooms: a white ceiling under each ground-floor room (the upper rooms
+	-- already have their plaster Ceiling_*), and an LED panel in its middle.
+	local lobbyName = "Room_" .. cfg.Rooms.FrontGround[2]
+	local half = cfg.RoomLightPanelStuds / 2
+	for _, room in ipairs(rooms:GetChildren()) do
+		if room:IsA("BasePart") and room.Name ~= lobbyName then
+			local name = string.sub(room.Name, 6) -- without "Room_"
+			local low, high = room.Position - room.Size / 2, room.Position + room.Size / 2
+			local underside = high.Y
+			if room:GetAttribute("Floor") == 1 then
+				box(roofs, "Ceiling_Room_" .. name, Vector3.new(low.X, high.Y - thickness, low.Z), high, looks.Ceiling)
+				underside = high.Y - thickness
+			end
+			local mx, mz = room.Position.X, room.Position.Z
+			local panel = decor(box(lights, "RoomLight_" .. name, Vector3.new(mx - half, underside - 0.1, mz - half),
+				Vector3.new(mx + half, underside, mz + half), looks.GlowWhite))
+			shining(panel, cfg.RoomLightRange, cfg.RoomLightBrightness, 150)
+		end
+	end
+
+	-- The rack hall: light bars hanging under every steel beam (StarterGymBuilder
+	-- buildRoof's TieBeams), front to back, behind the front balcony.
+	local beamBottom = plan.roofY - cfg.RoofBeamDepthStuds
+	local barTop = beamBottom - cfg.HallLightDropStuds
+	local barBottom = barTop - 0.25
+	local width = cfg.HallLightWidthStuds
+	local z0, z1 = frontEdgeZ + 2, plan.hallBackZ - 2
+	local segments, gap = cfg.HallLightSegmentsPerRow, cfg.HallLightGapStuds
+	local segmentLength = ((z1 - z0) - (segments - 1) * gap) / segments
+	assert(segmentLength > 2, "the hall's light bars do not fit; use fewer segments or smaller gaps")
+	local bayWidth = 2 * hallHalf / cfg.RoofBeamCount
+	for index = 1, cfg.RoofBeamCount do
+		local x = cx - hallHalf + (index - 0.5) * bayWidth
+		for segment = 1, segments do
+			local za = z0 + (segment - 1) * (segmentLength + gap)
+			local zb = za + segmentLength
+			local bar = decor(box(lights, string.format("HallLight_%d_%d", index, segment), Vector3.new(x - width / 2, barBottom, za),
+				Vector3.new(x + width / 2, barTop, zb), looks.GlowWhite))
+			shining(bar, cfg.HallLightRange, cfg.HallLightBrightness, 140)
+			for cable, z in ipairs({ za + 1, zb - 1 }) do
+				decor(box(lights, string.format("HallLight_%d_%d_Cable_%d", index, segment, cable),
+					Vector3.new(x - 0.04, barTop, z - 0.04), Vector3.new(x + 0.04, beamBottom, z + 0.04), looks.Stainless))
+			end
+		end
+	end
+
+	return count
+end
+
 -- Builds the gym into `model` and returns a one-line summary for the Output.
 local function buildGym(model: Model): string
 	local cfg = StarterGymConfig
@@ -1147,6 +1236,7 @@ local function buildGym(model: Model): string
 	local steps = buildBalconyAndStairs(model, plan)
 	buildReception(model, plan)
 	buildDoors(model, plan)
+	local lights = buildLights(model, plan)
 
 	for name, value in pairs({
 		HallMin = Vector3.new(cx - hallHalf, floorY, hallFrontZ),
@@ -1157,9 +1247,9 @@ local function buildGym(model: Model): string
 		model:SetAttribute(name, value)
 	end
 	return string.format(
-		"hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms, roof with %d skylights, 2 glass staircases of %d steps",
+		"hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms, roof with %d skylights, 2 glass staircases of %d steps, %d room and hall lights",
 		cx - hallHalf, cx + hallHalf, hallFrontZ, hallBackZ, outerMinX, outerMaxX, frontZ - t, hallBackZ + t,
-		#walls:GetChildren(), #rooms:GetChildren(), skylights, steps)
+		#walls:GetChildren(), #rooms:GetChildren(), skylights, steps, lights)
 end
 
 --[[

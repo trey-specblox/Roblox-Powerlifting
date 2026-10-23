@@ -614,9 +614,38 @@ and polish.
   passed" (output lines not shared). DOORS DONE; COMMITTED and pushed
   2026-10-23 with user approval as "Add automatic sliding glass doors to the
   Starter Gym entrance and hall opening" (`git log` for the hash).
+  v2 STAGE 5 (LIGHTING) BUILT, NOT YET STUDIO-TESTED, NOT committed (user,
+  2026-10-23: "Start lighting"; style already approved: References/Visual
+  Style "bright, clean, even lighting"):
+  - `default.project.json` Lighting (Rojo applies it on Connect; the user
+    must SAVE the place for the live game): Ambient 0 -> (0.43, 0.43, 0.45),
+    OutdoorAmbient (0.5, 0.5, 0.52), Brightness 2 -> 2.5, ClockTime 14,
+    EnvironmentDiffuseScale 1, EnvironmentSpecularScale 0.5, Technology
+    Voxel -> Future (phones: check in milestone step 7).
+  - `StarterGymBuilder.buildLights` (folder Lights): white Ceiling_Room_*
+    (Roofs) under every ground-floor room except the lobby (it has
+    Lobby_Ceiling), Soffit_Front/Left/Right (Balcony) under the balcony, a
+    6 x 6 neon RoomLight_<Name> panel with a SurfaceLight in every room but
+    the lobby (25), and 9 x 3 HallLight bars hanging 2 below the hall's tie
+    beams on cables (27). All SurfaceLights without shadows. Config in
+    `StarterGymConfig` ("Lighting" block).
+  - Verify: Lighting is Future / ambient not dark / daytime; an upward ray
+    in every room hits a ceiling; 22 rays under the balcony hit Soffit_;
+    every room light; 27 hall bars.
+  - luau-lsp 0 errors in the changed files, `rojo build` OK (Technology
+    token 4 = Future), `git diff --check` clean.
+  Studio result (user, 2026-10-23): "The lighting looks good and the verify
+  script passed" (output lines and screenshots not shared). STAGE 5 DONE in
+  Studio; COMMITTED and pushed 2026-10-23 with user approval as "Light the
+  Starter Gym and give its rooms white ceilings (stage 5)" (`git log` for
+  the hash). Whether the
+  user saved the place with the new Lighting settings: not stated.
+  NEXT ACTION (after the stage 5 commit): milestone step (6) props and
+  decoration rooms, or step (7) phone performance and polish (check Future
+  lighting and the ~52 room/hall lights on a phone); ask the user which.
   luau-lsp 0 errors in the changed files (with a `rojo sourcemap`; only the
   known section 5 errors elsewhere), `rojo build` OK, `git diff --check` clean.
-  NEXT ACTION: lighting (Lighting.Ambient is black; the other rooms still
+  OLD NEXT ACTION (done 2026-10-23, stage 5 above): lighting (Lighting.Ambient is black; the other rooms still
   show the upper floor's tiles as their ceiling). Old steps (a)-(d): done;
   (b) reconnect Rojo, run StarterGym_VerifyShell (expect ALL ... CHECKS
   PASSED) and look around; (c) commit stage 4 with approval (files:

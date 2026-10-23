@@ -17,7 +17,8 @@
 	over the whole building with skylights over the hall, gable walls and steel
 	roof beams. Stage 3: the balcony and the two glass staircases. Stage 4:
 	the reception desk, the gym-name wall and the outside name sign, and
-	(2026-10-23) automatic sliding doors in the entrance. Later: lights.
+	(2026-10-23) automatic sliding doors in the entrance and the hall opening.
+	Stage 5: room ceilings and lights.
 
 	The building's size is WORKED OUT from GymLayout, so adding racks or rows
 	moves the walls with it. Directions (as in GymLayout): the entrance is at
@@ -202,6 +203,33 @@ StarterGymConfig.CeilingStripWidthStuds = 0.4
 StarterGymConfig.SignTextColor = Color3.fromRGB(255, 255, 255)
 StarterGymConfig.SignAccentColor = Color3.fromRGB(200, 32, 40) -- the red of the 25 kg plates
 StarterGymConfig.LightColor = Color3.fromRGB(255, 250, 240) -- a clean, slightly warm white
+
+--[[
+	Lighting (stage 5; References/Visual Style: "bright, clean, even
+	lighting"). The Lighting service's own settings (ambient light, time of
+	day, Future lighting) are in default.project.json, which Rojo applies.
+	Here: what StarterGymBuilder adds to the building.
+
+	  - white ceilings under the ground-floor rooms and under the balcony, so
+	    nobody looks up at the upper floor's tiles;
+	  - in the rack hall: long LED light bars hanging under the steel beams,
+	    front to back, in a few segments each;
+	  - in every room except the lobby (which has its own LED strips): one
+	    square LED panel in the middle of the ceiling.
+
+	Every light is a SurfaceLight shining down from a glowing (Neon) part,
+	without shadows (cheaper, and the rooms stay evenly lit).
+]]
+StarterGymConfig.CeilingThicknessStuds = 0.2
+StarterGymConfig.HallLightDropStuds = 2 -- how far the light bars hang below the steel beams
+StarterGymConfig.HallLightSegmentsPerRow = 3
+StarterGymConfig.HallLightGapStuds = 4 -- between two segments of a row
+StarterGymConfig.HallLightWidthStuds = 0.6
+StarterGymConfig.HallLightRange = 40 -- the bars hang about 24 studs above the floor
+StarterGymConfig.HallLightBrightness = 1.5
+StarterGymConfig.RoomLightPanelStuds = 6
+StarterGymConfig.RoomLightRange = 18 -- a storey is 14 studs high
+StarterGymConfig.RoomLightBrightness = 1.2
 
 --[[
 	The automatic sliding doors (user, 2026-10-23: "like the ones you see in
