@@ -30,6 +30,9 @@
 	STAGE 4:
 	  Reception the reception desk and the gym-name wall in the lobby, and
 	          the name sign outside above the entrance ("ELITE PREP GYM").
+	  Doors   automatic sliding glass doors (2026-10-23) in the entrance and
+	          in the lobby's opening into the hall, moved by the client's
+	          AutoDoorAnimator.
 	Later stages: lights.
 
 	Visual and physical only: no gameplay rule, credit or player data changes.
@@ -860,6 +863,116 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 	end
 end
 
+--[[
+	The automatic sliding doors (user, 2026-10-23: like the ones in stores),
+	in the entrance and in the lobby's wide opening into the hall. Glass panels
+	in aluminium frames close an opening in a glass wall, on one side of it.
+	When someone comes near, the client's AutoDoorAnimator slides them apart
+	behind the fixed glass (each panel model by its OpenOffset from its
+	ClosedPivot). The invisible Sensor part is the zone that opens them; a steel
+	header with a small sensor runs above them. Here, on the server, the panels
+	always stay closed (and solid).
+
+	`face` is the Z of the glass wall's face the doors stand in front of and
+	`out` (+1 or -1) the direction from that face to the doors' side. With
+	`perSide` panels per side, they telescope: each panel is on its own layer,
+	and when open they all stack up just past the opening's edge.
+]]
+local function autoDoor(parent: Instance, name: string, centreX: number, floorY: number, face: number, out: number,
+	width: number, height: number, perSide: number)
+	local cfg = StarterGymConfig
+	local looks = cfg.Looks
+	local t = cfg.WallThicknessStuds
+	local frame, thickness, overlap = cfg.DoorFrameStuds, cfg.DoorPanelThicknessStuds, cfg.DoorPanelOverlapStuds
+	local topY = floorY + height
+	local half = width / 2
+	local step = half / perSide -- how much of the opening each panel closes
+	local layerStuds = thickness + 0.12 -- panel layers: 0.08 between their frames
+	-- A Vector3 at `x`, `y` and `d` studs out from the wall's face.
+	local function at(x: number, y: number, d: number): Vector3
+		return Vector3.new(x, y, face + out * d)
+	end
+	-- An axis-aligned part between two such corners (in any order).
+	local function part(holder: Instance, partName: string, a: Vector3, b: Vector3, look: StarterGymConfig.Look): BasePart
+		return box(holder, partName, a:Min(b), a:Max(b), look)
+	end
+
+	local door = Instance.new("Model")
+	door.Name = name
+	-- Sent to players as a whole, so a player's screen never moves half a door.
+	door.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+	door.Parent = parent
+
+	-- The header the panels hang from (as long as the panels reach when open),
+	-- with the sensor's small box and lamp under the middle of its outer edge.
+	local headerHalf = half + step + overlap + 0.5
+	local headerDepth = 0.85 + (perSide - 1) * layerStuds
+	part(door, "Header", at(centreX - headerHalf, topY, 0.05), at(centreX + headerHalf, topY + 1.2, headerDepth), looks.DoorFrame)
+	decor(part(door, "SensorBox", at(centreX - 0.6, topY - 0.3, headerDepth - 0.35), at(centreX + 0.6, topY, headerDepth),
+		looks.Gadget))
+	decor(part(door, "SensorLamp", at(centreX - 0.12, topY - 0.34, headerDepth - 0.23),
+		at(centreX + 0.12, topY - 0.3, headerDepth - 0.11), looks.GlowRed))
+
+	-- The zone that opens the doors: the opening and a little past its sides,
+	-- DoorSensorReachStuds out on both sides of the wall.
+	local reach, side = cfg.DoorSensorReachStuds, cfg.DoorSensorSideStuds
+	local sensor = part(door, "Sensor", at(centreX - half - side, floorY, -t - reach), at(centreX + half + side, topY, reach),
+		looks.Glass)
+	sensor.Transparency = 1
+	sensor.CanCollide = false
+	sensor.CanQuery = false
+	sensor.CastShadow = false
+
+	local y0, y1 = floorY + 0.05, topY - 0.05
+	for _, sign in ipairs({ 1, -1 }) do
+		local label = if sign == 1 then "Left" else "Right"
+		for index = 1, perSide do
+			-- Panel 1 meets the other side's in the middle; the last one reaches behind the fixed glass.
+			local inner = if index == 1 then 0.03 else (index - 1) * step
+			local outer = index * step + overlap
+			local function xs(a: number, b: number): (number, number)
+				return centreX + sign * a, centreX + sign * b
+			end
+			local d0 = 0.15 + (index - 1) * layerStuds
+			local d1 = d0 + thickness
+			local panel = Instance.new("Model")
+			panel.Name = if perSide == 1 then "Panel_" .. label else string.format("Panel_%s_%d", label, index)
+			panel.Parent = door
+			local xa, xb = xs(inner, outer)
+			-- The glass sits inside its frame; the frame is a little thicker, so no faces are shared.
+			local glass = part(panel, "Glass", at(math.min(xa, xb) + 0.1, y0 + 0.1, d0), at(math.max(xa, xb) - 0.1, y1 - 0.1, d1),
+				looks.Glass)
+			local f0, f1 = d0 - 0.02, d1 + 0.02
+			decor(part(panel, "Frame_Top", at(xa, y1 - frame, f0), at(xb, y1, f1), looks.DoorFrame))
+			decor(part(panel, "Frame_Bottom", at(xa, y0, f0), at(xb, y0 + frame, f1), looks.DoorFrame))
+			local ma, mb = xs(inner, inner + frame)
+			decor(part(panel, "Frame_Inner", at(ma, y0, f0), at(mb, y1, f1), looks.DoorFrame))
+			local sa, sb = xs(outer - frame, outer)
+			decor(part(panel, "Frame_Outer", at(sa, y0, f0), at(sb, y1, f1), looks.DoorFrame))
+
+			panel.PrimaryPart = glass
+			panel:SetAttribute("ClosedPivot", panel:GetPivot())
+			-- Open: slid out until its inner edge is just past the opening's edge, behind the fixed glass.
+			panel:SetAttribute("OpenOffset", Vector3.new(sign * (half + 0.2 - (index - 1) * step), 0, 0))
+		end
+	end
+
+	door:AddTag(cfg.AutoDoorTag)
+end
+
+local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
+	local cfg = StarterGymConfig
+	local doors = Instance.new("Folder")
+	doors.Name = "Doors"
+	doors.Parent = model
+	-- The entrance: on the lobby side (+Z) of the glass front.
+	autoDoor(doors, "EntranceDoor", plan.centreX, plan.floorY, plan.frontZ, 1, cfg.EntranceWidthStuds,
+		cfg.EntranceHeightStuds, cfg.EntranceDoorPanelsPerSide)
+	-- The wide opening into the hall: on the lobby side (-Z) of the front block's glass.
+	autoDoor(doors, "HallDoor", plan.centreX, plan.floorY, plan.hallFrontZ - cfg.WallThicknessStuds, -1,
+		cfg.LobbyOpeningWidthStuds, cfg.LobbyOpeningHeightStuds, cfg.HallDoorPanelsPerSide)
+end
+
 -- Builds the gym into `model` and returns a one-line summary for the Output.
 local function buildGym(model: Model): string
 	local cfg = StarterGymConfig
@@ -1033,6 +1146,7 @@ local function buildGym(model: Model): string
 	local skylights = buildRoof(roofs, plan)
 	local steps = buildBalconyAndStairs(model, plan)
 	buildReception(model, plan)
+	buildDoors(model, plan)
 
 	for name, value in pairs({
 		HallMin = Vector3.new(cx - hallHalf, floorY, hallFrontZ),

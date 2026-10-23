@@ -29,7 +29,11 @@
 	  - stage 2: the whole hall is under the roof (upward rays all hit it),
 	    seen from above the whole building is the pitched roof (no flat roof
 	    tops), and the skylights exist;
-	  - the entrance is open, and every SpawnLocation stands in the lobby.
+	  - the entrance is open, and every SpawnLocation stands in the lobby;
+	  - the automatic sliding doors (2026-10-23) in the entrance and in the
+	    lobby's opening into the hall: tagged, with a sensor; panels that fill
+	    the opening when closed, and when open clear it, hit no wall or
+	    reception part and do not run into each other.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -355,6 +359,90 @@ local function run()
 		Vector3.new(plan.centreX + halfEntrance, layout.floorY + gym.EntranceHeightStuds - 0.2, plan.frontZ))
 	check(#entranceHits == 0, string.format("entrance open (%g wide, %g high)%s", gym.EntranceWidthStuds,
 		gym.EntranceHeightStuds, if #entranceHits > 0 then " (blocked by " .. table.concat(entranceHits, ", ") .. ")" else ""))
+
+	-- The automatic sliding doors (2026-10-23), in the entrance and the hall
+	-- opening. Worked out from each panel's ClosedPivot and OpenOffset, so it
+	-- does not matter whether a door is open on this screen right now.
+	local doorsFolder = model:FindFirstChild("Doors")
+	for _, spec in ipairs({
+		{ name = "EntranceDoor", width = gym.EntranceWidthStuds, panels = 2 * gym.EntranceDoorPanelsPerSide },
+		{ name = "HallDoor", width = gym.LobbyOpeningWidthStuds, panels = 2 * gym.HallDoorPanelsPerSide },
+	}) do
+		local door = doorsFolder and doorsFolder:FindFirstChild(spec.name)
+		check(door ~= nil and door:IsA("Model") and door:HasTag(gym.AutoDoorTag),
+			string.format("Doors.%s exists and is tagged %s", spec.name, gym.AutoDoorTag))
+		if door then
+			local sensor = door:FindFirstChild("Sensor")
+			check(sensor ~= nil and sensor:IsA("BasePart") and sensor.Transparency >= 1 and not sensor.CanCollide
+				and sensor.Size.Z >= 2 * gym.DoorSensorReachStuds,
+				spec.name .. "'s sensor is invisible, not solid, and reaches out on both sides")
+			local entranceMin = plan.centreX - spec.width / 2
+			local entranceMax = plan.centreX + spec.width / 2
+			local panels, good, problems = 0, 0, {}
+			local covered, openBoxes = {}, {}
+			for _, panel in ipairs(door:GetChildren()) do
+				if panel:IsA("Model") then
+					panels += 1
+					local closed = panel:GetAttribute("ClosedPivot")
+					local offset = panel:GetAttribute("OpenOffset")
+					local glass = panel.PrimaryPart
+					if typeof(closed) ~= "CFrame" or typeof(offset) ~= "Vector3" or glass == nil then
+						table.insert(problems, panel.Name .. ": no ClosedPivot / OpenOffset / glass")
+					elseif not (glass.Anchored and glass.CanCollide) then
+						table.insert(problems, panel.Name .. ": glass not anchored and solid")
+					else
+						-- Every part of the panel where it is when closed, and when open.
+						local shift = closed.Position - panel:GetPivot().Position
+						local closedLow, closedHigh = Vector3.one * math.huge, -Vector3.one * math.huge
+						for _, part in ipairs(panel:GetDescendants()) do
+							if part:IsA("BasePart") then
+								local low, high = bounds(part)
+								closedLow, closedHigh = closedLow:Min(low + shift), closedHigh:Max(high + shift)
+							end
+						end
+						table.insert(covered, { closedLow.X, closedHigh.X })
+						local openLow, openHigh = closedLow + offset, closedHigh + offset
+						local inEntrance = openHigh.X > entranceMin + 0.01 and openLow.X < entranceMax - 0.01
+						local hits = wallsIn(openLow, openHigh)
+						-- Panels that slide over each other must be on different layers.
+						local through = {}
+						for _, other in ipairs(openBoxes) do
+							local lo, hi = openLow:Max(other.low), openHigh:Min(other.high)
+							if hi.X - lo.X > 0.01 and hi.Y - lo.Y > 0.01 and hi.Z - lo.Z > 0.01 then
+								table.insert(through, other.name)
+							end
+						end
+						table.insert(openBoxes, { name = panel.Name, low = openLow, high = openHigh })
+						if inEntrance then
+							table.insert(problems, panel.Name .. ": still in the opening when open")
+						elseif #hits > 0 then
+							table.insert(problems, panel.Name .. " hits " .. table.concat(hits, ", ") .. " when open")
+						elseif #through > 0 then
+							table.insert(problems, panel.Name .. " runs into " .. table.concat(through, ", ") .. " when open")
+						else
+							good += 1
+						end
+					end
+				end
+			end
+			-- Closed, the panels together cover the opening (only a thin gap where they meet).
+			table.sort(covered, function(a, b)
+				return a[1] < b[1]
+			end)
+			local reach, gaps = entranceMin, 0
+			for _, range in ipairs(covered) do
+				if range[1] - reach > 0.1 then
+					gaps += 1
+				end
+				reach = math.max(reach, range[2])
+			end
+			local doorsShut = #covered > 0 and gaps == 0 and reach >= entranceMax
+			check(panels == spec.panels and good == spec.panels and doorsShut, string.format(
+				"%s: %d sliding panels; closed they fill the %g-stud opening, open they clear it and hit nothing (%d found, %d right%s)",
+				spec.name, spec.panels, spec.width, panels, good,
+				if #problems > 0 then "; " .. table.concat(problems, "; ") elseif not doorsShut then "; not closed" else ""))
+		end
+	end
 
 	-- Stage 4: the gym's name twice (name wall, outside sign), the check-in
 	-- screen, and the lights (ceiling strips, desk glow and light bar, two sign

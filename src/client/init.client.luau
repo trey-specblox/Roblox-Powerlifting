@@ -24,6 +24,11 @@ TrainingMenuController.start()
 local StationPoseAnimator = require(TrainingFolder:WaitForChild("StationPoseAnimator"))
 StationPoseAnimator.start()
 
+-- The automatic sliding doors at the gym's entrance open for anyone near them. Visual only.
+local WorldFolder = script:WaitForChild("World")
+local AutoDoorAnimator = require(WorldFolder:WaitForChild("AutoDoorAnimator"))
+AutoDoorAnimator.start()
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

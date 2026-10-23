@@ -16,8 +16,8 @@
 	ceilings, every wall and glass front, the rooms. Stage 2: one pitched roof
 	over the whole building with skylights over the hall, gable walls and steel
 	roof beams. Stage 3: the balcony and the two glass staircases. Stage 4:
-	the reception desk, the gym-name wall and the outside name sign. Later:
-	lights.
+	the reception desk, the gym-name wall and the outside name sign, and
+	(2026-10-23) automatic sliding doors in the entrance. Later: lights.
 
 	The building's size is WORKED OUT from GymLayout, so adding racks or rows
 	moves the walls with it. Directions (as in GymLayout): the entrance is at
@@ -204,6 +204,28 @@ StarterGymConfig.SignAccentColor = Color3.fromRGB(200, 32, 40) -- the red of the
 StarterGymConfig.LightColor = Color3.fromRGB(255, 250, 240) -- a clean, slightly warm white
 
 --[[
+	The automatic sliding doors (user, 2026-10-23: "like the ones you see in
+	stores"), in the entrance and in the lobby's wide opening into the hall.
+	Glass panels close the opening from the lobby side and slide apart, behind
+	the fixed glass, when anyone comes near (either side); they slide shut
+	again a moment after everyone has gone. StarterGymBuilder builds them
+	(Doors.EntranceDoor and Doors.HallDoor, tagged AutoDoorTag) and the
+	client's AutoDoorAnimator moves them on every player's screen.
+]]
+StarterGymConfig.AutoDoorTag = "AutoDoor"
+StarterGymConfig.EntranceDoorPanelsPerSide = 1
+-- The hall opening is 46 wide: one 23-stud panel per side would not fit
+-- beside it in the lobby when open, so two per side slide over each other.
+StarterGymConfig.HallDoorPanelsPerSide = 2
+StarterGymConfig.DoorSensorReachStuds = 10 -- how far in front of and behind the doors someone opens them
+StarterGymConfig.DoorSensorSideStuds = 2 -- and how far past the entrance's sides
+StarterGymConfig.DoorSlideSeconds = 0.6 -- closed to fully open
+StarterGymConfig.DoorHoldOpenSeconds = 1 -- they stay open this long after the last person has left
+StarterGymConfig.DoorPanelThicknessStuds = 0.3
+StarterGymConfig.DoorPanelOverlapStuds = 0.5 -- each closed panel reaches this far behind the fixed glass
+StarterGymConfig.DoorFrameStuds = 0.25 -- the aluminium frame round each panel
+
+--[[
 	The rooms (GAME_DESIGN §27: names are PLACEHOLDERS until the NPCs are
 	designed; a name here is only the room's name in Workspace). Each becomes an
 	invisible region part "Room_<Name>" in Workspace.StarterGym.Rooms, with its
@@ -255,6 +277,8 @@ StarterGymConfig.Looks = {
 	Ceiling = { material = Enum.Material.Plaster, color = Color3.fromRGB(246, 246, 244) },
 	GlowWhite = { material = Enum.Material.Neon, color = Color3.fromRGB(255, 250, 240) },
 	GlowGreen = { material = Enum.Material.Neon, color = Color3.fromRGB(60, 220, 110) },
+	GlowRed = { material = Enum.Material.Neon, color = Color3.fromRGB(225, 40, 40) }, -- the door sensor while closed
+	DoorFrame = { material = Enum.Material.Metal, color = Color3.fromRGB(52, 54, 58) }, -- the entrance doors' aluminium
 	ShirtBlack = { material = Enum.Material.Fabric, color = Color3.fromRGB(26, 26, 28) },
 	ShirtWhite = { material = Enum.Material.Fabric, color = Color3.fromRGB(235, 235, 232) },
 	ShirtRed = { material = Enum.Material.Fabric, color = Color3.fromRGB(190, 30, 38) },

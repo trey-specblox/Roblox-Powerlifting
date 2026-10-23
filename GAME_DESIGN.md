@@ -858,6 +858,12 @@ Comp max testing
 >   reception things, entrance gates, lights and glowing sign effects.
 >   Decoration only: the gates never block anyone and nothing here has
 >   gameplay yet (the receptionist can become an NPC later).
+> - **Automatic entrance doors** (user, 2026-10-23): the entrance gets
+>   automatic sliding glass doors "like the ones you see in stores": two
+>   glass panels that slide apart when anyone comes near (inside or outside)
+>   and close again a moment after everyone has gone. The lobby's wide
+>   opening into the rack hall gets them too (user, 2026-10-23). Decoration
+>   only, no gameplay.
 > - **Desk logo** (user, 2026-10-21): the user's own **"SBD Central"** logo
 >   on the front of the white reception desk, as uploaded images owned by
 >   the game's group: the wide version (a barbell over "SBD CENTRAL" on one

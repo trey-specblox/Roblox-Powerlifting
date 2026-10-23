@@ -589,6 +589,33 @@ and polish.
   the hash). The user chose to INCLUDE the pictures (`art/logos/`, 13 PNGs,
   ~9.6 MB) in the public repo, with `art/scripts/build_desk_front.ps1` and
   `build_front_sign_art.ps1`.
+  AUTOMATIC ENTRANCE DOORS (user, 2026-10-23, new session; asked for before
+  lighting; recorded in GAME_DESIGN §27): BUILT, NOT YET STUDIO-TESTED, NOT
+  committed. User then asked (screenshot) for the same on the lobby's 46 x 10
+  opening into the hall. `StarterGymBuilder.autoDoor` (called by
+  `buildDoors`, folder Doors) makes one Model per opening (tag `AutoDoor`,
+  ModelStreamingMode Atomic), on the lobby side of the glass: a steel
+  Header, a SensorBox with a red SensorLamp, an invisible non-solid Sensor
+  (opening + 2 per side, 10 studs out on both sides), and panel models
+  (solid glass in a decor aluminium frame, attributes ClosedPivot +
+  OpenOffset) that slide out behind the fixed glass. EntranceDoor: 1 panel
+  per side (Panel_Left/Right). HallDoor: 2 per side (Panel_Left_1/2 ...),
+  telescoping on separate layers, because one 23-stud panel would not fit in
+  the 90-wide lobby when open (open they reach X +/-35.2). New client `src/client/World/AutoDoorAnimator.luau`
+  (started in `init.client.luau`): every screen opens the door while any
+  character's root is in the sensor, closes it DoorHoldOpenSeconds (1) after,
+  slide DoorSlideSeconds (0.6), lamp green/red. The server's panels stay
+  closed and solid; your character collides with your screen's copy.
+  Config in `StarterGymConfig` (AutoDoorTag, DoorSensor*, DoorSlide/Hold,
+  panel sizes, EntranceDoorPanelsPerSide 1, HallDoorPanelsPerSide 2; looks
+  GlowRed, DoorFrame). Verify, per door: tagged, sensor, panels fill the
+  opening closed, clear it open, hit nothing and do not run into each other.
+  Studio result (user, 2026-10-23): "Both doors work and the verify script
+  passed" (output lines not shared). DOORS DONE; COMMITTED and pushed
+  2026-10-23 with user approval as "Add automatic sliding glass doors to the
+  Starter Gym entrance and hall opening" (`git log` for the hash).
+  luau-lsp 0 errors in the changed files (with a `rojo sourcemap`; only the
+  known section 5 errors elsewhere), `rojo build` OK, `git diff --check` clean.
   NEXT ACTION: lighting (Lighting.Ambient is black; the other rooms still
   show the upper floor's tiles as their ceiling). Old steps (a)-(d): done;
   (b) reconnect Rojo, run StarterGym_VerifyShell (expect ALL ... CHECKS
