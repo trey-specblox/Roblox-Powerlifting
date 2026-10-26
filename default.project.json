@@ -321,6 +321,66 @@
           "NormalMap": "rbxassetid://80941039028506",
           "RoughnessMap": "rbxassetid://128584025842739"
         }
+      },
+      "Strongman_Timber": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "WoodPlanks",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://115601618684425",
+          "NormalMap": "rbxassetid://89422451719522",
+          "RoughnessMap": "rbxassetid://118545744197354"
+        }
+      },
+      "Strongman_SteelPlates": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Metal",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://109321439128150",
+          "NormalMap": "rbxassetid://86451185616305",
+          "RoughnessMap": "rbxassetid://130651176889490"
+        }
+      },
+      "Dumbbells_DiamondPlate": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "DiamondPlate",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://103167934441698",
+          "NormalMap": "rbxassetid://84895998611329",
+          "RoughnessMap": "rbxassetid://101546373474764"
+        }
+      },
+      "Cardio_Track": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Rubber",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://115211432323838",
+          "NormalMap": "rbxassetid://97991264023733",
+          "RoughnessMap": "rbxassetid://135222975761483"
+        }
+      },
+      "Shed_CorrugatedSteel": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Metal",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://78063520458469",
+          "NormalMap": "rbxassetid://108554226634224",
+          "RoughnessMap": "rbxassetid://110330213785139"
+        }
+      },
+      "Shed_Shutter": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Metal",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://121529721433172",
+          "NormalMap": "rbxassetid://119842376730446",
+          "RoughnessMap": "rbxassetid://75579880290713"
+        }
       }
     }
   }

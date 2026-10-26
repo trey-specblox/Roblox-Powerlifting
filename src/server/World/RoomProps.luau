@@ -1508,6 +1508,89 @@ FURNISH.Massage = function(kit)
 	put("Plant_3", "SBarPlant", 1, hw - 1.8, D - 1.8, 0.06, "-d")
 end
 
+--[[
+	The spa reception (GAME_DESIGN §27 "Closed rooms and the spa wing", user
+	2026-10-26): the front room of the upstairs Recovery & Spa wing, its one
+	door from the balcony, the corridor to the Sauna, Recovery and Massage
+	opening off its right wall by the door. Built from the approved spa looks
+	and props: the light wood floor, the stone wall behind an oak desk with a
+	white marble top and a warm glow, a "RECOVERY & SPA" sign, candles, a
+	diffuser and CENTRAL oils on the desk, warm pendant lamps; a waiting corner
+	of poufs round a low table; a shelf of folded towels; plants.
+]]
+FURNISH.SpaReception = function(kit)
+	local props = propsFor({ "CandleSet", "Diffuser", "OilBottle", "Pouf", "Towel", "PendantLamp", "SpaStones",
+		"SBarPlant" })
+	if props == nil then
+		return
+	end
+	local hw, D = kit.W / 2, kit.D
+	local back, left = kit.wall("back"), kit.wall("left")
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+	local function glow(model: Model, piece: string)
+		local part = model:FindFirstChild(piece, true)
+		if part then
+			warmGlow(part :: BasePart, 8, 0.4)
+		end
+	end
+
+	-- The room's surfaces. The corridor opens in the right wall by the door
+	-- (it is not a room, so the kit has no door there): that wall is covered
+	-- only beyond the corridor's wall, about 6 in.
+	local right = kit.wall("right")
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.MassageFloor)
+	clad(kit, "back", "Wall_Stone", looks.MassageStone)
+	clad(kit, "left", "Wall_Left", looks.MassageWall)
+	right.item("Wall_Right", 6, D, 0, 0.08, 0.06, kit.H, looks.MassageWall)
+
+	-- An oak bench along the right wall with rolled towels, and a plant beside it.
+	right.block("Bench", 9, 17, 0.08, 1.7, 0.06, 1.5, looks.LockersSlats)
+	for k = 0, 2 do
+		local a, d = right.at(10.5 + k * 2.5, 0.9)
+		put("Bench_Towel_" .. k + 1, "Towel", k + 2, a, d, 1.5, "-a")
+	end
+	local pa, pd = right.at(19, 1.8)
+	put("Plant_4", "SBarPlant", 1, pa, pd, 0.06, "-a")
+	neonSign(back, "Sign", "RECOVERY & SPA", -7, 7, 8.4, 10.6, Color3.fromRGB(255, 240, 220), Color3.fromRGB(60, 120, 100),
+		looks.GlowWarm)
+
+	-- The desk in front of the stone wall, facing the door.
+	local d0, d1 = D - 8, D - 5.6
+	kit.block("Desk_Body", -5, 5, d0, d1, 0.06, 3.4, looks.LockersSlats)
+	kit.item("Desk_Top", -5.2, 5.2, d0 - 0.2, d1 + 0.1, 3.4, 3.6, looks.CafeMarble)
+	local deskGlow = kit.item("Desk_Glow", -4.8, 4.8, d0 - 0.06, d0, 0.2, 0.32, looks.GlowWarm)
+	warmGlow(deskGlow, 6, 0.5)
+	glow(put("Desk_Candles", "CandleSet", 2, -3.6, d0 + 1.1, 3.6, "-d"), "CandleSet_Flame")
+	glow(put("Desk_Diffuser", "Diffuser", 1, 3.8, d0 + 1.1, 3.6, "-d"), "Diffuser_Light")
+	for k = 0, 2 do
+		put("Desk_Oil_" .. k + 1, "OilBottle", k + 1, -0.6 + k * 0.6, d0 + 1, 3.6, "-d")
+	end
+	put("Desk_Stones", "SpaStones", 1, 1.8, d0 + 1.1, 3.6, "-d")
+	for index, a in ipairs({ -3, 3 }) do
+		pendant(kit, props, "Desk_Lamp_" .. index, index * 2 - 1, a, d0 + 1.2, 7.4)
+	end
+
+	-- A waiting corner by the left wall: poufs round a low oak table with candles.
+	local ta, td = -hw + 4.5, D / 2 - 1
+	roundTable(kit, "LowTable", ta, td, looks.LockersSlats, 2)
+	glow(put("LowTable_Candles", "CandleSet", 3, ta, td, 2, "-d"), "CandleSet_Flame")
+	for index, spot in ipairs({ { ta, td - 2.6 }, { ta, td + 2.6 }, { ta + 2.6, td } }) do
+		put("Pouf_" .. index, "Pouf", index, spot[1], spot[2], 0.06, "-a")
+		hidden(kit.block("Pouf_Solid_" .. index, spot[1] - 0.8, spot[1] + 0.8, spot[2] - 0.8, spot[2] + 0.8, 0.06, 1.66,
+			looks.Glass))
+	end
+
+	-- Folded towels on the left wall, near the desk.
+	towelShelf(kit, props, left, "+a", "TowelShelf", D - 15, 3)
+
+	-- Plants in the corners by the stone wall and beside the door.
+	put("Plant_1", "SBarPlant", 1, -hw + 1.8, D - 1.8, 0.06, "-d")
+	put("Plant_2", "SBarPlant", 1, hw - 1.8, D - 1.8, 0.06, "-d")
+	put("Plant_3", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
+end
+
 FURNISH.Physio = function(kit)
 	local hw, D = kit.W / 2, kit.D
 	paddedTable(kit, "TreatmentTable", -6, 11, 18, looks.PaddingBlue)
@@ -2073,8 +2156,18 @@ function RoomProps.build(model: Model): number
 	props.Name = "Props"
 	props.Parent = model
 
+	-- The rooms, and the Strongman Shed's region (furnished the same way).
+	local regions = rooms:GetChildren()
+	local shed = model:FindFirstChild("Shed")
+	if shed then
+		for _, region in ipairs(shed:GetChildren()) do
+			if string.sub(region.Name, 1, 5) == "Shed_" then
+				table.insert(regions, region)
+			end
+		end
+	end
 	local doorSpots: { Vector3 } = {}
-	for _, room in ipairs(rooms:GetChildren()) do
+	for _, room in ipairs(regions) do
 		local spot = room:GetAttribute("DoorCentre")
 		if typeof(spot) == "Vector3" then
 			table.insert(doorSpots, spot)
@@ -2082,8 +2175,8 @@ function RoomProps.build(model: Model): number
 	end
 
 	local furnished = 0
-	for _, room in ipairs(rooms:GetChildren()) do
-		local name = string.sub(room.Name, 6) -- without "Room_"
+	for _, room in ipairs(regions) do
+		local name = string.sub(room.Name, 6) -- without "Room_" (or "Shed_")
 		local furnish = FURNISH[name]
 		if room:IsA("BasePart") and furnish then
 			local folder = Instance.new("Folder")
@@ -2101,6 +2194,510 @@ function RoomProps.build(model: Model): number
 		end
 	end
 	return furnished
+end
+
+-- ---------------------------------------------------------------- themed room fronts
+
+--[[
+	Themed room fronts (GAME_DESIGN §27 "Themed room fronts", user-approved
+	2026-10-26): each closed room's wall onto the hall is designed around what
+	is inside, so you can tell the room without seeing in. StarterGymBuilder
+	clads the wall (its `face` look), trims the doorway and hangs the sign; it
+	leaves an invisible region "Front_<Room>" in model.Fronts. FRONT[<Room>]
+	adds the details in the front's own frame (a FrontKit):
+	  a  along the wall: 0 at the door's middle, + to the right as you face it;
+	  d  out from the wall's face into the hall, 0 .. D (FrontDepthStuds);
+	  y  up from the floor, 0 .. H (the ceiling, soffit or wall top).
+	Details are decor; big props get hidden solid blockers, never near the door.
+]]
+type FrontKit = {
+	aMin: number,
+	aMax: number,
+	D: number,
+	H: number,
+	doorHalf: number, -- the doorway's half width
+	doorTop: number, -- the doorway's height
+	block: BoxFn, -- solid
+	item: BoxFn, -- decor
+	cylinder: (name: string, a: number, d: number, y: number, length: number, diameter: number, axis: string,
+		look: Look) -> BasePart,
+	-- A strip along the wall from a0 to a1, cut round the doorway (and its trim) where it crosses it.
+	band: (name: string, a0: number, a1: number, y0: number, y1: number, d0: number, d1: number, look: Look) -> (),
+	toward: (direction: string) -> Vector3,
+	place: (name: string, template: Model, a: number, d: number, y: number, facing: string) -> Model,
+}
+
+local FRONT: { [string]: (front: FrontKit) -> () } = {}
+
+local function frontFor(folder: Folder, region: BasePart): FrontKit
+	local outward = region:GetAttribute("Outward") :: Vector3
+	local door = region:GetAttribute("DoorAt") :: Vector3
+	local doorHalf = (region:GetAttribute("DoorWidth") :: number) / 2
+	local doorTop = region:GetAttribute("DoorTop") :: number
+	local right = (-outward):Cross(Vector3.yAxis)
+	local low, high = region.Position - region.Size / 2, region.Position + region.Size / 2
+	local aLow, aHigh = (low - door):Dot(right), (high - door):Dot(right)
+	local front = {} :: FrontKit
+	front.aMin, front.aMax = math.min(aLow, aHigh), math.max(aLow, aHigh)
+	front.D, front.H = StarterGymConfig.FrontDepthStuds, high.Y - door.Y
+	front.doorHalf, front.doorTop = doorHalf, doorTop
+	local function world(a: number, d: number, y: number): Vector3
+		return door + right * a + outward * d + Vector3.yAxis * y
+	end
+	local function inside(name: string, a0: number, a1: number, d1: number, y0: number, y1: number)
+		local e = 0.001
+		if a0 < front.aMin - e or a1 > front.aMax + e or d1 > front.D + e or y0 < -e or y1 > front.H + e then
+			error(string.format("%s does not fit the front (a %.2f..%.2f of %.2f..%.2f, out to %.2f of %.2f, y %.2f..%.2f of %.2f)",
+				name, a0, a1, front.aMin, front.aMax, d1, front.D, y0, y1, front.H), 0)
+		end
+	end
+	local function make(name: string, a0: number, a1: number, d0: number, d1: number, y0: number, y1: number, look: Look,
+		solid: boolean): BasePart
+		inside(name, a0, a1, d1, y0, y1)
+		-- Nothing solid in the way of the door: its width and 1.5 more each side, 4 out.
+		if solid and a0 < doorHalf + 1.5 and a1 > -doorHalf - 1.5 and d0 < 4 and y0 < doorTop then
+			error(string.format("%s stands in front of the door", name), 0)
+		end
+		local p, q = world(a0, d0, y0), world(a1, d1, y1)
+		local part = BuildParts.box(folder, name, p:Min(q), p:Max(q), look)
+		if not solid then
+			BuildParts.decor(part)
+		end
+		return part
+	end
+	front.block = function(name, a0, a1, d0, d1, y0, y1, look)
+		return make(name, a0, a1, d0, d1, y0, y1, look, true)
+	end
+	front.item = function(name, a0, a1, d0, d1, y0, y1, look)
+		return make(name, a0, a1, d0, d1, y0, y1, look, false)
+	end
+	front.band = function(name, a0, a1, y0, y1, d0, d1, look)
+		local cut = doorHalf + 0.35 -- the doorway and its trim
+		if y0 >= doorTop + 0.35 then
+			front.item(name, a0, a1, d0, d1, y0, y1, look)
+			return
+		end
+		if a0 < -cut then
+			front.item(name .. "_1", a0, math.min(a1, -cut), d0, d1, y0, y1, look)
+		end
+		if a1 > cut then
+			front.item(name .. "_2", math.max(a0, cut), a1, d0, d1, y0, y1, look)
+		end
+		if y1 > doorTop + 0.35 and a0 < cut and a1 > -cut then
+			front.item(name .. "_OverDoor", math.max(a0, -cut), math.min(a1, cut), d0, d1, doorTop + 0.35, y1, look)
+		end
+	end
+	front.cylinder = function(name, a, d, y, length, diameter, axis, look)
+		local half = if axis == "a" then length / 2 else diameter / 2
+		inside(name, a - half, a + half, d + (if axis == "d" then length / 2 else diameter / 2), y - diameter / 2,
+			y + (if axis == "up" then length / 2 else diameter / 2))
+		local along = if axis == "up" then Vector3.yAxis elseif axis == "a" then right else outward
+		local up = if axis == "up" then right else Vector3.yAxis
+		local part = BuildParts.placed(folder, name, Vector3.new(length, diameter, diameter),
+			CFrame.fromMatrix(world(a, d, y), along, up), look);
+		(part :: any).Shape = Enum.PartType.Cylinder
+		return BuildParts.decor(part)
+	end
+	front.toward = function(direction)
+		if direction == "+d" then
+			return outward
+		elseif direction == "-d" then
+			return -outward
+		elseif direction == "+a" then
+			return right
+		end
+		return -right
+	end
+	-- Like Kit.place; a front's details may touch or sink into the wall, but not stand out too far.
+	front.place = function(name, template, a, d, y, facing)
+		local copy = template:Clone()
+		copy.Name = name
+		local position = world(a, d, y)
+		copy:PivotTo(CFrame.lookAt(position, position + front.toward(facing)))
+		local box, size = copy:GetBoundingBox()
+		local aMin, aMax, dMax, yMin, yMax = math.huge, -math.huge, -math.huge, math.huge, -math.huge
+		local half = size / 2
+		for _, x in ipairs({ -1, 1 }) do
+			for _, yy in ipairs({ -1, 1 }) do
+				for _, z in ipairs({ -1, 1 }) do
+					local offset = box:PointToWorldSpace(Vector3.new(x * half.X, yy * half.Y, z * half.Z)) - door
+					aMin, aMax = math.min(aMin, offset:Dot(right)), math.max(aMax, offset:Dot(right))
+					dMax = math.max(dMax, offset:Dot(outward))
+					yMin, yMax = math.min(yMin, offset.Y), math.max(yMax, offset.Y)
+				end
+			end
+		end
+		local ok, problem = pcall(inside, name, aMin + 0.01, aMax - 0.01, dMax - 0.01, yMin + 0.01, yMax - 0.01)
+		if not ok then
+			copy:Destroy()
+			error(problem, 0)
+		end
+		for _, part in ipairs(copy:GetDescendants()) do
+			if part:IsA("BasePart") then
+				BuildParts.decor(part)
+			end
+		end
+		copy.Parent = folder
+		return copy
+	end
+	return front
+end
+
+-- A coloured 3D prop on a front (propItem works on a FrontKit too: it only uses `place`), optionally scaled.
+local function frontProp(front: FrontKit, templates: { [string]: Model }, name: string, item: string, colourway: number,
+	a: number, d: number, y: number, facing: string, scale: number?): Model
+	local source = templates
+	if scale then
+		local big = templates[item]:Clone()
+		big:ScaleTo(scale)
+		source = { [item] = big }
+	end
+	local copy = propItem((front :: any) :: Kit, source, name, item, colourway, a, d, y, facing)
+	if scale then
+		source[item]:Destroy()
+	end
+	return copy
+end
+
+-- A glowing light inside a prop's piece (an uplight's lens, ...).
+local function propGlow(model: Model, piece: string, range: number, brightness: number)
+	local part = model:FindFirstChild(piece, true)
+	if part then
+		warmGlow(part :: BasePart, range, brightness)
+	end
+end
+
+-- A steel (or other) portal round the doorway: two posts and a header, standing out from the wall.
+local function portal(front: FrontKit, look: Look, width: number, out: number, above: number)
+	local inner, outer = front.doorHalf + 0.35, front.doorHalf + 0.35 + width
+	local top = front.doorTop + above
+	front.item("Portal_1", -outer, -inner, 0.06, out, 0, top, look)
+	front.item("Portal_2", inner, outer, 0.06, out, 0, top, look)
+	front.item("Portal_Top", -outer, outer, 0.06, out, front.doorTop + 0.35, top, look)
+end
+
+--[[
+	Recovery & Spa (the wing's long wall, its door near the front end): stone
+	cladding (the builder's face), an oak portal round the door, and along the
+	wall bays of oak slat panels and planters full of plants, warm uplights
+	washing the stone between them.
+]]
+FRONT.SpaReception = function(front)
+	portal(front, looks.LockersSlats, 1.25, 0.3, 1)
+	local props = propsFor({ "Planter", "WallUplight", "SBarPlant" })
+	local function planter(name: string, centre: number, colourway: number)
+		if props == nil then
+			return
+		end
+		frontProp(front, props, name, "Planter", colourway, centre, 0.72, 0, "+d")
+		hidden(front.block(name .. "_Solid", centre - 2.06, centre + 2.06, 0.06, 1.38, 0, 1.3, looks.Glass))
+		for index, offset in ipairs({ -0.9, 0.9 }) do
+			frontProp(front, props, string.format("%s_Plant_%d", name, index), "SBarPlant", 1, centre + offset, 1.0, 0.25, "+d")
+		end
+	end
+	-- Left of the door: one planter.
+	planter("Planter_0", front.aMin + 2.7, 4)
+	-- Right of the door: bays of 12 (an oak slat panel, an uplight, a planter).
+	local bay, c = 0, front.doorHalf + 3
+	while c + 4 <= front.aMax - 0.3 do
+		bay += 1
+		local id = "Bay_" .. bay
+		front.item(id .. "_Slats", c, c + 4, 0.06, 0.12, 0, front.H - 0.3, looks.LockersSlats)
+		local x = c + 0.4
+		local batten = 0
+		while x + 0.15 <= c + 4 do
+			batten += 1
+			front.item(string.format("%s_Batten_%d", id, batten), x - 0.15, x + 0.15, 0.12, 0.3, 0, front.H - 0.3, looks.LockersSlats)
+			x += 0.8
+		end
+		if props and c + 5.4 <= front.aMax then
+			propGlow(frontProp(front, props, id .. "_Uplight", "WallUplight", bay % 3 + 1, c + 5, 0.3, 0.4, "+d"), "WallUplight_Light", 12, 0.9)
+		end
+		if c + 10.2 <= front.aMax then
+			planter(id .. "_Planter", c + 8, bay % 4 + 1)
+		end
+		c += 12
+	end
+end
+
+-- A competition barbell (2.2 m: 9.8 studs at 1 stud = 225 mm, like Barbell_01's plates) on a front,
+-- centred at (a, d, y), lying along the wall ("a") or standing up ("up"): a shaft in `shaft`'s look,
+-- steel collars and sleeves (a rusted bar is rusted all over).
+local function barbell(front: FrontKit, name: string, a: number, d: number, y: number, axis: string, shaft: Look)
+	local steel = if shaft == looks.RustBar then looks.RustSleeve else looks.Stainless
+	local function at(offset: number): (number, number)
+		if axis == "a" then
+			return a + offset, y
+		end
+		return a, y + offset
+	end
+	local sa, sy = at(0)
+	front.cylinder(name .. "_Shaft", sa, d, sy, 5.8, 0.15, axis, shaft)
+	for side, sign in ipairs({ -1, 1 }) do
+		local ca, cy = at(sign * 2.975)
+		front.cylinder(string.format("%s_Collar_%d", name, side), ca, d, cy, 0.15, 0.34, axis, steel)
+		local la, ly = at(sign * 3.975)
+		front.cylinder(string.format("%s_Sleeve_%d", name, side), la, d, ly, 1.85, 0.22, axis, steel)
+	end
+end
+
+--[[
+	Max Testing (the gym's solo meet room): black, with red and white
+	competition stripes, barbells on wall racks either side of the door, stage
+	lights along the top, an attempt board on the right and the three judges'
+	lights on the left.
+]]
+FRONT.MaxTesting = function(front)
+	front.band("Stripe_Red", front.aMin, front.aMax, 2.9, 3.5, 0.06, 0.1, looks.PlateRed)
+	front.band("Stripe_White", front.aMin, front.aMax, 3.62, 3.72, 0.06, 0.1, looks.LaneWhite)
+	front.band("Stripe_Thin", front.aMin, front.aMax, 3.84, 3.96, 0.06, 0.1, looks.PlateRed)
+	-- Barbells on the wall (user, 2026-10-26, with photos of wall bar racks): a
+	-- horizontal rack left of the door, a vertical "gun rack" right of it.
+	local shafts = { looks.Stainless, looks.RustBar, looks.PlateRed, looks.Stainless, looks.PlateBlue, looks.RustBar, looks.PlateRed }
+	local left = -(front.doorHalf + 8)
+	for _, offset in ipairs({ -2.6, 2.6 }) do
+		front.item("BarRack_Upright_" .. (if offset < 0 then 1 else 2), left + offset - 0.2, left + offset + 0.2, 0.06, 0.25, 4.2,
+			9.6, looks.Gadget)
+	end
+	for k, shaft in ipairs(shafts) do
+		local y = 4.6 + (k - 1) * 0.72
+		for side, offset in ipairs({ -2.6, 2.6 }) do
+			local id = string.format("BarRack_Hook_%d_%d", k, side)
+			front.item(id, left + offset - 0.15, left + offset + 0.15, 0.25, 0.62, y - 0.2, y - 0.12, looks.Gadget)
+			front.item(id .. "_Lip", left + offset - 0.15, left + offset + 0.15, 0.56, 0.62, y - 0.12, y + 0.06, looks.Gadget)
+		end
+		barbell(front, "Bar_H_" .. k, left, 0.42, y, "a", shaft)
+	end
+	local right = front.doorHalf + 8
+	local bars = 11
+	front.item("GunRack_Top", right - 5.2, right + 5.2, 0.06, 0.6, 7.7, 8.0, looks.Gadget)
+	front.item("GunRack_Bottom", right - 5.2, right + 5.2, 0.06, 0.6, 1.0, 1.2, looks.Gadget)
+	for k = 1, bars do
+		local a = right + (k - (bars + 1) / 2) * 0.9
+		local shaft = if k == 4 then looks.PlateRed elseif k == 8 then looks.PlateBlue elseif k % 2 == 0 then looks.RustBar else looks.Stainless
+		barbell(front, "Bar_V_" .. k, a, 0.38, 5.15, "up", shaft)
+	end
+	-- The attempt board (right) and the judges' lights (left), at eye height.
+	local board = front.item("AttemptBoard", 19, 27, 0.06, 0.4, 4, 9, looks.Gadget)
+	writing(board, front.toward("+d"), "ATTEMPT BOARD", { "LIFTER    —", "LIFT    —", "ATTEMPT    1   2   3", "WEIGHT    —  KG" },
+		Color3.fromRGB(12, 12, 14), Color3.fromRGB(255, 255, 255))
+	front.item("AttemptBoard_Glow", 19.4, 26.6, 0.4, 0.45, 3.85, 3.95, looks.PlateRed)
+	-- Stage lights along the top, either side of the sign, like over a competition platform.
+	local lightY = front.H - 1.6
+	local at = front.aMin + 2
+	local count = 0
+	while at <= front.aMax - 2 do
+		if math.abs(at) > 11 then
+			count += 1
+			front.item("StageLight_" .. count, at - 0.45, at + 0.45, 0.06, 0.25, lightY - 0.2, lightY + 0.2, looks.Gadget)
+			front.cylinder("StageLight_" .. count .. "_Can", at, 0.55, lightY, 0.6, 0.8, "d", looks.Gadget)
+			front.cylinder("StageLight_" .. count .. "_Lens", at, 0.87, lightY, 0.04, 0.6, "d", looks.GlowWhite)
+		end
+		at += 4
+	end
+	front.item("JudgesLights", -27, -19, 0.06, 0.4, 5, 8, looks.Gadget)
+	for index, a in ipairs({ -25, -23, -21 }) do
+		front.cylinder("JudgesLight_" .. index, a, 0.46, 6.5, 0.12, 1.4, "d", looks.GlowWhite)
+	end
+end
+
+--[[
+	Dumbbells: charcoal (the builder's face) over a diamond-plate kick band, a
+	black steel portal, big hex dumbbells either side of the sign, and a
+	dumbbell rack full of CENTRAL hex dumbbells either side of the door.
+]]
+FRONT.Dumbbells = function(front)
+	front.band("PlateBand", front.aMin, front.aMax, 0, 3.4, 0.06, 0.16, looks.DumbbellsPlate)
+	portal(front, looks.SteelBeam, 0.6, 0.35, 0.6)
+	local props = propsFor({ "HexDumbbell", "DumbbellRack" })
+	if props == nil then
+		return
+	end
+	for index, side in ipairs({ -1, 1 }) do
+		frontProp(front, props, "BigDumbbell_" .. index, "HexDumbbell", index, side * 9.6, 1.15, 10.1, "+d", 3)
+		local centre = side * 9.2
+		frontProp(front, props, "Rack_" .. index, "DumbbellRack", index, centre, 1.0, 0, "+d")
+		hidden(front.block("Rack_Solid_" .. index, centre - 3, centre + 3, 0.06, 2.0, 0, 2.7, looks.Glass))
+		for k = 0, 2 do
+			local a = centre + (k - 1) * 2
+			frontProp(front, props, string.format("Rack_%d_Low_%d", index, k + 1), "HexDumbbell", (index - 1) * 3 + k + 1, a, 1.2,
+				1.05, "+d")
+			frontProp(front, props, string.format("Rack_%d_High_%d", index, k + 1), "HexDumbbell", (index * 3 + k) % 8 + 1, a, 0.68,
+				2.05, "+d")
+		end
+	end
+end
+
+--[[
+	Cardio: a red running track (four lanes with white lines and lane numbers)
+	along the bottom of a dark wall, and glowing speed lines streaking past the
+	door above it.
+]]
+FRONT.Cardio = function(front)
+	front.band("Track", front.aMin, front.aMax, 0, 4.6, 0.06, 0.16, looks.CardioTrack)
+	for index, y in ipairs({ 1.15, 2.3, 3.45 }) do
+		front.band("Lane_" .. index, front.aMin, front.aMax, y - 0.05, y + 0.05, 0.16, 0.18, looks.LaneWhite)
+	end
+	front.band("TrackEdge", front.aMin, front.aMax, 4.6, 4.75, 0.06, 0.18, looks.LaneWhite)
+	-- Lane numbers at both ends.
+	for _, a in ipairs({ front.aMin + 0.5, front.aMax - 1.4 }) do
+		for lane = 1, 4 do
+			local y0 = (lane - 1) * 1.15 + 0.15
+			local number = front.item(string.format("LaneNumber_%d_%d", if a < 0 then 1 else 2, lane), a, a + 0.9, 0.16, 0.17, y0,
+				y0 + 0.85, looks.LaneWhite)
+			number.Transparency = 1
+			local gui = Instance.new("SurfaceGui")
+			gui.Face = faceToward(front.toward("+d"))
+			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			gui.PixelsPerStud = 50
+			gui.Parent = number
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.fromScale(1, 1)
+			label.BackgroundTransparency = 1
+			label.Text = tostring(lane)
+			label.TextScaled = true
+			label.TextColor3 = looks.LaneWhite.color
+			label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+			label.Parent = gui
+		end
+	end
+	-- Speed lines: glowing streaks of different lengths and colours either side of the door.
+	local streaks = {
+		{ y = 5.6, near = 4.6, far = 11.5, look = looks.GlowIce },
+		{ y = 6.3, near = 6.2, far = 12.9, look = looks.GlowWhite },
+		{ y = 7.0, near = 5.0, far = 9.5, look = looks.GlowWarm },
+		{ y = 7.7, near = 7.0, far = 13.2, look = looks.GlowIce },
+		{ y = 8.4, near = 5.5, far = 10.8, look = looks.GlowWhite },
+	}
+	for index, streak in ipairs(streaks) do
+		local y, near, far, look = streak.y, streak.near, streak.far, streak.look
+		for side, sign in ipairs({ -1, 1 }) do
+			local a0, a1 = sign * near, sign * far
+			front.item(string.format("Speed_%d_%d", index, side), math.min(a0, a1), math.max(a0, a1), 0.06, 0.12, y, y + 0.14, look)
+		end
+	end
+end
+
+--[[
+	The Strongman Shed (GAME_DESIGN §27, user 2026-10-26: a big shed of its own
+	beside the gym), furnished like a room from its roller door (its walls,
+	roof, lamps and sign are the builder's): two turf lanes with white lines
+	(yoke on the left, farmer's walk beside it) and a chalk stand between their
+	starts; at the far end a loaded yoke and farmer's handles, a steel rig with
+	chains and a row of atlas stones on stands; tractor tyres and logs on the
+	right; sandbags near the door. Look only (no gameplay yet).
+]]
+FURNISH.StrongmanShed = function(kit)
+	-- The turf lanes, with white side lines and start and finish lines.
+	for _, lane in ipairs({ { name = "YokeLane", a0 = -32, a1 = -22 }, { name = "FarmerLane", a0 = -18, a1 = -8 } }) do
+		kit.item(lane.name, lane.a0, lane.a1, 4.4, 40.4, 0, 0.08, looks.YardTurf)
+		for index, a in ipairs({ lane.a0, lane.a1 - 0.2 }) do
+			kit.item(lane.name .. "_Side_" .. index, a, a + 0.2, 4.4, 40.4, 0.08, 0.1, looks.LaneWhite)
+		end
+		kit.item(lane.name .. "_Start", lane.a0, lane.a1, 4.4, 4.7, 0.08, 0.1, looks.LaneWhite)
+		kit.item(lane.name .. "_Finish", lane.a0, lane.a1, 40.1, 40.4, 0.08, 0.1, looks.LaneWhite)
+	end
+	-- A chalk stand between the lanes' starts.
+	kit.block("ChalkStand", -20.4, -19.6, 2.6, 3.4, 0, 3.2, looks.SteelBeam)
+	kit.cylinder("ChalkStand_Bowl", -20, 3, 3.45, 0.5, 1.6, "up", looks.Whiteboard)
+	-- A steel rig at the far end, chains hanging from its front beam.
+	local r0, r1, e0, e1 = -4, 6, 42.4, 52.4
+	for index, corner in ipairs({ { r0, e0 }, { r1, e0 }, { r0, e1 }, { r1, e1 } }) do
+		kit.block("Rig_Post_" .. index, corner[1] - 0.3, corner[1] + 0.3, corner[2] - 0.3, corner[2] + 0.3, 0, 10.2, looks.SteelBeam)
+	end
+	for index, d in ipairs({ e0, e1 }) do
+		kit.block("Rig_Beam_" .. index, r0 - 0.3, r1 + 0.3, d - 0.3, d + 0.3, 9.6, 10.2, looks.SteelBeam)
+	end
+	for index, a in ipairs({ r0, r1 }) do
+		kit.block("Rig_Side_" .. index, a - 0.3, a + 0.3, e0 + 0.3, e1 - 0.3, 9.6, 10.2, looks.SteelBeam)
+	end
+	kit.cylinder("Rig_PullUpBar", (r0 + r1) / 2, (e0 + e1) / 2, 9.35, r1 - r0, 0.2, "a", looks.Stainless)
+	local props = propsFor({ "Tyre", "Sandbag", "Yoke", "FarmerHandle", "AtlasStone", "AtlasStand", "StrongLog", "Chain",
+		"CompPlate" })
+	if props == nil then
+		return
+	end
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string,
+		scale: number?): Model
+		return frontProp((kit :: any) :: FrontKit, props, name, item, colourway, a, d, y, facing, scale)
+	end
+	for index, a in ipairs({ -1.5, 1, 3.5 }) do
+		put("Rig_Chain_" .. index, "Chain", index % 2 + 1, a, e0, 9.6 - 5.4, "-d")
+	end
+	-- The yoke at the end of its lane, a red and a blue plate on each horn.
+	local yokeA, ends = -27, 46.4
+	put("Yoke", "Yoke", 1, yokeA, ends, 0, "-d")
+	for _, side in ipairs({ -1, 1 }) do
+		hidden(kit.block("Yoke_Solid_" .. side + 2, yokeA + side * 2.6 - 0.25, yokeA + side * 2.6 + 0.25, ends - 1.2, ends + 1.2,
+			0, 7.4, looks.Glass))
+		for k = 0, 1 do
+			put(string.format("Yoke_Plate_%d_%d", side + 2, k + 1), "CompPlate", k + 1, yokeA + side * (3.15 + k * 0.22), ends, 0,
+				if side > 0 then "+a" else "-a")
+		end
+	end
+	-- Two farmer's handles at the end of theirs, a plate at each end.
+	for index, a in ipairs({ -14.3, -11.7 }) do
+		put("Farmer_" .. index, "FarmerHandle", index, a, ends, 0, "+a")
+		for side, sign in ipairs({ -1, 1 }) do
+			put(string.format("Farmer_%d_Plate_%d", index, side), "CompPlate", 2 + index, a, ends + sign * 2.45, 0,
+				if sign > 0 then "+d" else "-d")
+		end
+	end
+	-- A row of atlas stones on their stands, smallest to biggest.
+	for index, scale in ipairs({ 0.85, 1, 1.15, 1.3 }) do
+		local a = 8 + index * 5
+		put("Stand_" .. index, "AtlasStand", index % 2 + 1, a, ends, 0, "-d")
+		put("Stone_" .. index, "AtlasStone", index % 3 + 1, a, ends, 1.24, "-d", scale)
+		hidden(kit.block("Stand_Solid_" .. index, a - 1.3, a + 1.3, ends - 1.3, ends + 1.3, 0, 1.3 + 1.8 * scale, looks.Glass))
+	end
+	-- Tractor tyres and logs on the right.
+	for index, d in ipairs({ 26, 17.5 }) do
+		put("Tyre_" .. index, "Tyre", index, 30, d, 0, "-d")
+		hidden(kit.block("Tyre_Solid_" .. index, 26.7, 33.3, d - 3.3, d + 3.3, 0, 2.6, looks.Glass))
+	end
+	for index, d in ipairs({ 19, 25 }) do
+		put("Log_" .. index, "StrongLog", index + 1, 17, d, 0, "-d")
+		hidden(kit.block("Log_Solid_" .. index, 13.5, 20.5, d - 0.7, d + 0.7, 0, 1.4, looks.Glass))
+	end
+	-- Sandbags near the door.
+	for index, spot in ipairs({ { -1.5, 12 }, { 1.8, 12 }, { 5.1, 12 }, { 0.2, 15.5 }, { 3.5, 15.5 } }) do
+		put("Sandbag_" .. index, "Sandbag", index, spot[1], spot[2], 0, "-d")
+	end
+end
+
+--[[
+	Decorates every closed room's front that has a FRONT design (StarterGymBuilder
+	left their regions in model.Fronts), into model.FrontProps, one folder per
+	room. A front that goes wrong is left out with a warning, like a room.
+]]
+function RoomProps.buildFronts(model: Model): number
+	local regions = model:FindFirstChild("Fronts")
+	if regions == nil then
+		return 0
+	end
+	local holder = Instance.new("Folder")
+	holder.Name = "FrontProps"
+	holder.Parent = model
+	local themed = 0
+	for _, region in ipairs(regions:GetChildren()) do
+		local name = string.sub(region.Name, 7) -- without "Front_"
+		local decorate = FRONT[name]
+		if region:IsA("BasePart") and decorate then
+			local folder = Instance.new("Folder")
+			folder.Name = name
+			local ok, problem = pcall(function()
+				decorate(frontFor(folder, region))
+			end)
+			if ok then
+				folder.Parent = holder
+				themed += 1
+			else
+				folder:Destroy()
+				warn(string.format("[RoomProps] %s front left plain: %s", name, tostring(problem)))
+			end
+		end
+	end
+	return themed
 end
 
 return RoomProps

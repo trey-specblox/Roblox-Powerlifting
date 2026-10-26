@@ -352,6 +352,102 @@
         "normal": "rbxassetid://80941039028506",
         "roughness": "rbxassetid://128584025842739"
       }
+    },
+    "Strongman_Timber": {
+      "source": "polyhaven:weathered_brown_planks",
+      "url": "https://polyhaven.com/a/weathered_brown_planks",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_weathered_brown_planks",
+      "ids": {
+        "color": "rbxassetid://115601618684425",
+        "normal": "rbxassetid://89422451719522",
+        "roughness": "rbxassetid://118545744197354"
+      }
+    },
+    "Strongman_SteelPlates": {
+      "source": "ambientcg:MetalPlates013",
+      "url": "https://ambientcg.com/view?id=MetalPlates013",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_MetalPlates013",
+      "ids": {
+        "color": "rbxassetid://109321439128150",
+        "normal": "rbxassetid://86451185616305",
+        "roughness": "rbxassetid://130651176889490"
+      }
+    },
+    "Dumbbells_DiamondPlate": {
+      "source": "ambientcg:DiamondPlate008A",
+      "url": "https://ambientcg.com/view?id=DiamondPlate008A",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_DiamondPlate008A",
+      "ids": {
+        "color": "rbxassetid://103167934441698",
+        "normal": "rbxassetid://84895998611329",
+        "roughness": "rbxassetid://101546373474764"
+      }
+    },
+    "Cardio_Track": {
+      "source": "polyhaven:rubberized_track",
+      "url": "https://polyhaven.com/a/rubberized_track",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_rubberized_track",
+      "ids": {
+        "color": "rbxassetid://115211432323838",
+        "normal": "rbxassetid://97991264023733",
+        "roughness": "rbxassetid://135222975761483"
+      }
+    },
+    "Shed_CorrugatedSteel": {
+      "source": "ambientcg:CorrugatedSteel005",
+      "url": "https://ambientcg.com/view?id=CorrugatedSteel005",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/shed_CorrugatedSteel005",
+      "ids": {
+        "color": "rbxassetid://78063520458469",
+        "normal": "rbxassetid://108554226634224",
+        "roughness": "rbxassetid://110330213785139"
+      }
+    },
+    "Shed_Shutter": {
+      "source": "polyhaven:painted_metal_shutter",
+      "url": "https://polyhaven.com/a/painted_metal_shutter",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/shed_painted_metal_shutter",
+      "ids": {
+        "color": "rbxassetid://121529721433172",
+        "normal": "rbxassetid://119842376730446",
+        "roughness": "rbxassetid://75579880290713"
+      }
     }
   },
   "models": {
@@ -387,6 +483,22 @@
       "license": "own work",
       "ids": {
         "model": "rbxassetid://109192629566668"
+      }
+    },
+    "RoomProps_04": {
+      "about": "Themed room front props, batch 1: atlas stone and stand, strongman log, chain, hex dumbbell, dumbbell rack, competition plate, planter, wall uplight (CENTRAL labels). Made by art/scripts/build_room_props_04.py (art/blender/RoomProps_04.blend).",
+      "file": "art/exports/RoomProps_04.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://91749281309773"
+      }
+    },
+    "RoomProps_05": {
+      "about": "Strongman Yard props: tractor tyre, sandbag, yoke, farmer's walk handle (CENTRAL labels; loaded with RoomProps_04's CompPlate in the game). Made by art/scripts/build_room_props_05.py (art/blender/RoomProps_05.blend).",
+      "file": "art/exports/RoomProps_05.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://126419721956699"
       }
     }
   }

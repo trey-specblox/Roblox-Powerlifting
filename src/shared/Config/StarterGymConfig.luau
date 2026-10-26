@@ -281,6 +281,7 @@ export type SwingDoorSpec = {
 	look: string, -- Looks names: the leaves,
 	frame: string, -- the frame round them,
 	handle: string, -- the handles
+	plaque: boolean?, -- false = no name plaque over the door (default: one)
 }
 StarterGymConfig.SwingDoors = {
 	Sauna = { openingWidth = 8, openingHeight = 10, leaves = 2, width = 7.4, height = 9, window = true,
@@ -289,10 +290,71 @@ StarterGymConfig.SwingDoors = {
 		look = "LockersSlats", frame = "SignPanel", handle = "Stainless" },
 } :: { [string]: SwingDoorSpec }
 StarterGymConfig.SwingDoorSensorReachStuds = 5 -- on each side of the wall
--- Rooms with a solid wall onto the hall instead of glass (privacy; user,
--- 2026-10-25: the lockers), with the big sign over the door on its hall side
--- (oak slats around it). Front block, ground floor only for now.
-StarterGymConfig.PrivateRooms = { Lockers = "LOCKER ROOM" } :: { [string]: string }
+
+--[[
+	Closed rooms (GAME_DESIGN §27 "Closed rooms and the spa wing", user
+	2026-10-26: real-life rooms are not seen into and have doors). Only the
+	GlassFrontRooms keep a glass front onto the hall (shop windows). Every other
+	room has a solid wall wherever it faces the hall and a real door that
+	closes (SwingDoors, or else one solid door coloured like its room's wall),
+	except the lobby and the OpenDoorwayRooms.
+
+	ClosedRooms: what the hall sees of a room. `label` is the big glowing sign
+	over its door (and the door's plaque); `colour` paints its wall on the hall
+	side and its door (2026-10-26; the user found plain colours "lazy", so they
+	stay only until the room's themed front is built); `face` = a Looks name
+	for the wall's hall side instead (a themed front's base texture; RoomProps
+	FRONT adds its details); `signWidth` = the sign's width (default 18);
+	`slats` = oak slats instead (the lockers); `door` = a Looks name for the
+	door instead of the colour; `plaque = false` = no plaque over the door. A
+	room with no entry gets a plain door and its own name.
+]]
+-- How far a themed front's details may stand out from its wall (aisles and the
+-- 12-stud balcony stay clear).
+StarterGymConfig.FrontDepthStuds = 3
+StarterGymConfig.GlassFrontRooms = { Cafe = true, SupplementBar = true, Shop = true } :: { [string]: boolean }
+-- The showers are reached only through the lockers, which have the door.
+StarterGymConfig.OpenDoorwayRooms = { Showers = true } :: { [string]: boolean }
+export type ClosedRoom = {
+	label: string,
+	colour: Color3?,
+	face: string?,
+	signWidth: number?,
+	slats: boolean?,
+	door: string?,
+	plaque: boolean?,
+}
+StarterGymConfig.ClosedRooms = {
+	Lockers = { label = "LOCKER ROOM", slats = true },
+	-- Ground floor.
+	Office = { label = "OFFICE", colour = Color3.fromRGB(36, 58, 102) }, -- navy
+	-- Themed fronts, batch 1 (GAME_DESIGN §27 "Themed room fronts"): black steel and diamond plate.
+	Dumbbells = { label = "DUMBBELLS", face = "FrontCharcoal", signWidth = 12, door = "DumbbellsPlate" },
+	Machines = { label = "MACHINES", colour = Color3.fromRGB(62, 70, 84) }, -- graphite
+	Physio = { label = "INDEX", colour = Color3.fromRGB(0, 124, 124) }, -- teal (the Index room, GAME_DESIGN §27)
+	Storage = { label = "STORAGE", colour = Color3.fromRGB(92, 104, 116) }, -- slate grey
+	Cardio = { label = "CARDIO", face = "FrontGraphite", door = "CardioTrack" }, -- running track, speed lines
+	-- Behind the cafe: the cafe's own "STAFF ONLY" sign is over this door.
+	StaffRoom = { label = "STAFF ROOM", colour = Color3.fromRGB(96, 132, 160), plaque = false }, -- dusty blue
+	-- Upper floor. The spa wing: its wall onto the hall, then the rooms off its
+	-- corridor (oak doors; the sauna's own doors are in SwingDoors).
+	SpaReception = { label = "RECOVERY & SPA", face = "MassageStone", door = "LockersSlats" }, -- stone, oak, planters
+	Sauna = { label = "SAUNA" },
+	Recovery = { label = "RECOVERY", door = "LockersSlats" },
+	Massage = { label = "MASSAGE", door = "LockersSlats" },
+	SpareRoom = { label = "COMING SOON", colour = Color3.fromRGB(150, 154, 160) }, -- its use is decided later (user, 2026-10-26)
+	Classroom = { label = "CLASSROOM", colour = Color3.fromRGB(80, 152, 206) }, -- sky blue
+	MediaRoom = { label = "MEDIA ROOM", colour = Color3.fromRGB(104, 64, 150) }, -- purple
+	WarmUp = { label = "WARM-UP & MOBILITY", colour = Color3.fromRGB(118, 152, 114) }, -- sage
+	MaxTesting = { label = "MAX TESTING", face = "MaxBlack", door = "MaxBlack" }, -- black, red stripes, plates
+	Coach = { label = "COACHES", colour = Color3.fromRGB(40, 84, 170) }, -- royal blue
+	Lounge = { label = "LOUNGE", colour = Color3.fromRGB(214, 108, 88) }, -- coral
+	TrophyRoom = { label = "TROPHY ROOM", colour = Color3.fromRGB(176, 136, 48) }, -- gold
+} :: { [string]: ClosedRoom }
+-- The door of a closed room that has no SwingDoors entry: one solid door
+-- (no window, user 2026-10-26), its look from ClosedRooms.
+StarterGymConfig.ClosedRoomDoor = { openingWidth = 6, openingHeight = 9, leaves = 1, width = 5.2, height = 8.6,
+	window = false, look = "DoorPlain", frame = "SignPanel", handle = "Stainless" } :: SwingDoorSpec
 
 --[[
 	The rooms (GAME_DESIGN §27). What each room is and holds was approved by
@@ -307,19 +369,75 @@ StarterGymConfig.Rooms = {
 	-- A name in two neighbouring places is ONE room across both (no wall
 	-- between, one door in the middle): the sauna upstairs, where Room8 and
 	-- Room7 were (user, 2026-10-25: upstairs, bigger).
-	LeftGround = { "Office", "Recovery", "Massage", "Physio" },
-	RightGround = { "Storage", "SupplementBar", "Coach", "Shop" },
-	LeftUpper = { "Room4", "Room3", "Room2", "Room1" },
-	RightUpper = { "Sauna", "Sauna", "Room6", "Room5" },
+	-- Where each room goes: user, 2026-10-26 (GAME_DESIGN §27 "Closed rooms and
+	-- the spa wing"); the old ground-floor Coach room is Cardio, the coaches
+	-- are upstairs (where the Studio was planned).
+	-- The left block's upper floor is the Recovery & Spa wing (SpaWing below).
+	LeftGround = { "Office", "Dumbbells", "Machines", "Physio" },
+	RightGround = { "Storage", "SupplementBar", "Cardio", "Shop" },
+	LeftUpper = { "SpaWing", "SpaWing", "SpaWing", "SpaWing" },
+	-- SpareRoom: where Strongman was (it is the StrongmanShed beside the gym now); its use is decided later.
+	RightUpper = { "SpareRoom", "SpareRoom", "Classroom", "MediaRoom" },
 	-- The front block between its two corner rooms, LEFT TO RIGHT as you walk in.
 	-- Ground: the middle one is the lobby (LobbyWidthStuds); upstairs: equal widths.
 	FrontGround = { "Lockers", "Lobby", "Cafe" },
-	FrontUpper = { "WarmUp", "MaxTesting", "Studio" },
+	FrontUpper = { "WarmUp", "MaxTesting", "Coach" },
 	-- The front corners, both floors (the stairs' place in the drawing; see stage 3).
 	-- Ground: reached through Lockers (left) and Cafe (right). The Staff Room was
 	-- the Kitchen (user, 2026-10-25: the steak kitchen becomes its own building).
+	-- Upper: reached through Warm-up (left) and Coach (right).
 	CornerGround = { Left = "Showers", Right = "StaffRoom" },
-	CornerUpper = { Left = "CornerLeftUpper", Right = "CornerRightUpper" },
+	CornerUpper = { Left = "Lounge", Right = "TrophyRoom" },
+}
+
+--[[
+	The Recovery & Spa wing (GAME_DESIGN §27 "Closed rooms and the spa wing",
+	user 2026-10-26: three big rooms). It fills the places named `name` in
+	Rooms (the left block's upper floor): one door from the balcony into the
+	reception at the wing's front end, across the whole block; from there a
+	corridor runs back along the hall wall, and the rooms open off it, front
+	to back, each with its own door. The last room takes what is left. No
+	windows onto the hall.
+]]
+--[[
+	The Strongman Shed (GAME_DESIGN §27 "Strongman becomes an outdoor yard",
+	then "a big shed", user 2026-10-26): its own building, disconnected from the
+	gym, beside it on the side `side` (-1 = -X: on your right as you face the
+	entrance from outside, by the Cafe corner), `gapStuds` from its side wall,
+	its front level with the gym's front so players see it as they walk out. A
+	steel and timber barn: weathered timber along the bottom, dark corrugated
+	steel above, a pitched corrugated roof (the ridge front to back, gable ends
+	front and back), steel trusses with hanging lamps inside, and a big roller
+	door in its front, always rolled up, with the sign over it. RoomProps lays
+	out its equipment (FURNISH.StrongmanShed) like a room's, from the door.
+]]
+StarterGymConfig.StrongmanShed = {
+	name = "StrongmanShed",
+	label = "STRONGMAN",
+	side = -1,
+	gapStuds = 12,
+	widthStuds = 80, -- outside, across (X)
+	depthStuds = 60, -- outside, from its front (level with the gym's front) back (Z)
+	wallHeightStuds = 16,
+	roofRiseStuds = 9, -- the ridge above the walls' top
+	roofOverhangStuds = 1.5,
+	timberBandStuds = 4, -- the weathered timber along the bottom of the walls
+	doorWidthStuds = 22,
+	doorHeightStuds = 13,
+	trussSpacingStuds = 12,
+}
+
+export type SpaWingRoom = { name: string, lengthStuds: number? }
+StarterGymConfig.SpaWing = {
+	name = "SpaWing",
+	reception = "SpaReception",
+	receptionDepthStuds = 20, -- front to back
+	corridorWidthStuds = 6, -- from the hall wall's inside face to the corridor wall's middle
+	rooms = {
+		{ name = "Sauna", lengthStuds = 33 },
+		{ name = "Recovery", lengthStuds = 28 },
+		{ name = "Massage" },
+	} :: { SpaWingRoom },
 }
 
 --[[
@@ -338,6 +456,8 @@ StarterGymConfig.PropAssets = {
 	{ id = 72818612497691, whole = "SBarPlant" }, -- SBarPlant_01: the leafy potted plant
 	{ id = 93719454817045 }, -- RoomProps_02: Lockers, Cafe and Staff Room
 	{ id = 109192629566668 }, -- RoomProps_03: Showers, Recovery and Massage
+	{ id = 91749281309773 }, -- RoomProps_04: themed room fronts, batch 1
+	{ id = 126419721956699 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -382,10 +502,13 @@ StarterGymConfig.PropPaints = {
 	Amber = { color = Color3.fromRGB(190, 110, 40), transparency = 0.25, reflectance = 0.1 }, -- brown glass
 	BlueGlass = { color = Color3.fromRGB(40, 90, 170), transparency = 0.25, reflectance = 0.1 },
 	Ice = { color = Color3.fromRGB(225, 240, 250), transparency = 0.35, reflectance = 0.1 },
+	-- RoomProps_04 (themed room fronts, batch 1)
+	Granite = { color = Color3.fromRGB(150, 150, 146), material = Enum.Material.Granite },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
 StarterGymConfig.PropFabricPieces = {
+	Sandbag_Body = true,
 	Sofa_Frame = true,
 	Sofa_Cushion = true,
 	Curtain_Cloth = true,
@@ -648,6 +771,58 @@ StarterGymConfig.PropColourways = {
 		{ Frame = "Black", Panel = "Sage" },
 		{ Frame = "Oak", Panel = "Kraft" },
 	},
+	-- RoomProps_04: the themed room fronts, batch 1 (art/scripts/build_room_props_04.py COLOURWAYS).
+	AtlasStone = { { Stone = "Granite" }, { Stone = "Slate" }, { Stone = "Charcoal" } },
+	AtlasStand = { { Frame = "Oak", Top = "Chocolate" }, { Frame = "Black", Top = "Oak" } },
+	StrongLog = {
+		{ Body = "Black", Cap = "Silver", Slot = "Charcoal", Handle = "Silver", Text = "White" },
+		{ Body = "Navy", Cap = "Silver", Slot = "Charcoal", Handle = "Silver", Text = "White" },
+		{ Body = "Forest", Cap = "Brass", Slot = "Charcoal", Handle = "Silver", Text = "Cream" },
+		{ Body = "Orange", Cap = "Black", Slot = "Charcoal", Handle = "Silver", Text = "Black" },
+	},
+	Chain = { { Metal = "Silver" }, { Metal = "Charcoal" } },
+	HexDumbbell = {
+		{ Head = "Black", Face = "Red", Handle = "Silver", Text = "White" },
+		{ Head = "Black", Face = "Blue", Handle = "Silver", Text = "White" },
+		{ Head = "Black", Face = "Yellow", Handle = "Silver", Text = "Black" },
+		{ Head = "Black", Face = "Green", Handle = "Silver", Text = "Black" },
+		{ Head = "Black", Face = "Orange", Handle = "Silver", Text = "Black" },
+		{ Head = "Black", Face = "White", Handle = "Silver", Text = "Black" },
+		{ Head = "Black", Face = "Purple", Handle = "Silver", Text = "White" },
+		{ Head = "Black", Face = "Teal", Handle = "Silver", Text = "White" },
+	},
+	DumbbellRack = { { Frame = "Black", Shelf = "Charcoal", Text = "White" }, { Frame = "Silver", Shelf = "Black", Text = "Black" } },
+	-- IPF calibrated plate colours: 25 red, 20 blue, 15 yellow, 10 green, 5 white.
+	CompPlate = {
+		{ Disc = "Red", Hub = "Silver", Text = "White" },
+		{ Disc = "Blue", Hub = "Silver", Text = "White" },
+		{ Disc = "Yellow", Hub = "Silver", Text = "Black" },
+		{ Disc = "Green", Hub = "Silver", Text = "White" },
+		{ Disc = "White", Hub = "Silver", Text = "Black" },
+	},
+	Planter = { { Body = "Oak", Soil = "Chocolate" }, { Body = "Charcoal", Soil = "Chocolate" },
+		{ Body = "Terracotta", Soil = "Chocolate" }, { Body = "Cream", Soil = "Chocolate" } },
+	WallUplight = { { Body = "Brass", Light = "WarmGlow" }, { Body = "Black", Light = "WarmGlow" },
+		{ Body = "White", Light = "WarmGlow" } },
+	-- RoomProps_05: the Strongman Yard (art/scripts/build_room_props_05.py COLOURWAYS).
+	Tyre = { { Rubber = "Black", Text = "Yellow" }, { Rubber = "Black", Text = "White" } },
+	Sandbag = {
+		{ Body = "Forest", Strap = "Black", Text = "White" },
+		{ Body = "Kraft", Strap = "Black", Text = "Black" },
+		{ Body = "Navy", Strap = "Black", Text = "White" },
+		{ Body = "Terracotta", Strap = "Black", Text = "White" },
+		{ Body = "Black", Strap = "Black", Text = "Yellow" },
+	},
+	Yoke = {
+		{ Frame = "Black", Horn = "Silver", Pad = "Black", Text = "White" },
+		{ Frame = "Red", Horn = "Silver", Pad = "Black", Text = "White" },
+		{ Frame = "Navy", Horn = "Silver", Pad = "Black", Text = "White" },
+	},
+	FarmerHandle = {
+		{ Frame = "Black", Grip = "Silver", Text = "White" },
+		{ Frame = "Orange", Grip = "Silver", Text = "Black" },
+		{ Frame = "Teal", Grip = "Silver", Text = "White" },
+	},
 } :: { [string]: { { [string]: string } } }
 
 -- `variant` names one of the MaterialVariants below; `material` must then be that variant's base material.
@@ -827,6 +1002,50 @@ StarterGymConfig.MaterialVariants = {
 		normal = "rbxassetid://80941039028506",
 		roughness = "rbxassetid://128584025842739",
 	},
+	-- Themed room fronts, batch 1 (2026-10-26).
+	Strongman_Timber = { -- polyhaven weathered_brown_planks
+		base = Enum.Material.WoodPlanks,
+		studsPerTile = 10,
+		color = "rbxassetid://115601618684425",
+		normal = "rbxassetid://89422451719522",
+		roughness = "rbxassetid://118545744197354",
+	},
+	Strongman_SteelPlates = { -- ambientCG MetalPlates013
+		base = Enum.Material.Metal,
+		studsPerTile = 8,
+		color = "rbxassetid://109321439128150",
+		normal = "rbxassetid://86451185616305",
+		roughness = "rbxassetid://130651176889490",
+	},
+	Dumbbells_DiamondPlate = { -- ambientCG DiamondPlate008A
+		base = Enum.Material.DiamondPlate,
+		studsPerTile = 6,
+		color = "rbxassetid://103167934441698",
+		normal = "rbxassetid://84895998611329",
+		roughness = "rbxassetid://101546373474764",
+	},
+	Cardio_Track = { -- polyhaven rubberized_track
+		base = Enum.Material.Rubber,
+		studsPerTile = 10,
+		color = "rbxassetid://115211432323838",
+		normal = "rbxassetid://97991264023733",
+		roughness = "rbxassetid://135222975761483",
+	},
+	-- The Strongman Shed (2026-10-26).
+	Shed_CorrugatedSteel = { -- ambientCG CorrugatedSteel005
+		base = Enum.Material.Metal,
+		studsPerTile = 8,
+		color = "rbxassetid://78063520458469",
+		normal = "rbxassetid://108554226634224",
+		roughness = "rbxassetid://110330213785139",
+	},
+	Shed_Shutter = { -- polyhaven painted_metal_shutter
+		base = Enum.Material.Metal,
+		studsPerTile = 6,
+		color = "rbxassetid://121529721433172",
+		normal = "rbxassetid://119842376730446",
+		roughness = "rbxassetid://75579880290713",
+	},
 } :: { [string]: MaterialVariantSpec }
 
 -- Bright and clean, black rubber under the racks (References/Visual Style).
@@ -922,7 +1141,33 @@ StarterGymConfig.Looks = {
 	MassageStone = { material = Enum.Material.Slate, color = Color3.fromRGB(255, 255, 255), variant = "Massage_StoneWall" },
 	-- The grey limewash tinted warm (Roblox multiplies the map by the colour).
 	MassageWall = { material = Enum.Material.Plaster, color = Color3.fromRGB(255, 236, 214), variant = "Massage_Limewash" },
+	-- The door of a closed room without a colour of its own (2026-10-26).
+	DoorPlain = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(236, 236, 232) },
+	-- The Strongman Shed's turf lanes (yoke, farmer's walk).
+	YardTurf = { material = Enum.Material.Grass, color = Color3.fromRGB(78, 132, 62) },
+	-- The Strongman Shed's corrugated steel (tinted dark) and its roller door's shutter.
+	ShedSteel = { material = Enum.Material.Metal, color = Color3.fromRGB(92, 96, 104), variant = "Shed_CorrugatedSteel" },
+	ShedShutter = { material = Enum.Material.Metal, color = Color3.fromRGB(205, 205, 210), variant = "Shed_Shutter" },
+	-- Themed room fronts, batch 1 (2026-10-26).
+	StrongmanTimber = { material = Enum.Material.WoodPlanks, color = Color3.fromRGB(255, 255, 255), variant = "Strongman_Timber" },
+	StrongmanSteel = { material = Enum.Material.Metal, color = Color3.fromRGB(255, 255, 255), variant = "Strongman_SteelPlates" },
+	-- The diamond plate's map is a pale steel: tinted dark, it reads as black steel plate.
+	DumbbellsPlate = { material = Enum.Material.DiamondPlate, color = Color3.fromRGB(92, 94, 100), variant = "Dumbbells_DiamondPlate" },
+	CardioTrack = { material = Enum.Material.Rubber, color = Color3.fromRGB(255, 255, 255), variant = "Cardio_Track" },
+	FrontCharcoal = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(38, 40, 46) },
+	FrontGraphite = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(30, 34, 44) },
+	MaxBlack = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(16, 16, 18) },
+	LaneWhite = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(240, 240, 236) },
+	-- Rusted barbells on the Max Testing wall (user, 2026-10-26: black bars were invisible on black).
+	RustBar = { material = Enum.Material.CorrodedMetal, color = Color3.fromRGB(118, 66, 40) },
+	RustSleeve = { material = Enum.Material.CorrodedMetal, color = Color3.fromRGB(96, 76, 64) }, -- the rusted bar's sleeves
 } :: { [string]: Look }
+-- Each closed room's colour (ClosedRooms) as a look: its wall on the hall side and its door.
+for name, closed in pairs(StarterGymConfig.ClosedRooms) do
+	if closed.colour then
+		StarterGymConfig.Looks["HallFront_" .. name] = { material = Enum.Material.SmoothPlastic, color = closed.colour }
+	end
+end
 
 --[[
 	Where everything goes, worked out from the rack floor plan. Pure maths, used
@@ -980,6 +1225,57 @@ function StarterGymConfig.footprint(layout: FloorPlan): Footprint
 		roofSlabBottomY = roofY - cfg.SlabThicknessStuds,
 		roofY = roofY,
 	}
+end
+
+-- Every room's name, once each (a name in two neighbouring places is one
+-- room; the spa wing is its reception and its rooms).
+function StarterGymConfig.roomNames(): { string }
+	local wing = StarterGymConfig.SpaWing
+	local names = {}
+	local function add(name: string)
+		if not table.find(names, name) then
+			table.insert(names, name)
+		end
+	end
+	for _, list in pairs(StarterGymConfig.Rooms) do
+		for _, name in pairs(list) do
+			if name == wing.name then
+				add(wing.reception)
+				for _, wingRoom in ipairs(wing.rooms) do
+					add(wingRoom.name)
+				end
+			else
+				add(name)
+			end
+		end
+	end
+	return names
+end
+
+-- The text on a room's sign and door plaque.
+function StarterGymConfig.roomLabel(name: string): string
+	local closed = StarterGymConfig.ClosedRooms[name]
+	return if closed then closed.label else string.upper(name)
+end
+
+-- The real door in a room's doorway (ClosedRooms), or nil for a room with an
+-- open doorway: a glass-fronted room, the lobby and the OpenDoorwayRooms.
+function StarterGymConfig.swingDoorFor(name: string): SwingDoorSpec?
+	local cfg = StarterGymConfig
+	local own = cfg.SwingDoors[name]
+	if own then
+		return own
+	end
+	if cfg.GlassFrontRooms[name] or cfg.OpenDoorwayRooms[name] or name == cfg.Rooms.FrontGround[2] then
+		return nil
+	end
+	local spec = table.clone(cfg.ClosedRoomDoor)
+	local closed = cfg.ClosedRooms[name]
+	if closed then
+		spec.look = closed.door or (if closed.colour then "HallFront_" .. name else spec.look)
+		spec.plaque = closed.plaque
+	end
+	return spec
 end
 
 return StarterGymConfig

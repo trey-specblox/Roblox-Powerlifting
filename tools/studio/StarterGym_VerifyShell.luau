@@ -38,9 +38,22 @@
 	    bright ambient and daytime; looking up in every room and under the
 	    balcony you see a white ceiling (not tiles); every room but the lobby
 	    has its light panel; the hall has all its light bars;
-	  - step 6a (room furniture): every ground-floor room but the lobby is
+	  - step 6a (room furniture): every room whose furniture is built is
 	    furnished, all furniture stays inside its room, and no solid piece
-	    stands in front of a door (either side) or inside a wall.
+	    stands in front of a door (either side) or inside a wall;
+	  - closed rooms (2026-10-26, GAME_DESIGN §27 "Closed rooms and the spa
+	    wing"): every room facing the hall but the three shop windows and the
+	    lobby shows a solid wall (rays from the hall), and has a real door; the
+	    Cafe, Supplement Bar and Shop show glass; every room's swing door has
+	    solid leaves that swing clear of its doorway; the Recovery & Spa wing
+	    upstairs has one door from the balcony, no see-through spot, and its
+	    rooms (Sauna, Recovery, Massage) off its corridor, away from the hall;
+	  - the Strongman Shed (2026-10-26): its own building beside the gym, its
+	    roller door open, no door into it from the gym, walled in, roofed and
+	    furnished;
+	  - themed room fronts (2026-10-26): each listed front is decorated, its
+	    details stay along its wall within FrontDepthStuds, and nothing solid
+	    stands in front of its door.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -182,16 +195,9 @@ local function run()
 			if #blocked > 0 then " (" .. table.concat(blocked, "; ") .. ")" else ""))
 	end
 
-	-- Rooms: each listed once, each door open.
-	-- A name listed twice in a block is one room across both places (the sauna).
-	local expected = {}
-	for key, list in pairs(gym.Rooms) do
-		for _, name in pairs(list) do
-			if not table.find(expected, name) then
-				table.insert(expected, name)
-			end
-		end
-	end
+	-- Rooms: each listed once, each doorway open (no wall part in it).
+	-- A name listed twice in a block is one room across both places.
+	local expected = gym.roomNames()
 	local missing, doubled, shut = {}, {}, {}
 	local thickness = gym.WallThicknessStuds
 	local halfDoor = gym.RoomDoorWidthStuds / 2 - 0.1
@@ -455,10 +461,17 @@ local function run()
 	end
 
 	-- Real swing doors (the sauna, 2026-10-23; double doors and the lockers'
-	-- door 2026-10-25): tagged, a sensor, the spec's number of solid panels
-	-- hinged at their pivots; turned to their OpenPivots, they leave the middle
-	-- of the door gap clear.
-	for roomName, spec in pairs(gym.SwingDoors) do
+	-- door 2026-10-25; every closed room 2026-10-26, gym.swingDoorFor): tagged,
+	-- a sensor, the spec's number of solid panels hinged at their pivots;
+	-- turned to their OpenPivots, they leave the middle of the door gap clear.
+	local swingDoorCount, badSwingDoors = 0, {}
+	for _, roomPart in ipairs(folders.Rooms:GetChildren()) do
+		local roomName = string.sub(roomPart.Name, 6)
+		local spec = gym.swingDoorFor(roomName)
+		if spec == nil then
+			continue
+		end
+		swingDoorCount += 1
 		local door = doorsFolder and doorsFolder:FindFirstChild(roomName .. "Door")
 		local panels = {}
 		if door then
@@ -469,7 +482,7 @@ local function run()
 			end
 		end
 		local sensor = door and door:FindFirstChild("Sensor")
-		local room = folders.Rooms:FindFirstChild("Room_" .. roomName)
+		local room = roomPart
 		local fine, problem = false, string.format("missing door, sensor or room, or not %d panels", spec.leaves)
 		if door and door:HasTag(gym.AutoDoorTag) and #panels == spec.leaves and sensor and sensor:IsA("BasePart")
 			and not sensor.CanCollide and room then
@@ -518,25 +531,181 @@ local function run()
 					else "open door still in the gap: " .. table.concat(blocking, ", ")
 			end
 		end
-		check(fine, string.format("Doors.%sDoor: %d solid door leaf(s) that swing clear of the doorway%s", roomName,
-			spec.leaves, if fine then "" else " (" .. problem .. ")"))
+		if not fine then
+			table.insert(badSwingDoors, string.format("%sDoor: %s", roomName, problem))
+		end
 	end
-	-- Private rooms (the lockers, user 2026-10-25): a painted wall onto the hall,
-	-- no glass, and a door that closes.
-	for roomName in pairs(gym.PrivateRooms) do
-		local pieces, seeThrough = 0, 0
-		for _, part in ipairs(folders.Walls:GetChildren()) do
-			if part:IsA("BasePart") and string.find(part.Name, "FrontBlock_Ground_" .. roomName .. "_", 1, true) then
-				pieces += 1
-				if part.Transparency > 0 or string.sub(part.Name, 1, 6) == "Glass_" then
-					seeThrough += 1
+	local lockersDoor = gym.swingDoorFor("Lockers")
+	check(#badSwingDoors == 0 and swingDoorCount >= 15 and lockersDoor ~= nil and gym.swingDoorFor("Sauna") ~= nil,
+		string.format("%d rooms have real doors (solid leaves that swing clear of the doorway, sensor, tag)%s",
+			swingDoorCount, if #badSwingDoors > 0 then " (" .. table.concat(badSwingDoors, "; ") .. ")" else ""))
+
+	-- Closed rooms (user 2026-10-25 the lockers, 2026-10-26 every room but the
+	-- shops): looking from the hall at any room's wall, beside its doorway and
+	-- above it, the first wall part you meet is solid paint, except the
+	-- GlassFrontRooms (and the lobby), which show glass. Rays every 2 studs,
+	-- from 3 studs out in the hall (or over the balcony) toward the room.
+	local wallRays = RaycastParams.new()
+	wallRays.FilterType = Enum.RaycastFilterType.Include
+	wallRays.FilterDescendantsInstances = { folders.Walls }
+	local lobbyName = "Room_" .. gym.Rooms.FrontGround[2]
+	local seeInto, notGlass, noDoor, closedCount, glassCount = {}, {}, {}, 0, 0
+	for _, roomPart in ipairs(folders.Rooms:GetChildren()) do
+		if not roomPart:IsA("BasePart") or roomPart.Name == lobbyName then
+			continue
+		end
+		local roomName = string.sub(roomPart.Name, 6)
+		local low, high = bounds(roomPart)
+		-- Which side of the room faces the hall (its edge within 1.5 of the hall's).
+		local inward: Vector3?, faceLine, alongX = nil, 0, false
+		if math.abs(low.X - plan.hallMaxX) <= 1.5 and high.Z > plan.hallFrontZ then
+			inward, faceLine = Vector3.xAxis, plan.hallMaxX
+		elseif math.abs(high.X - plan.hallMinX) <= 1.5 and high.Z > plan.hallFrontZ then
+			inward, faceLine = -Vector3.xAxis, plan.hallMinX
+		elseif math.abs(high.Z - plan.hallFrontZ) <= 1.5 and low.X < plan.hallMaxX and high.X > plan.hallMinX then
+			inward, faceLine, alongX = -Vector3.zAxis, plan.hallFrontZ, true
+		end
+		if inward == nil then
+			continue
+		end
+		local glass = gym.GlassFrontRooms[roomName] == true
+		if glass then
+			glassCount += 1
+		else
+			closedCount += 1
+			if gym.swingDoorFor(roomName) == nil then
+				table.insert(noDoor, roomName)
+			end
+		end
+		local door = roomPart:GetAttribute("DoorCentre") :: Vector3
+		local from = if alongX then math.max(low.X, plan.hallMinX) else math.max(low.Z, plan.hallFrontZ)
+		local to = if alongX then math.min(high.X, plan.hallMaxX) else math.min(high.Z, plan.hallBackZ)
+		local doorAt = if alongX then door.X else door.Z
+		local bad = 0
+		local s = from + 1
+		while s <= to - 1 do
+			for _, height in ipairs({ 2, 6, 11 }) do
+				local inDoorway = math.abs(s - doorAt) < 4.5 and height < 10
+				if not inDoorway then
+					local y = low.Y + height
+					local origin = if alongX then Vector3.new(s, y, faceLine) else Vector3.new(faceLine, y, s)
+					origin -= inward * 3
+					local hit = workspace:Raycast(origin, inward * 6, wallRays)
+					local opaque = hit ~= nil and hit.Instance.Transparency < 0.05
+					local clear = hit ~= nil and hit.Instance.Transparency > 0.3
+					if (glass and not clear) or (not glass and not opaque) then
+						bad += 1
+					end
+				end
+			end
+			s += 2
+		end
+		if bad > 0 then
+			table.insert(if glass then notGlass else seeInto, string.format("%s (%d spots)", roomName, bad))
+		end
+	end
+	check(#seeInto == 0 and #noDoor == 0 and closedCount >= 12, string.format(
+		"%d closed rooms: no seeing in from the hall, each with a real door%s%s", closedCount,
+		if #seeInto > 0 then " (see-through: " .. table.concat(seeInto, ", ") .. ")" else "",
+		if #noDoor > 0 then " (no door: " .. table.concat(noDoor, ", ") .. ")" else ""))
+	check(#notGlass == 0 and glassCount == 3, string.format("%d shop-window rooms keep their glass fronts (expected 3)%s",
+		glassCount, if #notGlass > 0 then " (not glass: " .. table.concat(notGlass, ", ") .. ")" else ""))
+
+	-- The Recovery & Spa wing (2026-10-26): along its whole wall onto the hall,
+	-- rays from the balcony find one way in (the reception's door) and nothing
+	-- see-through; its rooms upstairs, away from the hall wall, their doors in
+	-- the corridor wall.
+	local wing = gym.SpaWing
+	local reception = folders.Rooms:FindFirstChild("Room_" .. wing.reception) :: BasePart?
+	if reception then
+		local low = bounds(reception)
+		local side = if math.abs(low.X - plan.hallMaxX) <= 1.5 then 1 else -1
+		local faceLine = if side == 1 then plan.hallMaxX else plan.hallMinX
+		local inward = Vector3.new(side, 0, 0)
+		local openings, seeThrough, inGap = 0, 0, false
+		local z = plan.hallFrontZ + 0.5
+		while z <= plan.hallBackZ - 0.5 do
+			local lowHit = workspace:Raycast(Vector3.new(faceLine, low.Y + 4, z) - inward * 3, inward * 6, wallRays)
+			local highHit = workspace:Raycast(Vector3.new(faceLine, low.Y + 11, z) - inward * 3, inward * 6, wallRays)
+			if lowHit == nil and not inGap then
+				openings += 1
+			end
+			inGap = lowHit == nil
+			if (lowHit and lowHit.Instance.Transparency > 0.05) or highHit == nil or highHit.Instance.Transparency > 0.05 then
+				seeThrough += 1
+			end
+			z += 0.5
+		end
+		local wrong = {}
+		for _, wingRoom in ipairs(wing.rooms) do
+			local part = folders.Rooms:FindFirstChild("Room_" .. wingRoom.name) :: BasePart?
+			if part == nil then
+				table.insert(wrong, wingRoom.name .. " missing")
+			else
+				local roomLow, roomHigh = bounds(part)
+				local door = part:GetAttribute("DoorCentre") :: Vector3
+				local fromHall = if side == 1 then roomLow.X - plan.hallMaxX else plan.hallMinX - roomHigh.X
+				if part:GetAttribute("Floor") ~= 2 or fromHall < wing.corridorWidthStuds - 0.5
+					or math.abs(door.X - faceLine) < wing.corridorWidthStuds - 0.5 then
+					table.insert(wrong, wingRoom.name)
 				end
 			end
 		end
-		check(pieces > 0 and seeThrough == 0 and gym.SwingDoors[roomName] ~= nil, string.format(
-			"%s is private: a solid wall onto the hall (%d pieces, %d see-through) and a door that closes", roomName, pieces,
-			seeThrough))
+		check(openings == 1 and seeThrough == 0 and #wrong == 0, string.format(
+			"the spa wing: one door from the balcony (%d found), no see-through spots (%d), %d rooms off its corridor%s",
+			openings, seeThrough, #wing.rooms, if #wrong > 0 then " (wrong: " .. table.concat(wrong, ", ") .. ")" else ""))
+	else
+		check(false, "the spa wing's reception Room_" .. wing.reception .. " exists")
 	end
+
+	-- Themed room fronts (2026-10-26, batch 1): each is decorated; every detail
+	-- stays along its own wall and within FrontDepthStuds of it (the aisles and
+	-- the balcony stay clear); nothing solid stands in front of its door (the
+	-- door's width and 1.5 more each side, 4 out).
+	local THEMED = { "SpaReception", "MaxTesting", "Dumbbells", "Cardio" }
+	local frontRegions, frontDecor = model:FindFirstChild("Fronts"), model:FindFirstChild("FrontProps")
+	local frontProblems, frontParts = {}, 0
+	for _, name in ipairs(THEMED) do
+		local region = frontRegions and frontRegions:FindFirstChild("Front_" .. name) :: BasePart?
+		local decor = frontDecor and frontDecor:FindFirstChild(name)
+		if region == nil or decor == nil then
+			table.insert(frontProblems, name .. " not decorated")
+			continue
+		end
+		local outward = region:GetAttribute("Outward") :: Vector3
+		local door = region:GetAttribute("DoorAt") :: Vector3
+		local doorHalf = (region:GetAttribute("DoorWidth") :: number) / 2
+		local doorTop = region:GetAttribute("DoorTop") :: number
+		local right = (-outward):Cross(Vector3.yAxis)
+		local regionLow, regionHigh = bounds(region)
+		local aLimitLow = math.min((regionLow - door):Dot(right), (regionHigh - door):Dot(right))
+		local aLimitHigh = math.max((regionLow - door):Dot(right), (regionHigh - door):Dot(right))
+		local outside, blocking = 0, 0
+		for _, part in ipairs(decor:GetDescendants()) do
+			if part:IsA("BasePart") then
+				frontParts += 1
+				local low, high = bounds(part)
+				local a0, a1 = (low - door):Dot(right), (high - door):Dot(right)
+				local d0, d1 = (low - door):Dot(outward), (high - door):Dot(outward)
+				a0, a1, d0, d1 = math.min(a0, a1), math.max(a0, a1), math.min(d0, d1), math.max(d0, d1)
+				if d1 > gym.FrontDepthStuds + 0.05 or a0 < aLimitLow - 0.05 or a1 > aLimitHigh + 0.05 then
+					outside += 1
+				end
+				if part.CanCollide and a0 < doorHalf + 1.5 and a1 > -doorHalf - 1.5 and d0 < 4 and d1 > 0
+					and low.Y < door.Y + doorTop then
+					blocking += 1
+				end
+			end
+		end
+		if outside > 0 or blocking > 0 then
+			table.insert(frontProblems, string.format("%s: %d too far out or past its wall, %d solid at its door", name, outside,
+				blocking))
+		end
+	end
+	check(#frontProblems == 0, string.format(
+		"%d themed room fronts: details within %d studs of their walls, nothing solid at their doors (%d parts)%s",
+		#THEMED, gym.FrontDepthStuds, frontParts,
+		if #frontProblems > 0 then " (" .. table.concat(frontProblems, "; ") .. ")" else ""))
 
 	-- Stage 5: lighting. The Lighting service (set by Rojo from default.project.json).
 	local lighting = game:GetService("Lighting")
@@ -640,12 +809,21 @@ local function run()
 	-- inside its room, nothing solid in front of a door or inside a wall.
 	local propsFolder = model:FindFirstChild("Props")
 	local emptyRooms, outside, solidParts, propParts = {}, {}, {}, 0
-	-- Every ground room but the lobby must be furnished; any room that has
-	-- furniture (the sauna upstairs too) is checked the same way.
+	-- Every room whose furniture has been built (MUST_FURNISH) must be
+	-- furnished; any room that has furniture is checked the same way. The new
+	-- rooms (Cardio, Dumbbells, ...) stay empty until their own room batch
+	-- (GAME_DESIGN §27, user 2026-10-26).
+	local MUST_FURNISH = { "Lockers", "Showers", "Cafe", "StaffRoom", "Office", "Recovery", "Massage", "Physio",
+		"Storage", "SupplementBar", "Shop", "Sauna", "Coach", "SpaReception" }
+	for _, name in ipairs(MUST_FURNISH) do
+		if folders.Rooms:FindFirstChild("Room_" .. name) == nil then
+			table.insert(emptyRooms, name .. " (no room)")
+		end
+	end
 	for _, room in ipairs(folders.Rooms:GetChildren()) do
 		local name = string.sub(room.Name, 6)
 		local roomProps = propsFolder and propsFolder:FindFirstChild(name)
-		local mustFurnish = room:GetAttribute("Floor") == 1 and room.Name ~= lobbyRoom
+		local mustFurnish = table.find(MUST_FURNISH, name) ~= nil
 		if room:IsA("BasePart") and (mustFurnish or roomProps ~= nil) then
 			local count = 0
 			if roomProps then
@@ -670,7 +848,7 @@ local function run()
 			end
 		end
 	end
-	check(#emptyRooms == 0, string.format("every ground-floor room but the lobby is furnished (%d prop parts)%s", propParts,
+	check(#emptyRooms == 0, string.format("every room with built furniture is furnished (%d prop parts)%s", propParts,
 		if #emptyRooms > 0 then "; empty: " .. table.concat(emptyRooms, ", ") else ""))
 	check(#outside == 0, string.format("all room furniture stays inside its room%s",
 		if #outside > 0 then " (" .. table.concat(outside, ", ", 1, math.min(#outside, 6)) .. ")" else ""))
@@ -726,6 +904,69 @@ local function run()
 	-- Stage 4: the gym's name twice (name wall, outside sign), the check-in
 	-- screen, and the lights (ceiling strips, desk glow and light bar, two sign
 	-- halos, two spotlights).
+	-- The Strongman Shed (2026-10-26): its own building beside the gym (a gap
+	-- of at least 10 to the gym's side wall, its front level with the gym's),
+	-- its roller door open, walled in (rays from its middle, the front ones
+	-- aimed beside the door, hit its walls), roofed, no door into it from the
+	-- gym, furnished, and nothing of its furniture outside it or solid in front
+	-- of its door.
+	local shedFolder = model:FindFirstChild("Shed")
+	local shedRegion = shedFolder and shedFolder:FindFirstChild("Shed_" .. gym.StrongmanShed.name) :: BasePart?
+	if shedRegion then
+		local shedLow, shedHigh = bounds(shedRegion)
+		local outerX = plan.outerHalfWidth + thickness
+		local apart = (shedHigh.X <= plan.centreX - outerX - 10 or shedLow.X >= plan.centreX + outerX + 10)
+			and math.abs(shedLow.Z - (plan.frontZ - thickness) - thickness) < 0.05
+		local door = shedRegion:GetAttribute("DoorCentre") :: Vector3
+		local shedParams = OverlapParams.new()
+		shedParams.FilterType = Enum.RaycastFilterType.Include
+		shedParams.FilterDescendantsInstances = { shedFolder :: Instance }
+		local doorBox = Vector3.new(gym.StrongmanShed.doorWidthStuds / 2 - 0.6, 4.2, 0.6)
+		local inDoorway = {}
+		for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new(door), doorBox * 2, shedParams)) do
+			if part.CanCollide then
+				table.insert(inDoorway, part.Name)
+			end
+		end
+		if doorsFolder and doorsFolder:FindFirstChild(gym.StrongmanShed.name .. "Door") then
+			table.insert(inDoorway, "a door from the gym still exists")
+		end
+		local shedRays = RaycastParams.new()
+		shedRays.FilterType = Enum.RaycastFilterType.Include
+		shedRays.FilterDescendantsInstances = { shedFolder :: Instance }
+		local middle = Vector3.new((shedLow.X + shedHigh.X) / 2, layout.floorY + 3, (shedLow.Z + shedHigh.Z) / 2)
+		local gaps = 0
+		for _, direction in ipairs({ Vector3.xAxis, -Vector3.xAxis, Vector3.zAxis, Vector3.new(1, 0, 1).Unit,
+			Vector3.new(-1, 0, 1).Unit, Vector3.new(1, 0, -1).Unit, Vector3.new(-1, 0, -1).Unit, Vector3.yAxis }) do
+			local hit = workspace:Raycast(if direction == Vector3.yAxis then middle + Vector3.new(4, 0, 0) else middle,
+				direction * 100, shedRays)
+			if hit == nil or not hit.Instance.CanCollide then
+				gaps += 1
+			end
+		end
+		local shedProps = propsFolder and propsFolder:FindFirstChild(gym.StrongmanShed.name)
+		local count, away, atDoor = 0, 0, 0
+		if shedProps then
+			for _, part in ipairs(shedProps:GetDescendants()) do
+				if part:IsA("BasePart") then
+					count += 1
+					local low, high = bounds(part)
+					if low.X < shedLow.X - 0.02 or high.X > shedHigh.X + 0.02 or low.Z < shedLow.Z - 0.02
+						or high.Z > shedHigh.Z + 0.02 or high.Y > shedHigh.Y + 0.02 then
+						away += 1
+					end
+					if part.CanCollide and low.X < door.X + 4.5 and high.X > door.X - 4.5 and low.Z < door.Z + 7.5 then
+						atDoor += 1
+					end
+				end
+			end
+		end
+		check(apart and #inDoorway == 0 and gaps == 0 and count >= 40 and away == 0 and atDoor == 0, string.format(
+			"Strongman Shed: its own building beside the gym, roller door open, no door from the gym%s, walled in and roofed (%d rays out), %d furniture parts (%d outside, %d solid at its door)",
+			if #inDoorway > 0 then " (blocked: " .. table.concat(inDoorway, ", ") .. ")" else "", gaps, count, away, atDoor))
+	else
+		check(false, "the Strongman Shed's region Shed_" .. gym.StrongmanShed.name .. " exists")
+	end
 	local names, rightNames = 0, 0
 	for _, d in ipairs(folders.Reception:GetDescendants()) do
 		if d:IsA("SurfaceGui") and d.Name == "GymName" then

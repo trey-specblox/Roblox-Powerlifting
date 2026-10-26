@@ -2,9 +2,9 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-26
-(Starter Gym step 6: Showers, Recovery and Massage remade with the kits; new
-layout decision: closed rooms with doors and an upstairs spa wing; newest
-entries at the end of the CURRENT MILESTONE block).
+(Starter Gym step 6: closed rooms with real doors, the upstairs Recovery & Spa
+wing, themed room fronts batch 1 and the Strongman Shed built and approved,
+not committed yet; newest entries at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -931,13 +931,91 @@ and polish.
     balcony, a reception / corridor, bigger closed Sauna, Recovery and Massage
     rooms). Recovery and Massage were committed in their ground-floor rooms as
     a checkpoint and will MOVE (their FURNISH code and props are reused).
-  NEXT ACTION: build the new layout in StarterGymBuilder, in steps: (1) closed
-  rooms: generalise PrivateRooms (front block ground floor only today) to
-  every block and both floors, with a door for every closed room; (2) the spa
-  wing in the left upper block with internal walls and doors, the Sauna moved
-  there, Recovery and Massage moved up; (3) settle the [TBD]s in GAME_DESIGN
-  with the user first (what fills the freed rooms, where the six side rooms
-  go). Then continue the room batches (Index, Office, Storage, ...).
+  CLOSED ROOMS, SPA WING, THEMED FRONTS (BATCH 1) AND THE STRONGMAN SHED
+  (2026-10-26; every step Studio-tested by Claude via the MCP and approved by
+  the user from screenshots; GAME_DESIGN §27 "Closed rooms and the spa wing",
+  "Themed room fronts", "Strongman becomes an outdoor yard" / "Now a big
+  shed"; NOT committed yet, waiting for the user's approval):
+  - Decisions (user, from a drawn top-down plan): Dumbbells and Machines take
+    the ground-floor Recovery and Massage rooms, Cardio the old ground-floor
+    Coach room, Coach (with its furniture) moves to the upstairs front-right
+    room (was "Studio"), Classroom and Media Room upstairs right, the corners
+    are Lounge and Trophy Room; the spa wing = reception + corridor + 3 big
+    rooms; the freed upstairs room (where Sauna, then Strongman were) is
+    `SpareRoom` ("COMING SOON"), its use decided later.
+  - Closed rooms (`StarterGymConfig`: `GlassFrontRooms` = Cafe, SupplementBar,
+    Shop; `OpenDoorwayRooms` = Showers; `ClosedRooms` = label / colour / face /
+    signWidth / door / plaque per room; `ClosedRoomDoor`; helpers
+    `roomNames()`, `roomLabel()`, `swingDoorFor()`). `StarterGymBuilder`: the
+    per-floor glass walls became one stretch per room (`hallStretch`): glass,
+    or a painted wall with `hallFront` (paint or a themed `face`, door trim,
+    skirting, big sign) and a front region `Front_<Room>` in `model.Fronts`;
+    every room but the open ones gets a swing door (20 doors). PrivateRooms is
+    gone (Lockers keep their oak slats via ClosedRooms.slats).
+  - Spa wing (`StarterGymConfig.SpaWing`, `Rooms.LeftUpper` = "SpaWing" x4):
+    reception (one door from the balcony), a corridor with light wood floor and
+    limewash walls, Sauna / Recovery / Massage off it with their own doors;
+    corridor lights in `buildLights`. New `FURNISH.SpaReception` (approved
+    textures and props: stone wall, oak desk with marble top, candles, oils,
+    pendant lamps, poufs, towel shelf, oak bench, plants).
+  - Themed fronts, batch 1 (the user rejected plain colour walls as "lazy";
+    the other closed rooms keep the colour walls until their batch):
+    `RoomProps.buildFronts` + `FRONT.<Room>` in a FrontKit frame (a along the
+    wall, d out, y up; details within `FrontDepthStuds` = 3). Recovery & Spa
+    (stone, oak portal and slat bays, planters, uplights), Max Testing (black,
+    red/white competition stripes, stage lights, a horizontal barbell rack and
+    a vertical gun rack of bars in silver / red / blue / RUSTED (no black bars:
+    user), attempt board, judges' lights), Dumbbells (dark diamond plate, steel
+    portal, big CENTRAL hex dumbbells, two dumbbell racks), Cardio (red running
+    track with lane lines and numbers, speed lines).
+  - Strongman Shed (`StarterGymConfig.StrongmanShed`; it went: room front ->
+    outdoor yard behind the gym -> yard beside the gym -> a big shed of its own,
+    all the same day at the user's request): a separate steel and timber barn
+    beside the gym on the Cafe side (12-stud gap, front level with the gym's),
+    corrugated walls and roof, trusses, hanging lamps, an always-open roller
+    door, a STRONGMAN sign; inside `FURNISH.StrongmanShed` (turf lanes, loaded
+    yoke and farmer's handles, rig with chains, atlas stones on stands, tyres,
+    logs, sandbags). No door into it from the gym.
+  - Art (all previewed and approved before upload; uploaded with the group
+    key, ids in `art/materials/materials.json`): textures Strongman_Timber
+    (Poly Haven weathered_brown_planks), Strongman_SteelPlates (ambientCG
+    MetalPlates013), Dumbbells_DiamondPlate (DiamondPlate008A), Cardio_Track
+    (Poly Haven rubberized_track), Shed_CorrugatedSteel (CorrugatedSteel005),
+    Shed_Shutter (Poly Haven painted_metal_shutter): MaterialVariants in
+    `default.project.json` and `StarterGymConfig.MaterialVariants` (28 now).
+    Props: `art/scripts/build_room_props_04.py` (RoomProps_04: atlas stone and
+    stand, strongman log, chain, hex dumbbell, dumbbell rack, competition
+    plate, planter, wall uplight; Model asset 91749281309773) and
+    `build_room_props_05.py` (RoomProps_05: tractor tyre, sandbag, yoke,
+    farmer's handle; Model asset 126419721956699); .blend files in
+    `art/blender/`, GLBs in `art/exports/`. New PropPaint Granite.
+  - Tool notes: the kit's own Python (textures.py) is blocked by the auto-mode
+    safety check ("code from external"); texture previews and maps were made
+    by Claude's own small scripts instead (session notes folder). Bash breaks
+    on apostrophes inside Python heredocs: write edit scripts to a file.
+  - Checks: luau-lsp 0 errors in the changed files, `rojo build` OK, Studio via
+    the MCP (Play, cloud place): no [RoomProps]/[StarterGymBuilder] warnings,
+    15 rooms furnished, 4 themed fronts; StarterGym_VerifyShell ALL 55 CHECKS
+    PASSED (new checks: closed rooms not see-through + real doors, the 3 glass
+    shop windows, the spa wing, themed fronts, the Strongman Shed). Doors
+    opened at 90 degrees with the character in front (Office, spa reception,
+    Recovery, Sauna).
+  - Open idea, NOT approved (GAME_DESIGN §27): a secret NPC in the shed that
+    sells stat boosts; it conflicts with "no room gives CN, technique or
+    lifting performance" and needs its own design decision first.
+  - Still for the user: SAVE/PUBLISH the cloud place once so the new
+    MaterialVariants reach the live game; approve the commit (and the push of
+    d045cd5, still ahead 1).
+  NEXT ACTION: commit this work with the user's approval (stage only our
+  files: the 4 Luau files, default.project.json, materials.json, GAME_DESIGN,
+  DEVELOPMENT_STATUS, the two new build scripts, RoomProps_04/05 .blend and
+  .glb). Then themed fronts batch 2 (Office, Machines, Index, Storage,
+  Classroom, Media Room, Warm-up & Mobility, Coaches, per GAME_DESIGN §27),
+  same pipeline: textures and props previewed first. Later: the remaining
+  room interiors (Dumbbells, Machines, Cardio, Classroom, ...), the spare room.
+  OLD NEXT ACTION (done above): build the new layout in StarterGymBuilder, in
+  steps: (1) closed rooms; (2) the spa wing; (3) settle the [TBD]s with the
+  user first. Then continue the room batches (Index, Office, Storage, ...).
   OLD NEXT ACTION (done above): the next batch of 2-3 rooms with the same
   pipeline (textures and props previewed first, variety in colours), per the
   approved room purposes. Reuse PropAssets/propItem/clad; add a new model
@@ -1298,6 +1376,10 @@ Step 6D.2c files (7 entries, COMMITTED 2026-10-17; listed for reference):
   `src/server/Training/RackSpawner.luau`, `tools/studio/Step6D2a_VerifyRacks.luau`,
   `GAME_DESIGN.md` (§34.12 decision 12 + implementation note), `DEVELOPMENT_STATUS.md`.
 - Keep OUT: the same unrelated files as above.
+
+Closed rooms, spa wing, themed fronts batch 1 and the Strongman Shed (2026-10-26;
+Studio-tested and user-approved, NOT committed yet: waiting for the user's
+commit approval; files listed in the CURRENT MILESTONE block's NEXT ACTION).
 
 ## 5. Current Limitations
 

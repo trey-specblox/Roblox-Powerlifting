@@ -930,7 +930,9 @@ Comp max testing
 >     never invented rules); Storage (look only); **Supplement Bar**
 >     (cosmetic shakes only, no boosts); Shop (cosmetic gear for cosmetic
 >     currency, §34.9, later). The ground-floor Coach room gets a new use
->     later, since the coaches move upstairs.
+>     later, since the coaches move upstairs (**it becomes Cardio**, user
+>     2026-10-26; where every room now goes: "Closed rooms and the spa wing"
+>     below).
 >   - **Upstairs:** Sauna; **Coach** (the big front-right room, 63 x 32,
 >     where the Mobility Studio was planned: room for **plenty of coaches**,
 >     e.g. Squat, Bench and Deadlift coaches, §22, as NPCs later; what a
@@ -1028,13 +1030,129 @@ Comp max testing
 >     balcony through **one door** into a small reception / corridor, with
 >     **bigger closed rooms** off it for the **Sauna** (moved there from the
 >     right block), **Recovery** and **Massage**. No windows onto the gym.
->   - **[TBD]**, to settle when the wing is built: what fills the freed
->     places (the ground-floor Recovery and Massage rooms, and the right
->     block's upstairs where the Sauna was); where the six side rooms
->     (Dumbbells, Machines, Cardio, Strongman, Classroom, Media Room) go now
->     that Room1-4 are the wing; the wing's exact plan (room sizes, whether
->     the cold plunges or a relax lounge get their own room); the look of the
->     closed walls on the hall side (signs over the doors like the Lockers).
+>   - **Settled by the user 2026-10-26** (from a drawn top-down plan; all
+>     four of Claude's recommended options):
+>     - **Where the rooms go.** Ground floor, left block (front to back):
+>       Office, **Dumbbells** (where Recovery was), **Machines** (where Massage
+>       was), Index. Ground floor, right block: Storage, Supplement Bar,
+>       **Cardio** (the old ground-floor Coach room), Shop. Upstairs, right
+>       block: **Strongman** in the big room where the Sauna was (its two
+>       front places joined), then **Classroom** and **Media Room**. Upstairs
+>       front: Warm-up and Mobility, Max Testing, **Coach** (the big
+>       front-right room; the coach room's furniture moves up there). The
+>       upstairs corners: Lounge (left) and Trophy Room (right).
+>     - **The spa wing plan: three big rooms.** A **spa reception** at the
+>       front of the wing (about 20 x 30; desk and waiting seats), its one
+>       door from the balcony right where the left staircase arrives; from it
+>       a **corridor** (about 6 wide) runs back along the hall side, with the
+>       **Sauna** (about 33 x 24, its wooden double doors), **Recovery** (about
+>       28 x 24) and **Massage** (about 28 x 24) off it, each with its own
+>       door. The cold plunges stay in Recovery; no extra rooms.
+>     - **The closed walls from the hall:** ~~each room's wall painted its own
+>       colour with a big glowing name sign over its door~~ — **rejected by
+>       the user 2026-10-26** after Studio screenshots ("very lazy, just
+>       different colour walls as room indications"); kept only as a
+>       temporary look until the themed fronts below are built.
+>     - **Themed room fronts** (user-approved 2026-10-26, from Claude's
+>       list): every closed room's front onto the hall is designed around
+>       what is inside, with real CC0 textures and 3D details (props in many
+>       colours, CENTRAL on any gear label), so you can tell the room
+>       without seeing in. Each keeps a big name sign over its door. Built in
+>       batches, textures and props previewed first:
+>       - **Office:** dark walnut panels, a frosted window with blinds beside
+>         the door (no seeing in), a brass name plate, a wall lamp.
+>       - **Dumbbells:** black steel frame on a diamond-plate base, a big 3D
+>         dumbbell over the door, a short dumbbell rack beside it.
+>       - **Machines:** brushed-steel panels with bolts, a 3D weight stack
+>         with its pin and cable beside the door.
+>       - **Index:** teal tiles with a big lit board of the meet ladder
+>         (Local → Nationals → Worlds → Sheffield).
+>       - **Storage:** corrugated metal, stencilled letters, crates and a
+>         plate stack outside.
+>       - **Cardio:** a red running-track stripe with white lane lines
+>         sweeping across the wall, LED speed lines.
+>       - **Lockers:** keeps its approved oak slats.
+>       - **Strongman:** rough timber and steel, chains, an atlas stone on a
+>         stand and a log by the door. (Superseded the same day: Strongman is
+>         now the outdoor Strongman Yard, below; its timber and steel look goes
+>         to the yard.)
+>       - **Classroom:** a chalkboard wall in a wooden frame with chalk
+>         drawings of squat, bench and deadlift technique.
+>       - **Media Room:** acoustic foam panels in several colours, a big
+>         microphone, a red ON AIR lamp over the door.
+>       - **Warm-up & Mobility:** light oak slats, hooks with coloured
+>         resistance bands, a foam-roller rack.
+>       - **Max Testing:** black with red competition stripes, a wall of
+>         coloured competition plates, an attempt-board screen over the door.
+>       - **Coaches:** navy panels with a big whiteboard showing a training
+>         programme, and clipboards.
+>       - **Recovery & Spa:** stone cladding, oak slats, planters with warm
+>         uplights, a wooden door.
+>       - Batch 1 (most visible): Recovery & Spa, Strongman, Max Testing,
+>         Dumbbells, Cardio.
+>       - **Max Testing, revised** (user, 2026-10-26, with photos of wall bar
+>         racks): **barbells on the wall instead of plates**: a horizontal
+>         barbell rack left of the door and a vertical "gun rack" of bars right
+>         of it; bars in silver, red, blue and **rusted** (no black bars: they
+>         vanish on the black wall).
+>     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
+>       woody strongman front right beside bright, colourful rooms "makes 0
+>       sense"; it must NOT be connected to the other rooms). Chosen from a
+>       drawn plan: the **Strongman Yard** is outside, **behind the gym**,
+>       about 80 x 60 studs under the open sky, reached through **its own
+>       steel door in the middle of the rack hall's back wall** (from the back
+>       aisle) with a "STRONGMAN YARD" sign over it. Black rubber ground,
+>       enclosed by a tall **weathered timber fence on dark steel posts**; two
+>       **turf lanes** (yoke, farmer's walk); atlas stones on stands, logs, a
+>       steel rig with chains, a yoke and farmer's handles loaded with CENTRAL
+>       plates, a tractor tyre, sandbags, floodlights. New props previewed
+>       before upload. Look only for now (no gameplay; no CN, technique or
+>       lifting performance, §33-34).
+>       - **Moved beside the gym** (user, 2026-10-26, the same day, from a
+>         drawn plan: "a random rusted door in the middle of the gym" made no
+>         sense, and players should see the yard when they walk outside):
+>         the yard is **outside, on the gym's right side as you face the
+>         entrance from outside** (the Cafe / Staff Room corner), its front
+>         level with the gym's front. **No door from the gym**: you walk out
+>         of the entrance and in through the yard's **open gate** in a
+>         **see-through black steel railing** along its front, under a steel
+>         **arch with a "STRONGMAN YARD" sign**; timber fence on its other
+>         sides. Same equipment inside.
+>       - **Now a big shed** (user, 2026-10-26, the same day: "a big shed,
+>         disconnected from the gym itself"; choices from Claude's options):
+>         the **Strongman Shed** is **its own building**, in the same place
+>         (beside the gym on the Cafe side, front level with the gym's front)
+>         with a **gap of about 12 studs** to the gym. A **steel and timber
+>         barn**: weathered timber along the bottom, **dark corrugated steel**
+>         walls and a pitched corrugated roof (CC0 textures picked from a
+>         preview board), steel trusses with hanging lamps inside, a **big
+>         roller door, always rolled up** so you see the equipment from
+>         outside, and a **"STRONGMAN" sign** over it. The same equipment
+>         inside (turf lanes, yoke, farmer's handles, rig with chains, atlas
+>         stones, tyres, logs, sandbags). The secret-NPC idea below now means
+>         the shed.
+>       - **Approved in Studio screenshots** (user, 2026-10-26): the closed
+>         rooms and doors, the spa wing, the themed fronts batch 1 (Recovery
+>         & Spa, Max Testing with its barbells, Dumbbells, Cardio) and the
+>         Strongman Shed.
+>       - **[TBD] idea, NOT approved** (user, 2026-10-26: "I might"): a
+>         **secret NPC** in the yard that **sells stat boosts**. Before it can
+>         be built it needs its own design decision: it conflicts with the
+>         rule above (no room or area gives Competition Number, technique or
+>         lifting performance; §33-34), so what it boosts, what it costs, how
+>         "secret" works and whether it touches Competition Number must be
+>         settled first.
+>     - **The freed upstairs room** (right block, front, where Strongman and
+>       before it the Sauna were): an **empty closed room, its use decided
+>       later** (user, 2026-10-26).
+>     - **The doors:** one **solid door** (no window) per closed room,
+>       **coloured to match its room's wall**, that swings open when someone
+>       comes near and closes after (like the Lockers'). The Sauna keeps its
+>       wooden double doors. The Showers stay reached only through the
+>       Lockers, as before.
+>     - The new rooms (Dumbbells, Machines, Cardio, Strongman, Classroom,
+>       Media Room and the other upstairs rooms) stay **empty until their own
+>       room batch** (textures and props previewed first, like every room).
 > - **Gear brand: "CENTRAL"** (user, 2026-10-23). Every logo box or badge
 >   on in-game gear carries the word CENTRAL; never an empty box. Real
 >   brands (SBD, Inzer) are not copied onto items. The shop's sign uses the
