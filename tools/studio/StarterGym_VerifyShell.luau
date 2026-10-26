@@ -658,11 +658,11 @@ local function run()
 		check(false, "the spa wing's reception Room_" .. wing.reception .. " exists")
 	end
 
-	-- Themed room fronts (2026-10-26, batch 1): each is decorated; every detail
-	-- stays along its own wall and within FrontDepthStuds of it (the aisles and
-	-- the balcony stay clear); nothing solid stands in front of its door (the
-	-- door's width and 1.5 more each side, 4 out).
-	local THEMED = { "SpaReception", "MaxTesting", "Dumbbells", "Cardio" }
+	-- Themed room fronts (2026-10-26, batches 1 and 2a): each is decorated; every
+	-- detail stays along its own wall and within FrontDepthStuds of it (the
+	-- aisles and the balcony stay clear); nothing solid stands in front of its
+	-- door (the door's width and 1.5 more each side, 4 out).
+	local THEMED = { "SpaReception", "MaxTesting", "Dumbbells", "Cardio", "Office", "Machines", "Physio", "Storage" }
 	local frontRegions, frontDecor = model:FindFirstChild("Fronts"), model:FindFirstChild("FrontProps")
 	local frontProblems, frontParts = {}, 0
 	for _, name in ipairs(THEMED) do

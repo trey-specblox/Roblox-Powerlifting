@@ -2578,6 +2578,187 @@ FRONT.Cardio = function(front)
 	end
 end
 
+-- Letters straight on a front (no backing): a see-through part `d` out from the wall, `text` filling it.
+local function frontLetters(front: FrontKit, name: string, a0: number, a1: number, y0: number, y1: number, d: number,
+	text: string, ink: Color3, lit: boolean?): BasePart
+	local part = front.item(name, a0, a1, d, d + 0.04, y0, y1, looks.SignPanel)
+	part.Transparency = 1
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Writing"
+	gui.Face = faceToward(front.toward("+d"))
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = if lit then 0 else 0.5
+	gui.Parent = part
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextScaled = true
+	label.TextColor3 = ink
+	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	label.Parent = gui
+	return part
+end
+
+--[[
+	Office (the gym manager's office and help point): dark walnut panels (the
+	builder's face) with grooves and a brass rail, a frosted window with white
+	blinds right of the door (no seeing in), brass wall lamps either side of
+	the door, a brass name plate, a framed "HELP POINT" sign and a planter.
+]]
+FRONT.Office = function(front)
+	local groove, a = 0, front.aMin + 1.5
+	while a < front.aMax - 0.5 do
+		if math.abs(a) > front.doorHalf + 0.6 then
+			groove += 1
+			front.item("Groove_" .. groove, a - 0.04, a + 0.04, 0.06, 0.08, 0.5, front.H - 0.2, looks.SignPanel)
+		end
+		a += 3
+	end
+	front.band("BrassRail", front.aMin, front.aMax, 3.3, 3.42, 0.06, 0.14, looks.Brass)
+	-- The window: a dark panel (the room behind), white blinds, frosted glass, a black frame and a steel sill.
+	local w0, w1, y0, y1 = 5.6, 12.4, 3.9, 8.3
+	front.item("Window_Back", w0, w1, 0.06, 0.09, y0, y1, looks.SBarWall) -- over the grooves
+	local slat, y = 0, y0 + 0.15
+	while y + 0.16 <= y1 - 0.1 do
+		slat += 1
+		front.item("Blind_" .. slat, w0 + 0.1, w1 - 0.1, 0.09, 0.12, y, y + 0.18, looks.Whiteboard)
+		y += 0.26
+	end
+	front.item("Window_Glass", w0, w1, 0.13, 0.16, y0, y1, looks.FrostedGlass)
+	front.item("Window_Frame_1", w0 - 0.18, w0, 0.06, 0.24, y0, y1, looks.Gadget)
+	front.item("Window_Frame_2", w1, w1 + 0.18, 0.06, 0.24, y0, y1, looks.Gadget)
+	front.item("Window_Frame_Top", w0 - 0.18, w1 + 0.18, 0.06, 0.24, y1, y1 + 0.18, looks.Gadget)
+	front.item("Window_Mullion", (w0 + w1) / 2 - 0.08, (w0 + w1) / 2 + 0.08, 0.06, 0.2, y0, y1, looks.Gadget)
+	front.item("Window_Sill", w0 - 0.35, w1 + 0.35, 0.06, 0.5, y0 - 0.2, y0, looks.Stainless)
+	-- The name plate and the framed help-point sign, left of the door.
+	local plate = front.item("NamePlate", -8.4, -5.4, 0.06, 0.12, 4.5, 5.3, looks.Brass)
+	plaque(plate, front.toward("+d"), "GYM MANAGER", looks.Brass.color, Color3.fromRGB(40, 28, 18))
+	front.item("HelpPoint_Frame", -12.6, -7.8, 0.06, 0.14, 5.9, 8.9, looks.Brass)
+	local sign = front.item("HelpPoint", -12.4, -8.0, 0.14, 0.18, 6.1, 8.7, looks.Whiteboard)
+	writing(sign, front.toward("+d"), "HELP POINT", { "NEW HERE? QUESTIONS?", "ASK THE GYM MANAGER", "INSIDE" },
+		Color3.fromRGB(236, 224, 196), Color3.fromRGB(40, 28, 18))
+	local props = propsFor({ "WallSconce", "Planter", "SBarPlant" })
+	if props == nil then
+		return
+	end
+	for index, side in ipairs({ -1, 1 }) do
+		propGlow(frontProp(front, props, "Sconce_" .. index, "WallSconce", 1, side * 4.4, 0.6, 6.3, "+d"), "WallSconce_Light", 12,
+			0.8)
+	end
+	frontProp(front, props, "Planter", "Planter", 1, -10.2, 0.72, 0, "+d")
+	hidden(front.block("Planter_Solid", -12.26, -8.14, 0.06, 1.38, 0, 1.3, looks.Glass))
+	for index, offset in ipairs({ -0.9, 0.9 }) do
+		frontProp(front, props, "Planter_Plant_" .. index, "SBarPlant", 1, -10.2 + offset, 1.0, 0.25, "+d")
+	end
+end
+
+-- A small instruction board on a front: a title and lines in a black frame.
+local function frontBoard(front: FrontKit, name: string, a0: number, a1: number, y0: number, y1: number, title: string,
+	lines: { string }, background: Color3, ink: Color3)
+	front.item(name .. "_Frame", a0 - 0.12, a1 + 0.12, 0.06, 0.16, y0 - 0.12, y1 + 0.12, looks.Gadget)
+	local board = front.item(name, a0, a1, 0.16, 0.2, y0, y1, looks.Whiteboard)
+	writing(board, front.toward("+d"), title, lines, background, ink)
+end
+
+--[[
+	Machines: bolted steel panels (the builder's face), a yellow portal round
+	the door, steel columns at both ends, a weight stack (pin, cable, pulley)
+	either side of the door in two colours, and "how to use" boards.
+]]
+FRONT.Machines = function(front)
+	portal(front, looks.PlateYellow, 0.4, 0.3, 0.4)
+	for index, a in ipairs({ front.aMin + 0.4, front.aMax - 0.4 }) do
+		front.item("Column_" .. index, a - 0.35, a + 0.35, 0.06, 0.5, 0, front.H, looks.SteelBeam)
+	end
+	frontBoard(front, "HowTo", 9.9, 12.3, 4.6, 6.6, "HOW TO USE", { "1  SET THE SEAT", "2  PIN THE WEIGHT", "3  LIFT UNDER CONTROL" },
+		Color3.fromRGB(242, 190, 30), Color3.fromRGB(22, 22, 24))
+	frontBoard(front, "Etiquette", -12.3, -9.9, 4.6, 6.6, "MACHINE ZONE", { "WIPE IT DOWN", "RETURN THE PIN", "SHARE THE STATION" },
+		Color3.fromRGB(22, 22, 24), Color3.fromRGB(242, 190, 30))
+	local props = propsFor({ "WeightStack" })
+	if props == nil then
+		return
+	end
+	for index, side in ipairs({ -1, 1 }) do
+		local centre = side * 8
+		frontProp(front, props, "Stack_" .. index, "WeightStack", index, centre, 0.91, 0, "+d")
+		hidden(front.block("Stack_Solid_" .. index, centre - 1.5, centre + 1.5, 0.06, 1.76, 0, 8.6, looks.Glass))
+	end
+end
+
+--[[
+	Index (room "Physio"; it explains the game, GAME_DESIGN §27): teal tiles
+	(the builder's face), a big lit board of the meet ladder right of the door
+	(Local -> Nationals -> Worlds -> Sheffield as rising glowing steps), medals
+	on a brass rail and a "learn the game" board left of it.
+]]
+FRONT.Physio = function(front)
+	local b0, b1 = front.doorHalf + 1.4, front.aMax - 0.4
+	front.item("Ladder_Board", b0, b1, 0.06, 0.3, 2.4, 9.4, looks.SignPanel)
+	front.item("Ladder_Edge", b0, b1, 0.3, 0.34, 2.3, 2.42, looks.GlowTeal)
+	frontLetters(front, "Ladder_Title", b0 + 0.4, b1 - 0.4, 8.3, 9.1, 0.3, "THE MEET LADDER", Color3.fromRGB(255, 255, 255), true)
+	-- Solid steps (neon was too bright) with a glowing top edge each.
+	local steps = {
+		{ name = "LOCAL", look = looks.MatTeal, glow = looks.GlowTeal },
+		{ name = "NATIONALS", look = looks.PlateBlue, glow = looks.GlowIce },
+		{ name = "WORLDS", look = looks.Stainless, glow = looks.GlowWhite },
+		{ name = "SHEFFIELD", look = looks.Brass, glow = looks.GlowGold },
+	}
+	local width = (b1 - b0 - 0.8) / #steps
+	for k, step in ipairs(steps) do
+		local s0, top = b0 + 0.4 + (k - 1) * width, 3.2 + k
+		front.item("Ladder_Step_" .. k, s0 + 0.1, s0 + width - 0.1, 0.3, 0.38, 2.8, top - 0.1, step.look)
+		front.item("Ladder_StepGlow_" .. k, s0 + 0.1, s0 + width - 0.1, 0.3, 0.38, top - 0.1, top, step.glow)
+		frontLetters(front, "Ladder_Label_" .. k, s0, s0 + width, top + 0.1, top + 0.55, 0.3, step.name, step.glow.color, true)
+	end
+	front.band("Glow", front.aMin, front.aMax, 0.5, 0.6, 0.06, 0.1, looks.GlowTeal)
+	frontBoard(front, "Learn", -12.4, -5.6, 2.6, 5.0, "LEARN THE GAME",
+		{ "COMPETITION NUMBER", "COMPETITION SCALE", "TECHNIQUE STATS", "WEIGHT CLASSES" }, Color3.fromRGB(14, 40, 44),
+		Color3.fromRGB(255, 255, 255))
+	front.item("MedalRail", -12.8, -4.6, 0.06, 0.2, 8.1, 8.3, looks.Brass)
+	local props = propsFor({ "Medal" })
+	if props == nil then
+		return
+	end
+	-- Big medals (1.4 x), hanging from the rail.
+	for k = 1, 5 do
+		frontProp(front, props, "Medal_" .. k, "Medal", k, -12 + (k - 1) * 1.75, 0.18, 8.25 - 2.22 * 1.4, "+d", 1.4)
+	end
+end
+
+--[[
+	Storage: green corrugated steel (the builder's face) over a yellow kick
+	band, stencilled letters, crates on a pallet and one beside it on the
+	left, and stacks of bumper plates in mixed colours on the right.
+]]
+FRONT.Storage = function(front)
+	local stencil = Color3.fromRGB(236, 236, 232)
+	front.band("KickBand", front.aMin, front.aMax, 0.5, 0.85, 0.06, 0.1, looks.PlateYellow)
+	frontLetters(front, "Stencil", 5.0, 12.8, 6.2, 8.0, 0.06, "STORE 01", stencil)
+	frontLetters(front, "Stencil_Clear", 5.0, 12.8, 5.4, 6.0, 0.06, "KEEP CLEAR", stencil)
+	frontLetters(front, "Stencil_Load", -13.0, -6.4, 6.0, 6.7, 0.06, "MAX LOAD 500 KG", stencil)
+	local props = propsFor({ "Pallet", "WoodCrate", "BumperPlate" })
+	if props == nil then
+		return
+	end
+	frontProp(front, props, "Pallet", "Pallet", 1, -11.3, 1.42, 0, "+d", 0.85)
+	frontProp(front, props, "Crate_1", "WoodCrate", 1, -11.3, 1.3, 0.51, "+d")
+	frontProp(front, props, "Crate_2", "WoodCrate", 3, -11.1, 1.3, 2.31, "+d")
+	hidden(front.block("Pallet_Solid", -13.0, -9.6, 0.06, 2.78, 0, 4.11, looks.Glass))
+	frontProp(front, props, "Crate_3", "WoodCrate", 5, -7.6, 1.0, 0, "+d")
+	hidden(front.block("Crate_Solid", -8.8, -6.4, 0.1, 1.9, 0, 1.8, looks.Glass))
+	for index, stack in ipairs({ { at = 6.0, plates = { 1, 2, 5, 3 } }, { at = 8.5, plates = { 5, 5, 2, 2, 1, 4 } },
+		{ at = 11.0, plates = { 3, 4, 6 } } }) do
+		for k, colourway in ipairs(stack.plates) do
+			-- (0.02 up: a plate's flat bottom flickers on the floor)
+			frontProp(front, props, string.format("Plates_%d_%d", index, k), "BumperPlate", colourway, stack.at, 1.1,
+				0.02 + (k - 1) * 0.34, "+d")
+		end
+		hidden(front.block("Plates_Solid_" .. index, stack.at - 1, stack.at + 1, 0.1, 2.1, 0, 0.02 + #stack.plates * 0.34, looks.Glass))
+	end
+end
+
 --[[
 	The Strongman Shed (GAME_DESIGN §27, user 2026-10-26: a big shed of its own
 	beside the gym), furnished like a room from its roller door (its walls,

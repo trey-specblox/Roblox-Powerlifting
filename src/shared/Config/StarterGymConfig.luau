@@ -327,12 +327,16 @@ export type ClosedRoom = {
 StarterGymConfig.ClosedRooms = {
 	Lockers = { label = "LOCKER ROOM", slats = true },
 	-- Ground floor.
-	Office = { label = "OFFICE", colour = Color3.fromRGB(36, 58, 102) }, -- navy
+	-- Themed fronts, batch 2a: walnut panels, a frosted window with blinds, brass lamps.
+	Office = { label = "OFFICE", face = "OfficeWalnut", signWidth = 14, door = "OfficeWalnut" },
 	-- Themed fronts, batch 1 (GAME_DESIGN §27 "Themed room fronts"): black steel and diamond plate.
 	Dumbbells = { label = "DUMBBELLS", face = "FrontCharcoal", signWidth = 12, door = "DumbbellsPlate" },
-	Machines = { label = "MACHINES", colour = Color3.fromRGB(62, 70, 84) }, -- graphite
-	Physio = { label = "INDEX", colour = Color3.fromRGB(0, 124, 124) }, -- teal (the Index room, GAME_DESIGN §27)
-	Storage = { label = "STORAGE", colour = Color3.fromRGB(92, 104, 116) }, -- slate grey
+	-- Batch 2a: bolted steel panels, a yellow portal, two weight stacks.
+	Machines = { label = "MACHINES", face = "MachinesSteel", signWidth = 14, door = "FrontGraphite" },
+	-- The Index room (GAME_DESIGN §27); batch 2a: teal tiles, the lit meet-ladder board, medals. Its door keeps the teal.
+	Physio = { label = "INDEX", colour = Color3.fromRGB(0, 124, 124), face = "IndexTiles", signWidth = 12 },
+	-- Batch 2a: green corrugated steel, stencilled letters, crates on a pallet, stacks of bumper plates.
+	Storage = { label = "STORAGE", face = "StorageSteel", signWidth = 14, door = "SignPanel" },
 	Cardio = { label = "CARDIO", face = "FrontGraphite", door = "CardioTrack" }, -- running track, speed lines
 	-- Behind the cafe: the cafe's own "STAFF ONLY" sign is over this door.
 	StaffRoom = { label = "STAFF ROOM", colour = Color3.fromRGB(96, 132, 160), plaque = false }, -- dusty blue
@@ -458,6 +462,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 109192629566668 }, -- RoomProps_03: Showers, Recovery and Massage
 	{ id = 91749281309773 }, -- RoomProps_04: themed room fronts, batch 1
 	{ id = 126419721956699 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
+	{ id = 89330038688157 }, -- RoomProps_06: themed room fronts, batch 2a (weight stack, sconce, crate, pallet, bumper plate, medal)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -504,6 +509,8 @@ StarterGymConfig.PropPaints = {
 	Ice = { color = Color3.fromRGB(225, 240, 250), transparency = 0.35, reflectance = 0.1 },
 	-- RoomProps_04 (themed room fronts, batch 1)
 	Granite = { color = Color3.fromRGB(150, 150, 146), material = Enum.Material.Granite },
+	-- RoomProps_06 (themed room fronts, batch 2a)
+	Bronze = { color = Color3.fromRGB(176, 110, 60), material = Enum.Material.Metal },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -823,6 +830,46 @@ StarterGymConfig.PropColourways = {
 		{ Frame = "Orange", Grip = "Silver", Text = "Black" },
 		{ Frame = "Teal", Grip = "Silver", Text = "White" },
 	},
+	-- RoomProps_06: themed room fronts, batch 2a (art/scripts/build_room_props_06.py COLOURWAYS).
+	WeightStack = {
+		{ Frame = "Black", Rod = "Silver", Plate = "Black", Top = "Red", Pin = "Yellow", Cable = "Black", Pulley = "Silver",
+			Text = "White", Logo = "White" },
+		{ Frame = "LightGrey", Rod = "Silver", Plate = "Charcoal", Top = "Blue", Pin = "Red", Cable = "Black", Pulley = "Silver",
+			Text = "White", Logo = "White" },
+		{ Frame = "White", Rod = "Silver", Plate = "Black", Top = "Yellow", Pin = "Red", Cable = "Black", Pulley = "Silver",
+			Text = "White", Logo = "Black" },
+		{ Frame = "Navy", Rod = "Silver", Plate = "Black", Top = "Orange", Pin = "Yellow", Cable = "Black", Pulley = "Silver",
+			Text = "White", Logo = "Black" },
+	},
+	WallSconce = {
+		{ Mount = "Brass", Shade = "Cream", Light = "WarmGlow" },
+		{ Mount = "Black", Shade = "White", Light = "WarmGlow" },
+		{ Mount = "Brass", Shade = "Forest", Light = "WarmGlow" },
+		{ Mount = "Silver", Shade = "Navy", Light = "WarmGlow" },
+	},
+	WoodCrate = {
+		{ Slats = "Oak", Frame = "Chocolate", Text = "Black" },
+		{ Slats = "Kraft", Frame = "Coffee", Text = "Black" },
+		{ Slats = "Forest", Frame = "Black", Text = "White" },
+		{ Slats = "Navy", Frame = "Black", Text = "White" },
+		{ Slats = "Mustard", Frame = "Black", Text = "Black" },
+	},
+	Pallet = { { Boards = "Kraft", Blocks = "Kraft" }, { Boards = "Blue", Blocks = "Blue" }, { Boards = "Oak", Blocks = "Chocolate" } },
+	BumperPlate = {
+		{ Disc = "Red", Hub = "Silver", Text = "White" },
+		{ Disc = "Blue", Hub = "Silver", Text = "White" },
+		{ Disc = "Yellow", Hub = "Silver", Text = "Black" },
+		{ Disc = "Green", Hub = "Silver", Text = "Black" },
+		{ Disc = "Black", Hub = "Silver", Text = "White" },
+		{ Disc = "LightGrey", Hub = "Silver", Text = "Black" },
+	},
+	Medal = {
+		{ Disc = "Brass", Ribbon = "Red", Text = "Coffee" },
+		{ Disc = "Silver", Ribbon = "Blue", Text = "Charcoal" },
+		{ Disc = "Bronze", Ribbon = "Forest", Text = "Coffee" },
+		{ Disc = "Brass", Ribbon = "Navy", Text = "Coffee" },
+		{ Disc = "Silver", Ribbon = "Purple", Text = "Charcoal" },
+	},
 } :: { [string]: { { [string]: string } } }
 
 -- `variant` names one of the MaterialVariants below; `material` must then be that variant's base material.
@@ -1046,6 +1093,35 @@ StarterGymConfig.MaterialVariants = {
 		normal = "rbxassetid://119842376730446",
 		roughness = "rbxassetid://75579880290713",
 	},
+	-- Themed room fronts, batch 2a (2026-10-26, picked by the user from a preview board).
+	Office_Walnut = { -- polyhaven walnut_veneer_02
+		base = Enum.Material.Wood,
+		studsPerTile = 8,
+		color = "rbxassetid://94298329377256",
+		normal = "rbxassetid://120418570645120",
+		roughness = "rbxassetid://128706919134224",
+	},
+	Machines_SteelPanels = { -- ambientCG MetalPlates001
+		base = Enum.Material.Metal,
+		studsPerTile = 10,
+		color = "rbxassetid://120663242806268",
+		normal = "rbxassetid://77095484702474",
+		roughness = "rbxassetid://122670398560555",
+	},
+	Index_Tiles = { -- ambientCG Tiles107
+		base = Enum.Material.CeramicTiles,
+		studsPerTile = 6,
+		color = "rbxassetid://84345694547823",
+		normal = "rbxassetid://125733647653307",
+		roughness = "rbxassetid://72505428069044",
+	},
+	Storage_Corrugated = { -- ambientCG CorrugatedSteel006A
+		base = Enum.Material.Metal,
+		studsPerTile = 8,
+		color = "rbxassetid://95672327931285",
+		normal = "rbxassetid://90858943002731",
+		roughness = "rbxassetid://108191610762847",
+	},
 } :: { [string]: MaterialVariantSpec }
 
 -- Bright and clean, black rubber under the racks (References/Visual Style).
@@ -1161,6 +1237,18 @@ StarterGymConfig.Looks = {
 	-- Rusted barbells on the Max Testing wall (user, 2026-10-26: black bars were invisible on black).
 	RustBar = { material = Enum.Material.CorrodedMetal, color = Color3.fromRGB(118, 66, 40) },
 	RustSleeve = { material = Enum.Material.CorrodedMetal, color = Color3.fromRGB(96, 76, 64) }, -- the rusted bar's sleeves
+	-- Themed room fronts, batch 2a (2026-10-26). The walnut veneer tinted dark; the white tiles tinted teal.
+	OfficeWalnut = { material = Enum.Material.Wood, color = Color3.fromRGB(84, 62, 52), variant = "Office_Walnut" },
+	MachinesSteel = { material = Enum.Material.Metal, color = Color3.fromRGB(150, 154, 160), variant = "Machines_SteelPanels" },
+	IndexTiles = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(16, 112, 116), variant = "Index_Tiles" },
+	StorageSteel = { material = Enum.Material.Metal, color = Color3.fromRGB(255, 255, 255), variant = "Storage_Corrugated" },
+	-- A frosted office window, half see-through: the blinds and a pale panel behind it stand in for the room
+	-- (no seeing in).
+	FrostedGlass = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(212, 226, 232), transparency = 0.45,
+		reflectance = 0.2 },
+	Brass = { material = Enum.Material.Metal, color = Color3.fromRGB(200, 160, 82) },
+	GlowTeal = { material = Enum.Material.Neon, color = Color3.fromRGB(60, 220, 210) },
+	GlowGold = { material = Enum.Material.Neon, color = Color3.fromRGB(255, 196, 60) },
 } :: { [string]: Look }
 -- Each closed room's colour (ClosedRooms) as a look: its wall on the hall side and its door.
 for name, closed in pairs(StarterGymConfig.ClosedRooms) do

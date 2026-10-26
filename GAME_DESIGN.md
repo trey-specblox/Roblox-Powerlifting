@@ -1095,6 +1095,23 @@ Comp max testing
 >         barbell rack left of the door and a vertical "gun rack" of bars right
 >         of it; bars in silver, red, blue and **rusted** (no black bars: they
 >         vanish on the black wall).
+>       - **Batch 2** (user, 2026-10-26): built in two smaller batches, the
+>         ground floor first (2a: Office, Machines, Index, Storage), then
+>         upstairs (2b: Classroom, Media Room, Warm-up & Mobility, Coaches).
+>         Textures picked by the user from a preview board, props approved
+>         from Blender renders. **Batch 2a approved in Studio screenshots**
+>         (user, 2026-10-26), as built: **Office** dark walnut panels with
+>         grooves and a brass rail, a frosted window with white blinds, brass
+>         wall lamps, a "GYM MANAGER" plate, a framed "HELP POINT" sign and a
+>         planter; **Machines** bolted steel panels, a yellow door portal, two
+>         CENTRAL weight stacks (pin, cable, pulley) in different colours and
+>         "how to use" boards; **Index** teal tiles, a lit "THE MEET LADDER"
+>         board with rising steps (Local, Nationals, Worlds, Sheffield),
+>         medals on a brass rail and a "LEARN THE GAME" board naming the topics
+>         the room explains; **Storage** green corrugated steel over a yellow
+>         kick band, stencilled "STORE 01 / KEEP CLEAR / MAX LOAD 500 KG",
+>         CENTRAL crates on a pallet and stacks of mixed-colour bumper plates.
+>         Look only (no gameplay).
 >     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
 >       woody strongman front right beside bright, colourful rooms "makes 0
 >       sense"; it must NOT be connected to the other rooms). Chosen from a

@@ -448,6 +448,70 @@
         "normal": "rbxassetid://119842376730446",
         "roughness": "rbxassetid://75579880290713"
       }
+    },
+    "Office_Walnut": {
+      "source": "polyhaven:walnut_veneer_02",
+      "url": "https://polyhaven.com/a/walnut_veneer_02",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_walnut_veneer_02",
+      "ids": {
+        "color": "rbxassetid://94298329377256",
+        "normal": "rbxassetid://120418570645120",
+        "roughness": "rbxassetid://128706919134224"
+      }
+    },
+    "Machines_SteelPanels": {
+      "source": "ambientcg:MetalPlates001",
+      "url": "https://ambientcg.com/a/MetalPlates001",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_MetalPlates001",
+      "ids": {
+        "color": "rbxassetid://120663242806268",
+        "normal": "rbxassetid://77095484702474",
+        "roughness": "rbxassetid://122670398560555"
+      }
+    },
+    "Index_Tiles": {
+      "source": "ambientcg:Tiles107",
+      "url": "https://ambientcg.com/a/Tiles107",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Tiles107",
+      "ids": {
+        "color": "rbxassetid://84345694547823",
+        "normal": "rbxassetid://125733647653307",
+        "roughness": "rbxassetid://72505428069044"
+      }
+    },
+    "Storage_Corrugated": {
+      "source": "ambientcg:CorrugatedSteel006A",
+      "url": "https://ambientcg.com/a/CorrugatedSteel006A",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_CorrugatedSteel006A",
+      "ids": {
+        "color": "rbxassetid://95672327931285",
+        "normal": "rbxassetid://90858943002731",
+        "roughness": "rbxassetid://108191610762847"
+      }
     }
   },
   "models": {
@@ -499,6 +563,14 @@
       "license": "own work",
       "ids": {
         "model": "rbxassetid://126419721956699"
+      }
+    },
+    "RoomProps_06": {
+      "about": "Themed room fronts batch 2a props: weight stack (Machines), wall sconce (Office), wooden crate, pallet and flat bumper plate (Storage), medal (Index); CENTRAL labels. Made by art/scripts/build_room_props_06.py (art/blender/RoomProps_06.blend).",
+      "file": "art/exports/RoomProps_06.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://89330038688157"
       }
     }
   }

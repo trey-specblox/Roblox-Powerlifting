@@ -381,6 +381,46 @@
           "NormalMap": "rbxassetid://119842376730446",
           "RoughnessMap": "rbxassetid://75579880290713"
         }
+      },
+      "Office_Walnut": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Wood",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://94298329377256",
+          "NormalMap": "rbxassetid://120418570645120",
+          "RoughnessMap": "rbxassetid://128706919134224"
+        }
+      },
+      "Machines_SteelPanels": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Metal",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://120663242806268",
+          "NormalMap": "rbxassetid://77095484702474",
+          "RoughnessMap": "rbxassetid://122670398560555"
+        }
+      },
+      "Index_Tiles": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://84345694547823",
+          "NormalMap": "rbxassetid://125733647653307",
+          "RoughnessMap": "rbxassetid://72505428069044"
+        }
+      },
+      "Storage_Corrugated": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Metal",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://95672327931285",
+          "NormalMap": "rbxassetid://90858943002731",
+          "RoughnessMap": "rbxassetid://108191610762847"
+        }
       }
     }
   }
