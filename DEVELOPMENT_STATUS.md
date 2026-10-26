@@ -806,9 +806,44 @@ and polish.
   `%USERPROFILE%\.fwjelaa\roblox-open-cloud.key`; verified by introspect and
   by reading the group's desk-logo asset. Nothing uploaded with it yet.
   COMMITTED and pushed 2026-10-25 with user approval (section 4).
-  NEXT ACTION: the Supplement Bar as the first room upgraded with kit
-  textures/models (pilot of the kit -> upload -> Rojo pipeline), then 2-3
-  rooms per checkpoint.
+  SUPPLEMENT BAR REMADE WITH THE KITS (pilot, user-approved 2026-10-25;
+  GAME_DESIGN §27 "Supplement Bar look" and "Variety, not just red and black"):
+  - Textures: 4 CC0 materials picked by the user from a preview sheet
+    (ambientCG WoodFloor064, Poly Haven long_white_tiles, ambientCG
+    Marble006, ambientCG Planks037A), prepared with the Maps kit's prep step
+    (never its upload), uploaded as 12 group-owned images by the new
+    `art/scripts/upload_group_images.py` (sets creator group 529442797; the
+    Maps kit's uploader only uploads as a user). Ids, sources, licences:
+    `art/materials/materials.json`.
+  - MaterialVariants: game scripts may NOT create them ("lacking capability
+    Plugin"), so they are in `default.project.json` (MaterialService, 4
+    variants; needed a Rojo reconnect) and mirrored in
+    `StarterGymConfig.MaterialVariants` (the verify compares them). Looks can
+    name a `variant`; BuildParts.placed applies it.
+  - Room: rebuilt in RoomProps (textured floor, tile wall, charcoal walls,
+    marble/plank back bar and counter with slats, red glow and foot rail, neon
+    sign, 2 menu screens, 2 lit floating shelves, 3 pendant lamps hung below
+    the sign, marble tables).
+  - 3D props: `art/scripts/build_sbar_props_01.py` (Blender;
+    `art/blender/SBarProps_01.blend`, with a preview shelf) makes 7 CENTRAL
+    product shapes + shaker + modern bar stool (29 parts); colourways in
+    `StarterGymConfig.SBarColourways` (user: variety, not just red/black).
+    Plant: Poly Haven potted_plant_02 via the kit's download step, simplified
+    by `art/scripts/prep_sbar_plant.py` (leaves kept, 9k tris). Both exported
+    as GLB (`art/exports/SBarProps_01.glb`, `SBarPlant_01.glb`), uploaded as
+    group-owned Model assets (SBarPropsAsset 126463004640141, SBarPlantAsset
+    72818612497691) and LOADED AT SERVER START by RoomProps
+    (InsertService:LoadAsset, split into templates by name prefix, recoloured
+    per colourway); no manual Studio import. If loading fails, the bar falls
+    back to its part-built props. Placed: 105 products, 6 shakers, 9 stools,
+    2 plants (~460 MeshParts; watch on phones in milestone step 7).
+  - Studio by Claude via the MCP: no warnings; VerifyShell ALL 50 PASSED
+    (condensed but complete copy of the checks, incl. the new textured-
+    materials check); screenshots approved by the user.
+  - Process notes: take MCP screenshots one at a time (parallel ones mix
+    up); the game window must be visible or captures come out white.
+  NEXT ACTION: the next 2-3 rooms with the same pipeline (textures and props
+  previewed first, variety in colours), per the approved room purposes.
   OLD NEXT ACTION (done 2026-10-23, stage 5 above): lighting (Lighting.Ambient is black; the other rooms still
   show the upper floor's tiles as their ceiling). Old steps (a)-(d): done;
   (b) reconnect Rojo, run StarterGym_VerifyShell (expect ALL ... CHECKS
@@ -1017,6 +1052,15 @@ Deliberately left uncommitted (keep, never discard):
   referenced by GAME_DESIGN.md and the build scripts. COMMITTED and pushed
   2026-10-19 with user approval as "Add the Visual Style reference note"
   (`git log` for the hash). Its two image embeds stay local (above).
+
+Supplement Bar remade with the kits (Studio-tested 2026-10-25; COMMITTED and pushed 2026-10-25 with user approval as "Remake the Supplement Bar with CC0 textures and CENTRAL product models"; `git log` for the hash):
+- New: `art/scripts/upload_group_images.py`, `art/materials/materials.json`,
+  `art/scripts/build_sbar_props_01.py`, `art/blender/SBarProps_01.blend`,
+  `art/exports/SBarProps_01.glb`, `art/scripts/prep_sbar_plant.py`, `art/exports/SBarPlant_01.glb`.
+- Changed: `default.project.json` (MaterialService variants), `src/server/World/BuildParts.luau`,
+  `src/server/World/RoomProps.luau`, `src/shared/Config/StarterGymConfig.luau`,
+  `tools/studio/StarterGym_VerifyShell.luau`, `GAME_DESIGN.md`, `DEVELOPMENT_STATUS.md`.
+- Keep OUT: the same unrelated files as above.
 
 Starter Gym step 6a + shop gear + sauna upstairs (Studio-tested 2026-10-25; COMMITTED and pushed 2026-10-25 with user approval as "Furnish the Starter Gym ground floor, add the shop gear models and move the sauna upstairs (step 6a)"; `git log` for the hash):
 - New: `src/server/World/BuildParts.luau`, `src/server/World/RoomProps.luau`,

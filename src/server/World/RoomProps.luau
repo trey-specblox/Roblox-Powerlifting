@@ -424,12 +424,15 @@ local function paddedTable(kit: Kit, name: string, a: number, d0: number, d1: nu
 	kit.cylinder(name .. "_Towel", a, d0 + 0.6, 3.25, 2, 0.5, "a", looks.ShirtWhite)
 end
 
-local function cafeTable(kit: Kit, name: string, a: number, d: number)
-	kit.block(name .. "_Top", a - 1.3, a + 1.3, d - 1.3, d + 1.3, 3, 3.15, looks.Wood)
+-- A high table; with `noStools` the caller seats it.
+local function cafeTable(kit: Kit, name: string, a: number, d: number, top: Look?, noStools: boolean?)
+	kit.block(name .. "_Top", a - 1.3, a + 1.3, d - 1.3, d + 1.3, 3, 3.15, top or looks.Wood)
 	kit.block(name .. "_Pole", a - 0.15, a + 0.15, d - 0.15, d + 0.15, 0.1, 3, looks.SteelBeam)
 	kit.block(name .. "_Base", a - 0.7, a + 0.7, d - 0.7, d + 0.7, 0, 0.1, looks.Stainless)
-	stool(kit, name .. "_Stool_1", a - 2.3, d)
-	stool(kit, name .. "_Stool_2", a + 2.3, d)
+	if not noStools then
+		stool(kit, name .. "_Stool_1", a - 2.3, d)
+		stool(kit, name .. "_Stool_2", a + 2.3, d)
+	end
 end
 
 -- A see-through drinks fridge against a wall, full of bottles.
@@ -839,17 +842,144 @@ local function tubs(kit: Kit, wall: Wall, name: string): (level: number, s: numb
 	end
 end
 
+-- One template Model of `parts` (moved into it), its pivot at the bottom centre
+-- of their bounds, facing -Z (where the props' labels face).
+local function asTemplate(name: string, parts: { BasePart }): Model
+	local model = Instance.new("Model")
+	model.Name = name
+	local low, high = Vector3.one * math.huge, -Vector3.one * math.huge
+	for _, part in ipairs(parts) do
+		local half = part.Size / 2
+		for _, x in ipairs({ -1, 1 }) do
+			for _, y in ipairs({ -1, 1 }) do
+				for _, z in ipairs({ -1, 1 }) do
+					local corner = part.CFrame:PointToWorldSpace(Vector3.new(x * half.X, y * half.Y, z * half.Z))
+					low, high = low:Min(corner), high:Max(corner)
+				end
+			end
+		end
+		part.Anchored = true
+		part.Parent = model
+	end
+	model.WorldPivot = CFrame.new((low.X + high.X) / 2, low.Y, (low.Z + high.Z) / 2)
+	return model
+end
+
+--[[
+	The supplement bar's 3D props (StarterGymConfig.SBarPropsAsset and
+	SBarPlantAsset), loaded once with InsertService: one template per item
+	(SBarWhey, SBarShaker, SBarStool, ..., SBarPlant). nil when loading fails;
+	the bar then uses its part-built props.
+]]
+local sbarTemplates: { [string]: Model }? = nil
+local sbarTried = false
+local function loadSBarTemplates(): { [string]: Model }?
+	if sbarTried then
+		return sbarTemplates
+	end
+	sbarTried = true
+	local InsertService = game:GetService("InsertService")
+	local ok, result = pcall(function()
+		local templates: { [string]: Model } = {}
+		local props = InsertService:LoadAsset(StarterGymConfig.SBarPropsAsset)
+		local groups: { [string]: { BasePart } } = {}
+		for _, d in ipairs(props:GetDescendants()) do
+			local prefix = if d:IsA("BasePart") then string.match(d.Name, "^(SBar%a+)_") else nil
+			if prefix then
+				groups[prefix] = groups[prefix] or {}
+				table.insert(groups[prefix], d :: BasePart)
+			end
+		end
+		for prefix, parts in pairs(groups) do
+			templates[prefix] = asTemplate(prefix, parts)
+		end
+		props:Destroy()
+		local plant = InsertService:LoadAsset(StarterGymConfig.SBarPlantAsset)
+		local plantParts: { BasePart } = {}
+		for _, d in ipairs(plant:GetDescendants()) do
+			if d:IsA("BasePart") then
+				table.insert(plantParts, d)
+			end
+		end
+		templates.SBarPlant = asTemplate("SBarPlant", plantParts)
+		plant:Destroy()
+		return templates
+	end)
+	if ok then
+		sbarTemplates = result
+	else
+		warn("[RoomProps] supplement bar props not loaded (simple props instead): " .. tostring(result))
+	end
+	return sbarTemplates
+end
+
+local SBAR_PIECE = { Body = 1, Lid = 2, Label = 3, Text = 4 }
+
+-- A coloured copy of a supplement bar prop (Kit.place, so it must fit the room):
+-- products take their SBarColourways colours per piece, the stool a black seat on steel.
+local function sbarItem(kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number,
+	a: number, d: number, y: number, facing: string): Model
+	local copy = kit.place(name, templates[item], a, d, y, facing)
+	local scheme = StarterGymConfig.SBarColourways[item]
+	local colours = scheme and scheme[colourway]
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local piece = string.match(part.Name, "_(%a+)$")
+			local colourName = if colours and piece and SBAR_PIECE[piece] then colours[SBAR_PIECE[piece]]
+				elseif piece == "Seat" then "Black"
+				elseif piece == "Metal" then "Silver"
+				else nil
+			if colourName and colourName ~= "" then
+				part.Color = StarterGymConfig.SBarColours[colourName]
+				part.Material = if colourName == "Silver" then Enum.Material.Metal else Enum.Material.SmoothPlastic
+			end
+		end
+	end
+	return copy
+end
+
+-- Shelving fill: every level holds one product line, `perSlot` side by side,
+-- facing out of the wall (like a real supplement wall: rows of one product).
+type ProductRow = { item: string, colourway: number, perSlot: number }
+local function productRows(kit: Kit, templates: { [string]: Model }, wall: Wall, name: string, facing: string,
+	rows: { ProductRow }): (level: number, s: number, t: number, y: number) -> ()
+	return function(level, s, t, y)
+		local row = rows[level]
+		if row then
+			for k = 1, row.perSlot do
+				local a, d = wall.at(s + (k - (row.perSlot + 1) / 2) * 0.64, t)
+				sbarItem(kit, templates, string.format("%s_%d_%.0f_%d", name, level, s * 10, k), row.item, row.colourway,
+					a, d, y, facing)
+			end
+		end
+	end
+end
+
 --[[
 	The supplement bar (user, 2026-10-25: in the ground-floor room the sauna
-	left when it moved upstairs). A back bar with blenders under a menu board
-	and a drinks fridge, a serving counter with shakers, shelves of
-	supplement tubs on both side walls, two high tables with stools.
+	left when it moved upstairs; remade the same day with real CC0 textures:
+	dark wood floor, cream tile feature wall, black marble, dark planks). A
+	tiled back wall with a red neon "SUPPLEMENT BAR" sign, two menu screens,
+	floating shelves and a planked back bar with blenders and a drinks fridge;
+	a slatted serving counter with a black marble top, a red glow underneath, a
+	foot rail and stools; pendant lamps over it; charcoal side walls with
+	planked tub shelves; two high tables. Cosmetic only (GAME_DESIGN §27).
 ]]
 FURNISH.SupplementBar = function(kit)
-	local hw = kit.W / 2
+	local hw, D, H = kit.W / 2, kit.D, kit.H
 	local back = kit.wall("back")
-	back.block("BackBar", -hw + 1, 6, 0, 2, 0, 3.4, looks.DeskBody)
-	back.block("BackBar_Top", -hw + 1, 6, 0, 2.1, 3.4, 3.6, looks.DeskWork)
+	local props = loadSBarTemplates() -- the 3D props, or nil: simple part-built ones
+
+	-- The room's surfaces.
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.SBarFloor)
+	back.item("Wall_Tiles", -hw, hw, 0, 0.08, 0.06, H, looks.SBarTiles)
+	for _, which in ipairs({ "left", "right" }) do
+		kit.wall(which).item("Wall_" .. which, 0, D, 0, 0.08, 0.06, H, looks.SBarWall)
+	end
+
+	-- The back bar: planked cabinets under a black marble top, blenders on it.
+	back.block("BackBar", -hw + 1, 6, 0.08, 2, 0.06, 3.4, looks.SBarPlanks)
+	back.block("BackBar_Top", -hw + 1, 6, 0.08, 2.15, 3.4, 3.6, looks.SBarMarble)
 	for index, s in ipairs({ -9, -5.5, -2 }) do
 		local blender = "Blender_" .. index
 		back.item(blender .. "_Base", s - 0.6, s + 0.6, 0.4, 1.6, 3.6, 4.2, looks.Gadget)
@@ -857,28 +987,166 @@ FURNISH.SupplementBar = function(kit)
 		kit.cylinder(blender .. "_Jug", a, d, 4.95, 1.5, 0.8, "up", looks.Glass)
 		kit.cylinder(blender .. "_Lid", a, d, 5.77, 0.14, 0.86, "up", looks.Gadget)
 	end
-	local menu = back.item("MenuBoard", -hw + 1, 6, 0, 0.15, 6, 10, looks.SignPanel)
-	writing(menu, back.out, "SUPPLEMENT BAR", { "Whey shake ...... 5", "Creatine ...... 2", "Pre-workout ...... 4",
-		"Electrolytes ...... 2" }, looks.SignPanel.color, WHITE)
-	drinksFridge(kit, back, "Fridge", 8, hw - 0.6)
-	-- The serving counter with shakers, staff behind it.
-	back.block("Counter", -10, 8, 5.5, 7, 0, 3.6, looks.DeskBody)
-	back.block("Counter_Top", -10.2, 8.2, 5.4, 7.2, 3.6, 3.8, looks.DeskWork)
-	back.item("Counter_Stripe", -10, 8, 7, 7.03, 2.6, 2.9, looks.PlateRed)
-	for index = 0, 5 do
-		local a, d = back.at(-8.5 + index * 3, 6.25)
-		kit.cylinder("Shaker_" .. index + 1, a, d, 4.25, 0.9, 0.5, "up", if index % 2 == 0 then looks.PlateRed else looks.Gadget)
+	-- Two floating shelves of products, each lit from underneath: small jars
+	-- and bottles below, whey and isolate tubs above.
+	-- `count` of one product side by side, in shelf order.
+	local function run(list: { ProductRow }, item: string, colourway: number, count: number): { ProductRow }
+		for _ = 1, count do
+			table.insert(list, { item = item, colourway = colourway, perSlot = 1 })
+		end
+		return list
 	end
-	-- Shelves of tubs on both side walls.
+	local shelfRows = {
+		run(run(run({}, "SBarBCAA", 1, 4), "SBarCreatine", 1, 4), "SBarPreWorkout", 2, 4),
+		run(run(run({}, "SBarWhey", 1, 3), "SBarWhey", 2, 3), "SBarIsolate", 1, 3),
+	}
+	for level, y in ipairs({ 5, 6.7 }) do
+		local shelf = "Shelf_" .. level
+		back.item(shelf, -12, -3, 0.08, 1, y, y + 0.15, looks.SBarPlanks)
+		local strip = back.item(shelf .. "_Light", -11.8, -3.2, 0.7, 0.8, y - 0.05, y, looks.GlowWarm)
+		BuildParts.surfaceLight(strip, Enum.NormalId.Bottom, 4, 0.6, 120, looks.GlowWarm.color)
+		if props then
+			local row = shelfRows[level]
+			local step = 8.6 / #row
+			for k, entry in ipairs(row) do
+				local a, d = back.at(-11.8 + (k - 0.5) * step, 0.55)
+				sbarItem(kit, props, string.format("%s_Item_%d", shelf, k), entry.item, entry.colourway, a, d, y + 0.15, "-d")
+			end
+		else
+			for k = 0, 7 do
+				local a, d = back.at(-11.4 + k * 1.1, 0.55)
+				local tub = string.format("%s_Tub_%d", shelf, k + 1)
+				local tall = if k % 2 == 0 then 0.75 else 0.6
+				kit.cylinder(tub, a, d, y + 0.15 + tall / 2, tall, 0.6, "up", if k % 3 == 0 then looks.ShirtWhite else looks.Gadget)
+				kit.cylinder(tub .. "_Lid", a, d, y + 0.15 + tall + 0.05, 0.1, 0.62, "up", looks.PlateRed)
+			end
+		end
+	end
+	-- Two menu screens.
+	for index, menu in ipairs({
+		{ s0 = -2, s1 = 1.8, title = "SHAKES", lines = { "Whey vanilla ...... 5", "Whey chocolate ...... 5", "Mass gainer ...... 6" } },
+		{ s0 = 2.2, s1 = 6, title = "PRE & POST", lines = { "Pre-workout ...... 4", "Creatine ...... 2", "Electrolytes ...... 2" } },
+	}) do
+		local screen = back.item("Screen_" .. index, menu.s0, menu.s1, 0.08, 0.2, 5, 7.4, looks.Gadget)
+		writing(screen, back.out, menu.title, menu.lines, looks.Gadget.color, WHITE)
+	end
+	-- The red neon sign: glowing letters (no backing) over a neon underline.
+	local sign = back.item("NeonSign", -11, 5, 0.08, 0.14, 8.6, 10.8, looks.SignPanel)
+	sign.Transparency = 1
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Writing"
+	gui.Face = faceToward(back.out)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0
+	gui.Parent = sign
+	local letters = Instance.new("TextLabel")
+	letters.Size = UDim2.fromScale(1, 1)
+	letters.BackgroundTransparency = 1
+	letters.Text = "SUPPLEMENT BAR"
+	letters.TextScaled = true
+	letters.TextColor3 = Color3.fromRGB(255, 70, 70)
+	letters.TextStrokeColor3 = Color3.fromRGB(140, 0, 0)
+	letters.TextStrokeTransparency = 0.2
+	letters.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	letters.Parent = gui
+	local underline = back.item("NeonSign_Underline", -10, 4, 0.08, 0.16, 8.4, 8.52, looks.GlowRed)
+	local signGlow = Instance.new("PointLight")
+	signGlow.Color = looks.GlowRed.color
+	signGlow.Range = 10
+	signGlow.Brightness = 0.6
+	signGlow.Shadows = false
+	signGlow.Parent = underline
+	drinksFridge(kit, back, "Fridge", 8, hw - 0.6)
+
+	-- The serving counter: dark plank slats, a black marble top, a red glow
+	-- under the front lip, a steel foot rail, shakers and a till; staff behind.
+	back.block("Counter_Plinth", -9.8, 7.8, 5.6, 6.7, 0.06, 0.4, looks.Gadget)
+	back.block("Counter", -10, 8, 5.5, 6.95, 0.4, 3.6, looks.SBarPlanks)
+	back.block("Counter_Top", -10.3, 8.3, 5.3, 7.45, 3.6, 3.85, looks.SBarMarble)
+	local slat = 0
+	local s = -9.85
+	while s + 0.3 <= 7.9 do
+		slat += 1
+		back.item("Counter_Slat_" .. slat, s, s + 0.3, 6.95, 7.07, 0.45, 3.55, looks.SBarPlanks)
+		s += 0.45
+	end
+	local glow = back.item("Counter_Glow", -9.8, 7.8, 6.8, 6.95, 0.33, 0.4, looks.GlowRed)
+	BuildParts.surfaceLight(glow, Enum.NormalId.Bottom, 3, 1, 120, looks.GlowRed.color)
+	local railA, railD = back.at(-1, 7.75)
+	kit.cylinder("FootRail", railA, railD, 0.9, 17.6, 0.16, "a", looks.Stainless)
+	for index, rs in ipairs({ -9, -1, 7 }) do
+		back.item("FootRail_Bracket_" .. index, rs - 0.06, rs + 0.06, 7.07, 7.75, 0.84, 0.96, looks.Stainless)
+	end
+	for index = 0, 5 do
+		local a, d = back.at(-8.5 + index * 2.6, 6.4)
+		if props then
+			sbarItem(kit, props, "Shaker_" .. index + 1, "SBarShaker", index + 1, a, d, 3.85, "-d")
+		else
+			kit.cylinder("Shaker_" .. index + 1, a, d, 4.3, 0.9, 0.5, "up", if index % 2 == 0 then looks.PlateRed else looks.Gadget)
+		end
+	end
+	back.item("Till", 6.4, 7.4, 5.6, 6.2, 3.85, 3.95, looks.Gadget)
+	back.item("Till_Screen", 6.6, 7.2, 5.7, 5.8, 3.95, 4.8, looks.Gadget)
+	for index, ss in ipairs({ -8, -5, -2, 1, 4 }) do
+		local a, d = back.at(ss, 8.6)
+		if props then
+			sbarItem(kit, props, "BarStool_" .. index, "SBarStool", 1, a, d, 0.06, "-d")
+		else
+			stool(kit, "BarStool_" .. index, a, d)
+		end
+	end
+	-- Three pendant lamps over the counter, hung low enough that the neon sign
+	-- shows above them from the customers' side.
+	for index, ps in ipairs({ -7, -1, 5 }) do
+		local a, d = back.at(ps, 6.2)
+		local lamp = "Pendant_" .. index
+		kit.cylinder(lamp .. "_Cable", a, d, (H + 7.55) / 2, H - 7.55, 0.06, "up", looks.Gadget)
+		kit.cylinder(lamp .. "_Shade", a, d, 7.2, 0.7, 1.3, "up", looks.Gadget)
+		warmGlow(kit.ball(lamp .. "_Bulb", a, d, 6.75, 0.45, looks.GlowWarm), 14, 1.1)
+	end
+
+	-- Planked shelves of products on both side walls (one product line per
+	-- shelf: tall gainer jugs at the bottom, the low isolate tubs on top; small
+	-- jars two to a slot); two high tables; plants by the door.
+	local wallRows: { [string]: { ProductRow } } = {
+		left = {
+			{ item = "SBarGainer", colourway = 1, perSlot = 1 },
+			{ item = "SBarWhey", colourway = 1, perSlot = 1 },
+			{ item = "SBarWhey", colourway = 2, perSlot = 1 },
+			{ item = "SBarIsolate", colourway = 1, perSlot = 1 },
+		},
+		right = {
+			{ item = "SBarCreatine", colourway = 1, perSlot = 2 },
+			{ item = "SBarPreWorkout", colourway = 1, perSlot = 2 },
+			{ item = "SBarPreWorkout", colourway = 2, perSlot = 2 },
+			{ item = "SBarBCAA", colourway = 1, perSlot = 2 },
+		},
+	}
 	for _, which in ipairs({ "left", "right" }) do
 		local wall = kit.wall(which)
 		local name = "TubShelf_" .. which
-		shelving(wall, name, 8, 18, 1.4, 7, 4, looks.DeskBody, tubs(kit, wall, name))
+		local fill = if props
+			then productRows(kit, props, wall, name, if which == "left" then "+a" else "-a", wallRows[which])
+			else tubs(kit, wall, name)
+		shelving(wall, name, 8, 18, 1.4, 7, 4, looks.SBarPlanks, fill)
 	end
-	cafeTable(kit, "Table_1", -6.5, 10)
-	cafeTable(kit, "Table_2", 6.5, 10)
-	plant(kit, "Plant_1", -hw + 1.5, 1.5)
-	plant(kit, "Plant_2", hw - 1.5, 1.5)
+	for index, a in ipairs({ -6.5, 6.5 }) do
+		cafeTable(kit, "Table_" .. index, a, 10, looks.SBarMarble, props ~= nil)
+		if props then
+			for side, sa in ipairs({ a - 2.3, a + 2.3 }) do
+				sbarItem(kit, props, string.format("Table_%d_Stool_%d", index, side), "SBarStool", 1, sa, 10, 0.06,
+					if sa < a then "+a" else "-a")
+			end
+		end
+	end
+	if props then
+		sbarItem(kit, props, "Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
+		sbarItem(kit, props, "Plant_2", "SBarPlant", 1, hw - 1.8, 1.7, 0.06, "+d")
+	else
+		plant(kit, "Plant_1", -hw + 1.5, 1.5)
+		plant(kit, "Plant_2", hw - 1.5, 1.5)
+	end
 end
 
 FURNISH.Coach = function(kit)

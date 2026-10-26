@@ -605,6 +605,20 @@ local function run()
 	local expectedHall = gym.RoofBeamCount * gym.HallLightSegmentsPerRow
 	check(hallLights == expectedHall, string.format("%d hall light bars with lights (%d found)", expectedHall, hallLights))
 
+	-- Textured materials (2026-10-25): one MaterialVariant per config entry, with its uploaded maps.
+	local materialService = game:GetService("MaterialService")
+	local badVariants, variantCount = {}, 0
+	for name, spec in pairs(gym.MaterialVariants) do
+		variantCount += 1
+		local variant = materialService:FindFirstChild(name)
+		if not (variant and variant:IsA("MaterialVariant") and variant.BaseMaterial == spec.base
+			and variant.ColorMap == spec.color and variant.NormalMap == spec.normal) then
+			table.insert(badVariants, name)
+		end
+	end
+	check(#badVariants == 0, string.format("%d textured materials in MaterialService%s", variantCount,
+		if #badVariants > 0 then " (missing or wrong: " .. table.concat(badVariants, ", ") .. ")" else ""))
+
 	-- Step 6a: furniture in every ground-floor room but the lobby, all of it
 	-- inside its room, nothing solid in front of a door or inside a wall.
 	local propsFolder = model:FindFirstChild("Props")

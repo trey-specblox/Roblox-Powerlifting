@@ -305,7 +305,97 @@ StarterGymConfig.Rooms = {
 	CornerUpper = { Left = "CornerLeftUpper", Right = "CornerRightUpper" },
 }
 
-export type Look = { material: Enum.Material, color: Color3, transparency: number?, reflectance: number? }
+--[[
+	The supplement bar's 3D props (2026-10-25): uploaded as Model assets owned
+	by the game's group (art/materials/materials.json; source
+	art/scripts/build_sbar_props_01.py and prep_sbar_plant.py) and loaded by
+	RoomProps with InsertService when the server starts. If a load fails, the
+	bar falls back to its simple part-built props.
+	SBarProps holds one item per name prefix (SBarWhey_Body, SBarWhey_Lid, ...);
+	each product line has its colourways: { body, lid, label, text } colour
+	names from SBarColours (the shaker has no label).
+]]
+StarterGymConfig.SBarPropsAsset = 126463004640141
+StarterGymConfig.SBarPlantAsset = 72818612497691
+StarterGymConfig.SBarColours = {
+	Black = Color3.fromRGB(22, 22, 24),
+	Red = Color3.fromRGB(200, 30, 38),
+	White = Color3.fromRGB(236, 236, 232),
+	Blue = Color3.fromRGB(30, 92, 205),
+	Yellow = Color3.fromRGB(242, 190, 30),
+	Green = Color3.fromRGB(95, 222, 60),
+	Purple = Color3.fromRGB(128, 52, 190),
+	Orange = Color3.fromRGB(245, 130, 30),
+	Silver = Color3.fromRGB(190, 192, 198), -- shown as Metal
+	Pink = Color3.fromRGB(240, 125, 172),
+}
+StarterGymConfig.SBarColourways = {
+	SBarWhey = { { "Black", "Red", "Red", "White" }, { "White", "Black", "Black", "White" } },
+	SBarIsolate = { { "White", "Blue", "Blue", "White" } },
+	SBarGainer = { { "Black", "Black", "Yellow", "Black" } },
+	SBarPreWorkout = { { "Black", "Green", "Green", "Black" }, { "Black", "Purple", "Purple", "White" } },
+	SBarCreatine = { { "White", "Silver", "Silver", "Black" } },
+	SBarBCAA = { { "White", "Orange", "Orange", "White" } },
+	SBarShaker = {
+		{ "Red", "Black", "", "White" },
+		{ "Blue", "Black", "", "White" },
+		{ "White", "Black", "", "Black" },
+		{ "Black", "White", "", "White" },
+		{ "Green", "Black", "", "Black" },
+		{ "Pink", "White", "", "White" },
+	},
+} :: { [string]: { { string } } }
+
+-- `variant` names one of the MaterialVariants below; `material` must then be that variant's base material.
+export type Look = { material: Enum.Material, color: Color3, transparency: number?, reflectance: number?, variant: string? }
+
+--[[
+	Textured materials (2026-10-25): free CC0 maps from ambientCG and Poly Haven,
+	prepared with the Roblox Maps kit and uploaded as images owned by the
+	game's group (art/scripts/upload_group_images.py; sources, licences and ids
+	in art/materials/materials.json). Game scripts may not create
+	MaterialVariants, so Rojo does: default.project.json has one
+	MaterialService.<name> MaterialVariant per entry below, with the same
+	values. KEEP THE TWO IN STEP (the verify script compares them). A part
+	whose variant is missing just shows its plain base material.
+]]
+export type MaterialVariantSpec = {
+	base: Enum.Material,
+	studsPerTile: number,
+	color: string,
+	normal: string,
+	roughness: string,
+}
+StarterGymConfig.MaterialVariants = {
+	SBar_DarkWoodFloor = { -- ambientCG WoodFloor064
+		base = Enum.Material.WoodPlanks,
+		studsPerTile = 9,
+		color = "rbxassetid://116853125392813",
+		normal = "rbxassetid://131023733106403",
+		roughness = "rbxassetid://99877885379174",
+	},
+	SBar_CreamWallTiles = { -- Poly Haven long_white_tiles
+		base = Enum.Material.CeramicTiles,
+		studsPerTile = 6,
+		color = "rbxassetid://87087652044414",
+		normal = "rbxassetid://78705441173025",
+		roughness = "rbxassetid://136168219104020",
+	},
+	SBar_BlackMarble = { -- ambientCG Marble006
+		base = Enum.Material.Marble,
+		studsPerTile = 8,
+		color = "rbxassetid://134658265297491",
+		normal = "rbxassetid://81687991928406",
+		roughness = "rbxassetid://85154963086209",
+	},
+	SBar_DarkPlanks = { -- ambientCG Planks037A
+		base = Enum.Material.Wood,
+		studsPerTile = 6,
+		color = "rbxassetid://78285911641083",
+		normal = "rbxassetid://77687587802341",
+		roughness = "rbxassetid://134955031392788",
+	},
+} :: { [string]: MaterialVariantSpec }
 
 -- Bright and clean, black rubber under the racks (References/Visual Style).
 StarterGymConfig.Looks = {
@@ -364,6 +454,12 @@ StarterGymConfig.Looks = {
 	ShirtBlack = { material = Enum.Material.Fabric, color = Color3.fromRGB(26, 26, 28) },
 	ShirtWhite = { material = Enum.Material.Fabric, color = Color3.fromRGB(235, 235, 232) },
 	ShirtRed = { material = Enum.Material.Fabric, color = Color3.fromRGB(190, 30, 38) },
+	-- The supplement bar (2026-10-25): textured materials, white so the maps show their own colours.
+	SBarFloor = { material = Enum.Material.WoodPlanks, color = Color3.fromRGB(255, 255, 255), variant = "SBar_DarkWoodFloor" },
+	SBarTiles = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(255, 255, 255), variant = "SBar_CreamWallTiles" },
+	SBarMarble = { material = Enum.Material.Marble, color = Color3.fromRGB(255, 255, 255), variant = "SBar_BlackMarble" },
+	SBarPlanks = { material = Enum.Material.Wood, color = Color3.fromRGB(255, 255, 255), variant = "SBar_DarkPlanks" },
+	SBarWall = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(34, 34, 38) }, -- charcoal side walls
 } :: { [string]: Look }
 
 --[[

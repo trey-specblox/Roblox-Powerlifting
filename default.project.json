@@ -99,6 +99,49 @@
       "$properties": {
         "RespectFilteringEnabled": true
       }
+    },
+    "MaterialService": {
+      "$ignoreUnknownInstances": true,
+      "SBar_DarkWoodFloor": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "WoodPlanks",
+          "StudsPerTile": 9,
+          "ColorMap": "rbxassetid://116853125392813",
+          "NormalMap": "rbxassetid://131023733106403",
+          "RoughnessMap": "rbxassetid://99877885379174"
+        }
+      },
+      "SBar_CreamWallTiles": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://87087652044414",
+          "NormalMap": "rbxassetid://78705441173025",
+          "RoughnessMap": "rbxassetid://136168219104020"
+        }
+      },
+      "SBar_BlackMarble": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Marble",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://134658265297491",
+          "NormalMap": "rbxassetid://81687991928406",
+          "RoughnessMap": "rbxassetid://85154963086209"
+        }
+      },
+      "SBar_DarkPlanks": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Wood",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://78285911641083",
+          "NormalMap": "rbxassetid://77687587802341",
+          "RoughnessMap": "rbxassetid://134955031392788"
+        }
+      }
     }
   }
 }

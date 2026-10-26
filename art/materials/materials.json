@@ -1,0 +1,89 @@
+{
+  "about": "CC0 materials used in the Starter Gym, uploaded as images owned by group 529442797 with art/scripts/upload_group_images.py. preparedFolder is where the Roblox Maps kit's prep step left the 1024 px maps (outside the repo; re-made from the source if lost).",
+  "materials": {
+    "SBar_DarkWoodFloor": {
+      "source": "ambientcg:WoodFloor064",
+      "url": "https://ambientcg.com/view?id=WoodFloor064",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_WoodFloor064",
+      "ids": {
+        "color": "rbxassetid://116853125392813",
+        "normal": "rbxassetid://131023733106403",
+        "roughness": "rbxassetid://99877885379174"
+      }
+    },
+    "SBar_CreamWallTiles": {
+      "source": "polyhaven:long_white_tiles",
+      "url": "https://polyhaven.com/a/long_white_tiles",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_long_white_tiles",
+      "ids": {
+        "color": "rbxassetid://87087652044414",
+        "normal": "rbxassetid://78705441173025",
+        "roughness": "rbxassetid://136168219104020"
+      }
+    },
+    "SBar_BlackMarble": {
+      "source": "ambientcg:Marble006",
+      "url": "https://ambientcg.com/view?id=Marble006",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Marble006",
+      "ids": {
+        "color": "rbxassetid://134658265297491",
+        "normal": "rbxassetid://81687991928406",
+        "roughness": "rbxassetid://85154963086209"
+      }
+    },
+    "SBar_DarkPlanks": {
+      "source": "ambientcg:Planks037A",
+      "url": "https://ambientcg.com/view?id=Planks037A",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Planks037A",
+      "ids": {
+        "color": "rbxassetid://78285911641083",
+        "normal": "rbxassetid://77687587802341",
+        "roughness": "rbxassetid://134955031392788"
+      }
+    }
+  },
+  "models": {
+    "SBarProps_01": {
+      "about": "Supplement bar products (CENTRAL), shaker and bar stool. Made by art/scripts/build_sbar_props_01.py (art/blender/SBarProps_01.blend).",
+      "file": "art/exports/SBarProps_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://126463004640141"
+      }
+    },
+    "SBarPlant_01": {
+      "about": "Potted plant. Poly Haven potted_plant_02, simplified by art/scripts/prep_sbar_plant.py.",
+      "source": "polyhaven:potted_plant_02",
+      "url": "https://polyhaven.com/a/potted_plant_02",
+      "license": "CC0 1.0",
+      "file": "art/exports/SBarPlant_01.glb",
+      "ids": {
+        "model": "rbxassetid://72818612497691"
+      }
+    }
+  }
+}

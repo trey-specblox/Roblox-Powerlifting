@@ -946,6 +946,20 @@ Comp max testing
 >     steak "+%" boosts is **[TBD]**.
 >   - **Look:** real CC0 textures and models through the downloaded kits,
 >     uploaded under the game's group, so rooms are not bland.
+>   - **Supplement Bar look** (user-approved 2026-10-25, the first room
+>     remade with the kits): dark wood floor, cream tile feature wall, black
+>     marble counter and tables, dark plank slats, charcoal side walls, a red
+>     neon "SUPPLEMENT BAR" sign, menu screens, pendant lamps, modern bar
+>     stools, two leafy potted plants, and walls of CENTRAL products.
+>   - **Variety, not just red and black** (user, 2026-10-25, with photos of
+>     real supplement walls): props come in many shapes and colours. The
+>     CENTRAL products are seven lines, each with its own shape and colours,
+>     shown in rows of one product like a real store: Whey Protein (round
+>     tub; red/black and white/black), Isolate (square tub; white and blue),
+>     Mass Gainer (tall jug; black and yellow), Pre-Workout (small jar;
+>     green, and purple), Creatine (smaller jar; silver/white), BCAA
+>     (capsule bottle; white and orange), shakers in six colours. Every
+>     label still says CENTRAL.
 > - **Gear brand: "CENTRAL"** (user, 2026-10-23). Every logo box or badge
 >   on in-game gear carries the word CENTRAL; never an empty box. Real
 >   brands (SBD, Inzer) are not copied onto items. The shop's sign uses the

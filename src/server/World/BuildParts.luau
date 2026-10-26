@@ -25,6 +25,9 @@ function BuildParts.placed(parent: Instance, name: string, size: Vector3, cframe
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Material = look.material
+	if look.variant then
+		part.MaterialVariant = look.variant -- a textured material (StarterGymConfig.MaterialVariants)
+	end
 	part.Color = look.color
 	part.Transparency = look.transparency or 0
 	part.Reflectance = look.reflectance or 0
