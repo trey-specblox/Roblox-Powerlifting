@@ -454,10 +454,11 @@ local function run()
 		end
 	end
 
-	-- Real wooden swing doors (the sauna, 2026-10-23; double doors 2026-10-25):
-	-- tagged, a sensor, SwingDoorLeaves solid panels hinged at their pivots;
-	-- turned to their OpenPivots, they leave the middle of the door gap clear.
-	for _, roomName in ipairs(gym.SwingDoorRooms) do
+	-- Real swing doors (the sauna, 2026-10-23; double doors and the lockers'
+	-- door 2026-10-25): tagged, a sensor, the spec's number of solid panels
+	-- hinged at their pivots; turned to their OpenPivots, they leave the middle
+	-- of the door gap clear.
+	for roomName, spec in pairs(gym.SwingDoors) do
 		local door = doorsFolder and doorsFolder:FindFirstChild(roomName .. "Door")
 		local panels = {}
 		if door then
@@ -469,8 +470,8 @@ local function run()
 		end
 		local sensor = door and door:FindFirstChild("Sensor")
 		local room = folders.Rooms:FindFirstChild("Room_" .. roomName)
-		local fine, problem = false, string.format("missing door, sensor or room, or not %d panels", gym.SwingDoorLeaves)
-		if door and door:HasTag(gym.AutoDoorTag) and #panels == gym.SwingDoorLeaves and sensor and sensor:IsA("BasePart")
+		local fine, problem = false, string.format("missing door, sensor or room, or not %d panels", spec.leaves)
+		if door and door:HasTag(gym.AutoDoorTag) and #panels == spec.leaves and sensor and sensor:IsA("BasePart")
 			and not sensor.CanCollide and room then
 			local centre, alongX = room:GetAttribute("DoorCentre"), room:GetAttribute("DoorAlongX")
 			if typeof(centre) ~= "Vector3" then
@@ -517,8 +518,24 @@ local function run()
 					else "open door still in the gap: " .. table.concat(blocking, ", ")
 			end
 		end
-		check(fine, string.format("Doors.%sDoor: %d solid wooden door leaf(s) that swing clear of the doorway%s", roomName,
-			gym.SwingDoorLeaves, if fine then "" else " (" .. problem .. ")"))
+		check(fine, string.format("Doors.%sDoor: %d solid door leaf(s) that swing clear of the doorway%s", roomName,
+			spec.leaves, if fine then "" else " (" .. problem .. ")"))
+	end
+	-- Private rooms (the lockers, user 2026-10-25): a painted wall onto the hall,
+	-- no glass, and a door that closes.
+	for roomName in pairs(gym.PrivateRooms) do
+		local pieces, seeThrough = 0, 0
+		for _, part in ipairs(folders.Walls:GetChildren()) do
+			if part:IsA("BasePart") and string.find(part.Name, "FrontBlock_Ground_" .. roomName .. "_", 1, true) then
+				pieces += 1
+				if part.Transparency > 0 or string.sub(part.Name, 1, 6) == "Glass_" then
+					seeThrough += 1
+				end
+			end
+		end
+		check(pieces > 0 and seeThrough == 0 and gym.SwingDoors[roomName] ~= nil, string.format(
+			"%s is private: a solid wall onto the hall (%d pieces, %d see-through) and a door that closes", roomName, pieces,
+			seeThrough))
 	end
 
 	-- Stage 5: lighting. The Lighting service (set by Rojo from default.project.json).

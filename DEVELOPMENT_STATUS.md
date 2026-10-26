@@ -2,9 +2,9 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-25
-(Starter Gym step 6: shop gear and the upstairs sauna Studio-tested and
-approved; room purposes approved; kits, Python and an upload key set up;
-newest entries at the end of the CURRENT MILESTONE block).
+(Starter Gym step 6: Lockers, Cafe and Staff Room remade with the kits and
+approved; the Lockers made private with a solid wall and door; newest entries
+at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -842,8 +842,62 @@ and polish.
     materials check); screenshots approved by the user.
   - Process notes: take MCP screenshots one at a time (parallel ones mix
     up); the game window must be visible or captures come out white.
-  NEXT ACTION: the next 2-3 rooms with the same pipeline (textures and props
-  previewed first, variety in colours), per the approved room purposes.
+  LOCKERS, CAFE AND STAFF ROOM REMADE WITH THE KITS (2026-10-25, user-approved
+  in Studio screenshots; GAME_DESIGN §27 "Lockers look", "Private Lockers",
+  "Cafe look", "Staff Room look"):
+  - Textures: 10 CC0 materials picked by the user from a preview board
+    (Lockers: ambientCG Tiles108 floor, Poly Haven oak_veneer_02 slats,
+    ambientCG Tiles126 penny tiles; Cafe: Poly Haven herringbone_parquet,
+    red_brick_03, ambientCG Tiles032 green tiles, Marble021; Staff Room: Poly
+    Haven laminate_floor_03, ambientCG Wood049 worktop, Cork002; the Supplement
+    Bar's cream tiles reused as splashback). 30 group-owned images; ids in
+    `art/materials/materials.json`; MaterialVariants in `default.project.json`
+    and `StarterGymConfig.MaterialVariants` (14 now). Rojo picked the new
+    variants up without a reconnect this time.
+  - Props: `art/scripts/build_room_props_02.py` (Blender, shared helpers in the
+    new `art/scripts/prop_helpers.py`; `art/blender/RoomProps_02.blend` has a
+    Preview collection) makes 25 items (lockers, bench, gym bag, bottle, round
+    mirror, basin, curtain; espresso machine, grinder, takeaway cup, mug,
+    pastry case, donut, muffin, croissant, shell chair, booth, pendant lamp,
+    coffee bag; sofa, microwave, kettle, water cooler, retro fridge, staff tee),
+    ~22.6k triangles, CENTRAL on every label. Previewed in all colourways and
+    approved, exported `art/exports/RoomProps_02.glb`, uploaded as group Model
+    asset 93719454817045.
+  - Config: the Supplement Bar's prop settings are now general:
+    `StarterGymConfig.PropAssets` (all 3 model assets; `whole` for the plant),
+    `PropPaints` (paint name -> colour/material/reflectance/transparency),
+    `PropFabricPieces`, `PropColourways` (per item, piece -> paint; the SBar
+    lines converted from the old arrays, same colours). `CornerGround.Right`
+    renamed "Kitchen" -> "StaffRoom". New Looks for the three rooms.
+  - `RoomProps`: general prop helpers (`loadPropTemplates`, `propsFor`,
+    `propItem`, `productRows`, `pendant`, `roundTable`, `neonSign`, `plaque`,
+    `clad` = wall covering with doorway holes, `hidden` solid blockers; Kit now
+    knows where the doors in each wall are). The Supplement Bar uses them
+    (same layout). New FURNISH.Lockers / Cafe / StaffRoom; the old part-built
+    rooms stay as fallbacks (`simpleLockers`, `simpleCafe`, `simpleStaffRoom`)
+    when the props do not load. Fix found in Studio: lockers stood 0.02 out of
+    the wall (handles make them deeper), moved out.
+  - PRIVATE LOCKERS (user: a locker room must not be seen into and needs a
+    door): `StarterGymConfig.SwingDoors` replaces SwingDoorRooms/Leaves/sizes
+    (per room: Sauna = double wooden doors with windows as before; Lockers =
+    one solid oak door, black frame); `PrivateRooms = { Lockers = "LOCKER
+    ROOM" }`. `StarterGymBuilder`: the front block's ground glass is built per
+    room; a private room's stretch is a painted wall, and its hall side gets
+    oak slats with battens and a big glowing sign over the door
+    (`privateFront`, decor only). `StarterGym_VerifyShell`: checks every swing
+    door from its spec and that private rooms have no see-through wall.
+  - Checks by Claude: luau-lsp 0 errors in the changed files, `rojo build` OK,
+    `git diff --check` clean. Studio by Claude via the MCP (Play, cloud place):
+    13 rooms furnished, no [RoomProps]/[StarterGymBuilder] warnings; Lockers
+    121 / Cafe 242 / Staff Room 70 MeshParts; the Lockers door opened at 90
+    degrees with the character in front and closed after it left;
+    StarterGym_VerifyShell ALL 52 CHECKS PASSED (pasted in full, returning its
+    lines). Screenshots approved by the user.
+  - Still for the user: SAVE/PUBLISH the cloud place once so the new
+    MaterialVariants (and the Supplement Bar's) reach the live game.
+  NEXT ACTION: the next batch of 2-3 rooms with the same pipeline (textures and
+  props previewed first, variety in colours), per the approved room purposes.
+  Reuse PropAssets/propItem/clad; add a new model asset per batch.
   OLD NEXT ACTION (done 2026-10-23, stage 5 above): lighting (Lighting.Ambient is black; the other rooms still
   show the upper floor's tiles as their ceiling). Old steps (a)-(d): done;
   (b) reconnect Rojo, run StarterGym_VerifyShell (expect ALL ... CHECKS
@@ -1052,6 +1106,15 @@ Deliberately left uncommitted (keep, never discard):
   referenced by GAME_DESIGN.md and the build scripts. COMMITTED and pushed
   2026-10-19 with user approval as "Add the Visual Style reference note"
   (`git log` for the hash). Its two image embeds stay local (above).
+
+Lockers, Cafe and Staff Room remade with the kits + private Lockers (Studio-tested and user-approved 2026-10-25; COMMITTED and pushed 2026-10-25 with user approval as "Remake the Lockers, Cafe and Staff Room with CC0 textures and CENTRAL props; make the Lockers private"; `git log` for the hash):
+- New: `art/scripts/prop_helpers.py`, `art/scripts/build_room_props_02.py`,
+  `art/blender/RoomProps_02.blend`, `art/exports/RoomProps_02.glb`.
+- Changed: `art/materials/materials.json`, `default.project.json`,
+  `src/server/World/RoomProps.luau`, `src/server/World/StarterGymBuilder.luau`,
+  `src/shared/Config/StarterGymConfig.luau`, `tools/studio/StarterGym_VerifyShell.luau`,
+  `GAME_DESIGN.md`, `DEVELOPMENT_STATUS.md`.
+- Keep OUT: the same unrelated files as above.
 
 Supplement Bar remade with the kits (Studio-tested 2026-10-25; COMMITTED and pushed 2026-10-25 with user approval as "Remake the Supplement Bar with CC0 textures and CENTRAL product models"; `git log` for the hash):
 - New: `art/scripts/upload_group_images.py`, `art/materials/materials.json`,

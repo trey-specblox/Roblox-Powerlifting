@@ -896,18 +896,20 @@ local function autoDoor(parent: Instance, name: string, centreX: number, floorY:
 end
 
 --[[
-	Real wooden swing doors in a room's doorway (StarterGymConfig
-	SwingDoorRooms; user 2026-10-23: the sauna must not have an open door;
-	2026-10-25: bigger, double doors). A wooden frame fills the rest of the
-	doorway, through the wall and the room's 0.55 inset up to its inside wall
-	boards. Each door leaf (a wooden panel with a window) hangs on its outer
-	edge; the client's AutoDoorAnimator swings the leaves into the room (each
-	panel model from ClosedPivot to OpenPivot, both at its hinge) when someone
-	is near.
+	Real swing doors in a room's doorway (StarterGymConfig.SwingDoors; user
+	2026-10-23: the sauna must not have an open door; 2026-10-25: bigger,
+	double doors; the lockers: a solid door, nobody sees in). A frame fills the
+	rest of the doorway, through the wall and the room's 0.55 inset up to its
+	inside wall boards. Each door leaf (a panel, with a window if the spec says
+	so) hangs on its outer edge; the client's AutoDoorAnimator swings the
+	leaves into the room (each panel model from ClosedPivot to OpenPivot, both
+	at its hinge) when someone is near.
 ]]
-local function swingDoor(parent: Instance, room: BasePart)
+local function swingDoor(parent: Instance, room: BasePart, spec: StarterGymConfig.SwingDoorSpec)
 	local cfg = StarterGymConfig
 	local looks = cfg.Looks
+	local leafLook, frameLook, handleLook = looks[spec.look], looks[spec.frame], looks[spec.handle]
+	assert(leafLook and frameLook and handleLook, room.Name .. ": SwingDoors names a look that does not exist")
 	local centre = room:GetAttribute("DoorCentre") :: Vector3
 	local alongX = room:GetAttribute("DoorAlongX") :: boolean
 	local inward = if alongX
@@ -916,8 +918,8 @@ local function swingDoor(parent: Instance, room: BasePart)
 	local along = if alongX then Vector3.xAxis else Vector3.zAxis -- across the doorway
 	local floorY = room.Position.Y - room.Size.Y / 2
 	local t = cfg.WallThicknessStuds
-	local openingHalf, openingHeight = cfg.SwingDoorOpeningWidthStuds / 2, cfg.SwingDoorOpeningHeightStuds
-	local doorHalf, doorHeight = cfg.SwingDoorWidthStuds / 2, cfg.SwingDoorHeightStuds
+	local openingHalf, openingHeight = spec.openingWidth / 2, spec.openingHeight
+	local doorHalf, doorHeight = spec.width / 2, spec.height
 	-- Depth from the hall-side face of the wall through to the room's inside boards.
 	local hallFace, roomFace = -t / 2, t / 2 + 0.55
 	local wallLine = Vector3.new(centre.X, floorY, centre.Z)
@@ -934,9 +936,9 @@ local function swingDoor(parent: Instance, room: BasePart)
 	door.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	door.Parent = parent
 	-- The frame filling the doorway around the door.
-	slab(door, "Frame_Jamb_1", -openingHalf, -doorHalf, hallFace, roomFace, 0, openingHeight, looks.SaunaWood)
-	slab(door, "Frame_Jamb_2", doorHalf, openingHalf, hallFace, roomFace, 0, openingHeight, looks.SaunaWood)
-	slab(door, "Frame_Header", -doorHalf, doorHalf, hallFace, roomFace, doorHeight, openingHeight, looks.SaunaWood)
+	slab(door, "Frame_Jamb_1", -openingHalf, -doorHalf, hallFace, roomFace, 0, openingHeight, frameLook)
+	slab(door, "Frame_Jamb_2", doorHalf, openingHalf, hallFace, roomFace, 0, openingHeight, frameLook)
+	slab(door, "Frame_Header", -doorHalf, doorHalf, hallFace, roomFace, doorHeight, openingHeight, frameLook)
 	-- A plaque on the hall side of the header.
 	local plaque = decor(slab(door, "Plaque", -1.2, 1.2, hallFace - 0.05, hallFace, doorHeight + 0.15, doorHeight + 0.85,
 		looks.SignPanel))
@@ -960,10 +962,10 @@ local function swingDoor(parent: Instance, room: BasePart)
 	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
 	label.Parent = gui
 
-	-- The leaves: wooden panels with a window, each hinged on its outer edge
-	-- (a single door: on its first edge). `hingeU` is the hinge edge across the
-	-- doorway, `latchU` the edge that swings.
-	local leaves = cfg.SwingDoorLeaves
+	-- The leaves: panels (with a window if the spec says so), each hinged on its
+	-- outer edge (a single door: on its first edge). `hingeU` is the hinge edge
+	-- across the doorway, `latchU` the edge that swings.
+	local leaves = spec.leaves
 	local leafWidth = 2 * doorHalf / leaves
 	local d0, d1 = -0.125, 0.125
 	local y0, y1 = 0.05, doorHeight - 0.02
@@ -979,16 +981,19 @@ local function swingDoor(parent: Instance, room: BasePart)
 			hingeU, latchU = right, left
 		end
 		local inwardU = math.sign(latchU - hingeU) -- from the hinge toward the latch edge
-		slab(panel, "Stile_Hinge", hingeU, hingeU + inwardU * 0.6, d0, d1, y0, y1, looks.SaunaWood)
-		slab(panel, "Stile_Latch", latchU - inwardU * 0.6, latchU, d0, d1, y0, y1, looks.SaunaWood)
-		slab(panel, "Rail_Bottom", left + 0.6, right - 0.6, d0, d1, y0, windowLow, looks.SaunaWood)
-		slab(panel, "Rail_Top", left + 0.6, right - 0.6, d0, d1, windowHigh, y1, looks.SaunaWood)
-		slab(panel, "Window", left + 0.6, right - 0.6, -0.04, 0.04, windowLow, windowHigh, looks.SaunaGlass)
+		slab(panel, "Stile_Hinge", hingeU, hingeU + inwardU * 0.6, d0, d1, y0, y1, leafLook)
+		slab(panel, "Stile_Latch", latchU - inwardU * 0.6, latchU, d0, d1, y0, y1, leafLook)
+		if spec.window then
+			slab(panel, "Rail_Bottom", left + 0.6, right - 0.6, d0, d1, y0, windowLow, leafLook)
+			slab(panel, "Rail_Top", left + 0.6, right - 0.6, d0, d1, windowHigh, y1, leafLook)
+			slab(panel, "Window", left + 0.6, right - 0.6, -0.04, 0.04, windowLow, windowHigh, looks.SaunaGlass)
+		else
+			slab(panel, "Middle", left + 0.6, right - 0.6, d0, d1, y0, y1, leafLook)
+		end
 		for index, side in ipairs({ -1, 1 }) do
 			local v = side * 0.125
 			local handleU = latchU - inwardU * 0.375
-			decor(slab(panel, "Handle_" .. index, handleU - 0.075, handleU + 0.075, v, v + side * 0.3, 3, 5,
-				looks.SaunaBench))
+			decor(slab(panel, "Handle_" .. index, handleU - 0.075, handleU + 0.075, v, v + side * 0.3, 3, 5, handleLook))
 		end
 		-- The hinge: the room-side corner of the hinge edge. The open angle turns
 		-- the leaf's width (from the hinge toward the latch) to point into the room.
@@ -1012,6 +1017,62 @@ local function swingDoor(parent: Instance, room: BasePart)
 	door:AddTag(cfg.AutoDoorTag)
 end
 
+--[[
+	The hall side of a private room's solid front (the lockers, user
+	2026-10-25: "less plain"): oak slats with vertical battens from the floor to
+	the balcony's soffit, a hole for the doorway, and a big sign with the room's
+	name in glowing letters above the door. Decoration only (not solid), on the
+	wall's hall face at `faceZ`, from x0 to x1; `outward` is +1 or -1 in Z.
+]]
+local function privateFront(parent: Instance, name: string, label: string, x0: number, x1: number, faceZ: number,
+	outward: number, y0: number, y1: number, opening: Opening)
+	local cfg = StarterGymConfig
+	local looks = cfg.Looks
+	local function slab(part: string, a: number, b: number, t0: number, t1: number, low: number, high: number,
+		look: StarterGymConfig.Look): BasePart
+		local za, zb = faceZ + outward * t0, faceZ + outward * t1
+		return decor(box(parent, name .. "_" .. part, Vector3.new(a, low, math.min(za, zb)),
+			Vector3.new(b, high, math.max(za, zb)), look))
+	end
+	local holeA, holeB = opening.centre - opening.width / 2, opening.centre + opening.width / 2
+	local holeTop = opening.bottom + opening.height + 0.7 -- clear of the door's own name plaque
+	-- The slats, around the doorway.
+	slab("Slats_1", x0, holeA, 0, 0.08, y0, y1, looks.LockersSlats)
+	slab("Slats_2", holeB, x1, 0, 0.08, y0, y1, looks.LockersSlats)
+	slab("Slats_OverDoor", holeA, holeB, 0, 0.08, holeTop, y1, looks.LockersSlats)
+	local batten, x = 0, x0 + 0.6
+	while x + 0.15 <= x1 do
+		batten += 1
+		local low = if x + 0.15 > holeA and x - 0.15 < holeB then holeTop else y0
+		slab("Batten_" .. batten, x - 0.15, x + 0.15, 0.08, 0.3, low, y1, looks.LockersSlats)
+		x += 1.2
+	end
+	-- The sign: glowing letters on a dark panel over a glowing underline.
+	local signHalf = math.min(9, (x1 - x0) / 2 - 1)
+	local top = y1 - 0.4
+	local panel = slab("Sign", opening.centre - signHalf, opening.centre + signHalf, 0.3, 0.4, top - 2.4, top,
+		looks.SignPanel)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = if outward > 0 then Enum.NormalId.Back else Enum.NormalId.Front
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0
+	gui.Parent = panel
+	local letters = Instance.new("TextLabel")
+	letters.AnchorPoint = Vector2.new(0.5, 0.5)
+	letters.Position = UDim2.fromScale(0.5, 0.45)
+	letters.Size = UDim2.fromScale(0.9, 0.7)
+	letters.BackgroundTransparency = 1
+	letters.Text = label
+	letters.TextScaled = true
+	letters.TextColor3 = cfg.SignTextColor
+	letters.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	letters.Parent = gui
+	local line = slab("Sign_Glow", opening.centre - signHalf + 1, opening.centre + signHalf - 1, 0.4, 0.45, top - 2.15,
+		top - 2, looks.GlowWhite)
+	surfaceLight(line, Enum.NormalId.Bottom, 8, 0.6, 120)
+end
+
 local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
 	local cfg = StarterGymConfig
 	local doors = Instance.new("Folder")
@@ -1023,12 +1084,12 @@ local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
 	-- The wide opening into the hall: on the lobby side (-Z) of the front block's glass.
 	autoDoor(doors, "HallDoor", plan.centreX, plan.floorY, plan.hallFrontZ - cfg.WallThicknessStuds, -1,
 		cfg.LobbyOpeningWidthStuds, cfg.LobbyOpeningHeightStuds, cfg.HallDoorPanelsPerSide)
-	-- Real wooden doors in some rooms' doorways (the sauna).
+	-- Real swing doors in some rooms' doorways (the sauna, the lockers).
 	local rooms = model:FindFirstChild("Rooms") :: Folder
-	for _, name in ipairs(cfg.SwingDoorRooms) do
+	for name, spec in pairs(cfg.SwingDoors) do
 		local room = rooms:FindFirstChild("Room_" .. name)
-		assert(room and room:IsA("BasePart"), "SwingDoorRooms: no room named " .. name)
-		swingDoor(doors, room)
+		assert(room and room:IsA("BasePart"), "SwingDoors: no room named " .. name)
+		swingDoor(doors, room, spec)
 	end
 end
 
@@ -1146,11 +1207,11 @@ local function buildGym(model: Model): string
 	local function door(centre: number, bottom: number): Opening
 		return { centre = centre, width = doorWidth, height = doorHeight, bottom = bottom }
 	end
-	-- A room's doorway: bigger where the room gets wooden swing doors (the sauna).
+	-- A room's doorway: sized for its swing doors where it has them (the sauna, the lockers).
 	local function doorFor(roomName: string, centre: number, bottom: number): Opening
-		if table.find(cfg.SwingDoorRooms, roomName) then
-			return { centre = centre, width = cfg.SwingDoorOpeningWidthStuds, height = cfg.SwingDoorOpeningHeightStuds,
-				bottom = bottom }
+		local spec = cfg.SwingDoors[roomName]
+		if spec then
+			return { centre = centre, width = spec.openingWidth, height = spec.openingHeight, bottom = bottom }
 		end
 		return door(centre, bottom)
 	end
@@ -1255,9 +1316,9 @@ local function buildGym(model: Model): string
 		{ name = frontGround[3], x0 = cx - hallHalf, x1 = cx - lobbyHalf },
 	}
 	local frontGroundOpenings: { Opening } = {
-		door(lockersCentre, floorY),
+		doorFor(frontGround[1], lockersCentre, floorY),
 		{ centre = cx, width = cfg.LobbyOpeningWidthStuds, height = cfg.LobbyOpeningHeightStuds, bottom = floorY },
-		door(2 * cx - lockersCentre, floorY),
+		doorFor(frontGround[3], 2 * cx - lockersCentre, floorY),
 	}
 	-- Each room's door is in the middle of its stretch of glass (the lobby's is its wide opening).
 	for _, span in ipairs(groundSpans) do
@@ -1281,9 +1342,27 @@ local function buildGym(model: Model): string
 				upperY, roofSlabBottom, "Paint", {})
 		end
 	end
-	-- The glass front onto the hall (it also closes the corners where the side glass meets it).
+	-- The glass front onto the hall (it also closes the corners where the side
+	-- glass meets it). A private room's stretch is a painted wall instead
+	-- (StarterGymConfig.PrivateRooms: the lockers).
 	local glassMinX, glassMaxX = cx - hallHalf - t, cx + hallHalf + t
-	wall(walls, "Glass_FrontBlock_Ground", true, frontGlassLine, glassMinX, glassMaxX, 0, upperSlabBottom, "Glass", frontGroundOpenings)
+	local frontStretches = {
+		{ name = frontGround[1], x0 = cx + lobbyHalf, x1 = glassMaxX, opening = frontGroundOpenings[1] },
+		{ name = frontGround[2], x0 = cx - lobbyHalf, x1 = cx + lobbyHalf, opening = frontGroundOpenings[2] },
+		{ name = frontGround[3], x0 = glassMinX, x1 = cx - lobbyHalf, opening = frontGroundOpenings[3] },
+	}
+	for _, stretch in ipairs(frontStretches) do
+		local sign = cfg.PrivateRooms[stretch.name]
+		local private = sign ~= nil
+		wall(walls, (if private then "Wall_FrontBlock_Ground_" else "Glass_FrontBlock_Ground_") .. stretch.name, true,
+			frontGlassLine, stretch.x0, stretch.x1, 0, upperSlabBottom, if private then "Paint" else "Glass", { stretch.opening })
+		if private then
+			-- Its hall side: from the lobby glass to the hall's side, under the balcony.
+			privateFront(walls, "HallFront_" .. stretch.name, sign :: string, math.max(stretch.x0, cx - hallHalf) + 0.05,
+				math.min(stretch.x1, cx + hallHalf) - 0.05, hallFrontZ, 1, floorY, upperSlabBottom - cfg.CeilingThicknessStuds,
+				stretch.opening)
+		end
+	end
 	wall(walls, "Wall_FrontBlock_SlabEdge", true, frontGlassLine, glassMinX, glassMaxX, upperSlabBottom, upperY, "Paint", {})
 	wall(walls, "Glass_FrontBlock_Upper", true, frontGlassLine, glassMinX, glassMaxX, upperY, roofSlabBottom, "Glass", upperOpenings)
 	wall(walls, "Wall_FrontBlock_RoofEdge", true, frontGlassLine, glassMinX, glassMaxX, roofSlabBottom, roofY, "Paint", {})

@@ -141,6 +141,106 @@
           "NormalMap": "rbxassetid://77687587802341",
           "RoughnessMap": "rbxassetid://134955031392788"
         }
+      },
+      "Lockers_DarkGridTiles": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "StudsPerTile": 14,
+          "ColorMap": "rbxassetid://82594454999235",
+          "NormalMap": "rbxassetid://101853108914550",
+          "RoughnessMap": "rbxassetid://74507281506922"
+        }
+      },
+      "Lockers_OakSlats": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Wood",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://89603927198995",
+          "NormalMap": "rbxassetid://128274853236069",
+          "RoughnessMap": "rbxassetid://87590195110822"
+        }
+      },
+      "Lockers_GreenPennyTiles": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://87108536379404",
+          "NormalMap": "rbxassetid://85589153419592",
+          "RoughnessMap": "rbxassetid://110819419280798"
+        }
+      },
+      "Cafe_Herringbone": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "WoodPlanks",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://117332819213723",
+          "NormalMap": "rbxassetid://90927464344679",
+          "RoughnessMap": "rbxassetid://131534083397873"
+        }
+      },
+      "Cafe_RedBrick": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Brick",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://117468038485514",
+          "NormalMap": "rbxassetid://102691661534276",
+          "RoughnessMap": "rbxassetid://86141807694480"
+        }
+      },
+      "Cafe_GreenTiles": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "StudsPerTile": 5,
+          "ColorMap": "rbxassetid://124067811087466",
+          "NormalMap": "rbxassetid://91163032168998",
+          "RoughnessMap": "rbxassetid://105784961345502"
+        }
+      },
+      "Cafe_WhiteMarble": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Marble",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://112174899086953",
+          "NormalMap": "rbxassetid://98757688022461",
+          "RoughnessMap": "rbxassetid://79859733110735"
+        }
+      },
+      "Staff_Laminate": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "WoodPlanks",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://71311120498653",
+          "NormalMap": "rbxassetid://104370922500764",
+          "RoughnessMap": "rbxassetid://74679013768559"
+        }
+      },
+      "Staff_WoodWorktop": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Wood",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://121763820794578",
+          "NormalMap": "rbxassetid://111180060671694",
+          "RoughnessMap": "rbxassetid://104817297102607"
+        }
+      },
+      "Staff_Cork": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Cardboard",
+          "StudsPerTile": 6,
+          "ColorMap": "rbxassetid://116250822379910",
+          "NormalMap": "rbxassetid://138250345893095",
+          "RoughnessMap": "rbxassetid://108333057618621"
+        }
       }
     }
   }

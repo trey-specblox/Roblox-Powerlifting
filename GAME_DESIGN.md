@@ -831,7 +831,8 @@ Comp max testing
 > - **Two floors of rooms on three sides** of the hall (left, right and
 >   front), not all on one side: "plenty of rooms scattered across the gym",
 >   like Academia 2.0. Every room has a **glass front** onto the hall (bright
->   rooms, and you can see the gym). About 21 rooms. They are **decoration
+>   rooms, and you can see the gym), **except the Lockers** (user,
+>   2026-10-25, see "Private Lockers" below). About 21 rooms. They are **decoration
 >   only for now**; the user plans to put **plenty of NPCs** in them later
 >   (no NPC design yet). Room names are placeholders until then.
 > - **Upstairs:** reached by **two open staircases in the rack hall's two
@@ -960,6 +961,38 @@ Comp max testing
 >     green, and purple), Creatine (smaller jar; silver/white), BCAA
 >     (capsule bottle; white and orange), shakers in six colours. Every
 >     label still says CENTRAL.
+>   - **Lockers look** (user-approved 2026-10-25, textures picked from a
+>     preview sheet, props from Blender previews): dark grid-tile floor;
+>     sixteen lockers in four colours (navy, sage, oak, light grey) against an
+>     oak slatted wall with a "LOCKER ROOM" sign; oak benches with CENTRAL gym
+>     bags (five colourways) and bottles; a vanity with three basins under
+>     round glowing mirrors on a green penny-tile wall; two changing cubicles
+>     with coloured curtains (teal, mustard; where outfits will be changed
+>     later); towels by the Showers door.
+>   - **Private Lockers** (user, 2026-10-25: a locker room / bathroom must
+>     not be seen into and must have a door): the Lockers have a **solid
+>     wall** onto the hall instead of glass and a **single solid oak door**
+>     (no window) that swings open when someone comes near and closes after.
+>     The hall side of that wall has oak slats with battens and a big glowing
+>     "LOCKER ROOM" sign over the door. The Showers stay reachable only
+>     through the Lockers.
+>   - **Cafe look** (user-approved 2026-10-25): herringbone wood floor, red
+>     brick back wall, cream side walls; a back bar and serving counter in
+>     dark green tiles with white marble tops; two espresso machines (silver,
+>     mint), grinders, shelves of CENTRAL COFFEE bags in four colours, a
+>     menu board and a warm neon "CAFE" sign; a glass pastry case of donuts,
+>     muffins and croissants; takeaway cups and mugs in many colours; two
+>     booths (green, terracotta), round marble tables, shell chairs in
+>     mustard, teal, terracotta and white, pendant lamps in four colours; a
+>     window bar with stools looking out at the gym; a "STAFF ONLY" sign over
+>     the Staff Room door.
+>   - **Staff Room look** (user-approved 2026-10-25; the old Kitchen corner
+>     room, renamed): laminate floor and a dusty blue accent wall; a
+>     kitchenette with sage units, a wooden worktop, a cream tile
+>     splashback, sink, kettle, microwave and mugs; a retro mint fridge and
+>     a water cooler; a table with six chairs; a mustard sofa facing a wall
+>     TV with staff notices; four staff lockers under a cork "STAFF ROTA"
+>     board; a rail of CENTRAL STAFF tees (black, red, navy).
 > - **Gear brand: "CENTRAL"** (user, 2026-10-23). Every logo box or badge
 >   on in-game gear carries the word CENTRAL; never an empty box. Real
 >   brands (SBD, Inzer) are not copied onto items. The shop's sign uses the

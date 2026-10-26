@@ -62,6 +62,8 @@ type Kit = {
 	wall: (which: string) -> Wall, -- "back", "front" (the door's wall), "left" (a = -W/2) or "right" (a = W/2)
 	-- The world direction of "+d", "-d" (toward the door), "+a" or "-a".
 	toward: (direction: string) -> Vector3,
+	-- Where the doors in each wall are, along it (its `s`): "front", "back", "left", "right".
+	doors: { [string]: { number } },
 	-- A copy of a model template (decor), its pivot at (a, d, y), its front
 	-- (the pivot's LookVector) toward `facing`. It must stay inside the room.
 	place: (name: string, template: Model, a: number, d: number, y: number, facing: string) -> Model,
@@ -103,6 +105,7 @@ local function kitFor(folder: Folder, room: BasePart, doorSpots: { Vector3 }): K
 	-- Keep-clear zones in front of every door into this room (its own, and a
 	-- neighbour's door in one of its walls), on the nearest wall.
 	local zones: { Zone } = {}
+	local doors: { [string]: { number } } = { front = {}, back = {}, left = {}, right = {} }
 	for _, spot in ipairs(doorSpots) do
 		if spot.X >= low.X - 0.7 and spot.X <= high.X + 0.7 and spot.Z >= low.Z - 0.7 and spot.Z <= high.Z + 0.7
 			and spot.Y > low.Y and spot.Y < high.Y then
@@ -111,12 +114,16 @@ local function kitFor(folder: Folder, room: BasePart, doorSpots: { Vector3 }): K
 			local nearest = math.min(toFront, toBack, toLeft, toRight)
 			if nearest == toFront then
 				table.insert(zones, { a0 = a - DOOR_HALF_CLEAR, a1 = a + DOOR_HALF_CLEAR, d0 = 0, d1 = DOOR_DEPTH_CLEAR })
+				table.insert(doors.front, a)
 			elseif nearest == toBack then
 				table.insert(zones, { a0 = a - DOOR_HALF_CLEAR, a1 = a + DOOR_HALF_CLEAR, d0 = D - DOOR_DEPTH_CLEAR, d1 = D })
+				table.insert(doors.back, a)
 			elseif nearest == toLeft then
 				table.insert(zones, { a0 = -W / 2, a1 = -W / 2 + DOOR_DEPTH_CLEAR, d0 = d - DOOR_HALF_CLEAR, d1 = d + DOOR_HALF_CLEAR })
+				table.insert(doors.left, d)
 			else
 				table.insert(zones, { a0 = W / 2 - DOOR_DEPTH_CLEAR, a1 = W / 2, d0 = d - DOOR_HALF_CLEAR, d1 = d + DOOR_HALF_CLEAR })
+				table.insert(doors.right, d)
 			end
 		end
 	end
@@ -150,7 +157,7 @@ local function kitFor(folder: Folder, room: BasePart, doorSpots: { Vector3 }): K
 	end
 
 	local kit = {} :: Kit
-	kit.W, kit.D, kit.H, kit.doorA = W, D, H, doorA
+	kit.W, kit.D, kit.H, kit.doorA, kit.doors = W, D, H, doorA, doors
 	kit.block = function(name, a0, a1, d0, d1, y0, y1, look)
 		return make(name, a0, a1, d0, d1, y0, y1, look, true)
 	end
@@ -478,11 +485,250 @@ local function plateStack(kit: Kit, name: string, a: number, d: number, plates: 
 	end
 end
 
+-- A warm light (sauna, mirrors): a PointLight in `part`.
+local function warmGlow(part: BasePart, range: number, brightness: number)
+	local glow = Instance.new("PointLight")
+	glow.Color = looks.GlowWarm.color
+	glow.Range = range
+	glow.Brightness = brightness
+	glow.Shadows = false
+	glow.Parent = part
+end
+
+-- A solid piece nobody sees: it stops players walking through a 3D prop (props are decor).
+local function hidden(part: BasePart): BasePart
+	part.Transparency = 1
+	return part
+end
+
+--[[
+	A wall covering (paint, tiles, bricks...) over the whole of `which` wall up
+	to the ceiling, 0.08 thick, with a doorway-sized hole where the wall has a
+	door (Kit.doors).
+]]
+local function clad(kit: Kit, which: string, name: string, look: Look)
+	local wall = kit.wall(which)
+	local s0, s1 = if wall.axis == "a" then -kit.W / 2 else 0, if wall.axis == "a" then kit.W / 2 else kit.D
+	local half, top = StarterGymConfig.RoomDoorWidthStuds / 2, StarterGymConfig.RoomDoorHeightStuds
+	local doors = table.clone(kit.doors[which])
+	table.sort(doors)
+	local s, piece = s0, 0
+	for _, door in ipairs(doors) do
+		if door - half > s then
+			piece += 1
+			wall.item(string.format("%s_%d", name, piece), s, door - half, 0, 0.08, 0.06, kit.H, look)
+		end
+		wall.item(string.format("%s_OverDoor_%d", name, piece), door - half, door + half, 0, 0.08, top, kit.H, look)
+		s = door + half
+	end
+	if s1 > s then
+		wall.item(string.format("%s_%d", name, piece + 1), s, s1, 0, 0.08, 0.06, kit.H, look)
+	end
+end
+
+-- One line of text filling the face of `part` that looks toward `toward` (a door sign, a label).
+local function plaque(part: BasePart, toward: Vector3, text: string, background: Color3, ink: Color3)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Writing"
+	gui.Face = faceToward(toward)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0.5
+	gui.Parent = part
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundColor3 = background
+	label.BorderSizePixel = 0
+	label.Text = text
+	label.TextColor3 = ink
+	label.TextScaled = true
+	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	label.Parent = gui
+end
+
+--[[
+	A neon sign: glowing letters (no backing) on `wall` from s0 to s1 and y0 to
+	y1, over a glowing underline that lights the wall a little; `at` studs out
+	from the wall (0.08 by default: just in front of a wall covering).
+]]
+local function neonSign(wall: Wall, name: string, text: string, s0: number, s1: number, y0: number, y1: number,
+	ink: Color3, stroke: Color3, line: Look, at: number?)
+	local t = at or 0.08
+	local sign = wall.item(name, s0, s1, t, t + 0.06, y0, y1, looks.SignPanel)
+	sign.Transparency = 1
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Writing"
+	gui.Face = faceToward(wall.out)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0
+	gui.Parent = sign
+	local letters = Instance.new("TextLabel")
+	letters.Size = UDim2.fromScale(1, 1)
+	letters.BackgroundTransparency = 1
+	letters.Text = text
+	letters.TextScaled = true
+	letters.TextColor3 = ink
+	letters.TextStrokeColor3 = stroke
+	letters.TextStrokeTransparency = 0.2
+	letters.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	letters.Parent = gui
+	local inset = (s1 - s0) / 16
+	local underline = wall.item(name .. "_Underline", s0 + inset, s1 - inset, t, t + 0.08, y0 - 0.2, y0 - 0.08, line)
+	local glow = Instance.new("PointLight")
+	glow.Color = line.color
+	glow.Range = 10
+	glow.Brightness = 0.6
+	glow.Shadows = false
+	glow.Parent = underline
+end
+
+-- ---------------------------------------------------------------- 3D props
+
+-- One template Model of `parts` (moved into it), its pivot at the bottom centre
+-- of their bounds, facing -Z (where the props' fronts and labels face).
+local function asTemplate(name: string, parts: { BasePart }): Model
+	local model = Instance.new("Model")
+	model.Name = name
+	local low, high = Vector3.one * math.huge, -Vector3.one * math.huge
+	for _, part in ipairs(parts) do
+		local half = part.Size / 2
+		for _, x in ipairs({ -1, 1 }) do
+			for _, y in ipairs({ -1, 1 }) do
+				for _, z in ipairs({ -1, 1 }) do
+					local corner = part.CFrame:PointToWorldSpace(Vector3.new(x * half.X, y * half.Y, z * half.Z))
+					low, high = low:Min(corner), high:Max(corner)
+				end
+			end
+		end
+		part.Anchored = true
+		part.Parent = model
+	end
+	model.WorldPivot = CFrame.new((low.X + high.X) / 2, low.Y, (low.Z + high.Z) / 2)
+	return model
+end
+
+--[[
+	The rooms' 3D props (StarterGymConfig.PropAssets), loaded once with
+	InsertService: one template per item ("Locker", "SBarWhey", ..., or the
+	asset's `whole` name). An asset that fails to load is left out with a
+	warning; rooms ask for the items they need with propsFor.
+]]
+local propTemplates: { [string]: Model }? = nil
+local function loadPropTemplates(): { [string]: Model }
+	if propTemplates then
+		return propTemplates
+	end
+	local InsertService = game:GetService("InsertService")
+	local templates: { [string]: Model } = {}
+	for _, asset in ipairs(StarterGymConfig.PropAssets) do
+		local ok, problem = pcall(function()
+			local loaded = InsertService:LoadAsset(asset.id)
+			local groups: { [string]: { BasePart } } = {}
+			for _, d in ipairs(loaded:GetDescendants()) do
+				local item = if d:IsA("BasePart") then asset.whole or string.match(d.Name, "^(%a+)_") else nil
+				if item then
+					groups[item] = groups[item] or {}
+					table.insert(groups[item], d :: BasePart)
+				end
+			end
+			for item, parts in pairs(groups) do
+				templates[item] = asTemplate(item, parts)
+			end
+			loaded:Destroy()
+		end)
+		if not ok then
+			warn(string.format("[RoomProps] props asset %d not loaded (simple props instead): %s", asset.id, tostring(problem)))
+		end
+	end
+	propTemplates = templates
+	return templates
+end
+
+-- The prop templates when every one of `items` has loaded, else nil (the room then uses simple props).
+local function propsFor(items: { string }): { [string]: Model }?
+	local templates = loadPropTemplates()
+	for _, item in ipairs(items) do
+		if not templates[item] then
+			return nil
+		end
+	end
+	return templates
+end
+
+-- A coloured copy of a 3D prop (Kit.place, so it must fit the room): every piece
+-- takes its colour from the item's StarterGymConfig.PropColourways colourway.
+local function propItem(kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number,
+	a: number, d: number, y: number, facing: string): Model
+	local cfg = StarterGymConfig
+	local copy = kit.place(name, templates[item], a, d, y, facing)
+	local scheme = cfg.PropColourways[item]
+	local colours = scheme and scheme[colourway]
+	if colours then
+		for _, part in ipairs(copy:GetDescendants()) do
+			local piece = if part:IsA("BasePart") then string.match(part.Name, "_(%a+)$") else nil
+			local paint = piece and colours[piece] and cfg.PropPaints[colours[piece]]
+			if paint then
+				local basePart = part :: BasePart
+				basePart.Color = paint.color
+				basePart.Material = paint.material
+					or (if cfg.PropFabricPieces[item .. "_" .. (piece :: string)] then Enum.Material.Fabric else Enum.Material.SmoothPlastic)
+				basePart.Reflectance = paint.reflectance or 0
+				basePart.Transparency = paint.transparency or 0
+			end
+		end
+	end
+	return copy
+end
+
+-- Shelving fill: every level holds one product line, `perSlot` side by side,
+-- facing out of the wall (like a real supplement wall: rows of one product).
+type ProductRow = { item: string, colourway: number, perSlot: number }
+local function productRows(kit: Kit, templates: { [string]: Model }, wall: Wall, name: string, facing: string,
+	rows: { ProductRow }): (level: number, s: number, t: number, y: number) -> ()
+	return function(level, s, t, y)
+		local row = rows[level]
+		if row then
+			for k = 1, row.perSlot do
+				local a, d = wall.at(s + (k - (row.perSlot + 1) / 2) * 0.64, t)
+				propItem(kit, templates, string.format("%s_%d_%.0f_%d", name, level, s * 10, k), row.item, row.colourway,
+					a, d, y, facing)
+			end
+		end
+	end
+end
+
+-- A pendant lamp of `item` hung with its bottom at `bottom`, on a cable from the
+-- ceiling, its bulb lighting the room warmly.
+local function pendant(kit: Kit, templates: { [string]: Model }, name: string, colourway: number, a: number, d: number,
+	bottom: number)
+	local lamp = propItem(kit, templates, name, "PendantLamp", colourway, a, d, bottom, "-d")
+	local top = bottom + lamp:GetExtentsSize().Y
+	kit.cylinder(name .. "_Cable", a, d, (kit.H + top) / 2, kit.H - top, 0.06, "up", looks.Gadget)
+	local bulb = lamp:FindFirstChild("PendantLamp_Bulb", true)
+	if bulb then
+		local light = Instance.new("PointLight")
+		light.Color = StarterGymConfig.PropPaints.WarmGlow.color
+		light.Range = 14
+		light.Brightness = 1
+		light.Shadows = false
+		light.Parent = bulb
+	end
+end
+
+-- A round table: a marble-topped disc on a black pole and base (only the pole and base are solid).
+local function roundTable(kit: Kit, name: string, a: number, d: number, top: Look, height: number)
+	kit.cylinder(name .. "_Top", a, d, height - 0.08, 0.16, 2.8, "up", top)
+	kit.block(name .. "_Pole", a - 0.12, a + 0.12, d - 0.12, d + 0.12, 0.1, height - 0.16, looks.Gadget)
+	kit.block(name .. "_Base", a - 0.6, a + 0.6, d - 0.6, d + 0.6, 0, 0.1, looks.Gadget)
+end
+
 -- ---------------------------------------------------------------- the rooms (step 6a: ground floor)
 
 local FURNISH: { [string]: (kit: Kit) -> () } = {}
 
-FURNISH.Lockers = function(kit)
+-- The first lockers (step 6a), kept for when the 3D props do not load.
+local function simpleLockers(kit: Kit)
 	local hw, D = kit.W / 2, kit.D
 	local count = math.floor((kit.W - 4) / 2.5)
 	lockerBank(kit.wall("back"), "Lockers_Back", -count * 2.5 / 2, count)
@@ -528,7 +774,8 @@ FURNISH.Showers = function(kit)
 	shelving(shelfWall, "TowelShelf", 10, 16, 1.2, 4.5, 3, looks.DeskBody, towels(shelfWall, "TowelShelf"))
 end
 
-FURNISH.Cafe = function(kit)
+-- The first cafe (step 6a), kept for when the 3D props do not load.
+local function simpleCafe(kit: Kit)
 	local hw = kit.W / 2
 	local back = kit.wall("back")
 	back.block("BackCounter", -14, 6, 0, 2, 0, 3.4, looks.DeskBody)
@@ -553,7 +800,8 @@ FURNISH.Cafe = function(kit)
 	plant(kit, "Plant_2", hw - 1.5, 1.5)
 end
 
-FURNISH.Kitchen = function(kit)
+-- The old kitchen corner (step 6a), kept as the staff room for when the 3D props do not load.
+local function simpleStaffRoom(kit: Kit)
 	local hw = kit.W / 2
 	local back = kit.wall("back")
 	local counterEnd = hw - 6
@@ -586,6 +834,340 @@ FURNISH.Kitchen = function(kit)
 	local pantryWall = kit.wall(if kit.doorA > 0 then "left" else "right")
 	shelving(pantryWall, "Pantry", 9, 18, 1.4, 7, 3, looks.DeskBody, boxes(pantryWall, "Pantry"))
 	plant(kit, "Plant", if kit.doorA > 0 then -hw + 1.5 else hw - 1.5, 1.5)
+end
+
+--[[
+	The lockers (GAME_DESIGN §27: where players will change outfit and wear
+	cosmetic gear, later). Remade 2026-10-25 with CC0 textures and 3D props: a
+	dark tiled floor; banks of lockers in four colours against an oak slatted
+	wall with a LOCKER ROOM sign; oak benches with gym bags and bottles; a
+	vanity with three basins under round glowing mirrors on a green penny-tile
+	wall; two changing cubicles with coloured curtains; towels by the showers.
+]]
+FURNISH.Lockers = function(kit)
+	local props = propsFor({ "Locker", "LockerBench", "GymBag", "WaterBottle", "RoundMirror", "Sink", "Curtain",
+		"SBarPlant" })
+	if props == nil then
+		simpleLockers(kit)
+		return
+	end
+	local hw, D, H = kit.W / 2, kit.D, kit.H
+	local back, left, right = kit.wall("back"), kit.wall("left"), kit.wall("right")
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+
+	-- The room's surfaces.
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.LockersFloor)
+	clad(kit, "back", "Wall_Slats", looks.LockersSlats)
+	clad(kit, "left", "Wall_Penny", looks.LockersPenny)
+	clad(kit, "right", "Wall_Right", looks.LockersWall)
+
+	-- Sixteen lockers along the back wall, four of each colour, oak battens
+	-- around them and the sign above.
+	local columns = 16
+	local l0 = -columns * 2.4 / 2
+	for k = 0, columns - 1 do
+		local a, d = back.at(l0 + (k + 0.5) * 2.4, 1.04)
+		put("Locker_" .. k + 1, "Locker", math.floor(k / 4) % 4 + 1, a, d, 0.06, "-d")
+	end
+	hidden(back.block("Lockers_Solid", l0, -l0, 0.08, 2, 0.06, 7.46, looks.Glass))
+	local batten, s = 0, -hw + 0.6
+	while s + 0.15 <= hw do
+		batten += 1
+		back.item("Batten_" .. batten, s - 0.15, s + 0.15, 0.08, 0.3, if math.abs(s) < -l0 + 0.2 then 7.6 else 0.06, H,
+			looks.LockersSlats)
+		s += 1.2
+	end
+	neonSign(back, "Sign", "LOCKER ROOM", -8, 8, 8.9, 10.9, Color3.fromRGB(250, 250, 245), Color3.fromRGB(110, 110, 110),
+		looks.GlowWhite, 0.32)
+
+	-- Oak benches with bags and bottles: three in front of the lockers, one in the middle.
+	for index, spot in ipairs({ { -12, D - 5.6 }, { 0, D - 5.6 }, { 12, D - 5.6 }, { -8, 15 } }) do
+		put("Bench_" .. index, "LockerBench", 1, spot[1], spot[2], 0.06, "-d")
+		hidden(kit.block("Bench_Solid_" .. index, spot[1] - 4, spot[1] + 4, spot[2] - 0.8, spot[2] + 0.8, 0.06, 1.86, looks.Glass))
+	end
+	for index, spot in ipairs({ { -14.5, D - 5.6, 1.86 }, { 2.5, D - 5.6, 1.86 }, { 14, D - 7.6, 0.06 }, { -3, D - 3.4, 0.06 },
+		{ -10, 15, 1.86 } }) do
+		put("GymBag_" .. index, "GymBag", index, spot[1], spot[2], spot[3], "-d")
+	end
+	for index, spot in ipairs({ { -10, D - 5.6 }, { 1, D - 5.4 }, { 10.8, D - 5.6 }, { -5.5, 15 } }) do
+		put("Bottle_" .. index, "WaterBottle", index, spot[1], spot[2], 1.86, "-d")
+	end
+
+	-- The vanity on the penny-tile wall: an oak cabinet with a marble top, three
+	-- basins, a round glowing mirror over each.
+	left.block("Vanity", 6, 24, 0.08, 2.2, 0.06, 3, looks.LockersSlats)
+	left.block("Vanity_Top", 5.8, 24.2, 0.08, 2.4, 3, 3.2, looks.CafeMarble)
+	for index, vs in ipairs({ 9, 15, 21 }) do
+		local a, d = left.at(vs, 1.3)
+		put("Basin_" .. index, "Sink", 1, a, d, 3.2, "+a")
+		local ma, md = left.at(vs, 0.16)
+		local mirror = put("Mirror_" .. index, "RoundMirror", 1, ma, md, 4.4, "+a")
+		local glow = mirror:FindFirstChild("RoundMirror_Glow", true)
+		if glow then
+			warmGlow(glow :: BasePart, 10, 0.5)
+		end
+	end
+
+	-- Two changing cubicles on the wall toward the showers, each with a seat
+	-- and a coloured curtain (where outfits will be changed later).
+	for index = 0, 2 do
+		local c = 3.4 + index * 4.7
+		right.block("Cubicle_Wall_" .. index + 1, c - 0.1, c + 0.1, 0.08, 4.6, 0.06, 7.5, looks.LockersSlats)
+	end
+	right.block("Cubicle_Header", 3.3, 12.9, 4.4, 4.7, 6.7, 7.5, looks.LockersSlats)
+	for index = 1, 2 do
+		local c = 3.4 + (index - 0.5) * 4.7
+		right.block("Cubicle_Seat_" .. index, c - 1.6, c + 1.6, 0.08, 1.3, 1.5, 1.8, looks.LockersSlats)
+		right.item("Cubicle_Hook_" .. index, c - 0.1, c + 0.1, 0.08, 0.5, 5.4, 5.6, looks.Stainless)
+		local a, d = right.at(c, 4.45)
+		put("Curtain_" .. index, "Curtain", index, a, d, 0.3, "-a")
+	end
+	shelving(right, "TowelShelf", 26.4, 30.3, 1.4, 6, 3, looks.LockersSlats, towels(right, "TowelShelf"))
+
+	-- Plants by the glass.
+	put("Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
+	put("Plant_2", "SBarPlant", 1, hw - 1.8, 1.7, 0.06, "+d")
+end
+
+--[[
+	The cafe (GAME_DESIGN §27: the social hangout). Remade 2026-10-25 with CC0
+	textures and 3D props: a herringbone floor and a red brick wall; a back bar
+	and serving counter in dark green tiles with white marble tops, espresso
+	machines, grinders, shelves of CENTRAL coffee bags, a menu and a warm neon
+	CAFE sign; a pastry case of donuts, muffins and croissants; booths, round
+	tables and chairs in many colours under pendant lamps; a window bar
+	looking out at the gym; the Staff Room door in the left wall.
+]]
+FURNISH.Cafe = function(kit)
+	local props = propsFor({ "Espresso", "Grinder", "CoffeeCup", "Mug", "PastryCase", "Donut", "Muffin", "Croissant",
+		"CafeChair", "Booth", "PendantLamp", "CoffeeBag", "SBarStool", "SBarPlant" })
+	if props == nil then
+		simpleCafe(kit)
+		return
+	end
+	local hw, D = kit.W / 2, kit.D
+	local back, left = kit.wall("back"), kit.wall("left")
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+	-- Against the back wall, `t` out from it, facing into the room.
+	local function onBack(name: string, item: string, colourway: number, s: number, t: number, y: number): Model
+		local a, d = back.at(s, t)
+		return put(name, item, colourway, a, d, y, "-d")
+	end
+
+	-- The room's surfaces.
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.CafeFloor)
+	clad(kit, "back", "Wall_Brick", looks.CafeBrick)
+	clad(kit, "left", "Wall_Left", looks.CafeWall)
+	clad(kit, "right", "Wall_Right", looks.CafeWall)
+
+	-- The back bar: green tiles under white marble, two espresso machines,
+	-- grinders, mugs; shelves of coffee bags, the menu and the neon sign.
+	back.block("BackBar", 1, 22.5, 0.08, 2.2, 0.06, 3.4, looks.CafeTiles)
+	back.block("BackBar_Top", 1, 22.5, 0.08, 2.35, 3.4, 3.6, looks.CafeMarble)
+	onBack("Espresso_1", "Espresso", 1, 8, 1.2, 3.6)
+	onBack("Espresso_2", "Espresso", 2, 19, 1.2, 3.6)
+	onBack("Grinder_1", "Grinder", 1, 4.6, 1.2, 3.6)
+	onBack("Grinder_2", "Grinder", 1, 11.4, 1.2, 3.6)
+	for k = 0, 5 do
+		onBack("BarMug_" .. k + 1, "Mug", k % 5 + 1, 13.5 + k * 0.55, 1.4, 3.6)
+	end
+	for level, y in ipairs({ 5.2, 6.9 }) do
+		back.item("Shelf_" .. level, 2, 12, 0.08, 1, y, y + 0.15, looks.LockersSlats)
+		for k = 0, 11 do
+			onBack(string.format("Shelf_%d_Bag_%d", level, k + 1), "CoffeeBag", (math.floor(k / 3) + level) % 4 + 1,
+				2.6 + k * 0.8, 0.55, y + 0.15)
+		end
+	end
+	local menu = back.item("MenuBoard", 13.5, 21.5, 0.08, 0.2, 5.6, 9.2, looks.SignPanel)
+	writing(menu, back.out, "ELITE PREP CAFE", { "Flat white ...... 3", "Iced latte ...... 4", "Protein coffee ...... 5",
+		"Croissant ...... 2" }, looks.SignPanel.color, WHITE)
+	neonSign(back, "NeonSign", "CAFE", 3, 11, 9.2, 11.6, Color3.fromRGB(255, 214, 150), Color3.fromRGB(150, 90, 30),
+		looks.GlowWarm)
+
+	-- The serving counter: the pastry case, takeaway cups, mugs and a till;
+	-- pendant lamps over it.
+	back.block("Counter", 1, 20, 5.2, 6.8, 0.06, 3.6, looks.CafeTiles)
+	back.block("Counter_Top", 0.8, 20.2, 5, 7.1, 3.6, 3.85, looks.CafeMarble)
+	onBack("PastryCase", "PastryCase", 1, 5, 6.05, 3.85)
+	for k = 0, 4 do
+		onBack("Case_Donut_" .. k + 1, "Donut", k % 3 + 1, 3.6 + k * 0.65, 5.75, 4.15)
+		onBack("Case_Croissant_" .. k + 1, "Croissant", 1, 3.6 + k * 0.65, 6.4, 4.15)
+	end
+	for k = 0, 5 do
+		onBack("Case_Muffin_" .. k + 1, "Muffin", k % 3 + 1, 3.5 + k * 0.6, 6.05, 4.74)
+	end
+	for k = 0, 3 do
+		onBack("Cup_" .. k + 1, "CoffeeCup", k + 1, 9 + k * 0.6, 5.6, 3.85)
+		onBack("CounterMug_" .. k + 1, "Mug", k + 2, 12.5 + k * 0.6, 5.6, 3.85)
+	end
+	back.item("Till", 16.5, 17.5, 5.4, 6, 3.85, 3.95, looks.Gadget)
+	back.item("Till_Screen", 16.7, 17.3, 5.5, 5.6, 3.95, 4.8, looks.Gadget)
+	for index, ps in ipairs({ 4, 10, 16 }) do
+		local a, d = back.at(ps, 6.1)
+		pendant(kit, props, "Pendant_" .. index, index, a, d, 7.2)
+	end
+
+	-- Booths along the brick wall, two tables at each (chairs at the second,
+	-- away from the Staff Room door), a lamp over every table.
+	for index, spec in ipairs({ { s = -18.6, colourway = 1, chairs = false }, { s = -7.6, colourway = 3, chairs = true } }) do
+		onBack("Booth_" .. index, "Booth", spec.colourway, spec.s, 1.28, 0.06)
+		hidden(back.block("Booth_Solid_" .. index, spec.s - 5.1, spec.s + 5.1, 0.08, 2.4, 0.06, 1.9, looks.Glass))
+		for k, offset in ipairs({ -2.5, 2.5 }) do
+			local id = string.format("Booth_%d_Table_%d", index, k)
+			local a, d = back.at(spec.s + offset, 4.1)
+			roundTable(kit, id, a, d, looks.CafeMarble, 3.06)
+			put(id .. "_Mug", "Mug", (index + k) % 5 + 1, a + 0.5, d, 3.06, "-d")
+			if spec.chairs then
+				local ca, cd = back.at(spec.s + offset, 6.4)
+				put(id .. "_Chair", "CafeChair", (index + k) % 4 + 1, ca, cd, 0.06, "+d")
+			end
+			pendant(kit, props, id .. "_Lamp", (index + k) % 4 + 1, a, d, 7.6)
+		end
+	end
+
+	-- Round tables in the middle with chairs in mixed colours, cups and a pastry.
+	for index, spot in ipairs({ { -16, 13 }, { -7, 15 }, { 8, 11.5 }, { 16, 13 } }) do
+		local id = "Table_" .. index
+		roundTable(kit, id, spot[1], spot[2], looks.CafeMarble, 3.06)
+		put(id .. "_Chair_1", "CafeChair", index % 4 + 1, spot[1] - 2, spot[2], 0.06, "+a")
+		put(id .. "_Chair_2", "CafeChair", (index + 1) % 4 + 1, spot[1] + 2, spot[2], 0.06, "-a")
+		put(id .. "_Cup", "CoffeeCup", index, spot[1] - 0.5, spot[2] + 0.3, 3.06, "+a")
+		put(id .. "_Donut", "Donut", index % 3 + 1, spot[1] + 0.5, spot[2] - 0.3, 3.06, "-a")
+	end
+
+	-- A window bar along the glass with stools, looking out at the gym.
+	kit.block("WindowBar", -21.5, -6, 0.2, 1.5, 3.6, 3.85, looks.CafeMarble)
+	for index, a in ipairs({ -20.8, -13.75, -6.7 }) do
+		kit.block("WindowBar_Leg_" .. index, a - 0.1, a + 0.1, 0.75, 0.95, 0.06, 3.6, looks.Gadget)
+	end
+	for k = 0, 5 do
+		put("WindowStool_" .. k + 1, "SBarStool", 1, -20 + k * 2.6, 2.6, 0.06, "-d")
+	end
+
+	-- Plants, and a sign over the Staff Room door.
+	put("Plant_1", "SBarPlant", 1, hw - 1.8, 1.7, 0.06, "+d")
+	local pa, pd = left.at(12, 1.8)
+	put("Plant_2", "SBarPlant", 1, pa, pd, 0.06, "+a")
+	for index, door in ipairs(kit.doors.left) do
+		local sign = left.item("StaffSign_" .. index, door - 2, door + 2, 0.08, 0.16, 9.4, 10.4, looks.SignPanel)
+		plaque(sign, left.out, "STAFF ONLY", looks.SignPanel.color, WHITE)
+	end
+end
+
+--[[
+	The Staff Room (GAME_DESIGN §27: was the Kitchen; a staff break room, look
+	only, staff NPCs later), behind the cafe. 2026-10-25: a laminate floor and
+	a dusty blue wall; a kitchenette with sage units, a wooden worktop, a cream
+	tiled splashback, a kettle, microwave and mugs, a retro fridge and a water
+	cooler; a table with chairs; a sofa facing a wall TV with staff notices;
+	staff lockers, a rail of CENTRAL STAFF tees and a cork rota board.
+]]
+FURNISH.StaffRoom = function(kit)
+	local props = propsFor({ "Fridge", "WaterCooler", "Microwave", "Kettle", "Mug", "Sofa", "CafeChair", "Locker",
+		"StaffTee", "SBarPlant" })
+	if props == nil then
+		simpleStaffRoom(kit)
+		return
+	end
+	local hw, D = kit.W / 2, kit.D
+	local back, left, right = kit.wall("back"), kit.wall("left"), kit.wall("right")
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+	local function onBack(name: string, item: string, colourway: number, s: number, t: number, y: number): Model
+		local a, d = back.at(s, t)
+		return put(name, item, colourway, a, d, y, "-d")
+	end
+
+	-- The room's surfaces.
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.StaffFloor)
+	clad(kit, "left", "Wall_Accent", looks.StaffAccent)
+	for _, which in ipairs({ "back", "front", "right" }) do
+		clad(kit, which, "Wall_" .. which, looks.LockersWall)
+	end
+
+	-- The kitchenette along the back wall.
+	local k0, k1 = -hw + 0.1, 2.2
+	back.block("Cabinets", k0, k1 - 0.2, 0.08, 2.2, 0.06, 3.2, looks.StaffCabinet)
+	back.block("Worktop", k0, k1, 0.08, 2.4, 3.2, 3.4, looks.StaffWorktop)
+	back.item("Splashback", k0, k1, 0.08, 0.14, 3.4, 6, looks.SBarTiles)
+	back.block("WallCabinets", k0, k1 - 0.2, 0.14, 1.4, 6.2, 8.6, looks.StaffCabinet)
+	for index = 1, 5 do
+		local cs = k0 + index * (k1 - 0.2 - k0) / 6
+		back.item("Cabinet_Seam_" .. index, cs - 0.03, cs + 0.03, 2.2, 2.23, 0.3, 3, looks.Gadget)
+		back.item("WallCabinet_Seam_" .. index, cs - 0.03, cs + 0.03, 1.4, 1.43, 6.3, 8.5, looks.Gadget)
+		back.item("Cabinet_Handle_" .. index, cs + 0.25, cs + 0.35, 2.2, 2.32, 2.2, 2.9, looks.Stainless)
+		back.item("WallCabinet_Handle_" .. index, cs + 0.25, cs + 0.35, 1.4, 1.52, 6.4, 7.1, looks.Stainless)
+	end
+	back.item("Sink", -6, -3.5, 0.6, 1.8, 3.38, 3.42, looks.Stainless)
+	back.item("Tap", -4.85, -4.65, 0.3, 0.5, 3.4, 4.4, looks.Stainless)
+	back.item("Tap_Spout", -4.85, -4.65, 0.5, 1, 4.2, 4.35, looks.Stainless)
+	onBack("Kettle", "Kettle", 2, -11, 1.3, 3.4)
+	onBack("Microwave", "Microwave", 1, -1, 1.2, 3.4)
+	for k = 0, 2 do
+		onBack("Mug_" .. k + 1, "Mug", k + 2, -8.6 + k * 0.6, 1.6, 3.4)
+	end
+	onBack("Fridge", "Fridge", 1, 4.4, 1.25, 0.06)
+	hidden(back.block("Fridge_Solid", 3.2, 5.6, 0.1, 2.3, 0.06, 6, looks.Glass))
+	onBack("WaterCooler", "WaterCooler", 1, 7.4, 0.85, 0.06)
+	hidden(back.block("WaterCooler_Solid", 6.8, 8, 0.1, 1.5, 0.06, 3.4, looks.Glass))
+	local roomSign = back.item("Sign", -9, -1, 0.08, 0.16, 9.4, 10.8, looks.SignPanel)
+	plaque(roomSign, back.out, "STAFF ROOM", looks.SignPanel.color, WHITE)
+
+	-- A table with six chairs.
+	kit.block("Table_Top", -7, 1, 15, 19, 2.86, 3.06, looks.StaffWorktop)
+	for index, corner in ipairs({ { -6.6, 15.4 }, { 0.6, 15.4 }, { -6.6, 18.6 }, { 0.6, 18.6 } }) do
+		kit.block("Table_Leg_" .. index, corner[1] - 0.15, corner[1] + 0.15, corner[2] - 0.15, corner[2] + 0.15, 0.06, 2.86,
+			looks.Gadget)
+	end
+	for k, a in ipairs({ -5.5, -3, -0.5 }) do
+		put("Chair_Near_" .. k, "CafeChair", k, a, 13.6, 0.06, "+d")
+		put("Chair_Far_" .. k, "CafeChair", k + 1, a, 20.4, 0.06, "-d")
+		put("Table_Mug_" .. k, "Mug", k, a + 0.4, 16 + k % 2 * 2, 3.06, "-d")
+	end
+
+	-- The lounge: a sofa facing a wall TV with the staff notices, a coffee table between.
+	local tv = left.item("TV", 4, 12, 0.08, 0.3, 4.4, 8.8, looks.Gadget)
+	writing(tv, left.out, "ELITE PREP GYM", { "Staff meeting: Monday 9:00", "New members: say hi!", "Keep the cafe tidy" },
+		Color3.fromRGB(22, 44, 74), WHITE)
+	put("Sofa", "Sofa", 2, -5.95, 8, 0.06, "-a")
+	hidden(kit.block("Sofa_Solid", -7.25, -4.65, 5, 11, 0.06, 1.86, looks.Glass))
+	kit.block("CoffeeTable", -12, -9.4, 6.5, 9.5, 1.2, 1.4, looks.StaffWorktop)
+	for index, corner in ipairs({ { -11.8, 6.7 }, { -9.6, 6.7 }, { -11.8, 9.3 }, { -9.6, 9.3 } }) do
+		kit.block("CoffeeTable_Leg_" .. index, corner[1] - 0.1, corner[1] + 0.1, corner[2] - 0.1, corner[2] + 0.1, 0.06, 1.2,
+			looks.Gadget)
+	end
+	put("CoffeeTable_Mug", "Mug", 5, -10.7, 7.4, 1.4, "-a")
+
+	-- The outer wall: staff lockers under a cork rota board, a rail of staff tees.
+	for k = 0, 3 do
+		local a, d = right.at(13 + (k + 0.5) * 2.4, 1.04)
+		put("Locker_" .. k + 1, "Locker", k + 1, a, d, 0.06, "-a")
+	end
+	hidden(right.block("Lockers_Solid", 13, 22.6, 0.08, 2, 0.06, 7.46, looks.Glass))
+	right.item("Board_Frame", 12.8, 22.8, 0.08, 0.14, 8, 11.6, looks.LockersSlats)
+	right.item("Board", 13, 22.6, 0.14, 0.2, 8.2, 11.4, looks.StaffCork)
+	local noteLooks = { looks.PlateYellow, looks.ShirtWhite, looks.PaddingBlue, looks.PlateGreen, looks.Whiteboard }
+	for k = 0, 7 do
+		local ns, ny = 13.5 + k * 1.15, 8.5 + (k % 2) * 1.1
+		right.item("Note_" .. k + 1, ns, ns + 0.9, 0.2, 0.22, ny, ny + 1, noteLooks[k % 5 + 1])
+	end
+	local title = right.item("Board_Title", 15.8, 19.8, 0.2, 0.24, 10.5, 11.2, looks.Whiteboard)
+	plaque(title, right.out, "STAFF ROTA", WHITE, INK)
+	right.item("TeeRail", 3, 11.5, 0.55, 0.65, 7.05, 7.15, looks.Stainless)
+	for index, rs in ipairs({ 3.2, 11.3 }) do
+		right.item("TeeRail_Bracket_" .. index, rs - 0.05, rs + 0.05, 0.08, 0.6, 7.05, 7.15, looks.Stainless)
+	end
+	for index, ts in ipairs({ 4.5, 7.25, 10 }) do
+		local a, d = right.at(ts, 0.6)
+		put("StaffTee_" .. index, "StaffTee", index, a, d, 4.64, "-a")
+	end
+
+	put("Plant", "SBarPlant", 1, hw - 1.8, D - 1.8, 0.06, "-d")
 end
 
 FURNISH.Office = function(kit)
@@ -687,16 +1269,6 @@ FURNISH.Storage = function(kit)
 	kit.item("Boxes_2", hw - 3.8, hw - 1.4, 2.3, 4.2, 2, 3.6, looks.Cardboard)
 end
 
--- A warm light (sauna): a PointLight in `part`.
-local function warmGlow(part: BasePart, range: number, brightness: number)
-	local glow = Instance.new("PointLight")
-	glow.Color = looks.GlowWarm.color
-	glow.Range = range
-	glow.Brightness = brightness
-	glow.Shadows = false
-	glow.Parent = part
-end
-
 --[[
 	The sauna (user, 2026-10-23: "make it seem like an actual sauna", no open
 	door). A wooden cabin inside the room: boards on the floor, on all four
@@ -708,8 +1280,9 @@ end
 ]]
 FURNISH.Sauna = function(kit)
 	local hw, D, H = kit.W / 2, kit.D, kit.H
-	local door, doorHalf = kit.doorA, StarterGymConfig.SwingDoorWidthStuds / 2
-	local doorTop = StarterGymConfig.SwingDoorHeightStuds
+	local saunaDoor = StarterGymConfig.SwingDoors.Sauna
+	local door, doorHalf = kit.doorA, saunaDoor.width / 2
+	local doorTop = saunaDoor.height
 	local back, front, left = kit.wall("back"), kit.wall("front"), kit.wall("left")
 	local board, slat = looks.SaunaWood, looks.SaunaBench
 
@@ -842,119 +1415,6 @@ local function tubs(kit: Kit, wall: Wall, name: string): (level: number, s: numb
 	end
 end
 
--- One template Model of `parts` (moved into it), its pivot at the bottom centre
--- of their bounds, facing -Z (where the props' labels face).
-local function asTemplate(name: string, parts: { BasePart }): Model
-	local model = Instance.new("Model")
-	model.Name = name
-	local low, high = Vector3.one * math.huge, -Vector3.one * math.huge
-	for _, part in ipairs(parts) do
-		local half = part.Size / 2
-		for _, x in ipairs({ -1, 1 }) do
-			for _, y in ipairs({ -1, 1 }) do
-				for _, z in ipairs({ -1, 1 }) do
-					local corner = part.CFrame:PointToWorldSpace(Vector3.new(x * half.X, y * half.Y, z * half.Z))
-					low, high = low:Min(corner), high:Max(corner)
-				end
-			end
-		end
-		part.Anchored = true
-		part.Parent = model
-	end
-	model.WorldPivot = CFrame.new((low.X + high.X) / 2, low.Y, (low.Z + high.Z) / 2)
-	return model
-end
-
---[[
-	The supplement bar's 3D props (StarterGymConfig.SBarPropsAsset and
-	SBarPlantAsset), loaded once with InsertService: one template per item
-	(SBarWhey, SBarShaker, SBarStool, ..., SBarPlant). nil when loading fails;
-	the bar then uses its part-built props.
-]]
-local sbarTemplates: { [string]: Model }? = nil
-local sbarTried = false
-local function loadSBarTemplates(): { [string]: Model }?
-	if sbarTried then
-		return sbarTemplates
-	end
-	sbarTried = true
-	local InsertService = game:GetService("InsertService")
-	local ok, result = pcall(function()
-		local templates: { [string]: Model } = {}
-		local props = InsertService:LoadAsset(StarterGymConfig.SBarPropsAsset)
-		local groups: { [string]: { BasePart } } = {}
-		for _, d in ipairs(props:GetDescendants()) do
-			local prefix = if d:IsA("BasePart") then string.match(d.Name, "^(SBar%a+)_") else nil
-			if prefix then
-				groups[prefix] = groups[prefix] or {}
-				table.insert(groups[prefix], d :: BasePart)
-			end
-		end
-		for prefix, parts in pairs(groups) do
-			templates[prefix] = asTemplate(prefix, parts)
-		end
-		props:Destroy()
-		local plant = InsertService:LoadAsset(StarterGymConfig.SBarPlantAsset)
-		local plantParts: { BasePart } = {}
-		for _, d in ipairs(plant:GetDescendants()) do
-			if d:IsA("BasePart") then
-				table.insert(plantParts, d)
-			end
-		end
-		templates.SBarPlant = asTemplate("SBarPlant", plantParts)
-		plant:Destroy()
-		return templates
-	end)
-	if ok then
-		sbarTemplates = result
-	else
-		warn("[RoomProps] supplement bar props not loaded (simple props instead): " .. tostring(result))
-	end
-	return sbarTemplates
-end
-
-local SBAR_PIECE = { Body = 1, Lid = 2, Label = 3, Text = 4 }
-
--- A coloured copy of a supplement bar prop (Kit.place, so it must fit the room):
--- products take their SBarColourways colours per piece, the stool a black seat on steel.
-local function sbarItem(kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number,
-	a: number, d: number, y: number, facing: string): Model
-	local copy = kit.place(name, templates[item], a, d, y, facing)
-	local scheme = StarterGymConfig.SBarColourways[item]
-	local colours = scheme and scheme[colourway]
-	for _, part in ipairs(copy:GetDescendants()) do
-		if part:IsA("BasePart") then
-			local piece = string.match(part.Name, "_(%a+)$")
-			local colourName = if colours and piece and SBAR_PIECE[piece] then colours[SBAR_PIECE[piece]]
-				elseif piece == "Seat" then "Black"
-				elseif piece == "Metal" then "Silver"
-				else nil
-			if colourName and colourName ~= "" then
-				part.Color = StarterGymConfig.SBarColours[colourName]
-				part.Material = if colourName == "Silver" then Enum.Material.Metal else Enum.Material.SmoothPlastic
-			end
-		end
-	end
-	return copy
-end
-
--- Shelving fill: every level holds one product line, `perSlot` side by side,
--- facing out of the wall (like a real supplement wall: rows of one product).
-type ProductRow = { item: string, colourway: number, perSlot: number }
-local function productRows(kit: Kit, templates: { [string]: Model }, wall: Wall, name: string, facing: string,
-	rows: { ProductRow }): (level: number, s: number, t: number, y: number) -> ()
-	return function(level, s, t, y)
-		local row = rows[level]
-		if row then
-			for k = 1, row.perSlot do
-				local a, d = wall.at(s + (k - (row.perSlot + 1) / 2) * 0.64, t)
-				sbarItem(kit, templates, string.format("%s_%d_%.0f_%d", name, level, s * 10, k), row.item, row.colourway,
-					a, d, y, facing)
-			end
-		end
-	end
-end
-
 --[[
 	The supplement bar (user, 2026-10-25: in the ground-floor room the sauna
 	left when it moved upstairs; remade the same day with real CC0 textures:
@@ -968,7 +1428,9 @@ end
 FURNISH.SupplementBar = function(kit)
 	local hw, D, H = kit.W / 2, kit.D, kit.H
 	local back = kit.wall("back")
-	local props = loadSBarTemplates() -- the 3D props, or nil: simple part-built ones
+	-- the 3D props, or nil: simple part-built ones
+	local props = propsFor({ "SBarWhey", "SBarIsolate", "SBarGainer", "SBarPreWorkout", "SBarCreatine", "SBarBCAA",
+		"SBarShaker", "SBarStool", "SBarPlant" })
 
 	-- The room's surfaces.
 	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.SBarFloor)
@@ -1010,7 +1472,7 @@ FURNISH.SupplementBar = function(kit)
 			local step = 8.6 / #row
 			for k, entry in ipairs(row) do
 				local a, d = back.at(-11.8 + (k - 0.5) * step, 0.55)
-				sbarItem(kit, props, string.format("%s_Item_%d", shelf, k), entry.item, entry.colourway, a, d, y + 0.15, "-d")
+				propItem(kit, props, string.format("%s_Item_%d", shelf, k), entry.item, entry.colourway, a, d, y + 0.15, "-d")
 			end
 		else
 			for k = 0, 7 do
@@ -1030,33 +1492,9 @@ FURNISH.SupplementBar = function(kit)
 		local screen = back.item("Screen_" .. index, menu.s0, menu.s1, 0.08, 0.2, 5, 7.4, looks.Gadget)
 		writing(screen, back.out, menu.title, menu.lines, looks.Gadget.color, WHITE)
 	end
-	-- The red neon sign: glowing letters (no backing) over a neon underline.
-	local sign = back.item("NeonSign", -11, 5, 0.08, 0.14, 8.6, 10.8, looks.SignPanel)
-	sign.Transparency = 1
-	local gui = Instance.new("SurfaceGui")
-	gui.Name = "Writing"
-	gui.Face = faceToward(back.out)
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.LightInfluence = 0
-	gui.Parent = sign
-	local letters = Instance.new("TextLabel")
-	letters.Size = UDim2.fromScale(1, 1)
-	letters.BackgroundTransparency = 1
-	letters.Text = "SUPPLEMENT BAR"
-	letters.TextScaled = true
-	letters.TextColor3 = Color3.fromRGB(255, 70, 70)
-	letters.TextStrokeColor3 = Color3.fromRGB(140, 0, 0)
-	letters.TextStrokeTransparency = 0.2
-	letters.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
-	letters.Parent = gui
-	local underline = back.item("NeonSign_Underline", -10, 4, 0.08, 0.16, 8.4, 8.52, looks.GlowRed)
-	local signGlow = Instance.new("PointLight")
-	signGlow.Color = looks.GlowRed.color
-	signGlow.Range = 10
-	signGlow.Brightness = 0.6
-	signGlow.Shadows = false
-	signGlow.Parent = underline
+	-- The red neon sign.
+	neonSign(back, "NeonSign", "SUPPLEMENT BAR", -11, 5, 8.6, 10.8, Color3.fromRGB(255, 70, 70), Color3.fromRGB(140, 0, 0),
+		looks.GlowRed)
 	drinksFridge(kit, back, "Fridge", 8, hw - 0.6)
 
 	-- The serving counter: dark plank slats, a black marble top, a red glow
@@ -1081,7 +1519,7 @@ FURNISH.SupplementBar = function(kit)
 	for index = 0, 5 do
 		local a, d = back.at(-8.5 + index * 2.6, 6.4)
 		if props then
-			sbarItem(kit, props, "Shaker_" .. index + 1, "SBarShaker", index + 1, a, d, 3.85, "-d")
+			propItem(kit, props, "Shaker_" .. index + 1, "SBarShaker", index + 1, a, d, 3.85, "-d")
 		else
 			kit.cylinder("Shaker_" .. index + 1, a, d, 4.3, 0.9, 0.5, "up", if index % 2 == 0 then looks.PlateRed else looks.Gadget)
 		end
@@ -1091,7 +1529,7 @@ FURNISH.SupplementBar = function(kit)
 	for index, ss in ipairs({ -8, -5, -2, 1, 4 }) do
 		local a, d = back.at(ss, 8.6)
 		if props then
-			sbarItem(kit, props, "BarStool_" .. index, "SBarStool", 1, a, d, 0.06, "-d")
+			propItem(kit, props, "BarStool_" .. index, "SBarStool", 1, a, d, 0.06, "-d")
 		else
 			stool(kit, "BarStool_" .. index, a, d)
 		end
@@ -1135,14 +1573,14 @@ FURNISH.SupplementBar = function(kit)
 		cafeTable(kit, "Table_" .. index, a, 10, looks.SBarMarble, props ~= nil)
 		if props then
 			for side, sa in ipairs({ a - 2.3, a + 2.3 }) do
-				sbarItem(kit, props, string.format("Table_%d_Stool_%d", index, side), "SBarStool", 1, sa, 10, 0.06,
+				propItem(kit, props, string.format("Table_%d_Stool_%d", index, side), "SBarStool", 1, sa, 10, 0.06,
 					if sa < a then "+a" else "-a")
 			end
 		end
 	end
 	if props then
-		sbarItem(kit, props, "Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
-		sbarItem(kit, props, "Plant_2", "SBarPlant", 1, hw - 1.8, 1.7, 0.06, "+d")
+		propItem(kit, props, "Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
+		propItem(kit, props, "Plant_2", "SBarPlant", 1, hw - 1.8, 1.7, 0.06, "+d")
 	else
 		plant(kit, "Plant_1", -hw + 1.5, 1.5)
 		plant(kit, "Plant_2", hw - 1.5, 1.5)

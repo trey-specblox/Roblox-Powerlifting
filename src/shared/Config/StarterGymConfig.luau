@@ -266,17 +266,33 @@ StarterGymConfig.DoorHoldOpenSeconds = 1 -- they stay open this long after the l
 StarterGymConfig.DoorPanelThicknessStuds = 0.3
 StarterGymConfig.DoorPanelOverlapStuds = 0.5 -- each closed panel reaches this far behind the fixed glass
 StarterGymConfig.DoorFrameStuds = 0.25 -- the aluminium frame round each panel
--- Rooms whose doorway gets real wooden swing doors (user, 2026-10-23: the
--- sauna must not have an open door; 2026-10-25: bigger, double doors). Their
--- doorway is bigger than a normal room door; a wooden frame fills the rest of
--- it, and the doors swing into the room when someone is near.
-StarterGymConfig.SwingDoorRooms = { "Sauna" }
-StarterGymConfig.SwingDoorOpeningWidthStuds = 8 -- the hole in the glass wall
-StarterGymConfig.SwingDoorOpeningHeightStuds = 10
-StarterGymConfig.SwingDoorLeaves = 2 -- 1 = a single door, 2 = double doors
-StarterGymConfig.SwingDoorWidthStuds = 7.4 -- all leaves together, inside the frame
-StarterGymConfig.SwingDoorHeightStuds = 9
+-- Rooms whose doorway gets real swing doors (user, 2026-10-23: the sauna must
+-- not have an open door; 2026-10-25: bigger, double doors). A frame fills the
+-- rest of the doorway, and the doors swing into the room when someone is near.
+-- The lockers (user, 2026-10-25: a locker room must not be seen into and needs
+-- a door) get a single solid door without a window.
+export type SwingDoorSpec = {
+	openingWidth: number, -- the hole in the wall
+	openingHeight: number,
+	leaves: number, -- 1 = a single door, 2 = double doors
+	width: number, -- all leaves together, inside the frame
+	height: number,
+	window: boolean, -- a window in each leaf
+	look: string, -- Looks names: the leaves,
+	frame: string, -- the frame round them,
+	handle: string, -- the handles
+}
+StarterGymConfig.SwingDoors = {
+	Sauna = { openingWidth = 8, openingHeight = 10, leaves = 2, width = 7.4, height = 9, window = true,
+		look = "SaunaWood", frame = "SaunaWood", handle = "SaunaBench" },
+	Lockers = { openingWidth = 6, openingHeight = 9, leaves = 1, width = 5.2, height = 8.6, window = false,
+		look = "LockersSlats", frame = "SignPanel", handle = "Stainless" },
+} :: { [string]: SwingDoorSpec }
 StarterGymConfig.SwingDoorSensorReachStuds = 5 -- on each side of the wall
+-- Rooms with a solid wall onto the hall instead of glass (privacy; user,
+-- 2026-10-25: the lockers), with the big sign over the door on its hall side
+-- (oak slats around it). Front block, ground floor only for now.
+StarterGymConfig.PrivateRooms = { Lockers = "LOCKER ROOM" } :: { [string]: string }
 
 --[[
 	The rooms (GAME_DESIGN §27). What each room is and holds was approved by
@@ -300,51 +316,196 @@ StarterGymConfig.Rooms = {
 	FrontGround = { "Lockers", "Lobby", "Cafe" },
 	FrontUpper = { "WarmUp", "MaxTesting", "Studio" },
 	-- The front corners, both floors (the stairs' place in the drawing; see stage 3).
-	-- Ground: reached through Lockers (left) and Cafe (right).
-	CornerGround = { Left = "Showers", Right = "Kitchen" },
+	-- Ground: reached through Lockers (left) and Cafe (right). The Staff Room was
+	-- the Kitchen (user, 2026-10-25: the steak kitchen becomes its own building).
+	CornerGround = { Left = "Showers", Right = "StaffRoom" },
 	CornerUpper = { Left = "CornerLeftUpper", Right = "CornerRightUpper" },
 }
 
 --[[
-	The supplement bar's 3D props (2026-10-25): uploaded as Model assets owned
-	by the game's group (art/materials/materials.json; source
-	art/scripts/build_sbar_props_01.py and prep_sbar_plant.py) and loaded by
-	RoomProps with InsertService when the server starts. If a load fails, the
-	bar falls back to its simple part-built props.
-	SBarProps holds one item per name prefix (SBarWhey_Body, SBarWhey_Lid, ...);
-	each product line has its colourways: { body, lid, label, text } colour
-	names from SBarColours (the shaker has no label).
+	The rooms' 3D props (2026-10-25): uploaded as Model assets owned by the
+	game's group (art/materials/materials.json) and loaded by RoomProps with
+	InsertService when the server starts. A room whose props fail to load uses
+	simple part-built ones (or leaves them out).
+	An asset holds one item per name prefix ("<Item>_<Piece>": SBarWhey_Body,
+	Locker_Door, ...); `whole` makes the whole asset one item instead (a Poly
+	Haven model with its own part names). Sources: art/scripts/
+	build_sbar_props_01.py, prep_sbar_plant.py, build_room_props_02.py.
 ]]
-StarterGymConfig.SBarPropsAsset = 126463004640141
-StarterGymConfig.SBarPlantAsset = 72818612497691
-StarterGymConfig.SBarColours = {
-	Black = Color3.fromRGB(22, 22, 24),
-	Red = Color3.fromRGB(200, 30, 38),
-	White = Color3.fromRGB(236, 236, 232),
-	Blue = Color3.fromRGB(30, 92, 205),
-	Yellow = Color3.fromRGB(242, 190, 30),
-	Green = Color3.fromRGB(95, 222, 60),
-	Purple = Color3.fromRGB(128, 52, 190),
-	Orange = Color3.fromRGB(245, 130, 30),
-	Silver = Color3.fromRGB(190, 192, 198), -- shown as Metal
-	Pink = Color3.fromRGB(240, 125, 172),
+export type PropAsset = { id: number, whole: string? }
+StarterGymConfig.PropAssets = {
+	{ id = 126463004640141 }, -- SBarProps_01: supplement bar products, shaker, bar stool
+	{ id = 72818612497691, whole = "SBarPlant" }, -- SBarPlant_01: the leafy potted plant
+	{ id = 93719454817045 }, -- RoomProps_02: Lockers, Cafe and Staff Room
+} :: { PropAsset }
+
+-- The colours a prop piece can take (material SmoothPlastic unless named here).
+export type PropPaint = { color: Color3, material: Enum.Material?, reflectance: number?, transparency: number? }
+StarterGymConfig.PropPaints = {
+	Black = { color = Color3.fromRGB(22, 22, 24) },
+	Charcoal = { color = Color3.fromRGB(46, 48, 54) },
+	Red = { color = Color3.fromRGB(200, 30, 38) },
+	White = { color = Color3.fromRGB(236, 236, 232) },
+	LightGrey = { color = Color3.fromRGB(176, 180, 186) },
+	Blue = { color = Color3.fromRGB(30, 92, 205) },
+	Navy = { color = Color3.fromRGB(30, 48, 98) },
+	Yellow = { color = Color3.fromRGB(242, 190, 30) },
+	Mustard = { color = Color3.fromRGB(214, 160, 38) },
+	Green = { color = Color3.fromRGB(95, 222, 60) },
+	Forest = { color = Color3.fromRGB(34, 98, 62) },
+	Sage = { color = Color3.fromRGB(140, 164, 134) },
+	Mint = { color = Color3.fromRGB(172, 218, 196) },
+	Teal = { color = Color3.fromRGB(0, 138, 140) },
+	Purple = { color = Color3.fromRGB(128, 52, 190) },
+	Lavender = { color = Color3.fromRGB(184, 170, 222) },
+	Orange = { color = Color3.fromRGB(245, 130, 30) },
+	Terracotta = { color = Color3.fromRGB(196, 98, 62) },
+	Pink = { color = Color3.fromRGB(240, 125, 172) },
+	Cream = { color = Color3.fromRGB(236, 224, 196) },
+	Kraft = { color = Color3.fromRGB(184, 142, 98) },
+	Oak = { color = Color3.fromRGB(198, 152, 102), material = Enum.Material.Wood },
+	Coffee = { color = Color3.fromRGB(62, 34, 20) },
+	Chocolate = { color = Color3.fromRGB(94, 52, 32) },
+	Dough = { color = Color3.fromRGB(214, 160, 92) },
+	Silver = { color = Color3.fromRGB(190, 192, 198), material = Enum.Material.Metal },
+	Brass = { color = Color3.fromRGB(200, 160, 82), material = Enum.Material.Metal },
+	Glass = { color = Color3.fromRGB(205, 225, 235), transparency = 0.7, reflectance = 0.1 },
+	WaterBlue = { color = Color3.fromRGB(150, 200, 235), transparency = 0.35 },
+	Mirror = { color = Color3.fromRGB(122, 134, 148), reflectance = 0.6 }, -- darker, so it reads as glass, not a white plate
+	WarmGlow = { color = Color3.fromRGB(255, 205, 150), material = Enum.Material.Neon },
+} :: { [string]: PropPaint }
+
+-- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
+StarterGymConfig.PropFabricPieces = {
+	Sofa_Frame = true,
+	Sofa_Cushion = true,
+	Curtain_Cloth = true,
+	GymBag_Body = true,
+	StaffTee_Body = true,
 }
-StarterGymConfig.SBarColourways = {
-	SBarWhey = { { "Black", "Red", "Red", "White" }, { "White", "Black", "Black", "White" } },
-	SBarIsolate = { { "White", "Blue", "Blue", "White" } },
-	SBarGainer = { { "Black", "Black", "Yellow", "Black" } },
-	SBarPreWorkout = { { "Black", "Green", "Green", "Black" }, { "Black", "Purple", "Purple", "White" } },
-	SBarCreatine = { { "White", "Silver", "Silver", "Black" } },
-	SBarBCAA = { { "White", "Orange", "Orange", "White" } },
-	SBarShaker = {
-		{ "Red", "Black", "", "White" },
-		{ "Blue", "Black", "", "White" },
-		{ "White", "Black", "", "Black" },
-		{ "Black", "White", "", "White" },
-		{ "Green", "Black", "", "Black" },
-		{ "Pink", "White", "", "White" },
+
+--[[
+	Each item's colourways: piece -> paint name (PropPaints). A piece left out
+	keeps the asset's plain look. Variety, not just red and black (user,
+	2026-10-25); every product, bag and tee label says CENTRAL.
+]]
+StarterGymConfig.PropColourways = {
+	-- The supplement bar (product: body, lid, label, text; the shaker has no label).
+	SBarWhey = {
+		{ Body = "Black", Lid = "Red", Label = "Red", Text = "White" },
+		{ Body = "White", Lid = "Black", Label = "Black", Text = "White" },
 	},
-} :: { [string]: { { string } } }
+	SBarIsolate = { { Body = "White", Lid = "Blue", Label = "Blue", Text = "White" } },
+	SBarGainer = { { Body = "Black", Lid = "Black", Label = "Yellow", Text = "Black" } },
+	SBarPreWorkout = {
+		{ Body = "Black", Lid = "Green", Label = "Green", Text = "Black" },
+		{ Body = "Black", Lid = "Purple", Label = "Purple", Text = "White" },
+	},
+	SBarCreatine = { { Body = "White", Lid = "Silver", Label = "Silver", Text = "Black" } },
+	SBarBCAA = { { Body = "White", Lid = "Orange", Label = "Orange", Text = "White" } },
+	SBarShaker = {
+		{ Body = "Red", Lid = "Black", Text = "White" },
+		{ Body = "Blue", Lid = "Black", Text = "White" },
+		{ Body = "White", Lid = "Black", Text = "Black" },
+		{ Body = "Black", Lid = "White", Text = "White" },
+		{ Body = "Green", Lid = "Black", Text = "Black" },
+		{ Body = "Pink", Lid = "White", Text = "White" },
+	},
+	SBarStool = { { Seat = "Black", Metal = "Silver" } },
+	-- Lockers (as art/scripts/build_room_props_02.py COLOURWAYS).
+	Locker = {
+		{ Door = "Navy", Frame = "Charcoal", Metal = "Silver", Dark = "Black" },
+		{ Door = "Sage", Frame = "Charcoal", Metal = "Silver", Dark = "Black" },
+		{ Door = "Oak", Frame = "Charcoal", Metal = "Silver", Dark = "Black" },
+		{ Door = "LightGrey", Frame = "Charcoal", Metal = "Silver", Dark = "Black" },
+	},
+	LockerBench = { { Seat = "Oak", Metal = "Black" } },
+	GymBag = {
+		{ Body = "Black", Trim = "Red", Text = "White" },
+		{ Body = "Navy", Trim = "White", Text = "White" },
+		{ Body = "Pink", Trim = "Black", Text = "Black" },
+		{ Body = "LightGrey", Trim = "Teal", Text = "Black" },
+		{ Body = "Mustard", Trim = "Black", Text = "Black" },
+	},
+	WaterBottle = {
+		{ Body = "Blue", Cap = "Black", Text = "White" },
+		{ Body = "Pink", Cap = "White", Text = "White" },
+		{ Body = "Teal", Cap = "Black", Text = "White" },
+		{ Body = "Orange", Cap = "Black", Text = "Black" },
+	},
+	RoundMirror = { { Glass = "Mirror", Glow = "WarmGlow" } },
+	Sink = { { Bowl = "White", Metal = "Silver" } },
+	Curtain = {
+		{ Cloth = "Teal", Metal = "Silver" },
+		{ Cloth = "Mustard", Metal = "Silver" },
+		{ Cloth = "Terracotta", Metal = "Silver" },
+	},
+	-- Cafe.
+	Espresso = {
+		{ Body = "Silver", Panel = "Black", Metal = "Silver", Text = "White" },
+		{ Body = "Mint", Panel = "Cream", Metal = "Silver", Text = "Black" },
+	},
+	Grinder = { { Body = "Black", Hopper = "Glass", Beans = "Coffee", Metal = "Silver" } },
+	CoffeeCup = {
+		{ Body = "White", Lid = "Black", Label = "Kraft", Text = "White" },
+		{ Body = "White", Lid = "Black", Label = "Forest", Text = "White" },
+		{ Body = "White", Lid = "Black", Label = "Terracotta", Text = "White" },
+		{ Body = "White", Lid = "Black", Label = "Black", Text = "White" },
+	},
+	Mug = {
+		{ Body = "White", Coffee = "Coffee" },
+		{ Body = "Mint", Coffee = "Coffee" },
+		{ Body = "Mustard", Coffee = "Coffee" },
+		{ Body = "Terracotta", Coffee = "Coffee" },
+		{ Body = "Navy", Coffee = "Coffee" },
+	},
+	PastryCase = { { Base = "Oak", Glass = "Glass", Metal = "Brass" } },
+	Donut = { { Dough = "Dough", Icing = "Pink" }, { Dough = "Dough", Icing = "Chocolate" }, { Dough = "Dough", Icing = "White" } },
+	Muffin = { { Case = "Red", Top = "Chocolate" }, { Case = "Teal", Top = "Dough" }, { Case = "Mustard", Top = "Chocolate" } },
+	Croissant = { { Dough = "Dough" } },
+	CafeChair = {
+		{ Shell = "Mustard", Legs = "Oak" },
+		{ Shell = "Teal", Legs = "Oak" },
+		{ Shell = "Terracotta", Legs = "Black" },
+		{ Shell = "White", Legs = "Oak" },
+	},
+	Booth = { { Frame = "Oak", Cushion = "Forest" }, { Frame = "Black", Cushion = "Mustard" }, { Frame = "Oak", Cushion = "Terracotta" } },
+	PendantLamp = {
+		{ Shade = "Brass", Bulb = "WarmGlow" },
+		{ Shade = "Black", Bulb = "WarmGlow" },
+		{ Shade = "Sage", Bulb = "WarmGlow" },
+		{ Shade = "Terracotta", Bulb = "WarmGlow" },
+	},
+	CoffeeBag = {
+		{ Body = "Black", Label = "Cream", Text = "Black" },
+		{ Body = "Kraft", Label = "Cream", Text = "Black" },
+		{ Body = "Forest", Label = "Cream", Text = "Black" },
+		{ Body = "Terracotta", Label = "Cream", Text = "Black" },
+	},
+	-- Staff Room.
+	Sofa = {
+		{ Frame = "Teal", Cushion = "Teal", Legs = "Oak" },
+		{ Frame = "Mustard", Cushion = "Mustard", Legs = "Oak" },
+		{ Frame = "LightGrey", Cushion = "LightGrey", Legs = "Oak" },
+	},
+	Microwave = {
+		{ Body = "White", Door = "Black", Panel = "Black", Metal = "Silver" },
+		{ Body = "Silver", Door = "Black", Panel = "Black", Metal = "Silver" },
+	},
+	Kettle = { { Body = "Cream", Trim = "Black" }, { Body = "Sage", Trim = "Silver" }, { Body = "Red", Trim = "Black" } },
+	WaterCooler = { { Body = "White", Bottle = "WaterBlue", Tap = "Blue", Dark = "Black" } },
+	Fridge = {
+		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
+		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },
+		{ Body = "Lavender", Dark = "Charcoal", Metal = "Silver" },
+	},
+	StaffTee = {
+		{ Body = "Black", Text = "White", Metal = "Silver" },
+		{ Body = "Red", Text = "White", Metal = "Silver" },
+		{ Body = "Navy", Text = "White", Metal = "Silver" },
+		{ Body = "White", Text = "Black", Metal = "Silver" },
+	},
+} :: { [string]: { { [string]: string } } }
 
 -- `variant` names one of the MaterialVariants below; `material` must then be that variant's base material.
 export type Look = { material: Enum.Material, color: Color3, transparency: number?, reflectance: number?, variant: string? }
@@ -394,6 +555,77 @@ StarterGymConfig.MaterialVariants = {
 		color = "rbxassetid://78285911641083",
 		normal = "rbxassetid://77687587802341",
 		roughness = "rbxassetid://134955031392788",
+	},
+	-- Lockers, Cafe and Staff Room (2026-10-25, picked by the user from a preview sheet).
+	Lockers_DarkGridTiles = { -- ambientcg Tiles108
+		base = Enum.Material.CeramicTiles,
+		studsPerTile = 14,
+		color = "rbxassetid://82594454999235",
+		normal = "rbxassetid://101853108914550",
+		roughness = "rbxassetid://74507281506922",
+	},
+	Lockers_OakSlats = { -- polyhaven oak_veneer_02
+		base = Enum.Material.Wood,
+		studsPerTile = 8,
+		color = "rbxassetid://89603927198995",
+		normal = "rbxassetid://128274853236069",
+		roughness = "rbxassetid://87590195110822",
+	},
+	Lockers_GreenPennyTiles = { -- ambientcg Tiles126
+		base = Enum.Material.CeramicTiles,
+		studsPerTile = 6,
+		color = "rbxassetid://87108536379404",
+		normal = "rbxassetid://85589153419592",
+		roughness = "rbxassetid://110819419280798",
+	},
+	Cafe_Herringbone = { -- polyhaven herringbone_parquet
+		base = Enum.Material.WoodPlanks,
+		studsPerTile = 10,
+		color = "rbxassetid://117332819213723",
+		normal = "rbxassetid://90927464344679",
+		roughness = "rbxassetid://131534083397873",
+	},
+	Cafe_RedBrick = { -- polyhaven red_brick_03
+		base = Enum.Material.Brick,
+		studsPerTile = 6,
+		color = "rbxassetid://117468038485514",
+		normal = "rbxassetid://102691661534276",
+		roughness = "rbxassetid://86141807694480",
+	},
+	Cafe_GreenTiles = { -- ambientcg Tiles032
+		base = Enum.Material.CeramicTiles,
+		studsPerTile = 5,
+		color = "rbxassetid://124067811087466",
+		normal = "rbxassetid://91163032168998",
+		roughness = "rbxassetid://105784961345502",
+	},
+	Cafe_WhiteMarble = { -- ambientcg Marble021
+		base = Enum.Material.Marble,
+		studsPerTile = 10,
+		color = "rbxassetid://112174899086953",
+		normal = "rbxassetid://98757688022461",
+		roughness = "rbxassetid://79859733110735",
+	},
+	Staff_Laminate = { -- polyhaven laminate_floor_03
+		base = Enum.Material.WoodPlanks,
+		studsPerTile = 10,
+		color = "rbxassetid://71311120498653",
+		normal = "rbxassetid://104370922500764",
+		roughness = "rbxassetid://74679013768559",
+	},
+	Staff_WoodWorktop = { -- ambientcg Wood049
+		base = Enum.Material.Wood,
+		studsPerTile = 6,
+		color = "rbxassetid://121763820794578",
+		normal = "rbxassetid://111180060671694",
+		roughness = "rbxassetid://104817297102607",
+	},
+	Staff_Cork = { -- ambientcg Cork002
+		base = Enum.Material.Cardboard,
+		studsPerTile = 6,
+		color = "rbxassetid://116250822379910",
+		normal = "rbxassetid://138250345893095",
+		roughness = "rbxassetid://108333057618621",
 	},
 } :: { [string]: MaterialVariantSpec }
 
@@ -460,6 +692,21 @@ StarterGymConfig.Looks = {
 	SBarMarble = { material = Enum.Material.Marble, color = Color3.fromRGB(255, 255, 255), variant = "SBar_BlackMarble" },
 	SBarPlanks = { material = Enum.Material.Wood, color = Color3.fromRGB(255, 255, 255), variant = "SBar_DarkPlanks" },
 	SBarWall = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(34, 34, 38) }, -- charcoal side walls
+	-- Lockers, Cafe and Staff Room (2026-10-25): textured the same way.
+	LockersFloor = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(255, 255, 255), variant = "Lockers_DarkGridTiles" },
+	LockersSlats = { material = Enum.Material.Wood, color = Color3.fromRGB(255, 255, 255), variant = "Lockers_OakSlats" },
+	LockersPenny = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(255, 255, 255), variant = "Lockers_GreenPennyTiles" },
+	LockersWall = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(226, 226, 222) }, -- warm white walls
+	CafeFloor = { material = Enum.Material.WoodPlanks, color = Color3.fromRGB(255, 255, 255), variant = "Cafe_Herringbone" },
+	CafeBrick = { material = Enum.Material.Brick, color = Color3.fromRGB(255, 255, 255), variant = "Cafe_RedBrick" },
+	CafeTiles = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(255, 255, 255), variant = "Cafe_GreenTiles" },
+	CafeMarble = { material = Enum.Material.Marble, color = Color3.fromRGB(255, 255, 255), variant = "Cafe_WhiteMarble" },
+	CafeWall = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(238, 230, 214) }, -- cream walls
+	StaffFloor = { material = Enum.Material.WoodPlanks, color = Color3.fromRGB(255, 255, 255), variant = "Staff_Laminate" },
+	StaffWorktop = { material = Enum.Material.Wood, color = Color3.fromRGB(255, 255, 255), variant = "Staff_WoodWorktop" },
+	StaffCork = { material = Enum.Material.Cardboard, color = Color3.fromRGB(255, 255, 255), variant = "Staff_Cork" },
+	StaffCabinet = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(140, 164, 134) }, -- sage kitchen units
+	StaffAccent = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(96, 132, 160) }, -- a dusty blue wall
 } :: { [string]: Look }
 
 --[[

@@ -64,6 +64,166 @@
         "normal": "rbxassetid://77687587802341",
         "roughness": "rbxassetid://134955031392788"
       }
+    },
+    "Lockers_DarkGridTiles": {
+      "source": "ambientcg:Tiles108",
+      "url": "https://ambientcg.com/view?id=Tiles108",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles108",
+      "ids": {
+        "color": "rbxassetid://82594454999235",
+        "normal": "rbxassetid://101853108914550",
+        "roughness": "rbxassetid://74507281506922"
+      }
+    },
+    "Lockers_OakSlats": {
+      "source": "polyhaven:oak_veneer_02",
+      "url": "https://polyhaven.com/a/oak_veneer_02",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_oak_veneer_02",
+      "ids": {
+        "color": "rbxassetid://89603927198995",
+        "normal": "rbxassetid://128274853236069",
+        "roughness": "rbxassetid://87590195110822"
+      }
+    },
+    "Lockers_GreenPennyTiles": {
+      "source": "ambientcg:Tiles126",
+      "url": "https://ambientcg.com/view?id=Tiles126",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles126",
+      "ids": {
+        "color": "rbxassetid://87108536379404",
+        "normal": "rbxassetid://85589153419592",
+        "roughness": "rbxassetid://110819419280798"
+      }
+    },
+    "Cafe_Herringbone": {
+      "source": "polyhaven:herringbone_parquet",
+      "url": "https://polyhaven.com/a/herringbone_parquet",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_herringbone_parquet",
+      "ids": {
+        "color": "rbxassetid://117332819213723",
+        "normal": "rbxassetid://90927464344679",
+        "roughness": "rbxassetid://131534083397873"
+      }
+    },
+    "Cafe_RedBrick": {
+      "source": "polyhaven:red_brick_03",
+      "url": "https://polyhaven.com/a/red_brick_03",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_red_brick_03",
+      "ids": {
+        "color": "rbxassetid://117468038485514",
+        "normal": "rbxassetid://102691661534276",
+        "roughness": "rbxassetid://86141807694480"
+      }
+    },
+    "Cafe_GreenTiles": {
+      "source": "ambientcg:Tiles032",
+      "url": "https://ambientcg.com/view?id=Tiles032",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles032",
+      "ids": {
+        "color": "rbxassetid://124067811087466",
+        "normal": "rbxassetid://91163032168998",
+        "roughness": "rbxassetid://105784961345502"
+      }
+    },
+    "Cafe_WhiteMarble": {
+      "source": "ambientcg:Marble021",
+      "url": "https://ambientcg.com/view?id=Marble021",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Marble021",
+      "ids": {
+        "color": "rbxassetid://112174899086953",
+        "normal": "rbxassetid://98757688022461",
+        "roughness": "rbxassetid://79859733110735"
+      }
+    },
+    "Staff_Laminate": {
+      "source": "polyhaven:laminate_floor_03",
+      "url": "https://polyhaven.com/a/laminate_floor_03",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_laminate_floor_03",
+      "ids": {
+        "color": "rbxassetid://71311120498653",
+        "normal": "rbxassetid://104370922500764",
+        "roughness": "rbxassetid://74679013768559"
+      }
+    },
+    "Staff_WoodWorktop": {
+      "source": "ambientcg:Wood049",
+      "url": "https://ambientcg.com/view?id=Wood049",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Wood049",
+      "ids": {
+        "color": "rbxassetid://121763820794578",
+        "normal": "rbxassetid://111180060671694",
+        "roughness": "rbxassetid://104817297102607"
+      }
+    },
+    "Staff_Cork": {
+      "source": "ambientcg:Cork002",
+      "url": "https://ambientcg.com/view?id=Cork002",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Cork002",
+      "ids": {
+        "color": "rbxassetid://116250822379910",
+        "normal": "rbxassetid://138250345893095",
+        "roughness": "rbxassetid://108333057618621"
+      }
     }
   },
   "models": {
@@ -83,6 +243,14 @@
       "file": "art/exports/SBarPlant_01.glb",
       "ids": {
         "model": "rbxassetid://72818612497691"
+      }
+    },
+    "RoomProps_02": {
+      "about": "Lockers, Cafe and Staff Room props (CENTRAL labels). Made by art/scripts/build_room_props_02.py (art/blender/RoomProps_02.blend).",
+      "file": "art/exports/RoomProps_02.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://93719454817045"
       }
     }
   }
