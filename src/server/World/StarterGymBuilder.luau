@@ -38,6 +38,8 @@
 	          and the balcony (Soffit_*), LED bars under the hall's beams and
 	          an LED panel in every room. The Lighting service's settings
 	          are in default.project.json.
+	STEP 6 (RoomProps):
+	  Props   the rooms' furniture, one folder per room (6a: ground floor).
 
 	Visual and physical only: no gameplay rule, credit or player data changes.
 	FAILS CLOSED: if anything goes wrong the half-built gym is removed with a
@@ -51,6 +53,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ConfigFolder = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config")
 local TrainingStationConfig = require(ConfigFolder:WaitForChild("TrainingStationConfig"))
 local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
+local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
+local RoomProps = require(script.Parent:WaitForChild("RoomProps"))
 
 local StarterGymBuilder = {}
 
@@ -62,30 +66,9 @@ type WallKind = "Outer" | "Paint" | "Glass"
 
 local built = false
 
--- An anchored, solid part of `size` at `cframe` (a Part, or a WedgePart for the gables).
-local function placed(parent: Instance, name: string, size: Vector3, cframe: CFrame, look: StarterGymConfig.Look,
-	className: string?): BasePart
-	local part = Instance.new(className or "Part") :: BasePart
-	part.Name = name
-	part.Anchored = true
-	part.CanCollide = true
-	part.CanTouch = false
-	part.TopSurface = Enum.SurfaceType.Smooth
-	part.BottomSurface = Enum.SurfaceType.Smooth
-	part.Material = look.material
-	part.Color = look.color
-	part.Transparency = look.transparency or 0
-	part.Reflectance = look.reflectance or 0
-	part.Size = size
-	part.CFrame = cframe
-	part.Parent = parent
-	return part
-end
-
--- An axis-aligned box between two corners.
-local function box(parent: Instance, name: string, low: Vector3, high: Vector3, look: StarterGymConfig.Look): BasePart
-	return placed(parent, name, high - low, CFrame.new((low + high) / 2), look)
-end
+-- Part-making helpers, shared with RoomProps (see BuildParts).
+local placed, box = BuildParts.placed, BuildParts.box
+local surfaceLight, decor = BuildParts.surfaceLight, BuildParts.decor
 
 --[[
 	One straight wall from y0 to y1. `alongX` walls run from `from` to `to` in
@@ -459,39 +442,8 @@ local function buildBalconyAndStairs(model: Model, plan: StarterGymConfig.Footpr
 	return steps
 end
 
--- True when every piece of an uploaded image (StarterGymConfig.ImagePiece) has its ID.
-local function piecesReady(pieces: { StarterGymConfig.ImagePiece }): boolean
-	if #pieces == 0 then
-		return false
-	end
-	for _, piece in ipairs(pieces) do
-		if piece.image == "" then
-			return false
-		end
-	end
-	return true
-end
-
--- The pieces side by side in `frame`, left to right, each as wide as its share
--- of the picture, so together they fill the frame as one image.
-local function addImagePieces(frame: GuiObject, pieces: { StarterGymConfig.ImagePiece })
-	local totalPixels = 0
-	for _, piece in ipairs(pieces) do
-		totalPixels += piece.widthPixels
-	end
-	local before = 0
-	for index, piece in ipairs(pieces) do
-		local image = Instance.new("ImageLabel")
-		image.Name = string.format("Piece_%d", index)
-		image.Position = UDim2.fromScale(before / totalPixels, 0)
-		image.Size = UDim2.fromScale(piece.widthPixels / totalPixels, 1)
-		image.BackgroundTransparency = 1
-		image.Image = piece.image
-		image.ScaleType = Enum.ScaleType.Stretch
-		image.Parent = frame
-		before += piece.widthPixels
-	end
-end
+-- Uploaded pictures cut into pieces (shared with RoomProps, see BuildParts).
+local piecesReady, addImagePieces = BuildParts.piecesReady, BuildParts.addImagePieces
 
 --[[
 	The gym's name on one face of a sign panel: big white letters with a short
@@ -569,27 +521,6 @@ end
 	the list. The name wall stands on the lobby's left wall (+X, your left as
 	you walk in), with the desk in front of it facing the middle of the lobby.
 ]]
-
--- A light-giving face on a part (SurfaceLight), in the gym's clean white.
-local function surfaceLight(part: BasePart, face: Enum.NormalId, range: number, brightness: number, angle: number)
-	local light = Instance.new("SurfaceLight")
-	light.Face = face
-	light.Range = range
-	light.Brightness = brightness
-	light.Angle = angle
-	light.Color = StarterGymConfig.LightColor
-	light.Shadows = false
-	light.Parent = part
-end
-
--- Small decoration (items on shelves and desks, cables, turnstile arms): not
--- solid, so it never snags a player, and ignored by spatial checks.
-local function decor(part: BasePart): BasePart
-	part.CanCollide = false
-	part.CanQuery = false
-	part:SetAttribute("Decor", true)
-	return part
-end
 
 -- The check-in screen on the reception monitor (facing the receptionist).
 local function checkInScreen(screen: BasePart, face: Enum.NormalId)
@@ -964,6 +895,123 @@ local function autoDoor(parent: Instance, name: string, centreX: number, floorY:
 	door:AddTag(cfg.AutoDoorTag)
 end
 
+--[[
+	Real wooden swing doors in a room's doorway (StarterGymConfig
+	SwingDoorRooms; user 2026-10-23: the sauna must not have an open door;
+	2026-10-25: bigger, double doors). A wooden frame fills the rest of the
+	doorway, through the wall and the room's 0.55 inset up to its inside wall
+	boards. Each door leaf (a wooden panel with a window) hangs on its outer
+	edge; the client's AutoDoorAnimator swings the leaves into the room (each
+	panel model from ClosedPivot to OpenPivot, both at its hinge) when someone
+	is near.
+]]
+local function swingDoor(parent: Instance, room: BasePart)
+	local cfg = StarterGymConfig
+	local looks = cfg.Looks
+	local centre = room:GetAttribute("DoorCentre") :: Vector3
+	local alongX = room:GetAttribute("DoorAlongX") :: boolean
+	local inward = if alongX
+		then Vector3.new(0, 0, math.sign(room.Position.Z - centre.Z))
+		else Vector3.new(math.sign(room.Position.X - centre.X), 0, 0)
+	local along = if alongX then Vector3.xAxis else Vector3.zAxis -- across the doorway
+	local floorY = room.Position.Y - room.Size.Y / 2
+	local t = cfg.WallThicknessStuds
+	local openingHalf, openingHeight = cfg.SwingDoorOpeningWidthStuds / 2, cfg.SwingDoorOpeningHeightStuds
+	local doorHalf, doorHeight = cfg.SwingDoorWidthStuds / 2, cfg.SwingDoorHeightStuds
+	-- Depth from the hall-side face of the wall through to the room's inside boards.
+	local hallFace, roomFace = -t / 2, t / 2 + 0.55
+	local wallLine = Vector3.new(centre.X, floorY, centre.Z)
+	-- A box `u0..u1` across the doorway, `v0..v1` deep (into the room), `y0..y1` up.
+	local function slab(holder: Instance, name: string, u0: number, u1: number, v0: number, v1: number, y0: number,
+		y1: number, look: StarterGymConfig.Look): BasePart
+		local p = wallLine + along * u0 + inward * v0 + Vector3.yAxis * y0
+		local q = wallLine + along * u1 + inward * v1 + Vector3.yAxis * y1
+		return box(holder, name, p:Min(q), p:Max(q), look)
+	end
+
+	local door = Instance.new("Model")
+	door.Name = string.sub(room.Name, 6) .. "Door"
+	door.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+	door.Parent = parent
+	-- The frame filling the doorway around the door.
+	slab(door, "Frame_Jamb_1", -openingHalf, -doorHalf, hallFace, roomFace, 0, openingHeight, looks.SaunaWood)
+	slab(door, "Frame_Jamb_2", doorHalf, openingHalf, hallFace, roomFace, 0, openingHeight, looks.SaunaWood)
+	slab(door, "Frame_Header", -doorHalf, doorHalf, hallFace, roomFace, doorHeight, openingHeight, looks.SaunaWood)
+	-- A plaque on the hall side of the header.
+	local plaque = decor(slab(door, "Plaque", -1.2, 1.2, hallFace - 0.05, hallFace, doorHeight + 0.15, doorHeight + 0.85,
+		looks.SignPanel))
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Top
+	for _, normal in ipairs(Enum.NormalId:GetEnumItems()) do
+		if Vector3.fromNormalId(normal):Dot(-inward) > 0.9 then
+			gui.Face = normal
+		end
+	end
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 50
+	gui.LightInfluence = 0
+	gui.Parent = plaque
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = string.upper(string.sub(room.Name, 6))
+	label.TextColor3 = cfg.SignTextColor
+	label.TextScaled = true
+	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	label.Parent = gui
+
+	-- The leaves: wooden panels with a window, each hinged on its outer edge
+	-- (a single door: on its first edge). `hingeU` is the hinge edge across the
+	-- doorway, `latchU` the edge that swings.
+	local leaves = cfg.SwingDoorLeaves
+	local leafWidth = 2 * doorHalf / leaves
+	local d0, d1 = -0.125, 0.125
+	local y0, y1 = 0.05, doorHeight - 0.02
+	local windowLow, windowHigh = doorHeight * 0.55, doorHeight * 0.87
+	for leaf = 1, leaves do
+		local panel = Instance.new("Model")
+		panel.Name = if leaves == 1 then "Panel" else "Panel_" .. leaf
+		panel.Parent = door
+		local left = -doorHalf + (leaf - 1) * leafWidth + 0.02
+		local right = -doorHalf + leaf * leafWidth - 0.02
+		local hingeU, latchU = left, right
+		if leaves > 1 and leaf == leaves then
+			hingeU, latchU = right, left
+		end
+		local inwardU = math.sign(latchU - hingeU) -- from the hinge toward the latch edge
+		slab(panel, "Stile_Hinge", hingeU, hingeU + inwardU * 0.6, d0, d1, y0, y1, looks.SaunaWood)
+		slab(panel, "Stile_Latch", latchU - inwardU * 0.6, latchU, d0, d1, y0, y1, looks.SaunaWood)
+		slab(panel, "Rail_Bottom", left + 0.6, right - 0.6, d0, d1, y0, windowLow, looks.SaunaWood)
+		slab(panel, "Rail_Top", left + 0.6, right - 0.6, d0, d1, windowHigh, y1, looks.SaunaWood)
+		slab(panel, "Window", left + 0.6, right - 0.6, -0.04, 0.04, windowLow, windowHigh, looks.SaunaGlass)
+		for index, side in ipairs({ -1, 1 }) do
+			local v = side * 0.125
+			local handleU = latchU - inwardU * 0.375
+			decor(slab(panel, "Handle_" .. index, handleU - 0.075, handleU + 0.075, v, v + side * 0.3, 3, 5,
+				looks.SaunaBench))
+		end
+		-- The hinge: the room-side corner of the hinge edge. The open angle turns
+		-- the leaf's width (from the hinge toward the latch) to point into the room.
+		local hinge = wallLine + along * hingeU + inward * d1 + Vector3.yAxis * (doorHeight / 2)
+		local closed = CFrame.new(hinge)
+		local towardLatch = along * inwardU
+		local angle = if CFrame.Angles(0, math.rad(90), 0):VectorToWorldSpace(towardLatch):Dot(inward) > 0
+			then math.rad(90)
+			else math.rad(-90)
+		panel.WorldPivot = closed
+		panel:SetAttribute("ClosedPivot", closed)
+		panel:SetAttribute("OpenPivot", closed * CFrame.Angles(0, angle, 0))
+	end
+
+	local reach = cfg.SwingDoorSensorReachStuds
+	local sensor = slab(door, "Sensor", -openingHalf, openingHalf, -reach, reach, 0, openingHeight, looks.Glass)
+	sensor.Transparency = 1
+	sensor.CanCollide = false
+	sensor.CanQuery = false
+	sensor.CastShadow = false
+	door:AddTag(cfg.AutoDoorTag)
+end
+
 local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
 	local cfg = StarterGymConfig
 	local doors = Instance.new("Folder")
@@ -975,6 +1023,13 @@ local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
 	-- The wide opening into the hall: on the lobby side (-Z) of the front block's glass.
 	autoDoor(doors, "HallDoor", plan.centreX, plan.floorY, plan.hallFrontZ - cfg.WallThicknessStuds, -1,
 		cfg.LobbyOpeningWidthStuds, cfg.LobbyOpeningHeightStuds, cfg.HallDoorPanelsPerSide)
+	-- Real wooden doors in some rooms' doorways (the sauna).
+	local rooms = model:FindFirstChild("Rooms") :: Folder
+	for _, name in ipairs(cfg.SwingDoorRooms) do
+		local room = rooms:FindFirstChild("Room_" .. name)
+		assert(room and room:IsA("BasePart"), "SwingDoorRooms: no room named " .. name)
+		swingDoor(doors, room)
+	end
 end
 
 --[[
@@ -1026,10 +1081,13 @@ local function buildLights(model: Model, plan: StarterGymConfig.Footprint): numb
 				box(roofs, "Ceiling_Room_" .. name, Vector3.new(low.X, high.Y - thickness, low.Z), high, looks.Ceiling)
 				underside = high.Y - thickness
 			end
-			local mx, mz = room.Position.X, room.Position.Z
-			local panel = decor(box(lights, "RoomLight_" .. name, Vector3.new(mx - half, underside - 0.1, mz - half),
-				Vector3.new(mx + half, underside, mz + half), looks.GlowWhite))
-			shining(panel, cfg.RoomLightRange, cfg.RoomLightBrightness, 150)
+			-- Rooms with their own warm lights (the sauna) get no white panel.
+			if not cfg.OwnLightRooms[name] then
+				local mx, mz = room.Position.X, room.Position.Z
+				local panel = decor(box(lights, "RoomLight_" .. name, Vector3.new(mx - half, underside - 0.1, mz - half),
+					Vector3.new(mx + half, underside, mz + half), looks.GlowWhite))
+				shining(panel, cfg.RoomLightRange, cfg.RoomLightBrightness, 150)
+			end
 		end
 	end
 
@@ -1088,6 +1146,14 @@ local function buildGym(model: Model): string
 	local function door(centre: number, bottom: number): Opening
 		return { centre = centre, width = doorWidth, height = doorHeight, bottom = bottom }
 	end
+	-- A room's doorway: bigger where the room gets wooden swing doors (the sauna).
+	local function doorFor(roomName: string, centre: number, bottom: number): Opening
+		if table.find(cfg.SwingDoorRooms, roomName) then
+			return { centre = centre, width = cfg.SwingDoorOpeningWidthStuds, height = cfg.SwingDoorOpeningHeightStuds,
+				bottom = bottom }
+		end
+		return door(centre, bottom)
+	end
 
 	-- ---------------------------------------------------------------- floors and roofs
 	box(floors, "Floor_Hall", Vector3.new(cx - hallHalf, floorLow, hallFrontZ), Vector3.new(cx + hallHalf, floorY, hallBackZ),
@@ -1137,20 +1203,35 @@ local function buildGym(model: Model): string
 		local glassLine = cx + sign * (hallHalf + t / 2)
 		local innerX, outerX = cx + sign * (hallHalf + t), cx + sign * outerHalf
 		local minX, maxX = math.min(innerX, outerX), math.max(innerX, outerX)
+		-- One floor's rooms. A name repeated in neighbouring places is one room
+		-- across them, with its door in the middle.
+		local function floorRooms(names: { string }, floorNumber: number, y0: number, y1: number, doors: { Opening })
+			local first = 1
+			while first <= 4 do
+				local last = first
+				while last < 4 and names[last + 1] == names[first] do
+					last += 1
+				end
+				local z0, z1 = hallFrontZ + (first - 1) * sideDepth, hallFrontZ + last * sideDepth
+				local zc = (z0 + z1) / 2
+				table.insert(doors, doorFor(names[first], zc, y0))
+				room(rooms, names[first], floorNumber, Vector3.new(minX, y0, z0), Vector3.new(maxX, y1, z1),
+					Vector3.new(glassLine, y0 + doorHeight / 2, zc), false)
+				first = last + 1
+			end
+		end
 		local groundDoors, upperDoors = {}, {}
-		for index = 1, 4 do
-			local z0 = hallFrontZ + (index - 1) * sideDepth
-			local zc = z0 + sideDepth / 2
-			table.insert(groundDoors, door(zc, floorY))
-			table.insert(upperDoors, door(zc, upperY))
-			room(rooms, groundNames[index], 1, Vector3.new(minX, floorY, z0), Vector3.new(maxX, upperSlabBottom, z0 + sideDepth),
-				Vector3.new(glassLine, floorY + doorHeight / 2, zc), false)
-			room(rooms, upperNames[index], 2, Vector3.new(minX, upperY, z0), Vector3.new(maxX, roofSlabBottom, z0 + sideDepth),
-				Vector3.new(glassLine, upperY + doorHeight / 2, zc), false)
-			if index < 4 then
-				-- Between two rooms, both floors.
-				wall(walls, string.format("Wall_%s_Divider_%d", sideName, index), true, z0 + sideDepth,
-					minX, maxX, 0, roofY, "Paint", {})
+		floorRooms(groundNames, 1, floorY, upperSlabBottom, groundDoors)
+		floorRooms(upperNames, 2, upperY, roofSlabBottom, upperDoors)
+		-- Between two rooms: through both floors, or only on the floor where they are different rooms.
+		for index = 1, 3 do
+			local splitGround = groundNames[index] ~= groundNames[index + 1]
+			local splitUpper = upperNames[index] ~= upperNames[index + 1]
+			local y0 = if splitGround then 0 else upperY
+			local y1 = if splitUpper then roofY else upperSlabBottom
+			if splitGround or splitUpper then
+				wall(walls, string.format("Wall_%s_Divider_%d", sideName, index), true, hallFrontZ + index * sideDepth,
+					minX, maxX, y0, y1, "Paint", {})
 			end
 		end
 		-- The glass front onto the hall: ground, the slab edge, upper, the roof edge.
@@ -1237,6 +1318,7 @@ local function buildGym(model: Model): string
 	buildReception(model, plan)
 	buildDoors(model, plan)
 	local lights = buildLights(model, plan)
+	local furnished = RoomProps.build(model)
 
 	for name, value in pairs({
 		HallMin = Vector3.new(cx - hallHalf, floorY, hallFrontZ),
@@ -1247,9 +1329,9 @@ local function buildGym(model: Model): string
 		model:SetAttribute(name, value)
 	end
 	return string.format(
-		"hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms, roof with %d skylights, 2 glass staircases of %d steps, %d room and hall lights",
+		"hall X %.1f..%.1f, Z %.1f..%.1f; building X %.1f..%.1f, Z %.1f..%.1f; %d wall parts, %d rooms, roof with %d skylights, 2 glass staircases of %d steps, %d room and hall lights, %d rooms furnished",
 		cx - hallHalf, cx + hallHalf, hallFrontZ, hallBackZ, outerMinX, outerMaxX, frontZ - t, hallBackZ + t,
-		#walls:GetChildren(), #rooms:GetChildren(), skylights, steps, lights)
+		#walls:GetChildren(), #rooms:GetChildren(), skylights, steps, lights, furnished)
 end
 
 --[[

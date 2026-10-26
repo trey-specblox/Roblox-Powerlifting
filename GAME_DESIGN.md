@@ -873,7 +873,84 @@ Comp max testing
 > - **Name wall art** (user, 2026-10-21): the "ELITE PREP GYM" sign behind
 >   the desk gets background artwork of a **muscular back** behind the
 >   letters (made by the user, uploaded by the game's group).
-> - Wall decoration (mirrors, graphics, the gym name) comes later.
+> - **What is in the rooms** (user-approved 2026-10-23, from Claude's
+>   proposal; still decoration only, NPCs later; **revised 2026-10-25, see
+>   "Room purposes" below**, which wins where the two differ). Built from
+>   simple Roblox parts in code, in three Studio-tested steps:
+>   - **6a, ground floor:** Lockers (lockers, benches, mirror), Showers
+>     (the left corner room behind Lockers: tiled shower stalls), Cafe
+>     (counter with a drinks fridge and shakers, small tables and stools),
+>     Kitchen (the right corner room behind Cafe: counters, fridge, oven),
+>     Office (desk with computer, chair, shelves), Recovery (ice baths, foam
+>     rollers, mats), Massage (two massage tables, towel shelf), Physio
+>     (treatment table, band rack), Storage (shelves with boxes, spare plates
+>     and bars), Sauna (wooden benches, heater), Coach (desk, whiteboard with
+>     a training plan, chairs), Shop (belts, knee sleeves and wrist wraps on
+>     shelves; may become a real shop later).
+>   - **6b, upstairs:** Warm-up (mats, light dumbbells, bands), Max Testing
+>     (competition platform with a rack, three judge chairs, attempt board),
+>     Mobility Studio (mirrors, stretching mats), Room1-8 become Dumbbells,
+>     Machines, Cardio, Classroom, Meeting Room, Media Room (podcast set),
+>     Nutrition and Strongman; the two upstairs corner rooms become Lounge
+>     (sofas, TV) and Trophy Room.
+>   - **6c, the rack hall:** mirrors on the walls, big wall graphics, a
+>     walkway strip in another floor colour, plate trees, chalk stands and
+>     benches between the rows.
+> - **Room quality** (user, 2026-10-23): rooms must not look basic or like
+>   filler. The **sauna** is a real wooden sauna with a closed wooden door
+>   (no open doorway). The **shop** looks like a powerlifting gear stand
+>   (user's SBD booth and shop photos): 3D models of knee sleeves, wrist
+>   wraps, lever belts, a one-piece singlet (high neck, red trim, red side
+>   panels down body and legs, mid-thigh legs) and tees on mannequins.
+> - **Sauna upstairs** (user, 2026-10-25): a sauna belongs upstairs, in a
+>   bigger room, with a bigger door. It is the two front rooms of the right
+>   side's upper floor joined into one (where Room8 and Room7 were, about
+>   30 x 54 studs), reached from the balcony next to the right staircase,
+>   with **wooden double doors** in an 8 x 10 doorway; benches run along the
+>   back and both side walls. Its old ground-floor room became the
+>   **Supplement Bar**.
+> - **Room purposes** (user-approved 2026-10-25, from Claude's proposal with
+>   the user's changes). Every room gets a purpose; the rooms are built and
+>   made to look real first, and each purpose's feature comes later as its
+>   own system. **No room gives Competition Number, technique or lifting
+>   performance** (§33-34); anything that would is a separate decision.
+>   - **Ground floor:** Lobby (spawn, check-in); Lockers (change outfit, wear
+>     cosmetic gear, later); Showers (look only); Cafe (social hangout);
+>     **Staff Room** (was Kitchen: staff break room, look only, staff NPCs
+>     later); Office (gym manager's office, help point); Recovery and Massage
+>     (relax spots with sit and lie-down emotes); **Index** (was Physio:
+>     explains Competition Number vs Competition Scale, the five technique
+>     stats, weight classes and the meet ladder Local -> Nationals -> Worlds
+>     -> Sheffield; numbers the design has not settled show "coming soon",
+>     never invented rules); Storage (look only); **Supplement Bar**
+>     (cosmetic shakes only, no boosts); Shop (cosmetic gear for cosmetic
+>     currency, §34.9, later). The ground-floor Coach room gets a new use
+>     later, since the coaches move upstairs.
+>   - **Upstairs:** Sauna; **Coach** (the big front-right room, 63 x 32,
+>     where the Mobility Studio was planned: room for **plenty of coaches**,
+>     e.g. Squat, Bench and Deadlift coaches, §22, as NPCs later; what a
+>     coach does is **[TBD]**); **Max Testing** (front middle: the gym's
+>     **Solo meet room**, §29.10: a competition platform where a player runs
+>     a Solo / Qualifying meet at any time to prove new maxes and raise
+>     Competition Scale; official meets stay at the separate local meet
+>     venue); **Warm-up and Mobility** together (front left: practice lifts
+>     with no rewards, stretching mats); six side rooms: Dumbbells, Machines,
+>     Cardio, Strongman, Classroom (tutorial for the three lift minigames),
+>     Media Room; the two corner rooms: Lounge and Trophy Room (World Records
+>     and Sheffield champions, §31-32). Nutrition, Meeting Room and a
+>     separate Mobility Studio are dropped.
+>   - **The Kitchen is its own building** outside the gym, with the steak
+>     cooker (§25: more steaks cook longer into one giant steak; players can
+>     AFK there). It is built **after the gym's rooms**, as the first
+>     building of the outside world (Retail Center area, §24). What the
+>     steak "+%" boosts is **[TBD]**.
+>   - **Look:** real CC0 textures and models through the downloaded kits,
+>     uploaded under the game's group, so rooms are not bland.
+> - **Gear brand: "CENTRAL"** (user, 2026-10-23). Every logo box or badge
+>   on in-game gear carries the word CENTRAL; never an empty box. Real
+>   brands (SBD, Inzer) are not copied onto items. The shop's sign uses the
+>   user's own "SBD Central" logo.
+> - Wall decoration (mirrors, graphics) in the hall comes in step 6c (above).
 > - The exact numbers are **[PROVISIONAL]**: rack spacing in
 >   `TrainingStationConfig.GymLayout`, the building in `StarterGymConfig`.
 

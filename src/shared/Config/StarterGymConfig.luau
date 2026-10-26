@@ -192,6 +192,18 @@ StarterGymConfig.FrontSignArt = {
 	{ image = "rbxassetid://118298598117791", widthPixels = 960 }, -- EPG_FrontSignArt_4 (right end)
 } :: { ImagePiece }
 StarterGymConfig.FrontSignArtHeightPixels = 512
+-- The user's own "SBD Central" logo banner (barbell over "SBD CENTRAL",
+-- transparent, 2172 x 564), the pieces first uploaded for the desk
+-- (art/logos/SBDCentral_DeskBanner_1-3.png, Group 529442797). The Shop's
+-- logo wall and counter show it on black (user, 2026-10-23: like an SBD stand).
+StarterGymConfig.ShopLogoPieces = {
+	{ image = "rbxassetid://72367430802433", widthPixels = 724 }, -- SBDCentral_DeskBanner_1 (left)
+	{ image = "rbxassetid://137359481610495", widthPixels = 724 }, -- SBDCentral_DeskBanner_2
+	{ image = "rbxassetid://72007290259241", widthPixels = 724 }, -- SBDCentral_DeskBanner_3 (right)
+} :: { ImagePiece }
+StarterGymConfig.ShopLogoHeightPixels = 564
+-- Where the Shop's gear models live (art/roblox/ShopGear_01.rbxmx, Rojo-mapped).
+StarterGymConfig.ShopGearTemplate = "ShopGear_01"
 -- The gates: a line across the lobby this far in front of the hall's glass.
 StarterGymConfig.GateLineFromHallStuds = 5
 StarterGymConfig.GateFreeLaneStuds = 16 -- the open middle lane (as wide as the entrance)
@@ -230,6 +242,8 @@ StarterGymConfig.HallLightBrightness = 1.5
 StarterGymConfig.RoomLightPanelStuds = 6
 StarterGymConfig.RoomLightRange = 18 -- a storey is 14 studs high
 StarterGymConfig.RoomLightBrightness = 1.2
+-- Rooms that bring their own (warm) lights in RoomProps and get no white panel.
+StarterGymConfig.OwnLightRooms = { Sauna = true }
 
 --[[
 	The automatic sliding doors (user, 2026-10-23: "like the ones you see in
@@ -252,25 +266,42 @@ StarterGymConfig.DoorHoldOpenSeconds = 1 -- they stay open this long after the l
 StarterGymConfig.DoorPanelThicknessStuds = 0.3
 StarterGymConfig.DoorPanelOverlapStuds = 0.5 -- each closed panel reaches this far behind the fixed glass
 StarterGymConfig.DoorFrameStuds = 0.25 -- the aluminium frame round each panel
+-- Rooms whose doorway gets real wooden swing doors (user, 2026-10-23: the
+-- sauna must not have an open door; 2026-10-25: bigger, double doors). Their
+-- doorway is bigger than a normal room door; a wooden frame fills the rest of
+-- it, and the doors swing into the room when someone is near.
+StarterGymConfig.SwingDoorRooms = { "Sauna" }
+StarterGymConfig.SwingDoorOpeningWidthStuds = 8 -- the hole in the glass wall
+StarterGymConfig.SwingDoorOpeningHeightStuds = 10
+StarterGymConfig.SwingDoorLeaves = 2 -- 1 = a single door, 2 = double doors
+StarterGymConfig.SwingDoorWidthStuds = 7.4 -- all leaves together, inside the frame
+StarterGymConfig.SwingDoorHeightStuds = 9
+StarterGymConfig.SwingDoorSensorReachStuds = 5 -- on each side of the wall
 
 --[[
-	The rooms (GAME_DESIGN §27: names are PLACEHOLDERS until the NPCs are
-	designed; a name here is only the room's name in Workspace). Each becomes an
+	The rooms (GAME_DESIGN §27). What each room is and holds was approved by
+	the user on 2026-10-23 (step 6); the ground floor's furniture is built by
+	RoomProps (6a), the upper floor keeps placeholder names until step 6b. A
+	name here is the room's name in Workspace. Each becomes an
 	invisible region part "Room_<Name>" in Workspace.StarterGym.Rooms, with its
 	floor and door position as attributes, ready for NPCs and signs later.
 ]]
 StarterGymConfig.Rooms = {
 	-- The side blocks, FRONT TO BACK. Left = +X (your left as you walk in).
+	-- A name in two neighbouring places is ONE room across both (no wall
+	-- between, one door in the middle): the sauna upstairs, where Room8 and
+	-- Room7 were (user, 2026-10-25: upstairs, bigger).
 	LeftGround = { "Office", "Recovery", "Massage", "Physio" },
-	RightGround = { "Storage", "Sauna", "Coach", "Shop" },
+	RightGround = { "Storage", "SupplementBar", "Coach", "Shop" },
 	LeftUpper = { "Room4", "Room3", "Room2", "Room1" },
-	RightUpper = { "Room8", "Room7", "Room6", "Room5" },
+	RightUpper = { "Sauna", "Sauna", "Room6", "Room5" },
 	-- The front block between its two corner rooms, LEFT TO RIGHT as you walk in.
 	-- Ground: the middle one is the lobby (LobbyWidthStuds); upstairs: equal widths.
 	FrontGround = { "Lockers", "Lobby", "Cafe" },
 	FrontUpper = { "WarmUp", "MaxTesting", "Studio" },
 	-- The front corners, both floors (the stairs' place in the drawing; see stage 3).
-	CornerGround = { Left = "CornerLeft", Right = "CornerRight" },
+	-- Ground: reached through Lockers (left) and Cafe (right).
+	CornerGround = { Left = "Showers", Right = "Kitchen" },
 	CornerUpper = { Left = "CornerLeftUpper", Right = "CornerRightUpper" },
 }
 
@@ -307,6 +338,29 @@ StarterGymConfig.Looks = {
 	GlowGreen = { material = Enum.Material.Neon, color = Color3.fromRGB(60, 220, 110) },
 	GlowRed = { material = Enum.Material.Neon, color = Color3.fromRGB(225, 40, 40) }, -- the door sensor while closed
 	DoorFrame = { material = Enum.Material.Metal, color = Color3.fromRGB(52, 54, 58) }, -- the entrance doors' aluminium
+	-- Room furniture (RoomProps, step 6).
+	LockerBody = { material = Enum.Material.Metal, color = Color3.fromRGB(64, 70, 80) },
+	Wood = { material = Enum.Material.Wood, color = Color3.fromRGB(190, 150, 104) },
+	SaunaWood = { material = Enum.Material.WoodPlanks, color = Color3.fromRGB(178, 126, 78) },
+	SaunaBench = { material = Enum.Material.Wood, color = Color3.fromRGB(214, 172, 118) }, -- lighter slats
+	SaunaGlass = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(150, 108, 66), transparency = 0.45 },
+	Tile = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(236, 238, 240) },
+	Mat = { material = Enum.Material.Rubber, color = Color3.fromRGB(44, 44, 48) },
+	Carpet = { material = Enum.Material.Fabric, color = Color3.fromRGB(150, 20, 28) }, -- the shop's red carpet
+	Padding = { material = Enum.Material.Fabric, color = Color3.fromRGB(34, 34, 38) },
+	PaddingBlue = { material = Enum.Material.Fabric, color = Color3.fromRGB(40, 78, 150) },
+	Water = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(150, 205, 230), transparency = 0.25 },
+	Cardboard = { material = Enum.Material.Cardboard, color = Color3.fromRGB(176, 136, 92) },
+	Whiteboard = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(250, 250, 250) },
+	Mirror = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(205, 214, 222), reflectance = 0.5 },
+	Plant = { material = Enum.Material.Grass, color = Color3.fromRGB(70, 140, 62) },
+	Stone = { material = Enum.Material.Slate, color = Color3.fromRGB(92, 92, 96) },
+	GlowWarm = { material = Enum.Material.Neon, color = Color3.fromRGB(255, 140, 60) },
+	-- IPF plate colours (SignAccentColor is the 25 kg red).
+	PlateRed = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(200, 32, 40) },
+	PlateBlue = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(30, 72, 180) },
+	PlateYellow = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(232, 190, 30) },
+	PlateGreen = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(40, 150, 70) },
 	ShirtBlack = { material = Enum.Material.Fabric, color = Color3.fromRGB(26, 26, 28) },
 	ShirtWhite = { material = Enum.Material.Fabric, color = Color3.fromRGB(235, 235, 232) },
 	ShirtRed = { material = Enum.Material.Fabric, color = Color3.fromRGB(190, 30, 38) },

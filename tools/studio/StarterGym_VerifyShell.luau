@@ -37,7 +37,10 @@
 	  - stage 5 (lighting): the Lighting service uses Future lighting, a
 	    bright ambient and daytime; looking up in every room and under the
 	    balcony you see a white ceiling (not tiles); every room but the lobby
-	    has its light panel; the hall has all its light bars.
+	    has its light panel; the hall has all its light bars;
+	  - step 6a (room furniture): every ground-floor room but the lobby is
+	    furnished, all furniture stays inside its room, and no solid piece
+	    stands in front of a door (either side) or inside a wall.
 ]]
 
 local RunService = game:GetService("RunService")
@@ -180,10 +183,13 @@ local function run()
 	end
 
 	-- Rooms: each listed once, each door open.
+	-- A name listed twice in a block is one room across both places (the sauna).
 	local expected = {}
 	for key, list in pairs(gym.Rooms) do
 		for _, name in pairs(list) do
-			table.insert(expected, name)
+			if not table.find(expected, name) then
+				table.insert(expected, name)
+			end
 		end
 	end
 	local missing, doubled, shut = {}, {}, {}
@@ -448,22 +454,101 @@ local function run()
 		end
 	end
 
+	-- Real wooden swing doors (the sauna, 2026-10-23; double doors 2026-10-25):
+	-- tagged, a sensor, SwingDoorLeaves solid panels hinged at their pivots;
+	-- turned to their OpenPivots, they leave the middle of the door gap clear.
+	for _, roomName in ipairs(gym.SwingDoorRooms) do
+		local door = doorsFolder and doorsFolder:FindFirstChild(roomName .. "Door")
+		local panels = {}
+		if door then
+			for _, child in ipairs(door:GetChildren()) do
+				if child:IsA("Model") then
+					table.insert(panels, child)
+				end
+			end
+		end
+		local sensor = door and door:FindFirstChild("Sensor")
+		local room = folders.Rooms:FindFirstChild("Room_" .. roomName)
+		local fine, problem = false, string.format("missing door, sensor or room, or not %d panels", gym.SwingDoorLeaves)
+		if door and door:HasTag(gym.AutoDoorTag) and #panels == gym.SwingDoorLeaves and sensor and sensor:IsA("BasePart")
+			and not sensor.CanCollide and room then
+			local centre, alongX = room:GetAttribute("DoorCentre"), room:GetAttribute("DoorAlongX")
+			if typeof(centre) ~= "Vector3" then
+				problem = "the room has no DoorCentre"
+			else
+				local solidPanel, blocking, noPivot = true, {}, false
+				local band = if alongX then Vector3.new(1.2, 3.5, 0.5) else Vector3.new(0.5, 3.5, 1.2)
+				local bandLow = centre - band + Vector3.new(0, 0.1, 0)
+				local bandHigh = centre + band + Vector3.new(0, 0.1, 0)
+				for _, panel in ipairs(panels) do
+					local closed, openPivot = panel:GetAttribute("ClosedPivot"), panel:GetAttribute("OpenPivot")
+					if typeof(closed) ~= "CFrame" or typeof(openPivot) ~= "CFrame" then
+						noPivot = true
+						continue
+					end
+					-- Every panel part where it is when open (worked out, not read from this screen).
+					local pivot = panel:GetPivot()
+					for _, part in ipairs(panel:GetDescendants()) do
+						if part:IsA("BasePart") then
+							if part:GetAttribute("Decor") ~= true and not (part.Anchored and part.CanCollide) then
+								solidPanel = false
+							end
+							local openFrame = openPivot * pivot:ToObjectSpace(part.CFrame)
+							local half = part.Size / 2
+							local low, high = Vector3.one * math.huge, -Vector3.one * math.huge
+							for _, x in ipairs({ -1, 1 }) do
+								for _, y in ipairs({ -1, 1 }) do
+									for _, z in ipairs({ -1, 1 }) do
+										local corner = openFrame:PointToWorldSpace(Vector3.new(x * half.X, y * half.Y, z * half.Z))
+										low, high = low:Min(corner), high:Max(corner)
+									end
+								end
+							end
+							if low.X < bandHigh.X and high.X > bandLow.X and low.Y < bandHigh.Y and high.Y > bandLow.Y
+								and low.Z < bandHigh.Z and high.Z > bandLow.Z then
+								table.insert(blocking, panel.Name .. "." .. part.Name)
+							end
+						end
+					end
+				end
+				fine = not noPivot and solidPanel and #blocking == 0
+				problem = if noPivot then "a panel has no ClosedPivot / OpenPivot"
+					elseif not solidPanel then "panel not solid"
+					else "open door still in the gap: " .. table.concat(blocking, ", ")
+			end
+		end
+		check(fine, string.format("Doors.%sDoor: %d solid wooden door leaf(s) that swing clear of the doorway%s", roomName,
+			gym.SwingDoorLeaves, if fine then "" else " (" .. problem .. ")"))
+	end
+
 	-- Stage 5: lighting. The Lighting service (set by Rojo from default.project.json).
 	local lighting = game:GetService("Lighting")
 	local ambient = lighting.Ambient
 	local readTechnology, technology = pcall(function()
 		return lighting.Technology
 	end)
+	-- Only the Command Bar may read Technology; code run through the Studio MCP
+	-- cannot, so there it is reported as INFO and the rest is still checked.
 	local technologyName = if readTechnology then technology.Name else "unreadable"
-	check(technologyName == "Future" and math.min(ambient.R, ambient.G, ambient.B) >= 0.3
+	check((technologyName == "Future" or not readTechnology) and math.min(ambient.R, ambient.G, ambient.B) >= 0.3
 		and lighting.ClockTime >= 8 and lighting.ClockTime <= 17, string.format(
 			"Lighting: Future (%s), ambient not dark (%.2f, %.2f, %.2f), daytime (ClockTime %.1f)",
 			technologyName, ambient.R, ambient.G, ambient.B, lighting.ClockTime))
+	if not readTechnology then
+		table.insert(lines, "  INFO  Lighting.Technology can't be read here; run this in the Command Bar to check it")
+	end
 	-- Looking straight up in every room you see a ceiling, not the floor tiles above;
-	-- every room but the lobby has its LED panel with a light.
+	-- every room but the lobby has its LED panel with a light. Furniture is left
+	-- out (the kitchen island stands in the middle of its room).
 	local upParams = RaycastParams.new()
 	upParams.FilterType = Enum.RaycastFilterType.Include
-	upParams.FilterDescendantsInstances = { model }
+	local notProps = {}
+	for _, child in ipairs(model:GetChildren()) do
+		if child.Name ~= "Props" then
+			table.insert(notProps, child)
+		end
+	end
+	upParams.FilterDescendantsInstances = notProps
 	local lightsFolder = model:FindFirstChild("Lights")
 	local lobbyRoom = "Room_" .. gym.Rooms.FrontGround[2]
 	local noCeiling, noLight = {}, {}
@@ -475,7 +560,7 @@ local function run()
 			if not (string.sub(seen, 1, 8) == "Ceiling_" or seen == "Lobby_Ceiling") then
 				table.insert(noCeiling, room.Name .. " sees " .. seen)
 			end
-			if room.Name ~= lobbyRoom then
+			if room.Name ~= lobbyRoom and not gym.OwnLightRooms[string.sub(room.Name, 6)] then
 				local panel = lightsFolder and lightsFolder:FindFirstChild("RoomLight_" .. string.sub(room.Name, 6))
 				if not (panel and panel:FindFirstChildOfClass("SurfaceLight")) then
 					table.insert(noLight, room.Name)
@@ -485,7 +570,7 @@ local function run()
 	end
 	check(#noCeiling == 0, string.format("every room has a white ceiling overhead%s",
 		if #noCeiling > 0 then " (" .. table.concat(noCeiling, "; ") .. ")" else ""))
-	check(#noLight == 0, string.format("every room but the lobby has its ceiling light%s",
+	check(#noLight == 0, string.format("every room but the lobby (and the warm-lit sauna) has its ceiling light%s",
 		if #noLight > 0 then " (missing: " .. table.concat(noLight, ", ") .. ")" else ""))
 	-- Under the balcony: the white soffit, not the walkway's tiles.
 	local underBalcony = {}
@@ -519,6 +604,93 @@ local function run()
 	end
 	local expectedHall = gym.RoofBeamCount * gym.HallLightSegmentsPerRow
 	check(hallLights == expectedHall, string.format("%d hall light bars with lights (%d found)", expectedHall, hallLights))
+
+	-- Step 6a: furniture in every ground-floor room but the lobby, all of it
+	-- inside its room, nothing solid in front of a door or inside a wall.
+	local propsFolder = model:FindFirstChild("Props")
+	local emptyRooms, outside, solidParts, propParts = {}, {}, {}, 0
+	-- Every ground room but the lobby must be furnished; any room that has
+	-- furniture (the sauna upstairs too) is checked the same way.
+	for _, room in ipairs(folders.Rooms:GetChildren()) do
+		local name = string.sub(room.Name, 6)
+		local roomProps = propsFolder and propsFolder:FindFirstChild(name)
+		local mustFurnish = room:GetAttribute("Floor") == 1 and room.Name ~= lobbyRoom
+		if room:IsA("BasePart") and (mustFurnish or roomProps ~= nil) then
+			local count = 0
+			if roomProps then
+				local roomLow, roomHigh = bounds(room)
+				for _, part in ipairs(roomProps:GetDescendants()) do
+					if part:IsA("BasePart") then
+						count += 1
+						local low, high = bounds(part)
+						if low.X < roomLow.X - 0.02 or low.Y < roomLow.Y - 0.02 or low.Z < roomLow.Z - 0.02
+							or high.X > roomHigh.X + 0.02 or high.Y > roomHigh.Y + 0.02 or high.Z > roomHigh.Z + 0.02 then
+							table.insert(outside, name .. "." .. part.Name)
+						end
+						if part.CanCollide then
+							table.insert(solidParts, part)
+						end
+					end
+				end
+			end
+			propParts += count
+			if count < 10 then
+				table.insert(emptyRooms, string.format("%s (%d parts)", name, count))
+			end
+		end
+	end
+	check(#emptyRooms == 0, string.format("every ground-floor room but the lobby is furnished (%d prop parts)%s", propParts,
+		if #emptyRooms > 0 then "; empty: " .. table.concat(emptyRooms, ", ") else ""))
+	check(#outside == 0, string.format("all room furniture stays inside its room%s",
+		if #outside > 0 then " (" .. table.concat(outside, ", ", 1, math.min(#outside, 6)) .. ")" else ""))
+	-- The shop's gear models (art/roblox/ShopGear_01.rbxmx): 3 mannequins, 6
+	-- hanging wraps, 8 knee sleeves, 6 rolled wraps, 6 belts.
+	local shopProps = propsFolder and propsFolder:FindFirstChild("Shop")
+	local gearCount = 0
+	if shopProps then
+		for _, child in ipairs(shopProps:GetChildren()) do
+			if child:IsA("Model") then
+				gearCount += 1
+			end
+		end
+	end
+	check(gearCount == 29, string.format("the shop shows its 29 gear models (%d found; they come from ServerStorage.PropTemplates.%s)",
+		gearCount, gym.ShopGearTemplate))
+	-- In front of every door, on both sides, nothing solid from the furniture.
+	local blockedDoors = {}
+	if propsFolder then
+		local propParams = OverlapParams.new()
+		propParams.FilterType = Enum.RaycastFilterType.Include
+		propParams.FilterDescendantsInstances = { propsFolder }
+		for _, room in ipairs(folders.Rooms:GetChildren()) do
+			local centre = room:GetAttribute("DoorCentre")
+			local alongX = room:GetAttribute("DoorAlongX")
+			if typeof(centre) == "Vector3" and typeof(alongX) == "boolean" then
+				local half = if alongX then Vector3.new(4.5, 3.8, 7) else Vector3.new(7, 3.8, 4.5)
+				local names = {}
+				for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new(centre + Vector3.new(0, 0.2, 0)), half * 2, propParams)) do
+					if part.CanCollide then
+						table.insert(names, part.Name)
+					end
+				end
+				if #names > 0 then
+					table.insert(blockedDoors, room.Name .. " (" .. table.concat(names, ", ") .. ")")
+				end
+			end
+		end
+	end
+	check(#blockedDoors == 0, string.format("no solid furniture in front of any door%s",
+		if #blockedDoors > 0 then " (" .. table.concat(blockedDoors, "; ") .. ")" else ""))
+	local inWalls = {}
+	for _, part in ipairs(solidParts) do
+		local low, high = bounds(part)
+		local hits = wallsIn(low + Vector3.one * 0.02, high - Vector3.one * 0.02)
+		if #hits > 0 then
+			table.insert(inWalls, part.Name .. " (" .. table.concat(hits, ", ") .. ")")
+		end
+	end
+	check(#inWalls == 0, string.format("no solid furniture inside a wall (%d solid pieces)%s", #solidParts,
+		if #inWalls > 0 then ": " .. table.concat(inWalls, "; ", 1, math.min(#inWalls, 6)) else ""))
 
 	-- Stage 4: the gym's name twice (name wall, outside sign), the check-in
 	-- screen, and the lights (ceiling strips, desk glow and light bar, two sign

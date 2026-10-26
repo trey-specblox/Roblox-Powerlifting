@@ -8,9 +8,10 @@
 	only: it sends nothing to the server and changes no game state.
 
 	Every door has an invisible Sensor part. While any player's character
-	stands in it, the door's panels (child Models with ClosedPivot and
-	OpenOffset attributes) slide open; DoorHoldOpenSeconds after the last one
-	has left, they slide shut. The sensor lamp is green while open, red while
+	stands in it, the door's panels (child Models with a ClosedPivot attribute)
+	open: sliding ones by their OpenOffset, swing doors to their OpenPivot
+	(turning about the hinge, where their pivot is); DoorHoldOpenSeconds after
+	the last one has left, they close again. The sensor lamp is green while open, red while
 	closed. Every player's screen works this out by itself from where the
 	characters are, so everyone sees the same thing.
 
@@ -61,7 +62,11 @@ local function placePanels(door: Instance, progress: number)
 		if child:IsA("Model") then
 			local closed = child:GetAttribute("ClosedPivot")
 			local offset = child:GetAttribute("OpenOffset")
-			if typeof(closed) == "CFrame" and typeof(offset) == "Vector3" then
+			local openPivot = child:GetAttribute("OpenPivot")
+			if typeof(closed) == "CFrame" and typeof(openPivot) == "CFrame" then
+				-- A swing door: its pivot is on the hinge, so this turns it about the hinge.
+				child:PivotTo(closed:Lerp(openPivot, eased))
+			elseif typeof(closed) == "CFrame" and typeof(offset) == "Vector3" then
 				child:PivotTo(closed + offset * eased)
 			end
 		end

@@ -30,6 +30,12 @@
         "Barbell_01": {
           "$path": "art/roblox/Barbell_01.rbxmx"
         }
+      },
+      "PropTemplates": {
+        "$className": "Folder",
+        "ShopGear_01": {
+          "$path": "art/roblox/ShopGear_01.rbxmx"
+        }
       }
     },
 

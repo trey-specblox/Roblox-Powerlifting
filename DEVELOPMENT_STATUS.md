@@ -1,9 +1,10 @@
 # Development Status
 
 Short handoff between Claude Code sessions. Read this first, then verify it
-against `git status` / `git log` before acting. Last updated: 2026-10-19
-(Starter Gym milestone: floor plan Option B approved; 30-rack stress test
-passed in Studio after a J-cup fix; committed and pushed).
+against `git status` / `git log` before acting. Last updated: 2026-10-25
+(Starter Gym step 6: shop gear and the upstairs sauna Studio-tested and
+approved; room purposes approved; kits, Python and an upload key set up;
+newest entries at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -640,11 +641,174 @@ and polish.
   Starter Gym and give its rooms white ceilings (stage 5)" (`git log` for
   the hash). Whether the
   user saved the place with the new Lighting settings: not stated.
-  NEXT ACTION (after the stage 5 commit): milestone step (6) props and
-  decoration rooms, or step (7) phone performance and polish (check Future
-  lighting and the ~52 room/hall lights on a phone); ask the user which.
+  MILESTONE STEP (6) PROPS AND DECORATION (user chose it 2026-10-23 over
+  step 7). Room plan proposed by Claude and APPROVED by the user (recorded in
+  GAME_DESIGN §27 "What is in the rooms"): 6a ground floor, 6b upstairs (with
+  new names for Room1-8 and the upper corners), 6c the rack hall.
+  STEP 6a (ground floor) BUILT, NOT YET STUDIO-TESTED, NOT committed:
+  - Corner ground rooms renamed CornerLeft -> Showers, CornerRight -> Kitchen
+    (`StarterGymConfig.Rooms.CornerGround`).
+  - New `src/server/World/BuildParts.luau`: placed/box/surfaceLight/decor,
+    moved out of StarterGymBuilder (same code; surfaceLight takes an optional
+    colour) so RoomProps can share them.
+  - New `src/server/World/RoomProps.luau`, called by StarterGymBuilder after
+    the lights: folder Props/<Room> for Lockers, Showers, Cafe, Kitchen,
+    Office, Recovery, Massage, Physio, Storage, Sauna, Coach, Shop. Each room
+    is furnished in a Kit frame (a across, d from the door wall, y up; 0.55
+    inset from the region). Big pieces solid, small items Decor. A solid
+    piece in a door's keep-clear zone (own door, or a neighbour's door in its
+    wall, e.g. Lockers -> Showers) or anything outside the room makes THAT
+    room fail with a "[RoomProps] <room> left empty" warning; the gym still
+    builds. Sauna heater has a warm PointLight. Text boards (cafe menu,
+    coach whiteboard, physio poster, shop sign) are SurfaceGuis "Writing".
+  - New looks in StarterGymConfig (LockerBody, Wood, SaunaWood, Tile, Mat,
+    Padding, PaddingBlue, Water, Cardboard, Whiteboard, Mirror, Plant, Stone,
+    GlowWarm, Plate*).
+  - Verify: every ground room but the lobby has >= 10 prop parts, all inside
+    the room, no solid prop within 7 studs of any door (both sides), no
+    solid prop inside a wall.
+  - luau-lsp 0 errors in the new/changed files (only the known section 5
+    errors elsewhere), `rojo build` OK. No Luau runtime on this PC, so the
+    layouts were only checked by hand: watch the Output for RoomProps warnings.
+  User look (2026-10-23, screenshots + reference photos): Sauna and Shop
+  "look basic, like filler"; the sauna must look like a real sauna with no
+  open door; the shop should look like an SBD-style gear stand with models
+  that look like real knee sleeves, wrist wraps, a lever belt and a singlet.
+  "Every room just looks so basic." (The 6a Studio verify result was not
+  reported.) Response, in progress (NOT yet Studio-tested, NOT committed):
+  - SAUNA rebuilt: `StarterGymBuilder.swingDoor` (StarterGymConfig
+    SwingDoorRooms = { "Sauna" }) fills the 6 x 9 doorway with a wooden frame
+    (through the wall and the 0.55 inset) around a 3.6 x 7.6 wooden door with
+    a bronze window and a "SAUNA" plaque, Doors.SaunaDoor tagged AutoDoor; the
+    panel model's pivot is the hinge (ClosedPivot/OpenPivot, 90 degrees into
+    the room); `AutoDoorAnimator` now also swings (CFrame Lerp about the
+    pivot). RoomProps Sauna: wood floor, boards on all 4 walls up to the
+    ceiling (front: around the door and one small window), wooden ceiling at
+    10, two slatted bench tiers with skirt boards, backrest, warm LED strips
+    under both tiers, duckboard, heater with stones, steel shield and a
+    wooden guard rail, slatted corner lamp, bucket and ladle, thermometer,
+    towels. No white panel: StarterGymConfig.OwnLightRooms. Kit: new "front"
+    wall; H is now just under the ceiling. Verify: SaunaDoor check (solid
+    panel, swings clear of the middle of the gap), light check skips
+    OwnLightRooms.
+  - SHOP GEAR models: `art/scripts/build_shop_gear_01.py` (run in Blender;
+    saved as `art/blender/ShopGear_01.blend`): KneeSleeve, WristWrap (rolled),
+    WristWrapHanging, LeverBelt, MannequinSinglet, MannequinTee (armless
+    torso forms with arm stubs on stands), 23 objects, ~20k triangles, one
+    material per object, black/red/grey/steel, NO brand names on the items.
+    User review 1 (2026-10-23, photo of a real singlet): the singlet must be
+    a one-piece with legs; "never empty boxes, put CENTRAL in them" (GAME_DESIGN
+    §27, memory). Rebuilt: MannequinSinglet form with thighs (pole behind
+    them), shell with red side columns, red Trim band round a high round
+    neck and deep armholes (exact booleans: Black/Red minus big cylinders,
+    Trim = shell AND big minus small), Shorts/ShortsRed as separate objects
+    (the boolean dropped a leg when they were in the same mesh), crotch cap
+    0.03 below the form. Fixed: radius lookup below the hips used the form's
+    r = 0 pole. "CENTRAL" in Montserrat Black (found in the Roblox install,
+    OFL) projected onto every badge: chest badges, knee sleeve (wrapped on
+    the cylinder), raised black on the belt lever, white on both wraps.
+    29 objects, ~28k triangles. Blend saved.
+    User review 2: the words were too small. Chest badges about twice as
+    big (singlet 0.68 x 0.2, text 0.15; tee 0.96 x 0.3, text 0.22). Saved.
+    APPROVED by the user (2026-10-23). Exported `art/exports/ShopGear_01.fbx`
+    (29 meshes, project FBX settings). New Command Bar script
+    `tools/studio/ShopGear01_PrepareImport.luau` (checks the fresh import,
+    sets looks, non-solid decor, groups into 6 item Models with pivots at
+    the bottom middle (hanging wrap: top) facing the item's front).
+    User (2026-10-23): imported, script "SUCCESS", saved
+    `art/roblox/ShopGear_01.rbxmx`. But the saved file was the RAW import
+    (default grey Plastic, unanchored, solid, ungrouped; probably saved
+    before the script ran). Fixed in the file with the new
+    `art/scripts/prepare_shop_gear_rbxmx.ps1` (same looks, groups and
+    pivots as the Studio script; refuses anything but the raw import;
+    raw copy kept in the Claude scratchpad): 6 item Models, 29 parts
+    anchored and non-solid, pivots e.g. MannequinSinglet 2.82 x 5.68 x 1.30
+    bottom middle facing -Z. Imported X is mirrored in position only
+    (Blender -> FBX -> Roblox is a 180-degree turn, not a mirror).
+    `default.project.json`: ServerStorage.PropTemplates.ShopGear_01 ->
+    art/roblox/ShopGear_01.rbxmx. `rojo build` OK, the 6 Models and their
+    WorldPivotData come through.
+  - SHOP rebuilt in RoomProps (not yet Studio-tested): red Carpet look, black
+    walls to 11.2, SBD Central logo (StarterGymConfig.ShopLogoPieces = the
+    desk banner pieces, re-added) on a back panel between GlowRed lines,
+    podium with 3 mannequins (singlet, tee, singlet) + invisible solid
+    columns + spotlights, slatwall with 6 hanging wraps, 8 knee sleeves on a
+    ledge, 6 rolled wraps, belt shelf with 6 belts and folded tees, black
+    counter with the logo, till, table of folded tees. Kit.place clones a
+    template by its pivot and refuses if it leaves the room; Kit.toward. No
+    templates = bare shop + warning. BuildParts now also holds piecesReady /
+    addImagePieces (moved from StarterGymBuilder). Verify: 29 gear models.
+    WAITING for the user's approval of the look, then: export FBX, one
+    Studio Import 3D, a prepare script, save `art/roblox/ShopGear_01.rbxmx`,
+    Rojo-map it, then rebuild the Shop room around it.
   luau-lsp 0 errors in the changed files (with a `rojo sourcemap`; only the
   known section 5 errors elsewhere), `rojo build` OK, `git diff --check` clean.
+  ROBLOX STUDIO MCP (2026-10-25, new session): Claude can now run Luau, take
+  screenshots, start/stop Play and move the test character in the open place
+  (Studio's "Enable Studio as MCP server"; Claude Code server `Roblox_Studio`).
+  Code run through it CANNOT read `Lighting.Technology` (Command Bar can).
+  Studio results BY CLAUDE via the MCP (2026-10-25, Play, cloud place):
+  Output "[RoomProps] Shop: 29 gear models placed", 12 rooms furnished, no
+  [RoomProps]/[StarterGymBuilder] warnings (one unrelated line:
+  "rbxassetid://203785492 failed", not in our code). `StarterGym_VerifyShell`
+  47/49; both failures were in the CHECK: (1) Technology unreadable via the
+  MCP -> now an INFO line when unreadable; (2) the Kitchen's upward ceiling
+  ray hit the kitchen island -> ceiling rays now skip Props. Then ALL 49
+  PASSED. Screenshots: shop (logo wall, 3 mannequins, slatwall, belt shelf,
+  counter) and sauna render as built; the sauna door swings open within 5
+  studs and closes again. User look: shop fine; sauna door too small and the
+  sauna belongs UPSTAIRS in a bigger room ("the room itself looks good").
+  SAUNA MOVED UPSTAIRS (user-approved 2026-10-25, GAME_DESIGN §27):
+  - `StarterGymConfig.Rooms`: a name repeated in neighbouring places of a
+    side block is ONE room across them: RightUpper = { "Sauna", "Sauna",
+    "Room6", "Room5" } (old Room8 + Room7, 30 x 54); RightGround's old sauna
+    slot is "SupplementBar". New SwingDoorOpeningWidth/HeightStuds 8 x 10,
+    SwingDoorLeaves 2, leaves 7.4 x 9 together.
+  - `StarterGymBuilder`: `doorFor` (bigger doorway for SwingDoorRooms);
+    sideBlock builds joined rooms (one region, door in the middle) and a
+    divider only on the floor(s) where the names differ; `swingDoor` builds
+    1 or 2 leaves (Panel / Panel_1, Panel_2), each hinged on its outer edge.
+  - `RoomProps`: sauna benches via `benchTiers` on the back AND both side
+    walls (from 7 studs in), a lamp in each back corner; new
+    `FURNISH.SupplementBar` (back bar with 3 blenders, SUPPLEMENT BAR menu,
+    drinks fridge, counter with shakers, tub shelves on both side walls via
+    `tubs`, two high tables).
+  - `StarterGym_VerifyShell`: joined rooms counted once; checks every swing
+    door leaf; furniture checks also cover furnished upstairs rooms.
+  - Checks by Claude: luau-lsp 0 errors (definitions from the VS Code
+    luau-lsp extension), `rojo build` OK, `git diff --check` clean.
+  - Studio by Claude via the MCP (after the user's Rojo reconnect): 25 rooms,
+    13 furnished, no warnings; VerifyShell ALL 49 PASSED; both leaves open
+    (-90/+90) with the character at the door and close after it leaves;
+    screenshots of the doors, the sauna inside and the supplement bar. USER
+    APPROVED the upstairs sauna (2026-10-25).
+  ROOM PURPOSES (user-approved 2026-10-25, recorded in GAME_DESIGN §27 "Room
+  purposes"): Physio -> Index (how CN / Competition Scale / meets work),
+  Kitchen room -> Staff Room, Coach -> the big front-right upstairs room
+  (where the Mobility Studio was), Max Testing = Solo meet room, Warm-up +
+  Mobility together, side rooms Dumbbells / Machines / Cardio / Strongman /
+  Classroom / Media Room, corners Lounge / Trophy Room; the steak Kitchen is
+  a separate building after the gym rooms. NOT BUILT yet (only the room
+  names in StarterGymConfig still say Physio / Kitchen / Coach / Room1-6 /
+  WarmUp / MaxTesting / Studio; renames come with each room's rebuild).
+  KITS AND TOOLS (2026-10-25, outside the repo): fwjelaa Maps / Animations /
+  Picture-to-Model kits, UI-Icon-Pack and the art pipeline unzipped to
+  `%USERPROFILE%\Downloads\RobloxKits`, safety-checked by Claude (no malware
+  patterns; full read of the risky parts only). Only the icon folders "09
+  Rank Icons" and "11 Keyboard Keys" are clearly CC0. RULE (user): kit TOOLS
+  run on the PC only, never their Studio installers in the game place;
+  results enter the game as files via Rojo/Git; the local test place
+  `D:\Robloxkittest.rbxl` is only for an installer that must run in Studio.
+  Python 3.12.10 + pillow + numpy installed (user scope); the kits find
+  Blender only with `$env:BLENDER` set (Blender 5.4 alpha lives on D:\).
+  Open Cloud key "Gym asset uploads": user key, asset read+write for group
+  529442797 ONLY, IP-locked, expires 2027-01-24, stored outside the repo at
+  `%USERPROFILE%\.fwjelaa\roblox-open-cloud.key`; verified by introspect and
+  by reading the group's desk-logo asset. Nothing uploaded with it yet.
+  COMMITTED and pushed 2026-10-25 with user approval (section 4).
+  NEXT ACTION: the Supplement Bar as the first room upgraded with kit
+  textures/models (pilot of the kit -> upload -> Rojo pipeline), then 2-3
+  rooms per checkpoint.
   OLD NEXT ACTION (done 2026-10-23, stage 5 above): lighting (Lighting.Ambient is black; the other rooms still
   show the upper floor's tiles as their ceiling). Old steps (a)-(d): done;
   (b) reconnect Rojo, run StarterGym_VerifyShell (expect ALL ... CHECKS
@@ -853,6 +1017,19 @@ Deliberately left uncommitted (keep, never discard):
   referenced by GAME_DESIGN.md and the build scripts. COMMITTED and pushed
   2026-10-19 with user approval as "Add the Visual Style reference note"
   (`git log` for the hash). Its two image embeds stay local (above).
+
+Starter Gym step 6a + shop gear + sauna upstairs (Studio-tested 2026-10-25; COMMITTED and pushed 2026-10-25 with user approval as "Furnish the Starter Gym ground floor, add the shop gear models and move the sauna upstairs (step 6a)"; `git log` for the hash):
+- New: `src/server/World/BuildParts.luau`, `src/server/World/RoomProps.luau`,
+  `art/roblox/ShopGear_01.rbxmx`, `art/scripts/build_shop_gear_01.py`,
+  `art/scripts/prepare_shop_gear_rbxmx.ps1`, `tools/studio/ShopGear01_PrepareImport.luau`.
+- Changed: `src/server/World/StarterGymBuilder.luau`, `src/shared/Config/StarterGymConfig.luau`,
+  `src/client/World/AutoDoorAnimator.luau` (swing doors), `default.project.json`
+  (PropTemplates.ShopGear_01), `tools/studio/StarterGym_VerifyShell.luau`,
+  `GAME_DESIGN.md` (§27 room quality, CENTRAL, sauna upstairs, room purposes),
+  `DEVELOPMENT_STATUS.md`.
+- Also `art/blender/ShopGear_01.blend` and `art/exports/ShopGear_01.fbx`: the
+  user chose (2026-10-25) to include them in the public repo.
+- Keep OUT: the same unrelated files as above.
 
 Starter Gym step 3, gym shell v1 + v2 stage 1 (Studio-tested; COMMITTED and pushed 2026-10-21; listed for reference):
 - New: `src/server/World/StarterGymBuilder.luau`,
