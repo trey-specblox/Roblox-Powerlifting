@@ -832,7 +832,10 @@ Comp max testing
 >   front), not all on one side: "plenty of rooms scattered across the gym",
 >   like Academia 2.0. Every room has a **glass front** onto the hall (bright
 >   rooms, and you can see the gym), **except the Lockers** (user,
->   2026-10-25, see "Private Lockers" below). About 21 rooms. They are **decoration
+>   2026-10-25, see "Private Lockers" below). **Revised by the user 2026-10-26**
+>   (see "Closed rooms and the spa wing" below): only the Cafe, the Supplement
+>   Bar and the Shop keep glass fronts; every other room gets a solid wall onto
+>   the hall and a real door. About 21 rooms. They are **decoration
 >   only for now**; the user plans to put **plenty of NPCs** in them later
 >   (no NPC design yet). Room names are placeholders until then.
 > - **Upstairs:** reached by **two open staircases in the rack hall's two
@@ -919,7 +922,8 @@ Comp max testing
 >     cosmetic gear, later); Showers (look only); Cafe (social hangout);
 >     **Staff Room** (was Kitchen: staff break room, look only, staff NPCs
 >     later); Office (gym manager's office, help point); Recovery and Massage
->     (relax spots with sit and lie-down emotes); **Index** (was Physio:
+>     (relax spots with sit and lie-down emotes; **moving upstairs into the
+>     spa wing**, user 2026-10-26); **Index** (was Physio:
 >     explains Competition Number vs Competition Scale, the five technique
 >     stats, weight classes and the meet ladder Local -> Nationals -> Worlds
 >     -> Sheffield; numbers the design has not settled show "coming soon",
@@ -993,6 +997,44 @@ Comp max testing
 >     a water cooler; a table with six chairs; a mustard sofa facing a wall
 >     TV with staff notices; four staff lockers under a cork "STAFF ROTA"
 >     board; a rail of CENTRAL STAFF tees (black, red, navy).
+>   - **Showers look** (textures and props approved by the user 2026-10-26,
+>     built the same day): dark blue mosaic floor, white marble tiles; five
+>     stalls with tiled walls, glass screens and rain showers (chrome, black,
+>     brass), a soap dispenser and a shelf of CENTRAL body wash and shampoo in
+>     many colours in each, oak duckboards; a colourful terrazzo wall with an
+>     oak bench, towels on rails in six colours and CENTRAL slides; a shelf of
+>     folded towels, "USED TOWELS" bins and an icy blue "SHOWERS" sign.
+>   - **Recovery look** and **Massage look** (approved and built 2026-10-26 in
+>     the ground-floor rooms; they move into the spa wing, below, keeping this
+>     look): Recovery has a rubber floor, a micro-cement wall and icy blue
+>     walls, two ice baths (oak barrel, white), four zero-gravity loungers,
+>     stretching mats with foam rollers, rolled yoga mats, CENTRAL massage guns,
+>     an oak wall ladder and an icy "RECOVERY" sign. Massage has a light wood
+>     floor, a grey stone wall and warm limewash walls, two massage tables with
+>     face cradles, a folding screen, warm pendant lamps, candles, diffusers,
+>     CENTRAL massage oils, spa stones, folded towels, poufs and a warm
+>     "MASSAGE" sign.
+> - **Closed rooms and the spa wing** (user, 2026-10-26: the layout "does not
+>   make sense"; real-life rooms like recovery, sauna and massage must be
+>   concealed, not seen through windows, and have doors):
+>   - **Only the Cafe, the Supplement Bar and the Shop keep glass fronts**
+>     (shop windows). Every other room, both floors (Office, Staff Room,
+>     Storage, Index, Coach, the training rooms, Max Testing, Warm-up and
+>     Mobility, Classroom, Media Room, Lounge, Trophy Room), gets a solid wall
+>     onto the hall and a **real door** that closes, like the Lockers. The
+>     Lockers and Showers stay private (Showers only through the Lockers).
+>   - **A Recovery & Spa wing upstairs**: the four upstairs rooms of the left
+>     block (Room1-4) are joined into one private wing, reached from the
+>     balcony through **one door** into a small reception / corridor, with
+>     **bigger closed rooms** off it for the **Sauna** (moved there from the
+>     right block), **Recovery** and **Massage**. No windows onto the gym.
+>   - **[TBD]**, to settle when the wing is built: what fills the freed
+>     places (the ground-floor Recovery and Massage rooms, and the right
+>     block's upstairs where the Sauna was); where the six side rooms
+>     (Dumbbells, Machines, Cardio, Strongman, Classroom, Media Room) go now
+>     that Room1-4 are the wing; the wing's exact plan (room sizes, whether
+>     the cold plunges or a relax lounge get their own room); the look of the
+>     closed walls on the hall side (signs over the doors like the Lockers).
 > - **Gear brand: "CENTRAL"** (user, 2026-10-23). Every logo box or badge
 >   on in-game gear carries the word CENTRAL; never an empty box. Real
 >   brands (SBD, Inzer) are not copied onto items. The shop's sign uses the

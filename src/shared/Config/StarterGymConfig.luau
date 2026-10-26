@@ -330,13 +330,14 @@ StarterGymConfig.Rooms = {
 	An asset holds one item per name prefix ("<Item>_<Piece>": SBarWhey_Body,
 	Locker_Door, ...); `whole` makes the whole asset one item instead (a Poly
 	Haven model with its own part names). Sources: art/scripts/
-	build_sbar_props_01.py, prep_sbar_plant.py, build_room_props_02.py.
+	build_sbar_props_01.py, prep_sbar_plant.py, build_room_props_02.py, build_room_props_03.py.
 ]]
 export type PropAsset = { id: number, whole: string? }
 StarterGymConfig.PropAssets = {
 	{ id = 126463004640141 }, -- SBarProps_01: supplement bar products, shaker, bar stool
 	{ id = 72818612497691, whole = "SBarPlant" }, -- SBarPlant_01: the leafy potted plant
 	{ id = 93719454817045 }, -- RoomProps_02: Lockers, Cafe and Staff Room
+	{ id = 109192629566668 }, -- RoomProps_03: Showers, Recovery and Massage
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -373,6 +374,14 @@ StarterGymConfig.PropPaints = {
 	WaterBlue = { color = Color3.fromRGB(150, 200, 235), transparency = 0.35 },
 	Mirror = { color = Color3.fromRGB(122, 134, 148), reflectance = 0.6 }, -- darker, so it reads as glass, not a white plate
 	WarmGlow = { color = Color3.fromRGB(255, 205, 150), material = Enum.Material.Neon },
+	-- Showers, Recovery and Massage (2026-10-26).
+	Coral = { color = Color3.fromRGB(238, 112, 92) },
+	Lime = { color = Color3.fromRGB(170, 214, 60) },
+	Sky = { color = Color3.fromRGB(120, 178, 224) },
+	Slate = { color = Color3.fromRGB(78, 82, 88), material = Enum.Material.Slate },
+	Amber = { color = Color3.fromRGB(190, 110, 40), transparency = 0.25, reflectance = 0.1 }, -- brown glass
+	BlueGlass = { color = Color3.fromRGB(40, 90, 170), transparency = 0.25, reflectance = 0.1 },
+	Ice = { color = Color3.fromRGB(225, 240, 250), transparency = 0.35, reflectance = 0.1 },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -382,6 +391,18 @@ StarterGymConfig.PropFabricPieces = {
 	Curtain_Cloth = true,
 	GymBag_Body = true,
 	StaffTee_Body = true,
+	Towel_Body = true,
+	Towel_Stripe = true,
+	HangingTowel_Body = true,
+	HangingTowel_Stripe = true,
+	TowelBin_Body = true,
+	TowelBin_Fill = true,
+	Lounger_Pad = true,
+	Lounger_Pillow = true,
+	MassageTable_Towel = true,
+	Pouf_Body = true,
+	Pouf_Piping = true,
+	FoldingScreen_Panel = true,
 }
 
 --[[
@@ -505,6 +526,128 @@ StarterGymConfig.PropColourways = {
 		{ Body = "Navy", Text = "White", Metal = "Silver" },
 		{ Body = "White", Text = "Black", Metal = "Silver" },
 	},
+	-- Showers, Recovery and Massage (as art/scripts/build_room_props_03.py COLOURWAYS).
+	RainShower = {
+		{ Metal = "Silver", Head = "Silver", Dark = "Charcoal" },
+		{ Metal = "Black", Head = "Black", Dark = "Charcoal" },
+		{ Metal = "Brass", Head = "Brass", Dark = "Charcoal" },
+	},
+	ShowerGel = {
+		{ Body = "Teal", Pump = "White", Label = "White", Text = "Black" },
+		{ Body = "Lavender", Pump = "White", Label = "White", Text = "Black" },
+		{ Body = "Coral", Pump = "Black", Label = "White", Text = "Black" },
+		{ Body = "Charcoal", Pump = "Silver", Label = "White", Text = "Black" },
+		{ Body = "Mint", Pump = "White", Label = "White", Text = "Black" },
+	},
+	Shampoo = {
+		{ Body = "Sky", Cap = "White", Label = "White", Text = "Navy" },
+		{ Body = "Lime", Cap = "White", Label = "White", Text = "Black" },
+		{ Body = "Orange", Cap = "Black", Label = "Cream", Text = "Black" },
+		{ Body = "White", Cap = "Navy", Label = "Navy", Text = "White" },
+	},
+	Towel = {
+		{ Body = "White", Stripe = "LightGrey" },
+		{ Body = "Sage", Stripe = "White" },
+		{ Body = "Navy", Stripe = "White" },
+		{ Body = "Terracotta", Stripe = "Cream" },
+		{ Body = "Mustard", Stripe = "White" },
+		{ Body = "Sky", Stripe = "White" },
+	},
+	HangingTowel = {
+		{ Body = "White", Stripe = "LightGrey", Metal = "Silver" },
+		{ Body = "Sage", Stripe = "White", Metal = "Silver" },
+		{ Body = "Navy", Stripe = "White", Metal = "Silver" },
+		{ Body = "Terracotta", Stripe = "Cream", Metal = "Silver" },
+		{ Body = "Mustard", Stripe = "White", Metal = "Silver" },
+		{ Body = "Sky", Stripe = "White", Metal = "Silver" },
+	},
+	SoapDispenser = {
+		{ Body = "White", Window = "Ice", Button = "Silver", Text = "Black" },
+		{ Body = "Black", Window = "Ice", Button = "Silver", Text = "White" },
+	},
+	TowelBin = {
+		{ Body = "Sage", Rim = "Oak", Text = "White", Fill = "White" },
+		{ Body = "Charcoal", Rim = "Oak", Text = "White", Fill = "White" },
+		{ Body = "Cream", Rim = "Black", Text = "Black", Fill = "White" },
+	},
+	Slides = {
+		{ Sole = "Black", Strap = "Black", Text = "White" },
+		{ Sole = "White", Strap = "Navy", Text = "White" },
+		{ Sole = "White", Strap = "Teal", Text = "White" },
+		{ Sole = "Black", Strap = "Sage", Text = "Black" },
+		{ Sole = "Cream", Strap = "Coral", Text = "White" },
+	},
+	ColdPlunge = {
+		{ Body = "Oak", Band = "Black", Rim = "Oak", Water = "WaterBlue", Ice = "Ice" },
+		{ Body = "White", Band = "Silver", Rim = "Silver", Water = "WaterBlue", Ice = "Ice" },
+		{ Body = "Charcoal", Band = "Oak", Rim = "Oak", Water = "WaterBlue", Ice = "Ice" },
+	},
+	FoamRoller = {
+		{ Body = "Blue", Core = "Black" },
+		{ Body = "Orange", Core = "Black" },
+		{ Body = "Pink", Core = "White" },
+		{ Body = "Lime", Core = "Charcoal" },
+		{ Body = "Teal", Core = "White" },
+		{ Body = "Purple", Core = "Black" },
+	},
+	Lounger = {
+		{ Pad = "Charcoal", Frame = "Silver", Pillow = "LightGrey" },
+		{ Pad = "Sage", Frame = "Oak", Pillow = "Cream" },
+		{ Pad = "Terracotta", Frame = "Black", Pillow = "Cream" },
+		{ Pad = "Navy", Frame = "Silver", Pillow = "White" },
+	},
+	MassageGun = {
+		{ Body = "Black", Grip = "Charcoal", Head = "Orange", Text = "White" },
+		{ Body = "Sage", Grip = "Charcoal", Head = "White", Text = "White" },
+		{ Body = "White", Grip = "LightGrey", Head = "Teal", Text = "Black" },
+		{ Body = "Lavender", Grip = "Charcoal", Head = "White", Text = "Black" },
+	},
+	YogaMat = {
+		{ Body = "Purple", Strap = "Black" },
+		{ Body = "Teal", Strap = "Black" },
+		{ Body = "Coral", Strap = "White" },
+		{ Body = "Mustard", Strap = "Black" },
+		{ Body = "Sky", Strap = "White" },
+		{ Body = "Sage", Strap = "Oak" },
+	},
+	MassageTable = {
+		{ Pad = "Cream", Frame = "Oak", Legs = "Oak", Bolster = "Sage", Towel = "White" },
+		{ Pad = "Sage", Frame = "Oak", Legs = "Oak", Bolster = "Cream", Towel = "White" },
+		{ Pad = "Charcoal", Frame = "Black", Legs = "Black", Bolster = "Terracotta", Towel = "White" },
+		{ Pad = "Terracotta", Frame = "Oak", Legs = "Oak", Bolster = "Cream", Towel = "Cream" },
+	},
+	OilBottle = {
+		{ Body = "Amber", Cap = "Black", Label = "Cream", Text = "Black" },
+		{ Body = "BlueGlass", Cap = "White", Label = "Cream", Text = "Black" },
+		{ Body = "White", Cap = "Brass", Label = "Cream", Text = "Black" },
+	},
+	CandleSet = {
+		{ Wax = "Cream", Flame = "WarmGlow", Tray = "Brass" },
+		{ Wax = "Sage", Flame = "WarmGlow", Tray = "Oak" },
+		{ Wax = "Terracotta", Flame = "WarmGlow", Tray = "Black" },
+		{ Wax = "White", Flame = "WarmGlow", Tray = "Oak" },
+	},
+	Diffuser = {
+		{ Body = "White", Base = "Oak", Light = "WarmGlow" },
+		{ Body = "Sage", Base = "Oak", Light = "WarmGlow" },
+		{ Body = "Terracotta", Base = "Black", Light = "WarmGlow" },
+	},
+	SpaStones = {
+		{ Stone = "Slate" },
+		{ Stone = "Charcoal" },
+	},
+	Pouf = {
+		{ Body = "Mustard", Piping = "Cream" },
+		{ Body = "Sage", Piping = "Cream" },
+		{ Body = "Terracotta", Piping = "Cream" },
+		{ Body = "Cream", Piping = "Kraft" },
+		{ Body = "Navy", Piping = "Cream" },
+	},
+	FoldingScreen = {
+		{ Frame = "Oak", Panel = "Cream" },
+		{ Frame = "Black", Panel = "Sage" },
+		{ Frame = "Oak", Panel = "Kraft" },
+	},
 } :: { [string]: { { [string]: string } } }
 
 -- `variant` names one of the MaterialVariants below; `material` must then be that variant's base material.
@@ -627,6 +770,63 @@ StarterGymConfig.MaterialVariants = {
 		normal = "rbxassetid://138250345893095",
 		roughness = "rbxassetid://108333057618621",
 	},
+	-- Showers, Recovery and Massage (2026-10-26, picked by the user from a preview board).
+	Showers_BlueMosaic = { -- ambientcg Tiles035
+		base = Enum.Material.CeramicTiles,
+		studsPerTile = 5,
+		color = "rbxassetid://79063036119056",
+		normal = "rbxassetid://118506027233058",
+		roughness = "rbxassetid://136996293743606",
+	},
+	Showers_MarbleBrick = { -- ambientcg Tiles010
+		base = Enum.Material.CeramicTiles,
+		studsPerTile = 5,
+		color = "rbxassetid://113634510763149",
+		normal = "rbxassetid://88969744448400",
+		roughness = "rbxassetid://92946355183459",
+	},
+	Showers_Terrazzo = { -- ambientcg Terrazzo018
+		base = Enum.Material.Marble,
+		studsPerTile = 8,
+		color = "rbxassetid://120098259872294",
+		normal = "rbxassetid://93489427314386",
+		roughness = "rbxassetid://123968892636231",
+	},
+	Recovery_Rubber = { -- ambientcg Rubber004
+		base = Enum.Material.Rubber,
+		studsPerTile = 10,
+		color = "rbxassetid://72558321603795",
+		normal = "rbxassetid://110859541932271",
+		roughness = "rbxassetid://94838493037491",
+	},
+	Recovery_MicroCement = { -- ambientcg Concrete048
+		base = Enum.Material.Concrete,
+		studsPerTile = 14,
+		color = "rbxassetid://79376788124469",
+		normal = "rbxassetid://134234346592830",
+		roughness = "rbxassetid://111992267111245",
+	},
+	Massage_LightWood = { -- ambientcg WoodFloor051
+		base = Enum.Material.WoodPlanks,
+		studsPerTile = 10,
+		color = "rbxassetid://72532828654279",
+		normal = "rbxassetid://79403708872298",
+		roughness = "rbxassetid://118527570413370",
+	},
+	Massage_StoneWall = { -- polyhaven japanese_stone_wall
+		base = Enum.Material.Slate,
+		studsPerTile = 12,
+		color = "rbxassetid://124186023288911",
+		normal = "rbxassetid://78046982833492",
+		roughness = "rbxassetid://112502857619364",
+	},
+	Massage_Limewash = { -- polyhaven painted_plaster_wall
+		base = Enum.Material.Plaster,
+		studsPerTile = 12,
+		color = "rbxassetid://105884708597781",
+		normal = "rbxassetid://80941039028506",
+		roughness = "rbxassetid://128584025842739",
+	},
 } :: { [string]: MaterialVariantSpec }
 
 -- Bright and clean, black rubber under the racks (References/Visual Style).
@@ -707,6 +907,21 @@ StarterGymConfig.Looks = {
 	StaffCork = { material = Enum.Material.Cardboard, color = Color3.fromRGB(255, 255, 255), variant = "Staff_Cork" },
 	StaffCabinet = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(140, 164, 134) }, -- sage kitchen units
 	StaffAccent = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(96, 132, 160) }, -- a dusty blue wall
+	-- Showers, Recovery and Massage (2026-10-26): textured the same way.
+	ShowersFloor = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(255, 255, 255), variant = "Showers_BlueMosaic" },
+	ShowersTiles = { material = Enum.Material.CeramicTiles, color = Color3.fromRGB(255, 255, 255), variant = "Showers_MarbleBrick" },
+	ShowersTerrazzo = { material = Enum.Material.Marble, color = Color3.fromRGB(255, 255, 255), variant = "Showers_Terrazzo" },
+	RecoveryFloor = { material = Enum.Material.Rubber, color = Color3.fromRGB(255, 255, 255), variant = "Recovery_Rubber" },
+	RecoveryCement = { material = Enum.Material.Concrete, color = Color3.fromRGB(255, 255, 255), variant = "Recovery_MicroCement" },
+	RecoveryWall = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(198, 222, 234) }, -- icy blue walls
+	GlowIce = { material = Enum.Material.Neon, color = Color3.fromRGB(150, 215, 255) },
+	MatTeal = { material = Enum.Material.Rubber, color = Color3.fromRGB(0, 138, 140) }, -- stretching mats
+	MatCoral = { material = Enum.Material.Rubber, color = Color3.fromRGB(238, 112, 92) },
+	MatLavender = { material = Enum.Material.Rubber, color = Color3.fromRGB(184, 170, 222) },
+	MassageFloor = { material = Enum.Material.WoodPlanks, color = Color3.fromRGB(255, 255, 255), variant = "Massage_LightWood" },
+	MassageStone = { material = Enum.Material.Slate, color = Color3.fromRGB(255, 255, 255), variant = "Massage_StoneWall" },
+	-- The grey limewash tinted warm (Roblox multiplies the map by the colour).
+	MassageWall = { material = Enum.Material.Plaster, color = Color3.fromRGB(255, 236, 214), variant = "Massage_Limewash" },
 } :: { [string]: Look }
 
 --[[

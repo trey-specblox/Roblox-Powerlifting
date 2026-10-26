@@ -1,10 +1,10 @@
 # Development Status
 
 Short handoff between Claude Code sessions. Read this first, then verify it
-against `git status` / `git log` before acting. Last updated: 2026-10-25
-(Starter Gym step 6: Lockers, Cafe and Staff Room remade with the kits and
-approved; the Lockers made private with a solid wall and door; newest entries
-at the end of the CURRENT MILESTONE block).
+against `git status` / `git log` before acting. Last updated: 2026-10-26
+(Starter Gym step 6: Showers, Recovery and Massage remade with the kits; new
+layout decision: closed rooms with doors and an upstairs spa wing; newest
+entries at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -895,9 +895,53 @@ and polish.
     lines). Screenshots approved by the user.
   - Still for the user: SAVE/PUBLISH the cloud place once so the new
     MaterialVariants (and the Supplement Bar's) reach the live game.
-  NEXT ACTION: the next batch of 2-3 rooms with the same pipeline (textures and
-  props previewed first, variety in colours), per the approved room purposes.
-  Reuse PropAssets/propItem/clad; add a new model asset per batch.
+  SHOWERS, RECOVERY AND MASSAGE REMADE WITH THE KITS (2026-10-26; textures and
+  props approved by the user from a preview board and Blender renders;
+  GAME_DESIGN §27 "Showers look", "Recovery look", "Massage look"):
+  - Textures: 8 CC0 materials (Showers: ambientCG Tiles035 mosaic floor,
+    Tiles010 marble tiles, Terrazzo018; Recovery: ambientCG Rubber004,
+    Concrete048; Massage: ambientCG WoodFloor051, Poly Haven
+    japanese_stone_wall, painted_plaster_wall). 24 group-owned images (ids in
+    `art/materials/materials.json`); MaterialVariants in `default.project.json`
+    and `StarterGymConfig.MaterialVariants` (22 now). Rojo synced them without
+    a reconnect.
+  - Props: `art/scripts/build_room_props_03.py` (`art/blender/RoomProps_03.blend`)
+    makes 20 items (rain shower, body wash, shampoo, folded towel, towel on a
+    rail, soap dispenser, towel bin, slides; cold plunge, foam roller,
+    zero-gravity lounger, massage gun, rolled yoga mat; massage table, oil
+    bottle, candle set, diffuser, spa stones, pouf, folding screen), ~26k
+    triangles, CENTRAL on every label. Exported `art/exports/RoomProps_03.glb`,
+    uploaded as group Model asset 109192629566668 (PropAssets entry 4). New
+    PropPaints (Coral, Lime, Sky, Slate, Amber, BlueGlass, Ice), fabric pieces
+    and colourways in StarterGymConfig.
+  - `RoomProps`: new FURNISH.Showers / Recovery / Massage and a `towelShelf`
+    helper; the old rooms stay as `simpleShowers`, `simpleRecovery`,
+    `simpleMassage` fallbacks. Fix after the first screenshots: the Showers
+    sign glows icy blue (white was unreadable on white tiles) and all its
+    walls are tiled.
+  - Checks by Claude: luau-lsp 0 errors, `rojo build` OK. Studio via the MCP
+    (Play, cloud place): 13 rooms furnished, no new warnings (only the known
+    DataStore and 203785492 messages); Showers 159 / Recovery 86 / Massage 95
+    MeshParts; StarterGym_VerifyShell ALL 52 CHECKS PASSED (pasted in full).
+    Screenshots shown to the user.
+  - NEW LAYOUT DECISION (user, 2026-10-26, GAME_DESIGN §27 "Closed rooms and
+    the spa wing"): only the Cafe, Supplement Bar and Shop keep glass fronts;
+    every other room gets a solid wall and a real door; the left block's four
+    upstairs rooms become one private Recovery & Spa wing (one door from the
+    balcony, a reception / corridor, bigger closed Sauna, Recovery and Massage
+    rooms). Recovery and Massage were committed in their ground-floor rooms as
+    a checkpoint and will MOVE (their FURNISH code and props are reused).
+  NEXT ACTION: build the new layout in StarterGymBuilder, in steps: (1) closed
+  rooms: generalise PrivateRooms (front block ground floor only today) to
+  every block and both floors, with a door for every closed room; (2) the spa
+  wing in the left upper block with internal walls and doors, the Sauna moved
+  there, Recovery and Massage moved up; (3) settle the [TBD]s in GAME_DESIGN
+  with the user first (what fills the freed rooms, where the six side rooms
+  go). Then continue the room batches (Index, Office, Storage, ...).
+  OLD NEXT ACTION (done above): the next batch of 2-3 rooms with the same
+  pipeline (textures and props previewed first, variety in colours), per the
+  approved room purposes. Reuse PropAssets/propItem/clad; add a new model
+  asset per batch.
   OLD NEXT ACTION (done 2026-10-23, stage 5 above): lighting (Lighting.Ambient is black; the other rooms still
   show the upper floor's tiles as their ceiling). Old steps (a)-(d): done;
   (b) reconnect Rojo, run StarterGym_VerifyShell (expect ALL ... CHECKS

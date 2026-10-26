@@ -224,6 +224,134 @@
         "normal": "rbxassetid://138250345893095",
         "roughness": "rbxassetid://108333057618621"
       }
+    },
+    "Showers_BlueMosaic": {
+      "source": "ambientcg:Tiles035",
+      "url": "https://ambientcg.com/view?id=Tiles035",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Tiles035",
+      "ids": {
+        "color": "rbxassetid://79063036119056",
+        "normal": "rbxassetid://118506027233058",
+        "roughness": "rbxassetid://136996293743606"
+      }
+    },
+    "Showers_MarbleBrick": {
+      "source": "ambientcg:Tiles010",
+      "url": "https://ambientcg.com/view?id=Tiles010",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Tiles010",
+      "ids": {
+        "color": "rbxassetid://113634510763149",
+        "normal": "rbxassetid://88969744448400",
+        "roughness": "rbxassetid://92946355183459"
+      }
+    },
+    "Showers_Terrazzo": {
+      "source": "ambientcg:Terrazzo018",
+      "url": "https://ambientcg.com/view?id=Terrazzo018",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Terrazzo018",
+      "ids": {
+        "color": "rbxassetid://120098259872294",
+        "normal": "rbxassetid://93489427314386",
+        "roughness": "rbxassetid://123968892636231"
+      }
+    },
+    "Recovery_Rubber": {
+      "source": "ambientcg:Rubber004",
+      "url": "https://ambientcg.com/view?id=Rubber004",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Rubber004",
+      "ids": {
+        "color": "rbxassetid://72558321603795",
+        "normal": "rbxassetid://110859541932271",
+        "roughness": "rbxassetid://94838493037491"
+      }
+    },
+    "Recovery_MicroCement": {
+      "source": "ambientcg:Concrete048",
+      "url": "https://ambientcg.com/view?id=Concrete048",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Concrete048",
+      "ids": {
+        "color": "rbxassetid://79376788124469",
+        "normal": "rbxassetid://134234346592830",
+        "roughness": "rbxassetid://111992267111245"
+      }
+    },
+    "Massage_LightWood": {
+      "source": "ambientcg:WoodFloor051",
+      "url": "https://ambientcg.com/view?id=WoodFloor051",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_WoodFloor051",
+      "ids": {
+        "color": "rbxassetid://72532828654279",
+        "normal": "rbxassetid://79403708872298",
+        "roughness": "rbxassetid://118527570413370"
+      }
+    },
+    "Massage_StoneWall": {
+      "source": "polyhaven:japanese_stone_wall",
+      "url": "https://polyhaven.com/a/japanese_stone_wall",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_japanese_stone_wall",
+      "ids": {
+        "color": "rbxassetid://124186023288911",
+        "normal": "rbxassetid://78046982833492",
+        "roughness": "rbxassetid://112502857619364"
+      }
+    },
+    "Massage_Limewash": {
+      "source": "polyhaven:painted_plaster_wall",
+      "url": "https://polyhaven.com/a/painted_plaster_wall",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_painted_plaster_wall",
+      "ids": {
+        "color": "rbxassetid://105884708597781",
+        "normal": "rbxassetid://80941039028506",
+        "roughness": "rbxassetid://128584025842739"
+      }
     }
   },
   "models": {
@@ -251,6 +379,14 @@
       "license": "own work",
       "ids": {
         "model": "rbxassetid://93719454817045"
+      }
+    },
+    "RoomProps_03": {
+      "about": "Showers, Recovery and Massage props (CENTRAL labels). Made by art/scripts/build_room_props_03.py (art/blender/RoomProps_03.blend).",
+      "file": "art/exports/RoomProps_03.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://109192629566668"
       }
     }
   }

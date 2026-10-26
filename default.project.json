@@ -241,6 +241,86 @@
           "NormalMap": "rbxassetid://138250345893095",
           "RoughnessMap": "rbxassetid://108333057618621"
         }
+      },
+      "Showers_BlueMosaic": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "StudsPerTile": 5,
+          "ColorMap": "rbxassetid://79063036119056",
+          "NormalMap": "rbxassetid://118506027233058",
+          "RoughnessMap": "rbxassetid://136996293743606"
+        }
+      },
+      "Showers_MarbleBrick": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "CeramicTiles",
+          "StudsPerTile": 5,
+          "ColorMap": "rbxassetid://113634510763149",
+          "NormalMap": "rbxassetid://88969744448400",
+          "RoughnessMap": "rbxassetid://92946355183459"
+        }
+      },
+      "Showers_Terrazzo": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Marble",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://120098259872294",
+          "NormalMap": "rbxassetid://93489427314386",
+          "RoughnessMap": "rbxassetid://123968892636231"
+        }
+      },
+      "Recovery_Rubber": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Rubber",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://72558321603795",
+          "NormalMap": "rbxassetid://110859541932271",
+          "RoughnessMap": "rbxassetid://94838493037491"
+        }
+      },
+      "Recovery_MicroCement": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Concrete",
+          "StudsPerTile": 14,
+          "ColorMap": "rbxassetid://79376788124469",
+          "NormalMap": "rbxassetid://134234346592830",
+          "RoughnessMap": "rbxassetid://111992267111245"
+        }
+      },
+      "Massage_LightWood": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "WoodPlanks",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://72532828654279",
+          "NormalMap": "rbxassetid://79403708872298",
+          "RoughnessMap": "rbxassetid://118527570413370"
+        }
+      },
+      "Massage_StoneWall": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Slate",
+          "StudsPerTile": 12,
+          "ColorMap": "rbxassetid://124186023288911",
+          "NormalMap": "rbxassetid://78046982833492",
+          "RoughnessMap": "rbxassetid://112502857619364"
+        }
+      },
+      "Massage_Limewash": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Plaster",
+          "StudsPerTile": 12,
+          "ColorMap": "rbxassetid://105884708597781",
+          "NormalMap": "rbxassetid://80941039028506",
+          "RoughnessMap": "rbxassetid://128584025842739"
+        }
       }
     }
   }

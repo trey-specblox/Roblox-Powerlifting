@@ -742,7 +742,8 @@ local function simpleLockers(kit: Kit)
 	plant(kit, "Plant_2", hw - 1.5, 1.5)
 end
 
-FURNISH.Showers = function(kit)
+-- The first showers (step 6a), kept for when the 3D props do not load.
+local function simpleShowers(kit: Kit)
 	local hw = kit.W / 2
 	local back = kit.wall("back")
 	back.item("Tiles_Back", -hw, hw, 0, 0.2, 0, 9, looks.Tile)
@@ -1189,7 +1190,8 @@ FURNISH.Office = function(kit)
 	plant(kit, "Plant_2", hw - 1.5, 1.5)
 end
 
-FURNISH.Recovery = function(kit)
+-- The first recovery room (step 6a), kept for when the 3D props do not load.
+local function simpleRecovery(kit: Kit)
 	local hw = kit.W / 2
 	local back = kit.wall("back")
 	iceBath(back, "IceBath_1", -10, -5)
@@ -1207,7 +1209,8 @@ FURNISH.Recovery = function(kit)
 	plant(kit, "Plant", hw - 1.5, 1.5)
 end
 
-FURNISH.Massage = function(kit)
+-- The first massage room (step 6a), kept for when the 3D props do not load.
+local function simpleMassage(kit: Kit)
 	local hw, D = kit.W / 2, kit.D
 	paddedTable(kit, "Table_1", -6, 11, 18, looks.Padding)
 	paddedTable(kit, "Table_2", 6, 11, 18, looks.Padding)
@@ -1221,6 +1224,288 @@ FURNISH.Massage = function(kit)
 	end
 	plant(kit, "Plant_1", -hw + 1.5, D - 1.5)
 	plant(kit, "Plant_2", hw - 1.5, D - 1.5)
+end
+
+-- An oak shelf (6 along `wall` from s0, 6.2 tall, 3 boards) of folded 3D towels:
+-- three stacks of two on every board, the colours starting `colourOffset` on.
+local function towelShelf(kit: Kit, templates: { [string]: Model }, wall: Wall, facing: string, name: string, s0: number,
+	colourOffset: number)
+	shelving(wall, name, s0, s0 + 6, 1.4, 6.2, 3, looks.LockersSlats)
+	for level = 1, 3 do
+		local y = 0.3 + (level - 1) * 6.2 / 3
+		for k = 0, 2 do
+			local a, d = wall.at(s0 + 1.1 + k * 1.9, 0.78)
+			for fold = 0, 1 do
+				propItem(kit, templates, string.format("%s_Towel_%d_%d_%d", name, level, k + 1, fold + 1), "Towel",
+					(level * 3 + k + colourOffset) % 6 + 1, a, d, y + fold * 0.26, facing)
+			end
+		end
+	end
+end
+
+--[[
+	The showers (GAME_DESIGN §27: look only), behind the private Lockers and
+	only reached through them. Remade 2026-10-26 with CC0 textures and 3D
+	props: a dark blue mosaic floor; five stalls in white marble tiles along
+	the back wall, each with a rain shower, a soap dispenser, a shelf of
+	CENTRAL body wash and shampoo, a glass screen and an oak duckboard; a
+	terrazzo wall and an oak bench with towels on rails and slides; a shelf of
+	folded towels, used-towel bins and a SHOWERS sign.
+]]
+FURNISH.Showers = function(kit)
+	local props = propsFor({ "RainShower", "ShowerGel", "Shampoo", "SoapDispenser", "Towel", "HangingTowel", "TowelBin",
+		"Slides", "LockerBench", "SBarPlant" })
+	if props == nil then
+		simpleShowers(kit)
+		return
+	end
+	local hw, D = kit.W / 2, kit.D
+	local back, left, right = kit.wall("back"), kit.wall("left"), kit.wall("right")
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+	-- Against `wall`, `t` out from it, facing `facing` (into the room).
+	local function onWall(wall: Wall, facing: string, name: string, item: string, colourway: number, s: number, t: number,
+		y: number): Model
+		local a, d = wall.at(s, t)
+		return put(name, item, colourway, a, d, y, facing)
+	end
+
+	-- The room's surfaces.
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.ShowersFloor)
+	clad(kit, "back", "Wall_Tiles", looks.ShowersTiles)
+	clad(kit, "left", "Wall_Terrazzo", looks.ShowersTerrazzo)
+	clad(kit, "right", "Wall_Right", looks.ShowersTiles)
+	clad(kit, "front", "Wall_Front", looks.ShowersTiles)
+
+	-- Five stalls along the back wall with tiled walls between them.
+	local unit, depth = 5.8, 5
+	local first = -2.5 * unit
+	for k = 0, 5 do
+		local s = first + k * unit
+		back.block("Stall_Wall_" .. k, s - 0.2, s + 0.2, 0.08, depth, 0.06, 8.5, looks.ShowersTiles)
+	end
+	for k = 1, 5 do
+		local c, id = first + (k - 0.5) * unit, "Stall_" .. k
+		onWall(back, "-d", id .. "_Shower", "RainShower", k % 3 + 1, c, 1.15, 4)
+		onWall(back, "-d", id .. "_Soap", "SoapDispenser", 1, c - 1.7, 0.3, 4.4)
+		back.item(id .. "_Shelf", c + 0.95, c + 2.45, 0.08, 0.7, 4.6, 4.72, looks.Stainless)
+		onWall(back, "-d", id .. "_Gel", "ShowerGel", k, c + 1.35, 0.4, 4.72)
+		onWall(back, "-d", id .. "_Shampoo", "Shampoo", (k - 1) % 4 + 1, c + 2, 0.4, 4.72)
+		back.item(id .. "_Drain", c - 2, c + 2, 3.7, 3.9, 0.06, 0.08, looks.Gadget)
+		-- A glass screen across the right half of the opening, in a black frame.
+		back.item(id .. "_Glass", c + 0.2, c + 2.5, depth - 0.1, depth, 0.06, 7.5, looks.Glass)
+		back.item(id .. "_GlassEdge", c + 0.1, c + 0.2, depth - 0.12, depth + 0.02, 0.06, 7.6, looks.Gadget)
+		back.item(id .. "_GlassTop", c + 0.1, c + 2.5, depth - 0.12, depth + 0.02, 7.5, 7.6, looks.Gadget)
+		for slat = 0, 5 do
+			local t = depth + 0.4 + slat * 0.3
+			back.item(string.format("%s_Duckboard_%d", id, slat + 1), c - 1.6, c + 1.6, t, t + 0.22, 0.06, 0.18,
+				looks.LockersSlats)
+		end
+	end
+	neonSign(back, "Sign", "SHOWERS", -7, 7, 9.4, 11.4, Color3.fromRGB(120, 210, 235), Color3.fromRGB(20, 70, 95),
+		looks.GlowIce)
+
+	-- The terrazzo wall: an oak bench with slides under it, towels on rails above, a towel bin.
+	onWall(left, "+a", "Bench_1", "LockerBench", 1, 10, 0.95, 0.06)
+	hidden(left.block("Bench_Solid_1", 6, 14, 0.15, 1.75, 0.06, 1.86, looks.Glass))
+	for index, s in ipairs({ 6.5, 9, 11.5, 14 }) do
+		onWall(left, "+a", "RailTowel_Left_" .. index, "HangingTowel", index + 1, s, 0.41, 3.6)
+	end
+	onWall(left, "+a", "Slides_1", "Slides", 2, 8, 0.9, 0.06)
+	onWall(left, "+a", "Slides_2", "Slides", 5, 12, 0.9, 0.06)
+	onWall(left, "+a", "TowelBin_1", "TowelBin", 1, 18, 0.95, 0.06)
+
+	-- The other wall: a shelf of folded towels, a towel bin, a bench with towels above it.
+	towelShelf(kit, props, right, "-a", "TowelShelf", 2.5, 0)
+	onWall(right, "-a", "TowelBin_2", "TowelBin", 3, 11, 0.95, 0.06)
+	onWall(right, "-a", "Bench_2", "LockerBench", 1, 18, 0.95, 0.06)
+	hidden(right.block("Bench_Solid_2", 14, 22, 0.15, 1.75, 0.06, 1.86, looks.Glass))
+	for index, s in ipairs({ 15, 17.5, 20 }) do
+		onWall(right, "-a", "RailTowel_Right_" .. index, "HangingTowel", index, s, 0.41, 3.6)
+	end
+	onWall(right, "-a", "Slides_3", "Slides", 3, 16, 0.9, 0.06)
+
+	-- Plants by the Lockers wall.
+	put("Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
+	put("Plant_2", "SBarPlant", 1, hw - 1.8, 1.7, 0.06, "+d")
+end
+
+--[[
+	Recovery (GAME_DESIGN §27: a relax spot, with sit and lie-down emotes
+	later). Remade 2026-10-26 with CC0 textures and 3D props: a rubber floor, a
+	micro-cement back wall and icy blue walls; two cold plunge tubs with ice;
+	four zero-gravity loungers; stretching mats with foam rollers and towels;
+	an oak wall ladder; a shelf of foam rollers, rolled yoga mats and CENTRAL
+	massage guns; an icy RECOVERY sign.
+]]
+FURNISH.Recovery = function(kit)
+	local props = propsFor({ "ColdPlunge", "FoamRoller", "Lounger", "MassageGun", "YogaMat", "WaterBottle", "Towel",
+		"SBarPlant" })
+	if props == nil then
+		simpleRecovery(kit)
+		return
+	end
+	local hw, D = kit.W / 2, kit.D
+	local back, left, right = kit.wall("back"), kit.wall("left"), kit.wall("right")
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+	local function onWall(wall: Wall, facing: string, name: string, item: string, colourway: number, s: number, t: number,
+		y: number): Model
+		local a, d = wall.at(s, t)
+		return put(name, item, colourway, a, d, y, facing)
+	end
+
+	-- The room's surfaces.
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.RecoveryFloor)
+	clad(kit, "back", "Wall_Cement", looks.RecoveryCement)
+	clad(kit, "left", "Wall_Left", looks.RecoveryWall)
+	clad(kit, "right", "Wall_Right", looks.RecoveryWall)
+
+	-- Two cold plunge tubs against the back wall, an oak step in front of each, the sign above.
+	for index, spec in ipairs({ { s = -8.5, colourway = 1 }, { s = -2.5, colourway = 2 } }) do
+		local id = "ColdPlunge_" .. index
+		onWall(back, "-d", id, "ColdPlunge", spec.colourway, spec.s, 2.8, 0.06)
+		hidden(back.block(id .. "_Solid", spec.s - 2.2, spec.s + 2.2, 0.6, 5, 0.06, 2.96, looks.Glass))
+		back.block(id .. "_Step", spec.s - 1, spec.s + 1, 5.3, 6.3, 0.06, 1, looks.LockersSlats)
+	end
+	neonSign(back, "Sign", "RECOVERY", -11, 0, 8.8, 10.8, Color3.fromRGB(225, 245, 255), Color3.fromRGB(40, 110, 160),
+		looks.GlowIce)
+
+	-- A shelf of foam rollers, rolled yoga mats, massage guns and bottles.
+	shelving(back, "GearShelf", 2, 12, 1.4, 5.6, 3, looks.LockersSlats)
+	local spacing = 5.6 / 3
+	for k = 0, 2 do
+		local s = 3.75 + k * 3.25
+		onWall(back, "-d", "Shelf_Roller_" .. k + 1, "FoamRoller", k * 2 + 1, s, 0.75, 0.3)
+		onWall(back, "-d", "Shelf_Mat_" .. k + 1, "YogaMat", k + 1, s, 0.75, 0.3 + spacing)
+	end
+	for k = 0, 3 do
+		onWall(back, "-d", "Shelf_MassageGun_" .. k + 1, "MassageGun", k + 1, 3 + k * 2, 0.75, 0.3 + 2 * spacing)
+	end
+	for k = 0, 1 do
+		onWall(back, "-d", "Shelf_Bottle_" .. k + 1, "WaterBottle", k + 2, 10.6 + k * 0.7, 0.75, 0.3 + 2 * spacing)
+	end
+
+	-- Four loungers with their heads to the right wall, a water bottle beside each.
+	for index, s in ipairs({ 7.5, 11, 14.5, 18 }) do
+		local id = "Lounger_" .. index
+		onWall(right, "-a", id, "Lounger", index, s, 3.3, 0.06)
+		hidden(right.block(id .. "_Solid", s - 1.25, s + 1.25, 0.3, 6.2, 0.06, 1.7, looks.Glass))
+		onWall(right, "-a", id .. "_Bottle", "WaterBottle", index, s + 1.7, 1, 0.06)
+	end
+
+	-- An oak wall ladder for stretching on the left wall.
+	for ladder = 0, 1 do
+		local s0 = 7 + ladder * 3.6
+		for side, s in ipairs({ s0, s0 + 3 }) do
+			left.item(string.format("Ladder_%d_Rail_%d", ladder + 1, side), s - 0.12, s + 0.12, 0.08, 0.5, 0.06, 9.6,
+				looks.LockersSlats)
+		end
+		local a, d = left.at(s0 + 1.5, 0.3)
+		for rung = 1, 16 do
+			kit.cylinder(string.format("Ladder_%d_Rung_%d", ladder + 1, rung), a, d, 0.06 + rung * 0.58, 2.76, 0.22, left.axis,
+				looks.LockersSlats)
+		end
+	end
+	hidden(left.block("Ladder_Solid", 6.8, 13.8, 0.08, 0.55, 0.06, 9.6, looks.Glass))
+
+	-- Stretching mats in the middle, a foam roller and a folded towel on each.
+	for index, spec in ipairs({ { a = -9.5, look = looks.MatTeal }, { a = -5.5, look = looks.MatCoral },
+		{ a = -1.5, look = looks.MatLavender } }) do
+		local id = "Mat_" .. index
+		kit.item(id, spec.a - 1.4, spec.a + 1.4, 9, 15.5, 0.06, 0.14, spec.look)
+		put(id .. "_Roller", "FoamRoller", index + 1, spec.a, 10.2, 0.14, "-d")
+		put(id .. "_Towel", "Towel", index + 1, spec.a, 14.6, 0.14, "-d")
+	end
+
+	-- Plants by the glass.
+	put("Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
+	put("Plant_2", "SBarPlant", 1, hw - 1.8, 1.7, 0.06, "+d")
+end
+
+--[[
+	Massage (GAME_DESIGN §27: a relax spot, with sit and lie-down emotes
+	later). Remade 2026-10-26 with CC0 textures and 3D props: a light wood
+	floor, a grey stone back wall and warm limewash walls; two massage tables
+	with face cradles, bolsters and towels, a folding screen between them and a
+	warm lamp over each; oak shelves of candles, diffusers, CENTRAL massage
+	oils and spa stones under a warm MASSAGE sign; folded towels; poufs round
+	a low table by the glass.
+]]
+FURNISH.Massage = function(kit)
+	local props = propsFor({ "MassageTable", "OilBottle", "CandleSet", "Diffuser", "SpaStones", "Pouf", "FoldingScreen",
+		"Towel", "PendantLamp", "SBarPlant" })
+	if props == nil then
+		simpleMassage(kit)
+		return
+	end
+	local hw, D = kit.W / 2, kit.D
+	local back, left = kit.wall("back"), kit.wall("left")
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+	local function onBack(name: string, item: string, colourway: number, s: number, t: number, y: number): Model
+		local a, d = back.at(s, t)
+		return put(name, item, colourway, a, d, y, "-d")
+	end
+	-- A small warm light in a candle's flames or a diffuser's glow ring.
+	local function glow(model: Model, piece: string)
+		local part = model:FindFirstChild(piece, true)
+		if part then
+			warmGlow(part :: BasePart, 8, 0.4)
+		end
+	end
+
+	-- The room's surfaces.
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.MassageFloor)
+	clad(kit, "back", "Wall_Stone", looks.MassageStone)
+	clad(kit, "left", "Wall_Left", looks.MassageWall)
+	clad(kit, "right", "Wall_Right", looks.MassageWall)
+
+	-- Two massage tables, their face cradles toward the stone wall, a warm
+	-- lamp over each and a folding screen between them.
+	for index, spec in ipairs({ { a = -6.5, colourway = 1, lamp = 1 }, { a = 6.5, colourway = 2, lamp = 3 } }) do
+		local id = "Table_" .. index
+		put(id, "MassageTable", spec.colourway, spec.a, D - 5.8, 0.06, "-d")
+		hidden(kit.block(id .. "_Solid", spec.a - 1.5, spec.a + 1.5, D - 10.5, D - 2.5, 0.06, 3.36, looks.Glass))
+		pendant(kit, props, id .. "_Lamp", spec.lamp, spec.a, D - 6.5, 7.6)
+	end
+	put("Screen", "FoldingScreen", 1, 0, D - 6.5, 0.06, "+a")
+	hidden(kit.block("Screen_Solid", -0.5, 0.5, D - 9.3, D - 3.7, 0.06, 6.4, looks.Glass))
+
+	-- Oak shelves on the stone wall: candles, diffusers, oils and stones; the sign above.
+	for level, y in ipairs({ 4.4, 6.4 }) do
+		back.item("Shelf_" .. level, -3.6, 3.6, 0.08, 1.1, y - 0.15, y, looks.LockersSlats)
+	end
+	glow(onBack("Shelf_Candles_1", "CandleSet", 1, -2.4, 0.6, 4.4), "CandleSet_Flame")
+	glow(onBack("Shelf_Diffuser_1", "Diffuser", 1, -0.2, 0.6, 4.4), "Diffuser_Light")
+	for k = 0, 2 do
+		onBack("Shelf_Oil_" .. k + 1, "OilBottle", k + 1, 1.6 + k * 0.5, 0.55, 4.4)
+	end
+	onBack("Shelf_Stones", "SpaStones", 1, -2.3, 0.6, 6.4)
+	glow(onBack("Shelf_Candles_2", "CandleSet", 3, 0.3, 0.6, 6.4), "CandleSet_Flame")
+	onBack("Shelf_Diffuser_2", "Diffuser", 2, 2.5, 0.6, 6.4)
+	neonSign(back, "Sign", "MASSAGE", -6, 6, 8.8, 10.8, Color3.fromRGB(255, 214, 150), Color3.fromRGB(150, 90, 30),
+		looks.GlowWarm)
+
+	-- Folded towels on the left wall.
+	towelShelf(kit, props, left, "+a", "TowelShelf", 4, 2)
+
+	-- A waiting corner by the glass: poufs round a low oak table with candles.
+	roundTable(kit, "LowTable", 9.8, 6.2, looks.LockersSlats, 2)
+	glow(put("LowTable_Candles", "CandleSet", 4, 9.8, 6.2, 2, "-d"), "CandleSet_Flame")
+	for index, spot in ipairs({ { 9.8, 3.6 }, { 9.8, 8.8 }, { 7.2, 6.2 } }) do
+		put("Pouf_" .. index, "Pouf", index, spot[1], spot[2], 0.06, "-d")
+		hidden(kit.block("Pouf_Solid_" .. index, spot[1] - 0.8, spot[1] + 0.8, spot[2] - 0.8, spot[2] + 0.8, 0.06, 1.66,
+			looks.Glass))
+	end
+
+	-- Plants.
+	put("Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
+	put("Plant_2", "SBarPlant", 1, -hw + 1.8, D - 1.8, 0.06, "-d")
+	put("Plant_3", "SBarPlant", 1, hw - 1.8, D - 1.8, 0.06, "-d")
 end
 
 FURNISH.Physio = function(kit)
