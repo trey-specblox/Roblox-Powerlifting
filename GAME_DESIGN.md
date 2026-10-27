@@ -1221,10 +1221,32 @@ Comp max testing
 >         saved. **No rewards**: it gives no Competition Number, technique,
 >         lifting performance or currency. The server decides the song, the
 >         timing and when a run ends (clients only send their key presses), so
->         times can't simply be made up. Built as its own step after the room;
->         [TBD] for that step: health and timing rules, the speed-up curve,
->         whether the board is all-time or also weekly, what happens when a
->         runner joins mid-song.
+>         times can't simply be made up. Built as its own step after the room.
+>         - **Settled** (user, 2026-10-26, picked from options):
+>           - **Health: misses only drain.** Every missed note costs health,
+>             good hits never give it back, so every run ends eventually.
+>           - **Levels every 30 seconds:** the beat steps up a level every 30
+>             s (faster tempo, more notes); the TV shows the level.
+>           - **Rounds:** when someone hops on a treadmill a round starts after
+>             a 5-second countdown, and everyone who hops on during the
+>             countdown joins it, so all runners start at the same speed.
+>             Late arrivals can run (just the running animation) and watch,
+>             and join the next round when the last runner of this one is out.
+>           - **Two boards in the room:** the **all-time** 10 best single runs
+>             and **this week's** 10 best (resets every Monday), each with
+>             avatar, username and survival time.
+>           - **The numbers** (approved by the user, 2026-10-26, after the
+>             Studio test; in `CardioRhythmConfig`): **100 health**; a
+>             **missed note costs 10** (10 misses and you are out); pressing
+>             a lane with **no note near costs 4** (so mashing every key does
+>             not work). A press within **0.15 s** of a note is a hit
+>             ("GOOD"), within **0.06 s** "PERFECT" (only a label: both count
+>             the same); the server allows **up to 0.2 s** for a player's
+>             lag. The beat starts at **100 BPM** and gets **8 BPM faster
+>             each 30-second level**, up to **196 BPM** (level 13). Notes take
+>             **1.6 s** to fall at level 1, a little quicker each level, never
+>             under **1.0 s**. The beat is our own: kick and snare on the
+>             beats, a hi-hat on the half beats from level 2.
 >     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
 >       woody strongman front right beside bright, colourful rooms "makes 0
 >       sense"; it must NOT be connected to the other rooms). Chosen from a

@@ -698,5 +698,55 @@
         "image": "rbxassetid://78602138170847"
       }
     }
+  },
+  "sounds": {
+    "Rhythm_Kick": {
+      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+      "file": "art/sounds/Rhythm_Kick.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://85088925719114"
+      }
+    },
+    "Rhythm_Snare": {
+      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+      "file": "art/sounds/Rhythm_Snare.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://99723722634680"
+      }
+    },
+    "Rhythm_Hat": {
+      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+      "file": "art/sounds/Rhythm_Hat.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://139986629908272"
+      }
+    },
+    "Rhythm_Hit": {
+      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+      "file": "art/sounds/Rhythm_Hit.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://111016778868160"
+      }
+    },
+    "Rhythm_Miss": {
+      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+      "file": "art/sounds/Rhythm_Miss.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://127344920469973"
+      }
+    },
+    "Rhythm_Count": {
+      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+      "file": "art/sounds/Rhythm_Count.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://105244845446461"
+      }
+    }
   }
 }

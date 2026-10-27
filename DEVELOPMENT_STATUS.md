@@ -2,8 +2,8 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-26
-(Starter Gym step 6: the Cardio room built, approved, committed and pushed;
-newest entries at the end of the CURRENT MILESTONE block).
+(Starter Gym step 6: the treadmill rhythm game part 1 built, tested, committed
+and pushed; newest entries at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -1219,11 +1219,51 @@ and polish.
     every machine type: positions, run track, pedalling, rowing, skiing,
     hop-off cleanup; StarterGym_VerifyShell ALL 57 CHECKS PASSED (after the
     bike remake); screenshots. Not tested: two players at once, a phone.
-  NEXT ACTION: the treadmill rhythm game (GAME_DESIGN §27 "The treadmill
-  rhythm game"): settle its [TBD]s with the user first (health and timing
-  rules, the speed-up curve, all-time or also weekly board, joining
-  mid-song), then build it server-authoritative with its saved leaderboard
-  (careful DataStore work, per CLAUDE.md). Other open threads: the records
+  THE TREADMILL RHYTHM GAME, PART 1 (2026-10-26; no leaderboard yet; the
+  user settled the rules from options, approved the 6 sounds for upload and
+  APPROVED the numbers after the Studio test; COMMITTED and pushed with the
+  user's approval as "Add the treadmill rhythm game (part 1: rounds, lanes,
+  health and our own beat)"; `git log` for the hash):
+  - New `src/shared/Config/CardioRhythmConfig.luau` (all the numbers: 100
+    health, miss -10, stray press -4, hit window +-0.15 s / perfect
+    +-0.06 s, lag allowance up to 0.2 s, 100 BPM +8 per 30-second level up
+    to 196, note fall 1.6 s down to 1.0 s; lane keys arrows / D F J K /
+    controller; lane colours; sound ids), `src/shared/World/RhythmChart.luau`
+    (notes and beats built from the round's seed, the same on server and
+    clients), `src/shared/World/CardioRhythmRemotes.luau` (RhythmPress: the
+    client only sends a lane; RhythmState; RhythmJudged).
+  - New `src/server/World/CardioRhythmService.luau` (started in
+    init.server): rounds (5 s countdown, everyone on a treadmill joins, late
+    arrivals wait for the next round, results 6 s), judges every press on the
+    server clock, misses only drain health, a 15-minute safety stop.
+  - New `src/client/World/CardioRhythmController.luau` (started in
+    init.client): your own 4 lanes in a panel centred on screen (user's
+    request), tap zones on phones, the wall TV shows the round with every
+    runner's name and health; the beat plays from the TV (kick on odd beats,
+    snare on even, hi-hat on half beats from level 2), Hit / Miss / Count in
+    your own ears.
+  - Sounds: `art/scripts/make_rhythm_sounds.py` makes 6 original WAVs
+    (`art/sounds/Rhythm_{Kick,Snare,Hat,Hit,Miss,Count}.wav`).
+    `art/scripts/upload_group_images.py` now uploads `.wav` as group Audio
+    (manifest section "sounds", ids under "audio"); uploaded as group audio
+    85088925719114 / 99723722634680 / 139986629908272 / 111016778868160 /
+    127344920469973 / 105244845446461 (materials.json "sounds").
+  - Checks: `rojo build` OK; Studio via the MCP (fresh Play, Treadmill_2,
+    E to hop on, Space to hop off): all 6 sounds load (IsLoaded, lengths
+    0.08-0.45 s); countdown beeps 1 s apart; kick/snare every 0.600 s at
+    level 1 and 0.555 s at level 2 (108 BPM); hi-hat starts at 30.3 s;
+    40 presses timed from the round's chart through the real remote were
+    all judged PERFECT with the Hit sound; untouched notes judged Miss with
+    the Miss sound, out after 10; real D/F/J/K key presses reach the server
+    (judged Stray when no note is near) and J does not start a deadlift;
+    hopping off during the countdown cancels the round; a runner who stays
+    on joins the next round. Screenshots. Not tested: two players at once,
+    a phone, a controller; whether the beat sounds good is the user's call.
+  NEXT ACTION: the rhythm game PART 2: the saved all-time and weekly
+  leaderboards (top 10 best single runs, avatar, username, survival time;
+  weekly resets Monday) via PlayerDataService or an OrderedDataStore
+  (careful DataStore work, per CLAUDE.md; propose the data design to the
+  user first). Other open threads: the records
   system (needs a decision; no meet system exists yet, §33), more machines,
   the mirror on a phone, the remaining room interiors (Classroom, Media Room,
   Warm-up, Max Testing), the spare room.
@@ -1281,6 +1321,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `5a189cb` (2026-10-26, pushed) Add the Cardio room: 11 machines players can hop on.
 - `e29401e` (2026-10-26, pushed) Add the open zone's machines: tricep and lat pulldowns, seated rows and leg extensions.
 - `4044e82` (2026-10-26, pushed) Open the dumbbell & machine zone, add the chalk records wall and a real mirror.
 - `bac11b5` (2026-10-26, pushed) Add themed room fronts batch 2b and replace the big room signs with name plaques.

@@ -37,6 +37,10 @@ MirrorController.start()
 local CardioMachineAnimator = require(WorldFolder:WaitForChild("CardioMachineAnimator"))
 CardioMachineAnimator.start()
 
+-- The treadmill rhythm game: your lanes, the wall TV and the beat; it only sends lane presses.
+local CardioRhythmController = require(WorldFolder:WaitForChild("CardioRhythmController"))
+CardioRhythmController.start()
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

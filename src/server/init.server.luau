@@ -30,6 +30,10 @@ StarterGymBuilder.build()
 -- The Cardio room's machines players can hop on (after the gym, which places them). Fun only: no stats.
 CardioMachineService.start()
 
+-- The treadmill rhythm game: rounds, notes and judging are the server's. Fun only: no stats, nothing saved yet.
+local CardioRhythmService = require(WorldFolder:WaitForChild("CardioRhythmService"))
+CardioRhythmService.start()
+
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the
 	Git-tracked templates and tagged before TrainingStationService looks for racks.

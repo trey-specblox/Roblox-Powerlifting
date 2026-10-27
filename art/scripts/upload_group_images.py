@@ -5,8 +5,8 @@
 
 The manifest lists each material's prepared map files (color/normal/roughness PNGs, made from ambientCG or
 Poly Haven with the Roblox Maps kit's prep step) under "materials", GLB models under "models" (uploaded as
-Model assets: a GLB arrives at 1 Blender unit = 1 stud) and single PNG pictures under "images" (signs,
-drawings), and receives the uploaded asset ids. Ids already in the manifest are never uploaded again.
+Model assets: a GLB arrives at 1 Blender unit = 1 stud), single PNG pictures under "images" (signs,
+drawings) and WAV sounds under "sounds" (uploaded as Audio assets), and receives the uploaded asset ids. Ids already in the manifest are never uploaded again.
 
 Why our own uploader: the game belongs to group 529442797, so its images must be owned by that group (images a
 user uploads fail to load in a group game). The Maps kit's uploader always uploads as the user.
@@ -53,6 +53,7 @@ def request(url, key, data=None, content_type=None):
 KINDS = {  # file suffix -> (asset type, content type)
     ".png": ("Image", "image/png"),
     ".glb": ("Model", "model/gltf-binary"),
+    ".wav": ("Audio", "audio/wav"),
 }
 
 
@@ -112,6 +113,13 @@ def main(argv):
             if not path.is_file():
                 sys.exit(f"{name}: missing {path}")
             todo.append(("images", name, "image", path))
+    for name, entry in manifest.get("sounds", {}).items():
+        ids = entry.setdefault("ids", {})
+        if not ids.get("audio"):
+            path = Path(entry["file"]).expanduser()
+            if not path.is_file():
+                sys.exit(f"{name}: missing {path}")
+            todo.append(("sounds", name, "audio", path))
     print(f"{len(todo)} asset(s) to upload as group {GROUP_ID}:")
     for _, name, kind, path in todo:
         print(f"  {name} {kind}: {path} ({path.stat().st_size // 1024} KB)")
