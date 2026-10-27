@@ -2,9 +2,8 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-26
-(Starter Gym step 6: the open dumbbell & machine zone, the chalk records wall
-and a real mirror built, approved, committed and pushed; newest entries at the
-end of the CURRENT MILESTONE block).
+(Starter Gym step 6: the open zone's machines built, approved, committed and
+pushed; newest entries at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -1146,11 +1145,40 @@ and polish.
     nothing sent to the server. Not tested on a phone yet (performance).
   - Leftovers: the MaterialVariants Dumbbells_DiamondPlate and
     Machines_SteelPanels are reused in the zone; Index_Tiles is now unused.
+  THE OPEN ZONE'S MACHINES (2026-10-26; the user picked this step and the
+  machines, changed two from Blender previews with photos, said yes to the
+  upload and APPROVED them in Studio screenshots; COMMITTED and pushed with
+  the user's approval as "Add the open zone's machines: tricep and lat
+  pulldowns, seated rows and leg extensions"; `git log` for the hash):
+  - At the start: StarterGym_VerifyShell ALL 56 CHECKS PASSED (fresh Play).
+  - `art/scripts/build_room_props_08.py` (art/blender/RoomProps_08.blend,
+    art/exports/RoomProps_08.glb): TricepPulldown, LatPulldown, SeatedRow,
+    LegExtension; a shared `stack()` (plates with kg numbers, top plate,
+    rods, pin, shroud panels with CENTRAL), `pulley()`, `cable()`; drawn at
+    the WeightStack's size and shrunk by SCALE 0.85 to the racks' scale
+    (players ~5.7 studs, racks 7). The first idea, a dual cable tower, was
+    replaced by the tricep pulldown and the seated row got visible pulleys and
+    a double-D handle (user feedback with photos). 52 pieces, ~33k triangles
+    (largest 4.3k). Uploaded as group Model asset 83964902060436
+    (materials.json "RoomProps_08").
+  - `StarterGymConfig`: PropAssets + RoomProps_08; PropColourways for the
+    four machines via a local `machine()` helper (3 mixed colourways each,
+    same as the Blender COLOURWAYS).
+  - `RoomProps`: `FURNISH.TrainingZone` places 8 machines (back wall: two
+    tricep and two lat pulldowns; end wall: two leg extensions and two
+    seated rows), each with hidden solid blocks; the five plain WeightStack
+    stations are gone (the WeightStack prop stays on the Machines front).
+  - Checks: luau-lsp 0 errors in the changed files, `rojo build` OK, Studio
+    via the MCP: 8 machines placed, 12 solid blocks, no [RoomProps]
+    warnings, StarterGym_VerifyShell ALL 56 CHECKS PASSED; screenshots.
+  - Still for the user: SAVE/PUBLISH the cloud place (the scripts sync by
+    Rojo; the place itself holds no new objects for this step).
   NEXT ACTION: ask the user what is next. Open threads: the records
   system (fill the chalk table from player data: needs a design decision on
-  what counts as a record and ties), new machine models for the open zone
-  (previewed first), the mirror on a phone (performance), the remaining room
-  interiors (Cardio, Classroom, Media Room, ...), the spare room.
+  what counts as a record and ties; NOTE no meet system exists yet, §33),
+  more machines (e.g. leg press, chest press, cable crossover), the mirror
+  on a phone (performance), the remaining room interiors (Cardio, Classroom,
+  Media Room, ...), the spare room.
   OLD NEXT ACTION (built above, user, 2026-10-26, from screenshots): open up the ground floor's
   left side: remove the walls of Dumbbells, Machines and Index so they join
   the hall as an open dumbbell & machine zone (columns hold the spa wing
@@ -1198,6 +1226,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `4044e82` (2026-10-26, pushed) Open the dumbbell & machine zone, add the chalk records wall and a real mirror.
 - `bac11b5` (2026-10-26, pushed) Add themed room fronts batch 2b and replace the big room signs with name plaques.
 - `fd4469d` (2026-10-26, pushed) Add themed room fronts batch 2a: Office, Machines, Index and Storage.
 - `2619ca0` (2026-10-26, pushed) Close the gym's rooms with real doors, add the Recovery & Spa wing, themed room fronts (batch 1) and the Strongman Shed.

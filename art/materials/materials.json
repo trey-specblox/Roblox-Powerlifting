@@ -646,6 +646,14 @@
         "model": "rbxassetid://111460003222169"
       },
       "supersedes": "rbxassetid://84544752881394 (roller named FoamRoller, clashed with RoomProps_03) and rbxassetid://127268303557491 (thin hoop bands); both unused"
+    },
+    "RoomProps_08": {
+      "about": "The open dumbbell & machine zone's machines: tricep pulldown station, lat pulldown, seated cable row, leg extension / leg curl (CENTRAL labels). Made by art/scripts/build_room_props_08.py (art/blender/RoomProps_08.blend).",
+      "file": "art/exports/RoomProps_08.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://83964902060436"
+      }
     }
   },
   "images": {

@@ -519,6 +519,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 126419721956699 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
 	{ id = 89330038688157 }, -- RoomProps_06: themed room fronts, batch 2a (weight stack, sconce, crate, pallet, bumper plate, medal)
 	{ id = 111460003222169 }, -- RoomProps_07: themed room fronts, batch 2b (mic, ON AIR lamp, headphones, band, roller, rack, clipboard)
+	{ id = 83964902060436 }, -- RoomProps_08: the open zone's machines (tricep pulldown, lat pulldown, seated row, leg extension)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -598,6 +599,15 @@ StarterGymConfig.PropFabricPieces = {
 	keeps the asset's plain look. Variety, not just red and black (user,
 	2026-10-25); every product, bag and tee label says CENTRAL.
 ]]
+-- One colourway of a RoomProps_08 machine (art/scripts/build_room_props_08.py `machine`): frame, shroud
+-- panels (and the top plate and cam), pads (and the stack's cap), CENTRAL, the selector pin, the plates.
+local function machine(frame: string, shroud: string, pad: string, logo: string, pin: string, plate: string?): { [string]: string }
+	return {
+		Frame = frame, Shroud = shroud, Top = shroud, Pad = pad, Cap = pad, Logo = logo, Pin = pin, Plate = plate or "Black",
+		Rod = "Silver", Cable = "Black", Pulley = "Silver", Bar = "Silver", Grip = "Black", Text = "White",
+	}
+end
+
 StarterGymConfig.PropColourways = {
 	-- The supplement bar (product: body, lid, label, text; the shaker has no label).
 	SBarWhey = {
@@ -967,6 +977,27 @@ StarterGymConfig.PropColourways = {
 		{ Board = "Green", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
 		{ Board = "Orange", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
 		{ Board = "Purple", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
+	},
+	-- RoomProps_08: the open zone's machines (art/scripts/build_room_props_08.py COLOURWAYS; mixed frames, user 2026-10-26).
+	TricepPulldown = {
+		machine("White", "Blue", "Black", "White", "Yellow"),
+		machine("Black", "Orange", "Black", "Black", "Yellow"),
+		machine("LightGrey", "Teal", "Charcoal", "White", "Red"),
+	},
+	LatPulldown = {
+		machine("Blue", "Yellow", "Charcoal", "Black", "Red"),
+		machine("White", "Red", "Black", "White", "Yellow"),
+		machine("LightGrey", "Purple", "Charcoal", "White", "Yellow"),
+	},
+	SeatedRow = {
+		machine("LightGrey", "Teal", "Charcoal", "White", "Yellow"),
+		machine("Yellow", "Black", "Black", "Yellow", "Red", "Charcoal"),
+		machine("Navy", "Lime", "Navy", "Black", "Yellow"),
+	},
+	LegExtension = {
+		machine("Black", "Orange", "Navy", "Black", "Yellow", "Charcoal"),
+		machine("White", "Green", "Forest", "Black", "Red"),
+		machine("Teal", "White", "Charcoal", "Teal", "Yellow"),
 	},
 } :: { [string]: { { [string]: string } } }
 

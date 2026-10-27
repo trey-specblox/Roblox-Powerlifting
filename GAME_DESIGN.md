@@ -1169,6 +1169,22 @@ Comp max testing
 >       - **Real mirrors** (user, 2026-10-26: "make this mirror reflect like
 >         a mirror"): the dumbbell zone's wall mirror shows the room and the
 >         players in it, mirrored, from each player's own view (visual only).
+>       - **The zone's machines** (user, 2026-10-26: picked from a list, then
+>         changed from Blender previews with photos; **approved in Studio
+>         screenshots** the same day): the plain weight-stack stations are
+>         replaced by **four CENTRAL weight-stack machines**, each in **mixed
+>         frame colours** (three colour options per machine): a **tricep
+>         pulldown station** (a tall covered stack with a rounded cap, a column
+>         with a top pulley and a **tricep rope**, an arm pad, a low pulley;
+>         this replaced a first cable-tower idea that was "just a pull-up bar
+>         with two stacks"), a **lat pulldown** (seat, knee rollers, wide bar),
+>         a **seated cable row** (visible pulleys at the top and at knee height,
+>         a **double-D row handle**, an angled foot plate, a long bench) and a
+>         **leg extension / leg curl** seat. Sized to the power racks (a player
+>         is about 5.7 studs, the racks 7). On the back wall two tricep
+>         pulldowns and two lat pulldowns, on the end wall two leg extensions
+>         and two seated rows. Look only: no gameplay, no Competition Number,
+>         technique or lifting performance from them.
 >     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
 >       woody strongman front right beside bright, colourful rooms "makes 0
 >       sense"; it must NOT be connected to the other rooms). Chosen from a

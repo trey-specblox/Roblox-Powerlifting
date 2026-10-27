@@ -1203,9 +1203,10 @@ end
 	Its "door" is the middle of its open side, so `back` is the building's
 	outer wall: on the Office's side a long mirror over a diamond-plate strip
 	with dumbbell racks full of CENTRAL hex dumbbells and flat benches facing
-	the mirror; on the far side, against a steel-panelled wall, cable stations
-	(weight stacks with a padded seat) along the back and end walls; neon
-	DUMBBELLS and MACHINES signs. The approved props of RoomProps_04 and _06.
+	the mirror; on the far side, against a steel-panelled wall, the machines of
+	RoomProps_08 (tricep and lat pulldowns on the back wall, leg extensions and
+	seated rows on the end wall); neon DUMBBELLS and MACHINES signs. The
+	approved props of RoomProps_04 and _08.
 ]]
 FURNISH.TrainingZone = function(kit)
 	local hw, D = kit.W / 2, kit.D
@@ -1230,7 +1231,7 @@ FURNISH.TrainingZone = function(kit)
 		looks.GlowRed)
 	neonSign(back, "Sign_Machines", "MACHINES", split + 4, hw - 4, 10, 11.6, Color3.fromRGB(242, 190, 30), INK, looks.GlowGold,
 		0.14)
-	local props = propsFor({ "DumbbellRack", "HexDumbbell", "WeightStack" })
+	local props = propsFor({ "DumbbellRack", "HexDumbbell" })
 	if props == nil then
 		return
 	end
@@ -1262,21 +1263,38 @@ FURNISH.TrainingZone = function(kit)
 				0.05, "-d")
 		end
 	end
-	-- Cable stations: a weight stack against the wall with a padded seat in front.
-	local function station(id: string, wall: Wall, s: number, colourway: number)
-		local a, d = wall.at(s, 0.86)
-		put(id, "WeightStack", colourway, a, d, 0.05, if wall == back then "-d" else "-a")
-		hidden(wall.block(id .. "_Solid", s - 1.5, s + 1.5, 0, 1.72, 0, 8.6, looks.Glass))
-		wall.block(id .. "_Seat", s - 1, s + 1, 3.4, 5.2, 1.5, 1.9, looks.PaddingBlue)
-		wall.item(id .. "_Post", s - 0.15, s + 0.15, 4.15, 4.45, 0.05, 1.5, looks.SteelBeam)
-		wall.item(id .. "_Foot", s - 0.8, s + 0.8, 3.7, 4.9, 0.05, 0.15, looks.SteelBeam)
+	-- The machines of RoomProps_08 (user 2026-10-26, from Blender previews; they replaced five plain
+	-- weight-stack stations), backs against the walls, in mixed colours. Each gets hidden solid blocks:
+	-- `solids` = { { half width, out from the wall, height } } from the wall outward.
+	local machines = propsFor({ "TricepPulldown", "LatPulldown", "SeatedRow", "LegExtension" })
+	if machines == nil then
+		return
 	end
-	for k, s in ipairs({ split + 6, split + 14, split + 22 }) do
-		station("Station_" .. k, back, s, k)
+	local function machine(id: string, wall: Wall, s: number, item: string, colourway: number,
+		solids: { { number } })
+		local depth = 0
+		for _, solid in ipairs(solids) do
+			depth = math.max(depth, solid[2])
+		end
+		local a, d = wall.at(s, depth / 2)
+		propItem(kit, machines, id, item, colourway, a, d, 0.05, if wall == back then "-d" else "-a")
+		local from = 0
+		for k, solid in ipairs(solids) do
+			hidden(wall.block(string.format("%s_Solid_%d", id, k), s - solid[1], s + solid[1], from, solid[2], 0, solid[3],
+				looks.Glass))
+			from = solid[2]
+		end
 	end
-	for k, s in ipairs({ D - 8, D - 16 }) do
-		station("Station_End_" .. k, endWall, s, k + 2)
-	end
+	-- Back wall, right of the mirror: two tricep pulldowns and two lat pulldowns.
+	machine("Tricep_1", back, split + 3.5, "TricepPulldown", 2, { { 1.86, 3.5, 7.2 } })
+	machine("LatPulldown_1", back, split + 9, "LatPulldown", 1, { { 1.73, 1.8, 7.3 }, { 0.9, 4.25, 1.6 } })
+	machine("LatPulldown_2", back, split + 14.5, "LatPulldown", 3, { { 1.73, 1.8, 7.3 }, { 0.9, 4.25, 1.6 } })
+	machine("Tricep_2", back, split + 20.5, "TricepPulldown", 1, { { 1.86, 3.5, 7.2 } })
+	-- End wall: two leg extension / curl seats and two seated rows (their benches reach into the zone).
+	machine("LegExtension_1", endWall, 6.5, "LegExtension", 1, { { 2.13, 3.94, 5.4 } })
+	machine("LegExtension_2", endWall, 12, "LegExtension", 2, { { 2.13, 3.94, 5.4 } })
+	machine("SeatedRow_1", endWall, 17.5, "SeatedRow", 1, { { 1.17, 2.2, 5.8 }, { 0.8, 7.14, 1.4 } })
+	machine("SeatedRow_2", endWall, 22.5, "SeatedRow", 2, { { 1.17, 2.2, 5.8 }, { 0.8, 7.14, 1.4 } })
 end
 
 -- The first recovery room (step 6a), kept for when the 3D props do not load.
