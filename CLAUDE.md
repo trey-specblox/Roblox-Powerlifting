@@ -129,6 +129,14 @@ The user wants as little manual Roblox Studio work as possible: fewer human conf
 11. All existing Git safety rules still apply: no unapproved commits or pushes, no deleting existing game assets without approval, no changes to unrelated code, and no changes to approved gameplay mechanics without approval.
 12. GAME_DESIGN.md stays authoritative for approved gameplay decisions. DEVELOPMENT_STATUS.md stays current with actual progress and test results.
 
+## 3D Models (one-sided faces)
+
+Roblox draws each face of a mesh from one side only. A piece whose faces point inward looks fine in Blender but shows see-through gaps in the game (for example bar stools whose base lets the floor show through).
+
+- Build props with `art/scripts/prop_helpers.py` where possible: its `Builder` checks every piece and stops the build if one is inside out or folded.
+- Before exporting or uploading ANY model file, run `blender -b <file>.blend --python art/scripts/check_models.py`. It must end with `CHECK PASSED`. Do not upload a model that fails.
+- Preview new or rebuilt models with backface culling on (as Roblox draws them) before asking the user to approve an upload.
+
 ## Development Status Handoff
 
 At the end of every completed development checkpoint, update DEVELOPMENT_STATUS.md to reflect the latest verified commit, completed work, current task, blockers, uncommitted files and next action. Before updating it, verify Git status and do not claim that work is committed unless it actually is. Read DEVELOPMENT_STATUS.md when starting a new development session.

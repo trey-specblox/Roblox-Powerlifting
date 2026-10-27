@@ -44,6 +44,53 @@ def find_font():
     return bpy.data.fonts.load(max(found, key=os.path.getmtime), check_existing=True)
 
 
+def winding_problems(mesh):
+    """What would look broken in Roblox, which draws each face from one side only: closed pieces (connected
+    parts with no open edges) that are inside out (faces point inward, so the near wall disappears) or folded
+    (faces that disagree with their neighbours). Open pieces such as text letters cannot be judged and are
+    skipped. Returns one line per bad piece; empty when the mesh is fine."""
+    bm = bmesh.new()
+    bm.from_mesh(mesh)
+    bm.normal_update()
+    seen, problems = set(), []
+    for start in bm.faces:
+        if start.index in seen:
+            continue
+        piece, stack = [], [start]
+        seen.add(start.index)
+        while stack:
+            f = stack.pop()
+            piece.append(f)
+            for e in f.edges:
+                for g in e.link_faces:
+                    if g.index not in seen:
+                        seen.add(g.index)
+                        stack.append(g)
+        if not all(e.is_manifold for f in piece for e in f.edges):
+            continue
+        volume = sum(f.verts[0].co.dot(f.verts[i].co.cross(f.verts[i + 1].co)) / 6
+                     for f in piece for i in range(1, len(f.verts) - 1))
+        if volume < 0:
+            problems.append(f"{len(piece)} faces inside out")
+            continue
+        before = [f.normal.copy() for f in piece]
+        bmesh.ops.recalc_face_normals(bm, faces=piece)
+        folded = sum(1 for n, f in zip(before, piece) if n.dot(f.normal) < 0)
+        if folded:
+            problems.append(f"{folded} of {len(piece)} faces folded")
+    bm.free()
+    return problems
+
+
+def check_winding(obj):
+    """Stops the build if obj would show see-through gaps in Roblox (see winding_problems)."""
+    problems = winding_problems(obj.data)
+    if obj.matrix_world.determinant() < 0:
+        problems.append("mirrored (negative scale)")
+    if problems:
+        raise RuntimeError(f"{obj.name} would look broken in Roblox: " + "; ".join(problems))
+
+
 def _merge(bm, tmp):
     mesh = bpy.data.meshes.new("_tmp")
     tmp.to_mesh(mesh)
@@ -184,6 +231,7 @@ class Builder:
         obj = bpy.data.objects.new(name, mesh)
         obj.location = centre
         self.coll.objects.link(obj)
+        check_winding(obj)
         return obj
 
     def add_text(self, bm, text, size, extrude, place):

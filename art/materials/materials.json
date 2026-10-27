@@ -585,8 +585,9 @@
       "file": "art/exports/SBarProps_01.glb",
       "license": "own work",
       "ids": {
-        "model": "rbxassetid://126463004640141"
-      }
+        "model": "rbxassetid://82461187336012"
+      },
+      "supersedes": "rbxassetid://126463004640141 (lathed pieces and the stool's foot ring were inside out, so Roblox showed see-through gaps: the stool base looked as if it clipped through the floor; unused)"
     },
     "SBarPlant_01": {
       "about": "Potted plant. Poly Haven potted_plant_02, simplified by art/scripts/prep_sbar_plant.py.",
@@ -596,6 +597,14 @@
       "file": "art/exports/SBarPlant_01.glb",
       "ids": {
         "model": "rbxassetid://72818612497691"
+      }
+    },
+    "ShopGear_01": {
+      "about": "The Shop's powerlifting gear (knee sleeve, wrist wraps, lever belt, singlet and tee on mannequins; CENTRAL badges). Made by art/scripts/build_shop_gear_01.py (art/blender/ShopGear_01.blend). The game loads art/roblox/ShopGear_01.rbxmx (from an Import 3D of art/exports/ShopGear_01.fbx); this upload supplies the corrected meshes of KneeSleeve_Body, WristWrap_Body, MannequinSinglet_Form and MannequinTee_Form, which were inside out in that import.",
+      "file": "art/exports/ShopGear_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://124788342666123"
       }
     },
     "RoomProps_02": {

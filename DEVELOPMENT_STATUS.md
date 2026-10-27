@@ -1279,7 +1279,8 @@ and polish.
     Sandbag body/strap (05), ColdPlunge, Pouf, FoamRoller, CoffeeCup,
     Donut, etc. (02, 03, 06, 07). A fix in `lathe_z` means rebuilding and
     re-uploading those model files. FIXED in the entry below.
-  INSIDE-OUT PROPS FIX (2026-10-27, user's request; NOT committed yet):
+  INSIDE-OUT PROPS FIX (2026-10-27, user's request; COMMITTED and pushed
+  with the user's approval as 854c352):
   - `art/scripts/prop_helpers.py`: `lathe_z` turns its faces outward whatever
     way the outline runs (signed area of the outline), `torus` too (always
     anticlockwise ring), `span` accepts its corners in any order (a reversed
@@ -1313,6 +1314,35 @@ and polish.
     walls and mugs see-through at the bottom.
   - Not fixed (separate scripts with their own inline copies of `lathe_z`):
     `build_sbar_props_01.py` and `build_shop_gear_01.py` were not audited.
+    FIXED in the entry below.
+  SUPPLEMENT BAR + SHOP GEAR FIX AND A PERMANENT CHECK (2026-10-27, user:
+  "the chairs are clipping through the floors, make sure every model in the
+  future doesn't have the same visual issue"; NOT committed yet):
+  - The bar stools stand 0.06 above the floor; their base, seat and foot ring
+    were inside out, so the floor showed through. SBarProps_01 had 19 inside-
+    out pieces (stool, every tub/lid/label, shaker), ShopGear_01 4 (KneeSleeve
+    and WristWrap bodies, both mannequin forms). Fixed the scripts' own
+    `lathe_z`/`lathe_x` and the stool's inline foot-ring torus.
+  - Permanent check: `prop_helpers.winding_problems`/`check_winding`;
+    `Builder.finish` now STOPS the build if a piece is inside out, folded or
+    mirrored (tested with broken boxes). New `art/scripts/check_models.py`
+    checks every mesh of any .blend (modifiers applied, "Preview" skipped),
+    prints CHECK PASSED/FAILED (exit code 1 in -b). PASSED: RoomProps_02..09,
+    SBarProps_01, ShopGear_01, Barbell_01, ComboRack_01. CLAUDE.md has a new
+    "3D Models" rule: no export/upload unless it passes, preview one-sided.
+  - SBarProps_01: rebuilt, saved, GLB exported (same 29 names), uploaded as
+    group Model 82461187336012 (old 126463004640141 under "supersedes"),
+    `StarterGymConfig.PropAssets` updated.
+  - ShopGear_01: rebuilt, saved, re-exported `ShopGear_01.fbx` (project FBX
+    settings) and a new `ShopGear_01.glb`, uploaded as group Model
+    124788342666123 (new materials.json entry "ShopGear_01"). The game still
+    loads `art/roblox/ShopGear_01.rbxmx`: only the four fixed MeshParts' MeshIds
+    were swapped there (KneeSleeve_Body 74644086537529, WristWrap_Body
+    123733480721433, MannequinSinglet_Form 96507931824892, MannequinTee_Form
+    77603604749304); their MeshSize matches the old meshes exactly.
+  - Studio (fresh Play): stools, mannequins, knee sleeves and wrist wraps
+    use the new meshes and render solid (screenshots); "Shop: 29 gear models
+    placed"; no new Output errors.
   NEXT ACTION: the rhythm game PART 2: the saved all-time and weekly
   leaderboards (top 10 best single runs, avatar, username, survival time;
   weekly resets Monday) via PlayerDataService or an OrderedDataStore
@@ -1375,6 +1405,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `854c352` (2026-10-27, pushed) Fix inside-out room props: lathed and ring shapes now render solid.
 - `f2e8ee1` (2026-10-27, pushed) Fix the Strongman tyre's see-through gaps and remove the shed's STRONGMAN sign.
 - `e728f47` (2026-10-26, pushed) Add the treadmill rhythm game (part 1: rounds, lanes, health and our own beat).
 - `5a189cb` (2026-10-26, pushed) Add the Cardio room: 11 machines players can hop on.

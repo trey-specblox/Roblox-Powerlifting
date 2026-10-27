@@ -567,7 +567,7 @@ StarterGymConfig.SpaWing = {
 ]]
 export type PropAsset = { id: number, whole: string? }
 StarterGymConfig.PropAssets = {
-	{ id = 126463004640141 }, -- SBarProps_01: supplement bar products, shaker, bar stool
+	{ id = 82461187336012 }, -- SBarProps_01: supplement bar products, shaker, bar stool
 	{ id = 72818612497691, whole = "SBarPlant" }, -- SBarPlant_01: the leafy potted plant
 	{ id = 95409978233696 }, -- RoomProps_02: Lockers, Cafe and Staff Room
 	{ id = 95190345614206 }, -- RoomProps_03: Showers, Recovery and Massage

@@ -122,6 +122,10 @@ def lathe_z(bm, outline, segments, centre=Vector((0, 0, 0)), squash=None):
     bmesh.ops.spin(tmp, geom=verts + edges, cent=(0, 0, 0), axis=(0, 0, 1),
                    angle=2 * math.pi, steps=segments, use_duplicate=False)
     bmesh.ops.remove_doubles(tmp, verts=tmp.verts[:], dist=1e-6)
+    # Spinning an anticlockwise (r, z) outline makes faces that point inward, and Roblox draws one side
+    # only: turn them outward, whichever way the outline runs (as prop_helpers.lathe_z).
+    if sum(r0 * z1 - r1 * z0 for (r0, z0), (r1, z1) in zip(outline, outline[1:] + outline[:1])) > 0:
+        bmesh.ops.reverse_faces(tmp, faces=tmp.faces[:])
     for v in tmp.verts:
         if squash:
             v.co.y *= squash(v.co.z)
@@ -140,6 +144,9 @@ def lathe_x(bm, outline, segments, centre):
     bmesh.ops.spin(tmp, geom=verts + edges, cent=(0, 0, 0), axis=(1, 0, 0),
                    angle=2 * math.pi, steps=segments, use_duplicate=False)
     bmesh.ops.remove_doubles(tmp, verts=tmp.verts[:], dist=1e-6)
+    # As lathe_z: turn the faces outward, whichever way the outline runs.
+    if sum(r0 * x1 - r1 * x0 for (x0, r0), (x1, r1) in zip(outline, outline[1:] + outline[:1])) > 0:
+        bmesh.ops.reverse_faces(tmp, faces=tmp.faces[:])
     for v in tmp.verts:
         v.co += centre
     mesh = bpy.data.meshes.new("_tmp")
