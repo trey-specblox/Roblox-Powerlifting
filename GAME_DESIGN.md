@@ -1166,6 +1166,26 @@ Comp max testing
 >         ladder is drawn in chalk on the right, a chalk barbell ("the big
 >         three") on the left. The cells are filled from player data in a
 >         later gameplay step; until then they show "?" and "—".
+>         - **What counts as a gym record** (user, 2026-10-27, picked from
+>           options): **meet lifts only**. A good lift in a meet that beats
+>           the record for the lifter's weight class goes on the wall; training
+>           numbers (Competition Number), test keys and lifts outside a meet
+>           never do. The wall therefore stays "?" until the meet system
+>           exists. Which meets are "eligible" (§33's open list) is decided
+>           with the meet system.
+>         - **Total = the sum of each best** (user, 2026-10-27): the Total
+>           column is the record holder's best meet Squat + best meet Bench +
+>           best meet Deadlift in that class, even if they came from different
+>           meets. This applies **only to this gym wall**; §31.2 (a World
+>           Record total must be one real meet total) is unchanged.
+>         - **Whole game, saved** (user, 2026-10-27): one set of gym records
+>           for every server, saved like the treadmill leaderboards; a record
+>           set anywhere shows everywhere. Studio runs never reach it.
+>         - **Ties: the first lifter keeps it** (user, 2026-10-27): a new
+>           record must be heavier, not equal.
+>         - This wall is the **GYM RECORD** board of §31.6 (the WORLD RECORD
+>           board is separate); beating a gym record at a meet earns the
+>           bonus in §30.5 (user, 2026-10-27).
 >       - **Real mirrors** (user, 2026-10-26: "make this mirror reflect like
 >         a mirror"): the dumbbell zone's wall mirror shows the room and the
 >         players in it, mirrored, from each player's own view (visual only).
@@ -2394,7 +2414,47 @@ Placement should meaningfully improve competition rewards.
 
 ---
 
+### 30.5 Gym record bonus (user, 2026-10-27)
+
+Beating a **gym record** (§31.6) at a meet earns a **money bonus**, one of the
+"record performance" bonuses §30.3 already allows. It gives the chalk wall a purpose
+and players a reason to enter meets.
+
+- **Where:** Local, National and Worlds meets. At Worlds, a lift that is **also a
+  World Record** earns the World Record reward **instead**, not both.
+- **Only for taking a record someone else holds.** The first record in an empty spot
+  (a "?" cell) puts the lifter's name on the wall but pays **no bonus**; otherwise
+  every empty class would hand out free bonuses early on, and lifters would move to
+  empty classes to collect them.
+- **Not for beating yourself over and over.** Breaking your **own** record still
+  updates the wall but pays a smaller bonus or none (exact rule TBD with the
+  economy), so a holder cannot add 2.5 kg at every meet for a bonus each time.
+- **One bonus per lift.** Because the wall's Total is the sum of each best, beating
+  a lift record often beats the Total record too; that counts as **one** bonus, not two.
+- **Solo meets update the wall but pay no bonus**, so it cannot be farmed alone on an
+  empty server. (Whether solo meets count for the wall at all is §33's open
+  eligibility question, decided with the meet system.)
+- **Amounts are TBD** with the money system; a bigger meet may pay a bigger bonus.
+- **Server-decided.** The server decides whether a lift beat a record, from its own
+  meet result; the client never reports it.
+
+
+---
+
 ## 31. World Record System
+
+> **⚠ Changed by the user, 2026-10-27 (see §31.6, §32.4 and §32.5).**
+> - **World Records start empty.** There are no preset World Records in game.
+>   The first players to compete at Worlds set them; Worlds stays the only way
+>   in (§31.1 unchanged).
+> - **The configured records in `ReferenceRecordConfig` are no longer shown or
+>   treated as "the World Record".** They are the fixed yardstick that
+>   **Sheffield scores against** (§32.4), and they keep their existing jobs
+>   (Record Percentage, Actual Record Proximity, §29).
+> - The **player-set Official World Record** keeps everything else in §31 and
+>   §32: the monthly freeze, the Pending race at Worlds, Sheffield
+>   qualification by the highest Worlds total, ties, and the update after
+>   Sheffield (§32.6). It is **no longer the Sheffield denominator**.
 
 
 ### 31.1 Worlds is the only World Record gateway
@@ -2448,7 +2508,12 @@ It does NOT immediately change when somebody exceeds it at Worlds.
 Instead, qualifying performances enter the Pending / Unofficial World Record system.
 
 The frozen Official World Record serves as the established standard for that monthly
-cycle and as the denominator for Sheffield scoring.
+cycle ~~and as the denominator for Sheffield scoring~~.
+
+> **[CHANGED, user 2026-10-27]** It is no longer the Sheffield denominator; Sheffield
+> scores against the configured records (§32.4). A class whose Official World Record
+> is still empty simply has none yet: the first valid Worlds total sets it (§32.6
+> treats an empty previous record as nothing to beat).
 
 
 ---
@@ -2510,6 +2575,28 @@ Do NOT resolve Sheffield qualification ties by:
 
 If multiple players legitimately share the highest qualifying Total, all tied players
 qualify.
+
+
+---
+
+### 31.6 The two in-game record boards (user, 2026-10-27)
+
+The game shows two separate record boards. They never feed each other.
+
+| | **WORLD RECORD** board | **GYM RECORD** board (the hall's chalk records wall) |
+|---|---|---|
+| Starts | **empty** | empty ("?") |
+| Set by | valid **Worlds** performances only (§31.1) | good lifts at **meets** only (any meet level; which meets are eligible is decided with the meet system) |
+| Shows | the player-set Official (and Pending) World Records per weight class | the best meet Squat, Bench, Deadlift per weight class, and **Total = the sum of those bests** (gym wall only) |
+| Ties | §31.5 (all tied players share it) | the first lifter keeps it; a new record must be heavier |
+| Scope | whole game, saved | whole game, saved |
+
+The configured records in `ReferenceRecordConfig` appear on neither board. They are
+the Sheffield yardstick (§32.4), not anyone's record.
+
+A gym record is **not** a World Record and never counts towards one, and §31.2's rule
+(a World Record total must be one real meet total) is unchanged by the gym wall's
+sum-of-bests Total.
 
 
 ---
@@ -2579,8 +2666,27 @@ A new qualification period begins only when the next monthly cycle begins.
 
 ### 32.4 Sheffield scoring baseline
 
-Sheffield uses the Official Total World Record that existed BEFORE the current monthly
-Worlds qualification cycle.
+> **⚠ CHANGED by the user, 2026-10-27. Sheffield scores against the configured
+> records, not the player-set World Record.** The denominator is the class's
+> **configured Total record** in `ReferenceRecordConfig` (the records the user set
+> in this design):
+>
+> SheffieldPercent = SheffieldMeetTotal / ConfiguredClassTotalRecord × 100
+>
+> **Why** (agreed 2026-10-27): with a player-set denominator, a weight class with few
+> players has a weak World Record, so its lifters could pass 100% easily and beat
+> lifters from busy classes. The configured records are equally hard for every class,
+> never move during the event, and exist even while the World Record board is empty.
+> The rules below still apply word for word with "Official Total World Record"
+> read as "configured class Total record": it is fixed for the whole event, and a
+> player's own Worlds performance can never change it. The worked examples keep their
+> arithmetic; only the source of the denominator changed.
+>
+> **Sheffield is hosted by admins** (user, 2026-10-27): it runs once enough players
+> are competing at that level; the calendar in §32.1 stays TBD.
+
+~~Sheffield uses the Official Total World Record that existed BEFORE the current monthly
+Worlds qualification cycle.~~ **[CHANGED — see the note above.]**
 
 This value is frozen for the entire Sheffield event.
 
@@ -2634,13 +2740,14 @@ even though the 120 kg competitor lifted more absolute weight.
 ### 32.5 Sheffield winner
 
 The Sheffield winner is determined by who achieves the highest percentage relative to
-their frozen class Official Total World Record.
+their ~~frozen class Official Total World Record~~ **class's configured Total record
+(§32.4, changed 2026-10-27)**.
 
 Conceptually:
 
 Winner =
 MAX(
-    SheffieldMeetTotal / FrozenOfficialClassTotalWR
+    SheffieldMeetTotal / ConfiguredClassTotalRecord
 )
 
 This allows lifters from different weight classes to compete against one another through

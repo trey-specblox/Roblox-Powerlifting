@@ -3,8 +3,8 @@
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-27
 (Starter Gym step 6: the treadmill rhythm game part 2, the saved leaderboards,
-tested in Studio, approved by the user and COMMITTED; not yet published or
-checked live; newest entries at the end of the
+tested in Studio, approved by the user, COMMITTED, published, and saving
+checked in the live game; newest entries at the end of the
 CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
@@ -1386,8 +1386,25 @@ and polish.
     first real test is the published game), two servers saving at once, the
     actual Monday rollover, names of players not in the server, two players
     at once, a phone.
-  NEXT ACTION: the user publishes the place; then check the boards in the
-  live game after a run (leave and rejoin: the time must still be there).
+  LIVE CHECK PASSED (user, 2026-10-27): published; in the live game a run's
+  time was saved and was still on the boards after leaving and rejoining
+  ("Saving works"). Still untested: two servers at once, the Monday reset,
+  two players at once, a phone.
+  RECORDS WALL DECISIONS (user, 2026-10-27, recorded in GAME_DESIGN under
+  "A chalk records wall"): meet lifts only; Total = sum of each best meet
+  lift (gym wall only, §31.2 unchanged); whole game, saved; ties keep the
+  first lifter. Nothing built: the wall needs the meet system first.
+  WORLD RECORD / SHEFFIELD CHANGE (user, 2026-10-27, GAME_DESIGN §31 note,
+  §31.6, §32.4, §32.5): World Records start empty and are set at Worlds;
+  Sheffield (admin-hosted) scores against ReferenceRecordConfig's Total
+  records, not the player-set WR; two boards (WORLD RECORD, GYM RECORD).
+  New §30.5: a money bonus for taking a gym record from someone else at
+  Local/National/Worlds meets (no bonus for empty spots, own records, solo
+  meets; one per lift; amounts TBD). Docs only; no code yet.
+  NEXT ACTION: design the meet system (a solo meet first: 3 attempts per lift,
+  attempt picker, 2.5 kg rules; shared code already in
+  src/shared/Meet/AttemptRules.luau and MeetTotal.luau), then the records
+  wall reads its good lifts.
   Other open threads: the records
   system (needs a decision; no meet system exists yet, §33), more machines,
   the mirror on a phone, the remaining room interiors (Classroom, Media Room,
