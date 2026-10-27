@@ -1297,6 +1297,76 @@ FURNISH.TrainingZone = function(kit)
 	machine("SeatedRow_2", endWall, 22.5, "SeatedRow", 2, { { 1.17, 2.2, 5.8 }, { 0.8, 7.14, 1.4 } })
 end
 
+--[[
+	The Cardio room (user 2026-10-26, from a drawn plan and Blender previews):
+	a big wall TV on the back wall with four treadmills facing it, three
+	exercise bikes behind them, two rowers on the left wall, two ski ergs on the
+	right wall, a water cooler and a "heart-rate zones" board by the door. The
+	running-track stripe of the room's front runs round the side walls. Each
+	machine is tagged StarterGymConfig.CardioMachineTag (its item in "Kind") so
+	CardioMachineService can let a player hop on it; fun only, no stats. The
+	machines of RoomProps_09.
+]]
+FURNISH.Cardio = function(kit)
+	local hw, D = kit.W / 2, kit.D
+	local back, front = kit.wall("back"), kit.wall("front")
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.GymFloor)
+	for _, which in ipairs({ "back", "front", "left", "right" }) do
+		clad(kit, which, "Wall_" .. which, looks.LockersWall)
+	end
+	for _, which in ipairs({ "left", "right" }) do
+		kit.wall(which).item("Track_" .. which, 0.4, D - 0.4, 0.08, 0.14, 1.4, 2.6, looks.CardioTrack)
+	end
+	local tv = back.item("TV", -6.5, 6.5, 0.08, 0.3, 5.4, 11.6, looks.Gadget)
+	writing(tv, back.out, "CENTRAL TV", { "Cardio zone", "Hop on any machine", "Jump to hop off" }, Color3.fromRGB(18, 34, 72),
+		WHITE)
+	local door = kit.doors.front[1] or kit.doorA
+	local board = front.item("Board", door - 12.2, door - 6.2, 0.08, 0.16, 4.6, 8.6, looks.ClassroomBoard)
+	writing(board, front.out, "HEART-RATE ZONES", { "1  50-60%  easy", "2  60-70%  steady", "3  70-80%  tempo",
+		"4  80-90%  hard", "5  90%+  all out" }, Color3.fromRGB(46, 72, 66), Color3.fromRGB(236, 224, 196))
+
+	local props = propsFor({ "Treadmill", "ExerciseBike", "Rower", "SkiErg", "WaterCooler" })
+	if props == nil then
+		return
+	end
+	local function put(name: string, item: string, colourway: number, a: number, d: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, 0.06, facing)
+	end
+	-- A machine players can hop on, with a hidden solid block over its footprint (`w` across, `l` along).
+	local function machine(name: string, item: string, colourway: number, a: number, d: number, facing: string, w: number,
+		l: number, h: number)
+		local model = put(name, item, colourway, a, d, facing)
+		model:SetAttribute("Kind", item)
+		model:AddTag(StarterGymConfig.CardioMachineTag)
+		local alongA = facing == "+a" or facing == "-a"
+		local ha, hd = if alongA then l / 2 else w / 2, if alongA then w / 2 else l / 2
+		hidden(kit.block(name .. "_Solid", a - ha, a + ha, d - hd, d + hd, 0.06, h, looks.Glass))
+	end
+	-- Four treadmills, consoles to the TV wall; the runner faces the TV.
+	for k, s in ipairs({ -7.5, -2.5, 2.5, 7.5 }) do
+		local a, d = back.at(s, 3.15)
+		machine("Treadmill_" .. k, "Treadmill", (k - 1) % 3 + 1, a, d, "-d", 3.1, 6.3, 4.8)
+	end
+	-- Three bikes behind them, also facing the TV.
+	for k, a in ipairs({ -6, 0, 6 }) do
+		machine("Bike_" .. k, "ExerciseBike", k, a, D - 11.6, "-d", 1.9, 3.6, 3.6)
+	end
+	-- Two rowers on the left wall and two ski ergs on the right wall, near the door.
+	local left, right = kit.wall("left"), kit.wall("right")
+	for k, s in ipairs({ 7, 10.5 }) do
+		local a, d = left.at(s, 4.05)
+		machine("Rower_" .. k, "Rower", k, a, d, "+a", 1.9, 8.1, 3.6)
+	end
+	for k, s in ipairs({ 7, 11 }) do
+		local a, d = right.at(s, 1.45)
+		machine("SkiErg_" .. k, "SkiErg", k + 1, a, d, "-a", 2.1, 2.9, 6.4)
+	end
+	-- The water cooler by the door.
+	local ca, cd = front.at(door + 7.5, 0.85)
+	put("WaterCooler", "WaterCooler", 1, ca, cd, "+d")
+	hidden(front.block("WaterCooler_Solid", door + 6.9, door + 8.1, 0.1, 1.5, 0.06, 3.4, looks.Glass))
+end
+
 -- The first recovery room (step 6a), kept for when the 3D props do not load.
 local function simpleRecovery(kit: Kit)
 	local hw = kit.W / 2

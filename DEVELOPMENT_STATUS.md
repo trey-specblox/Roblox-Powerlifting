@@ -2,8 +2,8 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-26
-(Starter Gym step 6: the open zone's machines built, approved, committed and
-pushed; newest entries at the end of the CURRENT MILESTONE block).
+(Starter Gym step 6: the Cardio room built, approved, committed and pushed;
+newest entries at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -1173,12 +1173,67 @@ and polish.
     warnings, StarterGym_VerifyShell ALL 56 CHECKS PASSED; screenshots.
   - Still for the user: SAVE/PUBLISH the cloud place (the scripts sync by
     Rojo; the place itself holds no new objects for this step).
-  NEXT ACTION: ask the user what is next. Open threads: the records
-  system (fill the chalk table from player data: needs a design decision on
-  what counts as a record and ties; NOTE no meet system exists yet, §33),
-  more machines (e.g. leg press, chest press, cable crossover), the mirror
-  on a phone (performance), the remaining room interiors (Cardio, Classroom,
-  Media Room, ...), the spare room.
+  THE CARDIO ROOM (2026-10-26; the user picked "look-only + fun", approved
+  the drawn plan and Blender previews, asked for the bike and ski erg fixes
+  and APPROVED the room in Studio screenshots; COMMITTED and pushed with the
+  user's approval as "Add the Cardio room: 11 machines players can hop on";
+  `git log` for the hash):
+  - `art/scripts/build_room_props_09.py` (RoomProps_09.blend / .glb):
+    Treadmill, ExerciseBike, Rower, SkiErg (3 colourways each); moving pieces
+    of their own: ExerciseBike_Crank, Rower_Handle / _Chain / _Pad (seat),
+    SkiErg_HandleLeft/Right, CordLeft/Right. Group Model asset 77291688307242
+    (materials.json "RoomProps_09"; the first upload 118823401986051 is
+    superseded: its bike was sized for real people, so Roblox avatars could
+    not reach the pedals). The second upload first failed with Roblox's
+    "internal error" and worked on retry (the failed try may have left an
+    unused asset).
+  - `StarterGymConfig`: PropAssets + RoomProps_09, PropColourways via a local
+    `cardio()` helper, `CardioMachineTag`, `CardioMachines` (per kind: label,
+    motion, `spot` from the machine's pivot, seated, rower `chainFrom`, ski
+    erg `pulleys`, bike `feet` / `hands`), prompt hold and reach.
+  - `RoomProps`: `FURNISH.Cardio` (floor, walls, running-track stripe, wall
+    TV "CENTRAL TV", heart-rate zones board, 4 treadmills, 3 bikes, 2 rowers,
+    2 ski ergs, water cooler; each machine tagged, Kind attribute, hidden
+    solid block).
+  - New `src/server/World/CardioMachineService.luau` (started in
+    init.server after the gym): a "Hop on" ProximityPrompt per machine; the
+    server checks alive / not on a machine / not posed at a rack / near /
+    machine free, anchors the player on the spot (seated: hips from the hip
+    joint, Motor6D or AnimationConstraint), marks character "CardioMachine"
+    and machine "Rider"; releases on Jump (remote), death, respawn, leaving,
+    machine removed, putting the player down in front. New
+    `src/shared/World/CardioRemotes.luau` (one remote, CardioHopOff, no
+    arguments). New `src/client/World/CardioMachineAnimator.luau`: treadmill =
+    the avatar's own run animation; rower and ski erg = joint transforms
+    timed from the server clock, with the seat sliding, handles following the
+    hands and chain / cords stretched (along their longest axis); bike =
+    IKControl feet on the pedals and hands on the grips, crank turning
+    forward. Lessons: the user's avatar uses AnimationConstraint joints (not
+    Motor6D); a CFrame angle built from the raw server clock loses precision
+    (wrap it to one turn); Roblox mirrors Blender's X (local x = -x, local
+    z = y - centre).
+  - Verify: Cardio added to MUST_FURNISH and a new check "the Cardio room has
+    its 11 machines, each a known kind with a Hop on prompt" (57 checks).
+  - Checks: luau-lsp 0 errors in the changed files, `rojo build` OK; Studio
+    via the MCP with real key presses (E to hop on, Space to hop off) on
+    every machine type: positions, run track, pedalling, rowing, skiing,
+    hop-off cleanup; StarterGym_VerifyShell ALL 57 CHECKS PASSED (after the
+    bike remake); screenshots. Not tested: two players at once, a phone.
+  NEXT ACTION: the treadmill rhythm game (GAME_DESIGN §27 "The treadmill
+  rhythm game"): settle its [TBD]s with the user first (health and timing
+  rules, the speed-up curve, all-time or also weekly board, joining
+  mid-song), then build it server-authoritative with its saved leaderboard
+  (careful DataStore work, per CLAUDE.md). Other open threads: the records
+  system (needs a decision; no meet system exists yet, §33), more machines,
+  the mirror on a phone, the remaining room interiors (Classroom, Media Room,
+  Warm-up, Max Testing), the spare room.
+  OLD NEXT ACTION (Cardio built above): ask the user what is next.
+  Phone and console (user, 2026-10-26: "keep it for milestone step 7"): step 7
+  covers BOTH speed (measure on a real phone first: rack hall, Supplement Bar,
+  mirror; then a low-detail mode for weak devices) AND controls (touch and
+  gamepad versions of the squat / bench / deadlift minigames: gameplay
+  mechanics, so options and the user's yes first; console needs to be switched
+  on in the experience's device settings before it can be tested).
   OLD NEXT ACTION (built above, user, 2026-10-26, from screenshots): open up the ground floor's
   left side: remove the walls of Dumbbells, Machines and Index so they join
   the hall as an open dumbbell & machine zone (columns hold the spa wing
@@ -1226,6 +1281,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `e29401e` (2026-10-26, pushed) Add the open zone's machines: tricep and lat pulldowns, seated rows and leg extensions.
 - `4044e82` (2026-10-26, pushed) Open the dumbbell & machine zone, add the chalk records wall and a real mirror.
 - `bac11b5` (2026-10-26, pushed) Add themed room fronts batch 2b and replace the big room signs with name plaques.
 - `fd4469d` (2026-10-26, pushed) Add themed room fronts batch 2a: Office, Machines, Index and Storage.

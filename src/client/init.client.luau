@@ -33,6 +33,10 @@ AutoDoorAnimator.start()
 local MirrorController = require(WorldFolder:WaitForChild("MirrorController"))
 MirrorController.start()
 
+-- Riders on the Cardio room's machines run, cycle, row and ski; Jump hops you off. Visual only.
+local CardioMachineAnimator = require(WorldFolder:WaitForChild("CardioMachineAnimator"))
+CardioMachineAnimator.start()
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

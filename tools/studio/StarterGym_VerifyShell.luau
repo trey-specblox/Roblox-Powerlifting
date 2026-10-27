@@ -842,7 +842,7 @@ local function run()
 	-- rooms (Cardio, Classroom, ...) stay empty until their own room batch
 	-- (GAME_DESIGN §27, user 2026-10-26).
 	local MUST_FURNISH = { "Lockers", "Showers", "Cafe", "StaffRoom", "Office", "Recovery", "Massage", "TrainingZone",
-		"Storage", "SupplementBar", "Shop", "Sauna", "Coach", "SpaReception" }
+		"Storage", "SupplementBar", "Shop", "Sauna", "Coach", "SpaReception", "Cardio" }
 	for _, name in ipairs(MUST_FURNISH) do
 		if folders.Rooms:FindFirstChild("Room_" .. name) == nil then
 			table.insert(emptyRooms, name .. " (no room)")
@@ -893,6 +893,26 @@ local function run()
 	end
 	check(gearCount == 29, string.format("the shop shows its 29 gear models (%d found; they come from ServerStorage.PropTemplates.%s)",
 		gearCount, gym.ShopGearTemplate))
+	-- The Cardio room's machines (user 2026-10-26): 11, each a known kind with a "Hop on" prompt, all free.
+	local cardioFolder = propsFolder and propsFolder:FindFirstChild("Cardio")
+	local machines, goodMachines, ridden = 0, 0, 0
+	for _, machine in ipairs(game:GetService("CollectionService"):GetTagged(gym.CardioMachineTag)) do
+		if machine:IsA("Model") and cardioFolder and machine:IsDescendantOf(cardioFolder) then
+			machines += 1
+			local point = machine:FindFirstChild("HopOnPoint")
+			local prompt = point and point:FindFirstChildOfClass("ProximityPrompt")
+			local kind = machine:GetAttribute("Kind")
+			if prompt and typeof(kind) == "string" and gym.CardioMachines[kind] then
+				goodMachines += 1
+			end
+			if machine:GetAttribute("Rider") ~= nil then
+				ridden += 1
+			end
+		end
+	end
+	check(machines == 11 and goodMachines == 11, string.format(
+		"the Cardio room has its 11 machines, each a known kind with a Hop on prompt (%d found, %d right, %d in use now)",
+		machines, goodMachines, ridden))
 	-- In front of every door, on both sides, nothing solid from the furniture.
 	local blockedDoors = {}
 	if propsFolder then

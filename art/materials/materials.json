@@ -654,6 +654,15 @@
       "ids": {
         "model": "rbxassetid://83964902060436"
       }
+    },
+    "RoomProps_09": {
+      "about": "The Cardio room's machines: treadmill, exercise bike, rowing machine, ski erg (CENTRAL labels; moving pieces for the hop-on animations). Made by art/scripts/build_room_props_09.py (art/blender/RoomProps_09.blend).",
+      "file": "art/exports/RoomProps_09.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://77291688307242"
+      },
+      "supersedes": "rbxassetid://118823401986051 (first upload: its exercise bike was sized for real people, so Roblox avatars' feet could not reach the pedals; unused)"
     }
   },
   "images": {

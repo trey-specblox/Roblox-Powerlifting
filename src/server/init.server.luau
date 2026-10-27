@@ -19,12 +19,16 @@ local RackSpawner = require(TrainingFolder:WaitForChild("RackSpawner"))
 
 local WorldFolder = script:WaitForChild("World")
 local StarterGymBuilder = require(WorldFolder:WaitForChild("StarterGymBuilder"))
+local CardioMachineService = require(WorldFolder:WaitForChild("CardioMachineService"))
 
 --[[
 	The Starter Gym's floors and walls (Starter Gym step 3), around the rack rows.
 	Visual and physical only; if it fails, everything else still starts.
 ]]
 StarterGymBuilder.build()
+
+-- The Cardio room's machines players can hop on (after the gym, which places them). Fun only: no stats.
+CardioMachineService.start()
 
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the

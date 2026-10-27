@@ -1185,6 +1185,46 @@ Comp max testing
 >         pulldowns and two lat pulldowns, on the end wall two leg extensions
 >         and two seated rows. Look only: no gameplay, no Competition Number,
 >         technique or lifting performance from them.
+>     - **The Cardio room** (user, 2026-10-26: "make Cardio a look-only room
+>       (treadmills, bikes, rowers, ski erg, TV) where players can hop on a
+>       machine for a fun running/cycling animation, no stats"; layout and
+>       Blender previews approved, "yes build it"): **4 treadmills** facing a
+>       big **wall TV** on the back wall, **3 exercise bikes** behind them
+>       facing the TV, **2 rowers** on the left wall, **2 ski ergs** on the
+>       right wall, a water cooler and a "heart-rate zones" board by the door
+>       (11 machines, mixed colours, CENTRAL on every label). **Hop on** with
+>       the machine's prompt (hold E / tap / controller X): your character
+>       runs, cycles, rows or skis on it in a loop, everyone sees it; **hop
+>       off** with Jump (also on death, respawn or leaving). One player per
+>       machine; not at the same time as a rack. **Fun only: no stats, no
+>       rewards, nothing saved.** **Approved in Studio screenshots** (user,
+>       2026-10-26, after two fixes they asked for: the ski erg's cords had
+>       turned into a "big black paper", and the bike "is not even pedalling
+>       the right way"). The bike is therefore sized for **Roblox avatars, not
+>       real people** (saddle about 1.75 studs up: a Roblox avatar's hips are
+>       only about 2 studs up), its crank turns forward and the rider's feet
+>       stay on the pedals and hands on the bars.
+>       - **The treadmill rhythm game** (user, 2026-10-26, idea: "whenever one
+>         person is on the treadmills, it plays a rhythm game like Robeats,
+>         Friday Night Funkin' or Guitar Hero, and a leaderboard in the room
+>         that adds up how long a player survives"; choices picked the same
+>         day). An **original** rhythm game (no copied songs, art or charts
+>         from those games): when someone is on a treadmill, a **song starts on
+>         the wall TV for everyone running**, and each runner also gets **their
+>         own 4 note lanes on their own screen** (arrow keys or D F J K, 4 tap
+>         zones on phones, 4 controller buttons); the TV shows every runner's
+>         lanes and health for people watching. The music is **our own endless
+>         beat** that **gets faster and harder the longer it runs**; you
+>         **survive** until your health runs out (missed notes cost health).
+>         A **leaderboard in the room** shows each player's **best single run
+>         (survival time)**: top 10 with Roblox avatar, username and time,
+>         saved. **No rewards**: it gives no Competition Number, technique,
+>         lifting performance or currency. The server decides the song, the
+>         timing and when a run ends (clients only send their key presses), so
+>         times can't simply be made up. Built as its own step after the room;
+>         [TBD] for that step: health and timing rules, the speed-up curve,
+>         whether the board is all-time or also weekly, what happens when a
+>         runner joins mid-song.
 >     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
 >       woody strongman front right beside bright, colourful rooms "makes 0
 >       sense"; it must NOT be connected to the other rooms). Chosen from a

@@ -348,6 +348,63 @@ StarterGymConfig.MirrorSideStuds = 25
 StarterGymConfig.MirrorHeightStuds = 80 -- up and down from the glass's middle: the hall's roof too
 
 --[[
+	The Cardio room's machines (user 2026-10-26: look-only, players "hop on a
+	machine for a fun running/cycling animation, no stats"). RoomProps tags each
+	machine Model with CardioMachineTag and its item name in the "Kind"
+	attribute; the server's CardioMachineService puts a "Hop on" prompt on it
+	and holds a player there; the client's CardioMachineAnimator moves them.
+	Nothing is saved and nothing is rewarded.
+
+	Per kind (RoomProps_09, art/scripts/build_room_props_09.py POSES): `spot` is
+	where the player's feet (standing) or seat (seated) go, in the placed
+	machine's own space from its pivot (the bottom centre of its bounding box;
+	-Z is the machine's front, and the player faces +Z, the machine's back);
+	`motion` is the animation. `chainFrom` (rower) and `pulleys` (ski erg) are
+	where the moving chain / cords start. The bike's rider reaches (IKControl):
+	`feet` are the pedals, from the crank's centre at rest; `hands` the grips,
+	from the pivot (Roblox mirrors Blender's X: -X is the rider's right).
+]]
+StarterGymConfig.CardioMachineTag = "CardioMachine"
+export type CardioMachine = {
+	label: string,
+	motion: string,
+	spot: Vector3,
+	seated: boolean,
+	chainFrom: Vector3?,
+	pulleys: { Vector3 }?,
+	feet: { [string]: Vector3 }?,
+	hands: { [string]: Vector3 }?,
+}
+StarterGymConfig.CardioMachines = {
+	Treadmill = { label = "Treadmill", motion = "Run", spot = Vector3.new(0, 0.66, -0.75), seated = false },
+	-- Sized for Roblox avatars (hips about 2 studs up), user 2026-10-26.
+	ExerciseBike = {
+		label = "Exercise bike",
+		motion = "Cycle",
+		spot = Vector3.new(0, 1.75, -0.8),
+		seated = true,
+		feet = { LeftFoot = Vector3.new(0.6, 0, -0.4), RightFoot = Vector3.new(-0.6, 0, 0.4) },
+		hands = { LeftHand = Vector3.new(0.45, 3.12, 0.25), RightHand = Vector3.new(-0.45, 3.12, 0.25) },
+	},
+	Rower = {
+		label = "Rowing machine",
+		motion = "Row",
+		spot = Vector3.new(0, 1.6, -0.85),
+		seated = true,
+		chainFrom = Vector3.new(0, 1.85, 2.65),
+	},
+	SkiErg = {
+		label = "Ski erg",
+		motion = "Ski",
+		spot = Vector3.new(0, 0.26, -0.55),
+		seated = false,
+		pulleys = { Vector3.new(-0.4, 5.6, 0.15), Vector3.new(0.4, 5.6, 0.15) },
+	},
+} :: { [string]: CardioMachine }
+StarterGymConfig.CardioPromptHoldSeconds = 0.3
+StarterGymConfig.CardioPromptDistanceStuds = 7
+
+--[[
 	The records wall (user 2026-10-26): the hall's back wall, behind the rack
 	rows, becomes a display of the leaderboard, the main records and the meet
 	ladder. StarterGymBuilder leaves a front region "Front_<name>" over it (no
@@ -520,6 +577,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 89330038688157 }, -- RoomProps_06: themed room fronts, batch 2a (weight stack, sconce, crate, pallet, bumper plate, medal)
 	{ id = 111460003222169 }, -- RoomProps_07: themed room fronts, batch 2b (mic, ON AIR lamp, headphones, band, roller, rack, clipboard)
 	{ id = 83964902060436 }, -- RoomProps_08: the open zone's machines (tricep pulldown, lat pulldown, seated row, leg extension)
+	{ id = 77291688307242 }, -- RoomProps_09: the Cardio machines (treadmill, exercise bike, rower, ski erg)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -605,6 +663,16 @@ local function machine(frame: string, shroud: string, pad: string, logo: string,
 	return {
 		Frame = frame, Shroud = shroud, Top = shroud, Pad = pad, Cap = pad, Logo = logo, Pin = pin, Plate = plate or "Black",
 		Rod = "Silver", Cable = "Black", Pulley = "Silver", Bar = "Silver", Grip = "Black", Text = "White",
+	}
+end
+
+-- One colourway of a RoomProps_09 cardio machine (art/scripts/build_room_props_09.py `cardio`): frame, shroud
+-- (motor hood, flywheel cover, head), pads (saddle, seat), CENTRAL, the screen's display; and the moving pieces.
+local function cardio(frame: string, shroud: string, pad: string, logo: string, display: string): { [string]: string }
+	return {
+		Frame = frame, Shroud = shroud, Pad = pad, Logo = logo, Display = display, Screen = "Black", Belt = "Charcoal",
+		Grip = "Black", Metal = "Silver", Text = "White", Crank = "Silver", Handle = "Black", Chain = "Silver",
+		HandleLeft = "Black", HandleRight = "Black", CordLeft = "Charcoal", CordRight = "Charcoal",
 	}
 end
 
@@ -998,6 +1066,27 @@ StarterGymConfig.PropColourways = {
 		machine("Black", "Orange", "Navy", "Black", "Yellow", "Charcoal"),
 		machine("White", "Green", "Forest", "Black", "Red"),
 		machine("Teal", "White", "Charcoal", "Teal", "Yellow"),
+	},
+	-- RoomProps_09: the Cardio machines (art/scripts/build_room_props_09.py COLOURWAYS).
+	Treadmill = {
+		cardio("Charcoal", "Red", "Black", "White", "Sky"),
+		cardio("White", "Teal", "Black", "White", "Lime"),
+		cardio("Black", "Orange", "Black", "Black", "Sky"),
+	},
+	ExerciseBike = {
+		cardio("White", "Blue", "Black", "White", "Sky"),
+		cardio("Charcoal", "Lime", "Black", "Black", "Lime"),
+		cardio("LightGrey", "Coral", "Navy", "White", "Sky"),
+	},
+	Rower = {
+		cardio("Black", "Yellow", "Black", "Black", "Lime"),
+		cardio("LightGrey", "Navy", "Charcoal", "White", "Sky"),
+		cardio("White", "Purple", "Black", "White", "Sky"),
+	},
+	SkiErg = {
+		cardio("Black", "Teal", "Black", "White", "Lime"),
+		cardio("White", "Orange", "Black", "White", "Sky"),
+		cardio("Charcoal", "Green", "Black", "Black", "Lime"),
 	},
 } :: { [string]: { { [string]: string } } }
 
