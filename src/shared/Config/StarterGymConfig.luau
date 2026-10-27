@@ -320,6 +320,42 @@ StarterGymConfig.FrontDepthStuds = 3
 StarterGymConfig.GlassFrontRooms = { Cafe = true, SupplementBar = true, Shop = true } :: { [string]: boolean }
 -- The showers are reached only through the lockers, which have the door.
 StarterGymConfig.OpenDoorwayRooms = { Showers = true } :: { [string]: boolean }
+--[[
+	Rooms open to the hall (user 2026-10-26, from a drawn plan: "remove all the
+	walls of the 3 rooms, leaving the gym manager office"): no wall and no door
+	onto the hall, only steel columns holding up the floor above at the hall's
+	edge; the gym's rubber floor runs in from the hall. A room name repeated in
+	neighbouring places in Rooms is one zone across them. RoomProps FURNISH
+	fills them like rooms (the "door" is the middle of the open side).
+]]
+StarterGymConfig.OpenToHall = { TrainingZone = true } :: { [string]: boolean }
+StarterGymConfig.OpenZoneColumnSpacingStuds = 12 -- about; the columns split the open side evenly
+StarterGymConfig.OpenZoneColumnStuds = 1.2 -- square
+
+--[[
+	Real wall mirrors (user 2026-10-26: "make this mirror reflect like a
+	mirror"; Roblox's Reflectance only mirrors the sky): RoomProps tags a mirror
+	part with MirrorTag and its "Facing" attribute (the direction its glass
+	faces); the client's MirrorController shows a mirrored copy of the room
+	in front of it, and the players in it, seen from that player's camera.
+	Only within MirrorRangeStuds of the glass; the room is copied MirrorDepthStuds
+	deep in front of it (MirrorSideStuds past each side, MirrorHeightStuds tall).
+]]
+StarterGymConfig.MirrorTag = "Mirror"
+StarterGymConfig.MirrorRangeStuds = 70
+StarterGymConfig.MirrorDepthStuds = 70 -- deep enough to show the racks across the hall
+StarterGymConfig.MirrorSideStuds = 25
+StarterGymConfig.MirrorHeightStuds = 80 -- up and down from the glass's middle: the hall's roof too
+
+--[[
+	The records wall (user 2026-10-26): the hall's back wall, behind the rack
+	rows, becomes a display of the leaderboard, the main records and the meet
+	ladder. StarterGymBuilder leaves a front region "Front_<name>" over it (no
+	door) and RoomProps FRONT[<name>] builds the boards, up to `heightStuds`.
+	Look only for now: the boards' names and numbers come from player data in
+	a later gameplay step.
+]]
+StarterGymConfig.RecordsWall = { name = "RecordsWall", heightStuds = 22 }
 export type ClosedRoom = {
 	label: string,
 	colour: Color3?,
@@ -335,12 +371,7 @@ StarterGymConfig.ClosedRooms = {
 	-- Ground floor.
 	-- Themed fronts, batch 2a: walnut panels, a frosted window with blinds, brass lamps.
 	Office = { label = "OFFICE", face = "OfficeWalnut", door = "OfficeWalnut", plaqueSide = -1 },
-	-- Themed fronts, batch 1 (GAME_DESIGN §27 "Themed room fronts"): black steel and diamond plate.
-	Dumbbells = { label = "DUMBBELLS", face = "FrontCharcoal", door = "DumbbellsPlate" },
-	-- Batch 2a: bolted steel panels, a yellow portal, two weight stacks.
-	Machines = { label = "MACHINES", face = "MachinesSteel", door = "FrontGraphite" },
-	-- The Index room (GAME_DESIGN §27); batch 2a: teal tiles, the lit meet-ladder board, medals. Its door keeps the teal.
-	Physio = { label = "INDEX", colour = Color3.fromRGB(0, 124, 124), face = "IndexTiles", plaqueSide = -1 },
+	-- (Dumbbells, Machines and the Index room became the open TrainingZone, user 2026-10-26.)
 	-- Batch 2a: green corrugated steel, stencilled letters, crates on a pallet, stacks of bumper plates.
 	Storage = { label = "STORAGE", face = "StorageSteel", door = "SignPanel" },
 	Cardio = { label = "CARDIO", face = "FrontGraphite", door = "CardioTrack" }, -- running track, speed lines
@@ -399,7 +430,9 @@ StarterGymConfig.Rooms = {
 	-- the spa wing"); the old ground-floor Coach room is Cardio, the coaches
 	-- are upstairs (where the Studio was planned).
 	-- The left block's upper floor is the Recovery & Spa wing (SpaWing below).
-	LeftGround = { "Office", "Dumbbells", "Machines", "Physio" },
+	-- The Dumbbells, Machines and Index rooms became one open dumbbell & machine
+	-- zone (OpenToHall, user 2026-10-26); the Office took over the Index's "learn the game" job.
+	LeftGround = { "Office", "TrainingZone", "TrainingZone", "TrainingZone" },
 	RightGround = { "Storage", "SupplementBar", "Cardio", "Shop" },
 	LeftUpper = { "SpaWing", "SpaWing", "SpaWing", "SpaWing" },
 	-- SpareRoom: where Strongman was (it is the StrongmanShed beside the gym now); its use is decided later.
@@ -1352,6 +1385,10 @@ StarterGymConfig.Looks = {
 	Brass = { material = Enum.Material.Metal, color = Color3.fromRGB(200, 160, 82) },
 	GlowTeal = { material = Enum.Material.Neon, color = Color3.fromRGB(60, 220, 210) },
 	GlowGold = { material = Enum.Material.Neon, color = Color3.fromRGB(255, 196, 60) },
+	-- The open zone's wall mirror: darker than Mirror, so a big one reads as glass, not a white wall.
+	GymMirror = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(104, 116, 130), reflectance = 0.6 },
+	-- The records wall's black chalkboard (the Classroom's chalkboard texture, tinted near black).
+	ChalkWall = { material = Enum.Material.Plaster, color = Color3.fromRGB(40, 42, 44), variant = "Classroom_Chalkboard" },
 	-- Themed room fronts, batch 2b (2026-10-26), tinted darker than the board (Studio shows them brighter).
 	ClassroomBoard = { material = Enum.Material.Plaster, color = Color3.fromRGB(46, 72, 66), variant = "Classroom_Chalkboard" },
 	MediaFelt = { material = Enum.Material.Fabric, color = Color3.fromRGB(84, 84, 98), variant = "Media_Felt" },
@@ -1461,14 +1498,16 @@ function StarterGymConfig.roomLabel(name: string): string
 end
 
 -- The real door in a room's doorway (ClosedRooms), or nil for a room with an
--- open doorway: a glass-fronted room, the lobby and the OpenDoorwayRooms.
+-- open doorway: a glass-fronted room, the lobby, the OpenDoorwayRooms and the
+-- rooms open to the hall (OpenToHall).
 function StarterGymConfig.swingDoorFor(name: string): SwingDoorSpec?
 	local cfg = StarterGymConfig
 	local own = cfg.SwingDoors[name]
 	if own then
 		return own
 	end
-	if cfg.GlassFrontRooms[name] or cfg.OpenDoorwayRooms[name] or name == cfg.Rooms.FrontGround[2] then
+	local open = cfg.GlassFrontRooms[name] or cfg.OpenDoorwayRooms[name] or cfg.OpenToHall[name]
+	if open or name == cfg.Rooms.FrontGround[2] then
 		return nil
 	end
 	local spec = table.clone(cfg.ClosedRoomDoor)

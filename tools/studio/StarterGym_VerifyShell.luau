@@ -550,6 +550,8 @@ local function run()
 	wallRays.FilterDescendantsInstances = { folders.Walls }
 	local lobbyName = "Room_" .. gym.Rooms.FrontGround[2]
 	local seeInto, notGlass, noDoor, closedCount, glassCount = {}, {}, {}, 0, 0
+	-- Rooms open to the hall (2026-10-26): only their columns between them and the hall.
+	local openZones, openBlocked, openColumns = 0, {}, 0
 	for _, roomPart in ipairs(folders.Rooms:GetChildren()) do
 		if not roomPart:IsA("BasePart") or roomPart.Name == lobbyName then
 			continue
@@ -566,6 +568,27 @@ local function run()
 			inward, faceLine, alongX = -Vector3.zAxis, plan.hallFrontZ, true
 		end
 		if inward == nil then
+			continue
+		end
+		if gym.OpenToHall[roomName] then
+			openZones += 1
+			local from = if alongX then math.max(low.X, plan.hallMinX) else math.max(low.Z, plan.hallFrontZ)
+			local to = if alongX then math.min(high.X, plan.hallMaxX) else math.min(high.Z, plan.hallBackZ)
+			-- (clear of the walls at its ends, which stand half in it)
+			local s = from + thickness
+			while s <= to - thickness do
+				local origin = if alongX then Vector3.new(s, low.Y + 4, faceLine) else Vector3.new(faceLine, low.Y + 4, s)
+				local hit = workspace:Raycast(origin - inward * 3, inward * 6, wallRays)
+				if hit and string.sub(hit.Instance.Name, 1, 7) ~= "Column_" then
+					table.insert(openBlocked, roomName .. "." .. hit.Instance.Name)
+				end
+				s += 0.5
+			end
+			for _, part in ipairs(folders.Walls:GetChildren()) do
+				if string.match(part.Name, "^Column_" .. roomName .. "_%d+$") and part:IsA("BasePart") and part.CanCollide then
+					openColumns += 1
+				end
+			end
 			continue
 		end
 		local glass = gym.GlassFrontRooms[roomName] == true
@@ -604,7 +627,10 @@ local function run()
 			table.insert(if glass then notGlass else seeInto, string.format("%s (%d spots)", roomName, bad))
 		end
 	end
-	check(#seeInto == 0 and #noDoor == 0 and closedCount >= 12, string.format(
+	check(openZones == 1 and #openBlocked == 0 and openColumns >= 2, string.format(
+		"%d zone open to the hall: nothing but its %d steel columns between it and the hall%s", openZones, openColumns,
+		if #openBlocked > 0 then " (blocked: " .. table.concat(openBlocked, ", ", 1, math.min(#openBlocked, 4)) .. ")" else ""))
+	check(#seeInto == 0 and #noDoor == 0 and closedCount >= 11, string.format(
 		"%d closed rooms: no seeing in from the hall, each with a real door%s%s", closedCount,
 		if #seeInto > 0 then " (see-through: " .. table.concat(seeInto, ", ") .. ")" else "",
 		if #noDoor > 0 then " (no door: " .. table.concat(noDoor, ", ") .. ")" else ""))
@@ -662,8 +688,9 @@ local function run()
 	-- every detail stays along its own wall and within FrontDepthStuds of it
 	-- (the aisles and the balcony stay clear); nothing solid stands in front of
 	-- its door (the door's width and 1.5 more each side, 4 out).
-	local THEMED = { "SpaReception", "MaxTesting", "Dumbbells", "Cardio", "Office", "Machines", "Physio", "Storage",
-		"Classroom", "MediaRoom", "WarmUp", "Coach" }
+	-- (2026-10-26: Dumbbells, Machines and the Index room became the open zone; the records wall has a front too.)
+	local THEMED = { "SpaReception", "MaxTesting", "Cardio", "Office", "Storage", "Classroom", "MediaRoom", "WarmUp", "Coach",
+		gym.RecordsWall.name }
 	local frontRegions, frontDecor = model:FindFirstChild("Fronts"), model:FindFirstChild("FrontProps")
 	local frontProblems, frontParts = {}, 0
 	for _, name in ipairs(THEMED) do
@@ -812,9 +839,9 @@ local function run()
 	local emptyRooms, outside, solidParts, propParts = {}, {}, {}, 0
 	-- Every room whose furniture has been built (MUST_FURNISH) must be
 	-- furnished; any room that has furniture is checked the same way. The new
-	-- rooms (Cardio, Dumbbells, ...) stay empty until their own room batch
+	-- rooms (Cardio, Classroom, ...) stay empty until their own room batch
 	-- (GAME_DESIGN §27, user 2026-10-26).
-	local MUST_FURNISH = { "Lockers", "Showers", "Cafe", "StaffRoom", "Office", "Recovery", "Massage", "Physio",
+	local MUST_FURNISH = { "Lockers", "Showers", "Cafe", "StaffRoom", "Office", "Recovery", "Massage", "TrainingZone",
 		"Storage", "SupplementBar", "Shop", "Sauna", "Coach", "SpaReception" }
 	for _, name in ipairs(MUST_FURNISH) do
 		if folders.Rooms:FindFirstChild("Room_" .. name) == nil then

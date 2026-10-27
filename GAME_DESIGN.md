@@ -1139,6 +1139,36 @@ Comp max testing
 >         the front needs it). Rooms reached only from inside (spa rooms,
 >         Lounge, Trophy Room) keep the small plaque over their door. The shop
 >         windows and the Strongman Shed keep their own signs.
+>     - **The open dumbbell & machine zone and the records wall** (user,
+>       2026-10-26, from screenshots and a drawn plan, "yes, build it";
+>       **approved in Studio screenshots** the same day): the
+>       ground floor's **Dumbbells, Machines and Index rooms lose their walls**
+>       and join the hall as one open **dumbbell & machine zone** (the gym's
+>       rubber floor, steel columns with yellow bands holding up the spa wing
+>       above; dumbbell racks, benches and weight-stack cable stations from the
+>       approved props now, new machine models previewed later). The
+>       **Office stays** and takes over the Index room's job (it explains the
+>       game: Competition Number and Scale, the technique stats, weight
+>       classes, the meet ladder). The **hall's back wall** becomes the
+>       **records wall**: a leaderboard, the main records (squat, bench,
+>       deadlift, total) and the meet ladder, as display boards first; their
+>       names and numbers come from player data in a later gameplay step
+>       (it needs its own design decision on what counts as a record).
+>       - **A chalk records wall** (user, 2026-10-26, with photos of real
+>         gym record boards: "make it look more like a drawn-on chalk wall, to
+>         give the game a more homely feeling"): the back wall is one black
+>         chalkboard in an oak frame with a chalk tray. In the middle, **GYM
+>         RECORDS** in hand-drawn chalk: one row per weight class (§13's
+>         classes, **smallest at the top to biggest**), columns **Squat,
+>         Bench, Deadlift, Total**; each record shows the holder's **Roblox
+>         avatar (headshot)**, their **username** and the **kg**. This table
+>         is the leaderboard (the separate top-10 board is gone). The meet
+>         ladder is drawn in chalk on the right, a chalk barbell ("the big
+>         three") on the left. The cells are filled from player data in a
+>         later gameplay step; until then they show "?" and "—".
+>       - **Real mirrors** (user, 2026-10-26: "make this mirror reflect like
+>         a mirror"): the dumbbell zone's wall mirror shows the room and the
+>         players in it, mirrored, from each player's own view (visual only).
 >     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
 >       woody strongman front right beside bright, colourful rooms "makes 0
 >       sense"; it must NOT be connected to the other rooms). Chosen from a

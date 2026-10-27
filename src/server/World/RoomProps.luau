@@ -27,6 +27,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local StarterGymConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("StarterGymConfig"))
+local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("WeightClassConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 
 local RoomProps = {}
@@ -1188,6 +1189,94 @@ FURNISH.Office = function(kit)
 	kit.cylinder("Clock", 0, D - 0.075, 9, 0.15, 1.6, "d", looks.Whiteboard)
 	plant(kit, "Plant_1", -hw + 1.5, D - 1.5)
 	plant(kit, "Plant_2", hw - 1.5, 1.5)
+	-- The guide board over the desk: what the Index room used to explain (user, 2026-10-26: the
+	-- Office took over its "learn the game" job; GAME_DESIGN §27).
+	local back = kit.wall("back")
+	local guide = back.item("Guide", -6, 6, 0, 0.1, 4.2, 8.0, looks.Whiteboard)
+	writing(guide, back.out, "LEARN THE GAME", { "COMPETITION NUMBER", "COMPETITION SCALE", "TECHNIQUE STATS",
+		"WEIGHT CLASSES", "THE MEET LADDER" }, WHITE, INK)
+end
+
+--[[
+	The open dumbbell & machine zone (StarterGymConfig.OpenToHall; user
+	2026-10-26: the Dumbbells, Machines and Index rooms opened into the hall).
+	Its "door" is the middle of its open side, so `back` is the building's
+	outer wall: on the Office's side a long mirror over a diamond-plate strip
+	with dumbbell racks full of CENTRAL hex dumbbells and flat benches facing
+	the mirror; on the far side, against a steel-panelled wall, cable stations
+	(weight stacks with a padded seat) along the back and end walls; neon
+	DUMBBELLS and MACHINES signs. The approved props of RoomProps_04 and _06.
+]]
+FURNISH.TrainingZone = function(kit)
+	local hw, D = kit.W / 2, kit.D
+	local back, endWall = kit.wall("back"), kit.wall("right")
+	local split = 6 -- dumbbells left of it (toward the Office), machines right of it
+	-- The mirror in panels about 4 wide, with thin black frames between them.
+	local m0, m1 = -hw + 2, split - 2
+	back.item("Mirror_Frame", m0 - 0.15, m1 + 0.15, 0, 0.06, 1.05, 9.35, looks.Gadget)
+	-- A real mirror: each player's MirrorController shows the room reflected in it.
+	local mirror = back.item("Mirror", m0, m1, 0.06, 0.1, 1.2, 9.2, looks.GymMirror)
+	mirror:SetAttribute("Facing", back.out)
+	mirror:AddTag(StarterGymConfig.MirrorTag)
+	local panels = math.max(1, math.round((m1 - m0) / 4))
+	for k = 1, panels - 1 do
+		local s = m0 + k * (m1 - m0) / panels
+		back.item("Mirror_Joint_" .. k, s - 0.06, s + 0.06, 0.1, 0.12, 1.2, 9.2, looks.Gadget)
+	end
+	back.item("SteelPanels", split, hw, 0, 0.06, 0, 9.6, looks.MachinesSteel)
+	endWall.item("SteelPanels_End", 0, D, 0, 0.06, 0, 9.6, looks.MachinesSteel)
+	kit.item("PlateStrip", -hw + 1, split - 1, D - 3.4, D, 0, 0.05, looks.DumbbellsPlate)
+	neonSign(back, "Sign_Dumbbells", "DUMBBELLS", -hw + 8, split - 10, 10, 11.6, WHITE, Color3.fromRGB(200, 30, 38),
+		looks.GlowRed)
+	neonSign(back, "Sign_Machines", "MACHINES", split + 4, hw - 4, 10, 11.6, Color3.fromRGB(242, 190, 30), INK, looks.GlowGold,
+		0.14)
+	local props = propsFor({ "DumbbellRack", "HexDumbbell", "WeightStack" })
+	if props == nil then
+		return
+	end
+	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
+		return propItem(kit, props, name, item, colourway, a, d, y, facing)
+	end
+	-- Five dumbbell racks against the mirror, three dumbbells on each shelf.
+	local rackD = D - 1.01
+	for k = 0, 4 do
+		local centre = -hw + 5 + k * 7
+		put("Rack_" .. k + 1, "DumbbellRack", k % 2 + 1, centre, rackD, 0.05, "-d")
+		hidden(kit.block("Rack_" .. k + 1 .. "_Solid", centre - 3, centre + 3, D - 2, D, 0, 2.75, looks.Glass))
+		for j = 0, 2 do
+			local a = centre + (j - 1) * 2
+			put(string.format("Rack_%d_Low_%d", k + 1, j + 1), "HexDumbbell", (k * 3 + j) % 8 + 1, a, rackD - 0.2, 1.1, "-d")
+			put(string.format("Rack_%d_High_%d", k + 1, j + 1), "HexDumbbell", (k * 3 + j + 4) % 8 + 1, a, rackD + 0.32, 2.1, "-d")
+		end
+	end
+	-- Four flat benches facing the mirror, a pair of dumbbells beside each.
+	for k = 0, 3 do
+		local a, id = -33 + k * 8.5, "Bench_" .. k + 1
+		kit.block(id, a - 0.7, a + 0.7, D - 10, D - 5.4, 1.55, 1.95, if k % 2 == 0 then looks.Padding else looks.PaddingBlue)
+		for leg, d in ipairs({ D - 9.6, D - 5.8 }) do
+			kit.item(string.format("%s_Leg_%d", id, leg), a - 0.6, a + 0.6, d - 0.2, d + 0.2, 0.05, 1.55, looks.SteelBeam)
+		end
+		kit.item(id .. "_Rail", a - 0.15, a + 0.15, D - 9.6, D - 5.8, 1.25, 1.55, looks.SteelBeam)
+		for side = 0, 1 do
+			put(string.format("%s_Dumbbell_%d", id, side + 1), "HexDumbbell", (k * 2 + side) % 8 + 1, a + 1.8, D - 8.4 + side * 1.4,
+				0.05, "-d")
+		end
+	end
+	-- Cable stations: a weight stack against the wall with a padded seat in front.
+	local function station(id: string, wall: Wall, s: number, colourway: number)
+		local a, d = wall.at(s, 0.86)
+		put(id, "WeightStack", colourway, a, d, 0.05, if wall == back then "-d" else "-a")
+		hidden(wall.block(id .. "_Solid", s - 1.5, s + 1.5, 0, 1.72, 0, 8.6, looks.Glass))
+		wall.block(id .. "_Seat", s - 1, s + 1, 3.4, 5.2, 1.5, 1.9, looks.PaddingBlue)
+		wall.item(id .. "_Post", s - 0.15, s + 0.15, 4.15, 4.45, 0.05, 1.5, looks.SteelBeam)
+		wall.item(id .. "_Foot", s - 0.8, s + 0.8, 3.7, 4.9, 0.05, 0.15, looks.SteelBeam)
+	end
+	for k, s in ipairs({ split + 6, split + 14, split + 22 }) do
+		station("Station_" .. k, back, s, k)
+	end
+	for k, s in ipairs({ D - 8, D - 16 }) do
+		station("Station_End_" .. k, endWall, s, k + 2)
+	end
 end
 
 -- The first recovery room (step 6a), kept for when the 3D props do not load.
@@ -1589,27 +1678,6 @@ FURNISH.SpaReception = function(kit)
 	put("Plant_1", "SBarPlant", 1, -hw + 1.8, D - 1.8, 0.06, "-d")
 	put("Plant_2", "SBarPlant", 1, hw - 1.8, D - 1.8, 0.06, "-d")
 	put("Plant_3", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
-end
-
-FURNISH.Physio = function(kit)
-	local hw, D = kit.W / 2, kit.D
-	paddedTable(kit, "TreatmentTable", -6, 11, 18, looks.PaddingBlue)
-	local right = kit.wall("right")
-	right.item("BandRack_Bar", 7, 17, 0, 0.6, 6.5, 6.75, looks.Stainless)
-	local bandLooks = { looks.PlateRed, looks.PlateBlue, looks.PlateYellow, looks.PlateGreen, looks.Gadget }
-	for index = 0, 7 do
-		local s = 7.6 + index * 1.2
-		right.item("Band_" .. index + 1, s - 0.15, s + 0.15, 0.25, 0.4, 3, 6.5, bandLooks[index % 5 + 1])
-	end
-	kit.ball("ExerciseBall_1", 5, 20, 1.3, 2.6, looks.PlateBlue)
-	kit.ball("ExerciseBall_2", 8.5, 22.5, 1.1, 2.2, looks.Gadget)
-	desk(kit, "Desk", -hw + 0.5, -hw + 6.5, D - 3, D - 0.5)
-	monitor(kit, "Monitor", -hw + 3.5, D - 1.2)
-	chair(kit, "Chair", -hw + 3.5, D - 4.5, "+d")
-	local back = kit.wall("back")
-	local poster = back.item("Poster", -2, 6, 0, 0.1, 4, 9, looks.Whiteboard)
-	writing(poster, back.out, "PHYSIO", { "Mobility", "Rehab", "Injury care" }, WHITE, INK)
-	plant(kit, "Plant", hw - 1.5, 1.5)
 end
 
 FURNISH.Storage = function(kit)
@@ -2500,33 +2568,6 @@ FRONT.MaxTesting = function(front)
 end
 
 --[[
-	Dumbbells: charcoal (the builder's face) over a diamond-plate kick band, a
-	black steel portal, big hex dumbbells high up either side of the door, and a
-	dumbbell rack full of CENTRAL hex dumbbells either side of the door.
-]]
-FRONT.Dumbbells = function(front)
-	front.band("PlateBand", front.aMin, front.aMax, 0, 3.4, 0.06, 0.16, looks.DumbbellsPlate)
-	portal(front, looks.SteelBeam, 0.6, 0.35, 0.6)
-	local props = propsFor({ "HexDumbbell", "DumbbellRack" })
-	if props == nil then
-		return
-	end
-	for index, side in ipairs({ -1, 1 }) do
-		frontProp(front, props, "BigDumbbell_" .. index, "HexDumbbell", index, side * 9.6, 1.15, 10.1, "+d", 3)
-		local centre = side * 9.2
-		frontProp(front, props, "Rack_" .. index, "DumbbellRack", index, centre, 1.0, 0, "+d")
-		hidden(front.block("Rack_Solid_" .. index, centre - 3, centre + 3, 0.06, 2.0, 0, 2.7, looks.Glass))
-		for k = 0, 2 do
-			local a = centre + (k - 1) * 2
-			frontProp(front, props, string.format("Rack_%d_Low_%d", index, k + 1), "HexDumbbell", (index - 1) * 3 + k + 1, a, 1.2,
-				1.05, "+d")
-			frontProp(front, props, string.format("Rack_%d_High_%d", index, k + 1), "HexDumbbell", (index * 3 + k) % 8 + 1, a, 0.68,
-				2.05, "+d")
-		end
-	end
-end
-
---[[
 	Cardio: a red running track (four lanes with white lines and lane numbers)
 	along the bottom of a dark wall, and glowing speed lines streaking past the
 	door above it.
@@ -2636,8 +2677,9 @@ FRONT.Office = function(front)
 	plaque(plate, front.toward("+d"), "GYM MANAGER", looks.Brass.color, Color3.fromRGB(40, 28, 18))
 	front.item("HelpPoint_Frame", -12.6, -7.8, 0.06, 0.14, 5.9, 8.9, looks.Brass)
 	local sign = front.item("HelpPoint", -12.4, -8.0, 0.14, 0.18, 6.1, 8.7, looks.Whiteboard)
-	writing(sign, front.toward("+d"), "HELP POINT", { "NEW HERE? QUESTIONS?", "ASK THE GYM MANAGER", "INSIDE" },
-		Color3.fromRGB(236, 224, 196), Color3.fromRGB(40, 28, 18))
+	-- The Office took over the Index room's "learn the game" job (user, 2026-10-26).
+	writing(sign, front.toward("+d"), "HELP POINT & GUIDE", { "NEW HERE? QUESTIONS?", "LEARN THE GAME INSIDE",
+		"ASK THE GYM MANAGER" }, Color3.fromRGB(236, 224, 196), Color3.fromRGB(40, 28, 18))
 	local props = propsFor({ "WallSconce", "Planter", "SBarPlant" })
 	if props == nil then
 		return
@@ -2660,72 +2702,6 @@ local function frontBoard(front: FrontKit, name: string, a0: number, a1: number,
 	front.item(name .. "_Frame", a0 - 0.12, a1 + 0.12, 0.06, 0.16, y0 - 0.12, y1 + 0.12, looks.Gadget)
 	local board = front.item(name, a0, a1, 0.16, 0.2, y0, y1, looks.Whiteboard)
 	writing(board, front.toward("+d"), title, lines, background, ink)
-end
-
---[[
-	Machines: bolted steel panels (the builder's face), a yellow portal round
-	the door, steel columns at both ends, a weight stack (pin, cable, pulley)
-	either side of the door in two colours, and "how to use" boards.
-]]
-FRONT.Machines = function(front)
-	portal(front, looks.PlateYellow, 0.4, 0.3, 0.4)
-	for index, a in ipairs({ front.aMin + 0.4, front.aMax - 0.4 }) do
-		front.item("Column_" .. index, a - 0.35, a + 0.35, 0.06, 0.5, 0, front.H, looks.SteelBeam)
-	end
-	frontBoard(front, "HowTo", 10.0, 12.4, 4.6, 6.6, "HOW TO USE", { "1  SET THE SEAT", "2  PIN THE WEIGHT", "3  LIFT UNDER CONTROL" },
-		Color3.fromRGB(242, 190, 30), Color3.fromRGB(22, 22, 24))
-	frontBoard(front, "Etiquette", -12.4, -10.0, 4.6, 6.6, "MACHINE ZONE", { "WIPE IT DOWN", "RETURN THE PIN", "SHARE THE STATION" },
-		Color3.fromRGB(22, 22, 24), Color3.fromRGB(242, 190, 30))
-	local props = propsFor({ "WeightStack" })
-	if props == nil then
-		return
-	end
-	-- The stacks clear of the name plaque right of the door.
-	for index, side in ipairs({ -1, 1 }) do
-		local centre = side * 8.3
-		frontProp(front, props, "Stack_" .. index, "WeightStack", index, centre, 0.91, 0, "+d")
-		hidden(front.block("Stack_Solid_" .. index, centre - 1.5, centre + 1.5, 0.06, 1.76, 0, 8.6, looks.Glass))
-	end
-end
-
---[[
-	Index (room "Physio"; it explains the game, GAME_DESIGN §27): teal tiles
-	(the builder's face), a big lit board of the meet ladder right of the door
-	(Local -> Nationals -> Worlds -> Sheffield as rising glowing steps), medals
-	on a brass rail and a "learn the game" board left of it.
-]]
-FRONT.Physio = function(front)
-	local b0, b1 = front.doorHalf + 1.4, front.aMax - 0.4
-	front.item("Ladder_Board", b0, b1, 0.06, 0.3, 2.4, 9.4, looks.SignPanel)
-	front.item("Ladder_Edge", b0, b1, 0.3, 0.34, 2.3, 2.42, looks.GlowTeal)
-	frontLetters(front, "Ladder_Title", b0 + 0.4, b1 - 0.4, 8.3, 9.1, 0.3, "THE MEET LADDER", Color3.fromRGB(255, 255, 255), true)
-	-- Solid steps (neon was too bright) with a glowing top edge each.
-	local steps = {
-		{ name = "LOCAL", look = looks.MatTeal, glow = looks.GlowTeal },
-		{ name = "NATIONALS", look = looks.PlateBlue, glow = looks.GlowIce },
-		{ name = "WORLDS", look = looks.Stainless, glow = looks.GlowWhite },
-		{ name = "SHEFFIELD", look = looks.Brass, glow = looks.GlowGold },
-	}
-	local width = (b1 - b0 - 0.8) / #steps
-	for k, step in ipairs(steps) do
-		local s0, top = b0 + 0.4 + (k - 1) * width, 3.2 + k
-		front.item("Ladder_Step_" .. k, s0 + 0.1, s0 + width - 0.1, 0.3, 0.38, 2.8, top - 0.1, step.look)
-		front.item("Ladder_StepGlow_" .. k, s0 + 0.1, s0 + width - 0.1, 0.3, 0.38, top - 0.1, top, step.glow)
-		frontLetters(front, "Ladder_Label_" .. k, s0, s0 + width, top + 0.1, top + 0.55, 0.3, step.name, step.glow.color, true)
-	end
-	front.band("Glow", front.aMin, front.aMax, 0.5, 0.6, 0.06, 0.1, looks.GlowTeal)
-	frontBoard(front, "Learn", -12.4, -5.6, 2.6, 5.0, "LEARN THE GAME",
-		{ "COMPETITION NUMBER", "COMPETITION SCALE", "TECHNIQUE STATS", "WEIGHT CLASSES" }, Color3.fromRGB(14, 40, 44),
-		Color3.fromRGB(255, 255, 255))
-	front.item("MedalRail", -13.5, -6.8, 0.06, 0.2, 8.1, 8.3, looks.Brass)
-	local props = propsFor({ "Medal" })
-	if props == nil then
-		return
-	end
-	-- Big medals (1.4 x), hanging from the rail, clear of the name plaque left of the door.
-	for k = 1, 5 do
-		frontProp(front, props, "Medal_" .. k, "Medal", k, -12.9 + (k - 1) * 1.35, 0.18, 8.25 - 2.22 * 1.4, "+d", 1.4)
-	end
 end
 
 --[[
@@ -2954,6 +2930,196 @@ FRONT.Coach = function(front)
 	end
 	frontPlanter(front, props, "Planter_1", front.aMin + 2.6, 1)
 	frontPlanter(front, props, "Planter_2", front.aMax - 2.6, 3)
+end
+
+-- Hand-written chalk lettering (Roblox's own fonts): bold marker for headings and numbers, neat hand for names.
+local CHALK_BOLD = Font.fromEnum(Enum.Font.PermanentMarker)
+local CHALK_HAND = Font.fromEnum(Enum.Font.PatrickHand)
+local CHALK = {
+	white = Color3.fromRGB(240, 238, 228),
+	yellow = Color3.fromRGB(250, 222, 110),
+	pink = Color3.fromRGB(246, 150, 180),
+	blue = Color3.fromRGB(150, 200, 245),
+	green = Color3.fromRGB(160, 230, 170),
+}
+
+-- A see-through writing surface on a front, `d` out from the wall, with a SurfaceGui named `name` facing the hall.
+local function chalkPanel(front: FrontKit, name: string, a0: number, a1: number, y0: number, y1: number, d: number): SurfaceGui
+	local part = front.item(name, a0, a1, d, d + 0.02, y0, y1, looks.SignPanel)
+	part.Transparency = 1
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = name
+	gui.Face = faceToward(front.toward("+d"))
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 20
+	gui.LightInfluence = 0.6
+	gui.Parent = part
+	return gui
+end
+
+-- Chalk writing at (x, y) with size (w, h), as fractions of `parent`.
+local function chalkText(parent: Instance, name: string, text: string, x: number, y: number, w: number, h: number,
+	colour: Color3, font: Font, align: Enum.TextXAlignment?): TextLabel
+	local label = Instance.new("TextLabel")
+	label.Name = name
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromScale(x, y)
+	label.Size = UDim2.fromScale(w, h)
+	label.Text = text
+	label.TextColor3 = colour
+	label.TextScaled = true
+	label.TextXAlignment = align or Enum.TextXAlignment.Center
+	label.FontFace = font
+	label.Parent = parent
+	return label
+end
+
+-- A chalk line (a thin slightly see-through strip) from (x, y), `w` wide and `h` high (fractions), or
+-- `pixels` thick when w or h is 0.
+local function chalkLine(parent: Instance, name: string, x: number, y: number, w: number, h: number, pixels: number,
+	colour: Color3?)
+	local line = Instance.new("Frame")
+	line.Name = name
+	line.BorderSizePixel = 0
+	line.BackgroundColor3 = colour or CHALK.white
+	line.BackgroundTransparency = 0.15
+	line.Position = UDim2.fromScale(x, y)
+	line.Size = UDim2.new(w, if w == 0 then pixels else 0, h, if h == 0 then pixels else 0)
+	line.Parent = parent
+end
+
+-- A chalk outline round a frame (a drawn box or circle).
+local function chalkOutline(frame: GuiObject, colour: Color3, round: boolean)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = colour
+	stroke.Thickness = 3
+	stroke.Transparency = 0.15
+	stroke.Parent = frame
+	if round then
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = frame
+	end
+end
+
+--[[
+	The records wall (StarterGymConfig.RecordsWall; user 2026-10-26: the hall's
+	back wall shows the gym's records, "like a drawn-on chalk wall, to give the
+	game a more homely feeling", from photos of real gym record boards): a
+	black chalkboard across the wall in an oak frame with a chalk tray. In the
+	middle the GYM RECORDS table drawn in chalk: one row per weight class
+	(WeightClassConfig, smallest at the top), a column each for the squat,
+	bench, deadlift and total. On the right the meet ladder drawn in chalk, on
+	the left a chalk barbell, planters at both ends.
+	Every record cell is a Frame "Record_<class>_<LIFT>" (attributes
+	WeightClass and Lift) in the SurfaceGui "RecordsTable", with an "Avatar"
+	ImageLabel (the holder's Roblox headshot), a "Holder" label (their
+	username) and a "Kg" label: the later records system fills them in. Until
+	then they show "?" and "—".
+]]
+FRONT.RecordsWall = function(front)
+	local oak = looks.LockersSlats
+	local w0, w1, b0, b1 = -86, 86, 2.2, 21.5
+	front.item("Chalkboard", w0, w1, 0.06, 0.12, b0, b1, looks.ChalkWall)
+	front.item("Frame_Top", w0 - 0.4, w1 + 0.4, 0.06, 0.24, b1, b1 + 0.4, oak)
+	front.item("Frame_Bottom", w0 - 0.4, w1 + 0.4, 0.06, 0.24, b0 - 0.4, b0, oak)
+	for index, a in ipairs({ w0 - 0.4, w1 }) do
+		front.item("Frame_Side_" .. index, a, a + 0.4, 0.06, 0.24, b0, b1, oak)
+	end
+	front.item("Tray", w0, w1, 0.24, 0.6, b0 - 0.4, b0 - 0.25, oak)
+	for index, stick in ipairs({ { a = -40, look = looks.Whiteboard }, { a = -39.3, look = looks.PlateYellow },
+		{ a = 22, look = looks.MatCoral }, { a = 70, look = looks.Whiteboard } }) do
+		front.cylinder("Chalk_" .. index, stick.a, 0.42, b0 - 0.2, 0.45, 0.09, "a", stick.look)
+	end
+
+	-- The records table.
+	local classes = WeightClassConfig.Classes
+	local lifts = { "SQUAT", "BENCH", "DEADLIFT", "TOTAL" }
+	local records = chalkPanel(front, "RecordsTable", -58, 58, b0 + 0.4, b1 - 0.3, 0.12)
+	chalkText(records, "Title", "GYM RECORDS", 0.2, 0.0, 0.6, 0.1, CHALK.white, CHALK_BOLD)
+	local top, rows = 0.12, #classes + 1
+	local rowH = (1 - top - 0.01) / rows
+	local classW = 0.13
+	local liftW = (1 - classW) / #lifts
+	-- The grid: a line under every row, a line between every column.
+	for row = 0, rows do
+		chalkLine(records, "Line_Row_" .. row, 0, top + row * rowH, 1, 0, 3)
+	end
+	for column = 0, #lifts + 1 do
+		local x = if column == 0 then 0 elseif column == 1 then classW else classW + (column - 1) * liftW
+		chalkLine(records, "Line_Column_" .. column, math.min(x, 0.997), top, 0, 1 - top - 0.01, 3)
+	end
+	chalkText(records, "Head_Class", "WEIGHT CLASS", 0.005, top + rowH * 0.15, classW - 0.01, rowH * 0.7, CHALK.yellow, CHALK_BOLD)
+	for index, lift in ipairs(lifts) do
+		chalkText(records, "Head_" .. lift, lift, classW + (index - 1) * liftW, top + rowH * 0.12, liftW, rowH * 0.76, CHALK.white,
+			CHALK_BOLD)
+	end
+	for row, class in ipairs(classes) do
+		local y = top + row * rowH
+		chalkText(records, "Class_" .. row, string.upper(class.label), 0.01, y + rowH * 0.15, classW - 0.02, rowH * 0.7,
+			CHALK.yellow, CHALK_BOLD)
+		for index, lift in ipairs(lifts) do
+			local cell = Instance.new("Frame")
+			cell.Name = string.format("Record_%s_%s", class.label, lift)
+			cell.BackgroundTransparency = 1
+			cell.Position = UDim2.fromScale(classW + (index - 1) * liftW, y)
+			cell.Size = UDim2.fromScale(liftW, rowH)
+			cell:SetAttribute("WeightClass", class.label)
+			cell:SetAttribute("Lift", lift)
+			cell.Parent = records
+			-- The holder's Roblox headshot in a chalk circle ("?" until there is one).
+			local avatar = Instance.new("ImageLabel")
+			avatar.Name = "Avatar"
+			avatar.BackgroundTransparency = 1
+			avatar.Image = ""
+			avatar.AnchorPoint = Vector2.new(0, 0.5)
+			avatar.Position = UDim2.fromScale(0.05, 0.5)
+			avatar.Size = UDim2.fromScale(0.82, 0.82)
+			avatar.SizeConstraint = Enum.SizeConstraint.RelativeYY
+			avatar.Parent = cell
+			chalkOutline(avatar, CHALK.white, true)
+			chalkText(avatar, "Unknown", "?", 0.2, 0.15, 0.6, 0.7, CHALK.white, CHALK_HAND)
+			-- The username beside the avatar, the weight big on the right.
+			chalkText(cell, "Holder", "—", 0.13, 0.2, 0.42, 0.6, CHALK.blue, CHALK_HAND, Enum.TextXAlignment.Left)
+			chalkText(cell, "Kg", "— KG", 0.55, 0.1, 0.41, 0.8, if lift == "TOTAL" then CHALK.pink else CHALK.white, CHALK_BOLD,
+				Enum.TextXAlignment.Right)
+		end
+	end
+
+	-- The meet ladder in chalk: four rising steps, each with its name above it.
+	local ladder = chalkPanel(front, "MeetLadder", 62, 84, b0 + 2, b1 - 1.5, 0.12)
+	chalkText(ladder, "Title", "THE MEET LADDER", 0.02, 0.0, 0.96, 0.14, CHALK.white, CHALK_BOLD)
+	for k, step in ipairs({ { name = "LOCAL", colour = CHALK.green }, { name = "NATIONALS", colour = CHALK.blue },
+		{ name = "WORLDS", colour = CHALK.white }, { name = "SHEFFIELD", colour = CHALK.yellow } }) do
+		local height = 0.14 + k * 0.14
+		local box = Instance.new("Frame")
+		box.Name = "Step_" .. k
+		box.BackgroundTransparency = 1
+		box.Position = UDim2.fromScale(0.04 + (k - 1) * 0.235, 0.98 - height)
+		box.Size = UDim2.fromScale(0.2, height)
+		box.Parent = ladder
+		chalkOutline(box, step.colour, false)
+		chalkText(ladder, "Label_" .. k, step.name, 0.02 + (k - 1) * 0.235, 0.98 - height - 0.09, 0.24, 0.07, step.colour,
+			CHALK_BOLD)
+	end
+
+	-- A chalk barbell on the left, the big three under it.
+	local big = chalkPanel(front, "BigThree", -84, -62, b0 + 2, b1 - 1.5, 0.12)
+	chalkText(big, "Title", "THE BIG THREE", 0.02, 0.0, 0.96, 0.14, CHALK.white, CHALK_BOLD)
+	chalkLine(big, "Bar", 0.06, 0.34, 0.88, 0, 6)
+	for index, plate in ipairs({ { x = 0.1, h = 0.3, colour = CHALK.blue }, { x = 0.16, h = 0.22, colour = CHALK.yellow },
+		{ x = 0.82, h = 0.22, colour = CHALK.yellow }, { x = 0.88, h = 0.3, colour = CHALK.blue } }) do
+		chalkLine(big, "Plate_" .. index, plate.x, 0.34 - plate.h / 2, 0, plate.h, 14, plate.colour)
+	end
+	for index, lift in ipairs({ "SQUAT", "BENCH", "DEADLIFT" }) do
+		chalkText(big, "Lift_" .. index, lift, 0.1, 0.52 + (index - 1) * 0.15, 0.8, 0.12, CHALK.white, CHALK_HAND)
+	end
+
+	local props = propsFor({ "Planter", "SBarPlant" })
+	if props then
+		frontPlanter(front, props, "Planter_1", front.aMin + 4, 2, 0.24)
+		frontPlanter(front, props, "Planter_2", front.aMax - 4, 4, 0.24)
+	end
 end
 
 --[[

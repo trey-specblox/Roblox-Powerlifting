@@ -1195,12 +1195,27 @@ local function buildLights(model: Model, plan: StarterGymConfig.Footprint, corri
 				box(roofs, "Ceiling_Room_" .. name, Vector3.new(low.X, high.Y - thickness, low.Z), high, looks.Ceiling)
 				underside = high.Y - thickness
 			end
-			-- Rooms with their own warm lights (the sauna) get no white panel.
+			-- Rooms with their own warm lights (the sauna) get no white panel; a long
+			-- zone open to the hall gets a row of them along its length.
 			if not cfg.OwnLightRooms[name] then
 				local mx, mz = room.Position.X, room.Position.Z
-				local panel = decor(box(lights, "RoomLight_" .. name, Vector3.new(mx - half, underside - 0.1, mz - half),
-					Vector3.new(mx + half, underside, mz + half), looks.GlowWhite))
-				shining(panel, cfg.RoomLightRange, cfg.RoomLightBrightness, 150)
+				local spots = { Vector3.new(mx, 0, mz) }
+				if cfg.OpenToHall[name] then
+					local alongX = room.Size.X > room.Size.Z
+					local length = if alongX then room.Size.X else room.Size.Z
+					local panels = math.max(1, math.round(length / 14))
+					spots = {}
+					for k = 1, panels do
+						local at = -length / 2 + (k - 0.5) * length / panels
+						table.insert(spots, if alongX then Vector3.new(mx + at, 0, mz) else Vector3.new(mx, 0, mz + at))
+					end
+				end
+				for index, spot in ipairs(spots) do
+					local panelName = if index == 1 then "RoomLight_" .. name else string.format("RoomLight_%s_%d", name, index)
+					local panel = decor(box(lights, panelName, Vector3.new(spot.X - half, underside - 0.1, spot.Z - half),
+						Vector3.new(spot.X + half, underside, spot.Z + half), looks.GlowWhite))
+					shining(panel, cfg.RoomLightRange, cfg.RoomLightBrightness, 150)
+				end
 			end
 		end
 	end
@@ -1296,10 +1311,26 @@ local function buildGym(model: Model): string
 		looks.RoomFloor)
 	box(floors, "Floor_FrontRight", Vector3.new(cx - outerHalf, floorLow, frontZ), Vector3.new(cx - lobbyHalf, floorY, blockBackZ),
 		looks.RoomFloor)
-	box(floors, "Floor_LeftBlock", Vector3.new(cx + hallHalf + t, floorLow, hallFrontZ),
-		Vector3.new(cx + outerHalf, floorY, hallBackZ), looks.RoomFloor)
-	box(floors, "Floor_RightBlock", Vector3.new(cx - outerHalf, floorLow, hallFrontZ),
-		Vector3.new(cx - hallHalf - t, floorY, hallBackZ), looks.RoomFloor)
+	-- The side blocks: room tiles, but under a room open to the hall (OpenToHall) the
+	-- gym's rubber, right up to the hall (no wall stands there).
+	local slotDepth = (hallBackZ - hallFrontZ) / 4
+	for _, block in ipairs({ { name = "LeftBlock", sign = 1, rooms = cfg.Rooms.LeftGround },
+		{ name = "RightBlock", sign = -1, rooms = cfg.Rooms.RightGround } }) do
+		local first = 1
+		while first <= 4 do
+			local open = cfg.OpenToHall[block.rooms[first]] == true
+			local last = first
+			while last < 4 and (cfg.OpenToHall[block.rooms[last + 1]] == true) == open do
+				last += 1
+			end
+			local inner = cx + block.sign * (hallHalf + (if open then 0 else t))
+			local outer = cx + block.sign * outerHalf
+			box(floors, string.format("Floor_%s_%d", block.name, first),
+				Vector3.new(math.min(inner, outer), floorLow, hallFrontZ + (first - 1) * slotDepth),
+				Vector3.new(math.max(inner, outer), floorY, hallFrontZ + last * slotDepth), if open then looks.GymFloor else looks.RoomFloor)
+			first = last + 1
+		end
+	end
 
 	-- The upper floor and the ceiling of each room block (they reach under the walls).
 	-- The ceilings are hidden under the one pitched roof: no flat roof shows outside.
@@ -1446,6 +1477,27 @@ local function buildGym(model: Model): string
 			})
 		end
 
+		-- A zone open to the hall (StarterGymConfig.OpenToHall) from z0 to z1: its
+		-- region (its "door" is the middle of the open side) and steel columns
+		-- along the hall's edge under the floor above, each with a yellow safety
+		-- band at the bottom; no wall, no door.
+		local function openZone(name: string, floorNumber: number, z0: number, z1: number, y0: number, y1: number)
+			room(rooms, name, floorNumber, Vector3.new(minX, y0, z0), Vector3.new(maxX, y1, z1),
+				Vector3.new(glassLine, y0 + doorHeight / 2, (z0 + z1) / 2), false)
+			local bays = math.max(1, math.round((z1 - z0) / cfg.OpenZoneColumnSpacingStuds))
+			if bays % 2 == 0 then
+				bays += 1 -- an odd number of bays: no column in the middle (the zone's "door")
+			end
+			local half = cfg.OpenZoneColumnStuds / 2
+			for k = 1, bays - 1 do
+				local z = z0 + k * (z1 - z0) / bays
+				box(walls, string.format("Column_%s_%d", name, k), Vector3.new(glassLine - half, y0, z - half),
+					Vector3.new(glassLine + half, y1, z + half), cfg.Looks.SteelBeam)
+				decor(box(walls, string.format("Column_%s_%d_Band", name, k), Vector3.new(glassLine - half - 0.03, y0, z - half - 0.03),
+					Vector3.new(glassLine + half + 0.03, y0 + 1.2, z + half + 0.03), cfg.Looks.PlateYellow))
+			end
+		end
+
 		local function floorRooms(names: { string }, floorNumber: number, y0: number, y1: number, wallLow: number,
 			faceTop: number)
 			local first = 1
@@ -1460,6 +1512,8 @@ local function buildGym(model: Model): string
 				local faceFrom, faceTo = if first == 1 then z0 + 0.5 else z0, if last == 4 then z1 - 0.05 else z1
 				if names[first] == cfg.SpaWing.name then
 					spaWing(floorNumber, z0, z1, y0, y1, wallLow, faceFrom, faceTo, faceTop)
+				elseif cfg.OpenToHall[names[first]] then
+					openZone(names[first], floorNumber, z0, z1, y0, y1)
 				else
 					room(rooms, names[first], floorNumber, Vector3.new(minX, y0, z0), Vector3.new(maxX, y1, z1),
 						Vector3.new(glassLine, y0 + doorHeight / 2, zc), false)
@@ -1489,6 +1543,9 @@ local function buildGym(model: Model): string
 	end
 	sideBlock("LeftBlock", 1, cfg.Rooms.LeftGround, cfg.Rooms.LeftUpper)
 	sideBlock("RightBlock", -1, cfg.Rooms.RightGround, cfg.Rooms.RightUpper)
+	-- The records wall: a front region over the hall's back wall (no door), for RoomProps.
+	frontRegion(cfg.RecordsWall.name, true, hallBackZ, -1, cx - hallHalf, cx + hallHalf, floorY + cfg.RecordsWall.heightStuds,
+		{ centre = cx, width = 0, height = 0, bottom = floorY })
 
 	-- ---------------------------------------------------------------- the front block
 	local frontGlassLine = hallFrontZ - t / 2

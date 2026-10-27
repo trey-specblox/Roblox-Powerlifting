@@ -2,10 +2,9 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-26
-(Starter Gym step 6: themed room fronts batch 2b (upstairs) and the small name
-plaques built, approved, committed and pushed; next: open the ground floor's
-Dumbbells / Machines / Index rooms into the hall and build the records wall;
-newest entries at the end of the CURRENT MILESTONE block).
+(Starter Gym step 6: the open dumbbell & machine zone, the chalk records wall
+and a real mirror built, approved, committed and pushed; newest entries at the
+end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -1093,7 +1092,66 @@ and polish.
     StarterGym_VerifyShell ALL 55 CHECKS PASSED.
   - Still for the user: SAVE/PUBLISH the cloud place once so the new
     MaterialVariants reach the live game.
-  NEXT ACTION (user, 2026-10-26, from screenshots): open up the ground floor's
+  THE OPEN DUMBBELL & MACHINE ZONE, THE CHALK RECORDS WALL AND THE MIRROR
+  (2026-10-26; plan approved by the user, built, Studio-tested and APPROVED
+  from screenshots; COMMITTED and pushed with the user's approval as "Open
+  the dumbbell & machine zone, add the chalk records wall and a real mirror";
+  `git log` for the hash):
+  - `StarterGymConfig`: `OpenToHall = { TrainingZone }`, column spacing and
+    size, `RecordsWall`; Rooms.LeftGround = Office + TrainingZone x3;
+    ClosedRooms Dumbbells / Machines / Physio removed; `swingDoorFor` gives
+    open zones no door; Look `GymMirror`.
+  - `StarterGymBuilder`: side-block floors per stretch (rubber up to the hall
+    under an open zone), `openZone` (region + columns with yellow bands, no
+    wall or door), a row of ceiling panels in long open zones, the
+    `Front_RecordsWall` region on the hall's back wall.
+  - `RoomProps`: `FURNISH.TrainingZone` (framed mirror, DUMBBELLS / MACHINES
+    neon, 5 dumbbell racks, 4 benches, 5 cable stations), `FRONT.RecordsWall`
+    (leaderboard, main records, meet ladder; helpers `displayBoard`,
+    `boardGui`, `boardText`), Office help point "HELP POINT & GUIDE" and a
+    LEARN THE GAME board inside; FRONT.Dumbbells / Machines / Physio and
+    FURNISH.Physio removed (in Git history).
+  - Verify: new check "zone open to the hall: nothing but its columns";
+    closed rooms >= 11; THEMED and MUST_FURNISH updated. Full run 55 of 56
+    passed; the one failure was the new check sampling inside the Office's
+    divider wall, fixed (skips the end walls) and re-run on its own: passes.
+  - Records wall redone as a CHALK wall (user, 2026-10-26, photos of gym
+    record boards): `FRONT.RecordsWall` = a black chalkboard (Look
+    `ChalkWall`, the Classroom chalkboard texture tinted black; no upload) in
+    an oak frame, the GYM RECORDS table (rows = `WeightClassConfig.Classes`,
+    smallest first; columns SQUAT / BENCH / DEADLIFT / TOTAL), the meet
+    ladder and a "big three" barbell in chalk (Roblox fonts PermanentMarker
+    and PatrickHand). For the later records system: SurfaceGui
+    "RecordsTable", one Frame per record "Record_<class label>_<LIFT>"
+    (attributes WeightClass, Lift) with "Avatar" (ImageLabel for
+    Players:GetUserThumbnailAsync HeadShot), "Holder" and "Kg" labels. A
+    preview filled the 83 kg row with the user's avatar and made-up numbers
+    in a test run only (not saved). Front check: 10 fronts, 0 outside, 0 at
+    a door.
+  - A REAL MIRROR (user, 2026-10-26: "make this mirror reflect like a
+    mirror"; Roblox Reflectance only mirrors the sky): new client module
+    `src/client/World/MirrorController.luau` (started in
+    `init.client.luau`): for parts tagged `StarterGymConfig.MirrorTag` with a
+    "Facing" attribute (the zone's mirror; RoomProps tags it), a SurfaceGui
+    in PlayerGui with a ViewportFrame: the room in front (MirrorDepthStuds
+    70 deep, MirrorSideStuds, MirrorHeightStuds) copied and reflected across
+    the glass, players' characters copied and reflected every frame (copied
+    parts matched by name path: some character children are not cloned);
+    the viewport camera stands at the player's camera looking straight at
+    the glass, the frame centred on the point in front of it (exact
+    window-into-a-mirrored-room projection), FOV capped at 120. Only within
+    MirrorRangeStuds (70); built on approach, thrown away when far. Tested in
+    Studio via the MCP: ~330 copied parts, the player's reflection follows
+    them (x 118 -> 130.7 behind glass at 124.4), screenshots. Visual only,
+    nothing sent to the server. Not tested on a phone yet (performance).
+  - Leftovers: the MaterialVariants Dumbbells_DiamondPlate and
+    Machines_SteelPanels are reused in the zone; Index_Tiles is now unused.
+  NEXT ACTION: ask the user what is next. Open threads: the records
+  system (fill the chalk table from player data: needs a design decision on
+  what counts as a record and ties), new machine models for the open zone
+  (previewed first), the mirror on a phone (performance), the remaining room
+  interiors (Cardio, Classroom, Media Room, ...), the spare room.
+  OLD NEXT ACTION (built above, user, 2026-10-26, from screenshots): open up the ground floor's
   left side: remove the walls of Dumbbells, Machines and Index so they join
   the hall as an open dumbbell & machine zone (columns hold the spa wing
   above; existing props now, new machine models previewed next); the Office
@@ -1140,6 +1198,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `bac11b5` (2026-10-26, pushed) Add themed room fronts batch 2b and replace the big room signs with name plaques.
 - `fd4469d` (2026-10-26, pushed) Add themed room fronts batch 2a: Office, Machines, Index and Storage.
 - `2619ca0` (2026-10-26, pushed) Close the gym's rooms with real doors, add the Recovery & Spa wing, themed room fronts (batch 1) and the Strongman Shed.
 - `d045cd5` (2026-10-26, pushed) Remake the Showers, Recovery and Massage with CC0 textures and CENTRAL props.
@@ -1474,6 +1533,10 @@ approval, `git log` for the hash).
 Themed fronts batch 2a and 2b, name plaques (2026-10-26; Studio-tested and
 user-approved; COMMITTED and pushed 2026-10-26 with user approval, `git log`
 for the hashes).
+
+Open zone, chalk records wall, mirror (2026-10-26; Studio-tested and
+user-approved; COMMITTED and pushed with user approval, `git log` for the
+hash).
 
 ## 5. Current Limitations
 

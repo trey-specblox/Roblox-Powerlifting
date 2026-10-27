@@ -29,6 +29,10 @@ local WorldFolder = script:WaitForChild("World")
 local AutoDoorAnimator = require(WorldFolder:WaitForChild("AutoDoorAnimator"))
 AutoDoorAnimator.start()
 
+-- The wall mirrors show the room and the players in them. Visual only.
+local MirrorController = require(WorldFolder:WaitForChild("MirrorController"))
+MirrorController.start()
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines
