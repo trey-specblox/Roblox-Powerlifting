@@ -1259,7 +1259,8 @@ and polish.
     hopping off during the countdown cancels the round; a runner who stays
     on joins the next round. Screenshots. Not tested: two players at once,
     a phone, a controller; whether the beat sounds good is the user's call.
-  STRONGMAN SHED FIXES (2026-10-27, user's request; NOT committed yet):
+  STRONGMAN SHED FIXES (2026-10-27, user's request; COMMITTED and pushed
+  with the user's approval as f2e8ee1):
   - The tractor tyre looked as if "a huge chunk" was missing: its rubber
     body (from `prop_helpers.lathe_z`) was inside out (640 of 1024 faces
     pointing inward; Roblox draws one side only). `build_room_props_05.py`
@@ -1277,7 +1278,41 @@ and polish.
     hollow or ring shapes may show the same gaps: Chain_Metal (RoomProps_04),
     Sandbag body/strap (05), ColdPlunge, Pouf, FoamRoller, CoffeeCup,
     Donut, etc. (02, 03, 06, 07). A fix in `lathe_z` means rebuilding and
-    re-uploading those model files.
+    re-uploading those model files. FIXED in the entry below.
+  INSIDE-OUT PROPS FIX (2026-10-27, user's request; NOT committed yet):
+  - `art/scripts/prop_helpers.py`: `lathe_z` turns its faces outward whatever
+    way the outline runs (signed area of the outline), `torus` too (always
+    anticlockwise ring), `span` accepts its corners in any order (a reversed
+    corner pair made an inside-out box: TricepPulldown frame), `rounded_box`
+    with a bevel over half the thinnest side now rounds only the edges across
+    that side (a flat slab with rounded corners; before, the bevels crossed and
+    folded the mesh: GymBag straps/end panels, Microwave door, Towel stripe,
+    Clipboard board). Every other rounded box is unchanged.
+  - `build_room_props_07.py`: the Headphones' CENTRAL was mirrored (read
+    backwards, inside out); `build_room_props_05.py`: the Sandbag's CENTRAL sat
+    just under the bag's surface (only visible because the bag was inside
+    out), now follows the bag's surface. The tyre's own recalc stays (harmless).
+  - Audit (every mesh of RoomProps_02..09, split into connected pieces, signed
+    volume + `recalc_face_normals`): 80+ meshes had inside-out pieces in 02..08
+    (lathed bottles/cups/mugs/plunge/pouf/plates/shades, torus chains/rings/
+    straps/donuts/bars), none in 09; after the rebuild none in any file. The
+    saved .blends matched their builders exactly before the rebuild; the fix
+    changed shapes only for the four slabs and the two labels. Text pieces show
+    "flipped" faces to recalc only because letters are open meshes (fine).
+  - Rebuilt + saved RoomProps_02..08.blend, exported GLBs (only the collection,
+    export_yup, export_apply, no materials; same object names as before), user
+    approved Blender before/after previews (backface culling), uploaded as group
+    Models: 02 95409978233696, 03 95190345614206, 04 103672329284661, 05
+    125479986784261, 06 71767379502226, 07 122130943505239, 08 122294195016059
+    (old ids under "supersedes" in materials.json); `StarterGymConfig.PropAssets`
+    updated.
+  - Studio (fresh Play): props load from the new assets, no prop errors in
+    Output; screenshots: poufs, cold plunges, mugs, cups, sandbags (label
+    visible), headphones (CENTRAL reads correctly), gym bag all render solid.
+    Before the fix, screenshots showed poufs and plunges missing their near
+    walls and mugs see-through at the bottom.
+  - Not fixed (separate scripts with their own inline copies of `lathe_z`):
+    `build_sbar_props_01.py` and `build_shop_gear_01.py` were not audited.
   NEXT ACTION: the rhythm game PART 2: the saved all-time and weekly
   leaderboards (top 10 best single runs, avatar, username, survival time;
   weekly resets Monday) via PlayerDataService or an OrderedDataStore
@@ -1340,6 +1375,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `f2e8ee1` (2026-10-27, pushed) Fix the Strongman tyre's see-through gaps and remove the shed's STRONGMAN sign.
 - `e728f47` (2026-10-26, pushed) Add the treadmill rhythm game (part 1: rounds, lanes, health and our own beat).
 - `5a189cb` (2026-10-26, pushed) Add the Cardio room: 11 machines players can hop on.
 - `e29401e` (2026-10-26, pushed) Add the open zone's machines: tricep and lat pulldowns, seated rows and leg extensions.

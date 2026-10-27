@@ -140,7 +140,7 @@ part("Headphones", "Cups", lambda bm: [H.cylinder(bm, o + HP + Vector((sx * 0.48
                                        for sx in (-1, 1)])
 part("Headphones", "Pads", lambda bm: [H.cylinder(bm, o + HP + Vector((sx * 0.37, 0, -0.12)), 0.19, 0.08, "X", 24)
                                        for sx in (-1, 1)])
-text_piece("Headphones", [(BRAND, 0.07, lambda x, up, d, sx=sx: o + HP + Vector((sx * (0.56 + d), -x * sx, -0.12 + up)))
+text_piece("Headphones", [(BRAND, 0.07, lambda x, up, d, sx=sx: o + HP + Vector((sx * (0.56 + d), x * sx, -0.12 + up)))
                           for sx in (-1, 1)])
 
 # ================================================================ WARM-UP & MOBILITY

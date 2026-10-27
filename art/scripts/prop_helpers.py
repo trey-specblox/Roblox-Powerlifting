@@ -62,6 +62,11 @@ def lathe_z(bm, outline, segments, centre=Vector((0, 0, 0))):
     bmesh.ops.spin(tmp, geom=verts + edges, cent=(0, 0, 0), axis=(0, 0, 1), angle=2 * math.pi, steps=segments,
                    use_duplicate=False)
     bmesh.ops.remove_doubles(tmp, verts=tmp.verts[:], dist=1e-6)
+    # Spinning an anticlockwise (r, z) outline (out along the bottom, up, back in along the top) makes faces
+    # that point inward, and Roblox draws one side only. Turn them outward, whichever way the outline runs.
+    area = sum(r0 * z1 - r1 * z0 for (r0, z0), (r1, z1) in zip(outline, outline[1:] + outline[:1]))
+    if area > 0:
+        bmesh.ops.reverse_faces(tmp, faces=tmp.faces[:])
     for v in tmp.verts:
         v.co += centre
     _merge(bm, tmp)
@@ -72,15 +77,23 @@ def box(bm, centre, size, rotation=Matrix.Identity(4)):
 
 
 def span(bm, low, high):
-    """A box from corner `low` to corner `high`."""
-    low, high = Vector(low), Vector(high)
+    """A box between two opposite corners (in any order: a negative size would turn the box inside out)."""
+    low, high = Vector(map(min, low, high)), Vector(map(max, low, high))
     box(bm, (low + high) / 2, high - low)
 
 
 def rounded_box(bm, centre, size, bevel, segments=3, rotation=Matrix.Identity(4)):
     tmp = bmesh.new()
-    bmesh.ops.create_cube(tmp, size=1.0, matrix=Matrix.Translation(centre) @ rotation @ Matrix.Diagonal((*size, 1)))
-    bmesh.ops.bevel(tmp, geom=tmp.edges[:], offset=bevel, segments=segments, affect="EDGES", profile=0.5)
+    bmesh.ops.create_cube(tmp, size=1.0, matrix=Matrix.Diagonal((*size, 1)))
+    edges = tmp.edges[:]
+    thin = min(range(3), key=lambda i: size[i])
+    if 2 * bevel > size[thin]:
+        # Too thin to round every edge (the bevels would cross and fold the faces inside out): round only the
+        # edges across the thin side, a flat slab with rounded corners.
+        edges = [e for e in edges if abs(e.verts[0].co[thin] - e.verts[1].co[thin]) > 1e-6]
+        bevel = min(bevel, 0.49 * min(s for i, s in enumerate(size) if i != thin))
+    bmesh.ops.bevel(tmp, geom=edges, offset=bevel, segments=segments, affect="EDGES", profile=0.5)
+    bmesh.ops.transform(tmp, matrix=Matrix.Translation(centre) @ rotation, verts=tmp.verts[:])
     _merge(bm, tmp)
 
 
@@ -109,6 +122,8 @@ def torus(bm, centre, radius, tube, plane="XY", segments=32, sides=10, arc=2 * m
     bmesh.ops.spin(tmp, geom=ring + edges, cent=(0, 0, 0), axis=(0, 0, 1), angle=arc, steps=segments,
                    use_duplicate=False)
     bmesh.ops.remove_doubles(tmp, verts=tmp.verts[:], dist=1e-6)
+    # The ring runs anticlockwise, so the spun faces point inward (see lathe_z): turn them outward.
+    bmesh.ops.reverse_faces(tmp, faces=tmp.faces[:])
     if not closed:
         bmesh.ops.holes_fill(tmp, edges=tmp.edges[:], sides=sides)
     turn = {"XY": Matrix.Identity(3), "XZ": Matrix.Rotation(math.pi / 2, 3, "X"),

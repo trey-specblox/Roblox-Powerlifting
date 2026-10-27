@@ -569,13 +569,13 @@ export type PropAsset = { id: number, whole: string? }
 StarterGymConfig.PropAssets = {
 	{ id = 126463004640141 }, -- SBarProps_01: supplement bar products, shaker, bar stool
 	{ id = 72818612497691, whole = "SBarPlant" }, -- SBarPlant_01: the leafy potted plant
-	{ id = 93719454817045 }, -- RoomProps_02: Lockers, Cafe and Staff Room
-	{ id = 109192629566668 }, -- RoomProps_03: Showers, Recovery and Massage
-	{ id = 91749281309773 }, -- RoomProps_04: themed room fronts, batch 1
-	{ id = 102621394697271 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
-	{ id = 89330038688157 }, -- RoomProps_06: themed room fronts, batch 2a (weight stack, sconce, crate, pallet, bumper plate, medal)
-	{ id = 111460003222169 }, -- RoomProps_07: themed room fronts, batch 2b (mic, ON AIR lamp, headphones, band, roller, rack, clipboard)
-	{ id = 83964902060436 }, -- RoomProps_08: the open zone's machines (tricep pulldown, lat pulldown, seated row, leg extension)
+	{ id = 95409978233696 }, -- RoomProps_02: Lockers, Cafe and Staff Room
+	{ id = 95190345614206 }, -- RoomProps_03: Showers, Recovery and Massage
+	{ id = 103672329284661 }, -- RoomProps_04: themed room fronts, batch 1
+	{ id = 125479986784261 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
+	{ id = 71767379502226 }, -- RoomProps_06: themed room fronts, batch 2a (weight stack, sconce, crate, pallet, bumper plate, medal)
+	{ id = 122130943505239 }, -- RoomProps_07: themed room fronts, batch 2b (mic, ON AIR lamp, headphones, band, roller, rack, clipboard)
+	{ id = 122294195016059 }, -- RoomProps_08: the open zone's machines (tricep pulldown, lat pulldown, seated row, leg extension)
 	{ id = 77291688307242 }, -- RoomProps_09: the Cardio machines (treadmill, exercise bike, rower, ski erg)
 } :: { PropAsset }
 

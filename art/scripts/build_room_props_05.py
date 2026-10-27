@@ -154,7 +154,15 @@ def bag_straps(bm):
 
 
 part("Sandbag", "Strap", bag_straps)
-text_piece("Sandbag", [(BRAND, 0.32, lambda x, up, d: o + Vector((x, -(BAG_R + d) * 0.98, BAG_R * 0.85 + up)))])
+
+
+def on_bag(x, up, d):
+    """The bag's front at height `up` from its middle: the squashed circle, just inside its 32 flat sides."""
+    front = BAG_R * math.sqrt(max(0.0, 1 - (up / (BAG_R * 0.85)) ** 2)) * math.cos(math.pi / 32)
+    return o + Vector((x, -(front - 0.002 + d), BAG_R * 0.85 + up))
+
+
+text_piece("Sandbag", [(BRAND, 0.32, on_bag)])
 
 # ================================================================ YOKE
 # Yoke: a strongman yoke (5.6 wide, 7.4 tall, about 1.7 m): two square uprights on feet, a round
