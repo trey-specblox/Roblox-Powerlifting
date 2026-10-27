@@ -1049,7 +1049,7 @@ local function hallFront(parent: Instance, roomName: string, alongX: boolean, fr
 	local holeA, holeB = opening.centre - opening.width / 2, opening.centre + opening.width / 2
 	local doorTop = opening.bottom + opening.height
 	if closed and closed.slats then
-		local holeTop = doorTop + 0.7 -- clear of the door's own name plaque
+		local holeTop = doorTop + 0.7 -- a band of slats over the doorway
 		-- The slats, around the doorway.
 		slab("Slats_1", from, holeA, 0, 0.08, y0, y1, looks.LockersSlats)
 		slab("Slats_2", holeB, to, 0, 0.08, y0, y1, looks.LockersSlats)
@@ -1074,33 +1074,45 @@ local function hallFront(parent: Instance, roomName: string, alongX: boolean, fr
 		slab("Skirting_1", from, holeA - 0.35, 0.06, 0.12, y0, y0 + 0.5, looks.SignPanel)
 		slab("Skirting_2", holeB + 0.35, to, 0.06, 0.12, y0, y0 + 0.5, looks.SignPanel)
 	end
-	-- The sign: glowing letters on a dark panel over a glowing underline, over
-	-- the door (kept on the wall when the door is near an end).
-	local signHalf = math.min((closed and closed.signWidth or 18) / 2, (to - from) / 2 - 1)
-	local signCentre = math.clamp(opening.centre, from + signHalf + 0.5, to - signHalf - 0.5)
-	local top = y1 - 0.4
-	local panel = slab("Sign", signCentre - signHalf, signCentre + signHalf, 0.3, 0.4, top - 2.4, top, looks.SignPanel)
+	-- The name plaque beside the door (StarterGymConfig.NamePlaque; it replaced
+	-- the big glowing sign over the door, user 2026-10-26): a steel back plate
+	-- on stand-offs, a black face with a steel strip, the name in pale gold.
+	if closed and closed.plaque == false then
+		return
+	end
+	local spec = cfg.NamePlaque
+	-- The world direction along the wall of "right as you face the wall", times the room's side.
+	local side = (if alongX then outward else -outward) * (closed and closed.plaqueSide or 1)
+	local near = opening.width / 2 + 0.35 + (closed and closed.plaqueOffset or spec.offsetStuds)
+	local a0, a1 = opening.centre + side * near, opening.centre + side * (near + spec.widthStuds)
+	local lo, hi = math.min(a0, a1), math.max(a0, a1)
+	local bottom, top, out = y0 + spec.bottomStuds, y0 + spec.bottomStuds + spec.heightStuds, spec.standOffStuds
+	for index, corner in ipairs({ { lo + 0.2, bottom + 0.2 }, { hi - 0.32, bottom + 0.2 }, { lo + 0.2, top - 0.32 },
+		{ hi - 0.32, top - 0.32 } }) do
+		slab("Plaque_StandOff_" .. index, corner[1], corner[1] + 0.12, 0, out, corner[2], corner[2] + 0.12, looks.Stainless)
+	end
+	slab("Plaque_Back", lo, hi, out, out + 0.06, bottom, top, looks.Stainless)
+	local plate = slab("Plaque", lo + 0.12, hi - 0.12, out + 0.06, out + 0.12, bottom + 0.12, top - 0.12, looks.SignPanel)
+	slab("Plaque_Strip", lo + 0.12, hi - 0.12, out + 0.12, out + 0.13, top - 0.42, top - 0.38, looks.Stainless)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = if alongX
 		then (if outward > 0 then Enum.NormalId.Back else Enum.NormalId.Front)
 		else (if outward > 0 then Enum.NormalId.Right else Enum.NormalId.Left)
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.LightInfluence = 0
-	gui.Parent = panel
+	gui.PixelsPerStud = 80
+	gui.LightInfluence = 0.3
+	gui.Parent = plate
 	local letters = Instance.new("TextLabel")
 	letters.AnchorPoint = Vector2.new(0.5, 0.5)
-	letters.Position = UDim2.fromScale(0.5, 0.45)
-	letters.Size = UDim2.fromScale(0.9, 0.7)
+	letters.Position = UDim2.fromScale(0.5, 0.58)
+	letters.Size = UDim2.fromScale(0.88, 0.6)
 	letters.BackgroundTransparency = 1
 	letters.Text = cfg.roomLabel(roomName)
 	letters.TextScaled = true
-	letters.TextColor3 = cfg.SignTextColor
-	letters.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
+	letters.TextWrapped = true
+	letters.TextColor3 = spec.textColour
+	letters.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Bold)
 	letters.Parent = gui
-	local line = slab("Sign_Glow", signCentre - signHalf + 1, signCentre + signHalf - 1, 0.4, 0.45, top - 2.15,
-		top - 2, looks.GlowWhite)
-	surfaceLight(line, Enum.NormalId.Bottom, 8, 0.6, 120)
 end
 
 local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
@@ -1116,12 +1128,19 @@ local function buildDoors(model: Model, plan: StarterGymConfig.Footprint)
 		cfg.LobbyOpeningWidthStuds, cfg.LobbyOpeningHeightStuds, cfg.HallDoorPanelsPerSide)
 	-- A real swing door in every room's doorway but the open ones (StarterGymConfig.swingDoorFor).
 	local rooms = model:FindFirstChild("Rooms") :: Folder
+	local fronts = model:FindFirstChild("Fronts")
 	for name in pairs(cfg.SwingDoors) do
 		assert(rooms:FindFirstChild("Room_" .. name), "SwingDoors: no room named " .. name)
 	end
 	for _, room in ipairs(rooms:GetChildren()) do
-		local spec = cfg.swingDoorFor(string.sub(room.Name, 6))
+		local name = string.sub(room.Name, 6)
+		local spec = cfg.swingDoorFor(name)
 		if spec and room:IsA("BasePart") then
+			-- A room with a wall onto the hall has its name plaque on that wall (hallFront), not over the door.
+			if fronts and fronts:FindFirstChild("Front_" .. name) then
+				spec = table.clone(spec)
+				spec.plaque = false
+			end
 			swingDoor(doors, room, spec)
 		end
 	end
@@ -1333,8 +1352,8 @@ local function buildGym(model: Model): string
 
 	-- One room's stretch of the wall onto the hall (GAME_DESIGN §27, user
 	-- 2026-10-26): glass for the shop windows (StarterGymConfig.GlassFrontRooms),
-	-- otherwise a solid painted wall with the room's colour and sign on its hall
-	-- side (hallFront, from `faceFrom` to `faceTo`, up to `faceTop`).
+	-- otherwise a solid painted wall with the room's colour and name plaque on its
+	-- hall side (hallFront, from `faceFrom` to `faceTo`, up to `faceTop`).
 	local function hallStretch(blockName: string, roomName: string, alongX: boolean, line: number, from: number,
 		to: number, y0: number, y1: number, opening: Opening, faceFrom: number, faceTo: number, faceTop: number)
 		local floorName = if y0 < upperY - 0.5 then "Ground" else "Upper"

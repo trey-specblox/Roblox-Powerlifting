@@ -2,10 +2,10 @@
 
 Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-26
-(Starter Gym step 6: themed room fronts batch 2a (Office, Machines, Index,
-Storage) built and approved by the user, NOT committed yet; batch 1 and the
-closed rooms / spa wing / Strongman Shed are committed and pushed; newest
-entries at the end of the CURRENT MILESTONE block).
+(Starter Gym step 6: themed room fronts batch 2b (upstairs) and the small name
+plaques built, approved, committed and pushed; next: open the ground floor's
+Dumbbells / Machines / Index rooms into the hall and build the records wall;
+newest entries at the end of the CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -1014,8 +1014,9 @@ and polish.
   THEMED FRONTS BATCH 2A: OFFICE, MACHINES, INDEX, STORAGE (2026-10-26; the
   user split batch 2 into 2a = ground floor and 2b = upstairs; textures picked
   from a preview board, props approved from Blender renders, the fronts
-  approved from Studio screenshots; GAME_DESIGN §27 "Batch 2"; NOT committed
-  yet, waiting for the user's approval):
+  approved from Studio screenshots; GAME_DESIGN §27 "Batch 2"; COMMITTED and
+  pushed 2026-10-26 with the user's approval as "Add themed room fronts batch
+  2a: Office, Machines, Index and Storage"; `git log` for the hash):
   - `RoomProps.luau`: `FRONT.Office` (walnut, grooves, brass rail, frosted
     window with blinds, brass wall sconces, GYM MANAGER plate, HELP POINT sign,
     planter), `FRONT.Machines` (steel panels, yellow portal, steel columns, two
@@ -1051,14 +1052,54 @@ and polish.
     floor (they flickered).
   - Still for the user: SAVE/PUBLISH the cloud place once so the new
     MaterialVariants reach the live game.
-  NEXT ACTION: commit batch 2a with the user's approval (stage only our files:
-  RoomProps.luau, StarterGymConfig.luau, StarterGym_VerifyShell.luau,
-  default.project.json, materials.json, GAME_DESIGN.md, DEVELOPMENT_STATUS.md,
-  build_room_props_06.py, RoomProps_06.blend, RoomProps_06.glb). Then themed
-  fronts batch 2b (Classroom, Media Room, Warm-up & Mobility, Coaches; the
-  upstairs WarmUp / Coach fronts are 62 studs wide, Classroom / Media Room 27),
-  same pipeline. Later: the remaining room interiors (Dumbbells, Machines,
-  Cardio, Classroom, ...), the spare room.
+  OLD NEXT ACTION (done below): themed fronts batch 2b (Classroom, Media
+  Room, Warm-up & Mobility, Coaches), same pipeline.
+  THEMED FRONTS BATCH 2B AND THE NAME PLAQUES (2026-10-26; textures picked
+  from a preview board, chalk drawings and props approved from previews, the
+  fronts approved from Studio screenshots; GAME_DESIGN §27 "Batch 2b
+  approved" and "Name plaques instead of big signs"; committed and pushed
+  with the user's approval as a save point; `git log` for the hash):
+  - `RoomProps.luau`: `FRONT.Classroom` (chalkboard, oak frame and pillars,
+    chalk tray, four chalk drawings as ImageLabels, clock), `FRONT.MediaRoom`
+    (foam panel grid, ON AIR lamp, red mic, equaliser, headphones),
+    `FRONT.WarmUp` (oak slats over a sage dado, MOVE WELL / LIFT WELL, bands
+    on a rail, roller racks, routine board, planters), `FRONT.Coach` (stripes,
+    whiteboard programme, coach name plates, clipboards, clock, planters);
+    helpers `wallClock`, `frontPlanter`. Batch 2a and 1 fronts shifted clear
+    of the new plaques (Office lamps up, Machines stacks out, Index medals
+    left, Storage stencils right, Cardio streaks, Max Testing gun rack and
+    full-width stage lights, spa bays).
+  - Name plaques (user: "instead of the big ugly text on top of every room, a
+    small sign", photos; "wall plaque only", names only):
+    `StarterGymBuilder.hallFront` builds a plaque (steel back on stand-offs,
+    black face, pale-gold name) instead of the big glowing sign;
+    `buildDoors` drops the over-door plaque where a room has a hall front.
+    Config: `StarterGymConfig.NamePlaque`, ClosedRooms `plaqueSide` /
+    `plaqueOffset` (signWidth removed).
+  - Art (previewed and approved; group-owned, ids in materials.json):
+    textures Classroom_Chalkboard (ambientCG Plaster001), Media_Foam
+    (AcousticFoam003, colour map lightened so tints show), Media_Felt
+    (Fabric030), Coaches_Panels (Poly Haven white_planks_clean): 36
+    MaterialVariants now. Chalk drawings `art/scripts/draw_chalk_lessons.py`
+    (4 transparent PNGs, `StarterGymConfig.ChalkLessons`; the uploader now
+    has an "images" section). Props `art/scripts/build_room_props_07.py`
+    (RoomProps_07: studio mic, ON AIR lamp, headphones, resistance band,
+    MobilityRoller, roller rack, clipboard; Model asset 111460003222169).
+    Two earlier uploads of RoomProps_07 are unused (listed in materials.json
+    "supersedes"): the first named its roller "FoamRoller", which clashed
+    with the Recovery room's roller; the second had thin hoop bands.
+  - Checks: luau-lsp 0 errors, `rojo build` OK, Studio via the MCP: 12 themed
+    fronts, 14 wall plaques, 0 big signs, no [RoomProps] warnings;
+    StarterGym_VerifyShell ALL 55 CHECKS PASSED.
+  - Still for the user: SAVE/PUBLISH the cloud place once so the new
+    MaterialVariants reach the live game.
+  NEXT ACTION (user, 2026-10-26, from screenshots): open up the ground floor's
+  left side: remove the walls of Dumbbells, Machines and Index so they join
+  the hall as an open dumbbell & machine zone (columns hold the spa wing
+  above; existing props now, new machine models previewed next); the Office
+  stays and takes over the Index's "learn the game" job; the hall's back
+  wall becomes a display wall of main records, leaderboards and the meet
+  ladder (display boards now, live data in a later gameplay step).
   OLD NEXT ACTION (done above): build the new layout in StarterGymBuilder, in
   steps: (1) closed rooms; (2) the spa wing; (3) settle the [TBD]s with the
   user first. Then continue the room batches (Index, Office, Storage, ...).
@@ -1099,6 +1140,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `fd4469d` (2026-10-26, pushed) Add themed room fronts batch 2a: Office, Machines, Index and Storage.
 - `2619ca0` (2026-10-26, pushed) Close the gym's rooms with real doors, add the Recovery & Spa wing, themed room fronts (batch 1) and the Strongman Shed.
 - `d045cd5` (2026-10-26, pushed) Remake the Showers, Recovery and Massage with CC0 textures and CENTRAL props.
 - (2026-10-21, pushed) Build the Starter Gym reception with the SBD Central desk and Elite Prep Gym signs (stage 4).
@@ -1429,9 +1471,9 @@ Closed rooms, spa wing, themed fronts batch 1 and the Strongman Shed (2026-10-26
 Studio-tested and user-approved; COMMITTED and pushed 2026-10-26 with user
 approval, `git log` for the hash).
 
-Themed fronts batch 2a (2026-10-26; Studio-tested and user-approved, NOT
-committed yet: waiting for the user's commit approval; files listed in the
-CURRENT MILESTONE block's NEXT ACTION).
+Themed fronts batch 2a and 2b, name plaques (2026-10-26; Studio-tested and
+user-approved; COMMITTED and pushed 2026-10-26 with user approval, `git log`
+for the hashes).
 
 ## 5. Current Limitations
 

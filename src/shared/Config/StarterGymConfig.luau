@@ -299,15 +299,20 @@ StarterGymConfig.SwingDoorSensorReachStuds = 5 -- on each side of the wall
 	closes (SwingDoors, or else one solid door coloured like its room's wall),
 	except the lobby and the OpenDoorwayRooms.
 
-	ClosedRooms: what the hall sees of a room. `label` is the big glowing sign
-	over its door (and the door's plaque); `colour` paints its wall on the hall
-	side and its door (2026-10-26; the user found plain colours "lazy", so they
-	stay only until the room's themed front is built); `face` = a Looks name
-	for the wall's hall side instead (a themed front's base texture; RoomProps
-	FRONT adds its details); `signWidth` = the sign's width (default 18);
-	`slats` = oak slats instead (the lockers); `door` = a Looks name for the
-	door instead of the colour; `plaque = false` = no plaque over the door. A
+	ClosedRooms: what the hall sees of a room. `label` is the room's name on its
+	name plaque; `colour` paints its wall on the hall side and its door
+	(2026-10-26; the user found plain colours "lazy", so they stay only until
+	the room's themed front is built); `face` = a Looks name for the wall's hall
+	side instead (a themed front's base texture; RoomProps FRONT adds its
+	details); `slats` = oak slats instead (the lockers); `door` = a Looks name
+	for the door instead of the colour; `plaque = false` = no name plaque. A
 	room with no entry gets a plain door and its own name.
+	The name plaque (user 2026-10-26, with photos of real office door signs:
+	"instead of the big ugly text on top of every room, a small sign"): a room
+	with a wall onto the hall gets a small wall plaque beside its door
+	(NamePlaque below), on the door's right as you face it (`plaqueSide = -1`:
+	its left), `plaqueOffset` studs from the door trim (default
+	NamePlaque.offsetStuds); other rooms keep a small plaque over the door.
 ]]
 -- How far a themed front's details may stand out from its wall (aisles and the
 -- 12-stud balcony stay clear).
@@ -319,24 +324,25 @@ export type ClosedRoom = {
 	label: string,
 	colour: Color3?,
 	face: string?,
-	signWidth: number?,
 	slats: boolean?,
 	door: string?,
 	plaque: boolean?,
+	plaqueSide: number?,
+	plaqueOffset: number?,
 }
 StarterGymConfig.ClosedRooms = {
 	Lockers = { label = "LOCKER ROOM", slats = true },
 	-- Ground floor.
 	-- Themed fronts, batch 2a: walnut panels, a frosted window with blinds, brass lamps.
-	Office = { label = "OFFICE", face = "OfficeWalnut", signWidth = 14, door = "OfficeWalnut" },
+	Office = { label = "OFFICE", face = "OfficeWalnut", door = "OfficeWalnut", plaqueSide = -1 },
 	-- Themed fronts, batch 1 (GAME_DESIGN §27 "Themed room fronts"): black steel and diamond plate.
-	Dumbbells = { label = "DUMBBELLS", face = "FrontCharcoal", signWidth = 12, door = "DumbbellsPlate" },
+	Dumbbells = { label = "DUMBBELLS", face = "FrontCharcoal", door = "DumbbellsPlate" },
 	-- Batch 2a: bolted steel panels, a yellow portal, two weight stacks.
-	Machines = { label = "MACHINES", face = "MachinesSteel", signWidth = 14, door = "FrontGraphite" },
+	Machines = { label = "MACHINES", face = "MachinesSteel", door = "FrontGraphite" },
 	-- The Index room (GAME_DESIGN §27); batch 2a: teal tiles, the lit meet-ladder board, medals. Its door keeps the teal.
-	Physio = { label = "INDEX", colour = Color3.fromRGB(0, 124, 124), face = "IndexTiles", signWidth = 12 },
+	Physio = { label = "INDEX", colour = Color3.fromRGB(0, 124, 124), face = "IndexTiles", plaqueSide = -1 },
 	-- Batch 2a: green corrugated steel, stencilled letters, crates on a pallet, stacks of bumper plates.
-	Storage = { label = "STORAGE", face = "StorageSteel", signWidth = 14, door = "SignPanel" },
+	Storage = { label = "STORAGE", face = "StorageSteel", door = "SignPanel" },
 	Cardio = { label = "CARDIO", face = "FrontGraphite", door = "CardioTrack" }, -- running track, speed lines
 	-- Behind the cafe: the cafe's own "STAFF ONLY" sign is over this door.
 	StaffRoom = { label = "STAFF ROOM", colour = Color3.fromRGB(96, 132, 160), plaque = false }, -- dusty blue
@@ -347,14 +353,30 @@ StarterGymConfig.ClosedRooms = {
 	Recovery = { label = "RECOVERY", door = "LockersSlats" },
 	Massage = { label = "MASSAGE", door = "LockersSlats" },
 	SpareRoom = { label = "COMING SOON", colour = Color3.fromRGB(150, 154, 160) }, -- its use is decided later (user, 2026-10-26)
-	Classroom = { label = "CLASSROOM", colour = Color3.fromRGB(80, 152, 206) }, -- sky blue
-	MediaRoom = { label = "MEDIA ROOM", colour = Color3.fromRGB(104, 64, 150) }, -- purple
-	WarmUp = { label = "WARM-UP & MOBILITY", colour = Color3.fromRGB(118, 152, 114) }, -- sage
+	-- Themed fronts, batch 2b: a chalkboard in an oak frame with chalk technique drawings (the plaque on its oak pillar).
+	Classroom = { label = "CLASSROOM", face = "ClassroomBoard", door = "LockersSlats", plaqueOffset = 0.2 },
+	-- Batch 2b: charcoal felt, acoustic foam panels in colours, a studio mic, ON AIR over the door.
+	MediaRoom = { label = "MEDIA ROOM", face = "MediaFelt", door = "SignPanel" },
+	-- Batch 2b: light oak with horizontal slats, bands on hooks, foam-roller racks.
+	WarmUp = { label = "WARM-UP & MOBILITY", face = "LockersSlats", door = "LockersSlats" },
 	MaxTesting = { label = "MAX TESTING", face = "MaxBlack", door = "MaxBlack" }, -- black, red stripes, plates
-	Coach = { label = "COACHES", colour = Color3.fromRGB(40, 84, 170) }, -- royal blue
+	-- Batch 2b: navy panels, a big whiteboard with the week's programme, clipboards.
+	Coach = { label = "COACHES", face = "CoachesNavy", door = "CoachesNavy" },
 	Lounge = { label = "LOUNGE", colour = Color3.fromRGB(214, 108, 88) }, -- coral
 	TrophyRoom = { label = "TROPHY ROOM", colour = Color3.fromRGB(176, 136, 48) }, -- gold
 } :: { [string]: ClosedRoom }
+-- The name plaque beside a closed room's door (see ClosedRooms; user 2026-10-26, from photos of real
+-- office door signs): a brushed-steel back plate on four stand-offs, a black face, the name in pale gold, at
+-- eye height. Measured along the wall from the door trim, and up from the floor.
+StarterGymConfig.NamePlaque = {
+	offsetStuds = 1.4, -- from the door trim to the plaque (clear of the fronts' door portals)
+	widthStuds = 2.0,
+	bottomStuds = 5.6,
+	heightStuds = 1.4,
+	standOffStuds = 0.24, -- the back plate's distance from the wall (clear of slats and battens)
+	textColour = Color3.fromRGB(232, 206, 140),
+}
+
 -- The door of a closed room that has no SwingDoors entry: one solid door
 -- (no window, user 2026-10-26), its look from ClosedRooms.
 StarterGymConfig.ClosedRoomDoor = { openingWidth = 6, openingHeight = 9, leaves = 1, width = 5.2, height = 8.6,
@@ -463,6 +485,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 91749281309773 }, -- RoomProps_04: themed room fronts, batch 1
 	{ id = 126419721956699 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
 	{ id = 89330038688157 }, -- RoomProps_06: themed room fronts, batch 2a (weight stack, sconce, crate, pallet, bumper plate, medal)
+	{ id = 111460003222169 }, -- RoomProps_07: themed room fronts, batch 2b (mic, ON AIR lamp, headphones, band, roller, rack, clipboard)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -511,6 +534,8 @@ StarterGymConfig.PropPaints = {
 	Granite = { color = Color3.fromRGB(150, 150, 146), material = Enum.Material.Granite },
 	-- RoomProps_06 (themed room fronts, batch 2a)
 	Bronze = { color = Color3.fromRGB(176, 110, 60), material = Enum.Material.Metal },
+	-- RoomProps_07 (themed room fronts, batch 2b): the ON AIR lamp's light.
+	RedGlow = { color = Color3.fromRGB(230, 40, 40), material = Enum.Material.Neon },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -870,6 +895,46 @@ StarterGymConfig.PropColourways = {
 		{ Disc = "Brass", Ribbon = "Navy", Text = "Coffee" },
 		{ Disc = "Silver", Ribbon = "Purple", Text = "Charcoal" },
 	},
+	-- RoomProps_07: themed room fronts, batch 2b (art/scripts/build_room_props_07.py COLOURWAYS).
+	StudioMic = {
+		{ Mount = "Black", Body = "Black", Grille = "Silver", Ring = "Silver", Text = "White" },
+		{ Mount = "Black", Body = "Silver", Grille = "Charcoal", Ring = "Silver", Text = "Black" },
+		{ Mount = "Black", Body = "Red", Grille = "Silver", Ring = "Silver", Text = "White" },
+	},
+	OnAirLamp = { { Body = "Black", Glow = "RedGlow", Text = "White" } },
+	Headphones = {
+		{ Band = "Black", Cups = "Red", Pads = "Black", Text = "White" },
+		{ Band = "White", Cups = "Sky", Pads = "Black", Text = "Black" },
+		{ Band = "Black", Cups = "Yellow", Pads = "Black", Text = "Black" },
+		{ Band = "Charcoal", Cups = "Teal", Pads = "Black", Text = "White" },
+	},
+	ResistanceBand = {
+		{ Band = "Red", Hook = "Silver" },
+		{ Band = "Yellow", Hook = "Silver" },
+		{ Band = "Green", Hook = "Silver" },
+		{ Band = "Blue", Hook = "Silver" },
+		{ Band = "Purple", Hook = "Silver" },
+		{ Band = "Black", Hook = "Silver" },
+		{ Band = "Orange", Hook = "Silver" },
+	},
+	-- (MobilityRoller, not FoamRoller: that is the Recovery room's roller from RoomProps_03.)
+	MobilityRoller = {
+		{ Body = "Teal", Ends = "Black", Text = "White" },
+		{ Body = "Orange", Ends = "Black", Text = "White" },
+		{ Body = "Purple", Ends = "Black", Text = "White" },
+		{ Body = "Blue", Ends = "Black", Text = "White" },
+		{ Body = "Lime", Ends = "Black", Text = "White" },
+		{ Body = "Pink", Ends = "Black", Text = "White" },
+	},
+	RollerRack = { { Frame = "Black", Text = "White" }, { Frame = "Silver", Text = "Black" }, { Frame = "White", Text = "Black" } },
+	Clipboard = {
+		{ Board = "Kraft", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
+		{ Board = "Blue", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
+		{ Board = "Red", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
+		{ Board = "Green", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
+		{ Board = "Orange", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
+		{ Board = "Purple", Clip = "Silver", Paper = "White", Lines = "Charcoal", Text = "Black" },
+	},
 } :: { [string]: { { [string]: string } } }
 
 -- `variant` names one of the MaterialVariants below; `material` must then be that variant's base material.
@@ -1122,7 +1187,45 @@ StarterGymConfig.MaterialVariants = {
 		normal = "rbxassetid://90858943002731",
 		roughness = "rbxassetid://108191610762847",
 	},
+	-- Themed room fronts, batch 2b (2026-10-26, picked by the user from a preview board).
+	Classroom_Chalkboard = { -- ambientCG Plaster001
+		base = Enum.Material.Plaster,
+		studsPerTile = 10,
+		color = "rbxassetid://112307825250984",
+		normal = "rbxassetid://127097939765707",
+		roughness = "rbxassetid://103438640351702",
+	},
+	Media_Foam = { -- ambientCG AcousticFoam003 (colour map lightened so tints show)
+		base = Enum.Material.Fabric,
+		studsPerTile = 4,
+		color = "rbxassetid://122357090322313",
+		normal = "rbxassetid://75000682808290",
+		roughness = "rbxassetid://128022995157349",
+	},
+	Media_Felt = { -- ambientCG Fabric030
+		base = Enum.Material.Fabric,
+		studsPerTile = 8,
+		color = "rbxassetid://116386534932599",
+		normal = "rbxassetid://81250484802635",
+		roughness = "rbxassetid://123834114511186",
+	},
+	Coaches_Panels = { -- polyhaven white_planks_clean
+		base = Enum.Material.WoodPlanks,
+		studsPerTile = 8,
+		color = "rbxassetid://97890308702102",
+		normal = "rbxassetid://125195452589850",
+		roughness = "rbxassetid://130902670264775",
+	},
 } :: { [string]: MaterialVariantSpec }
+
+-- The Classroom front's chalk drawings (transparent PNGs drawn by art/scripts/draw_chalk_lessons.py, uploaded
+-- as group images, user-approved 2026-10-26), left to right on the chalkboard.
+StarterGymConfig.ChalkLessons = {
+	"rbxassetid://82768532927795", -- TECHNIQUE 101: the big three
+	"rbxassetid://105865566921970", -- squat
+	"rbxassetid://109475773438357", -- bench
+	"rbxassetid://78602138170847", -- deadlift
+}
 
 -- Bright and clean, black rubber under the racks (References/Visual Style).
 StarterGymConfig.Looks = {
@@ -1249,6 +1352,17 @@ StarterGymConfig.Looks = {
 	Brass = { material = Enum.Material.Metal, color = Color3.fromRGB(200, 160, 82) },
 	GlowTeal = { material = Enum.Material.Neon, color = Color3.fromRGB(60, 220, 210) },
 	GlowGold = { material = Enum.Material.Neon, color = Color3.fromRGB(255, 196, 60) },
+	-- Themed room fronts, batch 2b (2026-10-26), tinted darker than the board (Studio shows them brighter).
+	ClassroomBoard = { material = Enum.Material.Plaster, color = Color3.fromRGB(46, 72, 66), variant = "Classroom_Chalkboard" },
+	MediaFelt = { material = Enum.Material.Fabric, color = Color3.fromRGB(84, 84, 98), variant = "Media_Felt" },
+	CoachesNavy = { material = Enum.Material.WoodPlanks, color = Color3.fromRGB(32, 54, 124), variant = "Coaches_Panels" },
+	-- The Media Room's acoustic foam panels in several colours.
+	FoamRed = { material = Enum.Material.Fabric, color = Color3.fromRGB(220, 60, 60), variant = "Media_Foam" },
+	FoamBlue = { material = Enum.Material.Fabric, color = Color3.fromRGB(50, 110, 210), variant = "Media_Foam" },
+	FoamYellow = { material = Enum.Material.Fabric, color = Color3.fromRGB(240, 180, 40), variant = "Media_Foam" },
+	FoamGreen = { material = Enum.Material.Fabric, color = Color3.fromRGB(60, 180, 110), variant = "Media_Foam" },
+	FoamPurple = { material = Enum.Material.Fabric, color = Color3.fromRGB(130, 70, 200), variant = "Media_Foam" },
+	FoamGrey = { material = Enum.Material.Fabric, color = Color3.fromRGB(120, 122, 130), variant = "Media_Foam" },
 } :: { [string]: Look }
 -- Each closed room's colour (ClosedRooms) as a look: its wall on the hall side and its door.
 for name, closed in pairs(StarterGymConfig.ClosedRooms) do

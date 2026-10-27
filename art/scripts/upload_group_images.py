@@ -4,9 +4,9 @@
     python art/scripts/upload_group_images.py art/materials/materials.json --dry    only list what would be uploaded
 
 The manifest lists each material's prepared map files (color/normal/roughness PNGs, made from ambientCG or
-Poly Haven with the Roblox Maps kit's prep step) under "materials", and GLB models under "models" (uploaded as
-Model assets: a GLB arrives at 1 Blender unit = 1 stud), and receives the uploaded asset ids. Ids already in the
-manifest are never uploaded again.
+Poly Haven with the Roblox Maps kit's prep step) under "materials", GLB models under "models" (uploaded as
+Model assets: a GLB arrives at 1 Blender unit = 1 stud) and single PNG pictures under "images" (signs,
+drawings), and receives the uploaded asset ids. Ids already in the manifest are never uploaded again.
 
 Why our own uploader: the game belongs to group 529442797, so its images must be owned by that group (images a
 user uploads fail to load in a group game). The Maps kit's uploader always uploads as the user.
@@ -105,6 +105,13 @@ def main(argv):
             if not path.is_file():
                 sys.exit(f"{name}: missing {path}")
             todo.append(("models", name, "model", path))
+    for name, entry in manifest.get("images", {}).items():
+        ids = entry.setdefault("ids", {})
+        if not ids.get("image"):
+            path = Path(entry["file"]).expanduser()
+            if not path.is_file():
+                sys.exit(f"{name}: missing {path}")
+            todo.append(("images", name, "image", path))
     print(f"{len(todo)} asset(s) to upload as group {GROUP_ID}:")
     for _, name, kind, path in todo:
         print(f"  {name} {kind}: {path} ({path.stat().st_size // 1024} KB)")

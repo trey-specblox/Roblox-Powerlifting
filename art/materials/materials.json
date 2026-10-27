@@ -512,6 +512,71 @@
         "normal": "rbxassetid://90858943002731",
         "roughness": "rbxassetid://108191610762847"
       }
+    },
+    "Classroom_Chalkboard": {
+      "source": "ambientcg:Plaster001",
+      "url": "https://ambientcg.com/a/Plaster001",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Plaster001",
+      "ids": {
+        "color": "rbxassetid://112307825250984",
+        "normal": "rbxassetid://127097939765707",
+        "roughness": "rbxassetid://103438640351702"
+      }
+    },
+    "Media_Foam": {
+      "source": "ambientcg:AcousticFoam003",
+      "url": "https://ambientcg.com/a/AcousticFoam003",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_AcousticFoam003_light",
+      "ids": {
+        "color": "rbxassetid://122357090322313",
+        "normal": "rbxassetid://75000682808290",
+        "roughness": "rbxassetid://128022995157349"
+      },
+      "note": "colour map lightened (autocontrast to 150-245 grey) so Roblox tints show"
+    },
+    "Media_Felt": {
+      "source": "ambientcg:Fabric030",
+      "url": "https://ambientcg.com/a/Fabric030",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_Fabric030",
+      "ids": {
+        "color": "rbxassetid://116386534932599",
+        "normal": "rbxassetid://81250484802635",
+        "roughness": "rbxassetid://123834114511186"
+      }
+    },
+    "Coaches_Panels": {
+      "source": "polyhaven:white_planks_clean",
+      "url": "https://polyhaven.com/a/white_planks_clean",
+      "license": "CC0 1.0",
+      "maps": [
+        "color",
+        "normal",
+        "roughness"
+      ],
+      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_white_planks_clean",
+      "ids": {
+        "color": "rbxassetid://97890308702102",
+        "normal": "rbxassetid://125195452589850",
+        "roughness": "rbxassetid://130902670264775"
+      }
     }
   },
   "models": {
@@ -571,6 +636,49 @@
       "license": "own work",
       "ids": {
         "model": "rbxassetid://89330038688157"
+      }
+    },
+    "RoomProps_07": {
+      "about": "Themed room fronts batch 2b props: studio mic, ON AIR lamp, headphones (Media Room), resistance band, foam roller (MobilityRoller), roller rack (Warm-up & Mobility), clipboard (Coaches); CENTRAL labels. Made by art/scripts/build_room_props_07.py (art/blender/RoomProps_07.blend).",
+      "file": "art/exports/RoomProps_07.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://111460003222169"
+      },
+      "supersedes": "rbxassetid://84544752881394 (roller named FoamRoller, clashed with RoomProps_03) and rbxassetid://127268303557491 (thin hoop bands); both unused"
+    }
+  },
+  "images": {
+    "Chalk_Lesson": {
+      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Lesson.png",
+      "license": "own work",
+      "ids": {
+        "image": "rbxassetid://82768532927795"
+      }
+    },
+    "Chalk_Squat": {
+      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Squat.png",
+      "license": "own work",
+      "ids": {
+        "image": "rbxassetid://105865566921970"
+      }
+    },
+    "Chalk_Bench": {
+      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Bench.png",
+      "license": "own work",
+      "ids": {
+        "image": "rbxassetid://109475773438357"
+      }
+    },
+    "Chalk_Deadlift": {
+      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Deadlift.png",
+      "license": "own work",
+      "ids": {
+        "image": "rbxassetid://78602138170847"
       }
     }
   }

@@ -421,6 +421,46 @@
           "NormalMap": "rbxassetid://90858943002731",
           "RoughnessMap": "rbxassetid://108191610762847"
         }
+      },
+      "Classroom_Chalkboard": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Plaster",
+          "StudsPerTile": 10,
+          "ColorMap": "rbxassetid://112307825250984",
+          "NormalMap": "rbxassetid://127097939765707",
+          "RoughnessMap": "rbxassetid://103438640351702"
+        }
+      },
+      "Media_Foam": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Fabric",
+          "StudsPerTile": 4,
+          "ColorMap": "rbxassetid://122357090322313",
+          "NormalMap": "rbxassetid://75000682808290",
+          "RoughnessMap": "rbxassetid://128022995157349"
+        }
+      },
+      "Media_Felt": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Fabric",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://116386534932599",
+          "NormalMap": "rbxassetid://81250484802635",
+          "RoughnessMap": "rbxassetid://123834114511186"
+        }
+      },
+      "Coaches_Panels": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "WoodPlanks",
+          "StudsPerTile": 8,
+          "ColorMap": "rbxassetid://97890308702102",
+          "NormalMap": "rbxassetid://125195452589850",
+          "RoughnessMap": "rbxassetid://130902670264775"
+        }
       }
     }
   }

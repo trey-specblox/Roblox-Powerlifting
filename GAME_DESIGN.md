@@ -1057,8 +1057,10 @@ Comp max testing
 >       list): every closed room's front onto the hall is designed around
 >       what is inside, with real CC0 textures and 3D details (props in many
 >       colours, CENTRAL on any gear label), so you can tell the room
->       without seeing in. Each keeps a big name sign over its door. Built in
->       batches, textures and props previewed first:
+>       without seeing in. Each keeps a big name sign over its door
+>       (**superseded** 2026-10-26: a small name plaque beside the door, see
+>       "Name plaques" below). Built in batches, textures and props previewed
+>       first:
 >       - **Office:** dark walnut panels, a frosted window with blinds beside
 >         the door (no seeing in), a brass name plate, a wall lamp.
 >       - **Dumbbells:** black steel frame on a diamond-plate base, a big 3D
@@ -1112,6 +1114,31 @@ Comp max testing
 >         kick band, stencilled "STORE 01 / KEEP CLEAR / MAX LOAD 500 KG",
 >         CENTRAL crates on a pallet and stacks of mixed-colour bumper plates.
 >         Look only (no gameplay).
+>       - **Batch 2b approved** (user, 2026-10-26, from Studio screenshots;
+>         "commit and push" as a save point), as built: **Classroom** a green
+>         chalkboard in an oak frame with a chalk tray, oak pillars beside the
+>         door and four chalk drawings by Claude (TECHNIQUE 101, SQUAT, BENCH,
+>         DEADLIFT with their cues; the bench arm fixed to a straight,
+>         locked-out arm at the user's request), oak panelling, a school clock;
+>         **Media Room** charcoal felt covered in acoustic foam panels in
+>         several colours, a red ON AIR lamp over the door, a red studio mic on
+>         a wall arm, a glowing equaliser, headphones on pegs; **Warm-up &
+>         Mobility** oak slats over a sage-green dado, glowing "MOVE WELL" /
+>         "LIFT WELL", seven flat loop resistance bands on a rail, two
+>         foam-roller racks, a warm-up routine board, planters; **Coaches**
+>         navy panels with a white and a gold stripe, a big whiteboard with the
+>         week's programme, "SQUAT / BENCH / DEADLIFT COACH" name plates over a
+>         row of big clipboards, a clock, planters. Look only.
+>       - **Name plaques instead of big signs** (user, 2026-10-26, with photos
+>         of real office door signs: "instead of the big ugly text on top of
+>         every room, a small sign"; picked "wall plaque only", names only, no
+>         room numbers): the big glowing sign over every closed room's door is
+>         gone. Each room with a wall onto the hall has a small wall plaque at
+>         eye height beside its door (brushed-steel back plate on stand-offs,
+>         black face, the name in pale gold; right of the door, or left where
+>         the front needs it). Rooms reached only from inside (spa rooms,
+>         Lounge, Trophy Room) keep the small plaque over their door. The shop
+>         windows and the Strongman Shed keep their own signs.
 >     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
 >       woody strongman front right beside bright, colourful rooms "makes 0
 >       sense"; it must NOT be connected to the other rooms). Chosen from a
