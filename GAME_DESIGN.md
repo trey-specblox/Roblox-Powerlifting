@@ -1247,6 +1247,19 @@ Comp max testing
 >             **1.6 s** to fall at level 1, a little quicker each level, never
 >             under **1.0 s**. The beat is our own: kick and snare on the
 >             beats, a hi-hat on the half beats from level 2.
+>           - **The boards** (user, 2026-10-27, picked from options): **one
+>             on each side wall** of the Cardio room, between the rowers /
+>             ski ergs and the treadmills: **all-time** on the rowers' wall,
+>             **this week** on the ski ergs' wall. The week **resets Monday
+>             00:00 UTC**. A run's time counts when the runner is out, hops
+>             off or leaves; the 15-minute safety stop counts as 15:00. Each
+>             board keeps a player's best only (a slower run never lowers it).
+>           - **How they are saved** (user approved the design, 2026-10-27):
+>             one Roblox ordered save store per board (the weekly one is a
+>             new store named after its Monday, so nothing is deleted); the
+>             **player's own save is not touched**. Runs in Studio **never
+>             reach the live boards** (separate "Studio_" boards, or a test
+>             board in memory when Studio has no save access).
 >     - **Strongman becomes an outdoor yard** (user, 2026-10-26: a rusty,
 >       woody strongman front right beside bright, colourful rooms "makes 0
 >       sense"; it must NOT be connected to the other rooms). Chosen from a

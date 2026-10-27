@@ -1,9 +1,11 @@
 # Development Status
 
 Short handoff between Claude Code sessions. Read this first, then verify it
-against `git status` / `git log` before acting. Last updated: 2026-10-26
-(Starter Gym step 6: the treadmill rhythm game part 1 built, tested, committed
-and pushed; newest entries at the end of the CURRENT MILESTONE block).
+against `git status` / `git log` before acting. Last updated: 2026-10-27
+(Starter Gym step 6: the treadmill rhythm game part 2, the saved leaderboards,
+tested in Studio, approved by the user and COMMITTED; not yet published or
+checked live; newest entries at the end of the
+CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
@@ -1317,7 +1319,8 @@ and polish.
     FIXED in the entry below.
   SUPPLEMENT BAR + SHOP GEAR FIX AND A PERMANENT CHECK (2026-10-27, user:
   "the chairs are clipping through the floors, make sure every model in the
-  future doesn't have the same visual issue"; NOT committed yet):
+  future doesn't have the same visual issue"; COMMITTED and pushed with the
+  user's approval as 7f1521b):
   - The bar stools stand 0.06 above the floor; their base, seat and foot ring
     were inside out, so the floor showed through. SBarProps_01 had 19 inside-
     out pieces (stool, every tub/lid/label, shaker), ShopGear_01 4 (KneeSleeve
@@ -1343,11 +1346,49 @@ and polish.
   - Studio (fresh Play): stools, mannequins, knee sleeves and wrist wraps
     use the new meshes and render solid (screenshots); "Shop: 29 gear models
     placed"; no new Output errors.
-  NEXT ACTION: the rhythm game PART 2: the saved all-time and weekly
-  leaderboards (top 10 best single runs, avatar, username, survival time;
-  weekly resets Monday) via PlayerDataService or an OrderedDataStore
-  (careful DataStore work, per CLAUDE.md; propose the data design to the
-  user first). Other open threads: the records
+  - The user published the cloud place afterwards (2026-10-27), so the live
+    game has both prop fixes (854c352 and 7f1521b).
+  THE TREADMILL RHYTHM GAME, PART 2: THE SAVED LEADERBOARDS (2026-10-27; the
+  user picked the board spots (side walls) and the reset (Monday 00:00 UTC)
+  and approved the data design (ordered stores only, player save untouched);
+  the user approved the boards in Studio; COMMITTED with the user's approval
+  on 2026-10-27, see section 1):
+  - `CardioRhythmConfig.Leaderboard`: top 10, times in tenths of a second,
+    store names `RhythmBest_AllTime` and `RhythmBest_Week_<Monday date>`,
+    `Studio_` prefix for Studio, refresh every 60 s, 3 save tries, runs under
+    1 s not saved, board tag.
+  - New `src/server/World/CardioRhythmLeaderboard.luau` (started in
+    init.server): one OrderedDataStore per board, key = UserId, UpdateAsync
+    keeps only a better time; a save queue with retries and a BindToClose
+    flush; reads both top 10s every minute (names via
+    GetNameFromUserIdAsync); draws the boards (avatar headshot, username,
+    m:ss.t, gold/silver/bronze ranks, the weekly "resets in"). Studio: API
+    access off -> boards in memory with a red "TEST BOARD" line; on ->
+    `Studio_` stores. Live servers always use the real stores.
+  - `CardioRhythmService`: a runner who is out (health, hop off, leaving,
+    15-minute stop) is sent to the leaderboard with the server's own time.
+  - `RoomProps` FURNISH.Cardio: two 8.8 x 7.2 board screens (Leaderboard_AllTime
+    on the rowers' wall, Leaderboard_Weekly on the ski ergs' wall) with a
+    tagged SurfaceGui each.
+  - Checks: luau-lsp 0 errors in the changed files, `rojo build` OK. Studio
+    (fresh Play, API access off -> "boards: memory"): a real run (E onto
+    Treadmill_2, no presses, out on misses) put treylicious1 0:12.7 on both
+    boards; a 5 s run (Space to hop off) left 0:12.7; a 20.6 s run (presses
+    from the chart through the real RhythmPress remote) replaced it with
+    0:20.6; the weekly subtitle read "Resets Monday 00:00 UTC (in 5d 5h)";
+    week names checked: Sun 2026-11-01 23:59:59 UTC -> Week_2026-10-26, Mon
+    2026-11-02 00:00 -> Week_2026-11-02; a full 10-row layout (sample text
+    written into the GUI only, overwritten by the next refresh) fits;
+    screenshots of both boards. Output: only the expected Studio line
+    "StudioAccessToApisNotAllowed ... GetAsync ... Studio_RhythmBest_AllTime"
+    (the one-time probe), no other new errors.
+  - NOT tested: real DataStore saves and reads (Studio has no API access;
+    first real test is the published game), two servers saving at once, the
+    actual Monday rollover, names of players not in the server, two players
+    at once, a phone.
+  NEXT ACTION: the user publishes the place; then check the boards in the
+  live game after a run (leave and rejoin: the time must still be there).
+  Other open threads: the records
   system (needs a decision; no meet system exists yet, §33), more machines,
   the mirror on a phone, the remaining room interiors (Classroom, Media Room,
   Warm-up, Max Testing), the spare room.
@@ -1405,6 +1446,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- 2026-10-27, pushed: Add the rhythm game's saved leaderboards (part 2: all-time and weekly boards); `git log -1` for the hash.
+- `7f1521b` (2026-10-27, pushed) Fix see-through bar stools and Shop gear, and check every model for it.
 - `854c352` (2026-10-27, pushed) Fix inside-out room props: lathed and ring shapes now render solid.
 - `f2e8ee1` (2026-10-27, pushed) Fix the Strongman tyre's see-through gaps and remove the shed's STRONGMAN sign.
 - `e728f47` (2026-10-26, pushed) Add the treadmill rhythm game (part 1: rounds, lanes, health and our own beat).

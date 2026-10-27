@@ -93,6 +93,30 @@ CardioRhythmConfig.Sounds = {
 	Count = "rbxassetid://105244845446461",
 } :: { [string]: string }
 
+--[[
+	The two saved leaderboards (user 2026-10-27): each player's best single run,
+	all-time and this week, top 10, one board on each side wall of the Cardio
+	room. CardioRhythmLeaderboard keeps them in one OrderedDataStore per board
+	(the player's own save is not touched). The weekly board starts a new store
+	every Monday 00:00 UTC.
+]]
+CardioRhythmConfig.Leaderboard = {
+	TopCount = 10,
+	-- Times are saved in tenths of a second (an ordered store holds whole numbers).
+	TicksPerSecond = 10,
+	-- CHANGING THESE NAMES STARTS THE BOARDS FROM EMPTY (the old times stay in the old store).
+	AllTimeStore = "RhythmBest_AllTime",
+	WeeklyStorePrefix = "RhythmBest_Week_", -- + the Monday's date, e.g. RhythmBest_Week_2026-10-26
+	-- In Studio with API access on, the boards use these names in front, so test runs never reach the live boards.
+	StudioPrefix = "Studio_",
+	RefreshSeconds = 60, -- read both top 10s again
+	SaveRetries = 3,
+	-- A run shorter than this is not saved (hopping straight back off).
+	MinSecondsToSave = 1,
+	-- RoomProps puts this tag on each board's SurfaceGui, with its board ("AllTime" or "Weekly") in "Board".
+	BoardTag = "RhythmLeaderboard",
+}
+
 function CardioRhythmConfig.levelAt(seconds: number): number
 	return math.max(1, math.floor(seconds / CardioRhythmConfig.LevelSeconds) + 1)
 end

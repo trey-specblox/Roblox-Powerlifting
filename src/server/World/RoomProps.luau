@@ -28,6 +28,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local StarterGymConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("StarterGymConfig"))
 local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("WeightClassConfig"))
+local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 
 local RoomProps = {}
@@ -1324,6 +1325,21 @@ FURNISH.Cardio = function(kit)
 	local board = front.item("Board", door - 12.2, door - 6.2, 0.08, 0.16, 4.6, 8.6, looks.ClassroomBoard)
 	writing(board, front.out, "HEART-RATE ZONES", { "1  50-60%  easy", "2  60-70%  steady", "3  70-80%  tempo",
 		"4  80-90%  hard", "5  90%+  all out" }, Color3.fromRGB(46, 72, 66), Color3.fromRGB(236, 224, 196))
+	-- The rhythm game's two leaderboards (user 2026-10-27: one on each side wall), between the rowers / ski ergs
+	-- and the treadmills. Blank screens here; CardioRhythmLeaderboard fills the tagged SurfaceGuis.
+	for which, boardName in pairs({ left = "AllTime", right = "Weekly" }) do
+		local wall = kit.wall(which)
+		local screen = wall.item("Leaderboard_" .. boardName, 12.6, 21.4, 0.08, 0.24, 3.4, 10.6, looks.Gadget)
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "Leaderboard"
+		gui.Face = faceToward(wall.out)
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 50
+		gui.LightInfluence = 0
+		gui:SetAttribute("Board", boardName)
+		gui:AddTag(CardioRhythmConfig.Leaderboard.BoardTag)
+		gui.Parent = screen
+	end
 
 	local props = propsFor({ "Treadmill", "ExerciseBike", "Rower", "SkiErg", "WaterCooler" })
 	if props == nil then

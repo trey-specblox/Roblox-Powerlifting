@@ -7,8 +7,9 @@
 	game"). The server owns everything that matters: the rounds, the notes
 	(from a seed it picks), the clock, every judgement, health and when a
 	runner is out. Clients only send "I pressed lane N"
-	(CardioRhythmRemotes.RhythmPress). Fun only, and not saved yet (part 1: no
-	leaderboard); nothing here touches player data.
+	(CardioRhythmRemotes.RhythmPress). Fun only: nothing here touches player
+	data. When a runner is out, their time (measured here) goes to
+	CardioRhythmLeaderboard, which keeps the saved all-time and weekly boards.
 
 	A ROUND
 	  Idle       nobody is on a treadmill.
@@ -38,6 +39,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
 local RhythmChart = require(Shared:WaitForChild("World"):WaitForChild("RhythmChart"))
 local CardioRhythmRemotes = require(Shared:WaitForChild("World"):WaitForChild("CardioRhythmRemotes"))
+local CardioRhythmLeaderboard = require(script.Parent:WaitForChild("CardioRhythmLeaderboard"))
 
 local CardioRhythmService = {}
 
@@ -114,6 +116,7 @@ local function knockOut(runner: Runner, at: number)
 	if not runner.out then
 		runner.out = true
 		runner.seconds = math.max(0, at)
+		CardioRhythmLeaderboard.submit(runner.userId, runner.player.Name, runner.seconds)
 	end
 end
 
