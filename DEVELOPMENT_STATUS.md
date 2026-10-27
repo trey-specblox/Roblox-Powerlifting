@@ -1259,6 +1259,25 @@ and polish.
     hopping off during the countdown cancels the round; a runner who stays
     on joins the next round. Screenshots. Not tested: two players at once,
     a phone, a controller; whether the beat sounds good is the user's call.
+  STRONGMAN SHED FIXES (2026-10-27, user's request; NOT committed yet):
+  - The tractor tyre looked as if "a huge chunk" was missing: its rubber
+    body (from `prop_helpers.lathe_z`) was inside out (640 of 1024 faces
+    pointing inward; Roblox draws one side only). `build_room_props_05.py`
+    now points its faces outward (`recalc_face_normals`); rebuilt
+    RoomProps_05.blend / .glb, the user approved the preview, uploaded as
+    group Model asset 102621394697271 (materials.json "RoomProps_05"; the old
+    126419721956699 is superseded), `StarterGymConfig.PropAssets` updated.
+  - The "STRONGMAN" sign, its red glow bar and `StrongmanShed.label` are
+    removed (`StarterGymBuilder`; GAME_DESIGN §27 "Sign removed").
+  - Checks: `rojo build` OK; Studio (fresh Play): both tyres use the new
+    mesh and render solid, no Shed.Sign / Sign_Glow, no "STRONGMAN" text
+    left, shed front screenshot clean; no new errors in Output.
+  - Found, NOT fixed (needs the user's go-ahead): `lathe_z` makes every
+    lathed shape inside out. Convex ones look nearly right, but other
+    hollow or ring shapes may show the same gaps: Chain_Metal (RoomProps_04),
+    Sandbag body/strap (05), ColdPlunge, Pouf, FoamRoller, CoffeeCup,
+    Donut, etc. (02, 03, 06, 07). A fix in `lathe_z` means rebuilding and
+    re-uploading those model files.
   NEXT ACTION: the rhythm game PART 2: the saved all-time and weekly
   leaderboards (top 10 best single runs, avatar, username, survival time;
   weekly resets Monday) via PlayerDataService or an OrderedDataStore
@@ -1321,6 +1340,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `e728f47` (2026-10-26, pushed) Add the treadmill rhythm game (part 1: rounds, lanes, health and our own beat).
 - `5a189cb` (2026-10-26, pushed) Add the Cardio room: 11 machines players can hop on.
 - `e29401e` (2026-10-26, pushed) Add the open zone's machines: tricep and lat pulldowns, seated rows and leg extensions.
 - `4044e82` (2026-10-26, pushed) Open the dumbbell & machine zone, add the chalk records wall and a real mirror.

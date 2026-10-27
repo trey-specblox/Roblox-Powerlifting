@@ -1283,6 +1283,8 @@ Comp max testing
 >         inside (turf lanes, yoke, farmer's handles, rig with chains, atlas
 >         stones, tyres, logs, sandbags). The secret-NPC idea below now means
 >         the shed.
+>         - **Sign removed** (user, 2026-10-27: the plain lettering looked
+>           "basic and bland"): the shed has **no sign** over its door.
 >       - **Approved in Studio screenshots** (user, 2026-10-26): the closed
 >         rooms and doors, the spa wing, the themed fronts batch 1 (Recovery
 >         & Spa, Max Testing with its barbells, Dumbbells, Cardio) and the

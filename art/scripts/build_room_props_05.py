@@ -116,6 +116,9 @@ def tyre_rubber(bm):
             rot = Matrix.Rotation(angle, 4, "Z") @ Matrix.Rotation(lean, 4, "X")
             centre = o + Vector((math.cos(angle) * (TYRE_OUT + 0.1), math.sin(angle) * (TYRE_OUT + 0.1), z))
             H.box(bm, centre, (0.2, 0.5, 0.95), rot)
+    # lathe_z winds this outline inside out; Roblox draws one side only, so the tyre looked as if a chunk
+    # was missing. Point every face outward.
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
 
 
 part("Tyre", "Rubber", tyre_rubber)

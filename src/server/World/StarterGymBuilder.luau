@@ -1735,28 +1735,7 @@ local function buildGym(model: Model): string
 		Vector3.new(shedX + doorHalf - 0.1, doorTop, shedZ0 + 0.65), looks.ShedShutter))
 	decor(box(shed, "Door_ShutterBar", Vector3.new(shedX - doorHalf + 0.1, doorTop - 0.65, shedZ0 + 0.3),
 		Vector3.new(shedX + doorHalf - 0.1, doorTop - 0.5, shedZ0 + 0.7), looks.SteelBeam))
-	-- The sign over the door, on the front: glowing letters on a dark panel over a red glow.
-	local sign = decor(box(shed, "Sign", Vector3.new(shedX - 10, doorTop + 0.8, shedZ0 - 0.45), Vector3.new(shedX + 10,
-		wallTop + 2.4, shedZ0 - 0.3), looks.SignPanel))
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 30
-	gui.LightInfluence = 0
-	gui.Parent = sign
-	local letters = Instance.new("TextLabel")
-	letters.AnchorPoint = Vector2.new(0.5, 0.5)
-	letters.Position = UDim2.fromScale(0.5, 0.46)
-	letters.Size = UDim2.fromScale(0.92, 0.72)
-	letters.BackgroundTransparency = 1
-	letters.Text = shedCfg.label
-	letters.TextScaled = true
-	letters.TextColor3 = cfg.SignTextColor
-	letters.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy)
-	letters.Parent = gui
-	local glow = decor(box(shed, "Sign_Glow", Vector3.new(shedX - 9, doorTop + 0.95, shedZ0 - 0.55), Vector3.new(shedX + 9,
-		doorTop + 1.1, shedZ0 - 0.45), looks.PlateRed))
-	glow.Material = Enum.Material.Neon
+	-- No sign over the door (user, 2026-10-27: the plain STRONGMAN lettering looked bland).
 	-- Its region: the inside, from the walls in, as high as the walls (like a room's).
 	local shedRegion = box(shed, "Shed_" .. shedName, Vector3.new(shedX0 + t, floorY, shedZ0 + t),
 		Vector3.new(shedX1 - t, wallTop, shedZ1 - t), looks.WallPaint)

@@ -524,12 +524,11 @@ StarterGymConfig.Rooms = {
 	steel and timber barn: weathered timber along the bottom, dark corrugated
 	steel above, a pitched corrugated roof (the ridge front to back, gable ends
 	front and back), steel trusses with hanging lamps inside, and a big roller
-	door in its front, always rolled up, with the sign over it. RoomProps lays
-	out its equipment (FURNISH.StrongmanShed) like a room's, from the door.
+	door in its front, always rolled up (no sign over it: user, 2026-10-27).
+	RoomProps lays out its equipment (FURNISH.StrongmanShed) like a room's, from the door.
 ]]
 StarterGymConfig.StrongmanShed = {
 	name = "StrongmanShed",
-	label = "STRONGMAN",
 	side = -1,
 	gapStuds = 12,
 	widthStuds = 80, -- outside, across (X)
@@ -573,7 +572,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 93719454817045 }, -- RoomProps_02: Lockers, Cafe and Staff Room
 	{ id = 109192629566668 }, -- RoomProps_03: Showers, Recovery and Massage
 	{ id = 91749281309773 }, -- RoomProps_04: themed room fronts, batch 1
-	{ id = 126419721956699 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
+	{ id = 102621394697271 }, -- RoomProps_05: Strongman Yard (tyre, sandbag, yoke, farmer's handle)
 	{ id = 89330038688157 }, -- RoomProps_06: themed room fronts, batch 2a (weight stack, sconce, crate, pallet, bumper plate, medal)
 	{ id = 111460003222169 }, -- RoomProps_07: themed room fronts, batch 2b (mic, ON AIR lamp, headphones, band, roller, rack, clipboard)
 	{ id = 83964902060436 }, -- RoomProps_08: the open zone's machines (tricep pulldown, lat pulldown, seated row, leg extension)

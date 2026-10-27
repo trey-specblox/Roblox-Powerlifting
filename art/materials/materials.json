@@ -627,8 +627,9 @@
       "file": "art/exports/RoomProps_05.glb",
       "license": "own work",
       "ids": {
-        "model": "rbxassetid://126419721956699"
-      }
+        "model": "rbxassetid://102621394697271"
+      },
+      "supersedes": "rbxassetid://126419721956699 (first upload: the tyre's rubber body was inside out, so Roblox showed see-through gaps in it; unused)"
     },
     "RoomProps_06": {
       "about": "Themed room fronts batch 2a props: weight stack (Machines), wall sconce (Office), wooden crate, pallet and flat bumper plate (Storage), medal (Index); CENTRAL labels. Made by art/scripts/build_room_props_06.py (art/blender/RoomProps_06.blend).",
