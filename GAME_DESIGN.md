@@ -936,7 +936,8 @@ Comp max testing
 >   - **Upstairs:** Sauna; **Coach** (the big front-right room, 63 x 32,
 >     where the Mobility Studio was planned: room for **plenty of coaches**,
 >     e.g. Squat, Bench and Deadlift coaches, §22, as NPCs later; what a
->     coach does is **[TBD]**); **Max Testing** (front middle: the gym's
+>     coach does is **[TBD]**); **Max Testing** (**renamed the Mock Meet
+>     Room**, user 2026-10-27, see §29.10; front middle: the gym's
 >     **Solo meet room**, §29.10: a competition platform where a player runs
 >     a Solo / Qualifying meet at any time to prove new maxes and raise
 >     Competition Scale; official meets stay at the separate local meet
@@ -1172,7 +1173,9 @@ Comp max testing
 >           numbers (Competition Number), test keys and lifts outside a meet
 >           never do. The wall therefore stays "?" until the meet system
 >           exists. Which meets are "eligible" (§33's open list) is decided
->           with the meet system.
+>           with the meet system. **Solo meets do not count** (user,
+>           2026-10-27): only official multiplayer meets put a name on the
+>           wall.
 >         - **Total = the sum of each best** (user, 2026-10-27): the Total
 >           column is the record holder's best meet Squat + best meet Bench +
 >           best meet Deadlift in that class, even if they came from different
@@ -2016,6 +2019,38 @@ reduced rate would make waiting for players optimal and would punish
 low-population servers. Multiplayer is desirable because everything prestigious is
 multiplayer-only, not because progression requires it.
 
+#### The Solo meet — first build (user, 2026-10-27, picked from options)
+
+- **Where:** the upstairs room once called Max Testing, **renamed the Mock Meet Room**
+  (user, 2026-10-27: "more realistic"; its door plaque reads MOCK MEET, and a solo
+  meet is called a **Mock Meet**). Official meets stay at the separate local meet venue.
+- **Everyone gets their own private room** (user, 2026-10-27: "it teleports them into
+  their own Mock meet room. Just to make sure its not crowded, or there is no line").
+  The gym's Mock Meet Room is the **check-in**: a desk where the player starts a Mock
+  Meet. They are moved into **their own private meet room** (a competition platform
+  with the gym's rack, three judges with lights, an attempt board), built just for
+  them away from the gym where nobody else can see or reach it, and cleared away when
+  they leave (Leave button, dying, or leaving the game), which puts them back at the
+  check-in. Chosen over sending them to a separate Roblox server, which loads slowly
+  and takes them out of their friends' server and chat.
+- **Meet first, rewards next.** The first build is the whole meet: weigh-in (class
+  locked, §32.7), attempt choice, the 9 lifts with the existing minigames, judges'
+  lights, the attempt board and the total. It **saves nothing permanent**: no
+  Competition Scale, no records, no money. Rewards are switched on in a second step,
+  after the weight-class build question (§33.8, §33.11 item 11) is decided, because
+  no meet may raise Scale before class scoping exists.
+- **Attempts are chosen one at a time**, like a real meet: the opener at weigh-in,
+  then each next attempt right after a lift, in kilograms with ±2.5 kg steps and the
+  % of Competition Number shown, with a short timer. The server checks every choice
+  with the legal attempt rules (§15, `AttemptRules`).
+- **A cooldown between solo meets** (e.g. one every **30 minutes**,
+  **[PROVISIONAL]**): failed lifts cost nothing (§33.6), so without a limit players
+  could spam heavy attempts until one lands (§33.11 item 1). Real lifters test maxes
+  rarely too.
+- **Solo meets never count for the GYM RECORD wall** (§31.6); only official
+  multiplayer meets do. A solo meet is personal: it proves Scale (once switched on)
+  and nothing else.
+
 **[FROZEN]** Account-wide rewards (currency, items) must **never** reuse the
 build-CN relative-intensity formula, because a fresh low-CN build reaches 100%
 relative intensity and ~100% Hill efficiency at trivial absolute weight. The
@@ -2431,9 +2466,8 @@ and players a reason to enter meets.
   economy), so a holder cannot add 2.5 kg at every meet for a bonus each time.
 - **One bonus per lift.** Because the wall's Total is the sum of each best, beating
   a lift record often beats the Total record too; that counts as **one** bonus, not two.
-- **Solo meets update the wall but pay no bonus**, so it cannot be farmed alone on an
-  empty server. (Whether solo meets count for the wall at all is §33's open
-  eligibility question, decided with the meet system.)
+- **Solo meets do not count for the wall at all** (user, 2026-10-27, §29.10), so
+  they never pay this bonus and it cannot be farmed alone on an empty server.
 - **Amounts are TBD** with the money system; a bigger meet may pay a bigger bonus.
 - **Server-decided.** The server decides whether a lift beat a record, from its own
   meet result; the client never reports it.
@@ -2586,7 +2620,7 @@ The game shows two separate record boards. They never feed each other.
 | | **WORLD RECORD** board | **GYM RECORD** board (the hall's chalk records wall) |
 |---|---|---|
 | Starts | **empty** | empty ("?") |
-| Set by | valid **Worlds** performances only (§31.1) | good lifts at **meets** only (any meet level; which meets are eligible is decided with the meet system) |
+| Set by | valid **Worlds** performances only (§31.1) | good lifts at **official multiplayer meets** only (Local, Nationals, Worlds; **never Solo meets**, user 2026-10-27; other eligibility details are decided with the meet system) |
 | Shows | the player-set Official (and Pending) World Records per weight class | the best meet Squat, Bench, Deadlift per weight class, and **Total = the sum of those bests** (gym wall only) |
 | Ties | §31.5 (all tied players share it) | the first lifter keeps it; a new record must be heavier |
 | Scope | whole game, saved | whole game, saved |

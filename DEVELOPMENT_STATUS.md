@@ -4,7 +4,8 @@ Short handoff between Claude Code sessions. Read this first, then verify it
 against `git status` / `git log` before acting. Last updated: 2026-10-27
 (Starter Gym step 6: the treadmill rhythm game part 2, the saved leaderboards,
 tested in Studio, approved by the user, COMMITTED, published, and saving
-checked in the live game; newest entries at the end of the
+checked in the live game; then the Mock Meet part 1 (private meet rooms),
+built, tested in Studio and COMMITTED; newest entries at the end of the
 CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
@@ -1401,10 +1402,46 @@ and polish.
   New §30.5: a money bonus for taking a gym record from someone else at
   Local/National/Worlds meets (no bonus for empty spots, own records, solo
   meets; one per lift; amounts TBD). Docs only; no code yet.
-  NEXT ACTION: design the meet system (a solo meet first: 3 attempts per lift,
-  attempt picker, 2.5 kg rules; shared code already in
-  src/shared/Meet/AttemptRules.luau and MeetTotal.luau), then the records
-  wall reads its good lifts.
+  SOLO MEET DECISIONS (user, 2026-10-27, GAME_DESIGN §29.10 "The Solo meet
+  — first build"): Max Testing room; meet first, nothing saved (Scale and
+  records switched on later, after the weight-class build decision); attempts
+  chosen one at a time (+/-2.5 kg, % of CN, timer); a cooldown between solo
+  meets (30 min, provisional); solo meets never count for the gym record
+  wall (official multiplayer meets only; §30.5 and §31.6 updated).
+  MOCK MEET PART 1: THE ROOMS AND THE MOVE IN AND OUT (2026-10-27; user:
+  rename Max Testing to "Mock Meet Room", and each player gets their own
+  private meet room "so its not crowded, or there is no line"; plan approved;
+  the user tried it in Studio; COMMITTED with the user's approval on
+  2026-10-28, see section 1):
+  - Rename: StarterGymConfig ClosedRooms/Rooms key MaxTesting -> MockMeet
+    (plaque "MOCK MEET"), RoomProps FRONT.MockMeet, the VerifyShell tool list.
+  - RoomProps FURNISH.MockMeet: the gym room is the check-in (black walls, red
+    stripe and runway, CHECK-IN desk, MOCK MEET board, waiting chairs, ceiling
+    lights); its tagged CheckInPoint gets the prompt.
+  - New src/shared/Config/MockMeetConfig.luau, src/shared/Meet/MockMeetRemotes
+    .luau (MockMeetLeave), src/server/Meet/MockMeetArena.luau (builds one
+    private room per slot at Origin (4000, 1000, 0) + 200 studs per slot, 60
+    slots: platform, ComboRack_01 via RackConfigurator without the station
+    tag, three judges with unlit light stands, attempt board, banners, lights)
+    and MockMeetService.luau ("Start Mock Meet" prompt; checks alive, not
+    anchored, not on a cardio machine or at a rack, near the desk, free slot;
+    streams the room in, moves the player, player attribute MockMeetSlot;
+    Leave puts them back where they checked in; death, respawn and leaving
+    clear the room); src/client/Meet/MockMeetController.luau (title and
+    "Leave Mock Meet" button). Started from init.server / init.client.
+  - Checks: luau-lsp 0 errors in the new and changed files (other files'
+    old errors unchanged), `rojo build` OK. Studio (Play, one player): the
+    gym room built (17 rooms furnished, no RoomProps warning), the plaque reads
+    MOCK MEET; holding E at the desk (the real prompt) put the player in room
+    1 at (4000, 1003, -31) with the Leave button; a second trigger while inside
+    did nothing; Leave returned them to the desk spot and removed the room;
+    checking in again reused slot 1; dying in the room removed it and the
+    player respawned in the gym; screenshots of both rooms; no new warnings.
+  - NOT tested: two or more players at once (each in their own room), a phone,
+    a live server. The look of the rooms needs the user's own check in Studio.
+  NEXT ACTION: Part 2, the meet itself (weigh-in, attempts one at a
+  time, 9 lifts through LiftAttemptService, judges' lights, attempt board,
+  results, the 30-minute cooldown; nothing saved).
   Other open threads: the records
   system (needs a decision; no meet system exists yet, §33), more machines,
   the mirror on a phone, the remaining room interiors (Classroom, Media Room,
@@ -1463,7 +1500,9 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-27, pushed: Add the rhythm game's saved leaderboards (part 2: all-time and weekly boards); `git log -1` for the hash.
+- 2026-10-28, pushed: Add the Mock Meet Room and a private meet room per player (Mock Meet part 1); `git log -1` for the hash.
+- `3eb5be1` (2026-10-27, pushed) Design: player-set World Records, Sheffield vs configured records, gym record rules.
+- `2d137c1` (2026-10-27, pushed) Add the rhythm game's saved leaderboards (part 2: all-time and weekly boards).
 - `7f1521b` (2026-10-27, pushed) Fix see-through bar stools and Shop gear, and check every model for it.
 - `854c352` (2026-10-27, pushed) Fix inside-out room props: lathed and ring shapes now render solid.
 - `f2e8ee1` (2026-10-27, pushed) Fix the Strongman tyre's see-through gaps and remove the shed's STRONGMAN sign.

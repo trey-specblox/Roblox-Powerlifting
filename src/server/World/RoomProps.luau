@@ -29,6 +29,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local StarterGymConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("StarterGymConfig"))
 local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("WeightClassConfig"))
 local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
+local MockMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("MockMeetConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 
 local RoomProps = {}
@@ -2146,6 +2147,62 @@ FURNISH.Coach = function(kit)
 	plant(kit, "Plant_2", -hw + 1.5, 1.5)
 end
 
+--[[
+	The Mock Meet Room (user 2026-10-27): the gym's check-in for a mock meet. A
+	red runway leads from the door to the check-in desk at the back; the desk's
+	tagged point gets MockMeetService's "Start Mock Meet" prompt, which moves the
+	player into their own private meet room. Waiting chairs line the side walls.
+]]
+FURNISH.MockMeet = function(kit)
+	local hw, D = kit.W / 2, kit.D
+	local back = kit.wall("back")
+	kit.item("Floor", -hw, hw, 0, D, 0, 0.06, looks.GymFloor)
+	for _, which in ipairs({ "back", "front", "left", "right" }) do
+		clad(kit, which, "Wall_" .. which, looks.MaxBlack)
+	end
+	-- The competition stripes of the room's front, round the three walls without the door.
+	back.item("Stripe_back", -hw, hw, 0.08, 0.12, 2.9, 3.5, looks.PlateRed)
+	for _, which in ipairs({ "left", "right" }) do
+		kit.wall(which).item("Stripe_" .. which, 0, D, 0.08, 0.12, 2.9, 3.5, looks.PlateRed)
+	end
+	kit.item("Runway", -2, 2, 0, D - 6, 0.06, 0.1, looks.PlateRed)
+
+	-- The check-in desk, facing the door.
+	kit.block("CheckInDesk_Body", -5, 5, D - 5, D - 3.2, 0.06, 3.1, looks.FrontCharcoal)
+	kit.block("CheckInDesk_Top", -5.2, 5.2, D - 5.2, D - 3, 3.1, 3.3, looks.Wood)
+	kit.item("CheckInDesk_Stripe", -5, 5, D - 5.08, D - 5, 0.9, 1.3, looks.PlateRed)
+	local sign = kit.item("CheckInDesk_Sign", -2.5, 2.5, D - 5.12, D - 5.04, 1.6, 2.8, looks.SignPanel)
+	plaque(sign, kit.toward("-d"), "CHECK-IN", Color3.fromRGB(16, 16, 18), WHITE)
+	kit.item("CheckInDesk_Screen", -3.6, -1.4, D - 3.9, D - 3.8, 3.3, 4.8, looks.Gadget)
+	chair(kit, "DeskChair", 0, D - 2, "-d")
+	local board = back.item("Board", -9, 9, 0.08, 0.3, 5, 10.4, looks.Gadget)
+	writing(board, back.out, "MOCK MEET", { "Your own private meet room", "Squat, bench, deadlift: 3 attempts each",
+		"Check in at the desk to start" }, Color3.fromRGB(16, 16, 18), WHITE)
+
+	-- Where the prompt sits: in front of the desk, on the player's side.
+	local point = kit.item("CheckInPoint", -1, 1, D - 8, D - 6, 0.1, 4, looks.Glass)
+	point.Transparency = 1
+	point:AddTag(MockMeetConfig.CheckInTag)
+
+	-- Waiting chairs along both side walls, facing across the room.
+	for index, d in ipairs({ 8, 11, 14, 17, 20 }) do
+		chair(kit, "WaitChair_L" .. index, -hw + 1.5, d, "+a")
+		chair(kit, "WaitChair_R" .. index, hw - 1.5, d, "-a")
+	end
+	plant(kit, "Plant_1", -7.5, D - 1.5)
+	plant(kit, "Plant_2", 7.5, D - 1.5)
+	-- Black walls swallow light: ceiling panels over the waiting chairs and the desk.
+	for _, a in ipairs({ -hw + 4, hw - 4 }) do
+		for _, d in ipairs({ 9, 19 }) do
+			local panel = kit.item(string.format("CeilingLight_%d_%d", a, d), a - 2.5, a + 2.5, d - 2.5, d + 2.5, kit.H - 0.2,
+				kit.H, looks.GlowWhite)
+			BuildParts.surfaceLight(panel, Enum.NormalId.Bottom, 20, 1.6, 110)
+		end
+	end
+	local deskLight = kit.item("CeilingLight_Desk", -6, 6, D - 7, D - 4, kit.H - 0.2, kit.H, looks.GlowWhite)
+	BuildParts.surfaceLight(deskLight, Enum.NormalId.Bottom, 20, 1.8, 110)
+end
+
 -- The user's SBD Central logo (StarterGymConfig.ShopLogoPieces) as large as
 -- fits on the face of `part` that looks toward `toward`.
 local function shopLogo(part: BasePart, toward: Vector3)
@@ -2614,12 +2671,12 @@ local function barbell(front: FrontKit, name: string, a: number, d: number, y: n
 end
 
 --[[
-	Max Testing (the gym's solo meet room): black, with red and white
-	competition stripes, barbells on wall racks either side of the door, stage
-	lights along the top, an attempt board on the right and the three judges'
-	lights on the left.
+	The Mock Meet Room (the gym's solo meet room; was Max Testing, renamed by the
+	user 2026-10-27): black, with red and white competition stripes, barbells on
+	wall racks either side of the door, stage lights along the top, an attempt
+	board on the right and the three judges' lights on the left.
 ]]
-FRONT.MaxTesting = function(front)
+FRONT.MockMeet = function(front)
 	front.band("Stripe_Red", front.aMin, front.aMax, 2.9, 3.5, 0.06, 0.1, looks.PlateRed)
 	front.band("Stripe_White", front.aMin, front.aMax, 3.62, 3.72, 0.06, 0.1, looks.LaneWhite)
 	front.band("Stripe_Thin", front.aMin, front.aMax, 3.84, 3.96, 0.06, 0.1, looks.PlateRed)

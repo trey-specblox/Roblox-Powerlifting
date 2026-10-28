@@ -38,6 +38,12 @@ CardioRhythmService.start()
 local CardioRhythmLeaderboard = require(WorldFolder:WaitForChild("CardioRhythmLeaderboard"))
 CardioRhythmLeaderboard.start()
 
+-- The Mock Meet: the check-in desk moves a player into their own private meet room and back.
+-- Part 1: no lifting yet, nothing saved.
+local MeetFolder = script:WaitForChild("Meet")
+local MockMeetService = require(MeetFolder:WaitForChild("MockMeetService"))
+MockMeetService.start()
+
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the
 	Git-tracked templates and tagged before TrainingStationService looks for racks.

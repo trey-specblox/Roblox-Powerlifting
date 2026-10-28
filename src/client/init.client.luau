@@ -41,6 +41,11 @@ CardioMachineAnimator.start()
 local CardioRhythmController = require(WorldFolder:WaitForChild("CardioRhythmController"))
 CardioRhythmController.start()
 
+-- The Mock Meet: the title and Leave button while you are in your private meet room.
+local MeetFolder = script:WaitForChild("Meet")
+local MockMeetController = require(MeetFolder:WaitForChild("MockMeetController"))
+MockMeetController.start()
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

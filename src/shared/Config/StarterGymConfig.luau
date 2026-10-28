@@ -447,7 +447,8 @@ StarterGymConfig.ClosedRooms = {
 	MediaRoom = { label = "MEDIA ROOM", face = "MediaFelt", door = "SignPanel" },
 	-- Batch 2b: light oak with horizontal slats, bands on hooks, foam-roller racks.
 	WarmUp = { label = "WARM-UP & MOBILITY", face = "LockersSlats", door = "LockersSlats" },
-	MaxTesting = { label = "MAX TESTING", face = "MaxBlack", door = "MaxBlack" }, -- black, red stripes, plates
+	-- The Mock Meet Room (was Max Testing; user 2026-10-27: "more realistic"): black, red stripes, plates.
+	MockMeet = { label = "MOCK MEET", face = "MaxBlack", door = "MaxBlack" },
 	-- Batch 2b: navy panels, a big whiteboard with the week's programme, clipboards.
 	Coach = { label = "COACHES", face = "CoachesNavy", door = "CoachesNavy" },
 	Lounge = { label = "LOUNGE", colour = Color3.fromRGB(214, 108, 88) }, -- coral
@@ -497,7 +498,7 @@ StarterGymConfig.Rooms = {
 	-- The front block between its two corner rooms, LEFT TO RIGHT as you walk in.
 	-- Ground: the middle one is the lobby (LobbyWidthStuds); upstairs: equal widths.
 	FrontGround = { "Lockers", "Lobby", "Cafe" },
-	FrontUpper = { "WarmUp", "MaxTesting", "Coach" },
+	FrontUpper = { "WarmUp", "MockMeet", "Coach" },
 	-- The front corners, both floors (the stairs' place in the drawing; see stage 3).
 	-- Ground: reached through Lockers (left) and Cafe (right). The Staff Room was
 	-- the Kitchen (user, 2026-10-25: the steak kitchen becomes its own building).
@@ -1489,7 +1490,7 @@ StarterGymConfig.Looks = {
 	FrontGraphite = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(30, 34, 44) },
 	MaxBlack = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(16, 16, 18) },
 	LaneWhite = { material = Enum.Material.SmoothPlastic, color = Color3.fromRGB(240, 240, 236) },
-	-- Rusted barbells on the Max Testing wall (user, 2026-10-26: black bars were invisible on black).
+	-- Rusted barbells on the Mock Meet Room's wall (user, 2026-10-26: black bars were invisible on black).
 	RustBar = { material = Enum.Material.CorrodedMetal, color = Color3.fromRGB(118, 66, 40) },
 	RustSleeve = { material = Enum.Material.CorrodedMetal, color = Color3.fromRGB(96, 76, 64) }, -- the rusted bar's sleeves
 	-- Themed room fronts, batch 2a (2026-10-26). The walnut veneer tinted dark; the white tiles tinted teal.

@@ -689,7 +689,7 @@ local function run()
 	-- (the aisles and the balcony stay clear); nothing solid stands in front of
 	-- its door (the door's width and 1.5 more each side, 4 out).
 	-- (2026-10-26: Dumbbells, Machines and the Index room became the open zone; the records wall has a front too.)
-	local THEMED = { "SpaReception", "MaxTesting", "Cardio", "Office", "Storage", "Classroom", "MediaRoom", "WarmUp", "Coach",
+	local THEMED = { "SpaReception", "MockMeet", "Cardio", "Office", "Storage", "Classroom", "MediaRoom", "WarmUp", "Coach",
 		gym.RecordsWall.name }
 	local frontRegions, frontDecor = model:FindFirstChild("Fronts"), model:FindFirstChild("FrontProps")
 	local frontProblems, frontParts = {}, 0
