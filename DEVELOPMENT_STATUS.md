@@ -1625,7 +1625,50 @@ and polish.
   - NOT tested: the STATS tab by a real click or tap, the screen with grown
     stats, a phone.
   Step 4 COMMITTED with the user's approval on 2026-10-28 (see section 1).
-  NEXT ACTION: step 5, the treadmill rhythm game's screens. After
+  STEP 5 BUILT (2026-10-28, user: "commit + treadmill"; NOT committed; two
+  parallel helpers, one file each, reviewed):
+  - CardioRhythmController (look only): the runner's screen as a UIStyle
+    panel at MinigameCentre titled TREADMILL //: LEVEL and time (yellow),
+    a 10-segment health bar (red at or below 30%), four navyDeep lanes, a
+    yellow hit line with a glow, lane-coloured targets, white notes with a
+    lane-coloured edge, D F J K key caps, PERFECT yellow / GOOD white / MISS
+    red at 44 px, countdown and OUT big; phone tap areas unchanged; the wall
+    TV in the same palette (RHYTHM RUN // tag, info line, runner rows with
+    health bars or OUT, results). Key binding, server-clock timing, chart,
+    sounds and remotes unchanged.
+  - CardioRhythmLeaderboard (drawing only; saving/loading untouched): navy
+    grid panel with a white frame and yellow slab, ALL-TIME // or THIS WEEK
+    // tag and BEST RUNS, ten rows with rank badges (1st yellow, 2nd white,
+    3rd bronze, others navy), headshot, name, time; the red Studio TEST BOARD
+    line kept. The server cannot require the client UIStyle, so its colours
+    are copied into a local table marked "mirror UIStyle.Colours".
+  - Checks: luau-lsp 0 problems in both files, `rojo build` OK, LF kept.
+    Studio: hopped on Treadmill_2 through its prompt; screenshots of the
+    countdown (GET READY, "1") and of a running round (LEVEL 1, 0:08, health
+    draining, a falling note, MISS); Space hopped off; screenshot of the
+    restyled ALL-TIME board; 0 client and 0 server warnings.
+  - Known: the boards' screens are only 8.8 x 7.2 studs (RoomProps), so the
+    rows are small from across the room; the wall TV's idle sign is still the
+    old RoomProps "CENTRAL TV" writing; the round's TV view was not captured.
+  CARDIO WALL TV REBUILT (2026-10-28; user: "This Tv is very bland and just
+  a square", and "Make sure models are getting updated through context of
+  our history of conversations" -> saved as a memory rule; NOT committed):
+  RoomProps FURNISH.Cardio: a steel wall mount, a black bezel (blue
+  SurfaceLight washing the wall), the glossy screen part (still named "TV",
+  in front of the bezel), a chin with a CENTRAL logo and a green power
+  light, a soundbar with a yellow trim and two speakers. New styledScreen()
+  helper (colours mirror UIStyle.Colours): the idle sign (still named
+  "Writing", so the rhythm game still hides it during a round) is a navy
+  grid screen with a CARDIO ZONE // tag, four lines with yellow markers and
+  a CENTRAL mark. Checks: luau-lsp 0 problems, `rojo build` OK; Studio: all
+  9 TV pieces built, screenshots of the new TV; 0 warnings.
+  Older in-world screens/signs still in an earlier look (candidates for the
+  same treatment): the Mock Meet arena's attempt board and banners (black and
+  red), the Mock Meet Room's MOCK MEET board, the coach's speech bubble.
+  Step 5 and the TV COMMITTED with the user's approval on 2026-10-28 (see
+  section 1).
+  NEXT ACTION: the Mock Meet signs and the coach's bubble in the new style,
+  and varied title cues (user: "Not every title needs a double line"). After
   that: the rewards step needs the weight-class build decision (§33.11 item
   11) before any meet raises Competition Scale.
   Other open threads: the records
@@ -1686,7 +1729,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Add the PLAYER STATS screen (UI restyle step 4); `git log -1` for the hash.
+- 2026-10-28, pushed: Restyle the treadmill game, its leaderboards, and rebuild the Cardio TV (UI restyle step 5); `git log -1` for the hash.
+- `4039899` (2026-10-28, pushed) Add the PLAYER STATS screen (UI restyle step 4).
 - `5f85a67` (2026-10-28, pushed) Restyle the rack menu and every "E" prompt (UI restyle step 3).
 - `bd7f298` (2026-10-28, pushed) One UI style for the Mock Meet and all lift minigames (UI restyle steps 1-2).
 - `ea6f636` (2026-10-28, pushed) Run the Mock Meet itself: attempts, lifts, coach and results (Mock Meet part 2).

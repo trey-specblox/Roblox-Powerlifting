@@ -24,6 +24,17 @@
 	Studio runs never reach the live boards. With Studio's API access on, the
 	boards use stores named "Studio_..."; with it off (the usual case) they live
 	in memory only, the boards say "TEST BOARD", and they vanish when Play stops.
+
+	THE LOOK (the game's one UI style, user 2026-10-28: yellow, white and dark
+	navy with a faint grid). A server script cannot require the client's
+	UIStyle, so the colours and font are copied into `Style` below (keep them in
+	step with src/client/UI/UIStyle.luau). Each board is a navy panel with a
+	faint grid, a white frame and a yellow slab peeking out behind it; a slanted
+	black title tag with a white edge and two yellow slashes ("ALL-TIME //",
+	"THIS WEEK //") and "BEST RUNS" beside it; the reset line in muted text;
+	then one navyDeep strip with a thin white edge per place: a rank badge (1st
+	gold, 2nd silver/white, 3rd bronze, the rest navy), the avatar headshot,
+	the username and the time in heavy italic. Studio's "TEST BOARD" line is red.
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -176,68 +187,211 @@ end
 
 -- ---------------------------------------------------------------- drawing the boards
 
-local BACKGROUND = Color3.fromRGB(18, 34, 72)
-local ROW_SHADE = Color3.fromRGB(28, 48, 96)
-local INK = Color3.fromRGB(255, 255, 255)
-local SOFT_INK = Color3.fromRGB(176, 196, 232)
-local TITLE_INK = { AllTime = Color3.fromRGB(255, 206, 64), Weekly = Color3.fromRGB(96, 224, 200) }
-local MEDALS = { Color3.fromRGB(255, 206, 64), Color3.fromRGB(214, 222, 232), Color3.fromRGB(232, 150, 92) }
-local TITLES = { AllTime = "ALL-TIME BEST RUNS", Weekly = "THIS WEEK'S BEST RUNS" }
+--[[
+	The game's one UI style (user 2026-10-28: "MAKE SURE everything that requires
+	a ui has the same style"). It lives in the client's UIStyle, which a server
+	script cannot require, so these values MIRROR UIStyle.Colours and
+	UIStyle.font (src/client/UI/UIStyle.luau): change them together.
+]]
+local Style = {
+	navy = Color3.fromRGB(14, 22, 54),
+	navyDeep = Color3.fromRGB(7, 11, 30),
+	grid = Color3.fromRGB(70, 96, 170),
+	gridTransparency = 0.82,
+	yellow = Color3.fromRGB(250, 206, 36),
+	white = Color3.fromRGB(248, 248, 244),
+	ink = Color3.fromRGB(10, 10, 12),
+	muted = Color3.fromRGB(150, 160, 192),
+	red = Color3.fromRGB(226, 46, 56),
+	blue = Color3.fromRGB(70, 146, 255),
+	family = "rbxasset://fonts/families/Montserrat.json", -- Montserrat; headings heavy italic
+}
+local HEADING = Font.new(Style.family, Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
+local BODY = Font.new(Style.family, Enum.FontWeight.Bold)
 
-local function text(parent: Instance, value: string, x: number, y: number, width: number, height: number,
-	weight: Enum.FontWeight, ink: Color3, align: Enum.TextXAlignment?): TextLabel
+-- The boards' own bronze (UIStyle has none): 3rd place.
+local BRONZE = Color3.fromRGB(214, 138, 72)
+-- Rank badges: 1st gold, 2nd silver (white), 3rd bronze, the rest navy with white numbers.
+local BADGES = {
+	{ fill = Style.yellow, ink = Style.ink },
+	{ fill = Style.white, ink = Style.ink },
+	{ fill = BRONZE, ink = Style.ink },
+}
+local OTHER_BADGE = { fill = Style.navy, ink = Style.white }
+local TITLES = { AllTime = "ALL-TIME", Weekly = "THIS WEEK" }
+
+-- Pixel sizes on the wall screens (RoomProps draws them at 50 pixels per stud, so 1 pixel = 0.02 studs).
+local FRAME_PX = 4 -- the panel's white frame
+local INNER_PX = 2 -- the thin inner line
+local TAG_EDGE_PX = 3 -- the title tag's white edge
+local ROW_EDGE_PX = 2 -- each row's thin white edge
+local GRID_PX = 22 -- the faint grid's spacing
+local GRID_LINE_PX = 2
+
+-- Where the panel sits on the screen, as a share of it; the yellow slab peeks out at the bottom right.
+local BODY_AT, BODY_SIZE = Vector2.new(0.012, 0.012), Vector2.new(0.955, 0.945)
+local SLAB_AT = Vector2.new(0.03, 0.035)
+
+-- The screen's size in pixels (for a square grid); a guess if it cannot be worked out.
+local function canvasSize(gui: SurfaceGui): Vector2
+	local parent = gui.Parent
+	if gui.SizingMode == Enum.SurfaceGuiSizingMode.FixedSize then
+		return gui.CanvasSize
+	end
+	if parent and parent:IsA("BasePart") then
+		local size = (parent :: BasePart).Size
+		local width, height = size.X, size.Y
+		if gui.Face == Enum.NormalId.Left or gui.Face == Enum.NormalId.Right then
+			width = size.Z
+		elseif gui.Face == Enum.NormalId.Top or gui.Face == Enum.NormalId.Bottom then
+			height = size.Z
+		end
+		if width > 0 and height > 0 then
+			return Vector2.new(width, height) * gui.PixelsPerStud
+		end
+	end
+	return Vector2.new(440, 360)
+end
+
+local function box(parent: Instance, name: string, x: number, y: number, width: number, height: number, colour: Color3,
+	zIndex: number): Frame
+	local frame = Instance.new("Frame")
+	frame.Name = name
+	frame.Position = UDim2.fromScale(x, y)
+	frame.Size = UDim2.fromScale(width, height)
+	frame.BackgroundColor3 = colour
+	frame.BorderSizePixel = 0
+	frame.ZIndex = zIndex
+	frame.Parent = parent
+	return frame
+end
+
+local function stroke(parent: Instance, colour: Color3, thickness: number, transparency: number?)
+	local edge = Instance.new("UIStroke")
+	edge.Color = colour
+	edge.Thickness = thickness
+	edge.Transparency = transparency or 0
+	edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	edge.Parent = parent
+end
+
+local function text(parent: Instance, name: string, value: string, x: number, y: number, width: number, height: number,
+	font: Font, ink: Color3, align: Enum.TextXAlignment, zIndex: number): TextLabel
 	local label = Instance.new("TextLabel")
+	label.Name = name
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromScale(x, y)
 	label.Size = UDim2.fromScale(width, height)
 	label.Text = value
 	label.TextColor3 = ink
 	label.TextScaled = true
-	label.TextXAlignment = align or Enum.TextXAlignment.Left
-	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight)
+	label.TextXAlignment = align
+	label.FontFace = font
+	label.ZIndex = zIndex
 	label.Parent = parent
 	return label
 end
 
+-- The navy panel: a yellow slab behind, navy fading to navyDeep, a faint grid, a white frame and a thin inner line.
+local function buildPanel(gui: SurfaceGui): Frame
+	local holder = Instance.new("Frame")
+	holder.Name = "Board"
+	holder.BackgroundTransparency = 1
+	holder.Size = UDim2.fromScale(1, 1)
+	holder.Parent = gui
+	box(holder, "Back", SLAB_AT.X, SLAB_AT.Y, BODY_SIZE.X, BODY_SIZE.Y, Style.yellow, 1)
+	local body = box(holder, "Body", BODY_AT.X, BODY_AT.Y, BODY_SIZE.X, BODY_SIZE.Y, Style.navy, 2)
+	stroke(body, Style.white, FRAME_PX)
+	local shade = Instance.new("UIGradient")
+	shade.Rotation = 90
+	shade.Color = ColorSequence.new(Style.navy, Style.navyDeep)
+	shade.Parent = body
+
+	local grid = box(body, "Grid", 0, 0, 1, 1, Style.navy, 2)
+	grid.BackgroundTransparency = 1
+	grid.ClipsDescendants = true
+	local canvas = canvasSize(gui)
+	local stepX = GRID_PX / math.max(canvas.X * BODY_SIZE.X, GRID_PX)
+	local stepY = GRID_PX / math.max(canvas.Y * BODY_SIZE.Y, GRID_PX)
+	for index = 1, math.floor(1 / stepX) do
+		local line = box(grid, "V", index * stepX, 0, 0, 1, Style.grid, 2)
+		line.Size = UDim2.new(0, GRID_LINE_PX, 1, 0)
+		line.BackgroundTransparency = Style.gridTransparency
+	end
+	for index = 1, math.floor(1 / stepY) do
+		local line = box(grid, "H", 0, index * stepY, 1, 0, Style.grid, 2)
+		line.Size = UDim2.new(1, 0, 0, GRID_LINE_PX)
+		line.BackgroundTransparency = Style.gridTransparency
+	end
+
+	local inner = Instance.new("Frame")
+	inner.Name = "Inner"
+	inner.BackgroundTransparency = 1
+	inner.Position = UDim2.fromOffset(9, 9)
+	inner.Size = UDim2.new(1, -18, 1, -18)
+	inner.ZIndex = 2
+	inner.Parent = body
+	stroke(inner, Style.white, INNER_PX, 0.65)
+	return body
+end
+
+-- A slanted black tag with a white edge, heavy italic text and two yellow slashes: "ALL-TIME //".
+local function buildTitleTag(body: Frame, title: string)
+	local tag = box(body, "TitleTag", 0.04, 0.045, 0.55, 0.105, Style.ink, 5)
+	tag.Rotation = -4
+	stroke(tag, Style.white, TAG_EDGE_PX)
+	text(tag, "Text", title, 0.05, 0.12, 0.77, 0.76, HEADING, Style.white, Enum.TextXAlignment.Left, 5)
+	for index = 0, 1 do
+		local slash = box(tag, "Slash_" .. index, 0.85 + index * 0.055, 0.12, 0.028, 0.76, Style.yellow, 5)
+		slash.Rotation = 25
+	end
+end
+
+-- One place on the board: a navyDeep strip with a thin white edge, the rank badge, avatar, name and time.
+local function buildRow(body: Frame, index: number, top: number, step: number): Row
+	local row = box(body, "Row_" .. index, 0.03, top + (index - 1) * step, 0.94, step * 0.86, Style.navyDeep, 3)
+	stroke(row, Style.white, ROW_EDGE_PX, 0.5)
+
+	local look = BADGES[index] or OTHER_BADGE
+	local badge = box(row, "Rank", 0.012, 0.12, 0.075, 0.76, look.fill, 4)
+	if BADGES[index] == nil then
+		stroke(badge, Style.white, ROW_EDGE_PX, 0.4)
+	end
+	local rank = text(badge, "Text", tostring(index), 0.06, 0.06, 0.88, 0.88, HEADING, look.ink, Enum.TextXAlignment.Center, 4)
+
+	local avatar = Instance.new("ImageLabel")
+	avatar.Name = "Avatar"
+	avatar.BackgroundColor3 = Style.navy
+	avatar.BackgroundTransparency = 1
+	avatar.BorderSizePixel = 0
+	avatar.Position = UDim2.fromScale(0.1, 0.08)
+	avatar.Size = UDim2.fromScale(0.84, 0.84)
+	avatar.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	avatar.ZIndex = 4
+	avatar.Parent = row
+
+	return {
+		rank = rank,
+		avatar = avatar,
+		name = text(row, "Name", "", 0.175, 0.14, 0.55, 0.72, BODY, Style.white, Enum.TextXAlignment.Left, 4),
+		time = text(row, "Time", "", 0.74, 0.1, 0.24, 0.8, HEADING, Style.white, Enum.TextXAlignment.Right, 4),
+	}
+end
+
 local function buildView(gui: SurfaceGui, board: string): View
-	local frame = Instance.new("Frame")
-	frame.Name = "Board"
-	frame.Size = UDim2.fromScale(1, 1)
-	frame.BorderSizePixel = 0
-	frame.BackgroundColor3 = BACKGROUND
-	frame.Parent = gui
-	text(frame, TITLES[board] or board, 0.05, 0.03, 0.9, 0.1, Enum.FontWeight.Heavy, TITLE_INK[board] or INK,
-		Enum.TextXAlignment.Center)
-	local subtitle = text(frame, "", 0.05, 0.135, 0.9, 0.055, Enum.FontWeight.Medium, SOFT_INK, Enum.TextXAlignment.Center)
+	local body = buildPanel(gui)
+	buildTitleTag(body, TITLES[board] or string.upper(board))
+	text(body, "Heading", "BEST RUNS", 0.62, 0.06, 0.34, 0.075, HEADING, Style.white, Enum.TextXAlignment.Right, 3)
+	local subtitle = text(body, "Subtitle", "", 0.04, 0.18, 0.92, 0.05, BODY, Style.muted, Enum.TextXAlignment.Left, 3)
 	local rows: { Row } = {}
-	local top, height = 0.215, 0.074
+	local top = 0.245
+	local step = 0.69 / math.max(Settings.TopCount, 1)
 	for index = 1, Settings.TopCount do
-		local row = Instance.new("Frame")
-		row.Name = "Row_" .. index
-		row.Position = UDim2.fromScale(0.04, top + (index - 1) * height)
-		row.Size = UDim2.fromScale(0.92, height * 0.9)
-		row.BorderSizePixel = 0
-		row.BackgroundColor3 = ROW_SHADE
-		row.BackgroundTransparency = if index % 2 == 1 then 0 else 1
-		row.Parent = frame
-		local avatar = Instance.new("ImageLabel")
-		avatar.Name = "Avatar"
-		avatar.BackgroundTransparency = 1
-		avatar.Position = UDim2.fromScale(0.1, 0.05)
-		avatar.Size = UDim2.fromScale(0.9, 0.9)
-		avatar.SizeConstraint = Enum.SizeConstraint.RelativeYY
-		avatar.Parent = row
-		rows[index] = {
-			rank = text(row, tostring(index), 0.01, 0.1, 0.08, 0.8, Enum.FontWeight.Heavy, MEDALS[index] or SOFT_INK,
-				Enum.TextXAlignment.Center),
-			avatar = avatar,
-			name = text(row, "", 0.19, 0.12, 0.55, 0.76, Enum.FontWeight.SemiBold, INK),
-			time = text(row, "", 0.75, 0.12, 0.23, 0.76, Enum.FontWeight.Bold, INK, Enum.TextXAlignment.Right),
-		}
+		rows[index] = buildRow(body, index, top, step)
 	end
 	if mode == "memory" or mode == "studio" then
-		text(frame, if mode == "memory" then "TEST BOARD (Studio, not saved)" else "TEST BOARD (Studio_ stores)",
-			0.05, 0.955, 0.9, 0.035, Enum.FontWeight.Medium, Color3.fromRGB(255, 150, 120), Enum.TextXAlignment.Center)
+		text(body, "TestBoard", if mode == "memory" then "TEST BOARD (Studio, not saved)" else "TEST BOARD (Studio_ stores)",
+			0.04, 0.943, 0.92, 0.042, BODY, Style.red, Enum.TextXAlignment.Center, 4)
 	end
 	return { subtitle = subtitle, rows = rows }
 end
@@ -262,7 +416,9 @@ local function render(board: string)
 			row.avatar.Image = if entry
 				then string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", entry.userId)
 				else ""
+			row.avatar.BackgroundTransparency = if entry then 0 else 1
 			row.name.Text = if entry then names[entry.userId] or ("Player " .. entry.userId) else "-"
+			row.name.TextColor3 = if entry then Style.white else Style.muted
 			row.time.Text = if entry then CardioRhythmLeaderboard.formatTime(entry.ticks) else ""
 		end
 	end
