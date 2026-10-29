@@ -2393,9 +2393,9 @@ and polish.
     real minigame lifts in a Local meet (same code path as the Mock Meet).
   - Performance: the hall is ~522 parts (8 racks); a full meet adds up to
     32 figures (3 referees + coach per lifter), removed after. 20 lights.
-  NEXT ACTION: the user tries a Local meet (ideally 2 players: Test >
-  Clients and Servers), then step 2 (rewards: the daily CN allowance, save
-  version 9). The user also has a Mock Meet and a deadlift to
+  - USER'S TEST (2026-10-29, reported by the user): a two-player Local meet
+    in Studio and a full meet; "It all works out". Not seen by Claude.
+  NEXT ACTION: step 2 (rewards: the daily CN allowance, save version 9). The user also has a Mock Meet and a deadlift to
   try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.
