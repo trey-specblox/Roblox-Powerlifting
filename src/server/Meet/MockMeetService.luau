@@ -5,8 +5,15 @@
 
 	The Mock Meet (GAME_DESIGN.md §29.10 "The Solo meet — first build", user
 	2026-10-27): the check-in, the move in and out of the private rooms, and the
-	meet itself. NOTHING IS SAVED OR REWARDED: no Competition Scale, no records,
-	no money. Player data is only read (Competition Number, bodyweight).
+	meet itself.
+
+	WHAT IT SAVES (GAME_DESIGN.md 29.11 and 33.7, user 2026-10-28): only into the
+	build of the class locked at the weigh-in. Each GOOD LIFT raises that
+	lift's Competition Scale at once (it counts even if the lifter leaves
+	early); a FINISHED meet's Total can raise the build's best Total. Both go
+	through the monotone ProfileOperations raises, fed by MeetTotal (good lifts
+	only). No records (never the GYM RECORD wall, never a World Record), no
+	money, and never Competition Number (33.3).
 
 	CHECK-IN. The check-in point in the gym's Mock Meet Room (tagged
 	MockMeetConfig.CheckInTag by RoomProps) gets a "Start Mock Meet" prompt. The
@@ -17,7 +24,7 @@
 	player attribute MockMeetConfig.SlotAttribute and starts the meet.
 
 	THE MEET (server-run; the client only asks and draws MockMeetRemotes.STATE):
-		weigh-in: the weight class from current bodyweight, locked for the meet
+		weigh-in: the weight class (= build) from current bodyweight, locked for the meet
 		for each lift in MeetConfig.LiftOrder, 3 attempts:
 			Choose   the client asks for a weight (MockMeetRemotes.CHOOSE); the
 			         server accepts only a multiple of WeightStepKg inside the
@@ -50,11 +57,13 @@ local MeetFolder = Shared:WaitForChild("Meet")
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
 local AttemptRules = require(MeetFolder:WaitForChild("AttemptRules"))
 local MeetTotal = require(MeetFolder:WaitForChild("MeetTotal"))
-local WeightClass = require(Shared:WaitForChild("Progression"):WaitForChild("WeightClass"))
 
 local ServerFolder = script.Parent.Parent
 local MockMeetArena = require(script.Parent:WaitForChild("MockMeetArena"))
-local PlayerDataService = require(ServerFolder:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
+local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
+local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
+-- For the two meet-only raises (Scale, best Total); see their security notes.
+local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 
 local MockMeetService = {}
@@ -80,7 +89,7 @@ type Visit = {
 	-- Where the player stood when they checked in; Leave puts them back there.
 	returnTo: CFrame,
 	connections: { RBXScriptConnection },
-	-- Locked at the weigh-in for the whole meet.
+	-- Locked at the weigh-in for the whole meet. classLabel is also the build every save goes to.
 	bodyweightKg: number,
 	classLabel: string,
 	competitionNumber: { [string]: number },
@@ -295,6 +304,48 @@ local function releaseLifter(player: Player, visit: Visit)
 	end
 end
 
+-- ---------------------------------------------------------------- what the meet saves
+
+--[[
+	After a GOOD LIFT: raises this lift's Competition Scale in the build of the
+	weigh-in class to the heaviest good lift of the meet so far. MeetTotal's
+	bestSuccessful only ever returns a GoodLift weight, so a miss can never
+	reach the raise. Saved at once, so leaving early keeps it (33.7).
+]]
+local function saveScale(player: Player, visit: Visit, lift: string)
+	local provenKg = MeetTotal.bestSuccessful(visit.lifts[lift].history)
+	if provenKg == nil then
+		return
+	end
+	local outcome: ProfileOperations.ScaleRaiseOutcome = "Rejected"
+	local scaleKg: number? = nil
+	PlayerDataService.update(player, function(data)
+		outcome, scaleKg = ProfileOperations.raiseCompetitionScale(data, visit.classLabel, lift, provenKg)
+	end)
+	if outcome == "Raised" and scaleKg then
+		notify(player, string.format("New %s Competition Scale: %s kg (%s class)", lift, kgText(scaleKg), visit.classLabel))
+	elseif outcome == "Rejected" then
+		warn(string.format("[MockMeetService] %s's %s Scale (%s kg, %s) was not saved", player.Name, lift,
+			kgText(provenKg), visit.classLabel))
+	end
+	log("%s %s Scale (%s): %s", player.Name, lift, visit.classLabel, outcome)
+end
+
+-- At the end of a FINISHED meet with a total: raises the build's best Total.
+local function saveBestTotal(player: Player, visit: Visit, totalKg: number)
+	local outcome: ProfileOperations.ScaleRaiseOutcome = "Rejected"
+	PlayerDataService.update(player, function(data)
+		outcome = ProfileOperations.raiseBestTotal(data, visit.classLabel, totalKg)
+	end)
+	if outcome == "Raised" then
+		notify(player, string.format("New best Total: %s kg (%s class)", kgText(totalKg), visit.classLabel))
+	elseif outcome == "Rejected" then
+		warn(string.format("[MockMeetService] %s's total (%s kg, %s) was not saved", player.Name, kgText(totalKg),
+			visit.classLabel))
+	end
+	log("%s best Total (%s): %s", player.Name, visit.classLabel, outcome)
+end
+
 -- ---------------------------------------------------------------- the meet
 
 -- What the watching coach says (flavour only; the minigames decide every verdict).
@@ -392,6 +443,9 @@ local function runAttempt(player: Player, visit: Visit, lift: string, attemptNum
 
 	-- Result.
 	table.insert(record.history, { weightKg = weightKg, result = result })
+	if result == "GoodLift" then
+		saveScale(player, visit, lift)
+	end
 	MockMeetArena.coachSays(visit.room, pick(if result == "GoodLift" then COACH_GOOD else COACH_MISS))
 	updateBoard(player, visit, lift, attemptNumber, weightKg, result)
 	sendState(player, visit, "Result", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
@@ -418,6 +472,9 @@ local function runMeet(player: Player, visit: Visit)
 		end
 	end
 	local result = MeetTotal.resolve(meetAttempts(visit))
+	if result.total then
+		saveBestTotal(player, visit, result.total)
+	end
 	MockMeetArena.coachSays(visit.room, if result.total then "Great meet. Proud of you." else "We'll get them next time.")
 	updateBoard(player, visit, nil, nil, result.total)
 	sendState(player, visit, "Done", { best = result.best, total = result.total, bombedOut = result.bombedOut })
@@ -499,16 +556,21 @@ function MockMeetService.checkIn(player: Player, point: BasePart): boolean
 		return false
 	end
 
-	-- The weigh-in reads the player's data; nothing is written.
+	-- The weigh-in reads the player's data; nothing is written. The class it locks is the build the meet saves to.
 	local data = PlayerDataService.getData(player)
 	if data == nil then
 		notify(player, "Your data is still loading. Try again in a moment.")
 		return false
 	end
+	local classKey = ProfileOperations.getActiveClassKey(data)
+	if classKey == nil or ProfileOperations.getBuild(data, classKey) == nil then
+		warn(string.format("[MockMeetService] %s has no build for their weight class", player.Name))
+		return false
+	end
 	local competitionNumber: { [string]: number } = {}
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
-		local cn = data.competitionNumber[lift]
-		if typeof(cn) ~= "number" or cn <= 0 then
+		local cn = ProfileOperations.getCompetitionNumber(data, lift)
+		if cn == nil or cn <= 0 then
 			return false
 		end
 		competitionNumber[lift] = cn
@@ -553,7 +615,7 @@ function MockMeetService.checkIn(player: Player, point: BasePart): boolean
 		returnTo = returnTo,
 		connections = {},
 		bodyweightKg = bodyweightKg,
-		classLabel = WeightClass.resolve(bodyweightKg).label,
+		classLabel = classKey,
 		competitionNumber = competitionNumber,
 		lifts = lifts,
 		choice = nil,

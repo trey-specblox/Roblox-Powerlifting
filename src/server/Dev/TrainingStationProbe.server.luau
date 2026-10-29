@@ -88,8 +88,39 @@ local function deepCopy(value: any): any
 end
 
 local function newProfile(): PlayerProfileSchema.ProfileData
-	return deepCopy(TEMPLATE)
+	local data = deepCopy(TEMPLATE)
+	-- The template's `builds` is empty; every real load creates the starting build (schema v6).
+	PlayerProfileSchema.ensureActiveBuild(data)
+	return data
 end
+
+--[[
+	SCHEMA VERSION 6: Competition Number and Scale live in the build of the
+	current weight class (GAME_DESIGN.md 29.11). These read the active build so
+	the checks below stay about the numbers, not the storage path. A missing
+	build reads as an empty table, so a check FAILS rather than the probe
+	erroring.
+]]
+local function classOf(data: any): string
+	return PlayerProfileSchema.classKeyFor(data.bodyweight and data.bodyweight.currentKg) or "?"
+end
+
+local function buildOf(data: any): any
+	local builds = data.builds
+	local build = if typeof(builds) == "table" then builds[classOf(data)] else nil
+	return if typeof(build) == "table" then build else {}
+end
+
+local function cnOf(data: any): any
+	return buildOf(data).competitionNumber or {}
+end
+
+local function scaleOf(data: any): any
+	return buildOf(data).competitionScale or {}
+end
+
+-- What a new lifter starts with, from a fresh profile's build.
+local STARTING_CN = cnOf(newProfile())
 
 -- A UTC midnight, the same one TrainingProgressionProbe uses.
 local DAY_START = 1759968000
@@ -322,6 +353,7 @@ do
 
 	local heavy = newSim(DAY_START + 10 * HOUR)
 	heavy.data.bodyweight.currentKg = 130
+	PlayerProfileSchema.ensureActiveBuild(heavy.data)
 	local rejected = heavy.award("Squat", 0)
 	check("the zero-second check refuses a 120+ lifter (Rejected is fatal)",
 		rejected.outcome == "Rejected" and TrainingStationRules.isFatalResult(rejected))
@@ -331,7 +363,7 @@ do
 	local zero = normal.award("Squat", 0)
 	check("a normal lifter's zero-second check is NoProgress and earns nothing",
 		zero.outcome == "NoProgress" and not TrainingStationRules.isFatalResult(zero)
-			and normal.data.competitionNumber.Squat == TEMPLATE.competitionNumber.Squat)
+			and cnOf(normal.data).Squat == STARTING_CN.Squat)
 	check("ClockWentBackward is not fatal",
 		not TrainingStationRules.isFatalResult({ outcome = "ClockWentBackward" }))
 end
@@ -517,9 +549,9 @@ do
 	check("back on Squat, its hours resume from 604 s, NOT reset",
 		near(sim.data.trainingTimeToday.Squat, 614 / HOUR, 1e-12))
 	check("all three lifts earned CN",
-		sim.data.competitionNumber.Squat > TEMPLATE.competitionNumber.Squat
-			and sim.data.competitionNumber.Bench > TEMPLATE.competitionNumber.Bench
-			and sim.data.competitionNumber.Deadlift > TEMPLATE.competitionNumber.Deadlift)
+		cnOf(sim.data).Squat > STARTING_CN.Squat
+			and cnOf(sim.data).Bench > STARTING_CN.Bench
+			and cnOf(sim.data).Deadlift > STARTING_CN.Deadlift)
 	check("the EV/hours invariant holds after switching", invariantHolds(sim.data))
 end
 
@@ -563,8 +595,8 @@ do
 	local measuredTotal = 10 + 3 + 1.5
 	check("every second was credited exactly once (14.5 s in total)",
 		near(sim.secondsAwarded, measuredTotal, 1e-9), tostring(sim.secondsAwarded))
-	local cnTotal = (sim.data.competitionNumber.Squat - TEMPLATE.competitionNumber.Squat)
-		+ (sim.data.competitionNumber.Bench - TEMPLATE.competitionNumber.Bench)
+	local cnTotal = (cnOf(sim.data).Squat - STARTING_CN.Squat)
+		+ (cnOf(sim.data).Bench - STARTING_CN.Bench)
 	check("CN gained equals the sum of reported awards, nothing extra", near(cnTotal, sim.cnGainedReported, 1e-9))
 	check("the EV/hours invariant holds", invariantHolds(sim.data))
 end
@@ -600,7 +632,7 @@ do
 		string.find(TrainingStationRules.CAP_REACHED_HINT, "Technique", 1, true) ~= nil)
 	check("the EV/hours invariant holds at the cap", invariantHolds(sim.data))
 
-	local cnAtCap = sim.data.competitionNumber.Squat
+	local cnAtCap = cnOf(sim.data).Squat
 	local hoursAtCap = sim.data.trainingTimeToday.Squat
 	local callsAtCap = sim.awardCalls
 	local last: TrainingStationRules.CreditReport? = nil
@@ -612,7 +644,7 @@ do
 
 	check("ticks after the stop are NotTraining", last ~= nil and (last :: any).status == "NotTraining")
 	check("and never call the gateway", sim.awardCalls == callsAtCap)
-	check("no CN after the cap", sim.data.competitionNumber.Squat == cnAtCap)
+	check("no CN after the cap", cnOf(sim.data).Squat == cnAtCap)
 	check("no hours after the cap", sim.data.trainingTimeToday.Squat == hoursAtCap)
 
 	advance(sim, 2)
@@ -681,7 +713,7 @@ do
 		TrainingStationRules.statusLine(sessionOf(registry, "P")))
 
 	local callsBefore = sim.awardCalls
-	local cnBefore = sim.data.competitionNumber.Squat
+	local cnBefore = cnOf(sim.data).Squat
 	local legacyBefore = deepCopy(sim.data.techniqueAllowance)
 	local report: TrainingStationRules.CreditReport? = nil
 
@@ -703,7 +735,7 @@ do
 	check("This Session gains match the stats exactly",
 		near(sessionOf(registry, "P").techniqueGains.DepthAwareness or 0, raw(sim.data, "DepthAwareness"), 1e-9)
 			and near(sessionOf(registry, "P").techniqueGains.SquatControl or 0, raw(sim.data, "SquatControl"), 1e-9))
-	check("no CN call and no CN", sim.awardCalls == callsBefore and sim.data.competitionNumber.Squat == cnBefore)
+	check("no CN call and no CN", sim.awardCalls == callsBefore and cnOf(sim.data).Squat == cnBefore)
 	check("the legacy technique allowance record is untouched",
 		sim.data.techniqueAllowance.spentToday == legacyBefore.spentToday
 			and sim.data.techniqueAllowance.dayKey == legacyBefore.dayKey
@@ -1085,7 +1117,7 @@ do
 	check("the next tick raises Press Power 80% and Start Control 20% for the full 10 s",
 		near(raw(sim.data, "PressPower"), 0.8 * rawFor(TICK), 1e-12)
 			and near(raw(sim.data, "StartControl"), 0.2 * rawFor(TICK), 1e-12))
-	check("and earns no CN for Bench", sim.data.competitionNumber.Bench == TEMPLATE.competitionNumber.Bench)
+	check("and earns no CN for Bench", cnOf(sim.data).Bench == STARTING_CN.Bench)
 
 	advance(sim, 1.5)
 	local toSquatTechnique = choose(registry, "P", TECH_SQUAT_CONTROL, sim)
@@ -1124,6 +1156,7 @@ print("-- 18. the 120+ class can train technique but not CN")
 do
 	local heavy = newSim(DAY_START + 10 * HOUR)
 	heavy.data.bodyweight.currentKg = 130
+	PlayerProfileSchema.ensureActiveBuild(heavy.data)
 	local registry = newRegistry()
 
 	local refusal, outcome = TrainingStationRules.openMenu(registry, "H", "A", nil, heavy.clock)
@@ -1152,8 +1185,8 @@ do
 	check("asking for CN mid-technique is refused and technique keeps running",
 		cnAgain.decision == "CNIneligible" and sessionOf(registry, "H").selection.mode == "Technique"
 			and sessionOf(registry, "H").state == "Training")
-	check("no CN for any lift", heavy.data.competitionNumber.Squat == TEMPLATE.competitionNumber.Squat
-		and heavy.data.competitionNumber.Bench == TEMPLATE.competitionNumber.Bench
+	check("no CN for any lift", cnOf(heavy.data).Squat == STARTING_CN.Squat
+		and cnOf(heavy.data).Bench == STARTING_CN.Bench
 		and heavy.data.cnAllowance.spentToday == 0)
 end
 

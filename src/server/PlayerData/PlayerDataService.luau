@@ -15,8 +15,11 @@
 
 		local data = PlayerDataService.getData(player)
 		if data then
-			print(data.competitionNumber.Squat)
+			print(data.bodyweight.currentKg)
 		end
+
+		-- Competition Number lives in the build of the current class:
+		print(PlayerDataService.getCompetitionNumber(player, "Squat"))
 
 	Reading returns the live table for speed, and callers must treat it as
 	READ-ONLY.
@@ -195,14 +198,19 @@ local function onPlayerAdded(player: Player)
 	stampSession(profile.Data)
 	profiles[player] = profile
 
+	local function cnText(lift: string): string
+		local cn = ProfileOperations.getCompetitionNumber(profile.Data, lift)
+		return if cn then string.format("%.1f", cn) else "?"
+	end
 	log(
-		"loaded %s (version %d, session %d) S/B/D %.1f/%.1f/%.1f at %.1f kg",
+		"loaded %s (version %d, session %d) %s build S/B/D %s/%s/%s at %.1f kg",
 		player.Name,
 		finalVersion,
 		profile.Data.meta.sessionCount,
-		profile.Data.competitionNumber.Squat,
-		profile.Data.competitionNumber.Bench,
-		profile.Data.competitionNumber.Deadlift,
+		ProfileOperations.getActiveClassKey(profile.Data) or "?",
+		cnText("Squat"),
+		cnText("Bench"),
+		cnText("Deadlift"),
 		profile.Data.bodyweight.currentKg
 	)
 end
@@ -392,7 +400,7 @@ end
 	for a reward -- the real figure is under 3 kg for one attempt -- and too
 	restrictive for a legitimate weight-class translation.
 
-	So no kilogram writer exists. Two operations reopen the door, each owning its
+	So no kilogram writer exists. One operation reopens the door, owning its
 	own bound:
 
 	  1. awardTrainingProgression(player, lift, elapsedSeconds), below.
@@ -400,11 +408,10 @@ end
 	     derives both on the server. Bounded by construction, so no caller can
 	     get the magnitude wrong. Checkpoint 5B.5.
 
-	  2. translateCompetitionNumbers(player, fromClass, toClass)
-	     The authoritative RP Preservation recalculation of section 29.11, whose
-	     legitimate deltas are large. Not built yet.
+	  (A class-change translation was planned here and is no longer needed:
+	  each class keeps its own build, section 29.11, user 2026-10-28.)
 
-	Both call ProfileOperations.applyCompetitionNumberDelta, which keeps the
+	It calls ProfileOperations.applyCompetitionNumberDelta, which keeps the
 	validation that is universally true -- finite delta, known lift, a result
 	that remains a positive weight -- and holds no magnitude opinion, because
 	magnitude is the caller's to justify.

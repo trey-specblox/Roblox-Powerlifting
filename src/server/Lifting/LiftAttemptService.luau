@@ -499,8 +499,8 @@ function createAttempt(player: Player, liftName: string, requestedPercent: numbe
 		return false, "no player data"
 	end
 
-	-- Renamed field in schema v3; the in-memory name stays forecastedMax for now.
-	local forecastedMax = data.competitionNumber[sequence.lift]
+	-- The current class's build (schema v6); the in-memory name stays forecastedMax for now.
+	local forecastedMax = PlayerDataService.getCompetitionNumber(player, sequence.lift)
 	if typeof(forecastedMax) ~= "number" or forecastedMax <= 0 then
 		warn(string.format("[LiftAttemptService] %s has no usable forecasted %s", player.Name, sequence.lift))
 		return false, "no usable Competition Number"

@@ -13,7 +13,8 @@
 
 		left    the player's avatar, name, weight class and bodyweight
 		middle  COMPETITION NUMBER per lift and the total; PROVEN (Competition
-		        Scale) per lift, or UNPROVEN
+		        Scale) per lift, or UNPROVEN, and the BEST TOTAL; all for the
+		        build of the current weight class
 		right   TECHNIQUE: a five-cornered radar of the five trainable stats
 		        (effective values, the outer edge = 100) with each stat's name
 		        and value at its corner
@@ -155,8 +156,15 @@ function StatsScreen.start()
 		scaleRows[lift] = UIStyle.text(body, lift .. "_Scale", UDim2.fromOffset(middleX + 150, y), UDim2.fromOffset(140, 32),
 			SIZES.body, C.white, UIStyle.heading(), Enum.TextXAlignment.Right)
 	end
-	local hint = UIStyle.text(body, "Hint", UDim2.fromOffset(middleX, 410), UDim2.fromOffset(300, 60), SIZES.small, C.muted)
-	hint.Text = "Competition Number is what training built. A lift is proven when you make it in a meet."
+	-- The best Total from one finished meet in this class (personal, never a record).
+	local bestY = 298 + #ProgressionConfig.Lifts * 36
+	UIStyle.text(body, "BestTotalName", UDim2.fromOffset(middleX + 16, bestY), UDim2.fromOffset(140, 32), SIZES.body,
+		C.yellow, UIStyle.heading()).Text = "BEST TOTAL"
+	local bestTotalText = UIStyle.text(body, "BestTotal", UDim2.fromOffset(middleX + 150, bestY), UDim2.fromOffset(140, 32),
+		SIZES.body, C.yellow, UIStyle.heading(), Enum.TextXAlignment.Right)
+	local hint = UIStyle.text(body, "Hint", UDim2.fromOffset(middleX, bestY + 38), UDim2.fromOffset(300, 50), SIZES.small,
+		C.muted)
+	hint.Text = "Competition Number is what training built. A lift is proven when you make it in a meet in this class."
 
 	-- Right: the technique radar.
 	UIStyle.sectionHead(body, "TechHead", "TECHNIQUE", UDim2.fromOffset(640, 40), 118, 270, "corner")
@@ -212,6 +220,9 @@ function StatsScreen.start()
 			scaleRows[lift].TextColor3 = if scale > 0 then C.white else C.muted
 		end
 		totalText.Text = kgText(total)
+		local bestTotal = snapshot.bestTotalKg or 0
+		bestTotalText.Text = if bestTotal > 0 then kgText(bestTotal) else "—"
+		bestTotalText.TextColor3 = if bestTotal > 0 then C.yellow else C.muted
 
 		local stats = snapshot.technique
 		local count = #stats

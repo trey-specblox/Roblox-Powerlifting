@@ -35,9 +35,12 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local StartingValuesConfig = require(ConfigFolder:WaitForChild("StartingValuesConfig"))
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 
+local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig"))
+
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceRegeneration"))
 local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
+local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
 
 local PlayerProfileSchema = {}
 
@@ -45,7 +48,7 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below.
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 5
+PlayerProfileSchema.CURRENT_VERSION = 6
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -106,15 +109,40 @@ PlayerProfileSchema.UNPROVEN_SCALE = 0
 
 	`UNPROVEN_SCALE` above means the lift has never been proven.
 
-	NOTHING WRITES THIS YET. Section 33.12 sequences the monotone raise
-	operation as step 4 and the meet wiring as step 7, so in this version the
-	field is stored, migrated and read, and is 0 for every player in existence.
+	Lives inside a Build (version 6). Written only by the meet: each good lift
+	raises the Scale of the build for the meet's weigh-in class, through
+	ProfileOperations.raiseCompetitionScale.
 ]]
 export type CompetitionScale = {
 	-- Kilograms, or UNPROVEN_SCALE. Never decreases once above 0.
 	Squat: number,
 	Bench: number,
 	Deadlift: number,
+}
+
+--[[
+	NO BEST TOTAL YET. Same reasoning as UNPROVEN_SCALE: 0 kg is not a total
+	anyone can make, so it can never collide with a real one.
+]]
+PlayerProfileSchema.NO_TOTAL = 0
+
+--[[
+	A WEIGHT-CLASS BUILD, added in version 6. GAME_DESIGN.md section 29.11,
+	"Weight-class builds" (user, 2026-10-28).
+
+	The lifter's progress in ONE weight class. Competition Number and Scale
+	live here together, so the profile has one answer to "which build is this".
+
+		competitionNumber   what training built in this class
+		competitionScale    the heaviest lift proven in a meet in this class
+		bestTotalKg         the best Total from ONE finished meet in this class,
+		                    or NO_TOTAL. Personal only: never a record, never the
+		                    gym records wall, and never a sum of Scales (33.8)
+]]
+export type Build = {
+	competitionNumber: CompetitionNumber,
+	competitionScale: CompetitionScale,
+	bestTotalKg: number,
 }
 
 --[[
@@ -243,47 +271,32 @@ export type ProfileData = {
 	version: number,
 
 	--[[
-		BUILD-SCOPED IN THE FROZEN DESIGN, FLAT FOR NOW.
+		ONE BUILD PER WEIGHT CLASS, added in version 6 (GAME_DESIGN.md 29.11).
 
-		This note covers BOTH fields below. Section 29.11 makes Competition
-		Numbers per weight-class build and section 33.8 says a Competition Scale
-		"travels with that build", and the Weight-Class Build Slot system is not
-		built. These fields therefore hold the ACTIVE build's values, which is
-		every player's only build today.
+		Keyed by the class label from WeightClass.resolve ("59 kg" ... "120+ kg"),
+		the same keys ProgressionReferenceConfig uses. Until version 6 the
+		Competition Number and Scale sat flat on the profile; migrations[5] moved
+		them here, under the class the player was in, unchanged.
 
-		The later migration is deterministic and lossless: move both tables to
-		`builds[classKey]`, keyed by the class the player is already in, which
-		WeightClass.resolve derives from bodyweight.currentKg. No value is
-		invented and nothing is lost.
+		THE ACTIVE BUILD IS NOT STORED. It is the class of bodyweight.currentKg,
+		derived on every read (ProfileOperations.getActiveBuild), so the profile
+		can never hold two answers to "which build is this".
 
-		A `builds` map is deliberately NOT created now. Which build is active,
-		how slots are keyed, and how many a player may own are all undecided, and
-		guessing that shape would mean migrating away from the guess. No
-		paid-slot behaviour is implied or implemented here. Section 33.8 is
-		explicit: no `builds` map is to be invented ahead of that system.
+		A meet does NOT use the active build when it writes. It credits the class
+		frozen at its weigh-in (section 32.7), so a Scale proven in one class can
+		never land in another.
 
-		THE TWO FIELDS MUST STAY THE SAME SHAPE AS EACH OTHER. Keying Scale by
-		weight class while Competition Number stays flat would give the profile
-		two different answers to "which build is this", which is exactly the
-		confusion section 33.8's class-scoping rule exists to prevent. They
-		migrate together or not at all.
-
-		CLASS SCOPING IS NOT ENFORCED BY THIS SHAPE, AND CANNOT BE REACHED YET.
-		A Scale proven in one class must never count as proof in another. No
-		code writes competitionScale in this version, so that confusion is
-		unreachable today. Its enforcement point is the WRITE path: the meet
-		wiring of section 33.12 step 7, which must key the raise off the meet's
-		weigh-in snapshot (section 29.11), never off current bodyweight.
+		Builds are created on first entry to a class and kept forever, free; at
+		most one per class (ensureBuild below). Nothing deletes a build.
 	]]
-	competitionNumber: CompetitionNumber,
-	competitionScale: CompetitionScale,
+	builds: { [string]: Build },
 
 	technique: Technique,
 	bodyweight: Bodyweight,
 
 	--[[
-		ACCOUNT-WIDE, never build-scoped, so these stay OUTSIDE the future
-		`builds` map described above.
+		ACCOUNT-WIDE, never build-scoped, so these stay OUTSIDE the `builds`
+		map above.
 	]]
 	competitionBudget: CompetitionBudget,
 	trainingEnergy: Resource,
@@ -292,7 +305,7 @@ export type ProfileData = {
 		DAILY TRAINING ACCOUNTING, added in version 5. GAME_DESIGN.md section
 		34.12. Five counters in three records, and all three are ACCOUNT-WIDE --
 		not per build slot, not per weight class, not per station, not per
-		server -- so they stay outside the future `builds` map too.
+		server -- so they stay outside the `builds` map too.
 
 		The two allowances are account-wide in the quantity they bound. The
 		third record holds three PER-LIFT hour counters but is still account
@@ -320,31 +333,16 @@ export type ProfileData = {
 local template: ProfileData = {
 	version = PlayerProfileSchema.CURRENT_VERSION,
 
-	competitionNumber = {
-		Squat = StartingValuesConfig.Forecasted.Squat,
-		Bench = StartingValuesConfig.Forecasted.Bench,
-		Deadlift = StartingValuesConfig.Forecasted.Deadlift,
-	},
-
 	--[[
-		A NEW LIFTER HAS PROVEN NOTHING, and that is deliberate.
-
-		They start with Competition Number 25 kg per lift because training is
-		what builds capability, and with no Competition Scale at all because
-		they have never entered a meet. Seeding this from the starting
-		Competition Number would record three successful meet lifts that never
-		happened.
-
-		This value does NOT come from StartingValuesConfig. That file holds
-		balance decisions -- what a lifter begins with -- and "unproven" is not
-		a balance number. It is the storage encoding of an absent achievement,
-		so it belongs with the schema.
+		EMPTY IN THE TEMPLATE, ON PURPOSE. ProfileStore's Reconcile fills every
+		missing key of the template INTO NESTED TABLES TOO, so a template build
+		under "59 kg" would be planted into every profile that lacks one -- a
+		phantom 25 kg build that a later cut to 59 kg would "restore". The
+		starting build is created by ensureBuild instead, which migrate() runs on
+		every load, new profiles included. See newBuild for what a new lifter
+		starts with.
 	]]
-	competitionScale = {
-		Squat = PlayerProfileSchema.UNPROVEN_SCALE,
-		Bench = PlayerProfileSchema.UNPROVEN_SCALE,
-		Deadlift = PlayerProfileSchema.UNPROVEN_SCALE,
-	},
+	builds = {},
 
 	--[[
 		THE TEMPLATE STORES ZERO TIMESTAMPS, NOT os.time().
@@ -457,6 +455,21 @@ local template: ProfileData = {
 local migrations: { [number]: (ProfileData) -> () } = {}
 
 --[[
+	True once a profile's Competition Number and Scale live in builds (version
+	6). The older steps that wrote the FLAT fields check this, so re-running
+	them on an upgraded profile -- the double-migration bug the probe guards
+	against -- cannot plant a 25 kg flat table for migrations[5] to file over
+	the real build.
+]]
+local function hasMovedToBuilds(data: ProfileData): boolean
+	local builds = (data :: any).builds
+	return typeof(builds) == "table"
+		and next(builds) ~= nil
+		and (data :: any).competitionNumber == nil
+		and (data :: any).forecasted == nil
+end
+
+--[[
 	Version 1 to 2: the Deadlift gained its own first-phase technique stat.
 
 	Every pre-existing lifter receives PullStrength = 0, which is what a brand new
@@ -513,6 +526,11 @@ end
 	it would reset every existing lifter to 25 kg. 25 is only ever the default
 	for genuinely new lift data.
 
+	SINCE VERSION 6 the template has no flat `competitionNumber` (it moved into
+	`builds`), so Reconcile no longer creates it and the "Defensive" branch
+	below is the normal path for an old save. The result is the same; the
+	flat table then lives only until migrations[5] moves it into a build.
+
 	Each lift is copied independently and only when the old value is a usable
 	number, so a save with two good lifts and one corrupt field keeps the two.
 
@@ -532,34 +550,37 @@ end
 	and changes nothing.
 ]]
 migrations[2] = function(data: ProfileData)
-	local legacy = (data :: any).forecasted
+	-- Already in builds (version 6): the flat field is gone for good, so leave it gone.
+	if not hasMovedToBuilds(data) then
+		local legacy = (data :: any).forecasted
 
-	if typeof(data.competitionNumber) ~= "table" then
-		--[[
-			Defensive. Reconcile should always have created this. Building it
-			empty lets the copy below fill it, rather than erroring and failing
-			the load, which would kick the player instead of repairing them.
-		]]
-		data.competitionNumber = {} :: any
-	end
-
-	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		local saved = if typeof(legacy) == "table" then (legacy :: any)[lift] else nil
-
-		--[[
-			Only a finite number above zero is accepted. NaN, infinity, nil, a
-			string and a non-positive value all fall through to whatever
-			Reconcile put there, which is the 25 kg default.
-		]]
-		if typeof(saved) == "number" and saved == saved and saved > 0 and saved < math.huge then
-			(data.competitionNumber :: any)[lift] = saved
-		elseif typeof((data.competitionNumber :: any)[lift]) ~= "number" then
-			(data.competitionNumber :: any)[lift] = StartingValuesConfig.Forecasted[lift]
+		if typeof((data :: any).competitionNumber) ~= "table" then
+			--[[
+				Defensive. Reconcile should always have created this. Building it
+				empty lets the copy below fill it, rather than erroring and failing
+				the load, which would kick the player instead of repairing them.
+			]]
+			(data :: any).competitionNumber = {}
 		end
-	end
 
-	-- The rename is only complete once the old field is gone. See note 1 above.
-	(data :: any).forecasted = nil
+		for _, lift in ipairs(ProgressionConfig.Lifts) do
+			local saved = if typeof(legacy) == "table" then (legacy :: any)[lift] else nil
+
+			--[[
+				Only a finite number above zero is accepted. NaN, infinity, nil, a
+				string and a non-positive value all fall through to whatever
+				Reconcile put there, which is the 25 kg default.
+			]]
+			if typeof(saved) == "number" and saved == saved and saved > 0 and saved < math.huge then
+				(data :: any).competitionNumber[lift] = saved
+			elseif typeof((data :: any).competitionNumber[lift]) ~= "number" then
+				(data :: any).competitionNumber[lift] = StartingValuesConfig.Forecasted[lift]
+			end
+		end
+
+		-- The rename is only complete once the old field is gone. See note 1 above.
+		(data :: any).forecasted = nil
+	end
 
 	--[[
 		Repair rather than create: Reconcile has normally done this already.
@@ -622,12 +643,17 @@ end
 	table, a string, a NaN, a negative -- is replaced with UNPROVEN.
 ]]
 migrations[3] = function(data: ProfileData)
-	if typeof(data.competitionScale) ~= "table" then
-		data.competitionScale = {} :: any
+	-- Already in builds (version 6): there is no flat Scale to repair.
+	if hasMovedToBuilds(data) and (data :: any).competitionScale == nil then
+		return
+	end
+
+	if typeof((data :: any).competitionScale) ~= "table" then
+		(data :: any).competitionScale = {}
 	end
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		local saved = (data.competitionScale :: any)[lift]
+		local saved = (data :: any).competitionScale[lift]
 
 		--[[
 			A legitimate Scale is a finite number of 0 or more. 0 is the
@@ -640,7 +666,7 @@ migrations[3] = function(data: ProfileData)
 			and saved < math.huge
 
 		if not usable then
-			(data.competitionScale :: any)[lift] = PlayerProfileSchema.UNPROVEN_SCALE
+			(data :: any).competitionScale[lift] = PlayerProfileSchema.UNPROVEN_SCALE
 		end
 	end
 end
@@ -775,6 +801,234 @@ migrations[4] = function(data: ProfileData)
 end
 
 --[[
+	=========================================================================
+	WEIGHT-CLASS BUILDS (version 6, GAME_DESIGN.md 29.11)
+	=========================================================================
+]]
+
+local function isUsableCompetitionNumber(value: any): boolean
+	return typeof(value) == "number" and value == value and value > 0 and value < math.huge
+end
+
+-- A finite number of 0 or more: a Scale (0 = UNPROVEN) or a best Total (0 = none).
+local function isUsableProvenWeight(value: any): boolean
+	return typeof(value) == "number" and value == value and value >= 0 and value < math.huge
+end
+
+--[[
+	The build key for a bodyweight: the weight class label, e.g. "59 kg". Nil
+	for a bodyweight that is not a usable positive number.
+]]
+function PlayerProfileSchema.classKeyFor(bodyweightKg: any): string?
+	if not isUsableCompetitionNumber(bodyweightKg) then
+		return nil
+	end
+	return WeightClass.resolve(bodyweightKg).label
+end
+
+-- Position of a class key in WeightClassConfig.Classes (1 = lightest), or nil if it is not a class.
+local function classIndex(classKey: string): number?
+	for index, class in ipairs(WeightClassConfig.Classes) do
+		if class.label == classKey then
+			return index
+		end
+	end
+	return nil
+end
+
+--[[
+	A new build. Its Competition Number is `fromCN` (copied, never shared) or
+	the starting values; its Scale is UNPROVEN and it has no best Total.
+
+	SCALE AND BEST TOTAL ALWAYS START EMPTY. Section 29.11: proof never carries
+	between classes, so a new build has proven nothing.
+]]
+local function newBuild(fromCN: CompetitionNumber?): Build
+	local competitionNumber: any = {}
+	local competitionScale: any = {}
+
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local copied = if fromCN then (fromCN :: any)[lift] else nil
+		competitionNumber[lift] = if isUsableCompetitionNumber(copied)
+			then copied
+			else StartingValuesConfig.Forecasted[lift]
+		competitionScale[lift] = PlayerProfileSchema.UNPROVEN_SCALE
+	end
+
+	return {
+		competitionNumber = competitionNumber,
+		competitionScale = competitionScale,
+		bestTotalKg = PlayerProfileSchema.NO_TOTAL,
+	}
+end
+
+--[[
+	Fills in any MISSING part of an existing build. ProfileStore's Reconcile
+	cannot reach inside the `builds` map (its keys are not in the template), so
+	this is that job for builds.
+
+	ONLY MISSING FIELDS ARE FILLED, never corrupt ones. A NaN Competition
+	Number or Scale is left for the operations to refuse, exactly as before
+	version 6, rather than quietly replaced on every load.
+]]
+local function fillMissing(build: any)
+	if typeof(build.competitionNumber) ~= "table" then
+		build.competitionNumber = {}
+	end
+	if typeof(build.competitionScale) ~= "table" then
+		build.competitionScale = {}
+	end
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		if build.competitionNumber[lift] == nil then
+			build.competitionNumber[lift] = StartingValuesConfig.Forecasted[lift]
+		end
+		if build.competitionScale[lift] == nil then
+			build.competitionScale[lift] = PlayerProfileSchema.UNPROVEN_SCALE
+		end
+	end
+	if build.bestTotalKg == nil then
+		build.bestTotalKg = PlayerProfileSchema.NO_TOTAL
+	end
+end
+
+--[[
+	THE ONE PLACE A BUILD IS CREATED. Returns the build for `classKey`, creating
+	it on first entry to that class, or nil when `classKey` is not a weight class.
+
+	The rules (GAME_DESIGN.md 29.11, user 2026-10-28):
+	  - A class the player has had: its build is returned exactly as saved.
+	  - A class entered for the first time: the Competition Number is COPIED
+	    from the closest LIGHTER build. Moving up keeps your kilograms (you skip
+	    nothing); a class skipped on the way up gets what you had below it.
+	  - No lighter build (unreachable today -- every lifter starts in the
+	    lightest class): the starting values.
+	  - Scale and best Total always start empty: proof never changes class.
+
+	Never deletes or replaces an existing build. Pure: no clock, no Player.
+	The future bodyweight system must call this for every class it crosses, so
+	each crossed class keeps the numbers the lifter had while in it.
+]]
+function PlayerProfileSchema.ensureBuild(data: ProfileData, classKey: string): Build?
+	local index = classIndex(classKey)
+	if index == nil then
+		return nil
+	end
+
+	if typeof(data.builds) ~= "table" then
+		data.builds = {}
+	end
+
+	local existing = data.builds[classKey]
+	if typeof(existing) == "table" then
+		fillMissing(existing)
+		return existing
+	end
+
+	local fromCN: CompetitionNumber? = nil
+	for lighter = index - 1, 1, -1 do
+		local below = data.builds[WeightClassConfig.Classes[lighter].label]
+		if typeof(below) == "table" and typeof(below.competitionNumber) == "table" then
+			fromCN = below.competitionNumber
+			break
+		end
+	end
+
+	local created = newBuild(fromCN)
+	data.builds[classKey] = created
+	return created
+end
+
+--[[
+	Makes sure the build for the player's CURRENT class exists. Run by migrate()
+	on every load, which is how a brand new profile gets its starting build.
+
+	An unusable bodyweight creates nothing: without a class there is no build to
+	make, and guessing one would file the numbers under the wrong class.
+]]
+function PlayerProfileSchema.ensureActiveBuild(data: ProfileData): Build?
+	local bodyweight = (data :: any).bodyweight
+	local classKey = PlayerProfileSchema.classKeyFor(if typeof(bodyweight) == "table" then bodyweight.currentKg else nil)
+	if classKey == nil then
+		return nil
+	end
+	return PlayerProfileSchema.ensureBuild(data, classKey)
+end
+
+--[[
+	Version 5 to 6: weight-class builds.
+
+	THE FLAT COMPETITION NUMBER AND SCALE MOVE, TOGETHER, INTO ONE BUILD:
+
+		competitionNumber {S, B, D}           ->  builds[classKey].competitionNumber
+		competitionScale  {S, B, D}           ->  builds[classKey].competitionScale
+		(new)                                 ->  builds[classKey].bestTotalKg = 0
+
+	classKey is the class of the player's CURRENT bodyweight, the only build
+	they have ever had (no bodyweight system has ever changed anyone's class).
+	Section 33.8: no value is invented and nothing is lost.
+
+	  - Each Competition Number is copied exactly when usable. An unusable one
+	    (NaN, missing, not above 0) gets the starting value -- the same repair
+	    migrations[2] applies -- because a build must hold a weight the
+	    difficulty engine can divide by.
+	  - Each Scale is copied exactly when usable (0 = UNPROVEN stays 0). An
+	    unusable one becomes UNPROVEN: under-crediting is the safe failure.
+	  - bestTotalKg starts at NO_TOTAL. No meet has ever saved a total, so
+	    there is nothing to copy.
+
+	Then both flat fields are REMOVED, so the profile has one answer to "what
+	is this lifter's Competition Number".
+
+	ANY BUILDS ALREADY PRESENT ARE REPLACED BY THE MOVED ONE. A v5 save has no
+	`builds` key at all; Reconcile adds the template's empty table. Starting
+	from an empty map guarantees nothing but the real numbers end up there.
+
+	AN UNUSABLE BODYWEIGHT: the class falls back to that of the starting
+	bodyweight (every player's class today) with a warning, so the numbers are
+	kept rather than dropped.
+]]
+migrations[5] = function(data: ProfileData)
+	local legacyCN = (data :: any).competitionNumber
+	local legacyScale = (data :: any).competitionScale
+
+	-- IDEMPOTENT: nothing flat left and builds already filled means it already ran. Change nothing.
+	if legacyCN == nil and legacyScale == nil and hasMovedToBuilds(data) then
+		return
+	end
+
+	local bodyweight = (data :: any).bodyweight
+	local classKey = PlayerProfileSchema.classKeyFor(if typeof(bodyweight) == "table" then bodyweight.currentKg else nil)
+	if classKey == nil then
+		classKey = WeightClass.resolve(StartingValuesConfig.BodyweightKg).label
+		warn(string.format(
+			"[PlayerProfileSchema] v5 to v6: unusable bodyweight; filing the build under %s",
+			classKey :: string
+		))
+	end
+
+	local competitionNumber: any = {}
+	local competitionScale: any = {}
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local cn = if typeof(legacyCN) == "table" then legacyCN[lift] else nil
+		competitionNumber[lift] = if isUsableCompetitionNumber(cn) then cn else StartingValuesConfig.Forecasted[lift]
+
+		local scale = if typeof(legacyScale) == "table" then legacyScale[lift] else nil
+		competitionScale[lift] = if isUsableProvenWeight(scale) then scale else PlayerProfileSchema.UNPROVEN_SCALE
+	end
+
+	data.builds = {
+		[classKey :: string] = {
+			competitionNumber = competitionNumber,
+			competitionScale = competitionScale,
+			bestTotalKg = PlayerProfileSchema.NO_TOTAL,
+		},
+	}
+
+	(data :: any).competitionNumber = nil;
+	(data :: any).competitionScale = nil
+end
+
+--[[
 	Reads the version from raw saved data.
 
 	Returns 0 when the field is absent, and that matters a great deal. Reconcile
@@ -804,6 +1058,8 @@ end
 function PlayerProfileSchema.migrate(data: ProfileData, fromVersion: number): number
 	-- A brand new profile is created from the template, so it is already current.
 	if fromVersion == 0 and data.version == PlayerProfileSchema.CURRENT_VERSION then
+		-- The template's `builds` is empty on purpose; this creates the starting build.
+		PlayerProfileSchema.ensureActiveBuild(data)
 		return PlayerProfileSchema.CURRENT_VERSION
 	end
 
@@ -843,6 +1099,12 @@ function PlayerProfileSchema.migrate(data: ProfileData, fromVersion: number): nu
 	end
 
 	data.version = version
+
+	-- Only a fully current profile: a stalled migration may still hold the flat fields.
+	if version == PlayerProfileSchema.CURRENT_VERSION then
+		PlayerProfileSchema.ensureActiveBuild(data)
+	end
+
 	return version
 end
 

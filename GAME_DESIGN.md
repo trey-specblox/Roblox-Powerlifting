@@ -1650,9 +1650,13 @@ Consequences, all verified:
 - Weight class is about identity, records, body size, competition and headroom —
   **not progression speed**.
 - Heavier lifts move in larger kilogram increments, which matches real lifting.
-- Class switching is **exactly progression-neutral**: the reference ratio that
+- ~~Class switching is **exactly progression-neutral**: the reference ratio that
   inflates the reward is the same ratio that deflates it under RP Preservation,
-  so the round trip multiplier is exactly 1.0000.
+  so the round trip multiplier is exactly 1.0000.~~ **[SUPERSEDED, user
+  2026-10-28]** Class changes no longer use RP Preservation: returning restores a
+  build exactly and a first-time entry copies the closest lighter build's kg
+  (§29.11, "Weight-class builds"). Switching can cost relative progress but never
+  adds any.
 
 **The Hill input is never normalized.** It remains `PP = CN / ProgressionReference`.
 
@@ -2095,7 +2099,10 @@ multiplayer-only, not because progression requires it.
   lights, the attempt board and the total. It **saves nothing permanent**: no
   Competition Scale, no records, no money. Rewards are switched on in a second step,
   after the weight-class build question (§33.8, §33.11 item 11) is decided, because
-  no meet may raise Scale before class scoping exists.
+  no meet may raise Scale before class scoping exists. **Decided 2026-10-28**
+  (§29.11 "Weight-class builds"): a Mock Meet raises the Competition Scale of the
+  build for its weigh-in class with each good lift, and a finished meet's Total
+  can become that build's best Total. Still no records and no money.
 - **Attempts are chosen one at a time**, like a real meet: the opener at weigh-in,
   then each next attempt right after a lift, in kilograms with ±2.5 kg steps and the
   % of Competition Number shown, with a short timer. The server checks every choice
@@ -2121,12 +2128,66 @@ a heavier-class economic advantage.
 
 - Progression is **build-scoped**. Each weight-class build has its own CN.
 - Saved lighter builds **restore exactly**.
-- First-time downward translations follow the frozen transition architecture
-  (RP Preservation: `CN_new = CN_old x ref_new / ref_old`).
+- ~~First-time downward translations follow the frozen transition architecture
+  (RP Preservation: `CN_new = CN_old x ref_new / ref_old`).~~ **[CHANGED, user
+  2026-10-28]** A first-time entry copies the closest lighter build's kg; see
+  "Weight-class builds" below.
 - Meet entry takes a **weigh-in snapshot** (`weighInKg`, `meetClass`, `meetBuild`)
   frozen until the meet resolves.
 - Bodyweight above 120 kg is **cosmetic**; it confers no additional progression.
 - Muscle determines **bodyweight and physical size only** — never lift strength.
+
+#### Weight-class builds — DECIDED (user, 2026-10-28, picked from options)
+
+A **build** is the lifter's saved progress in **one weight class**: that class's
+Competition Number, Competition Scale and best meet Total.
+
+- **One build per weight class** (confirms the frozen rule above). Keyed by the
+  class label ("59 kg", "66 kg", … "120+ kg"), the same keys
+  `ProgressionReferenceConfig` uses.
+- **The active build is the class of the current bodyweight.** Training, the meets
+  and the stats screen use it. A meet uses the class **frozen at its weigh-in**
+  (§32.7), never the bodyweight at the end.
+- **Competition Number when the class changes** (user, 2026-10-28, in their words:
+  "59kg lifter totals 500kg moves up 74kg totals 1000kg, goes back down to 59kg
+  returns to 500kg, moves back up to 74kg, back to 1000kg"):
+  - **Returning to a class you had: restore that build exactly**, wherever you left
+    it.
+  - **Entering a class for the first time: copy the kg of your closest lighter
+    build.** Moving up therefore keeps your kilograms, so you sit further from the
+    heavier class's soft cap and gain faster there, but you skip nothing: a lifter
+    at 99% of the 59 kg World Record does **not** become 99% of the 120 kg one.
+  - **Every class you pass through gets a build.** While bulking 59 → 74, the
+    66 kg build is saved with whatever you had while in 66; cutting back to 66
+    later restores it (user: "whatever stats they were at while being in that
+    66kg threshhold thats where they will start at"). If bodyweight ever jumps past
+    a class in one step, that class copies the closest lighter build, which is the
+    same result.
+  - If no lighter build exists (not reachable today: every lifter starts at 53 kg,
+    the lightest class), the new build starts at the starting values.
+  - **Rejected:** "same kilograms both ways" (bulk to 120 kg for the faster gains,
+    then cut and be far stronger than everyone) and "scale every move with the
+    class math" (lets a near-record light lifter skip the heavy classes'
+    progression).
+  - **Replaces** the earlier rule that first-time **downward** moves use RP
+    Preservation (`CN_new = CN_old x ref_new / ref_old`) and §29.4's note that
+    switching is "exactly progression-neutral". Now moving up costs relative
+    progress and moving down never gains any, so switching can never make a lifter
+    stronger than they earned.
+- **Competition Scale never carries between classes.** A new build starts
+  **UNPROVEN** (`0`); returning to a class restores that build's own Scale. Closes
+  §33.11 item 11.
+- **Best Total per build:** the best Total from **one** meet in that class
+  (`MeetTotal`, the three best lifts of the same meet), `0` = none yet. It is
+  personal: never the GYM RECORD wall (§31.6), never a World Record (§31), and
+  never built from Scales (§33.8).
+- **How many builds:** one per class, **free**, created on first entry and **kept
+  forever**; at most 8. No paid slots.
+- **Account-wide, not per build:** technique stats, bodyweight, the daily training
+  counters, the Competition Budgets and Training Energy.
+- **Idea, not decided (user, 2026-10-28):** a Game Pass that lets a player "train
+  every weightclass at once". Not designed: how it meets the 4.00 EV account-wide
+  daily cap (§34.1) and pay-to-win concerns need a decision first.
 
 ### 29.12 Display precision — four separate concepts
 
@@ -3344,6 +3405,12 @@ subsequently voided for rule violations, and any future tutorial meet. The
 principle to apply is that an eligible attempt is one taken under full competition
 conditions and judged.
 
+**DECIDED for the Mock Meet (user, 2026-10-28):** a **Mock Meet** is eligible, and
+**a good lift counts even if the lifter leaves early** (Leave, dying, quitting):
+each good lift raises that lift's Scale as soon as it is judged, like a real meet
+where completed lifts stay on record. The **best Total** counts only for a
+finished meet. The rest of the list above stays **[TBD]**.
+
 
 ### 33.8 Competition Scale data rules
 
@@ -3416,6 +3483,11 @@ existed, so there is no data from which a Scale could honestly be derived.
 
 #### Class scoping is DEFERRED, and that deferral has a deadline
 
+> **✅ DECIDED (user, 2026-10-28): §29.11 "Weight-class builds".** One build per
+> class; Competition Number and Scale move into `builds[classKey]` together,
+> keyed by the class label, with a best Total beside them. The text below is the
+> reasoning that led there, kept for the record.
+
 **[FROZEN] Competition Scale is stored flat today, mirroring Competition Number**,
 because the Weight-Class Build Slot system does not exist and §33.8 above forbids
 inventing a `builds` map ahead of it. The two fields sit together under one note in
@@ -3438,7 +3510,10 @@ under the wrong key would be a silent, permanent error.
 > weight-class build system must exist by then. This is a hard prerequisite, not a
 > preference.
 
-> **Implemented in schema version 4.** See §33.12 step 3.
+> **Implemented in schema version 4.** See §33.12 step 3. **Class scoping
+> implemented in schema version 6** (2026-10-28): `migrations[5]` moved the flat
+> Competition Number and Scale, unchanged, into `builds[classKey]` for the class of
+> the current bodyweight, and removed the flat fields.
 
 
 ### 33.9 Where Competition Number now comes from
@@ -3563,13 +3638,13 @@ see §34.13.**
    neither does the Daily Set completion bonus. The question of whether completing
    it requires a meet no longer affects CN.
 9. **What "eligible meet" includes** for the purpose of raising Scale (§33.7).
+   **Partly decided** (2026-10-28): the Mock Meet is eligible, and its good lifts
+   count even when the lifter leaves early.
 10. ~~**What a stored Scale records**~~ — **DECIDED** (§33.8): a per-lift weight
     number only, no proof metadata. Implemented in schema v4.
-11. **Scale across weight classes.** CN translates between classes by RP
-    Preservation (§29.11). Translating Scale would mean inventing a lift that never
-    happened; not translating it means a class change resets proven strength.
-    Undecided, and **blocks §33.12 step 7** — see the class-scoping deadline in
-    §33.8.
+11. ~~**Scale across weight classes.**~~ — **DECIDED** (user, 2026-10-28, §29.11
+    "Weight-class builds"): Scale **never** carries between classes. A new build
+    starts unproven; returning to a class restores that build's own Scale.
 12. **Scale display precision and presentation** (§29.12), including whether an
     "unproven" state is shown and whether a cosmetic Proven Total exists at all.
 
@@ -3611,6 +3686,8 @@ Current repository reality, verified:
   `awardTrainingProgression` (checkpoint 5B.5), which takes station seconds and
   derives EV and kilograms itself. Its only caller is the gym training rack of
   5B.6, and there is still no arbitrary-kilogram writer.
+- **Update 2026-10-28: the Mock Meet now raises Competition Scale** (step 7, schema
+  v6). The bullet below describes the state before that.
 - **Competition Scale is STORED and RAISABLE, but unreachable from gameplay**
   (schema version 4, steps 3 and 4). The field, its type, the `UNPROVEN_SCALE`
   sentinel, the v3 to v4 migration, two read accessors and the monotone
@@ -3635,7 +3712,7 @@ none should begin without the decisions it depends on:
 | 5A | **Define** the training CN channel | **DONE** — approved and documented as **section 34**. The §33.9 rates and the §29.6 distribution that blocked this are both resolved |
 | 5B | **Implement** the training CN channel | **DONE** — 5B.1 to 5B.7 done and verified in Studio; 5B.7 (uncapped technique) committed as `5999fa1`. The Game Pass fallback is a later, separate item. Checkpoints in §34.14 |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
-| 7 | Wire meets to raise Scale | a meet system existing; §33.7 eligibility; **and the weight-class build system, per the class-scoping deadline in §33.8** |
+| 7 | Wire meets to raise Scale | **DONE for the Mock Meet (2026-10-28)** — schema v6 `builds[classKey]` (§29.11 "Weight-class builds"); `MockMeetService` raises the weigh-in class's Scale after each good lift (`MeetTotal.bestSuccessful`) and a finished meet's best Total (`raiseBestTotal`). Probes 462/298/205 passed, the v5→v6 fixture passed 30/0 on a disposable key in the real DataStore, and a Mock Meet in Studio saved Scale 25/0/22.5 to the 59 kg build. Official meets still to come |
 | 8 | Resolve the Competition Budget | §29.9 |
 
 > Step 7 must be built on `MeetTotal.bestSuccessful`, which already computes
@@ -3697,11 +3774,14 @@ own proven strength. It is deliberately **not exposed on `PlayerDataService`**, 
 the gateway every gameplay system actually uses has no path to it, and
 `ProfileOperations` lives in `ServerScriptService` and creates no remotes.
 
-**[FROZEN] It must keep zero production callers until class-scoped build storage
-exists.** Flat per-lift storage cannot express "proven in the 83 kg class", so a
-raise written today would credit the player's only build whatever class they
-weighed in at. That is unreachable while nothing calls it, and becomes reachable
-the moment a meet does — which is why step 7 is gated on §33.8.
+~~**[FROZEN] It must keep zero production callers until class-scoped build storage
+exists.**~~ **Met (2026-10-28):** class-scoped builds exist (schema v6), so the
+raise now takes the **weigh-in class** as an argument,
+`raiseCompetitionScale(data, classKey, lift, provenKg)`, writes only that build,
+refuses a class with no build, and has exactly one production caller, the Mock
+Meet (`MockMeetService`, through `PlayerDataService.update`). It is still **not**
+exposed on `PlayerDataService`. `raiseBestTotal(data, classKey, totalKg)` follows
+the same contract.
 
 
 ## 34. Training, AFK Gym Stations and Technique Progression — APPROVED STEP 5 DESIGN

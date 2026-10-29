@@ -37,6 +37,8 @@ export type StatsSnapshot = {
 	competitionNumber: { [string]: number },
 	-- Kilograms per lift: the heaviest lift proven in a meet; 0 = unproven.
 	competitionScale: { [string]: number },
+	-- The best Total from one finished meet in this class; 0 = none yet.
+	bestTotalKg: number,
 	-- Every trainable technique stat, in lift order.
 	technique: { TechniqueView },
 }

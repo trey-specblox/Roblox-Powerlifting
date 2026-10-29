@@ -118,7 +118,35 @@ local function deepEqual(a: any, b: any): boolean
 end
 
 local function newProfile(): PlayerProfileSchema.ProfileData
-	return deepCopy(PlayerProfileSchema.template)
+	local data = deepCopy(PlayerProfileSchema.template)
+	-- The template's `builds` is empty; every real load creates the starting build (schema v6).
+	PlayerProfileSchema.ensureActiveBuild(data)
+	return data
+end
+
+--[[
+	SCHEMA VERSION 6: Competition Number and Scale live in the build of the
+	current weight class (GAME_DESIGN.md 29.11). These read the active build so
+	the checks below stay about the numbers, not the storage path. A missing
+	build reads as an empty table, so a check FAILS rather than the probe
+	erroring.
+]]
+local function classOf(data: any): string
+	return PlayerProfileSchema.classKeyFor(data.bodyweight and data.bodyweight.currentKg) or "?"
+end
+
+local function buildOf(data: any): any
+	local builds = data.builds
+	local build = if typeof(builds) == "table" then builds[classOf(data)] else nil
+	return if typeof(build) == "table" then build else {}
+end
+
+local function cnOf(data: any): any
+	return buildOf(data).competitionNumber or {}
+end
+
+local function scaleOf(data: any): any
+	return buildOf(data).competitionScale or {}
 end
 
 --[[
@@ -161,7 +189,7 @@ local function newLedger(data: PlayerProfileSchema.ProfileData?): Ledger
 	local expectedGain = {}
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		startCN[lift] = (profile.competitionNumber :: any)[lift]
+		startCN[lift] = (cnOf(profile) :: any)[lift]
 		expectedGain[lift] = 0
 	end
 
@@ -174,7 +202,7 @@ local function newLedger(data: PlayerProfileSchema.ProfileData?): Ledger
 end
 
 local function train(ledger: Ledger, lift: string, nowUnix: number, elapsedSeconds: number): ProfileOperations.TrainingResult
-	local before = (ledger.data.competitionNumber :: any)[lift]
+	local before = (cnOf(ledger.data) :: any)[lift]
 	local result = ProfileOperations.applyTrainingProgression(ledger.data, lift, nowUnix, elapsedSeconds)
 
 	if result.earnedEV > 0 then
@@ -201,7 +229,7 @@ local function checkInvariants(label: string, ledger: Ledger, nowUnix: number)
 	)
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		local gained = (data.competitionNumber :: any)[lift] - ledger.startCN[lift]
+		local gained = (cnOf(data) :: any)[lift] - ledger.startCN[lift]
 
 		check(
 			string.format("INVARIANT %s: %s CN gained equals the formula's total", label, lift),
@@ -218,7 +246,7 @@ end
 local function untouchable(data: PlayerProfileSchema.ProfileData): any
 	return deepCopy({
 		version = data.version,
-		competitionScale = data.competitionScale,
+		competitionScale = scaleOf(data),
 		technique = data.technique,
 		bodyweight = data.bodyweight,
 		competitionBudget = data.competitionBudget,
@@ -253,7 +281,7 @@ do
 		local ledger = newLedger()
 		local data = ledger.data
 		local now = DAY_START + 10 * HOUR
-		local cnBefore = (data.competitionNumber :: any)[lift]
+		local cnBefore = (cnOf(data) :: any)[lift]
 
 		local result = train(ledger, lift, now, HOUR)
 
@@ -266,7 +294,7 @@ do
 		check(string.format("%s: CN delta is positive and fractional", lift),
 			result.deltaCN > 0 and result.deltaCN ~= math.floor(result.deltaCN))
 		check(string.format("%s: the stored CN moved by exactly that delta", lift),
-			(data.competitionNumber :: any)[lift] == cnBefore + result.deltaCN)
+			(cnOf(data) :: any)[lift] == cnBefore + result.deltaCN)
 		check(string.format("%s: the result reports the starting class", lift), result.weightClassLabel == STARTING_CLASS)
 		check(string.format("%s: the allowance is debited 1.00", lift), near(data.cnAllowance.spentToday, 1.0, 1e-12))
 		check(string.format("%s: this lift banked one hour", lift),
@@ -278,7 +306,7 @@ do
 		for _, other in ipairs(ProgressionConfig.Lifts) do
 			if other ~= lift then
 				check(string.format("%s: %s CN untouched", lift, other),
-					(data.competitionNumber :: any)[other] == ledger.startCN[other])
+					(cnOf(data) :: any)[other] == ledger.startCN[other])
 				check(string.format("%s: %s hours untouched", lift, other),
 					(data.trainingTimeToday :: any)[other] == 0)
 			end
@@ -317,13 +345,13 @@ do
 	check("the account has spent exactly 4.00", near(data.cnAllowance.spentToday, 4.0, 1e-12))
 
 	now += HOUR
-	local deadliftCN = data.competitionNumber.Deadlift
+	local deadliftCN = cnOf(data).Deadlift
 	local deadlift = train(ledger, "Deadlift", now, HOUR)
 
 	check("Deadlift, never trained today, earns NOTHING", deadlift.earnedEV == 0)
 	check("its outcome is NoProgress", deadlift.outcome == "NoProgress", deadlift.outcome)
 	check("it reports the cap", deadlift.capReached)
-	check("its CN is exactly unchanged", data.competitionNumber.Deadlift == deadliftCN)
+	check("its CN is exactly unchanged", cnOf(data).Deadlift == deadliftCN)
 	check("and it reports zero delta", deadlift.deltaCN == 0)
 	check("Deadlift banks no hours, so its full-rate window is intact", data.trainingTimeToday.Deadlift == 0)
 	check("every second went uncredited", near(deadlift.uncreditedSeconds, HOUR, 1e-6))
@@ -486,12 +514,12 @@ do
 
 	-- The player leaves, and returns three days later. Their stamp is three days old.
 	local later = now + 3 * DAY
-	local cnBefore = data.competitionNumber.Squat
+	local cnBefore = cnOf(data).Squat
 
 	local zero = train(ledger, "Squat", later, 0)
 
 	check("a zero-length update after three days earns NOTHING", zero.earnedEV == 0 and zero.outcome == "NoProgress")
-	check("CN is exactly unchanged", data.competitionNumber.Squat == cnBefore)
+	check("CN is exactly unchanged", cnOf(data).Squat == cnBefore)
 	check("the allowance rolled over to the new day", data.cnAllowance.dayKey == DayKey.fromUnix(later)
 		and data.cnAllowance.spentToday == 0)
 	check("Squat's hours reset with it", data.trainingTimeToday.Squat == 0)
@@ -522,16 +550,16 @@ do
 	local ledger = newLedger()
 	local data = ledger.data
 	local now = DAY_START + 10 * HOUR
-	local cnBefore = data.competitionNumber.Bench
+	local cnBefore = cnOf(data).Bench
 
 	local zero = train(ledger, "Bench", now, 0)
 	check("zero elapsed seconds: NoProgress", zero.outcome == "NoProgress")
-	check("zero elapsed seconds: no CN", data.competitionNumber.Bench == cnBefore and zero.deltaCN == 0)
+	check("zero elapsed seconds: no CN", cnOf(data).Bench == cnBefore and zero.deltaCN == 0)
 	check("zero elapsed seconds: no hill reported, nothing was paid", zero.hillMultiplier == nil)
 
 	local negative = train(ledger, "Bench", now, -300)
 	check("negative elapsed seconds earn nothing", negative.outcome == "NoProgress" and negative.earnedEV == 0)
-	check("negative elapsed seconds: no CN", data.competitionNumber.Bench == cnBefore)
+	check("negative elapsed seconds: no CN", cnOf(data).Bench == cnBefore)
 	check("negative elapsed seconds bank no hours", data.trainingTimeToday.Bench == 0)
 
 	checkInvariants("after zero-EV updates", ledger, now)
@@ -588,6 +616,8 @@ do
 	local function expectClassRejected(label: string, bodyweightKg: any, reason: string, prepare: ((any) -> ())?)
 		local data = newProfile()
 		data.bodyweight.currentKg = bodyweightKg
+		-- Entering a class creates its build (schema v6); an unusable bodyweight creates none.
+		PlayerProfileSchema.ensureActiveBuild(data)
 
 		if prepare then
 			prepare(data)
@@ -619,6 +649,7 @@ do
 	-- The boundary: 120.0 kg is the capped 120 kg class and trains normally.
 	local data = newProfile()
 	data.bodyweight.currentKg = 120
+	PlayerProfileSchema.ensureActiveBuild(data)
 	local boundary = ProfileOperations.applyTrainingProgression(data, "Deadlift", now, HOUR)
 	check("120.0 kg is the 120 kg class and is Awarded", boundary.outcome == "Awarded"
 		and boundary.weightClassLabel == "120 kg", tostring(boundary.weightClassLabel))
@@ -645,10 +676,10 @@ do
 		check(string.format("%s: profile unchanged", label), deepEqual(data, before))
 	end
 
-	expectCorrupt("NaN Squat CN", "InvalidCompetitionNumber", function(d) d.competitionNumber.Squat = 0 / 0 end)
-	expectCorrupt("zero Squat CN", "InvalidCompetitionNumber", function(d) d.competitionNumber.Squat = 0 end)
-	expectCorrupt("negative Squat CN", "InvalidCompetitionNumber", function(d) d.competitionNumber.Squat = -5 end)
-	expectCorrupt("string Squat CN", "InvalidCompetitionNumber", function(d) d.competitionNumber.Squat = "25" end)
+	expectCorrupt("NaN Squat CN", "InvalidCompetitionNumber", function(d) cnOf(d).Squat = 0 / 0 end)
+	expectCorrupt("zero Squat CN", "InvalidCompetitionNumber", function(d) cnOf(d).Squat = 0 end)
+	expectCorrupt("negative Squat CN", "InvalidCompetitionNumber", function(d) cnOf(d).Squat = -5 end)
+	expectCorrupt("string Squat CN", "InvalidCompetitionNumber", function(d) cnOf(d).Squat = "25" end)
 
 	expectCorrupt("NaN CN spend", "InvalidAccounting", function(d) d.cnAllowance.spentToday = 0 / 0 end)
 	expectCorrupt("negative CN spend", "InvalidAccounting", function(d) d.cnAllowance.spentToday = -1 end)
@@ -665,10 +696,10 @@ do
 
 	-- A corrupt OTHER lift's CN does not block training this one.
 	local data = newProfile() :: any
-	data.competitionNumber.Bench = 0 / 0
+	cnOf(data).Bench = 0 / 0
 	local squat = ProfileOperations.applyTrainingProgression(data, "Squat", now, HOUR)
 	check("a corrupt Bench CN does not block Squat training", squat.outcome == "Awarded")
-	check("and is left exactly as found, not repaired", data.competitionNumber.Bench ~= data.competitionNumber.Bench)
+	check("and is left exactly as found, not repaired", cnOf(data).Bench ~= cnOf(data).Bench)
 end
 
 --------------------------------------------------------------------------------
@@ -738,8 +769,10 @@ do
 	data.technique.SquatControl = 123.5
 	data.technique.PullStrength = 77
 	data.technique.Lockout = 9.25
-	data.competitionScale.Squat = 140
+	-- Into the 83 kg class first: its build is the one trained and checked (schema v6).
 	data.bodyweight.currentKg = 82.4
+	PlayerProfileSchema.ensureActiveBuild(data)
+	scaleOf(data).Squat = 140
 	data.meta.sessionCount = 17
 
 	local ledger = newLedger(data)
@@ -759,7 +792,7 @@ do
 	check("technique, Scale, bodyweight, budget, energy, meta and version are identical",
 		deepEqual(untouchable(data), guarded))
 	check("PullStrength survives at 77", data.technique.PullStrength == 77)
-	check("Competition Scale is still 140, not raised by training", data.competitionScale.Squat == 140)
+	check("Competition Scale is still 140, not raised by training", scaleOf(data).Squat == 140)
 	check("the technique allowance was never spent", data.techniqueAllowance.spentToday == 0)
 	check("an 82.4 kg lifter is scored in the 83 kg class", later.weightClassLabel == "83 kg",
 		tostring(later.weightClassLabel))

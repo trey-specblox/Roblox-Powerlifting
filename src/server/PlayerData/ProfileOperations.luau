@@ -136,20 +136,76 @@ ProfileOperations.isFiniteNumber = isFiniteNumber
 
 --[[
 	=========================================================================
-	COMPETITION NUMBER
+	WEIGHT-CLASS BUILDS  (GAME_DESIGN.md 29.11, schema version 6)
+	=========================================================================
+
+	Competition Number, Competition Scale and the best Total live in one build
+	per weight class. The ACTIVE build -- the one training and the stats screen
+	use -- is the class of the current bodyweight, derived on every read. A
+	meet credits the class frozen at its weigh-in instead, so its writes name
+	the class explicitly.
+]]
+
+--[[
+	The build key of the player's current class, e.g. "59 kg", or nil when the
+	stored bodyweight is unusable.
+]]
+function ProfileOperations.getActiveClassKey(data: ProfileData): string?
+	local bodyweight = (data :: any).bodyweight
+	return PlayerProfileSchema.classKeyFor(if typeof(bodyweight) == "table" then bodyweight.currentKg else nil)
+end
+
+--[[
+	The saved build for one class, or nil when the player has never been in it
+	or its shape is wrong. READ-ONLY: never creates a build (only
+	PlayerProfileSchema.ensureBuild does).
+]]
+function ProfileOperations.getBuild(data: ProfileData, classKey: string): PlayerProfileSchema.Build?
+	local builds = (data :: any).builds
+	if typeof(builds) ~= "table" or typeof(classKey) ~= "string" then
+		return nil
+	end
+	local build = builds[classKey]
+	if typeof(build) ~= "table"
+		or typeof(build.competitionNumber) ~= "table"
+		or typeof(build.competitionScale) ~= "table"
+	then
+		return nil
+	end
+	return build
+end
+
+-- The build of the player's current class, or nil. Every load creates it (migrate).
+function ProfileOperations.getActiveBuild(data: ProfileData): PlayerProfileSchema.Build?
+	local classKey = ProfileOperations.getActiveClassKey(data)
+	if classKey == nil then
+		return nil
+	end
+	return ProfileOperations.getBuild(data, classKey)
+end
+
+--[[
+	=========================================================================
+	COMPETITION NUMBER  (of the ACTIVE build)
 	=========================================================================
 ]]
 
 --[[
-	The player's Competition Number for one lift, in kilograms, or nil if the
-	lift name is not one of the three or the stored value is unusable.
+	The player's Competition Number for one lift in their current class, in
+	kilograms, or nil if the lift name is not one of the three, there is no
+	active build, or the stored value is unusable.
 ]]
 function ProfileOperations.getCompetitionNumber(data: ProfileData, lift: string): number?
 	if not ProgressionConfig.isLift(lift) then
 		return nil
 	end
 
-	local value = (data.competitionNumber :: any)[lift]
+	local build = ProfileOperations.getActiveBuild(data)
+	if build == nil then
+		return nil
+	end
+
+	local value = (build.competitionNumber :: any)[lift]
 
 	if not isFiniteNumber(value) then
 		return nil
@@ -178,12 +234,12 @@ end
 	     Bounded by construction, so there is nothing for a caller to get
 	     wrong. Implemented in checkpoint 5B.5.
 
-	  2. WEIGHT-CLASS / BUILD TRANSLATION. A deliberate authoritative
-	     recalculation under RP Preservation (section 29.11), whose legitimate
-	     deltas are LARGE. This is precisely why no universal kilogram cap
-	     belongs here: a cap sized for rewards would refuse a correct
-	     translation, and one sized for translation would not constrain rewards
-	     at all. Not built yet.
+	  2. ~~WEIGHT-CLASS / BUILD TRANSLATION under RP Preservation.~~ Not needed
+	     any more (user, 2026-10-28, section 29.11): a class change never
+	     recalculates a Competition Number. Each class keeps its own build, and
+	     a first-time build copies the closest lighter one
+	     (PlayerProfileSchema.ensureBuild). Still, no universal kilogram cap
+	     belongs here; the training award owns its bound.
 
 	The training award and the dev harness are its only callers.
 
@@ -224,7 +280,13 @@ function ProfileOperations.applyCompetitionNumberDelta(
 		return false, nil
 	end
 
-	local current = (data.competitionNumber :: any)[lift]
+	-- The ACTIVE build: training is done in the class the lifter is in now.
+	local build = ProfileOperations.getActiveBuild(data)
+	if build == nil then
+		return false, nil
+	end
+
+	local current = (build.competitionNumber :: any)[lift]
 
 	if not isFiniteNumber(current) then
 		return false, nil
@@ -240,7 +302,7 @@ function ProfileOperations.applyCompetitionNumberDelta(
 		return false, current
 	end
 
-	(data.competitionNumber :: any)[lift] = updated
+	(build.competitionNumber :: any)[lift] = updated
 
 	return true, updated
 end
@@ -254,33 +316,43 @@ end
 	eligible meet. Competition Number is what training built; this is what
 	competition confirmed.
 
-	Two readers and one monotone raise live below. The raise is INTERNAL and has
-	NO PRODUCTION CALLERS -- read the boundary note on it before wiring anything
-	to it, because the thing it does not do is the important part.
+	Two readers and two monotone raises (Scale and best Total) live below. The
+	raises are INTERNAL, and their only production caller is the meet
+	(MockMeetService) -- read the boundary note before wiring anything else to
+	them, because the thing they do not do is the important part.
 ]]
 
---[[
-	The player's Competition Scale for one lift, in kilograms.
-
-	Returns `PlayerProfileSchema.UNPROVEN_SCALE` (0) when the lift has never
-	been proven, which is every player today. Returns nil only when the lift
-	name is not one of the three or the stored value is unusable.
-
-	A CALLER MUST NOT TREAT 0 AS A WEIGHT. It is the absence of an achievement,
-	not a 0 kg lift. Use isCompetitionScaleProven to tell them apart.
-]]
-function ProfileOperations.getCompetitionScale(data: ProfileData, lift: string): number?
-	if not ProgressionConfig.isLift(lift) then
+-- One lift's stored Scale in a build, or nil when the lift or the value is unusable.
+local function buildScale(build: PlayerProfileSchema.Build?, lift: string): number?
+	if build == nil or not ProgressionConfig.isLift(lift) then
 		return nil
 	end
 
-	local value = (data.competitionScale :: any)[lift]
+	local value = (build.competitionScale :: any)[lift]
 
 	if not isFiniteNumber(value) or value < 0 then
 		return nil
 	end
 
 	return value
+end
+
+--[[
+	The player's Competition Scale for one lift, in kilograms, in their CURRENT
+	class -- or in `classKey`'s build when one is given.
+
+	Returns `PlayerProfileSchema.UNPROVEN_SCALE` (0) when the lift has never
+	been proven in that class. Returns nil when the lift name is not one of the
+	three, the build does not exist, or the stored value is unusable.
+
+	A CALLER MUST NOT TREAT 0 AS A WEIGHT. It is the absence of an achievement,
+	not a 0 kg lift. Use isCompetitionScaleProven to tell them apart.
+]]
+function ProfileOperations.getCompetitionScale(data: ProfileData, lift: string, classKey: string?): number?
+	local build = if classKey ~= nil
+		then ProfileOperations.getBuild(data, classKey)
+		else ProfileOperations.getActiveBuild(data)
+	return buildScale(build, lift)
 end
 
 --[[
@@ -327,8 +399,9 @@ export type ScaleRaiseOutcome = "Raised" | "Unchanged" | "Rejected"
 	is a low-level data transformation, NOT proof of an achievement.
 
 	Everything it does not check is therefore the CALLER's responsibility, and
-	only one kind of caller may ever exist: a future server-authoritative
-	meet-result handler that has already established all of the following.
+	only one kind of caller may ever exist: a server-authoritative meet-result
+	handler (today: MockMeetService) that has already established all of the
+	following.
 
 	  1. The attempt was actually taken in a meet this server was running.
 	  2. The attempt was judged a GOOD LIFT. A failed attempt may never raise
@@ -337,29 +410,22 @@ export type ScaleRaiseOutcome = "Raised" | "Unchanged" | "Rejected"
 	     heaviest, so a failure cannot reach this function through it.
 	  3. The meet was ELIGIBLE under section 33.7. Solo and Official both
 	     qualify; what else does is still [TBD].
-	  4. THE WEIGHT CLASS MATCHES THE BUILD BEING CREDITED. See below.
+	  4. `classKey` IS THE CLASS FROZEN AT THE MEET'S WEIGH-IN (section 32.7),
+	     never the bodyweight at the end of the meet. A Scale proven in one
+	     class is NOT proof in another (section 29.11), and naming the class
+	     here is what keeps it in its own build.
 
-	NO CLIENT, REMOTE, DEV TRIGGER OR EXISTING GAMEPLAY SYSTEM MAY REACH THIS.
+	NO CLIENT, REMOTE, DEV TRIGGER OR NON-MEET GAMEPLAY SYSTEM MAY REACH THIS.
 	A client-supplied weight arriving here would let a player write their own
 	proven strength, which is the single worst thing that could happen to this
 	field. It is not exposed on PlayerDataService, so the gateway every gameplay
-	system actually uses has no path to it.
+	system actually uses has no path to it; the meet requires this module
+	itself and writes through PlayerDataService.update, which refuses an
+	inactive session.
 
-	=========================================================================
-	WHY IT HAS NO PRODUCTION CALLER YET, AND MUST NOT GET ONE
-	=========================================================================
-
-	Competition Scale is stored FLAT, one value per lift, because the
-	Weight-Class Build Slot system does not exist (section 33.8). A flat store
-	cannot express "proven in the 83 kg class", so a raise written today would
-	credit the player's only build whatever class they weighed in at -- and a
-	Scale proven in one class is NOT proof in another.
-
-	That is unreachable right now because nothing calls this. It becomes
-	reachable the moment a meet can. So section 33.12 step 7 is blocked on
-	class-scoped build storage existing first, and this function must stay
-	caller-free until then. Tested: PlayerDataProbe asserts no gameplay module
-	can reach it.
+	THE BUILD MUST ALREADY EXIST. A raise never creates a build: the weigh-in
+	class is the class the lifter was in, whose build every load creates, so a
+	missing one is a bug and is "Rejected".
 
 	=========================================================================
 
@@ -374,10 +440,16 @@ export type ScaleRaiseOutcome = "Raised" | "Unchanged" | "Rejected"
 ]]
 function ProfileOperations.raiseCompetitionScale(
 	data: ProfileData,
+	classKey: string,
 	lift: string,
 	provenKg: number
 ): (ScaleRaiseOutcome, number?)
 	if not ProgressionConfig.isLift(lift) then
+		return "Rejected", nil
+	end
+
+	local build = ProfileOperations.getBuild(data, classKey)
+	if build == nil then
 		return "Rejected", nil
 	end
 
@@ -398,17 +470,15 @@ function ProfileOperations.raiseCompetitionScale(
 		return "Rejected", nil
 	end
 
-	local current = ProfileOperations.getCompetitionScale(data, lift)
+	local current = buildScale(build, lift)
 
 	--[[
 		A CORRUPT STORED SCALE IS REFUSED, NOT REPAIRED.
 
 		If the stored value is unusable we cannot know whether it was higher
 		than provenKg, so writing would be guessing at a proven achievement.
-		Repair is the migration's job, and it already does exactly this on every
-		load: PlayerProfileSchema.migrations[3] replaces a malformed Scale with
-		UNPROVEN. Doing it here as well would hide the corruption instead of
-		letting a reload clean it up.
+		Repair is the migrations' job (migrations[3], and migrations[5] when the
+		Scale moved into a build), not this write's.
 	]]
 	if current == nil then
 		return "Rejected", nil
@@ -424,9 +494,51 @@ function ProfileOperations.raiseCompetitionScale(
 		return "Unchanged", current
 	end
 
-	(data.competitionScale :: any)[lift] = provenKg
+	(build.competitionScale :: any)[lift] = provenKg
 
 	return "Raised", provenKg
+end
+
+--[[
+	THE MONOTONE BEST-TOTAL RAISE (GAME_DESIGN.md 29.11, user 2026-10-28).
+
+		New best = max(Old best, totalKg)
+
+	Same contract and the same security boundary as raiseCompetitionScale
+	above: pure, never creates a build, and its only caller is a meet-result
+	handler that has established the meet happened, was FINISHED, and that
+	`totalKg` is MeetTotal's total of that one meet (three best lifts of the
+	same meet -- never a sum of Scales, section 33.8). `classKey` is the
+	weigh-in class.
+
+	Personal only: it is never a record and never feeds the gym records wall.
+]]
+function ProfileOperations.raiseBestTotal(
+	data: ProfileData,
+	classKey: string,
+	totalKg: number
+): (ScaleRaiseOutcome, number?)
+	local build = ProfileOperations.getBuild(data, classKey)
+	if build == nil then
+		return "Rejected", nil
+	end
+
+	if not isFiniteNumber(totalKg) or totalKg <= 0 then
+		return "Rejected", nil
+	end
+
+	local current = build.bestTotalKg
+	if not isFiniteNumber(current) or current < 0 then
+		return "Rejected", nil
+	end
+
+	if totalKg <= current then
+		return "Unchanged", current
+	end
+
+	build.bestTotalKg = totalKg
+
+	return "Raised", totalKg
 end
 
 --[[

@@ -100,7 +100,35 @@ end
 	A brand-new profile, exactly as ProfileStore would hand one over.
 ]]
 local function newProfile(): PlayerProfileSchema.ProfileData
-	return deepCopy(PlayerProfileSchema.template)
+	local data = deepCopy(PlayerProfileSchema.template)
+	-- The template's `builds` is empty; every real load creates the starting build (schema v6).
+	PlayerProfileSchema.ensureActiveBuild(data)
+	return data
+end
+
+--[[
+	SCHEMA VERSION 6: Competition Number and Scale live in the build of the
+	current weight class (GAME_DESIGN.md 29.11). These read the active build so
+	the checks below stay about the numbers, not the storage path. A missing
+	build reads as an empty table, so a check FAILS rather than the probe
+	erroring.
+]]
+local function classOf(data: any): string
+	return PlayerProfileSchema.classKeyFor(data.bodyweight and data.bodyweight.currentKg) or "?"
+end
+
+local function buildOf(data: any): any
+	local builds = data.builds
+	local build = if typeof(builds) == "table" then builds[classOf(data)] else nil
+	return if typeof(build) == "table" then build else {}
+end
+
+local function cnOf(data: any): any
+	return buildOf(data).competitionNumber or {}
+end
+
+local function scaleOf(data: any): any
+	return buildOf(data).competitionScale or {}
 end
 
 --[[
@@ -271,9 +299,9 @@ do
 	check("version is current", data.version == PlayerProfileSchema.CURRENT_VERSION)
 	check(
 		"S/B/D all start at 25 kg",
-		data.competitionNumber.Squat == 25
-			and data.competitionNumber.Bench == 25
-			and data.competitionNumber.Deadlift == 25
+		cnOf(data).Squat == 25
+			and cnOf(data).Bench == 25
+			and cnOf(data).Deadlift == 25
 	)
 	check("no legacy forecasted field in the template", (data :: any).forecasted == nil)
 	check("bodyweight starts at 53 kg, maintaining", data.bodyweight.currentKg == 53 and data.bodyweight.targetKg == 53)
@@ -306,12 +334,12 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 5", finalVersion == 5 and data.version == 5)
-	check("Squat preserved at 182.5", near(data.competitionNumber.Squat, 182.5), tostring(data.competitionNumber.Squat))
-	check("Bench preserved at 117.5", near(data.competitionNumber.Bench, 117.5), tostring(data.competitionNumber.Bench))
-	check("Deadlift preserved at 215.0", near(data.competitionNumber.Deadlift, 215.0), tostring(data.competitionNumber.Deadlift))
+	check("migrated to version 6", finalVersion == 6 and data.version == 6)
+	check("Squat preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
+	check("Bench preserved at 117.5", near(cnOf(data).Bench, 117.5), tostring(cnOf(data).Bench))
+	check("Deadlift preserved at 215.0", near(cnOf(data).Deadlift, 215.0), tostring(cnOf(data).Deadlift))
 	check("legacy forecasted field removed", (data :: any).forecasted == nil)
-	check("NOT reset to the 25 kg default", data.competitionNumber.Squat ~= 25)
+	check("NOT reset to the 25 kg default", cnOf(data).Squat ~= 25)
 end
 
 --------------------------------------------------------------------------------
@@ -329,10 +357,10 @@ do
 	PlayerProfileSchema.migrate(data, 2)
 	PlayerProfileSchema.migrate(data, 3)
 
-	check("Squat still 300 after three passes", near(data.competitionNumber.Squat, 300.0), tostring(data.competitionNumber.Squat))
-	check("Bench still 200", near(data.competitionNumber.Bench, 200.0))
-	check("Deadlift still 350", near(data.competitionNumber.Deadlift, 350.0))
-	check("version still 5", data.version == 5)
+	check("Squat still 300 after three passes", near(cnOf(data).Squat, 300.0), tostring(cnOf(data).Squat))
+	check("Bench still 200", near(cnOf(data).Bench, 200.0))
+	check("Deadlift still 350", near(cnOf(data).Deadlift, 350.0))
+	check("version still 6", data.version == 6)
 	check(
 		"part-spent budget was not silently refilled",
 		near(data.competitionBudget.Squat.amount, spentBudget),
@@ -352,16 +380,16 @@ do
 	check("both additions applied", ok1 and ok2)
 	check(
 		"Squat is 25 + 1.418 + 1.069 = 27.487",
-		near(data.competitionNumber.Squat, 27.487),
-		tostring(data.competitionNumber.Squat)
+		near(cnOf(data).Squat, 27.487),
+		tostring(cnOf(data).Squat)
 	)
-	check("fractional progression was not rounded away", data.competitionNumber.Squat % 1 ~= 0)
-	check("Bench untouched", data.competitionNumber.Bench == 25)
-	check("Deadlift untouched", data.competitionNumber.Deadlift == 25)
+	check("fractional progression was not rounded away", cnOf(data).Squat % 1 ~= 0)
+	check("Bench untouched", cnOf(data).Bench == 25)
+	check("Deadlift untouched", cnOf(data).Deadlift == 25)
 
 	local okNeg = ProfileOperations.applyCompetitionNumberDelta(data, "Bench", -5)
 	check("a negative delta is allowed (weight-class translation will need it)", okNeg)
-	check("Bench is now 20", near(data.competitionNumber.Bench, 20.0))
+	check("Bench is now 20", near(cnOf(data).Bench, 20.0))
 end
 
 --------------------------------------------------------------------------------
@@ -383,15 +411,15 @@ do
 	]]
 	local function rejects(label: string, lift: string, delta: number)
 		local data = newProfile()
-		local before = data.competitionNumber.Squat
+		local before = cnOf(data).Squat
 
 		local applied = ProfileOperations.applyCompetitionNumberDelta(data, lift, delta)
 
 		check(label .. " is rejected", not applied)
 		check(
 			label .. " leaves Squat untouched",
-			data.competitionNumber.Squat == before,
-			string.format("%s, expected %s", tostring(data.competitionNumber.Squat), tostring(before))
+			cnOf(data).Squat == before,
+			string.format("%s, expected %s", tostring(cnOf(data).Squat), tostring(before))
 		)
 	end
 
@@ -415,21 +443,21 @@ do
 		ProfileOperations.applyCompetitionNumberDelta(data, "Squat", 0 / 0)
 		check(
 			"Squat is still a usable number after a NaN attempt",
-			data.competitionNumber.Squat == data.competitionNumber.Squat
-				and data.competitionNumber.Squat == 25
+			cnOf(data).Squat == cnOf(data).Squat
+				and cnOf(data).Squat == 25
 		)
 	end
 
 	-- A corrupt stored value is refused rather than written over.
 	do
 		local data = newProfile()
-		data.competitionNumber.Squat = 0 / 0
+		cnOf(data).Squat = 0 / 0
 
 		local applied = ProfileOperations.applyCompetitionNumberDelta(data, "Squat", 1.4)
 		check("a corrupt stored Competition Number is refused", not applied)
 		check(
 			"and is left for the migration to repair, not patched here",
-			data.competitionNumber.Squat ~= data.competitionNumber.Squat
+			cnOf(data).Squat ~= cnOf(data).Squat
 		)
 	end
 
@@ -488,8 +516,8 @@ do
 			and data.competitionBudget.Deadlift ~= nil
 	)
 	check(
-		"pools sit outside the future build map, at the profile root",
-		(data :: any).builds == nil and data.competitionBudget ~= nil
+		"pools sit outside the build map, at the profile root",
+		buildOf(data).competitionBudget == nil and data.competitionBudget ~= nil
 	)
 
 	-- Spending through the operation reaches the same single pool each time.
@@ -759,7 +787,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("bonus. a version-1 save reaches version 5 in one pass")
+print("bonus. a version-1 save reaches version 6 in one pass")
 do
 	--[[
 		The two-step path. A v1 save predates both PullStrength and the rename,
@@ -780,10 +808,10 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 5", finalVersion == 5 and data.version == 5)
-	check("Squat 140 preserved across two migrations", near(data.competitionNumber.Squat, 140.0), tostring(data.competitionNumber.Squat))
-	check("Bench 95 preserved", near(data.competitionNumber.Bench, 95.0))
-	check("Deadlift 170 preserved", near(data.competitionNumber.Deadlift, 170.0))
+	check("reached version 6", finalVersion == 6 and data.version == 6)
+	check("Squat 140 preserved across two migrations", near(cnOf(data).Squat, 140.0), tostring(cnOf(data).Squat))
+	check("Bench 95 preserved", near(cnOf(data).Bench, 95.0))
+	check("Deadlift 170 preserved", near(cnOf(data).Deadlift, 170.0))
 	check("PullStrength added at 0 by the v1 step", data.technique.PullStrength == 0)
 	check("pre-existing technique untouched", data.technique.PressPower == 600)
 	check("legacy forecasted removed", data.forecasted == nil)
@@ -796,10 +824,10 @@ do
 	local data = reconciledV2Save(200.0, 0 / 0, 240.0) :: any
 	PlayerProfileSchema.migrate(data, 2)
 
-	check("the good Squat survived", near(data.competitionNumber.Squat, 200.0), tostring(data.competitionNumber.Squat))
-	check("the good Deadlift survived", near(data.competitionNumber.Deadlift, 240.0))
-	check("the NaN Bench fell back to the 25 kg default", data.competitionNumber.Bench == 25, tostring(data.competitionNumber.Bench))
-	check("no NaN reached the profile", data.competitionNumber.Bench == data.competitionNumber.Bench)
+	check("the good Squat survived", near(cnOf(data).Squat, 200.0), tostring(cnOf(data).Squat))
+	check("the good Deadlift survived", near(cnOf(data).Deadlift, 240.0))
+	check("the NaN Bench fell back to the 25 kg default", cnOf(data).Bench == 25, tostring(cnOf(data).Bench))
+	check("no NaN reached the profile", cnOf(data).Bench == cnOf(data).Bench)
 end
 
 
@@ -1242,10 +1270,10 @@ print("24. a new profile has proven nothing")
 do
 	local data = newProfile()
 
-	check("competitionScale exists on a new profile", typeof(data.competitionScale) == "table")
+	check("competitionScale exists on a new profile", typeof(scaleOf(data)) == "table")
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		local stored = (data.competitionScale :: any)[lift]
+		local stored = (scaleOf(data) :: any)[lift]
 
 		check(
 			string.format("%s Scale is the UNPROVEN sentinel", lift),
@@ -1265,9 +1293,9 @@ do
 	check("the UNPROVEN sentinel is 0", PlayerProfileSchema.UNPROVEN_SCALE == 0)
 	check(
 		"Scale is NOT seeded from the 25 kg starting Competition Number",
-		data.competitionScale.Squat ~= data.competitionNumber.Squat
+		scaleOf(data).Squat ~= cnOf(data).Squat
 	)
-	check("Competition Number is still 25 kg", near(data.competitionNumber.Squat, 25.0))
+	check("Competition Number is still 25 kg", near(cnOf(data).Squat, 25.0))
 	check(
 		"getCompetitionScale returns 0, not nil, for an unproven lift",
 		ProfileOperations.getCompetitionScale(data, "Squat") == 0
@@ -1285,23 +1313,23 @@ do
 	local data = reconciledV3Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 3)
 
-	check("migrated to version 5", finalVersion == 5 and data.version == 5)
+	check("migrated to version 6", finalVersion == 6 and data.version == 6)
 
 	-- The rule that this whole checkpoint exists to get right.
-	check("Squat Scale is UNPROVEN after migration", data.competitionScale.Squat == 0, tostring(data.competitionScale.Squat))
-	check("Bench Scale is UNPROVEN after migration", data.competitionScale.Bench == 0)
-	check("Deadlift Scale is UNPROVEN after migration", data.competitionScale.Deadlift == 0)
-	check("Squat Scale was NOT set to the trained 182.5", data.competitionScale.Squat ~= 182.5)
-	check("Bench Scale was NOT set to the trained 117.5", data.competitionScale.Bench ~= 117.5)
-	check("Deadlift Scale was NOT set to the trained 215.0", data.competitionScale.Deadlift ~= 215.0)
+	check("Squat Scale is UNPROVEN after migration", scaleOf(data).Squat == 0, tostring(scaleOf(data).Squat))
+	check("Bench Scale is UNPROVEN after migration", scaleOf(data).Bench == 0)
+	check("Deadlift Scale is UNPROVEN after migration", scaleOf(data).Deadlift == 0)
+	check("Squat Scale was NOT set to the trained 182.5", scaleOf(data).Squat ~= 182.5)
+	check("Bench Scale was NOT set to the trained 117.5", scaleOf(data).Bench ~= 117.5)
+	check("Deadlift Scale was NOT set to the trained 215.0", scaleOf(data).Deadlift ~= 215.0)
 	check("no lift reads as proven", not ProfileOperations.isCompetitionScaleProven(data, "Squat")
 		and not ProfileOperations.isCompetitionScaleProven(data, "Bench")
 		and not ProfileOperations.isCompetitionScaleProven(data, "Deadlift"))
 
 	-- EVERYTHING ELSE THE PLAYER OWNED SURVIVES.
-	check("trained Squat CN preserved at 182.5", near(data.competitionNumber.Squat, 182.5), tostring(data.competitionNumber.Squat))
-	check("trained Bench CN preserved at 117.5", near(data.competitionNumber.Bench, 117.5))
-	check("trained Deadlift CN preserved at 215.0", near(data.competitionNumber.Deadlift, 215.0))
+	check("trained Squat CN preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
+	check("trained Bench CN preserved at 117.5", near(cnOf(data).Bench, 117.5))
+	check("trained Deadlift CN preserved at 215.0", near(cnOf(data).Deadlift, 215.0))
 	check("part-spent Squat budget preserved at 3.21", near(data.competitionBudget.Squat.amount, 3.21), tostring(data.competitionBudget.Squat.amount))
 	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
 	check("part-spent Training Energy preserved at 45", near(data.trainingEnergy.amount, 45))
@@ -1324,9 +1352,9 @@ do
 	local fresh = newProfile()
 	local reloadedFresh = saveAndReload(fresh)
 
-	check("unproven Squat is still 0 after a reload", reloadedFresh.competitionScale.Squat == 0)
-	check("unproven Bench is still 0", reloadedFresh.competitionScale.Bench == 0)
-	check("unproven Deadlift is still 0", reloadedFresh.competitionScale.Deadlift == 0)
+	check("unproven Squat is still 0 after a reload", scaleOf(reloadedFresh).Squat == 0)
+	check("unproven Bench is still 0", scaleOf(reloadedFresh).Bench == 0)
+	check("unproven Deadlift is still 0", scaleOf(reloadedFresh).Deadlift == 0)
 	check(
 		"still reads as not proven after a reload",
 		ProfileOperations.isCompetitionScaleProven(reloadedFresh, "Squat") == false
@@ -1343,18 +1371,18 @@ do
 		cover.
 	]]
 	local proven = newProfile() :: any
-	proven.competitionScale.Squat = 172.5
-	proven.competitionScale.Bench = 102.5
+	scaleOf(proven).Squat = 172.5
+	scaleOf(proven).Bench = 102.5
 
 	local reloadedProven = saveAndReload(proven)
 
-	check("proven Squat 172.5 survived the reload", near(reloadedProven.competitionScale.Squat, 172.5), tostring(reloadedProven.competitionScale.Squat))
-	check("proven Bench 102.5 survived", near(reloadedProven.competitionScale.Bench, 102.5))
-	check("the unproven Deadlift stayed unproven", reloadedProven.competitionScale.Deadlift == 0)
+	check("proven Squat 172.5 survived the reload", near(scaleOf(reloadedProven).Squat, 172.5), tostring(scaleOf(reloadedProven).Squat))
+	check("proven Bench 102.5 survived", near(scaleOf(reloadedProven).Bench, 102.5))
+	check("the unproven Deadlift stayed unproven", scaleOf(reloadedProven).Deadlift == 0)
 	check("proven Squat reads as proven", ProfileOperations.isCompetitionScaleProven(reloadedProven, "Squat"))
 	check("proven Bench reads as proven", ProfileOperations.isCompetitionScaleProven(reloadedProven, "Bench"))
 	check("unproven Deadlift still reads as not proven", not ProfileOperations.isCompetitionScaleProven(reloadedProven, "Deadlift"))
-	check("a 2.5 kg increment is stored exactly", reloadedProven.competitionScale.Squat == 172.5)
+	check("a 2.5 kg increment is stored exactly", scaleOf(reloadedProven).Squat == 172.5)
 
 	--[[
 		AND A RE-RUN OF THE MIGRATION MUST NOT WIPE IT. The v3 to v4 step
@@ -1366,10 +1394,10 @@ do
 
 	check(
 		"a re-run migration left the proven 172.5 untouched",
-		near(reloadedProven.competitionScale.Squat, 172.5),
-		tostring(reloadedProven.competitionScale.Squat)
+		near(scaleOf(reloadedProven).Squat, 172.5),
+		tostring(scaleOf(reloadedProven).Squat)
 	)
-	check("and left the unproven Deadlift at 0", reloadedProven.competitionScale.Deadlift == 0)
+	check("and left the unproven Deadlift at 0", scaleOf(reloadedProven).Deadlift == 0)
 end
 
 --------------------------------------------------------------------------------
@@ -1387,25 +1415,25 @@ do
 
 	PlayerProfileSchema.migrate(data, 3)
 
-	check("a NaN Scale repaired to 0", data.competitionScale.Squat == 0, tostring(data.competitionScale.Squat))
-	check("no NaN reached the profile", data.competitionScale.Squat == data.competitionScale.Squat)
-	check("a string Scale repaired to 0", data.competitionScale.Bench == 0, tostring(data.competitionScale.Bench))
-	check("a negative Scale repaired to 0", data.competitionScale.Deadlift == 0, tostring(data.competitionScale.Deadlift))
-	check("the player's trained CN was not touched by the repair", near(data.competitionNumber.Squat, 200.0))
+	check("a NaN Scale repaired to 0", scaleOf(data).Squat == 0, tostring(scaleOf(data).Squat))
+	check("no NaN reached the profile", scaleOf(data).Squat == scaleOf(data).Squat)
+	check("a string Scale repaired to 0", scaleOf(data).Bench == 0, tostring(scaleOf(data).Bench))
+	check("a negative Scale repaired to 0", scaleOf(data).Deadlift == 0, tostring(scaleOf(data).Deadlift))
+	check("the player's trained CN was not touched by the repair", near(cnOf(data).Squat, 200.0))
 
 	-- A missing table is rebuilt rather than erroring the load.
 	local missing = reconciledV3Save(150.0, 100.0, 180.0) :: any
 	missing.competitionScale = nil
 	PlayerProfileSchema.migrate(missing, 3)
 
-	check("an absent competitionScale table was rebuilt", typeof(missing.competitionScale) == "table")
-	check("and every lift is UNPROVEN", missing.competitionScale.Squat == 0
-		and missing.competitionScale.Bench == 0
-		and missing.competitionScale.Deadlift == 0)
+	check("an absent competitionScale table was rebuilt", typeof(scaleOf(missing)) == "table")
+	check("and every lift is UNPROVEN", scaleOf(missing).Squat == 0
+		and scaleOf(missing).Bench == 0
+		and scaleOf(missing).Deadlift == 0)
 
 	-- A corrupt stored value must read as unproven, not as a reward.
 	local corrupt = newProfile() :: any
-	corrupt.competitionScale.Squat = 0 / 0
+	scaleOf(corrupt).Squat = 0 / 0
 	check("a NaN Scale reads as nil, not as a number", ProfileOperations.getCompetitionScale(corrupt, "Squat") == nil)
 	check("a NaN Scale does NOT read as proven", ProfileOperations.isCompetitionScaleProven(corrupt, "Squat") == false)
 end
@@ -1519,31 +1547,31 @@ do
 	local data = newProfile()
 
 	-- UNPROVEN to first proven weight.
-	check("Squat starts unproven", data.competitionScale.Squat == 0)
+	check("Squat starts unproven", scaleOf(data).Squat == 0)
 
-	local outcome, value = ProfileOperations.raiseCompetitionScale(data, "Squat", 150.0)
+	local outcome, value = ProfileOperations.raiseCompetitionScale(data, classOf(data), "Squat", 150.0)
 
 	check("first proof returns Raised", outcome == "Raised", tostring(outcome))
 	check("and returns the new Scale", value == 150.0, tostring(value))
-	check("the stored Scale is 150", near(data.competitionScale.Squat, 150.0), tostring(data.competitionScale.Squat))
+	check("the stored Scale is 150", near(scaleOf(data).Squat, 150.0), tostring(scaleOf(data).Squat))
 	check("and it now reads as proven", ProfileOperations.isCompetitionScaleProven(data, "Squat"))
 
 	-- Raising an existing proven Scale.
-	local outcome2, value2 = ProfileOperations.raiseCompetitionScale(data, "Squat", 172.5)
+	local outcome2, value2 = ProfileOperations.raiseCompetitionScale(data, classOf(data), "Squat", 172.5)
 
 	check("a heavier proof returns Raised", outcome2 == "Raised", tostring(outcome2))
 	check("and returns 172.5", value2 == 172.5, tostring(value2))
-	check("the stored Scale is now 172.5", near(data.competitionScale.Squat, 172.5), tostring(data.competitionScale.Squat))
+	check("the stored Scale is now 172.5", near(scaleOf(data).Squat, 172.5), tostring(scaleOf(data).Squat))
 
 	-- A 2.5 kg increment, the smallest legal meet increase, is exact.
-	local outcome3 = ProfileOperations.raiseCompetitionScale(data, "Squat", 175.0)
+	local outcome3 = ProfileOperations.raiseCompetitionScale(data, classOf(data), "Squat", 175.0)
 	check("a 2.5 kg increase is accepted", outcome3 == "Raised")
-	check("and stored exactly", data.competitionScale.Squat == 175.0, tostring(data.competitionScale.Squat))
+	check("and stored exactly", scaleOf(data).Squat == 175.0, tostring(scaleOf(data).Squat))
 
 	-- A fractional weight is not rounded away.
 	local fresh = newProfile()
-	ProfileOperations.raiseCompetitionScale(fresh, "Bench", 102.3)
-	check("a fractional proof is stored at full precision", near(fresh.competitionScale.Bench, 102.3), tostring(fresh.competitionScale.Bench))
+	ProfileOperations.raiseCompetitionScale(fresh, classOf(fresh), "Bench", 102.3)
+	check("a fractional proof is stored at full precision", near(scaleOf(fresh).Bench, 102.3), tostring(scaleOf(fresh).Bench))
 end
 
 --------------------------------------------------------------------------------
@@ -1551,56 +1579,56 @@ print("")
 print("30. SCALE NEVER DECREASES")
 do
 	local data = newProfile()
-	ProfileOperations.raiseCompetitionScale(data, "Deadlift", 220.0)
+	ProfileOperations.raiseCompetitionScale(data, classOf(data), "Deadlift", 220.0)
 
 	-- A LOWER successful weight. The commonest case: a conservative opener.
-	local lower, lowerValue = ProfileOperations.raiseCompetitionScale(data, "Deadlift", 180.0)
+	local lower, lowerValue = ProfileOperations.raiseCompetitionScale(data, classOf(data), "Deadlift", 180.0)
 
 	check("a lower proof returns Unchanged, not Rejected", lower == "Unchanged", tostring(lower))
 	check("and reports the Scale that still stands", lowerValue == 220.0, tostring(lowerValue))
-	check("the stored Scale did NOT drop", near(data.competitionScale.Deadlift, 220.0), tostring(data.competitionScale.Deadlift))
+	check("the stored Scale did NOT drop", near(scaleOf(data).Deadlift, 220.0), tostring(scaleOf(data).Deadlift))
 
 	-- An EQUAL weight. Repeating a best is legal and changes nothing.
-	local equal, equalValue = ProfileOperations.raiseCompetitionScale(data, "Deadlift", 220.0)
+	local equal, equalValue = ProfileOperations.raiseCompetitionScale(data, classOf(data), "Deadlift", 220.0)
 
 	check("an equal proof returns Unchanged", equal == "Unchanged", tostring(equal))
 	check("and reports 220", equalValue == 220.0, tostring(equalValue))
-	check("the stored Scale is still 220", near(data.competitionScale.Deadlift, 220.0))
+	check("the stored Scale is still 220", near(scaleOf(data).Deadlift, 220.0))
 
 	-- A long run of lighter lifts can never erode it.
 	for _, weight in ipairs({ 100.0, 200.0, 50.0, 219.5, 1.0, 217.5 }) do
-		ProfileOperations.raiseCompetitionScale(data, "Deadlift", weight)
+		ProfileOperations.raiseCompetitionScale(data, classOf(data), "Deadlift", weight)
 	end
 
 	check(
 		"six lighter proofs left it at 220",
-		near(data.competitionScale.Deadlift, 220.0),
-		tostring(data.competitionScale.Deadlift)
+		near(scaleOf(data).Deadlift, 220.0),
+		tostring(scaleOf(data).Deadlift)
 	)
 
 	-- IDEMPOTENCE. Repeated identical calls settle on one value.
 	local repeated = newProfile()
 	for _ = 1, 10 do
-		ProfileOperations.raiseCompetitionScale(repeated, "Squat", 165.0)
+		ProfileOperations.raiseCompetitionScale(repeated, classOf(repeated), "Squat", 165.0)
 	end
-	check("ten identical calls give 165", near(repeated.competitionScale.Squat, 165.0), tostring(repeated.competitionScale.Squat))
+	check("ten identical calls give 165", near(scaleOf(repeated).Squat, 165.0), tostring(scaleOf(repeated).Squat))
 
 	-- ORDER INDEPENDENCE. The max does not care what order proofs arrive in.
 	local ascending = newProfile()
 	for _, w in ipairs({ 120.0, 140.0, 160.0, 180.0 }) do
-		ProfileOperations.raiseCompetitionScale(ascending, "Bench", w)
+		ProfileOperations.raiseCompetitionScale(ascending, classOf(ascending), "Bench", w)
 	end
 
 	local descending = newProfile()
 	for _, w in ipairs({ 180.0, 160.0, 140.0, 120.0 }) do
-		ProfileOperations.raiseCompetitionScale(descending, "Bench", w)
+		ProfileOperations.raiseCompetitionScale(descending, classOf(descending), "Bench", w)
 	end
 
 	check(
 		"ascending and descending orders agree at 180",
-		near(ascending.competitionScale.Bench, 180.0)
-			and near(descending.competitionScale.Bench, 180.0),
-		string.format("%s vs %s", tostring(ascending.competitionScale.Bench), tostring(descending.competitionScale.Bench))
+		near(scaleOf(ascending).Bench, 180.0)
+			and near(scaleOf(descending).Bench, 180.0),
+		string.format("%s vs %s", tostring(scaleOf(ascending).Bench), tostring(scaleOf(descending).Bench))
 	)
 end
 
@@ -1609,7 +1637,7 @@ print("")
 print("31. invalid input is rejected and writes nothing")
 do
 	local data = newProfile()
-	ProfileOperations.raiseCompetitionScale(data, "Squat", 160.0)
+	ProfileOperations.raiseCompetitionScale(data, classOf(data), "Squat", 160.0)
 
 	local rejects: { { label: string, lift: string, weight: any } } = {
 		{ label = "an unknown lift", lift = "Curl", weight = 200.0 },
@@ -1624,9 +1652,9 @@ do
 	}
 
 	for _, case in ipairs(rejects) do
-		local before = data.competitionScale.Squat
+		local before = scaleOf(data).Squat
 
-		local outcome, value = ProfileOperations.raiseCompetitionScale(data, case.lift, case.weight :: any)
+		local outcome, value = ProfileOperations.raiseCompetitionScale(data, classOf(data), case.lift, case.weight :: any)
 
 		check(
 			string.format("%s is Rejected", case.label),
@@ -1640,13 +1668,13 @@ do
 		)
 		check(
 			string.format("%s wrote nothing", case.label),
-			data.competitionScale.Squat == before,
-			string.format("%s, expected %s", tostring(data.competitionScale.Squat), tostring(before))
+			scaleOf(data).Squat == before,
+			string.format("%s, expected %s", tostring(scaleOf(data).Squat), tostring(before))
 		)
 	end
 
-	check("the Scale survived every rejection at 160", near(data.competitionScale.Squat, 160.0), tostring(data.competitionScale.Squat))
-	check("and no NaN reached the profile", data.competitionScale.Squat == data.competitionScale.Squat)
+	check("the Scale survived every rejection at 160", near(scaleOf(data).Squat, 160.0), tostring(scaleOf(data).Squat))
+	check("and no NaN reached the profile", scaleOf(data).Squat == scaleOf(data).Squat)
 
 	--[[
 		A CORRUPT STORED SCALE IS REFUSED RATHER THAN REPAIRED, because we
@@ -1654,11 +1682,11 @@ do
 		migration's job and happens on every load.
 	]]
 	local corrupt = newProfile() :: any
-	corrupt.competitionScale.Bench = 0 / 0
+	scaleOf(corrupt).Bench = 0 / 0
 
-	local outcome = ProfileOperations.raiseCompetitionScale(corrupt, "Bench", 120.0)
+	local outcome = ProfileOperations.raiseCompetitionScale(corrupt, classOf(corrupt), "Bench", 120.0)
 	check("a corrupt stored Scale rejects the raise", outcome == "Rejected", tostring(outcome))
-	check("and the raise did not overwrite it", corrupt.competitionScale.Bench ~= 120.0)
+	check("and the raise did not overwrite it", scaleOf(corrupt).Bench ~= 120.0)
 end
 
 --------------------------------------------------------------------------------
@@ -1669,9 +1697,9 @@ do
 
 	-- Snapshot everything a raise must not touch.
 	local cnBefore = {
-		Squat = data.competitionNumber.Squat,
-		Bench = data.competitionNumber.Bench,
-		Deadlift = data.competitionNumber.Deadlift,
+		Squat = cnOf(data).Squat,
+		Bench = cnOf(data).Bench,
+		Deadlift = cnOf(data).Deadlift,
 	}
 	local budgetBefore = data.competitionBudget.Squat.amount
 	local energyBefore = data.trainingEnergy.amount
@@ -1679,24 +1707,24 @@ do
 	local bodyweightBefore = data.bodyweight.currentKg
 	local versionBefore = data.version
 
-	ProfileOperations.raiseCompetitionScale(data, "Squat", 190.0)
+	ProfileOperations.raiseCompetitionScale(data, classOf(data), "Squat", 190.0)
 
-	check("Squat Scale rose to 190", near(data.competitionScale.Squat, 190.0))
-	check("Bench Scale stayed unproven", data.competitionScale.Bench == 0, tostring(data.competitionScale.Bench))
-	check("Deadlift Scale stayed unproven", data.competitionScale.Deadlift == 0, tostring(data.competitionScale.Deadlift))
+	check("Squat Scale rose to 190", near(scaleOf(data).Squat, 190.0))
+	check("Bench Scale stayed unproven", scaleOf(data).Bench == 0, tostring(scaleOf(data).Bench))
+	check("Deadlift Scale stayed unproven", scaleOf(data).Deadlift == 0, tostring(scaleOf(data).Deadlift))
 
-	ProfileOperations.raiseCompetitionScale(data, "Bench", 110.0)
-	ProfileOperations.raiseCompetitionScale(data, "Deadlift", 230.0)
+	ProfileOperations.raiseCompetitionScale(data, classOf(data), "Bench", 110.0)
+	ProfileOperations.raiseCompetitionScale(data, classOf(data), "Deadlift", 230.0)
 
-	check("all three now hold their own value", near(data.competitionScale.Squat, 190.0)
-		and near(data.competitionScale.Bench, 110.0)
-		and near(data.competitionScale.Deadlift, 230.0))
+	check("all three now hold their own value", near(scaleOf(data).Squat, 190.0)
+		and near(scaleOf(data).Bench, 110.0)
+		and near(scaleOf(data).Deadlift, 230.0))
 
 	-- COMPETITION NUMBER IS UNTOUCHED. Scale is not derived from it and does not feed it.
-	check("Squat CN unchanged", data.competitionNumber.Squat == cnBefore.Squat, tostring(data.competitionNumber.Squat))
-	check("Bench CN unchanged", data.competitionNumber.Bench == cnBefore.Bench)
-	check("Deadlift CN unchanged", data.competitionNumber.Deadlift == cnBefore.Deadlift)
-	check("CN is still the 25 kg starting value", near(data.competitionNumber.Squat, 25.0))
+	check("Squat CN unchanged", cnOf(data).Squat == cnBefore.Squat, tostring(cnOf(data).Squat))
+	check("Bench CN unchanged", cnOf(data).Bench == cnBefore.Bench)
+	check("Deadlift CN unchanged", cnOf(data).Deadlift == cnBefore.Deadlift)
+	check("CN is still the 25 kg starting value", near(cnOf(data).Squat, 25.0))
 
 	-- AND NOTHING ELSE MOVED EITHER.
 	check("Competition Budget untouched", near(data.competitionBudget.Squat.amount, budgetBefore))
@@ -1711,8 +1739,8 @@ do
 		cannot be made to behave differently by a clock.
 	]]
 	check(
-		"raiseCompetitionScale takes exactly three arguments, none a timestamp",
-		debug.info(ProfileOperations.raiseCompetitionScale, "a") == 3,
+		"raiseCompetitionScale takes exactly four arguments (data, class, lift, kg), none a timestamp",
+		debug.info(ProfileOperations.raiseCompetitionScale, "a") == 4,
 		tostring(debug.info(ProfileOperations.raiseCompetitionScale, "a"))
 	)
 	check("no budget timestamp was stamped", data.competitionBudget.Squat.lastUpdatedUnix == 0)
@@ -1765,7 +1793,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 4)
 
-	check("migrated 4 to 5", finalVersion == 5 and data.version == 5, tostring(data.version))
+	check("migrated 4 to 6", finalVersion == 6 and data.version == 6, tostring(data.version))
 
 	--[[
 		NO OFFLINE TRAINING CREDIT. A save that predates the station cannot
@@ -1781,13 +1809,13 @@ do
 		and data.trainingTimeToday.dayKey == DayKey.UNSTAMPED)
 
 	-- EVERY PRE-EXISTING FIELD SURVIVES. This is the half that can lose data.
-	check("Squat CN preserved", near(data.competitionNumber.Squat, 195.0), tostring(data.competitionNumber.Squat))
-	check("Bench CN preserved", near(data.competitionNumber.Bench, 125.0))
-	check("Deadlift CN preserved", near(data.competitionNumber.Deadlift, 232.5))
+	check("Squat CN preserved", near(cnOf(data).Squat, 195.0), tostring(cnOf(data).Squat))
+	check("Bench CN preserved", near(cnOf(data).Bench, 125.0))
+	check("Deadlift CN preserved", near(cnOf(data).Deadlift, 232.5))
 
-	check("Squat Scale preserved", near(data.competitionScale.Squat, 177.5), tostring(data.competitionScale.Squat))
-	check("Bench Scale preserved", near(data.competitionScale.Bench, 105.0))
-	check("Deadlift Scale preserved", near(data.competitionScale.Deadlift, 212.5))
+	check("Squat Scale preserved", near(scaleOf(data).Squat, 177.5), tostring(scaleOf(data).Squat))
+	check("Bench Scale preserved", near(scaleOf(data).Bench, 105.0))
+	check("Deadlift Scale preserved", near(scaleOf(data).Deadlift, 212.5))
 
 	check("SquatControl preserved", data.technique.SquatControl == 1550)
 	check("DepthAwareness preserved", data.technique.DepthAwareness == 975)
@@ -1812,7 +1840,7 @@ do
 end
 
 --------------------------------------------------------------------------------
-print("35. EVERY historical version gap still reaches version 5")
+print("35. EVERY historical version gap still reaches version 6")
 do
 	--[[
 		The rule this guards is in PlayerProfileSchema: a step must exist for every
@@ -1826,7 +1854,7 @@ do
 	oneToFive.technique.PullStrength = nil
 
 	local v1 = PlayerProfileSchema.migrate(oneToFive, 1)
-	check("version 1 reaches 5", v1 == 5 and oneToFive.version == 5, tostring(v1))
+	check("version 1 reaches 6", v1 == 6 and oneToFive.version == 6, tostring(v1))
 	check("v1 gained PullStrength at 0 on the way", oneToFive.technique.PullStrength == 0)
 	check("v1 gained the CN allowance", typeof(oneToFive.cnAllowance) == "table"
 		and oneToFive.cnAllowance.spentToday == 0)
@@ -1835,16 +1863,16 @@ do
 
 	local twoToFive = reconciledV2Save(182.5, 117.5, 215.0)
 	local v2 = PlayerProfileSchema.migrate(twoToFive, 2)
-	check("version 2 reaches 5", v2 == 5 and twoToFive.version == 5, tostring(v2))
-	check("v2 kept its real lifts through four steps", near(twoToFive.competitionNumber.Squat, 182.5))
+	check("version 2 reaches 6", v2 == 6 and twoToFive.version == 6, tostring(v2))
+	check("v2 kept its real lifts through four steps", near(cnOf(twoToFive).Squat, 182.5))
 	check("v2 gained the technique allowance", typeof(twoToFive.techniqueAllowance) == "table"
 		and twoToFive.techniqueAllowance.dayKey == DayKey.UNSTAMPED)
 
 	local threeToFive = reconciledV3Save(200.0, 130.0, 240.0)
 	local v3 = PlayerProfileSchema.migrate(threeToFive, 3)
-	check("version 3 reaches 5", v3 == 5 and threeToFive.version == 5, tostring(v3))
-	check("v3 is still UNPROVEN, never seeded from CN", threeToFive.competitionScale.Squat == 0,
-		tostring(threeToFive.competitionScale.Squat))
+	check("version 3 reaches 6", v3 == 6 and threeToFive.version == 6, tostring(v3))
+	check("v3 is still UNPROVEN, never seeded from CN", scaleOf(threeToFive).Squat == 0,
+		tostring(scaleOf(threeToFive).Squat))
 	check("v3 kept its part-spent budget", near(threeToFive.competitionBudget.Squat.amount, 3.21))
 	check("v3 gained all three version-5 records", typeof(threeToFive.cnAllowance) == "table"
 		and typeof(threeToFive.techniqueAllowance) == "table"
@@ -1853,7 +1881,7 @@ do
 	-- A brand new profile is already current and must skip every step.
 	local fresh = newProfile() :: any
 	local vNew = PlayerProfileSchema.migrate(fresh, 0)
-	check("a new profile is already version 5", vNew == 5 and fresh.version == 5)
+	check("a new profile is already version 6", vNew == 6 and fresh.version == 6)
 
 	--[[
 		IDEMPOTENT. Running the step again on an already-migrated profile must not
@@ -1912,7 +1940,7 @@ do
 	check("the reload is a separate table", near(data.cnAllowance.spentToday, 2.8109))
 
 	-- MIGRATING AN ALREADY-CURRENT PROFILE AGAIN MUST NOT RESET A LIVE DAY.
-	check("reload is still version 5", reloaded.version == 5)
+	check("reload is still version 6", reloaded.version == 6)
 end
 
 --------------------------------------------------------------------------------
@@ -2004,10 +2032,216 @@ do
 	check("a negative timestamp repairs to 0", negative.trainingTimeToday.lastUpdatedUnix == 0)
 
 	-- AND THE REPAIR TOUCHED NOTHING ELSE.
-	check("repair left CN alone", near(negative.competitionNumber.Squat, 165.0))
-	check("repair left Scale alone", near(negative.competitionScale.Squat, 177.5))
+	check("repair left CN alone", near(cnOf(negative).Squat, 165.0))
+	check("repair left Scale alone", near(scaleOf(negative).Squat, 177.5))
 	check("repair left technique alone", negative.technique.PullStrength == 410)
 	check("repair left the budget alone", near(negative.competitionBudget.Squat.amount, 2.75))
+end
+
+--[[
+	A VERSION-5 SAVE AS IT WOULD ARRIVE FROM A REAL DATASTORE, after Reconcile.
+
+	The flat Competition Number and Scale are the player's real numbers; `builds`
+	is the template's EMPTY table, which is all Reconcile adds. The planted Scale
+	is deliberate (no real profile holds one): a migration tested only against
+	zeroes cannot tell "moved" from "happened to be the default".
+]]
+local function reconciledV5Save(squat: number, bench: number, deadlift: number, bodyweightKg: number): any
+	local data = reconciledV4Save(squat, bench, deadlift)
+	data.bodyweight = { currentKg = bodyweightKg, targetKg = bodyweightKg }
+	data.builds = {}
+	data.cnAllowance = { spentToday = 1.5, dayKey = "2026-10-27", lastUpdatedUnix = 1761600000 }
+	data.version = 5
+	return data
+end
+
+local function countBuilds(data: any): number
+	local count = 0
+	for _ in pairs(data.builds) do
+		count += 1
+	end
+	return count
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("38. a version-5 player's numbers move into ONE build, exactly")
+do
+	local data = reconciledV5Save(182.5, 117.5, 215.0, 82.4)
+	local finalVersion = PlayerProfileSchema.migrate(data, 5)
+	local build = data.builds["83 kg"]
+
+	check("migrated to version 6", finalVersion == 6 and data.version == 6)
+	check("the build is filed under the bodyweight's class, 83 kg", typeof(build) == "table")
+	check("and it is the only build (no phantom 59 kg)", countBuilds(data) == 1, tostring(countBuilds(data)))
+	check("Squat CN moved exactly", build and build.competitionNumber.Squat == 182.5)
+	check("Bench CN moved exactly", build and build.competitionNumber.Bench == 117.5)
+	check("Deadlift CN moved exactly", build and build.competitionNumber.Deadlift == 215.0)
+	check("the planted Scale moved exactly", build and build.competitionScale.Squat == 177.5
+		and build.competitionScale.Bench == 105.0 and build.competitionScale.Deadlift == 212.5)
+	check("best Total starts at none", build and build.bestTotalKg == PlayerProfileSchema.NO_TOTAL)
+	check("the flat competitionNumber is gone", data.competitionNumber == nil)
+	check("the flat competitionScale is gone", data.competitionScale == nil)
+	check("the readers see the moved numbers", ProfileOperations.getCompetitionNumber(data, "Squat") == 182.5
+		and ProfileOperations.getCompetitionScale(data, "Squat") == 177.5)
+
+	-- NOTHING ACCOUNT-WIDE MOVED.
+	check("technique untouched", data.technique.PullStrength == 410)
+	check("budget untouched", near(data.competitionBudget.Squat.amount, 2.75))
+	check("daily allowance untouched", data.cnAllowance.spentToday == 1.5 and data.cnAllowance.dayKey == "2026-10-27")
+	check("bodyweight untouched", data.bodyweight.currentKg == 82.4)
+	check("meta untouched", data.meta.sessionCount == 103)
+
+	-- A real player today: 53 kg, never competed.
+	local today = reconciledV5Save(31.4, 27.0, 40.2, 53)
+	today.competitionScale = { Squat = 0, Bench = 0, Deadlift = 0 }
+	PlayerProfileSchema.migrate(today, 5)
+	local mine = today.builds["59 kg"]
+	check("a 53 kg player gets a 59 kg build", typeof(mine) == "table" and countBuilds(today) == 1)
+	check("with their fractional CN kept", mine and mine.competitionNumber.Squat == 31.4
+		and mine.competitionNumber.Deadlift == 40.2)
+	check("and still UNPROVEN", mine and mine.competitionScale.Squat == 0)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("39. corrupt v5 values: CN repairs to the start, Scale to UNPROVEN")
+do
+	local data = reconciledV5Save(150.0, 100.0, 180.0, 70)
+	data.competitionNumber.Bench = 0 / 0
+	data.competitionNumber.Deadlift = -5
+	data.competitionScale = { Squat = 0 / 0, Bench = "190", Deadlift = 160.0 }
+	PlayerProfileSchema.migrate(data, 5)
+	local build = data.builds["74 kg"]
+
+	check("the good Squat CN kept", build and build.competitionNumber.Squat == 150.0)
+	check("a NaN CN became the starting value", build and build.competitionNumber.Bench == StartingValuesConfig.Forecasted.Bench)
+	check("a negative CN became the starting value", build and build.competitionNumber.Deadlift == StartingValuesConfig.Forecasted.Deadlift)
+	check("a NaN Scale became UNPROVEN", build and build.competitionScale.Squat == 0)
+	check("a string Scale became UNPROVEN", build and build.competitionScale.Bench == 0)
+	check("the good Scale kept", build and build.competitionScale.Deadlift == 160.0)
+
+	-- An unusable bodyweight still keeps the numbers (filed under the starting class).
+	local lost = reconciledV5Save(120.0, 80.0, 140.0, 70)
+	lost.bodyweight.currentKg = 0 / 0
+	PlayerProfileSchema.migrate(lost, 5)
+	check("an unusable bodyweight files the build under 59 kg", typeof(lost.builds["59 kg"]) == "table"
+		and lost.builds["59 kg"].competitionNumber.Squat == 120.0)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("40. running migrations again on a version-6 profile changes nothing")
+do
+	local data = reconciledV5Save(200.0, 140.0, 250.0, 82.4)
+	PlayerProfileSchema.migrate(data, 5)
+	ProfileOperations.raiseBestTotal(data, "83 kg", 575.0)
+
+	-- The double-migration bugs these guard against: from 5, and all the way from 2.
+	data.version = 5
+	PlayerProfileSchema.migrate(data, 5)
+	data.version = 2
+	PlayerProfileSchema.migrate(data, 2)
+	local build = data.builds["83 kg"]
+
+	check("the build's CN survived", build and build.competitionNumber.Squat == 200.0, build and tostring(build.competitionNumber.Squat))
+	check("the build's Scale survived", build and build.competitionScale.Squat == 177.5)
+	check("the best Total survived", build and build.bestTotalKg == 575.0)
+	check("no flat field was planted back", data.competitionNumber == nil and data.competitionScale == nil)
+	check("still one build", countBuilds(data) == 1)
+	check("back at version 6", data.version == 6)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("41. a new profile gets one starting build, through migrate")
+do
+	local raw = deepCopy(PlayerProfileSchema.template)
+	check("the template's builds are EMPTY (no phantom for Reconcile to plant)", next(raw.builds) == nil)
+	PlayerProfileSchema.migrate(raw, 0)
+	local build = raw.builds["59 kg"]
+	check("migrate created the 59 kg build", typeof(build) == "table" and countBuilds(raw) == 1)
+	check("at the starting CN", build and build.competitionNumber.Squat == StartingValuesConfig.Forecasted.Squat)
+	check("UNPROVEN", build and build.competitionScale.Bench == 0)
+	check("no best Total", build and build.bestTotalKg == 0)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("42. class changes: first entry copies the closest lighter build, return restores")
+do
+	local data = newProfile() :: any
+	local b59 = data.builds["59 kg"]
+	b59.competitionNumber.Squat = 200.0
+	b59.competitionScale.Squat = 190.0
+	b59.bestTotalKg = 500.0
+
+	-- Moving UP for the first time keeps the kilograms; proof does not travel.
+	local b74 = PlayerProfileSchema.ensureBuild(data, "74 kg") :: any
+	check("first entry to 74 kg copies the 59 kg CN", b74 and b74.competitionNumber.Squat == 200.0)
+	check("but its Scale starts UNPROVEN", b74 and b74.competitionScale.Squat == 0)
+	check("and it has no best Total", b74 and b74.bestTotalKg == 0)
+	check("a copy, not the same table", b74 and b74.competitionNumber ~= b59.competitionNumber)
+
+	-- Train the 74, then go back to 59: restored exactly.
+	b74.competitionNumber.Squat = 260.0
+	local back = PlayerProfileSchema.ensureBuild(data, "59 kg") :: any
+	check("returning to 59 kg restores it exactly", back == b59 and back.competitionNumber.Squat == 200.0
+		and back.competitionScale.Squat == 190.0 and back.bestTotalKg == 500.0)
+	check("and the 74 kg build kept its 260", data.builds["74 kg"].competitionNumber.Squat == 260.0)
+
+	-- A class skipped on the way up copies the closest LIGHTER build (59), not the 74.
+	local b66 = PlayerProfileSchema.ensureBuild(data, "66 kg") :: any
+	check("a skipped 66 kg copies the 59 kg kg, not the heavier 74", b66 and b66.competitionNumber.Squat == 200.0)
+
+	check("an unknown class creates nothing", PlayerProfileSchema.ensureBuild(data, "70 kg") == nil)
+	check("three builds now", countBuilds(data) == 3)
+
+	-- No lighter build at all (unreachable today): the starting values.
+	local heavyOnly = newProfile() :: any
+	heavyOnly.builds = { ["93 kg"] = heavyOnly.builds["59 kg"] }
+	heavyOnly.builds["93 kg"].competitionNumber.Squat = 300.0
+	local b83 = PlayerProfileSchema.ensureBuild(heavyOnly, "83 kg") :: any
+	check("no lighter build: the starting values", b83 and b83.competitionNumber.Squat == StartingValuesConfig.Forecasted.Squat)
+
+	-- The active build follows bodyweight.
+	data.bodyweight.currentKg = 70
+	check("at 70 kg the active build is 74 kg", ProfileOperations.getActiveClassKey(data) == "74 kg"
+		and ProfileOperations.getCompetitionNumber(data, "Squat") == 260.0)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("43. the meet raises credit ONLY the named class's build")
+do
+	local data = newProfile() :: any
+	PlayerProfileSchema.ensureBuild(data, "66 kg")
+
+	local outcome, value = ProfileOperations.raiseCompetitionScale(data, "66 kg", "Squat", 140.0)
+	check("raising the 66 kg Squat returns Raised", outcome == "Raised" and value == 140.0)
+	check("the 66 kg build holds it", data.builds["66 kg"].competitionScale.Squat == 140.0)
+	check("the 59 kg build did NOT get it", data.builds["59 kg"].competitionScale.Squat == 0)
+
+	local missing = ProfileOperations.raiseCompetitionScale(data, "83 kg", "Squat", 150.0)
+	check("a class with no build is Rejected and creates nothing", missing == "Rejected" and data.builds["83 kg"] == nil)
+	check("a non-class key is Rejected", ProfileOperations.raiseCompetitionScale(data, "Squat" :: any, "Squat", 150.0) == "Rejected")
+
+	-- Best Total: monotone, real totals only.
+	local first, firstValue = ProfileOperations.raiseBestTotal(data, "66 kg", 400.0)
+	check("first best Total is Raised", first == "Raised" and firstValue == 400.0)
+	check("a lower total is Unchanged", ProfileOperations.raiseBestTotal(data, "66 kg", 380.0) == "Unchanged"
+		and data.builds["66 kg"].bestTotalKg == 400.0)
+	check("a higher total is Raised", ProfileOperations.raiseBestTotal(data, "66 kg", 412.5) == "Raised"
+		and data.builds["66 kg"].bestTotalKg == 412.5)
+	check("0 is Rejected", ProfileOperations.raiseBestTotal(data, "66 kg", 0) == "Rejected")
+	check("NaN is Rejected", ProfileOperations.raiseBestTotal(data, "66 kg", 0 / 0) == "Rejected")
+	check("a missing build is Rejected", ProfileOperations.raiseBestTotal(data, "93 kg", 500) == "Rejected")
+	check("the 59 kg best Total is still none", data.builds["59 kg"].bestTotalKg == 0)
+
+	local reloaded = saveAndReload(data)
+	check("builds survive a save and reload", reloaded.builds["66 kg"].bestTotalKg == 412.5
+		and reloaded.builds["66 kg"].competitionScale.Squat == 140.0
+		and reloaded.builds["59 kg"].competitionNumber.Squat == StartingValuesConfig.Forecasted.Squat)
 end
 
 --------------------------------------------------------------------------------

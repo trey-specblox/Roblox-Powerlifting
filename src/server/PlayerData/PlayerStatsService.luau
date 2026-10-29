@@ -5,7 +5,8 @@
 
 	Answers the stats screen (StatsRemotes.GET_MY_STATS) with a READ-ONLY
 	snapshot of the asking player's own stats: weight class and bodyweight,
-	Competition Number and Competition Scale per lift, and every trainable
+	Competition Number and Competition Scale per lift and the best meet Total
+	(all from the build of the current class), and every trainable
 	technique stat as its effective value (through TechniqueCurve, the one
 	curve). It never writes anything and never answers about another player.
 	A player may ask at most once every MIN_SECONDS_BETWEEN_ASKS.
@@ -23,6 +24,7 @@ local WeightClass = require(Shared:WaitForChild("Progression"):WaitForChild("Wei
 local StatsRemotes = require(Shared:WaitForChild("Stats"):WaitForChild("StatsRemotes"))
 
 local PlayerDataService = require(script.Parent:WaitForChild("PlayerDataService"))
+local ProfileOperations = require(script.Parent:WaitForChild("ProfileOperations"))
 
 local PlayerStatsService = {}
 
@@ -45,14 +47,16 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		return nil
 	end
 
+	-- The build of the current class (schema v6): its numbers are the ones shown.
+	local build = ProfileOperations.getActiveBuild(data)
 	local competitionNumber: { [string]: number } = {}
 	local competitionScale: { [string]: number } = {}
 	local technique: { StatsRemotes.TechniqueView } = {}
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		local cn = profile.competitionNumber and profile.competitionNumber[lift]
+		local cn = build and (build.competitionNumber :: any)[lift]
 		competitionNumber[lift] = if isNumber(cn) then cn else 0
-		local scale = profile.competitionScale and profile.competitionScale[lift]
-		competitionScale[lift] = if isNumber(scale) then scale else 0
+		local scale = build and (build.competitionScale :: any)[lift]
+		competitionScale[lift] = if isNumber(scale) and scale >= 0 then scale else 0
 		for _, stat in ipairs(ProgressionConfig.TrainableTechnique[lift] or {}) do
 			local raw = profile.technique and profile.technique[stat]
 			if isNumber(raw) and raw >= 0 then
@@ -75,6 +79,7 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		targetKg = if isNumber(bodyweight.targetKg) then bodyweight.targetKg else bodyweight.currentKg,
 		competitionNumber = competitionNumber,
 		competitionScale = competitionScale,
+		bestTotalKg = if build and isNumber(build.bestTotalKg) and build.bestTotalKg > 0 then build.bestTotalKg else 0,
 		technique = technique,
 	}
 end

@@ -6,7 +6,8 @@ against `git status` / `git log` before acting. Last updated: 2026-10-27
 tested in Studio, approved by the user, COMMITTED, published, and saving
 checked in the live game; then the Mock Meet part 1 (private meet rooms),
 built, tested in Studio and COMMITTED; then Mock Meet part 2 (the meet
-itself) COMMITTED; next the game-wide UI restyle; newest entries at the end of the
+itself) COMMITTED; next the game-wide UI restyle; 2026-10-28: weight-class
+builds (schema v6) and Mock Meet rewards, tested; newest entries at the end of the
 CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
@@ -1729,15 +1730,63 @@ and polish.
     Supplement Bar 596 (budget 600): ALL OK. 0 server warnings.
   - NOT checked: how the gym looks with fewer small shadows (user's eyes),
     frame rate on a phone.
-  NEXT ACTION: per the user's newer rule (memory "models-made-in-blender",
+  MOCK MEET REWARDS: WEIGHT-CLASS BUILDS, SCHEMA v6 (2026-10-28; decisions,
+  plan and save change approved by the user; tested; NOT YET COMMITTED):
+  - Decisions (GAME_DESIGN §29.11 "Weight-class builds", §33.7, §33.8,
+    §33.11 items 9/11, §29.4 note): one build per class, free, kept forever;
+    returning restores a build exactly; a first-time class copies the
+    closest LIGHTER build's kg (moving up keeps kg, no skipping); every
+    class passed through gets a build; Scale never changes class; best
+    Total per build; a Mock Meet's good lifts count even if the lifter
+    leaves early, best Total only for a finished meet. Game Pass "train
+    every class at once" = idea only.
+  - Schema v6 (`PlayerProfileSchema`): `builds[classKey]` =
+    { competitionNumber, competitionScale, bestTotalKg }; template `builds`
+    is EMPTY (Reconcile would plant a template build into every profile);
+    `migrations[5]` moves the flat CN + Scale unchanged into the build of
+    the current bodyweight's class and removes them; `ensureBuild` /
+    `ensureActiveBuild` (run by migrate on every load); old steps guarded
+    so a double migration cannot plant 25 kg over a build.
+  - `ProfileOperations`: getActiveClassKey / getBuild / getActiveBuild;
+    CN read/write go to the active build; `raiseCompetitionScale(data,
+    classKey, lift, kg)` and new `raiseBestTotal(data, classKey, kg)` write
+    only the named (weigh-in) class's build. Readers updated:
+    PlayerDataService log, LiftAttemptService, PlayerStatsService (+
+    bestTotalKg), StatsRemotes, StatsScreen (new BEST TOTAL row).
+  - `MockMeetService`: weigh-in class = build; after each GOOD LIFT raises
+    that lift's Scale (MeetTotal.bestSuccessful) via PlayerDataService.update
+    and notifies "New ... Competition Scale"; finished meet with a total
+    raises the best Total. Never CN, never records.
+  - Probes updated (read the active build; 6 new sections 38-43 in
+    PlayerDataProbe). New `src/server/Dev/MigrationFixtureV6.server.luau`
+    (ENABLED = false). init.server.luau was temporarily flagged for the
+    fixture run and is back to its committed state.
+  - Checks: luau-lsp 0 new errors (2 older ones remain, PlayerDataService
+    pcall line and LiftAttemptService Attempt table), `rojo build` OK.
+    Studio (by Claude): PlayerDataProbe 462/0, TrainingProgressionProbe
+    298/0, TrainingStationProbe 205/0; MigrationFixtureV6 on the disposable
+    key in the REAL DataStore 30/0, key deleted. The user's real save then
+    upgraded v5 -> v6 (59 kg build CN 25/25/25 kept, session 61). Mock Meet
+    played by the user in Studio ("Worked"): Squat 22.5 miss / 22.5 good /
+    25 good, Bench 3 misses, Deadlift 22.5 good on the 3rd -> Scale
+    25 / UNPROVEN / 22.5 saved in the real DataStore; bombed out, so no best
+    Total. Studio API access was turned ON by the user for the fixture.
+  - NOT tested in gameplay: a finished (non-bombed) meet's best Total
+    (covered by the probe and the fixture only); two players at once; a
+    phone. Class changes are unreachable until a bodyweight system exists.
+  - Rojo note: one file (ProfileOperations) stopped syncing mid-session; a
+    rewrite of the file made it sync. If Studio behaves like old code,
+    compare a script's Source with the file.
+  NEXT ACTION: commit the schema v6 / Mock Meet rewards work with the
+  user's approval. Then the block-built pieces below.
+  OLDER NEXT ACTION: per the user's newer rule (memory "models-made-in-blender",
   2026-10-28: every physical model is modelled in Blender, never stacked
   Roblox blocks in code), the block-built pieces from this work are
   candidates for Blender models: the Cardio TV unit (mount, bezel, logo
   chin, soundbar), the Mock Meet Room's check-in desk, the private room's
   platform, judge-free furniture, wait bench, board and banner frames.
-  Screens on them stay as StyledScreen SurfaceGuis. After
-  that: the rewards step needs the weight-class build decision (§33.11 item
-  11) before any meet raises Competition Scale.
+  Screens on them stay as StyledScreen SurfaceGuis. (The rewards step that
+  was blocked on the weight-class build decision is done, above.)
   Other open threads: the records
   system (needs a decision; no meet system exists yet, §33), more machines,
   the mirror on a phone, the remaining room interiors (Classroom, Media Room,
