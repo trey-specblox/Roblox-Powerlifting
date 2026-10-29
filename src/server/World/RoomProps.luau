@@ -1763,6 +1763,8 @@ FURNISH.Showers = function(kit)
 	end
 	local hw, D = kit.W / 2, kit.D
 	local back, left, right = kit.wall("back"), kit.wall("left"), kit.wall("right")
+	-- The stall screens, duckboards and shelves (Spa_01, CafeShop_01), or nil: blocks.
+	local spa = propsFor({ "ShowerScreen", "Duckboard", "WallShelf" })
 	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
 		return propItem(kit, props, name, item, colourway, a, d, y, facing)
 	end
@@ -1791,18 +1793,30 @@ FURNISH.Showers = function(kit)
 		local c, id = first + (k - 0.5) * unit, "Stall_" .. k
 		onWall(back, "-d", id .. "_Shower", "RainShower", k % 3 + 1, c, 1.15, 4)
 		onWall(back, "-d", id .. "_Soap", "SoapDispenser", 1, c - 1.7, 0.3, 4.4)
-		back.item(id .. "_Shelf", c + 0.95, c + 2.45, 0.08, 0.7, 4.6, 4.72, looks.Stainless)
+		if spa then
+			-- A steel shelf on brackets reaching 0.5 under it (CafeShop_01 WallShelf).
+			wallProp(kit, spa, back, id .. "_Shelf", "WallShelf", c + 0.95, c + 2.45, 0.08, 0.7, 4.1, 4.72,
+				{ Board = looks.Stainless })
+		else
+			back.item(id .. "_Shelf", c + 0.95, c + 2.45, 0.08, 0.7, 4.6, 4.72, looks.Stainless)
+		end
 		onWall(back, "-d", id .. "_Gel", "ShowerGel", k, c + 1.35, 0.4, 4.72)
 		onWall(back, "-d", id .. "_Shampoo", "Shampoo", (k - 1) % 4 + 1, c + 2, 0.4, 4.72)
 		back.item(id .. "_Drain", c - 2, c + 2, 3.7, 3.9, 0.06, 0.08, looks.Gadget)
-		-- A glass screen across the right half of the opening, in a black frame.
-		back.item(id .. "_Glass", c + 0.2, c + 2.5, depth - 0.1, depth, 0.06, 7.5, looks.Glass)
-		back.item(id .. "_GlassEdge", c + 0.1, c + 0.2, depth - 0.12, depth + 0.02, 0.06, 7.6, looks.Gadget)
-		back.item(id .. "_GlassTop", c + 0.1, c + 2.5, depth - 0.12, depth + 0.02, 7.5, 7.6, looks.Gadget)
-		for slat = 0, 5 do
-			local t = depth + 0.4 + slat * 0.3
-			back.item(string.format("%s_Duckboard_%d", id, slat + 1), c - 1.6, c + 1.6, t, t + 0.22, 0.06, 0.18,
-				looks.LockersSlats)
+		-- A glass screen across the right half of the opening, in a black frame; an oak duckboard.
+		if spa then
+			wallProp(kit, spa, back, id .. "_Screen", "ShowerScreen", c + 0.1, c + 2.5, depth - 0.12, depth + 0.02, 0.06, 7.6)
+			wallProp(kit, spa, back, id .. "_Duckboard", "Duckboard", c - 1.6, c + 1.6, depth + 0.4, depth + 1.72, 0.06, 0.18,
+				{ Slats = looks.LockersSlats })
+		else
+			back.item(id .. "_Glass", c + 0.2, c + 2.5, depth - 0.1, depth, 0.06, 7.5, looks.Glass)
+			back.item(id .. "_GlassEdge", c + 0.1, c + 0.2, depth - 0.12, depth + 0.02, 0.06, 7.6, looks.Gadget)
+			back.item(id .. "_GlassTop", c + 0.1, c + 2.5, depth - 0.12, depth + 0.02, 7.5, 7.6, looks.Gadget)
+			for slat = 0, 5 do
+				local t = depth + 0.4 + slat * 0.3
+				back.item(string.format("%s_Duckboard_%d", id, slat + 1), c - 1.6, c + 1.6, t, t + 0.22, 0.06, 0.18,
+					looks.LockersSlats)
+			end
 		end
 	end
 	neonSign(back, "Sign", "SHOWERS", -7, 7, 9.4, 11.4, Color3.fromRGB(120, 210, 235), Color3.fromRGB(20, 70, 95),
@@ -1850,6 +1864,8 @@ FURNISH.Recovery = function(kit)
 	end
 	local hw, D = kit.W / 2, kit.D
 	local back, left, right = kit.wall("back"), kit.wall("left"), kit.wall("right")
+	-- The plunge steps, wall ladders and mats (Spa_01), or nil: blocks.
+	local spa = propsFor({ "PlungeStep", "WallLadder", "FloorMat" })
 	local function put(name: string, item: string, colourway: number, a: number, d: number, y: number, facing: string): Model
 		return propItem(kit, props, name, item, colourway, a, d, y, facing)
 	end
@@ -1870,7 +1886,13 @@ FURNISH.Recovery = function(kit)
 		local id = "ColdPlunge_" .. index
 		onWall(back, "-d", id, "ColdPlunge", spec.colourway, spec.s, 2.8, 0.06)
 		hidden(back.block(id .. "_Solid", spec.s - 2.2, spec.s + 2.2, 0.6, 5, 0.06, 2.96, looks.Glass))
-		back.block(id .. "_Step", spec.s - 1, spec.s + 1, 5.3, 6.3, 0.06, 1, looks.LockersSlats)
+		local step = back.block(id .. "_Step", spec.s - 1, spec.s + 1, 5.3, 6.3, 0.06, 1, looks.LockersSlats)
+		if spa then
+			-- The Spa_01 two-tread step on the old block, now hidden.
+			hidden(step)
+			wallProp(kit, spa, back, id .. "_StepModel", "PlungeStep", spec.s - 1, spec.s + 1, 5.3, 6.3, 0.06, 1,
+				{ Wood = looks.LockersSlats })
+		end
 	end
 	neonSign(back, "Sign", "RECOVERY", -11, 0, 8.8, 10.8, Color3.fromRGB(225, 245, 255), Color3.fromRGB(40, 110, 160),
 		looks.GlowIce)
@@ -1901,14 +1923,19 @@ FURNISH.Recovery = function(kit)
 	-- An oak wall ladder for stretching on the left wall.
 	for ladder = 0, 1 do
 		local s0 = 7 + ladder * 3.6
-		for side, s in ipairs({ s0, s0 + 3 }) do
-			left.item(string.format("Ladder_%d_Rail_%d", ladder + 1, side), s - 0.12, s + 0.12, 0.08, 0.5, 0.06, 9.6,
-				looks.LockersSlats)
-		end
-		local a, d = left.at(s0 + 1.5, 0.3)
-		for rung = 1, 16 do
-			kit.cylinder(string.format("Ladder_%d_Rung_%d", ladder + 1, rung), a, d, 0.06 + rung * 0.58, 2.76, 0.22, left.axis,
-				looks.LockersSlats)
+		if spa then
+			wallProp(kit, spa, left, "Ladder_" .. ladder + 1, "WallLadder", s0 - 0.12, s0 + 3.12, 0.08, 0.5, 0.06, 9.6,
+				{ Wood = looks.LockersSlats })
+		else
+			for side, s in ipairs({ s0, s0 + 3 }) do
+				left.item(string.format("Ladder_%d_Rail_%d", ladder + 1, side), s - 0.12, s + 0.12, 0.08, 0.5, 0.06, 9.6,
+					looks.LockersSlats)
+			end
+			local a, d = left.at(s0 + 1.5, 0.3)
+			for rung = 1, 16 do
+				kit.cylinder(string.format("Ladder_%d_Rung_%d", ladder + 1, rung), a, d, 0.06 + rung * 0.58, 2.76, 0.22,
+					left.axis, looks.LockersSlats)
+			end
 		end
 	end
 	hidden(left.block("Ladder_Solid", 6.8, 13.8, 0.08, 0.55, 0.06, 9.6, looks.Glass))
@@ -1917,7 +1944,11 @@ FURNISH.Recovery = function(kit)
 	for index, spec in ipairs({ { a = -9.5, look = looks.MatTeal }, { a = -5.5, look = looks.MatCoral },
 		{ a = -1.5, look = looks.MatLavender } }) do
 		local id = "Mat_" .. index
-		kit.item(id, spec.a - 1.4, spec.a + 1.4, 9, 15.5, 0.06, 0.14, spec.look)
+		if spa then
+			paintLooks(put(id, "FloorMat", 1, spec.a, 12.25, 0.06, "-d"), "FloorMat", { Mat = spec.look })
+		else
+			kit.item(id, spec.a - 1.4, spec.a + 1.4, 9, 15.5, 0.06, 0.14, spec.look)
+		end
 		put(id .. "_Roller", "FoamRoller", index + 1, spec.a, 10.2, 0.14, "-d")
 		put(id .. "_Towel", "Towel", index + 1, spec.a, 14.6, 0.14, "-d")
 	end
@@ -1978,8 +2009,15 @@ FURNISH.Massage = function(kit)
 	hidden(kit.block("Screen_Solid", -0.5, 0.5, D - 9.3, D - 3.7, 0.06, 6.4, looks.Glass))
 
 	-- Oak shelves on the stone wall: candles, diffusers, oils and stones; the sign above.
+	-- Oak boards on brackets reaching 0.5 under them (CafeShop_01 WallShelf), or blocks.
+	local shelfProps = propsFor({ "WallShelf" })
 	for level, y in ipairs({ 4.4, 6.4 }) do
-		back.item("Shelf_" .. level, -3.6, 3.6, 0.08, 1.1, y - 0.15, y, looks.LockersSlats)
+		if shelfProps then
+			wallProp(kit, shelfProps, back, "Shelf_" .. level, "WallShelf", -3.6, 3.6, 0.08, 1.1, y - 0.65, y,
+				{ Board = looks.LockersSlats })
+		else
+			back.item("Shelf_" .. level, -3.6, 3.6, 0.08, 1.1, y - 0.15, y, looks.LockersSlats)
+		end
 	end
 	glow(onBack("Shelf_Candles_1", "CandleSet", 1, -2.4, 0.6, 4.4), "CandleSet_Flame")
 	glow(onBack("Shelf_Diffuser_1", "Diffuser", 1, -0.2, 0.6, 4.4), "Diffuser_Light")
@@ -2048,7 +2086,13 @@ FURNISH.SpaReception = function(kit)
 	right.item("Wall_Right", 6, D, 0, 0.08, 0.06, kit.H, looks.MassageWall)
 
 	-- An oak bench along the right wall with rolled towels, and a plant beside it.
-	right.block("Bench", 9, 17, 0.08, 1.7, 0.06, 1.5, looks.LockersSlats)
+	-- The oak locker bench and the counter (CafeShop_01) on hidden solid blocks, or blocks.
+	local furniture = propsFor({ "LockerBench", "CounterUnit" })
+	local bench = right.block("Bench", 9, 17, 0.08, 1.7, 0.06, 1.5, looks.LockersSlats)
+	if furniture then
+		hidden(bench)
+		wallProp(kit, furniture, right, "Bench_Model", "LockerBench", 9, 17, 0.08, 1.7, 0.06, 1.5)
+	end
 	for k = 0, 2 do
 		local a, d = right.at(10.5 + k * 2.5, 0.9)
 		put("Bench_Towel_" .. k + 1, "Towel", k + 2, a, d, 1.5, "-a")
@@ -2060,8 +2104,15 @@ FURNISH.SpaReception = function(kit)
 
 	-- The desk in front of the stone wall, facing the door.
 	local d0, d1 = D - 8, D - 5.6
-	kit.block("Desk_Body", -5, 5, d0, d1, 0.06, 3.4, looks.LockersSlats)
-	kit.item("Desk_Top", -5.2, 5.2, d0 - 0.2, d1 + 0.1, 3.4, 3.6, looks.CafeMarble)
+	local deskBody = kit.block("Desk_Body", -5, 5, d0, d1, 0.06, 3.4, looks.LockersSlats)
+	if furniture then
+		-- The counter (oak body, marble top overhanging the front), the old body block hidden under it.
+		hidden(deskBody)
+		paintLooks(propItem(kit, furniture, "Desk", "CounterUnit", 1, 0, (d0 - 0.2 + d1 + 0.1) / 2, 0.06, "-d",
+			Vector3.new(10.4, 3.54, d1 - d0 + 0.3)), "CounterUnit", { Body = looks.LockersSlats, Top = looks.CafeMarble })
+	else
+		kit.item("Desk_Top", -5.2, 5.2, d0 - 0.2, d1 + 0.1, 3.4, 3.6, looks.CafeMarble)
+	end
 	local deskGlow = kit.item("Desk_Glow", -4.8, 4.8, d0 - 0.06, d0, 0.2, 0.32, looks.GlowWarm)
 	warmGlow(deskGlow, 6, 0.5)
 	glow(put("Desk_Candles", "CandleSet", 2, -3.6, d0 + 1.1, 3.6, "-d"), "CandleSet_Flame")
@@ -2134,6 +2185,8 @@ FURNISH.Sauna = function(kit)
 	local doorTop = saunaDoor.height
 	local back, front, left = kit.wall("back"), kit.wall("front"), kit.wall("left")
 	local board, slat = looks.SaunaWood, looks.SaunaBench
+	-- The Spa_01 models (benches, duckboard, heater, lamps, bucket, thermometer) and towels, or nil: blocks.
+	local spa = propsFor({ "SaunaBench", "Duckboard", "SaunaHeater", "SaunaLamp", "SaunaBucket", "Thermometer", "Towel" })
 
 	-- The cabin: floor, walls up to the ceiling, a lower wooden ceiling.
 	kit.item("Floor", -hw, hw, 0, D, 0, 0.1, board)
@@ -2158,22 +2211,29 @@ FURNISH.Sauna = function(kit)
 	-- Two tiers of slatted benches with a backrest and warm LED strips under
 	-- both front edges, along a wall from s0 to s1.
 	local function benchTiers(wall: Wall, name: string, s0: number, s1: number)
-		wall.block(name .. "_Upper_Base", s0, s1, 0.15, 3.2, 0.1, 3, board)
-		for k = 0, 5 do
-			local t0 = 0.25 + k * 0.5
-			wall.block(name .. "_Upper_Slat_" .. k + 1, s0, s1, t0, t0 + 0.42, 3, 3.15, slat)
-		end
-		wall.item(name .. "_Upper_Skirt", s0, s1, 3.2, 3.26, 1.8, 2.3, slat)
-		wall.block(name .. "_Lower_Base", s0, s1, 3.2, 5.6, 0.1, 1.5, board)
-		for k = 0, 3 do
-			local t0 = 3.3 + k * 0.58
-			wall.block(name .. "_Lower_Slat_" .. k + 1, s0, s1, t0, t0 + 0.5, 1.5, 1.65, slat)
-		end
-		for k, band in ipairs({ { 0.3, 0.7 }, { 0.85, 1.25 } }) do
-			wall.item(name .. "_Lower_Skirt_" .. k, s0, s1, 5.6, 5.66, band[1], band[2], slat)
-		end
-		for k, y in ipairs({ 4, 4.8, 5.6 }) do
-			wall.item(name .. "_Backrest_" .. k, s0 + 0.35, s1 - 0.35, 0.15, 0.4, y, y + 0.35, slat)
+		if spa then
+			-- The Spa_01 tiers stretched along the wall, on hidden solid blocks like the old bases and slats.
+			wallProp(kit, spa, wall, name, "SaunaBench", s0, s1, 0.15, 5.66, 0.1, 5.95, { Base = board, Slats = slat })
+			hidden(wall.block(name .. "_Upper_Solid", s0, s1, 0.15, 3.2, 0.1, 3.15, board))
+			hidden(wall.block(name .. "_Lower_Solid", s0, s1, 3.2, 5.6, 0.1, 1.65, board))
+		else
+			wall.block(name .. "_Upper_Base", s0, s1, 0.15, 3.2, 0.1, 3, board)
+			for k = 0, 5 do
+				local t0 = 0.25 + k * 0.5
+				wall.block(name .. "_Upper_Slat_" .. k + 1, s0, s1, t0, t0 + 0.42, 3, 3.15, slat)
+			end
+			wall.item(name .. "_Upper_Skirt", s0, s1, 3.2, 3.26, 1.8, 2.3, slat)
+			wall.block(name .. "_Lower_Base", s0, s1, 3.2, 5.6, 0.1, 1.5, board)
+			for k = 0, 3 do
+				local t0 = 3.3 + k * 0.58
+				wall.block(name .. "_Lower_Slat_" .. k + 1, s0, s1, t0, t0 + 0.5, 1.5, 1.65, slat)
+			end
+			for k, band in ipairs({ { 0.3, 0.7 }, { 0.85, 1.25 } }) do
+				wall.item(name .. "_Lower_Skirt_" .. k, s0, s1, 5.6, 5.66, band[1], band[2], slat)
+			end
+			for k, y in ipairs({ 4, 4.8, 5.6 }) do
+				wall.item(name .. "_Backrest_" .. k, s0 + 0.35, s1 - 0.35, 0.15, 0.4, y, y + 0.35, slat)
+			end
 		end
 		local upperStrip = wall.item(name .. "_Upper_Light", s0 + 0.85, s1 - 0.85, 3.2, 3.26, 2.7, 2.8, looks.GlowWarm)
 		BuildParts.surfaceLight(upperStrip, Enum.NormalId.Bottom, 8, 1, 120, looks.GlowWarm.color)
@@ -2189,9 +2249,13 @@ FURNISH.Sauna = function(kit)
 		benchTiers(kit.wall("right"), "Bench_Right", sideStart, D - 5.6)
 	end
 	-- A slatted duckboard on the floor in front of the benches.
-	for k = 0, 5 do
-		local t0 = 5.9 + k * 0.55
-		back.item("Duckboard_" .. k + 1, -6, 6, t0, t0 + 0.45, 0.1, 0.22, slat)
+	if spa then
+		wallProp(kit, spa, back, "Duckboard", "Duckboard", -6, 6, 5.9, 9.1, 0.1, 0.22, { Slats = slat })
+	else
+		for k = 0, 5 do
+			local t0 = 5.9 + k * 0.55
+			back.item("Duckboard_" .. k + 1, -6, 6, t0, t0 + 0.45, 0.1, 0.22, slat)
+		end
 	end
 
 	-- The heater by the front wall: a dark stove with a basket of stones,
@@ -2199,56 +2263,80 @@ FURNISH.Sauna = function(kit)
 	local h0, h1 = 1.2, 3.7 -- along the left wall
 	local heater = left.block("Heater", h0, h1, 0.6, 3, 0.1, 2.6, looks.Gadget)
 	warmGlow(heater, 14, 1)
-	left.item("Heater_Shield", h0 - 0.5, h1 + 0.5, 0.15, 0.22, 0.6, 6, looks.Stainless)
-	left.item("Heater_Glow", h0 + 0.2, h1 - 0.2, 0.8, 2.8, 2.6, 2.7, looks.GlowWarm)
-	left.item("Heater_Rim_1", h0, h0 + 0.1, 0.6, 3, 2.6, 3.3, looks.Stainless)
-	left.item("Heater_Rim_2", h1 - 0.1, h1, 0.6, 3, 2.6, 3.3, looks.Stainless)
-	for i = 0, 3 do
-		for j = 0, 3 do
-			local a, d = left.at(h0 + 0.35 + i * 0.6, 0.95 + j * 0.6)
-			kit.ball(string.format("Stone_%d_%d", i + 1, j + 1), a, d, 2.95, 0.6, looks.Stone)
+	if spa then
+		-- The Spa_01 heater (shield to guard: s 0.7..4.2, t 0.15..3.58, up to the shield's top at 6); the old
+		-- stove block stays as its hidden solid block with the light.
+		hidden(heater)
+		wallProp(kit, spa, left, "Heater_Model", "SaunaHeater", h0 - 0.5, h1 + 0.5, 0.15, 3.58, 0.1, 6,
+			{ Stones = looks.Stone, Guard = slat })
+	else
+		left.item("Heater_Shield", h0 - 0.5, h1 + 0.5, 0.15, 0.22, 0.6, 6, looks.Stainless)
+		left.item("Heater_Glow", h0 + 0.2, h1 - 0.2, 0.8, 2.8, 2.6, 2.7, looks.GlowWarm)
+		left.item("Heater_Rim_1", h0, h0 + 0.1, 0.6, 3, 2.6, 3.3, looks.Stainless)
+		left.item("Heater_Rim_2", h1 - 0.1, h1, 0.6, 3, 2.6, 3.3, looks.Stainless)
+		for i = 0, 3 do
+			for j = 0, 3 do
+				local a, d = left.at(h0 + 0.35 + i * 0.6, 0.95 + j * 0.6)
+				kit.ball(string.format("Stone_%d_%d", i + 1, j + 1), a, d, 2.95, 0.6, looks.Stone)
+			end
 		end
-	end
-	for i = 0, 2 do
-		for j = 0, 2 do
-			local a, d = left.at(h0 + 0.65 + i * 0.6, 1.25 + j * 0.6)
-			kit.ball(string.format("Stone_Top_%d_%d", i + 1, j + 1), a, d, 3.4, 0.55, looks.Stone)
+		for i = 0, 2 do
+			for j = 0, 2 do
+				local a, d = left.at(h0 + 0.65 + i * 0.6, 1.25 + j * 0.6)
+				kit.ball(string.format("Stone_Top_%d_%d", i + 1, j + 1), a, d, 3.4, 0.55, looks.Stone)
+			end
 		end
-	end
-	local g0, g1, gt = h0 - 0.4, h1 + 0.4, 3.5
-	for index, s in ipairs({ g0, g1 }) do
-		left.item("Guard_Post_" .. index, s - 0.08, s + 0.08, gt - 0.08, gt + 0.08, 0.1, 3.6, slat)
-	end
-	for index, y in ipairs({ 1.6, 3.4 }) do
-		left.item("Guard_Rail_Front_" .. index, g0, g1, gt - 0.05, gt + 0.05, y, y + 0.2, slat)
-		left.item("Guard_Rail_Side1_" .. index, g0 - 0.05, g0 + 0.05, 0.15, gt, y, y + 0.2, slat)
-		left.item("Guard_Rail_Side2_" .. index, g1 - 0.05, g1 + 0.05, 0.15, gt, y, y + 0.2, slat)
+		local g0, g1, gt = h0 - 0.4, h1 + 0.4, 3.5
+		for index, s in ipairs({ g0, g1 }) do
+			left.item("Guard_Post_" .. index, s - 0.08, s + 0.08, gt - 0.08, gt + 0.08, 0.1, 3.6, slat)
+		end
+		for index, y in ipairs({ 1.6, 3.4 }) do
+			left.item("Guard_Rail_Front_" .. index, g0, g1, gt - 0.05, gt + 0.05, y, y + 0.2, slat)
+			left.item("Guard_Rail_Side1_" .. index, g0 - 0.05, g0 + 0.05, 0.15, gt, y, y + 0.2, slat)
+			left.item("Guard_Rail_Side2_" .. index, g1 - 0.05, g1 + 0.05, 0.15, gt, y, y + 0.2, slat)
+		end
 	end
 
 	-- Slatted wooden lamps in both back corners.
 	for index, s in ipairs({ hw - 2.3, -hw + 2.3 }) do
 		local lamp = "Lamp_" .. index
-		local lampGlow = back.item(lamp .. "_Glow", s - 0.7, s + 0.7, 0.15, 0.5, 7.2, 8.6, looks.GlowWarm)
-		warmGlow(lampGlow, 16, 0.8)
-		back.item(lamp .. "_Top", s - 0.9, s + 0.9, 0.15, 0.75, 8.8, 8.95, slat)
-		back.item(lamp .. "_Bottom", s - 0.9, s + 0.9, 0.15, 0.75, 6.85, 7, slat)
-		for k = 0, 3 do
-			local s0 = s - 0.8 + k * 0.45
-			back.item(lamp .. "_Slat_" .. k + 1, s0, s0 + 0.15, 0.6, 0.72, 7, 8.8, slat)
+		if spa then
+			local model = wallProp(kit, spa, back, lamp, "SaunaLamp", s - 0.9, s + 0.9, 0.15, 0.75, 6.85, 8.95, { Frame = slat })
+			warmGlow(model:FindFirstChild("SaunaLamp_Glow", true) :: BasePart, 16, 0.8)
+		else
+			local lampGlow = back.item(lamp .. "_Glow", s - 0.7, s + 0.7, 0.15, 0.5, 7.2, 8.6, looks.GlowWarm)
+			warmGlow(lampGlow, 16, 0.8)
+			back.item(lamp .. "_Top", s - 0.9, s + 0.9, 0.15, 0.75, 8.8, 8.95, slat)
+			back.item(lamp .. "_Bottom", s - 0.9, s + 0.9, 0.15, 0.75, 6.85, 7, slat)
+			for k = 0, 3 do
+				local s0 = s - 0.8 + k * 0.45
+				back.item(lamp .. "_Slat_" .. k + 1, s0, s0 + 0.15, 0.6, 0.72, 7, 8.8, slat)
+			end
 		end
 	end
 
 	-- A bucket with a ladle on the lower bench, a thermometer, towels.
 	local ba, bd = -4, D - 4.4
-	kit.cylinder("Bucket", ba, bd, 2.1, 0.9, 1, "up", slat)
-	kit.cylinder("Bucket_Band", ba, bd, 1.9, 0.08, 1.04, "up", looks.Stainless)
-	kit.cylinder("Ladle_Handle", ba + 0.5, bd, 2.62, 1.6, 0.08, "a", slat)
-	kit.ball("Ladle_Cup", ba - 0.2, bd, 2.45, 0.35, slat)
-	kit.cylinder("Thermometer", 4, D - 0.2, 7.6, 0.1, 1.4, "d", slat)
-	kit.cylinder("Thermometer_Face", 4, D - 0.27, 7.6, 0.04, 1.05, "d", looks.Whiteboard)
-	kit.item("Thermometer_Needle", 3.97, 4.03, D - 0.31, D - 0.29, 7.6, 8.05, looks.PlateRed)
-	back.item("Towel_1", -7, -5.4, 0.8, 2.2, 3.15, 3.4, looks.ShirtWhite)
-	back.item("Towel_2", 6, 7.6, 0.8, 2.2, 3.15, 3.4, looks.ShirtWhite)
+	if spa then
+		-- The bucket's bounds reach 0.4 further toward +a (the ladle's handle) than its middle.
+		paintLooks(propItem(kit, spa, "Bucket", "SaunaBucket", 1, ba + 0.4, bd, 1.65, "-d"), "SaunaBucket", { Wood = slat })
+		paintLooks(wallProp(kit, spa, back, "Thermometer", "Thermometer", 3.3, 4.7, 0.15, 0.31, 6.9, 8.3), "Thermometer",
+			{ Body = slat })
+		for index, s in ipairs({ -6.2, 6.8 }) do
+			local a, d = back.at(s, 1.5)
+			propItem(kit, spa, "Towel_" .. index, "Towel", 1, a, d, 3.15, "-d")
+		end
+	else
+		kit.cylinder("Bucket", ba, bd, 2.1, 0.9, 1, "up", slat)
+		kit.cylinder("Bucket_Band", ba, bd, 1.9, 0.08, 1.04, "up", looks.Stainless)
+		kit.cylinder("Ladle_Handle", ba + 0.5, bd, 2.62, 1.6, 0.08, "a", slat)
+		kit.ball("Ladle_Cup", ba - 0.2, bd, 2.45, 0.35, slat)
+		kit.cylinder("Thermometer", 4, D - 0.2, 7.6, 0.1, 1.4, "d", slat)
+		kit.cylinder("Thermometer_Face", 4, D - 0.27, 7.6, 0.04, 1.05, "d", looks.Whiteboard)
+		kit.item("Thermometer_Needle", 3.97, 4.03, D - 0.31, D - 0.29, 7.6, 8.05, looks.PlateRed)
+		back.item("Towel_1", -7, -5.4, 0.8, 2.2, 3.15, 3.4, looks.ShirtWhite)
+		back.item("Towel_2", 6, 7.6, 0.8, 2.2, 3.15, 3.4, looks.ShirtWhite)
+	end
 end
 
 -- Supplement tubs on a shelf: a dark or white tub with a lid and a stripe, `tall` high.

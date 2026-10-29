@@ -588,6 +588,8 @@ StarterGymConfig.PropAssets = {
 	-- merch wall, outside sign lamp
 	{ id = 135516072435746 }, -- CafeShop_01: counter, wall shelf, till, round and high tables, window bar, blender,
 	-- drinks fridge, supplement bar counter, slatwall, podium, tee stack, tee table, shop counter top
+	{ id = 72413560307802 }, -- Spa_01: sauna bench, duckboard, heater, lamp, bucket, thermometer, shower screen,
+	-- wall ladder, plunge step, floor mat
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -862,6 +864,18 @@ StarterGymConfig.PropColourways = {
 	},
 	DisplayTable = { { Body = "Black", Edge = "RedGlow" } },
 	ShopCounterTop = { { Top = "Black", Edge = "RedGlow" } },
+	-- The spa wing (Spa_01, art/scripts/build_spa_01.py). RoomProps paints the wooden and stone pieces with the
+	-- rooms' looks over these.
+	SaunaBench = { { Base = "Kraft", Slats = "Oak" } },
+	Duckboard = { { Slats = "Oak" } },
+	SaunaHeater = { { Stove = "Black", Metal = "Silver", Glow = "WarmGlow", Stones = "Slate", Guard = "Oak" } },
+	SaunaLamp = { { Frame = "Oak", Glow = "WarmGlow" } },
+	SaunaBucket = { { Wood = "Oak", Band = "Silver" } },
+	Thermometer = { { Body = "Oak", Face = "White", Needle = "Red" } },
+	ShowerScreen = { { Glass = "Glass", Frame = "Black" } },
+	WallLadder = { { Wood = "Oak" } },
+	PlungeStep = { { Wood = "Oak" } },
+	FloorMat = { { Mat = "Teal" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

@@ -2039,9 +2039,44 @@ and polish.
     not re-run.
   - NOT checked: walking into the counters and tables (the hidden solids are
     where the old blocks were); the user's own look.
-  NEXT ACTION: batch 6 (spa wing) in Blender: preview, the user's approval,
-  upload, place, Studio test, commit on approval. Reuse meshes where possible
-  (unique meshes 523 of 600). Optional:
+  Batch 6 (spa wing): `art/scripts/build_spa_01.py` -> `art/blender/Spa_01.blend`,
+  20 pieces, 3,466 triangles, CHECK PASSED; previews sent (backface culling).
+  New items: SaunaBench (stretched), Duckboard (sauna, and stretched for the
+  shower stalls), SaunaHeater, SaunaLamp, SaunaBucket, Thermometer,
+  ShowerScreen, WallLadder, PlungeStep, FloorMat. Reused to keep unique meshes
+  down: CafeShop_01 CounterUnit (spa desk, oak and marble), WallShelf (massage
+  shelves, shower shelves in steel), RoundTable (low tables, batch 5), the
+  Showers' Towel and LockerBench (sauna towels, spa bench). Stay blocks: the
+  sauna's glow strips under the benches (their SurfaceLights), walls, ceiling,
+  window and door trims; the shower stall walls and drains; desk glow; pendant
+  cables. Approved by the user ("Approve, upload"); exported to
+  `art/exports/Spa_01.glb`, uploaded as the group: rbxassetid://72413560307802
+  (materials.json). COMMITTED and pushed with user approval on 2026-10-29
+  ("Commit, then batch 7").
+  - StarterGymConfig: PropAssets entry and colourways for the 10 items.
+  - RoomProps: Sauna (bench tiers, duckboard, heater on the old stove block
+    now hidden with its light, lamps with their lights on the glow piece,
+    bucket, thermometer, towels), Showers (screens, duckboards, shelves),
+    Recovery (plunge steps on the old step blocks now hidden, ladders, mats in
+    their looks), Massage (shelves), SpaReception (desk on the old body block
+    now hidden, bench on the old bench block now hidden). Old blocks are the
+    fallback everywhere.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Studio Play (by Claude): no
+    script errors (only Studio DataStore messages). Visible blocks: Sauna
+    144 -> 23, Showers 69 -> 19, Recovery 46 -> 5, Massage 9 -> 7, Spa
+    Reception 11 -> 8; the sauna keeps its 9 lights. Screenshots: the sauna
+    benches, duckboard, lamps, thermometer, bucket and towels; the heater
+    with stones, shield and guard; Recovery ladders, mats and plunge step.
+    Audit: visible blocks 1,402 -> 1,187, parts 5,492, MeshParts 3,983,
+    unique meshes 543 (budget 600), shadow casters 1,922, lights 144 (0
+    shadows), screens 74, solid decor 0, precise 0. StarterGym_VerifyShell
+    not re-run.
+  - NOT checked: the showers, massage and spa reception by screenshot (counts
+    and names only); walking into the benches and steps; the user's own look.
+  NEXT ACTION: batch 7 (Staff Room, Storage, Office, Lockers, Training Zone,
+  Strongman Shed) in Blender: preview, the user's approval, upload, place,
+  Studio test, commit on approval. Unique meshes 543 of 600: reuse first.
+  Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
   the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
@@ -2110,7 +2145,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Replace the Cafe, Supplement Bar and Shop block furniture with Blender models (blocks to Blender, batch 5); `git log -1` for the hash.
+- 2026-10-29, pushed: Replace the spa wing's block furniture with Blender models (blocks to Blender, batch 6); `git log -1` for the hash.
+- `3118407` (2026-10-29, pushed) Replace the Cafe, Supplement Bar and Shop block furniture with Blender models (blocks to Blender, batch 5).
 - `a29fb82` (2026-10-29, pushed) Replace the reception's block furniture with Blender models (blocks to Blender, batch 4).
 - `a0206d1` (2026-10-29, pushed) Replace the block door pieces and name plaques with Blender models (blocks to Blender, batch 3).
 - `177c37e` (2026-10-28, pushed) Replace the block light fittings with Blender models (blocks to Blender, batch 2).

@@ -734,6 +734,14 @@
       "ids": {
         "model": "rbxassetid://135516072435746"
       }
+    },
+    "Spa_01": {
+      "about": "The spa wing pieces no earlier model covers: the sauna's benches (SaunaBench; stretched), duckboard (Duckboard; stretched for the shower stalls too), heater (SaunaHeater), wall lamp (SaunaLamp), bucket (SaunaBucket) and thermometer (Thermometer), the shower screen (ShowerScreen), the recovery wall ladder (WallLadder), plunge step (PlungeStep) and stretching mat (FloorMat). Made by art/scripts/build_spa_01.py (art/blender/Spa_01.blend).",
+      "file": "art/exports/Spa_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://72413560307802"
+      }
     }
   },
   "images": {
