@@ -647,8 +647,15 @@ local function iceBath(wall: Wall, name: string, s0: number, s1: number)
 end
 
 local function plateStack(kit: Kit, name: string, a: number, d: number, plates: { Look })
+	-- Each plate the BackRooms_01 bumper plate lying flat, in its colour, or a block disc.
+	local props = propsFor({ "FlatPlate" })
 	for index, look in ipairs(plates) do
-		kit.cylinder(string.format("%s_%d", name, index), a, d, 0.09 + (index - 1) * 0.18, 0.18, 2, "up", look)
+		local id = string.format("%s_%d", name, index)
+		if props then
+			paintLooks(propItem(kit, props, id, "FlatPlate", 1, a, d, (index - 1) * 0.18, "+d"), "FlatPlate", { Plate = look })
+		else
+			kit.cylinder(id, a, d, 0.09 + (index - 1) * 0.18, 0.18, 2, "up", look)
+		end
 	end
 end
 
@@ -1136,8 +1143,17 @@ FURNISH.Lockers = function(kit)
 
 	-- The vanity on the penny-tile wall: an oak cabinet with a marble top, three
 	-- basins, a round glowing mirror over each.
-	left.block("Vanity", 6, 24, 0.08, 2.2, 0.06, 3, looks.LockersSlats)
-	left.block("Vanity_Top", 5.8, 24.2, 0.08, 2.4, 3, 3.2, looks.CafeMarble)
+	-- The vanity, cubicle seats and hooks are Blender models (CafeShop_01, BackRooms_01) on hidden solid
+	-- blocks, or blocks.
+	local fittings = propsFor({ "CounterUnit", "WallShelf", "CoatHook" })
+	if fittings then
+		wallProp(kit, fittings, left, "Vanity", "CounterUnit", 5.8, 24.2, 0.08, 2.4, 0.06, 3.2,
+			{ Body = looks.LockersSlats, Top = looks.CafeMarble })
+		hidden(left.block("Vanity_Solid", 5.8, 24.2, 0.08, 2.4, 0.06, 3.2, looks.Glass))
+	else
+		left.block("Vanity", 6, 24, 0.08, 2.2, 0.06, 3, looks.LockersSlats)
+		left.block("Vanity_Top", 5.8, 24.2, 0.08, 2.4, 3, 3.2, looks.CafeMarble)
+	end
 	for index, vs in ipairs({ 9, 15, 21 }) do
 		local a, d = left.at(vs, 1.3)
 		put("Basin_" .. index, "Sink", 1, a, d, 3.2, "+a")
@@ -1158,8 +1174,16 @@ FURNISH.Lockers = function(kit)
 	right.block("Cubicle_Header", 3.3, 12.9, 4.4, 4.7, 6.7, 7.5, looks.LockersSlats)
 	for index = 1, 2 do
 		local c = 3.4 + (index - 0.5) * 4.7
-		right.block("Cubicle_Seat_" .. index, c - 1.6, c + 1.6, 0.08, 1.3, 1.5, 1.8, looks.LockersSlats)
-		right.item("Cubicle_Hook_" .. index, c - 0.1, c + 0.1, 0.08, 0.5, 5.4, 5.6, looks.Stainless)
+		local seat = right.block("Cubicle_Seat_" .. index, c - 1.6, c + 1.6, 0.08, 1.3, 1.5, 1.8, looks.LockersSlats)
+		if fittings then
+			-- An oak board on brackets reaching 0.5 under it, over the old seat block (now hidden); a coat hook.
+			hidden(seat)
+			wallProp(kit, fittings, right, "Cubicle_Seat_" .. index .. "_Model", "WallShelf", c - 1.6, c + 1.6, 0.08, 1.3, 1.0,
+				1.8, { Board = looks.LockersSlats })
+			wallProp(kit, fittings, right, "Cubicle_Hook_" .. index, "CoatHook", c - 0.08, c + 0.08, 0.08, 0.53, 5.35, 5.65)
+		else
+			right.item("Cubicle_Hook_" .. index, c - 0.1, c + 0.1, 0.08, 0.5, 5.4, 5.6, looks.Stainless)
+		end
 		local a, d = right.at(c, 4.45)
 		put("Curtain_" .. index, "Curtain", index, a, d, 0.3, "-a")
 	end
@@ -1364,20 +1388,36 @@ FURNISH.StaffRoom = function(kit)
 
 	-- The kitchenette along the back wall.
 	local k0, k1 = -hw + 0.1, 2.2
-	back.block("Cabinets", k0, k1 - 0.2, 0.08, 2.2, 0.06, 3.2, looks.StaffCabinet)
-	back.block("Worktop", k0, k1, 0.08, 2.4, 3.2, 3.4, looks.StaffWorktop)
+	-- The cabinets, sink, tables, rota board and tee rail are Blender models (BackRooms_01, Furniture_01, the
+	-- Lockers' basin) on the old solid blocks, now hidden; blocks if they did not load.
+	local kitchen = propsFor({ "KitchenUnit", "Sink", "Desk", "CorkBoard", "HangRail" })
+	local cabinets = back.block("Cabinets", k0, k1 - 0.2, 0.08, 2.2, 0.06, 3.2, looks.StaffCabinet)
+	local worktop = back.block("Worktop", k0, k1, 0.08, 2.4, 3.2, 3.4, looks.StaffWorktop)
 	back.item("Splashback", k0, k1, 0.08, 0.14, 3.4, 6, looks.SBarTiles)
-	back.block("WallCabinets", k0, k1 - 0.2, 0.14, 1.4, 6.2, 8.6, looks.StaffCabinet)
-	for index = 1, 5 do
-		local cs = k0 + index * (k1 - 0.2 - k0) / 6
-		back.item("Cabinet_Seam_" .. index, cs - 0.03, cs + 0.03, 2.2, 2.23, 0.3, 3, looks.Gadget)
-		back.item("WallCabinet_Seam_" .. index, cs - 0.03, cs + 0.03, 1.4, 1.43, 6.3, 8.5, looks.Gadget)
-		back.item("Cabinet_Handle_" .. index, cs + 0.25, cs + 0.35, 2.2, 2.32, 2.2, 2.9, looks.Stainless)
-		back.item("WallCabinet_Handle_" .. index, cs + 0.25, cs + 0.35, 1.4, 1.52, 6.4, 7.1, looks.Stainless)
+	local wallCabinets = back.block("WallCabinets", k0, k1 - 0.2, 0.14, 1.4, 6.2, 8.6, looks.StaffCabinet)
+	if kitchen then
+		hidden(cabinets)
+		hidden(worktop)
+		hidden(wallCabinets)
+		wallProp(kit, kitchen, back, "Kitchen", "KitchenUnit", k0, k1, 0.08, 2.4, 0.06, 3.4,
+			{ Body = looks.StaffCabinet, Top = looks.StaffWorktop })
+		-- The same unit for the wall cabinets, its top in the cabinets' colour.
+		wallProp(kit, kitchen, back, "Kitchen_WallCabinets", "KitchenUnit", k0, k1 - 0.2, 0.14, 1.52, 6.2, 8.6,
+			{ Body = looks.StaffCabinet, Top = looks.StaffCabinet })
+		local sa, sd = back.at(-4.75, 1.3)
+		propItem(kit, kitchen, "Sink", "Sink", 1, sa, sd, 3.4, "-d")
+	else
+		for index = 1, 5 do
+			local cs = k0 + index * (k1 - 0.2 - k0) / 6
+			back.item("Cabinet_Seam_" .. index, cs - 0.03, cs + 0.03, 2.2, 2.23, 0.3, 3, looks.Gadget)
+			back.item("WallCabinet_Seam_" .. index, cs - 0.03, cs + 0.03, 1.4, 1.43, 6.3, 8.5, looks.Gadget)
+			back.item("Cabinet_Handle_" .. index, cs + 0.25, cs + 0.35, 2.2, 2.32, 2.2, 2.9, looks.Stainless)
+			back.item("WallCabinet_Handle_" .. index, cs + 0.25, cs + 0.35, 1.4, 1.52, 6.4, 7.1, looks.Stainless)
+		end
+		back.item("Sink", -6, -3.5, 0.6, 1.8, 3.38, 3.42, looks.Stainless)
+		back.item("Tap", -4.85, -4.65, 0.3, 0.5, 3.4, 4.4, looks.Stainless)
+		back.item("Tap_Spout", -4.85, -4.65, 0.5, 1, 4.2, 4.35, looks.Stainless)
 	end
-	back.item("Sink", -6, -3.5, 0.6, 1.8, 3.38, 3.42, looks.Stainless)
-	back.item("Tap", -4.85, -4.65, 0.3, 0.5, 3.4, 4.4, looks.Stainless)
-	back.item("Tap_Spout", -4.85, -4.65, 0.5, 1, 4.2, 4.35, looks.Stainless)
 	onBack("Kettle", "Kettle", 2, -11, 1.3, 3.4)
 	onBack("Microwave", "Microwave", 1, -1, 1.2, 3.4)
 	for k = 0, 2 do
@@ -1391,10 +1431,18 @@ FURNISH.StaffRoom = function(kit)
 	plaque(roomSign, back.out, "STAFF ROOM", looks.SignPanel.color, WHITE)
 
 	-- A table with six chairs.
-	kit.block("Table_Top", -7, 1, 15, 19, 2.86, 3.06, looks.StaffWorktop)
+	local tableParts = { kit.block("Table_Top", -7, 1, 15, 19, 2.86, 3.06, looks.StaffWorktop) }
 	for index, corner in ipairs({ { -6.6, 15.4 }, { 0.6, 15.4 }, { -6.6, 18.6 }, { 0.6, 18.6 } }) do
-		kit.block("Table_Leg_" .. index, corner[1] - 0.15, corner[1] + 0.15, corner[2] - 0.15, corner[2] + 0.15, 0.06, 2.86,
-			looks.Gadget)
+		table.insert(tableParts, kit.block("Table_Leg_" .. index, corner[1] - 0.15, corner[1] + 0.15, corner[2] - 0.15,
+			corner[2] + 0.15, 0.06, 2.86, looks.Gadget))
+	end
+	if kitchen then
+		-- The Furniture_01 desk as the table, its top in the worktop's wood.
+		for _, part in ipairs(tableParts) do
+			hidden(part)
+		end
+		paintLooks(propItem(kit, kitchen, "Table", "Desk", 1, -3, 17, 0.06, "+d", Vector3.new(8, 3, 4)), "Desk",
+			{ Top = looks.StaffWorktop })
 	end
 	for k, a in ipairs({ -5.5, -3, -0.5 }) do
 		put("Chair_Near_" .. k, "CafeChair", k, a, 13.6, 0.06, "+d")
@@ -1408,10 +1456,17 @@ FURNISH.StaffRoom = function(kit)
 		Color3.fromRGB(22, 44, 74), WHITE)
 	put("Sofa", "Sofa", 2, -5.95, 8, 0.06, "-a")
 	hidden(kit.block("Sofa_Solid", -7.25, -4.65, 5, 11, 0.06, 1.86, looks.Glass))
-	kit.block("CoffeeTable", -12, -9.4, 6.5, 9.5, 1.2, 1.4, looks.StaffWorktop)
+	local coffeeParts = { kit.block("CoffeeTable", -12, -9.4, 6.5, 9.5, 1.2, 1.4, looks.StaffWorktop) }
 	for index, corner in ipairs({ { -11.8, 6.7 }, { -9.6, 6.7 }, { -11.8, 9.3 }, { -9.6, 9.3 } }) do
-		kit.block("CoffeeTable_Leg_" .. index, corner[1] - 0.1, corner[1] + 0.1, corner[2] - 0.1, corner[2] + 0.1, 0.06, 1.2,
-			looks.Gadget)
+		table.insert(coffeeParts, kit.block("CoffeeTable_Leg_" .. index, corner[1] - 0.1, corner[1] + 0.1, corner[2] - 0.1,
+			corner[2] + 0.1, 0.06, 1.2, looks.Gadget))
+	end
+	if kitchen then
+		for _, part in ipairs(coffeeParts) do
+			hidden(part)
+		end
+		paintLooks(propItem(kit, kitchen, "CoffeeTable_Model", "Desk", 1, -10.7, 8, 0.06, "+d", Vector3.new(2.6, 1.34, 3)),
+			"Desk", { Top = looks.StaffWorktop })
 	end
 	put("CoffeeTable_Mug", "Mug", 5, -10.7, 7.4, 1.4, "-a")
 
@@ -1421,18 +1476,28 @@ FURNISH.StaffRoom = function(kit)
 		put("Locker_" .. k + 1, "Locker", k + 1, a, d, 0.06, "-a")
 	end
 	hidden(right.block("Lockers_Solid", 13, 22.6, 0.08, 2, 0.06, 7.46, looks.Glass))
-	right.item("Board_Frame", 12.8, 22.8, 0.08, 0.14, 8, 11.6, looks.LockersSlats)
-	right.item("Board", 13, 22.6, 0.14, 0.2, 8.2, 11.4, looks.StaffCork)
-	local noteLooks = { looks.PlateYellow, looks.ShirtWhite, looks.PaddingBlue, looks.PlateGreen, looks.Whiteboard }
-	for k = 0, 7 do
-		local ns, ny = 13.5 + k * 1.15, 8.5 + (k % 2) * 1.1
-		right.item("Note_" .. k + 1, ns, ns + 0.9, 0.2, 0.22, ny, ny + 1, noteLooks[k % 5 + 1])
+	if kitchen then
+		wallProp(kit, kitchen, right, "Board", "CorkBoard", 12.8, 22.8, 0.08, 0.22, 8, 11.6,
+			{ Frame = looks.LockersSlats, Cork = looks.StaffCork })
+	else
+		right.item("Board_Frame", 12.8, 22.8, 0.08, 0.14, 8, 11.6, looks.LockersSlats)
+		right.item("Board", 13, 22.6, 0.14, 0.2, 8.2, 11.4, looks.StaffCork)
+		local noteLooks = { looks.PlateYellow, looks.ShirtWhite, looks.PaddingBlue, looks.PlateGreen, looks.Whiteboard }
+		for k = 0, 7 do
+			local ns, ny = 13.5 + k * 1.15, 8.5 + (k % 2) * 1.1
+			right.item("Note_" .. k + 1, ns, ns + 0.9, 0.2, 0.22, ny, ny + 1, noteLooks[k % 5 + 1])
+		end
 	end
 	local title = right.item("Board_Title", 15.8, 19.8, 0.2, 0.24, 10.5, 11.2, looks.Whiteboard)
 	plaque(title, right.out, "STAFF ROTA", WHITE, INK)
-	right.item("TeeRail", 3, 11.5, 0.55, 0.65, 7.05, 7.15, looks.Stainless)
-	for index, rs in ipairs({ 3.2, 11.3 }) do
-		right.item("TeeRail_Bracket_" .. index, rs - 0.05, rs + 0.05, 0.08, 0.6, 7.05, 7.15, looks.Stainless)
+	if kitchen then
+		-- The rail (its middle 0.06 above the model's bottom, the brackets' round wall plates).
+		wallProp(kit, kitchen, right, "TeeRail", "HangRail", 3, 11.5, 0.08, 0.65, 7.0, 7.2)
+	else
+		right.item("TeeRail", 3, 11.5, 0.55, 0.65, 7.05, 7.15, looks.Stainless)
+		for index, rs in ipairs({ 3.2, 11.3 }) do
+			right.item("TeeRail_Bracket_" .. index, rs - 0.05, rs + 0.05, 0.08, 0.6, 7.05, 7.15, looks.Stainless)
+		end
 	end
 	for index, ts in ipairs({ 4.5, 7.25, 10 }) do
 		local a, d = right.at(ts, 0.6)
@@ -1450,12 +1515,21 @@ FURNISH.Office = function(kit)
 	local right = kit.wall("right")
 	shelving(kit, right, "Bookshelf", 8, 20, 1.4, 8, 4, looks.Wood, books(kit, right, "Bookshelf"))
 	local left = kit.wall("left")
-	left.block("Filing", 10, 14, 0, 2, 0, 4.5, looks.LockerBody)
-	for drawer = 1, 2 do
-		left.item("Filing_Seam_" .. drawer, 10.2, 13.8, 2, 2.03, drawer * 1.5 - 0.03, drawer * 1.5 + 0.03, looks.Gadget)
-		left.item("Filing_Handle_" .. drawer, 11.5, 12.5, 2, 2.12, drawer * 1.5 + 0.5, drawer * 1.5 + 0.62, looks.Stainless)
+	-- The filing cabinet (on its old block, now hidden) and the clock are BackRooms_01 models, or blocks.
+	local officeProps = propsFor({ "FilingCabinet", "WallClock" })
+	local filing = left.block("Filing", 10, 14, 0, 2, 0, 4.5, looks.LockerBody)
+	if officeProps then
+		hidden(filing)
+		wallProp(kit, officeProps, left, "Filing_Model", "FilingCabinet", 10, 14, 0, 2.1, 0, 4.5, { Body = looks.LockerBody })
+		-- The clock's middle 9 up (its bounds reach 0.81 round it, 0.185 off the wall).
+		wallProp(kit, officeProps, kit.wall("back"), "Clock", "WallClock", -0.81, 0.81, 0, 0.185, 8.19, 9.81)
+	else
+		for drawer = 1, 2 do
+			left.item("Filing_Seam_" .. drawer, 10.2, 13.8, 2, 2.03, drawer * 1.5 - 0.03, drawer * 1.5 + 0.03, looks.Gadget)
+			left.item("Filing_Handle_" .. drawer, 11.5, 12.5, 2, 2.12, drawer * 1.5 + 0.5, drawer * 1.5 + 0.62, looks.Stainless)
+		end
+		kit.cylinder("Clock", 0, D - 0.075, 9, 0.15, 1.6, "d", looks.Whiteboard)
 	end
-	kit.cylinder("Clock", 0, D - 0.075, 9, 0.15, 1.6, "d", looks.Whiteboard)
 	plant(kit, "Plant_1", -hw + 1.5, D - 1.5)
 	plant(kit, "Plant_2", hw - 1.5, 1.5)
 	-- The guide board over the desk: what the Index room used to explain (user, 2026-10-26: the
@@ -1520,13 +1594,22 @@ FURNISH.TrainingZone = function(kit)
 		end
 	end
 	-- Four flat benches facing the mirror, a pair of dumbbells beside each.
+	-- The BackRooms_01 flat bench on its old pad block (now hidden), or blocks.
+	local benchProps = propsFor({ "FlatBench" })
 	for k = 0, 3 do
 		local a, id = -33 + k * 8.5, "Bench_" .. k + 1
-		kit.block(id, a - 0.7, a + 0.7, D - 10, D - 5.4, 1.55, 1.95, if k % 2 == 0 then looks.Padding else looks.PaddingBlue)
-		for leg, d in ipairs({ D - 9.6, D - 5.8 }) do
-			kit.item(string.format("%s_Leg_%d", id, leg), a - 0.6, a + 0.6, d - 0.2, d + 0.2, 0.05, 1.55, looks.SteelBeam)
+		local padLook = if k % 2 == 0 then looks.Padding else looks.PaddingBlue
+		local pad = kit.block(id, a - 0.7, a + 0.7, D - 10, D - 5.4, 1.55, 1.95, padLook)
+		if benchProps then
+			hidden(pad)
+			paintLooks(propItem(kit, benchProps, id .. "_Model", "FlatBench", 1, a, D - 7.7, 0.05, "-d"), "FlatBench",
+				{ Pad = padLook, Frame = looks.SteelBeam })
+		else
+			for leg, d in ipairs({ D - 9.6, D - 5.8 }) do
+				kit.item(string.format("%s_Leg_%d", id, leg), a - 0.6, a + 0.6, d - 0.2, d + 0.2, 0.05, 1.55, looks.SteelBeam)
+			end
+			kit.item(id .. "_Rail", a - 0.15, a + 0.15, D - 9.6, D - 5.8, 1.25, 1.55, looks.SteelBeam)
 		end
-		kit.item(id .. "_Rail", a - 0.15, a + 0.15, D - 9.6, D - 5.8, 1.25, 1.55, looks.SteelBeam)
 		for side = 0, 1 do
 			put(string.format("%s_Dumbbell_%d", id, side + 1), "HexDumbbell", (k * 2 + side) % 8 + 1, a + 1.8, D - 8.4 + side * 1.4,
 				0.05, "-d")
@@ -2159,14 +2242,24 @@ FURNISH.Storage = function(kit)
 		plateStack(kit, "Plates_" .. index, a, d, stacks[index])
 	end
 	local right = kit.wall("right")
-	right.block("BarHolder", 9, 15, 0, 1.2, 0, 0.6, looks.SteelBeam)
-	for index = 0, 4 do
-		local a, d = right.at(9.6 + index * 1.2, 0.6)
-		kit.cylinder("Bar_" .. index + 1, a, d, 0.6 + 4.9, 9.8, 0.14, "up", looks.Stainless)
-		kit.cylinder("Bar_" .. index + 1 .. "_Sleeve", a, d, 0.6 + 9.8 - 1.8, 3.6, 0.22, "up", looks.Stainless)
+	-- The bar holder with its bars (on the old holder block, now hidden) and the spare boxes are Blender models
+	-- (BackRooms_01, Furniture_01), or blocks.
+	local storageProps = propsFor({ "BarStand", "StorageBox" })
+	local holder = right.block("BarHolder", 9, 15, 0, 1.2, 0, 0.6, looks.SteelBeam)
+	if storageProps then
+		hidden(holder)
+		wallProp(kit, storageProps, right, "BarStand", "BarStand", 9, 15, 0, 1.2, 0, 10.4, { Holder = looks.SteelBeam })
+		propItem(kit, storageProps, "Boxes_1", "StorageBox", 1, hw - 2.5, 3.25, 0, "+d", Vector3.new(3, 2, 2.5))
+		propItem(kit, storageProps, "Boxes_2", "StorageBox", 1, hw - 2.6, 3.25, 2, "+d", Vector3.new(2.4, 1.6, 1.9))
+	else
+		for index = 0, 4 do
+			local a, d = right.at(9.6 + index * 1.2, 0.6)
+			kit.cylinder("Bar_" .. index + 1, a, d, 0.6 + 4.9, 9.8, 0.14, "up", looks.Stainless)
+			kit.cylinder("Bar_" .. index + 1 .. "_Sleeve", a, d, 0.6 + 9.8 - 1.8, 3.6, 0.22, "up", looks.Stainless)
+		end
+		kit.item("Boxes_1", hw - 4, hw - 1, 2, 4.5, 0, 2, looks.Cardboard)
+		kit.item("Boxes_2", hw - 3.8, hw - 1.4, 2.3, 4.2, 2, 3.6, looks.Cardboard)
 	end
-	kit.item("Boxes_1", hw - 4, hw - 1, 2, 4.5, 0, 2, looks.Cardboard)
-	kit.item("Boxes_2", hw - 3.8, hw - 1.4, 2.3, 4.2, 2, 3.6, looks.Cardboard)
 end
 
 --[[
@@ -2563,17 +2656,28 @@ end
 FURNISH.Coach = function(kit)
 	local hw, D = kit.W / 2, kit.D
 	local back = kit.wall("back")
-	back.item("Whiteboard_Frame", -7.15, 7.15, 0, 0.12, 3.35, 8.65, looks.Stainless)
+	-- The whiteboard's frame and tray and the laptop are BackRooms_01 models, or blocks.
+	local coachProps = propsFor({ "WhiteboardFrame", "Laptop" })
+	if coachProps then
+		wallProp(kit, coachProps, back, "Whiteboard_Frame", "WhiteboardFrame", -7.15, 7.15, 0, 0.5, 3.3, 8.65)
+	else
+		back.item("Whiteboard_Frame", -7.15, 7.15, 0, 0.12, 3.35, 8.65, looks.Stainless)
+		back.item("Whiteboard_Tray", -4, 4, 0.15, 0.5, 3.3, 3.45, looks.Stainless)
+	end
 	local board = back.item("Whiteboard", -7, 7, 0, 0.15, 3.5, 8.5, looks.Whiteboard)
-	back.item("Whiteboard_Tray", -4, 4, 0.15, 0.5, 3.3, 3.45, looks.Stainless)
 	writing(board, back.out, "TRAINING PLAN", { "Mon   Squat 5x5 @ 75%", "Wed   Bench 5x5 @ 75%",
 		"Fri   Deadlift 3x5 @ 80%", "Next meet: 6 weeks" }, WHITE, INK)
 	for index, a in ipairs({ -6, -2, 2, 6 }) do
 		chair(kit, "Chair_" .. index, a, D - 9, "+d")
 	end
 	desk(kit, "Desk", hw - 3.5, hw - 0.5, 10, 16)
-	kit.item("Laptop", hw - 2.8, hw - 1.4, 12, 14, 3, 3.08, looks.Gadget)
-	kit.item("Laptop_Screen", hw - 1.4, hw - 1.3, 12, 14, 3.08, 4.3, looks.Gadget)
+	if coachProps then
+		-- Facing the desk chair; its bounds reach 0.14 further toward the screen (+a) than the base's middle.
+		propItem(kit, coachProps, "Laptop", "Laptop", 1, hw - 2.1 + 0.14, 13, 3, "-a")
+	else
+		kit.item("Laptop", hw - 2.8, hw - 1.4, 12, 14, 3, 3.08, looks.Gadget)
+		kit.item("Laptop_Screen", hw - 1.4, hw - 1.3, 12, 14, 3.08, 4.3, looks.Gadget)
+	end
 	chair(kit, "DeskChair", hw - 5, 13, "+a")
 	plant(kit, "Plant_1", -hw + 1.5, D - 1.5)
 	plant(kit, "Plant_2", -hw + 1.5, 1.5)
@@ -3815,21 +3919,33 @@ FURNISH.StrongmanShed = function(kit)
 		kit.item(lane.name .. "_Start", lane.a0, lane.a1, 4.4, 4.7, 0.08, 0.1, looks.LaneWhite)
 		kit.item(lane.name .. "_Finish", lane.a0, lane.a1, 40.1, 40.4, 0.08, 0.1, looks.LaneWhite)
 	end
-	-- A chalk stand between the lanes' starts.
-	kit.block("ChalkStand", -20.4, -19.6, 2.6, 3.4, 0, 3.2, looks.SteelBeam)
-	kit.cylinder("ChalkStand_Bowl", -20, 3, 3.45, 0.5, 1.6, "up", looks.Whiteboard)
-	-- A steel rig at the far end, chains hanging from its front beam.
+	-- A chalk stand between the lanes' starts, and a steel rig at the far end with chains hanging from its front
+	-- beam: the BackRooms_01 models on the old solid blocks (now hidden), or blocks.
+	local shedProps = propsFor({ "ChalkStand", "StrongmanRig" })
+	local solids = { kit.block("ChalkStand", -20.4, -19.6, 2.6, 3.4, 0, 3.2, looks.SteelBeam) }
 	local r0, r1, e0, e1 = -4, 6, 42.4, 52.4
 	for index, corner in ipairs({ { r0, e0 }, { r1, e0 }, { r0, e1 }, { r1, e1 } }) do
-		kit.block("Rig_Post_" .. index, corner[1] - 0.3, corner[1] + 0.3, corner[2] - 0.3, corner[2] + 0.3, 0, 10.2, looks.SteelBeam)
+		table.insert(solids, kit.block("Rig_Post_" .. index, corner[1] - 0.3, corner[1] + 0.3, corner[2] - 0.3, corner[2] + 0.3,
+			0, 10.2, looks.SteelBeam))
 	end
 	for index, d in ipairs({ e0, e1 }) do
-		kit.block("Rig_Beam_" .. index, r0 - 0.3, r1 + 0.3, d - 0.3, d + 0.3, 9.6, 10.2, looks.SteelBeam)
+		table.insert(solids, kit.block("Rig_Beam_" .. index, r0 - 0.3, r1 + 0.3, d - 0.3, d + 0.3, 9.6, 10.2, looks.SteelBeam))
 	end
 	for index, a in ipairs({ r0, r1 }) do
-		kit.block("Rig_Side_" .. index, a - 0.3, a + 0.3, e0 + 0.3, e1 - 0.3, 9.6, 10.2, looks.SteelBeam)
+		table.insert(solids, kit.block("Rig_Side_" .. index, a - 0.3, a + 0.3, e0 + 0.3, e1 - 0.3, 9.6, 10.2, looks.SteelBeam))
 	end
-	kit.cylinder("Rig_PullUpBar", (r0 + r1) / 2, (e0 + e1) / 2, 9.35, r1 - r0, 0.2, "a", looks.Stainless)
+	if shedProps then
+		for _, part in ipairs(solids) do
+			hidden(part)
+		end
+		paintLooks(propItem(kit, shedProps, "ChalkStand_Model", "ChalkStand", 1, -20, 3, 0, "+d"), "ChalkStand",
+			{ Stand = looks.SteelBeam })
+		paintLooks(propItem(kit, shedProps, "Rig", "StrongmanRig", 1, (r0 + r1) / 2, (e0 + e1) / 2, 0, "+d"), "StrongmanRig",
+			{ Frame = looks.SteelBeam })
+	else
+		kit.cylinder("ChalkStand_Bowl", -20, 3, 3.45, 0.5, 1.6, "up", looks.Whiteboard)
+		kit.cylinder("Rig_PullUpBar", (r0 + r1) / 2, (e0 + e1) / 2, 9.35, r1 - r0, 0.2, "a", looks.Stainless)
+	end
 	local props = propsFor({ "Tyre", "Sandbag", "Yoke", "FarmerHandle", "AtlasStone", "AtlasStand", "StrongLog", "Chain",
 		"CompPlate" })
 	if props == nil then

@@ -590,6 +590,8 @@ StarterGymConfig.PropAssets = {
 	-- drinks fridge, supplement bar counter, slatwall, podium, tee stack, tee table, shop counter top
 	{ id = 72413560307802 }, -- Spa_01: sauna bench, duckboard, heater, lamp, bucket, thermometer, shower screen,
 	-- wall ladder, plunge step, floor mat
+	{ id = 106359740301632 }, -- BackRooms_01: kitchen unit, cork board, hang rail, coat hook, filing cabinet, wall
+	-- clock, whiteboard frame, laptop, flat plate, bar stand, flat bench, chalk stand, strongman rig
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -876,6 +878,21 @@ StarterGymConfig.PropColourways = {
 	WallLadder = { { Wood = "Oak" } },
 	PlungeStep = { { Wood = "Oak" } },
 	FloorMat = { { Mat = "Teal" } },
+	-- The back rooms (BackRooms_01, art/scripts/build_back_rooms_01.py). RoomProps paints the pieces made of a
+	-- room's surfaces with its looks over these.
+	KitchenUnit = { { Body = "Sage", Top = "Oak", Handles = "Silver" } },
+	CorkBoard = { { Frame = "Oak", Cork = "Kraft", NoteA = "Yellow", NoteB = "Mint" } },
+	HangRail = { { Rail = "Silver" } },
+	CoatHook = { { Hook = "Silver" } },
+	FilingCabinet = { { Body = "LightGrey", Handles = "Silver" } },
+	WallClock = { { Rim = "Black", Face = "White" } },
+	WhiteboardFrame = { { Frame = "Silver" } },
+	Laptop = { { Body = "Charcoal", Screen = "Black" } },
+	FlatPlate = { { Plate = "Red" } },
+	BarStand = { { Holder = "Charcoal", Bars = "Silver" } },
+	FlatBench = { { Pad = "Red", Frame = "Black" } },
+	ChalkStand = { { Stand = "Charcoal", Bowl = "White" } },
+	StrongmanRig = { { Frame = "Charcoal", Bar = "Silver" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

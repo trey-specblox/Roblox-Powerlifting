@@ -2073,9 +2073,47 @@ and polish.
     not re-run.
   - NOT checked: the showers, massage and spa reception by screenshot (counts
     and names only); walking into the benches and steps; the user's own look.
-  NEXT ACTION: batch 7 (Staff Room, Storage, Office, Lockers, Training Zone,
-  Strongman Shed) in Blender: preview, the user's approval, upload, place,
-  Studio test, commit on approval. Unique meshes 543 of 600: reuse first.
+  Batch 7 (Staff Room, Lockers, Office, Coach, Storage, Training Zone,
+  Strongman Shed): `art/scripts/build_back_rooms_01.py` ->
+  `art/blender/BackRooms_01.blend`, 25 pieces, 3,608 triangles, CHECK PASSED;
+  previews sent (backface culling). New items (1-4 colour pieces each, for
+  the mesh budget): KitchenUnit (stretched; base and wall cabinets),
+  CorkBoard, HangRail, CoatHook, FilingCabinet, WallClock, WhiteboardFrame,
+  Laptop, FlatPlate, BarStand, FlatBench, ChalkStand, StrongmanRig. Reused:
+  CounterUnit (locker vanity), WallShelf (cubicle seats), Desk (staff dining
+  and coffee tables), Sink (kitchen), StorageBox (spare boxes). Stay blocks:
+  the Lockers' 40 oak wall battens (wall trim), cubicle walls, splashback,
+  TV/guide/whiteboard/rota title writing surfaces, the mirror and its frame,
+  steel wall panels, lane lines. Approved by the user ("Approve, upload");
+  exported to `art/exports/BackRooms_01.glb`, uploaded as the group:
+  rbxassetid://106359740301632 (materials.json; a first try was refused by
+  the connection before reaching Roblox). COMMITTED and pushed with user
+  approval on 2026-10-29 ("Commit, then batch 8").
+  - StarterGymConfig: PropAssets entry and colourways for the 13 items.
+  - RoomProps: Lockers (vanity, cubicle seats on their old blocks now hidden,
+    hooks), StaffRoom (base and wall cabinets, sink, dining and coffee
+    tables on their old blocks now hidden, rota board, tee rail), Office
+    (filing cabinet on its old block now hidden, clock), Coach (whiteboard
+    frame, laptop), plateStack (flat plates in their colours), Storage (bar
+    stand on the old holder block now hidden, boxes), TrainingZone (benches
+    on their old pad blocks now hidden), StrongmanShed (chalk stand and rig on
+    their old blocks now hidden). Old blocks are the fallback everywhere.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Rojo first missed the last
+    edit (the Strongman Shed); a small comment change synced it before the
+    test. Studio Play (by Claude): no script errors, no room warnings.
+    Visible blocks: Staff Room 60 -> 11, Lockers 57 -> 51 (the battens),
+    Office 7 -> 1, Coach 5 -> 1, Storage 28 -> 0, Training Zone 33 -> 17,
+    Strongman Shed 21 -> 10. Screenshots: the Staff Room kitchen and table,
+    Storage (bar stand, boxes), the strongman rig. Audit: visible blocks
+    1,187 -> 1,067, parts 5,466, MeshParts 4,046, unique meshes 568 (budget
+    600), shadow casters 1,910, lights 144 (0 shadows), screens 74, solid
+    decor 0, precise 0. StarterGym_VerifyShell not re-run.
+  - NOT checked: the Office, Coach, Lockers and Training Zone by screenshot
+    (counts and names only); walking into the new pieces; the user's own look.
+  NEXT ACTION: batch 8 (themed fronts, the coach's clipboard) in Blender:
+  preview, the user's approval, upload, place, Studio test, commit on
+  approval. Unique meshes 568 of 600: reuse first (WallClock,
+  WhiteboardFrame, WallShelf, RailPost/RailRun...).
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2145,7 +2183,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Replace the spa wing's block furniture with Blender models (blocks to Blender, batch 6); `git log -1` for the hash.
+- 2026-10-29, pushed: Replace the back rooms' block furniture with Blender models (blocks to Blender, batch 7); `git log -1` for the hash.
+- `83234f1` (2026-10-29, pushed) Replace the spa wing's block furniture with Blender models (blocks to Blender, batch 6).
 - `3118407` (2026-10-29, pushed) Replace the Cafe, Supplement Bar and Shop block furniture with Blender models (blocks to Blender, batch 5).
 - `a29fb82` (2026-10-29, pushed) Replace the reception's block furniture with Blender models (blocks to Blender, batch 4).
 - `a0206d1` (2026-10-29, pushed) Replace the block door pieces and name plaques with Blender models (blocks to Blender, batch 3).

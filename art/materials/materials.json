@@ -742,6 +742,14 @@
       "ids": {
         "model": "rbxassetid://72413560307802"
       }
+    },
+    "BackRooms_01": {
+      "about": "The Staff Room, Lockers, Office, Coach room, Storage, Training Zone and Strongman Shed pieces no earlier model covers: a stretched cabinet run (KitchenUnit), the rota board (CorkBoard), a clothes rail (HangRail), a coat hook (CoatHook), a filing cabinet (FilingCabinet), a wall clock (WallClock), a whiteboard frame (WhiteboardFrame), a laptop (Laptop), a bumper plate lying flat (FlatPlate), the bar holder with bars (BarStand), the flat bench (FlatBench), the chalk stand (ChalkStand) and the strongman rig (StrongmanRig). Made by art/scripts/build_back_rooms_01.py (art/blender/BackRooms_01.blend).",
+      "file": "art/exports/BackRooms_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://106359740301632"
+      }
     }
   },
   "images": {
