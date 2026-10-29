@@ -33,6 +33,7 @@ local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
 local ServerFolder = script.Parent.Parent
 local BuildParts = require(ServerFolder:WaitForChild("World"):WaitForChild("BuildParts"))
 local RackConfigurator = require(ServerFolder:WaitForChild("Training"):WaitForChild("RackConfigurator"))
+local StyledScreen = require(ServerFolder:WaitForChild("World"):WaitForChild("StyledScreen"))
 
 local MockMeetArena = {}
 
@@ -73,38 +74,10 @@ local function roomsFolder(): Folder
 	return folder
 end
 
--- A dark board's text on its `face`: a red title and white lines.
-local function boardText(part: BasePart, face: Enum.NormalId, title: string, lines: { string })
-	local gui = Instance.new("SurfaceGui")
-	gui.Name = "Writing"
-	gui.Face = face
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 30
-	gui.LightInfluence = 0
-	gui.Parent = part
-	local frame = Instance.new("Frame")
-	frame.Size = UDim2.fromScale(1, 1)
-	frame.BorderSizePixel = 0
-	frame.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
-	frame.Parent = gui
-	local function label(text: string, y: number, height: number, weight: Enum.FontWeight, colour: Color3)
-		local textLabel = Instance.new("TextLabel")
-		textLabel.BackgroundTransparency = 1
-		textLabel.Position = UDim2.fromScale(0.05, y)
-		textLabel.Size = UDim2.fromScale(0.9, height)
-		textLabel.Text = text
-		textLabel.TextColor3 = colour
-		textLabel.TextScaled = true
-		textLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", weight)
-		textLabel.Parent = frame
-	end
-	label(title, 0.05, 0.26, Enum.FontWeight.Heavy, Color3.fromRGB(226, 52, 52))
-	local share = 0.62 / #lines
-	for index, line in ipairs(lines) do
-		label(line, 0.34 + (index - 1) * share, share * 0.86, Enum.FontWeight.Bold, WHITE)
-	end
+-- A board's screen on its `face`, in the game's one style (StyledScreen); `mark` picks its heading's mark.
+local function boardText(part: BasePart, face: Enum.NormalId, title: string, lines: { string }, mark: string?)
+	StyledScreen.build(part, face, title, lines, mark, 30)
 end
-
 --[[
 	The lifter's coach (GAME_DESIGN §22: what a coach does is still to be
 	decided; for now they watch and react). A standard Roblox figure in coach
@@ -182,17 +155,44 @@ local function buildCoach(model: Model, at: Vector3, watching: Vector3): TextLab
 	tag.TextScaled = true
 	tag.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
 	tag.Parent = billboard
+	local tagEdge = Instance.new("UIStroke")
+	tagEdge.Color = StyledScreen.Colours.white
+	tagEdge.Thickness = 2
+	tagEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	tagEdge.Parent = tag
+	-- The speech bubble in the game's style: a white slab with an ink edge, a yellow accent bar down its
+	-- left side and a tail pointing at the coach.
 	local bubble = Instance.new("Frame")
 	bubble.Name = "Bubble"
 	bubble.Size = UDim2.new(1, 0, 0, 56)
 	bubble.Rotation = 3
-	bubble.BackgroundColor3 = WHITE
+	bubble.BackgroundColor3 = StyledScreen.Colours.white
 	bubble.Visible = false
 	bubble.Parent = billboard
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(12, 12, 14)
+	stroke.Color = StyledScreen.Colours.ink
 	stroke.Thickness = 3
 	stroke.Parent = bubble
+	local accent = Instance.new("Frame")
+	accent.Name = "Accent"
+	accent.BorderSizePixel = 0
+	accent.BackgroundColor3 = StyledScreen.Colours.yellow
+	accent.Size = UDim2.new(0, 7, 1, 0)
+	accent.Parent = bubble
+	local tail = Instance.new("Frame")
+	tail.Name = "Tail"
+	tail.BorderSizePixel = 0
+	tail.BackgroundColor3 = StyledScreen.Colours.white
+	tail.AnchorPoint = Vector2.new(0.5, 0.5)
+	tail.Position = UDim2.new(0.5, 0, 1, 0)
+	tail.Size = UDim2.fromOffset(16, 16)
+	tail.Rotation = 45
+	tail.ZIndex = 0
+	tail.Parent = bubble
+	local tailEdge = Instance.new("UIStroke")
+	tailEdge.Color = StyledScreen.Colours.ink
+	tailEdge.Thickness = 3
+	tailEdge.Parent = tail
 	local line = Instance.new("TextLabel")
 	line.Name = "Line"
 	line.BackgroundTransparency = 1
@@ -291,12 +291,12 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 	-- The attempt board on the back wall, above the platform.
 	local board = decor("AttemptBoard", Vector3.new(-14, 9, hz - 0.4), Vector3.new(14, 21, hz - 0.06), looks.Gadget)
 	boardText(board, Enum.NormalId.Front, "ATTEMPT BOARD", { owner.DisplayName, "LIFT  —", "ATTEMPT  1   2   3",
-		"WEIGHT  —  KG" })
+		"WEIGHT  —  KG" }, "bar")
 	-- A banner on each side wall.
 	local left = decor("Banner_Left", Vector3.new(-hx + 0.06, 8, -6), Vector3.new(-hx + 0.3, 14, 14), looks.Gadget)
-	boardText(left, Enum.NormalId.Right, "CENTRAL MOCK MEET", { "Your own private meet room" })
+	boardText(left, Enum.NormalId.Right, "MOCK MEET", { "Your own private meet room", "Your coach is watching" }, "star")
 	local right = decor("Banner_Right", Vector3.new(hx - 0.3, 8, -6), Vector3.new(hx - 0.06, 14, 14), looks.Gadget)
-	boardText(right, Enum.NormalId.Left, "CENTRAL MOCK MEET", { "Squat  ·  Bench  ·  Deadlift" })
+	boardText(right, Enum.NormalId.Left, "THE BIG THREE", { "Squat  ·  Bench  ·  Deadlift", "3 attempts each" }, "dots")
 
 	-- A bench to wait on by the arrival spot.
 	box("WaitBench_Seat", Vector3.new(-hx + 1, 1.5, -hz + 6), Vector3.new(-hx + 3, 1.8, -hz + 16), looks.Wood)
@@ -365,7 +365,7 @@ function MockMeetArena.setBoard(room: Room, lines: { string })
 	if old then
 		old:Destroy()
 	end
-	boardText(board, Enum.NormalId.Front, "ATTEMPT BOARD", lines)
+	boardText(board, Enum.NormalId.Front, "ATTEMPT BOARD", lines, "bar")
 end
 
 return MockMeetArena

@@ -122,7 +122,7 @@ local function makeHeading(parent: Instance, text: string, order: number): Frame
 	row.LayoutOrder = order
 	row.Parent = parent
 	local width = 14 * #text + 10
-	UIStyle.sectionHead(row, "Text", text, UDim2.fromOffset(0, 2), width, PANEL_WIDTH - 60)
+	UIStyle.sectionHead(row, "Text", text, UDim2.fromOffset(0, 2), width, PANEL_WIDTH - 60, "bar")
 	return row
 end
 
@@ -228,7 +228,7 @@ local function buildGui(player: Player)
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Visible = false
 	panel = holder
-	UIStyle.titleTag(holder, "Tag", "SELECT YOUR GOAL", UDim2.fromOffset(-16, -28), UDim2.fromOffset(330, 48))
+	UIStyle.titleTag(holder, "Tag", "SELECT YOUR GOAL", UDim2.fromOffset(-16, -28), UDim2.fromOffset(330, 48), nil, "chevron")
 	UIStyle.exitButton(holder, "Exit", "EXIT", UDim2.new(1, -150, 1, 18), function()
 		send("Close")
 	end)

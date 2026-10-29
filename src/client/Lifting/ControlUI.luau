@@ -190,7 +190,7 @@ local function build(instructionText: string): Visuals
 		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	-- Its text is set per challenge ("SQUAT  CONTROL").
 	local headline = UIStyle.titleTag(holder, "Tag", "", UDim2.fromOffset(-16, -TAG_OVERHANG),
-		UDim2.fromOffset(TAG_WIDTH, TAG_HEIGHT))
+		UDim2.fromOffset(TAG_WIDTH, TAG_HEIGHT), nil, "bar")
 
 	--[[
 		The track. Exactly TRACK_WIDTH x TRACK_SCREEN_HEIGHT, and the bar and the

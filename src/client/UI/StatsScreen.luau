@@ -107,7 +107,7 @@ function StatsScreen.start()
 	local holder, body = UIStyle.panel(gui, "Panel", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Visible = false
-	UIStyle.titleTag(holder, "Tag", "PLAYER STATS", UDim2.fromOffset(-18, -30), UDim2.fromOffset(300, 52))
+	UIStyle.titleTag(holder, "Tag", "PLAYER STATS", UDim2.fromOffset(-18, -30), UDim2.fromOffset(300, 52), nil, "star")
 
 	-- Left: avatar, name, class.
 	local avatar = Instance.new("ImageLabel")
@@ -130,7 +130,7 @@ function StatsScreen.start()
 
 	-- Middle: Competition Number and Scale.
 	local middleX = 290
-	UIStyle.sectionHead(body, "CNHead", "COMPETITION NUMBER", UDim2.fromOffset(middleX, 40), 236, 300)
+	UIStyle.sectionHead(body, "CNHead", "COMPETITION NUMBER", UDim2.fromOffset(middleX, 40), 236, 300, "bar")
 	local cnRows: { [string]: TextLabel } = {}
 	local scaleRows: { [string]: TextLabel } = {}
 	for index, lift in ipairs(ProgressionConfig.Lifts) do
@@ -147,7 +147,7 @@ function StatsScreen.start()
 		UIStyle.heading()).Text = "TOTAL"
 	local totalText = UIStyle.text(body, "Total", UDim2.fromOffset(middleX + 150, 206), UDim2.fromOffset(140, 36),
 		SIZES.heading, C.yellow, UIStyle.heading(), Enum.TextXAlignment.Right)
-	UIStyle.sectionHead(body, "ScaleHead", "PROVEN IN A MEET", UDim2.fromOffset(middleX, 266), 210, 300)
+	UIStyle.sectionHead(body, "ScaleHead", "PROVEN IN A MEET", UDim2.fromOffset(middleX, 266), 210, 300, "dots")
 	for index, lift in ipairs(ProgressionConfig.Lifts) do
 		local y = 298 + (index - 1) * 36
 		UIStyle.text(body, lift .. "_ScaleName", UDim2.fromOffset(middleX + 16, y), UDim2.fromOffset(140, 32), SIZES.body,
@@ -159,7 +159,7 @@ function StatsScreen.start()
 	hint.Text = "Competition Number is what training built. A lift is proven when you make it in a meet."
 
 	-- Right: the technique radar.
-	UIStyle.sectionHead(body, "TechHead", "TECHNIQUE", UDim2.fromOffset(640, 40), 118, 270)
+	UIStyle.sectionHead(body, "TechHead", "TECHNIQUE", UDim2.fromOffset(640, 40), 118, 270, "corner")
 	local radar = Instance.new("Frame")
 	radar.Name = "Radar"
 	radar.BackgroundTransparency = 1

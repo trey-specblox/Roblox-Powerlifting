@@ -124,7 +124,8 @@ end
 	Waits for the remotes to replicate. Client only.
 ]]
 function LiftingRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
-	local folder = replicatedStorage:WaitForChild(LiftingRemotes.FOLDER_NAME)
+	-- No time limit: the server makes this after building the gym, which takes a while (no "infinite yield" warning).
+	local folder = replicatedStorage:WaitForChild(LiftingRemotes.FOLDER_NAME, math.huge) :: Instance
 	return collect(folder, true)
 end
 

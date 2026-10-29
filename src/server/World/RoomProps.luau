@@ -31,6 +31,7 @@ local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
 local MockMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("MockMeetConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
+local StyledScreen = require(script.Parent:WaitForChild("StyledScreen"))
 
 local RoomProps = {}
 
@@ -297,145 +298,6 @@ local function writing(part: BasePart, toward: Vector3, title: string, lines: { 
 	for index, line in ipairs(lines) do
 		label(line, 0.08, 0.36 + (index - 1) * share, 0.84, share * 0.8, Enum.FontWeight.Medium)
 	end
-end
-
---[[
-	A screen's sign in the game's one UI style (GAME_DESIGN "One UI style for the
-	whole game"): navy fading darker, a faint grid, a white frame, a slanted black
-	tag with a white edge and two yellow slashes, white lines in Montserrat, and a
-	small CENTRAL mark. Named "Writing" like writing()'s signs. The server cannot
-	require the client's UIStyle, so these colours mirror UIStyle.Colours: change
-	them together.
-]]
-local SCREEN_STYLE = {
-	navy = Color3.fromRGB(14, 22, 54),
-	navyDeep = Color3.fromRGB(7, 11, 30),
-	grid = Color3.fromRGB(70, 96, 170),
-	yellow = Color3.fromRGB(250, 206, 36),
-	white = Color3.fromRGB(248, 248, 244),
-	ink = Color3.fromRGB(10, 10, 12),
-	muted = Color3.fromRGB(150, 160, 192),
-}
-local function styledScreen(part: BasePart, toward: Vector3, tag: string, lines: { string })
-	local S = SCREEN_STYLE
-	local family = "rbxasset://fonts/families/Montserrat.json"
-	local gui = Instance.new("SurfaceGui")
-	gui.Name = "Writing"
-	gui.Face = faceToward(toward)
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
-	gui.LightInfluence = 0
-	gui.Brightness = 1.3
-	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.Parent = part
-
-	local back = Instance.new("Frame")
-	back.Name = "Back"
-	back.Size = UDim2.fromScale(1, 1)
-	back.BorderSizePixel = 0
-	back.BackgroundColor3 = S.navy
-	back.ClipsDescendants = true
-	back.Parent = gui
-	local shade = Instance.new("UIGradient")
-	shade.Rotation = 90
-	shade.Color = ColorSequence.new(S.navy, S.navyDeep)
-	shade.Parent = back
-	for x = 0.05, 1, 0.05 do
-		local v = Instance.new("Frame")
-		v.BorderSizePixel = 0
-		v.BackgroundColor3 = S.grid
-		v.BackgroundTransparency = 0.82
-		v.Position = UDim2.fromScale(x, 0)
-		v.Size = UDim2.new(0, 2, 1, 0)
-		v.Parent = back
-	end
-	for y = 0.1, 1, 0.1 do
-		local h = Instance.new("Frame")
-		h.BorderSizePixel = 0
-		h.BackgroundColor3 = S.grid
-		h.BackgroundTransparency = 0.82
-		h.Position = UDim2.fromScale(0, y)
-		h.Size = UDim2.new(1, 0, 0, 2)
-		h.Parent = back
-	end
-	local frame = Instance.new("Frame")
-	frame.Name = "Frame"
-	frame.BackgroundTransparency = 1
-	frame.Position = UDim2.fromOffset(8, 8)
-	frame.Size = UDim2.new(1, -16, 1, -16)
-	frame.Parent = back
-	local edge = Instance.new("UIStroke")
-	edge.Color = S.white
-	edge.Thickness = 4
-	edge.Parent = frame
-
-	-- The tag: a slanted black slab, white edge, the heading, two yellow slashes.
-	local tagSlab = Instance.new("Frame")
-	tagSlab.Name = "Tag"
-	tagSlab.BorderSizePixel = 0
-	tagSlab.BackgroundColor3 = S.ink
-	tagSlab.Position = UDim2.fromScale(0.05, 0.08)
-	tagSlab.Size = UDim2.fromScale(0.5, 0.2)
-	tagSlab.Rotation = -4
-	tagSlab.Parent = back
-	local tagEdge = Instance.new("UIStroke")
-	tagEdge.Color = S.white
-	tagEdge.Thickness = 4
-	tagEdge.Parent = tagSlab
-	local tagText = Instance.new("TextLabel")
-	tagText.BackgroundTransparency = 1
-	tagText.Position = UDim2.fromScale(0.05, 0.12)
-	tagText.Size = UDim2.fromScale(0.72, 0.76)
-	tagText.Text = tag
-	tagText.TextColor3 = S.white
-	tagText.TextScaled = true
-	tagText.TextXAlignment = Enum.TextXAlignment.Left
-	tagText.FontFace = Font.new(family, Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
-	tagText.Parent = tagSlab
-	for index = 0, 1 do
-		local slash = Instance.new("Frame")
-		slash.BorderSizePixel = 0
-		slash.BackgroundColor3 = S.yellow
-		slash.Position = UDim2.fromScale(0.82 + index * 0.07, 0.14)
-		slash.Size = UDim2.fromScale(0.035, 0.72)
-		slash.Rotation = 25
-		slash.Parent = tagSlab
-	end
-
-	-- The lines, each with a small yellow marker.
-	local share = 0.58 / #lines
-	for index, line in ipairs(lines) do
-		local y = 0.34 + (index - 1) * share
-		local marker = Instance.new("Frame")
-		marker.BorderSizePixel = 0
-		marker.BackgroundColor3 = S.yellow
-		marker.Position = UDim2.fromScale(0.07, y + share * 0.3)
-		marker.Size = UDim2.fromScale(0.012, share * 0.4)
-		marker.Parent = back
-		local text = Instance.new("TextLabel")
-		text.BackgroundTransparency = 1
-		text.Position = UDim2.fromScale(0.1, y + share * 0.12)
-		text.Size = UDim2.fromScale(0.82, share * 0.76)
-		text.Text = line
-		text.TextColor3 = S.white
-		text.TextScaled = true
-		text.TextXAlignment = Enum.TextXAlignment.Left
-		text.FontFace = Font.new(family, Enum.FontWeight.Bold)
-		text.Parent = back
-	end
-
-	-- The CENTRAL mark, bottom right.
-	local mark = Instance.new("TextLabel")
-	mark.BackgroundTransparency = 1
-	mark.AnchorPoint = Vector2.new(1, 1)
-	mark.Position = UDim2.fromScale(0.95, 0.94)
-	mark.Size = UDim2.fromScale(0.22, 0.08)
-	mark.Text = "CENTRAL"
-	mark.TextColor3 = S.muted
-	mark.TextScaled = true
-	mark.TextXAlignment = Enum.TextXAlignment.Right
-	mark.FontFace = Font.new(family, Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
-	mark.Parent = back
 end
 
 local function plant(kit: Kit, name: string, a: number, d: number)
@@ -1459,21 +1321,38 @@ FURNISH.Cardio = function(kit)
 		kit.wall(which).item("Track_" .. which, 0.4, D - 0.4, 0.08, 0.14, 1.4, 2.6, looks.CardioTrack)
 	end
 	--[[
-		The wall TV (user 2026-10-28: "very bland and just a square"): a real unit.
-		A steel wall mount, a black bezel with a chin carrying the CENTRAL logo and
-		a power light, the glossy screen in front, a soundbar under it with a
-		yellow trim, and a blue backlight washing the wall behind. The screen part
-		keeps the name "TV" and its idle sign the name "Writing": the treadmill
-		game (CardioRhythmController) finds them by those names and draws the
-		round over the screen.
+		The wall TV (user 2026-10-28: "very bland and just a square", then "I want
+		every model to be made in blender"): the Blender model CardioTV_01 (slim
+		bezel, CENTRAL chin, power light, steel mount, soundbar), facing into the
+		room, its screen centred at the old TV's height (8.5). Its screen piece is
+		renamed "TV" and moved into the room's folder, and its idle sign is named
+		"Writing": the treadmill game (CardioRhythmController) finds them by those
+		names and draws the round over the screen. A blue backlight washes the
+		wall behind. If the model fails to load, the block TV below is built.
 	]]
+	local tvProps = propsFor({ "CardioTV" })
+	if tvProps then
+		local a, d = back.at(0, 0.5)
+		local unit = propItem(kit, tvProps, "CardioTV", "CardioTV", 1, a, d, 3.81, "+d")
+		local screen = unit:FindFirstChild("CardioTV_Screen", true) :: BasePart?
+		local bezel = unit:FindFirstChild("CardioTV_Bezel", true) :: BasePart?
+		if screen and bezel then
+			screen.Name = "TV"
+			screen.Reflectance = 0.06
+			screen.Parent = unit.Parent
+			BuildParts.surfaceLight(bezel, faceToward(-back.out), 9, 1.6, 120, Color3.fromRGB(70, 146, 255))
+			StyledScreen.build(screen, faceToward(back.out), "CARDIO ZONE", { "Hop on any machine: hold E",
+				"Treadmills: the rhythm run", "Beat the boards on the side walls", "Jump to hop off" }, "corner")
+		end
+	end
+	if tvProps == nil then
 	back.item("TV_Mount", -2.4, 2.4, 0.08, 0.22, 7, 10, looks.SteelBeam)
 	local bezel = back.item("TV_Bezel", -6.95, 6.95, 0.22, 0.62, 4.95, 12.05, looks.Gadget)
 	BuildParts.surfaceLight(bezel, faceToward(-back.out), 9, 1.6, 120, Color3.fromRGB(70, 146, 255))
 	local tv = back.item("TV", -6.5, 6.5, 0.62, 0.7, 5.4, 11.6, looks.Gadget)
 	tv.Reflectance = 0.06
-	styledScreen(tv, back.out, "CARDIO ZONE", { "Hop on any machine: hold E", "Treadmills: the rhythm run",
-		"Beat the boards on the side walls", "Jump to hop off" })
+	StyledScreen.build(tv, faceToward(back.out), "CARDIO ZONE", { "Hop on any machine: hold E",
+		"Treadmills: the rhythm run", "Beat the boards on the side walls", "Jump to hop off" }, "corner")
 	local logo = back.item("TV_Logo", -1.3, 1.3, 0.62, 0.66, 5.03, 5.33, looks.Gadget)
 	plaque(logo, back.out, "CENTRAL", Color3.fromRGB(12, 12, 14), WHITE)
 	back.item("TV_PowerLight", 6.15, 6.35, 0.62, 0.66, 5.12, 5.24, looks.GlowGreen)
@@ -1482,6 +1361,7 @@ FURNISH.Cardio = function(kit)
 	for index, s in ipairs({ -4.2, 4.2 }) do
 		local a, d = back.at(s, 0.76)
 		kit.cylinder("TV_Speaker_" .. index, a, d, 4.36, 0.04, 0.42, "d", looks.FrontCharcoal)
+	end
 	end
 	local door = kit.doors.front[1] or kit.doorA
 	local board = front.item("Board", door - 12.2, door - 6.2, 0.08, 0.16, 4.6, 8.6, looks.ClassroomBoard)
@@ -2337,8 +2217,8 @@ FURNISH.MockMeet = function(kit)
 	kit.item("CheckInDesk_Screen", -3.6, -1.4, D - 3.9, D - 3.8, 3.3, 4.8, looks.Gadget)
 	chair(kit, "DeskChair", 0, D - 2, "-d")
 	local board = back.item("Board", -9, 9, 0.08, 0.3, 5, 10.4, looks.Gadget)
-	writing(board, back.out, "MOCK MEET", { "Your own private meet room", "Squat, bench, deadlift: 3 attempts each",
-		"Check in at the desk to start" }, Color3.fromRGB(16, 16, 18), WHITE)
+	StyledScreen.build(board, faceToward(back.out), "MOCK MEET", { "Your own private meet room",
+		"Squat, bench, deadlift: 3 attempts each", "Check in at the desk to start" }, "star")
 
 	-- Where the prompt sits: in front of the desk, on the player's side.
 	local point = kit.item("CheckInPoint", -1, 1, D - 8, D - 6, 0.1, 4, looks.Glass)

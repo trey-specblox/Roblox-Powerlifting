@@ -122,7 +122,8 @@ end
 	Waits for the remotes to replicate. Client only.
 ]]
 function MockMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
-	local folder = replicatedStorage:WaitForChild(MockMeetRemotes.FOLDER_NAME)
+	-- No time limit: the server makes this after building the gym, which takes a while (no "infinite yield" warning).
+	local folder = replicatedStorage:WaitForChild(MockMeetRemotes.FOLDER_NAME, math.huge) :: Instance
 	local function get(name: string): RemoteEvent
 		return folder:WaitForChild(name) :: RemoteEvent
 	end

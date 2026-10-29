@@ -250,7 +250,7 @@ local function build(instructionText: string): Visuals
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Position = PANEL_POSITION
 	local title = UIStyle.titleTag(holder, "Tag", "", UDim2.fromOffset(-14, -26), UDim2.fromOffset(400, 48),
-		UIStyle.LiftColours.Deadlift)
+		UIStyle.LiftColours.Deadlift, "corner")
 
 	local content = Instance.new("Frame")
 	content.Name = "Content"

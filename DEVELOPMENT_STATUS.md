@@ -1667,8 +1667,36 @@ and polish.
   red), the Mock Meet Room's MOCK MEET board, the coach's speech bubble.
   Step 5 and the TV COMMITTED with the user's approval on 2026-10-28 (see
   section 1).
-  NEXT ACTION: the Mock Meet signs and the coach's bubble in the new style,
-  and varied title cues (user: "Not every title needs a double line"). After
+  VARIED MARKS + MOCK MEET SIGNS (2026-10-28, user: "Commit+ signs but, Not
+  every title needs a double line. Change it up sometimes with different
+  ques"; NOT committed):
+  - UIStyle.cue (slashes / star / chevron / bar / corner / dots / none);
+    titleTag and sectionHead take a mark; primary/danger buttons use
+    chevrons. Marks mixed across MockMeetUI, the four minigames, the rack
+    menu, the stats screen and the treadmill (SkillCheckUI now tints any mark
+    in the lift colour).
+  - New src/server/World/StyledScreen.luau: in-world screens in the style
+    (colours mirror UIStyle.Colours; build() returns setTag/setLines); used
+    by RoomProps (the Cardio TV: corner mark; the Mock Meet Room board: star)
+    and MockMeetArena (attempt board: bar; banners MOCK MEET: star and THE BIG
+    THREE: dots). Coach bubble: white with an ink edge, a yellow accent bar
+    and a tail; COACH tag with a white edge.
+  - StatsRemotes, MockMeetRemotes and LiftingRemotes wait for their folder
+    with no time limit (the server makes them after building the gym), so
+    the client's "Infinite yield possible" start-up warnings go away.
+  - Checks: luau-lsp 0 new problems (LiftingRemotes keeps 2 older errors),
+    `rojo build` OK, LF kept. Studio: screenshots of the Mock Meet Room
+    board, the meet screen (star, corner, //, dots, chevrons), the arena
+    banners and coach bubble, the live attempt board; 0 server warnings; a
+    last run showed 0 client warnings.
+  COMMITTED with the user's approval on 2026-10-28 (see section 1).
+  NEXT ACTION: per the user's newer rule (memory "models-made-in-blender",
+  2026-10-28: every physical model is modelled in Blender, never stacked
+  Roblox blocks in code), the block-built pieces from this work are
+  candidates for Blender models: the Cardio TV unit (mount, bezel, logo
+  chin, soundbar), the Mock Meet Room's check-in desk, the private room's
+  platform, judge-free furniture, wait bench, board and banner frames.
+  Screens on them stay as StyledScreen SurfaceGuis. After
   that: the rewards step needs the weight-class build decision (§33.11 item
   11) before any meet raises Competition Scale.
   Other open threads: the records
@@ -1729,7 +1757,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Restyle the treadmill game, its leaderboards, and rebuild the Cardio TV (UI restyle step 5); `git log -1` for the hash.
+- 2026-10-28, pushed: Vary the heading marks and restyle the Mock Meet signs and coach bubble; `git log -1` for the hash.
+- `ca8dc47` (2026-10-28, pushed) Restyle the treadmill game, its leaderboards, and rebuild the Cardio TV (UI restyle step 5).
 - `4039899` (2026-10-28, pushed) Add the PLAYER STATS screen (UI restyle step 4).
 - `5f85a67` (2026-10-28, pushed) Restyle the rack menu and every "E" prompt (UI restyle step 3).
 - `bd7f298` (2026-10-28, pushed) One UI style for the Mock Meet and all lift minigames (UI restyle steps 1-2).

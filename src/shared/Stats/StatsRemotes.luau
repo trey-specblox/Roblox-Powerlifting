@@ -72,7 +72,8 @@ end
 
 -- Waits for the remote to replicate. Client only.
 function StatsRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
-	local folder = replicatedStorage:WaitForChild(StatsRemotes.FOLDER_NAME)
+	-- No time limit: the server makes this after building the gym, which takes a while (no "infinite yield" warning).
+	local folder = replicatedStorage:WaitForChild(StatsRemotes.FOLDER_NAME, math.huge) :: Instance
 	return { getMyStats = folder:WaitForChild(StatsRemotes.GET_MY_STATS) :: RemoteFunction }
 end
 

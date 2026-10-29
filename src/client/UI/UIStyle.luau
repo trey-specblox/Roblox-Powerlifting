@@ -112,6 +112,71 @@ end
 UIStyle.slashes = slashes
 
 --[[
+	The small mark after a heading. User 2026-10-28: "Not every title needs a
+	double line. Change it up sometimes with different cues." So headings pick
+	one of these (each fits a box about 26 px wide and `height` tall, starting at
+	`position`):
+		"slashes"  two slanted bars //
+		"star"     a four-point star
+		"chevron"  two arrow tips >>
+		"bar"      a thick bar and a small square
+		"corner"   an L-shaped bracket in the top right
+		"dots"     three dots getting smaller
+		"none"     nothing
+]]
+export type Cue = "slashes" | "star" | "chevron" | "bar" | "corner" | "dots" | "none"
+
+local function cue(parent: Instance, kind: Cue?, position: UDim2, height: number, colour: Color3?)
+	local tint = colour or C.yellow
+	local z = (parent :: any).ZIndex or 1
+	local function piece(name: string, offset: Vector2, size: Vector2, rotation: number?): Frame
+		local made = frame(parent, name, position + UDim2.fromOffset(offset.X, offset.Y), UDim2.fromOffset(size.X, size.Y), tint,
+			rotation)
+		made.ZIndex = z
+		return made
+	end
+	local k = kind or "slashes"
+	local h = height
+	if k == "slashes" then
+		slashes(parent, position, h, colour)
+	elseif k == "star" then
+		for index, rotation in ipairs({ 0, 90 }) do
+			local ray = piece("Star_" .. index, Vector2.new(h * 0.5, h * 0.5), Vector2.new(h * 0.24, h), rotation)
+			ray.AnchorPoint = Vector2.new(0.5, 0.5)
+			local taper = Instance.new("UIGradient")
+			taper.Rotation = 90
+			taper.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 1),
+			})
+			taper.Parent = ray
+		end
+	elseif k == "chevron" then
+		for index = 0, 1 do
+			local x = index * h * 0.5
+			local upper = piece("Chevron_" .. index .. "_A", Vector2.new(x + h * 0.22, h * 0.32), Vector2.new(h * 0.5, h * 0.16), 45)
+			upper.AnchorPoint = Vector2.new(0.5, 0.5)
+			local lower = piece("Chevron_" .. index .. "_B", Vector2.new(x + h * 0.22, h * 0.68), Vector2.new(h * 0.5, h * 0.16), -45)
+			lower.AnchorPoint = Vector2.new(0.5, 0.5)
+		end
+	elseif k == "bar" then
+		piece("Bar", Vector2.new(0, h * 0.38), Vector2.new(h * 0.8, h * 0.24))
+		piece("BarDot", Vector2.new(h * 0.95, h * 0.38), Vector2.new(h * 0.24, h * 0.24))
+	elseif k == "corner" then
+		piece("Corner_Top", Vector2.new(0, 0), Vector2.new(h * 0.9, h * 0.16))
+		piece("Corner_Side", Vector2.new(h * 0.74, 0), Vector2.new(h * 0.16, h * 0.9))
+	elseif k == "dots" then
+		for index, scale in ipairs({ 0.36, 0.26, 0.18 }) do
+			local d = h * scale
+			local dot = piece("Dot_" .. index, Vector2.new((index - 1) * h * 0.42, (h - d) / 2), Vector2.new(d, d))
+			local round = Instance.new("UICorner")
+			round.CornerRadius = UDim.new(0.5, 0)
+			round.Parent = dot
+		end
+	end
+end
+UIStyle.cue = cue
+
+--[[
 	A panel: returns the holder (place and size it; nothing is drawn on it) and
 	the body (put the content in it). The faint grid is drawn every `GRID`
 	pixels over the body's size at the time it is built, so build panels at
@@ -155,25 +220,25 @@ function UIStyle.panel(parent: Instance, name: string, position: UDim2, size: UD
 	return holder, body
 end
 
--- A slanted black tag with a white edge: a panel's heading. `accent` colours its slashes.
+-- A slanted black tag with a white edge: a panel's heading. `accent` colours its mark; `mark` picks it (Cue).
 function UIStyle.titleTag(parent: Instance, name: string, text: string, position: UDim2, size: UDim2,
-	accent: Color3?): TextLabel
+	accent: Color3?, mark: Cue?): TextLabel
 	local tag = frame(parent, name, position, size, C.ink, -4)
 	tag.ZIndex = 5
 	stroke(tag, C.white, 2)
 	local label = UIStyle.label(tag, "Text", UDim2.new(0, 12, 0.14, 0), UDim2.new(1, -44, 0.72, 0), C.white, UIStyle.heading())
 	label.ZIndex = 5
 	label.Text = text
-	slashes(tag, UDim2.new(1, -26, 0.12, 0), size.Y.Offset * 0.76, accent)
+	cue(tag, mark, UDim2.new(1, -30, 0.12, 0), size.Y.Offset * 0.76, accent)
 	return label
 end
 
--- A small heading inside a panel: text, slashes, then a thin line running to `lineTo` pixels.
+-- A small heading inside a panel: text, its mark (Cue), then a thin line running to `lineTo` pixels.
 function UIStyle.sectionHead(parent: Instance, name: string, text: string, position: UDim2, textWidth: number,
-	lineTo: number?): TextLabel
+	lineTo: number?, mark: Cue?): TextLabel
 	local label = UIStyle.label(parent, name, position, UDim2.fromOffset(textWidth, 20), C.white, UIStyle.heading())
 	label.Text = text
-	slashes(parent, position + UDim2.fromOffset(textWidth + 6, 1), 18)
+	cue(parent, mark, position + UDim2.fromOffset(textWidth + 6, 1), 18)
 	if lineTo then
 		frame(parent, name .. "_Line", position + UDim2.fromOffset(textWidth + 30, 10),
 			UDim2.fromOffset(math.max(0, lineTo - textWidth - 30), 2), C.white)
@@ -218,7 +283,8 @@ function UIStyle.button(parent: Instance, name: string, text: string, position: 
 		holder.Position = UDim2.new(1, 30, 0.5, 0)
 		holder.Size = UDim2.fromOffset(24, size.Y.Offset * 0.6)
 		holder.Parent = button
-		slashes(holder, UDim2.fromOffset(0, 0), size.Y.Offset * 0.6, if kind == "primary" then C.ink else C.white)
+		-- Chevrons say "go" on an action button.
+		cue(holder, "chevron", UDim2.fromOffset(0, 0), size.Y.Offset * 0.6, if kind == "primary" then C.ink else C.white)
 	end
 	button.Activated:Connect(onClick)
 	return button

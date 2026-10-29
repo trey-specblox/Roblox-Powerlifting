@@ -296,7 +296,7 @@ local function buildScreen(): Screen
 	local holder, body = UIStyle.panel(gui, "Panel", UIStyle.MinigameCentre, UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Position = UIStyle.MinigameCentre
-	UIStyle.titleTag(holder, "Tag", "TREADMILL", UDim2.fromOffset(-14, -24), UDim2.fromOffset(260, 44))
+	UIStyle.titleTag(holder, "Tag", "TREADMILL", UDim2.fromOffset(-14, -24), UDim2.fromOffset(260, 44), nil, "dots")
 
 	-- The level (or GET READY / YOU SURVIVED) on the left, the time on the right.
 	local status = UIStyle.text(body, "Status", UDim2.fromOffset(PAD, HEADER_Y), UDim2.fromOffset(260, HEADER_HEIGHT),
@@ -459,7 +459,7 @@ local function buildTv(part: BasePart): Tv
 	lanes.ZIndex = 2
 	lanes.Parent = body
 	local highway = newHighway(lanes, 2)
-	local title = UIStyle.titleTag(body, "Title", "RHYTHM RUN", UDim2.new(0.42, 0, 0, 12), TV_TAG_SIZE)
+	local title = UIStyle.titleTag(body, "Title", "RHYTHM RUN", UDim2.new(0.42, 0, 0, 12), TV_TAG_SIZE, nil, "chevron")
 	local info = UIStyle.text(body, "Info", UDim2.new(0.42, 0, 0, 62), UDim2.new(0.56, 0, 0, 34), TV_INFO_SIZE, C.yellow,
 		UIStyle.heading(), Enum.TextXAlignment.Left)
 	info.TextWrapped = false

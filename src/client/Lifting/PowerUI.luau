@@ -375,7 +375,7 @@ local function build(instructionText: string): Visuals
 	local panelHolder, panel = UIStyle.panel(group, "Info", UDim2.new(0.5, -PANEL_WIDTH / 2, 0, FIELD_SIZE + PANEL_GAP),
 		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	local titleText = UIStyle.titleTag(panelHolder, "Tag", "",
-		UDim2.new(0.5, -TITLE_WIDTH / 2, 0, -TITLE_HEIGHT / 2 - 4), UDim2.fromOffset(TITLE_WIDTH, TITLE_HEIGHT))
+		UDim2.new(0.5, -TITLE_WIDTH / 2, 0, -TITLE_HEIGHT / 2 - 4), UDim2.fromOffset(TITLE_WIDTH, TITLE_HEIGHT), nil, "chevron")
 
 	local instruction = panelLine(panel, "Instruction", INSTRUCTION_Y, 26, TEXT.body, C.white, UIStyle.heading())
 	instruction.Text = instructionText

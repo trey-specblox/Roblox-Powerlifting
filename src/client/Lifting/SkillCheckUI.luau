@@ -294,8 +294,9 @@ local function applyLiftColour(current: Visuals, colour: Color3)
 	current.closing.stroke.Color = colour
 	current.glow.stroke.Color = colour
 	current.keyBase.BackgroundColor3 = colour
+	-- The tag's mark (whatever UIStyle cue it is: its pieces are the tag's Frames).
 	for _, child in ipairs(current.tag:GetChildren()) do
-		if child:IsA("Frame") and string.sub(child.Name, 1, 6) == "Slash_" then
+		if child:IsA("Frame") then
 			child.BackgroundColor3 = colour
 		end
 	end
@@ -388,7 +389,9 @@ local function build(instructionText: string): Visuals
 		"Tag",
 		"",
 		UDim2.fromOffset(-14, -24),
-		UDim2.fromOffset(240, 44)
+		UDim2.fromOffset(240, 44),
+		nil,
+		"star"
 	)
 	local tag = headline.Parent :: Frame
 

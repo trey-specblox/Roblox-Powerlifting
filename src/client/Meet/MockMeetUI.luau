@@ -75,7 +75,7 @@ function MockMeetUI.build(handlers: Handlers): Ui
 	title.Position = UDim2.fromOffset(24, 18)
 	title.Size = UDim2.fromOffset(260, 70)
 	title.Parent = gui
-	UIStyle.titleTag(title, "Tag", "MOCK MEET", UDim2.fromOffset(0, 0), UDim2.fromOffset(230, 44))
+	UIStyle.titleTag(title, "Tag", "MOCK MEET", UDim2.fromOffset(0, 0), UDim2.fromOffset(230, 44), nil, "star")
 	UIStyle.label(title, "Sub", UDim2.fromOffset(16, 48), UDim2.fromOffset(200, 18), C.yellow, UIStyle.heading()).Text =
 		"PRIVATE ROOM  ·  COACH WATCHING"
 
@@ -88,7 +88,7 @@ function MockMeetUI.build(handlers: Handlers): Ui
 
 	-- ------------------------------------------------ scorecard
 	local scoreHolder, score = UIStyle.panel(gui, "Scorecard", UDim2.new(1, -350, 0.5, -130), UDim2.fromOffset(320, 252))
-	UIStyle.titleTag(scoreHolder, "Tag", "SCORECARD", UDim2.fromOffset(-14, -24), UDim2.fromOffset(190, 38))
+	UIStyle.titleTag(scoreHolder, "Tag", "SCORECARD", UDim2.fromOffset(-14, -24), UDim2.fromOffset(190, 38), nil, "corner")
 	local classText = UIStyle.label(score, "Class", UDim2.fromOffset(18, 24), UDim2.new(1, -36, 0, 18), C.muted)
 	local cells: { [string]: { TextLabel } } = {}
 	for row, lift in ipairs(MeetConfig.LiftOrder) do
@@ -138,7 +138,7 @@ function MockMeetUI.build(handlers: Handlers): Ui
 	choose.BackgroundTransparency = 1
 	choose.Size = UDim2.fromScale(1, 1)
 	choose.Parent = action
-	UIStyle.sectionHead(choose, "Prompt", "TYPE YOUR WEIGHT", UDim2.fromOffset(22, 26), 168)
+	UIStyle.sectionHead(choose, "Prompt", "TYPE YOUR WEIGHT", UDim2.fromOffset(22, 26), 168, nil, "dots")
 	local percentText = UIStyle.label(choose, "Percent", UDim2.new(1, -236, 0, 28), UDim2.fromOffset(214, 16), C.muted,
 		nil, Enum.TextXAlignment.Right)
 	local box = Instance.new("TextBox")

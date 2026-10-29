@@ -2076,6 +2076,13 @@ multiplayer-only, not because progression requires it.
   mash becomes a coloured ring; the deadlift typing game shows a row of pattern
   boxes. The **stats screen** (Competition Numbers, the technique stats, weight class)
   opens with a key or an on-screen STATS button (phones).
+  - **Varied heading marks** (user, 2026-10-28: "Not every title needs a double
+    line. Change it up sometimes with different cues"): a heading's mark is one of
+    two slashes //, a four-point star, chevrons », a bar, a corner bracket, three
+    dots, or none; screens mix them (action buttons use chevrons).
+  - **In-world screens and signs** (the Cardio TV, the Mock Meet boards and banners,
+    the leaderboards) use the same style, and the coach's speech bubble matches
+    (white with a yellow accent bar and a tail).
   - **The PLAYER STATS screen** (built 2026-10-28): **C** or the **STATS** tab on the
     left edge opens and closes it. It shows the avatar, name, weight class,
     bodyweight and target; the **Competition Number** per lift and their sum; the
