@@ -7,6 +7,11 @@
 	else.
 ]]
 
+-- Every "hold E" prompt in the game, drawn in the game's one look. Drawing only.
+local UIFolder = script:WaitForChild("UI")
+local PromptController = require(UIFolder:WaitForChild("PromptController"))
+PromptController.start()
+
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))
 

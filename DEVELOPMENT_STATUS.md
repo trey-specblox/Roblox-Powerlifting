@@ -1581,7 +1581,28 @@ and polish.
   create the lift remotes while building the gym; not from the restyle).
   Steps 1, 2 and 2b COMMITTED with the user's approval on 2026-10-28 (see
   section 1).
-  NEXT ACTION: step 3, the rack's stat picker and the "E" prompts. After
+  STEP 3 BUILT (2026-10-28, user: "commit + next"; NOT committed):
+  - TrainingMenuController restyled with UIStyle (look only; every request
+    and state rule unchanged): a SELECT YOUR GOAL panel with the rack's name,
+    WHAT TO TRAIN // LIFT // PRIMARY STAT sections of outline buttons (chosen
+    = yellow), the details, START TRAINING (yellow), STOP (red), EXIT under
+    the panel (sends "Close" as the old Close button did); the panel fits
+    what is showing; the top status strip navy with a yellow edge.
+  - New src/client/UI/PromptController.luau (started first in init.client):
+    every ProximityPrompt this client sees is switched to the Custom style
+    (a local change), and each shown prompt is drawn as a navy tile with a
+    yellow key cap (E / gamepad button / TAP), object and action text, and a
+    yellow hold bar; on touch or mouse the tile itself holds the prompt.
+  - Checks: luau-lsp 0 problems in these files, `rojo build` OK. Studio:
+    the rack prompt switched to Custom and drawn (1 tile); holding it opened
+    the rack menu (screenshots of the menu, before and after fitting); 0
+    client and 0 server warnings. The Studio screenshot tool does NOT draw
+    client-made BillboardGuis (even a plain test one), so the prompt was only
+    seen as a flat copy on screen: the user must confirm it shows in play.
+  - NOT tested: the technique view of the menu, Start/Stop/EXIT clicks, the
+    prompt on a phone, the cardio and Mock Meet prompts.
+  Step 3 COMMITTED with the user's approval on 2026-10-28 (see section 1).
+  NEXT ACTION: step 4, the STATS screen. After
   that: the rewards step needs the weight-class build decision (§33.11 item
   11) before any meet raises Competition Scale.
   Other open threads: the records
@@ -1642,7 +1663,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: One UI style for the Mock Meet and all lift minigames (UI restyle steps 1-2); `git log -1` for the hash.
+- 2026-10-28, pushed: Restyle the rack menu and every "E" prompt (UI restyle step 3); `git log -1` for the hash.
+- `bd7f298` (2026-10-28, pushed) One UI style for the Mock Meet and all lift minigames (UI restyle steps 1-2).
 - `ea6f636` (2026-10-28, pushed) Run the Mock Meet itself: attempts, lifts, coach and results (Mock Meet part 2).
 - `023f46c` (2026-10-28, pushed) Add the Mock Meet Room and a private meet room per player (Mock Meet part 1).
 - `3eb5be1` (2026-10-27, pushed) Design: player-set World Records, Sheffield vs configured records, gym record rules.

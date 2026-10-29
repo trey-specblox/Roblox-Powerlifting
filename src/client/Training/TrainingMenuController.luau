@@ -3,8 +3,14 @@
 	TrainingMenuController
 	Client / Training
 
-	TEMPORARY FUNCTIONAL INTERFACE for the training racks of checkpoints 5B.6
-	and 5B.7. Plain frames and buttons built in code; final styling comes later.
+	The training racks' menu (checkpoints 5B.6 and 5B.7), built from UIStyle,
+	the game's one look (user 2026-10-28: the rack menu as a "select your goal"
+	panel): a navy grid panel titled SELECT YOUR GOAL with the rack's name,
+	sections WHAT TO TRAIN // LIFT // PRIMARY STAT with outline buttons (the
+	chosen one yellow), the details, START (yellow) and STOP (red), and EXIT.
+	The small status strip at the top shows while the player holds a rack
+	with the menu closed. Only the look changed in the restyle: every request,
+	the state handling and the texts' meaning are as before.
 
 	Technique has NO earning cap, so the menu never shows a technique "today",
 	"remaining" or countdown -- only the rate, the split, the current raw and
@@ -37,16 +43,15 @@ local TrainingFolder = Shared:WaitForChild("Training")
 local TrainingRemotes = require(TrainingFolder:WaitForChild("TrainingRemotes"))
 local TrainingStationRules = require(TrainingFolder:WaitForChild("TrainingStationRules"))
 
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local C = UIStyle.Colours
+local SIZES = UIStyle.TextSizes
+
 local TrainingMenuController = {}
 
-local COLOR_PANEL = Color3.fromRGB(28, 30, 36)
-local COLOR_BUTTON = Color3.fromRGB(60, 64, 76)
-local COLOR_SELECTED = Color3.fromRGB(70, 130, 200)
-local COLOR_START = Color3.fromRGB(60, 150, 80)
-local COLOR_STOP = Color3.fromRGB(170, 70, 60)
-local COLOR_TEXT = Color3.fromRGB(240, 240, 240)
-local COLOR_NOTICE = Color3.fromRGB(255, 210, 90)
-local COLOR_TECHNIQUE = Color3.fromRGB(150, 220, 170)
+local PANEL_WIDTH, PANEL_HEIGHT = 660, 640 -- the height is the largest; the panel shrinks to fit (refreshMenu)
+local CONTENT_PADDING = 30 + 18 -- the content's top and bottom padding
+local LIST_GAP = 8
 
 local NOTICE_SECONDS = 8
 
@@ -102,18 +107,35 @@ end
 --------------------------------------------------------------------------------
 
 local function makeLabel(parent: Instance, text: string, height: number, order: number): TextLabel
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 0, height)
-	label.BackgroundTransparency = 1
-	label.TextColor3 = COLOR_TEXT
-	label.Font = Enum.Font.Gotham
-	label.TextSize = 15
-	label.TextWrapped = true
-	label.TextXAlignment = Enum.TextXAlignment.Left
+	local label = UIStyle.text(parent, "Label", UDim2.new(), UDim2.new(1, 0, 0, height), SIZES.body, C.white)
 	label.Text = text
 	label.LayoutOrder = order
-	label.Parent = parent
 	return label
+end
+
+-- A section heading: "LIFT //" with a line running on.
+local function makeHeading(parent: Instance, text: string, order: number): Frame
+	local row = Instance.new("Frame")
+	row.Name = "Heading"
+	row.BackgroundTransparency = 1
+	row.Size = UDim2.new(1, 0, 0, 24)
+	row.LayoutOrder = order
+	row.Parent = parent
+	local width = 14 * #text + 10
+	UIStyle.sectionHead(row, "Text", text, UDim2.fromOffset(0, 2), width, PANEL_WIDTH - 60)
+	return row
+end
+
+-- Outline button look, or the chosen one (yellow, ink text).
+local function setChosen(button: TextButton, chosen: boolean)
+	button.BackgroundColor3 = if chosen then C.yellow else C.navyDeep
+	button.TextColor3 = if chosen then C.ink else C.white
+	button.FontFace = if chosen then UIStyle.heading() else UIStyle.font(Enum.FontWeight.Bold)
+	local edge = button:FindFirstChildOfClass("UIStroke")
+	if edge then
+		edge.Color = if chosen then C.yellow else C.white
+		edge.Transparency = if chosen then 0 else 0.35
+	end
 end
 
 local function makeRow(parent: Instance, height: number, order: number): Frame
@@ -125,30 +147,20 @@ local function makeRow(parent: Instance, height: number, order: number): Frame
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.Padding = UDim.new(0, 6)
+	layout.Padding = UDim.new(0, 10)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = row
 
 	return row
 end
 
+-- An outline button (UIStyle look) sized as a share of its row.
 local function makeButton(parent: Instance, text: string, widthScale: number, order: number): TextButton
-	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(widthScale, -6, 1, 0)
-	button.BackgroundColor3 = COLOR_BUTTON
-	button.TextColor3 = COLOR_TEXT
-	button.Font = Enum.Font.GothamMedium
-	button.TextSize = 15
+	local button = UIStyle.button(parent, "Button", text, UDim2.new(), UDim2.new(widthScale, -10, 1, 0), "outline", function() end)
+	button.TextScaled = false
+	button.TextSize = SIZES.body
 	button.TextWrapped = true
-	button.AutoButtonColor = true
-	button.Text = text
 	button.LayoutOrder = order
-	button.Parent = parent
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 6)
-	corner.Parent = button
-
 	return button
 end
 
@@ -209,40 +221,42 @@ local function buildGui(player: Player)
 	gui.Name = "TrainingMenu"
 	gui.ResetOnSpawn = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	UIStyle.fitToScreen(gui) -- shrink on short screens so nothing overlaps
 
-	panel = Instance.new("Frame")
-	panel.Name = "Panel"
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromOffset(500, 640)
-	panel.BackgroundColor3 = COLOR_PANEL
-	panel.BackgroundTransparency = 0.05
-	panel.Visible = false
-	panel.Parent = gui
+	-- The panel, centred; its title tag SELECT YOUR GOAL and the rack's name; EXIT under its right corner.
+	local holder, body = UIStyle.panel(gui, "Panel", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Visible = false
+	panel = holder
+	UIStyle.titleTag(holder, "Tag", "SELECT YOUR GOAL", UDim2.fromOffset(-16, -28), UDim2.fromOffset(330, 48))
+	UIStyle.exitButton(holder, "Exit", "EXIT", UDim2.new(1, -150, 1, 18), function()
+		send("Close")
+	end)
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 10)
-	corner.Parent = panel
-
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.BackgroundTransparency = 1
+	content.Size = UDim2.fromScale(1, 1)
+	content.Parent = body
 	local padding = Instance.new("UIPadding")
-	padding.PaddingTop = UDim.new(0, 12)
-	padding.PaddingBottom = UDim.new(0, 12)
-	padding.PaddingLeft = UDim.new(0, 14)
-	padding.PaddingRight = UDim.new(0, 14)
-	padding.Parent = panel
+	padding.PaddingTop = UDim.new(0, 30)
+	padding.PaddingBottom = UDim.new(0, 18)
+	padding.PaddingLeft = UDim.new(0, 26)
+	padding.PaddingRight = UDim.new(0, 26)
+	padding.Parent = content
 
 	local list = Instance.new("UIListLayout")
-	list.Padding = UDim.new(0, 6)
+	list.Padding = UDim.new(0, LIST_GAP)
 	list.SortOrder = Enum.SortOrder.LayoutOrder
-	list.Parent = panel
+	list.Parent = content
 
-	titleLabel = makeLabel(panel, "Training Rack", 30, 1)
-	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.TextSize = 22
-	titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+	titleLabel = makeLabel(content, "Training Rack", 26, 1)
+	titleLabel.TextColor3 = C.yellow
+	titleLabel.FontFace = UIStyle.heading()
+	titleLabel.TextSize = SIZES.heading
 
-	makeLabel(panel, "Category", 18, 2)
-	local categoryRow = makeRow(panel, 40, 3)
+	makeHeading(content, "WHAT TO TRAIN", 2)
+	local categoryRow = makeRow(content, 46, 3)
 	categoryButtons.CN = makeButton(categoryRow, "Competition Number", 0.5, 1)
 	categoryButtons.Technique = makeButton(categoryRow, "Technique Stats", 0.5, 2)
 
@@ -253,8 +267,8 @@ local function buildGui(player: Player)
 		end)
 	end
 
-	makeLabel(panel, "Lift", 18, 4)
-	local liftRow = makeRow(panel, 36, 5)
+	makeHeading(content, "LIFT", 4)
+	local liftRow = makeRow(content, 42, 5)
 	for index, lift in ipairs(ProgressionConfig.Lifts) do
 		local button = makeButton(liftRow, lift, 1 / #ProgressionConfig.Lifts, index)
 		button.Activated:Connect(function()
@@ -268,27 +282,35 @@ local function buildGui(player: Player)
 		liftButtons[lift] = button
 	end
 
-	primaryHeading = makeLabel(panel, "Primary technique stat", 18, 6)
-	primaryRow = makeRow(panel, 36, 7)
+	primaryHeading = makeLabel(content, "PRIMARY STAT", 24, 6)
+	primaryHeading.FontFace = UIStyle.heading()
+	primaryRow = makeRow(content, 42, 7)
 
-	choiceLabel = makeLabel(panel, "", 40, 8)
-	currentLabel = makeLabel(panel, "", 40, 9)
-	todayLabel = makeLabel(panel, "", 36, 10)
-	todayLabel.TextSize = 14
+	choiceLabel = makeLabel(content, "", 28, 8)
+	choiceLabel.FontFace = UIStyle.font(Enum.FontWeight.Bold)
+	currentLabel = makeLabel(content, "", 28, 9)
+	currentLabel.TextColor3 = C.muted
+	todayLabel = makeLabel(content, "", 40, 10)
+	todayLabel.TextSize = SIZES.small
+	todayLabel.TextColor3 = C.muted
 
-	techniqueLabel = makeLabel(panel, "", 96, 11)
-	techniqueLabel.TextSize = 14
-	techniqueLabel.TextColor3 = COLOR_TECHNIQUE
+	techniqueLabel = makeLabel(content, "", 96, 11)
+	techniqueLabel.TextSize = SIZES.small
+	techniqueLabel.TextColor3 = C.white
 
-	noticeLabel = makeLabel(panel, "", 44, 12)
-	noticeLabel.TextColor3 = COLOR_NOTICE
+	noticeLabel = makeLabel(content, "", 28, 12)
+	noticeLabel.TextColor3 = C.yellow
+	noticeLabel.Visible = false
 
-	local actionRow = makeRow(panel, 40, 13)
-	startButton = makeButton(actionRow, "Start Training", 0.4, 1)
-	startButton.BackgroundColor3 = COLOR_START
-	stopButton = makeButton(actionRow, "Stop Training", 0.35, 2)
-	stopButton.BackgroundColor3 = COLOR_STOP
-	local closeButton = makeButton(actionRow, "Close", 0.25, 3)
+	local actionRow = makeRow(content, 48, 13)
+	startButton = UIStyle.button(actionRow, "Start", "START TRAINING", UDim2.new(), UDim2.new(0.55, -10, 1, 0), "primary",
+		function() end)
+	startButton.LayoutOrder = 1
+	stopButton = UIStyle.button(actionRow, "Stop", "STOP", UDim2.new(), UDim2.new(0.45, -10, 1, 0), "danger", function() end)
+	stopButton.LayoutOrder = 2
+	-- Close is the EXIT button under the panel; this hidden one keeps the old reference working.
+	local closeButton = makeButton(actionRow, "Close", 0, 3)
+	closeButton.Visible = false
 
 	startButton.Activated:Connect(function()
 		if chosenMode == "CN" then
@@ -306,20 +328,14 @@ local function buildGui(player: Player)
 		send("Close")
 	end)
 
-	-- Small status line shown while the player holds a rack with the menu closed.
-	statusBar = Instance.new("TextLabel")
-	statusBar.Name = "TrainingStatusBar"
+	-- Small status strip shown while the player holds a rack with the menu closed.
+	statusBar = UIStyle.text(gui, "TrainingStatusBar", UDim2.new(0.5, 0, 0, 10), UDim2.fromOffset(680, 76), SIZES.body,
+		C.white, UIStyle.font(Enum.FontWeight.Bold), Enum.TextXAlignment.Center)
 	statusBar.AnchorPoint = Vector2.new(0.5, 0)
-	statusBar.Position = UDim2.new(0.5, 0, 0, 8)
-	statusBar.Size = UDim2.fromOffset(620, 64)
-	statusBar.BackgroundColor3 = COLOR_PANEL
-	statusBar.BackgroundTransparency = 0.2
-	statusBar.TextColor3 = COLOR_TEXT
-	statusBar.Font = Enum.Font.GothamMedium
-	statusBar.TextSize = 15
-	statusBar.TextWrapped = true
+	statusBar.BackgroundTransparency = 0.1
+	statusBar.BackgroundColor3 = C.navyDeep
+	UIStyle.stroke(statusBar, C.yellow, 2)
 	statusBar.Visible = false
-	statusBar.Parent = gui
 
 	gui.Parent = player:WaitForChild("PlayerGui")
 
@@ -414,21 +430,21 @@ refreshMenu = function()
 	local state = lastState
 
 	for mode, button in pairs(categoryButtons) do
-		button.BackgroundColor3 = if mode == chosenMode then COLOR_SELECTED else COLOR_BUTTON
+		setChosen(button, mode == chosenMode)
 	end
 	categoryButtons.CN.Text = if state and not state.cnAvailable
 		then "Competition Number\n(daily limit reached)"
 		else "Competition Number"
 
 	for lift, button in pairs(liftButtons) do
-		button.BackgroundColor3 = if lift == chosenLift then COLOR_SELECTED else COLOR_BUTTON
+		setChosen(button, lift == chosenLift)
 	end
 
 	local technique = chosenMode == "Technique"
 	primaryHeading.Visible = technique
 	primaryRow.Visible = technique
 	for _, button in ipairs(primaryButtons) do
-		button.BackgroundColor3 = if button:GetAttribute("Stat") == chosenPrimary then COLOR_SELECTED else COLOR_BUTTON
+		setChosen(button, button:GetAttribute("Stat") == chosenPrimary)
 	end
 
 	local choice = describeChoice(chosenMode, chosenLift, if technique then chosenPrimary else nil)
@@ -449,17 +465,34 @@ refreshMenu = function()
 	end
 
 	startButton.AutoButtonColor = not (technique and chosenPrimary == nil)
+	startButton.BackgroundTransparency = if technique and chosenPrimary == nil then 0.5 else 0
+
+	-- The panel fits what is showing (the technique rows come and go), staying centred.
+	local content = panel:FindFirstChild("Content", true)
+	if content then
+		local height, count = CONTENT_PADDING, 0
+		for _, child in ipairs(content:GetChildren()) do
+			if child:IsA("GuiObject") and child.Visible then
+				height += child.Size.Y.Offset
+				count += 1
+			end
+		end
+		panel.Size = UDim2.fromOffset(PANEL_WIDTH, height + LIST_GAP * math.max(0, count - 1))
+	end
 end
 
 local function showNotice(notice: string?)
 	noticeToken += 1
 	local token = noticeToken
 	noticeLabel.Text = notice or ""
+	noticeLabel.Visible = notice ~= nil
 
 	if notice then
 		task.delay(NOTICE_SECONDS, function()
 			if noticeToken == token then
 				noticeLabel.Text = ""
+				noticeLabel.Visible = false
+				refreshMenu()
 			end
 		end)
 	end
