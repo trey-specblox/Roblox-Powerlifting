@@ -694,6 +694,14 @@
       "ids": {
         "model": "rbxassetid://104295814087547"
       }
+    },
+    "Furniture_01": {
+      "about": "Shared low-detail furniture: office chair, desk (stretched to each desk), monitor with keyboard (Workstation), shelving frames with 3 or 4 boards (ShelfThree, ShelfFour; stretched to each shelf), storage box and a row of books. Made by art/scripts/build_furniture_01.py (art/blender/Furniture_01.blend).",
+      "file": "art/exports/Furniture_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://80843208048332"
+      }
     }
   },
   "images": {

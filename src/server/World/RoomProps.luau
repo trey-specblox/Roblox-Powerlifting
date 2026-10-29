@@ -69,10 +69,40 @@ type Kit = {
 	-- Where the doors in each wall are, along it (its `s`): "front", "back", "left", "right".
 	doors: { [string]: { number } },
 	-- A copy of a model template (decor), its pivot at (a, d, y), its front
-	-- (the pivot's LookVector) toward `facing`. It must stay inside the room.
-	place: (name: string, template: Model, a: number, d: number, y: number, facing: string) -> Model,
+	-- (the pivot's LookVector) toward `facing`, stretched to `stretch` (width,
+	-- height, depth) when given. It must stay inside the room.
+	place: (name: string, template: Model, a: number, d: number, y: number, facing: string, stretch: Vector3?) -> Model,
 }
 type Zone = { a0: number, a1: number, d0: number, d1: number }
+
+--[[
+	Stretches a copy of a prop template (still unturned, as cloned) so its bounds
+	become `size` (width, height, depth), about its pivot (the bottom centre):
+	every piece keeps its place in the whole, so one mesh serves every desk or
+	shelf size. The pieces from Blender may be turned, so each piece's own axes
+	are matched to the template's.
+]]
+local function stretchTo(copy: Model, size: Vector3)
+	local pivot = copy:GetPivot()
+	local _, now = copy:GetBoundingBox()
+	local scale = size / now
+	local function along(axis: Vector3): number
+		return math.abs(axis.X) * scale.X + math.abs(axis.Y) * scale.Y + math.abs(axis.Z) * scale.Z
+	end
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local rel = pivot:ToObjectSpace(part.CFrame)
+			part.Size = part.Size * Vector3.new(along(rel.RightVector), along(rel.UpVector), along(rel.LookVector))
+			part.CFrame = pivot * CFrame.new(rel.Position * scale) * rel.Rotation
+		end
+	end
+end
+
+-- The 3D props, defined with the props further down and used by the furniture helpers before them.
+local propsFor: (items: { string }) -> { [string]: Model }?
+local propItem: (kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number, a: number,
+	d: number, y: number, facing: string, stretch: Vector3?) -> Model
+local hidden: (part: BasePart) -> BasePart
 
 -- The face of an unrotated part that looks toward `direction`.
 local function faceToward(direction: Vector3): Enum.NormalId
@@ -205,9 +235,12 @@ local function kitFor(folder: Folder, room: BasePart, doorSpots: { Vector3 }): K
 	end
 	local usableLow = Vector3.new(low.X + INSET, low.Y, low.Z + INSET)
 	local usableHigh = Vector3.new(high.X - INSET, low.Y + H, high.Z - INSET)
-	kit.place = function(name, template, a, d, y, facing)
+	kit.place = function(name, template, a, d, y, facing, stretch)
 		local copy = template:Clone()
 		copy.Name = name
+		if stretch then
+			stretchTo(copy, stretch)
+		end
 		local position = world(a, d, y)
 		copy:PivotTo(CFrame.lookAt(position, position + kit.toward(facing)))
 		local box, size = copy:GetBoundingBox()
@@ -300,7 +333,25 @@ local function writing(part: BasePart, toward: Vector3, title: string, lines: { 
 	end
 end
 
+-- The direction ("+d", "-d", "+a" or "-a") that looks out of `wall` into the room.
+local function facingOut(kit: Kit, wall: Wall): string
+	for _, facing in ipairs({ "+d", "-d", "+a", "-a" }) do
+		if kit.toward(facing):Dot(wall.out) > 0.9 then
+			return facing
+		end
+	end
+	return "-d"
+end
+
+-- A potted plant: the 3D leafy plant (SBarPlant), kept 1.8 off the walls where it is wider than the old one.
 local function plant(kit: Kit, name: string, a: number, d: number)
+	local props = propsFor({ "SBarPlant" })
+	if props then
+		local hw = kit.W / 2
+		propItem(kit, props, name, "SBarPlant", 1, math.clamp(a, -hw + 1.8, hw - 1.8), math.clamp(d, 1.8, kit.D - 1.8),
+			0.06, "+d")
+		return
+	end
 	kit.cylinder(name .. "_Pot", a, d, 0.8, 1.6, 1.6, "up", looks.DeskBody)
 	kit.ball(name .. "_Leaves", a, d, 2.7, 2.6, looks.Plant)
 end
@@ -317,8 +368,14 @@ local function bench(kit: Kit, name: string, a0: number, a1: number, d0: number,
 	end
 end
 
--- An office chair (decor), the sitter looking toward `facing` ("+d", "-d", "+a" or "-a").
-local function chair(kit: Kit, name: string, a: number, d: number, facing: string)
+-- An office chair (decor; Furniture_01's OfficeChair in `colourway`, 1 by default), the sitter looking
+-- toward `facing` ("+d", "-d", "+a" or "-a").
+local function chair(kit: Kit, name: string, a: number, d: number, facing: string, colourway: number?)
+	local props = propsFor({ "OfficeChair" })
+	if props then
+		propItem(kit, props, name, "OfficeChair", colourway or 1, a, d, 0, facing)
+		return
+	end
 	kit.item(name .. "_Seat", a - 0.9, a + 0.9, d - 0.9, d + 0.9, 1.6, 1.85, looks.Padding)
 	if facing == "+d" then
 		kit.item(name .. "_Back", a - 0.9, a + 0.9, d - 0.9, d - 0.7, 1.85, 4, looks.Padding)
@@ -339,66 +396,127 @@ local function stool(kit: Kit, name: string, a: number, d: number)
 	kit.cylinder(name .. "_Foot", a, d, 0.05, 0.1, 1.0, "up", looks.Stainless)
 end
 
--- A desk: wooden top at 3.0 on two steel side panels.
+-- A desk: wooden top at 3.0 on two steel side panels (Furniture_01's Desk stretched to the size, its long
+-- side across, on a hidden solid block).
 local function desk(kit: Kit, name: string, a0: number, a1: number, d0: number, d1: number)
+	local props = propsFor({ "Desk" })
+	if props then
+		local across = a1 - a0 >= d1 - d0
+		local long, short = math.max(a1 - a0, d1 - d0), math.min(a1 - a0, d1 - d0)
+		propItem(kit, props, name, "Desk", 1, (a0 + a1) / 2, (d0 + d1) / 2, 0, if across then "-d" else "+a",
+			Vector3.new(long, 3, short))
+		hidden(kit.block(name .. "_Solid", a0, a1, d0, d1, 0, 3, looks.Glass))
+		return
+	end
 	kit.block(name .. "_Top", a0, a1, d0, d1, 2.8, 3, looks.Wood)
 	kit.block(name .. "_Side_1", a0, a0 + 0.2, d0 + 0.1, d1 - 0.1, 0, 2.8, looks.SteelBeam)
 	kit.block(name .. "_Side_2", a1 - 0.2, a1, d0 + 0.1, d1 - 0.1, 0, 2.8, looks.SteelBeam)
 end
 
--- A monitor standing on a desk top (at 3.0), its screen across the room.
+-- A monitor standing on a desk top (at 3.0) at (a, d), its screen and the keyboard in front of it toward +d,
+-- where the sitter is (Furniture_01's Workstation, whose pivot is 0.475 in front of the monitor).
 local function monitor(kit: Kit, name: string, a: number, d: number)
+	local props = propsFor({ "Workstation" })
+	if props then
+		propItem(kit, props, name, "Workstation", 1, a, d + 0.475, 3, "+d")
+		return
+	end
 	kit.item(name .. "_Base", a - 0.5, a + 0.5, d - 0.35, d + 0.35, 3, 3.04, looks.Gadget)
 	kit.item(name .. "_Stand", a - 0.1, a + 0.1, d - 0.1, d + 0.1, 3.04, 3.5, looks.Gadget)
 	kit.item(name .. "_Screen", a - 1.4, a + 1.4, d - 0.06, d + 0.06, 3.5, 5.1, looks.Gadget)
+	kit.item(name .. "_Keyboard", a - 1, a + 1, d + 0.8, d + 1.3, 3, 3.06, looks.Gadget)
 end
 
 --[[
 	Shelving against a wall from s0 to s1: a back panel, two end panels and
 	`levels` boards plus a top board, `depth` deep and `height` tall. `fill` is
 	called for every slot on every board (level 1 = lowest) with the slot's s,
-	its middle depth t and the board's top y.
+	its middle depth t and the board's top y. With the 3D props it is one
+	Furniture_01 frame (ShelfThree or ShelfFour) stretched to the size and
+	coloured with `look`, on a hidden solid block.
 ]]
-local function shelving(wall: Wall, name: string, s0: number, s1: number, depth: number, height: number, levels: number,
-	look: Look, fill: ((level: number, s: number, t: number, y: number) -> ())?)
-	wall.block(name .. "_Back", s0, s1, 0, 0.1, 0, height, look)
-	wall.block(name .. "_End_1", s0, s0 + 0.15, 0.1, depth, 0, height, look)
-	wall.block(name .. "_End_2", s1 - 0.15, s1, 0.1, depth, 0, height, look)
-	wall.block(name .. "_Board_Top", s0 + 0.15, s1 - 0.15, 0.1, depth, height - 0.15, height, look)
+local function shelving(kit: Kit, wall: Wall, name: string, s0: number, s1: number, depth: number, height: number,
+	levels: number, look: Look, fill: ((level: number, s: number, t: number, y: number) -> ())?)
+	local item = if levels == 4 then "ShelfFour" elseif levels == 3 then "ShelfThree" else nil
+	local props = item and propsFor({ item })
 	local spacing = height / levels
-	for level = 1, levels do
-		local y = 0.15 + (level - 1) * spacing
-		wall.block(string.format("%s_Board_%d", name, level), s0 + 0.15, s1 - 0.15, 0.1, depth, y, y + 0.15, look)
-		if fill then
+	if item and props then
+		local a, d = wall.at((s0 + s1) / 2, depth / 2)
+		local frame = propItem(kit, props, name, item, 1, a, d, 0, facingOut(kit, wall), Vector3.new(s1 - s0, height, depth))
+		for _, part in ipairs(frame:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Material = look.material
+				part.MaterialVariant = look.variant or ""
+				part.Color = look.color
+			end
+		end
+		hidden(wall.block(name .. "_Solid", s0, s1, 0, depth, 0, height, looks.Glass))
+	else
+		wall.block(name .. "_Back", s0, s1, 0, 0.1, 0, height, look)
+		wall.block(name .. "_End_1", s0, s0 + 0.15, 0.1, depth, 0, height, look)
+		wall.block(name .. "_End_2", s1 - 0.15, s1, 0.1, depth, 0, height, look)
+		wall.block(name .. "_Board_Top", s0 + 0.15, s1 - 0.15, 0.1, depth, height - 0.15, height, look)
+		for level = 1, levels do
+			local y = 0.15 + (level - 1) * spacing
+			wall.block(string.format("%s_Board_%d", name, level), s0 + 0.15, s1 - 0.15, 0.1, depth, y, y + 0.15, look)
+		end
+	end
+	if fill then
+		for level = 1, levels do
+			-- The stretched frame's boards are as much thicker as the shelf is taller than the model's 6.
+			local top = (if item and props then 0.05 * height else 0.3) + (level - 1) * spacing
 			local s = s0 + 0.9
 			while s <= s1 - 0.9 do
-				fill(level, s, (depth + 0.1) / 2, y + 0.15)
+				fill(level, s, (depth + 0.1) / 2, top)
 				s += 1.3
 			end
 		end
 	end
 end
 
-local function towels(wall: Wall, name: string): (level: number, s: number, t: number, y: number) -> ()
+-- Shelf fill: three folded towels per slot (the 3D Towel in mixed colours, or white blocks).
+local function towels(kit: Kit, wall: Wall, name: string): (level: number, s: number, t: number, y: number) -> ()
+	local props = propsFor({ "Towel" })
 	return function(level, s, t, y)
 		for fold = 0, 2 do
-			wall.item(string.format("%s_Towel_%d_%.0f_%d", name, level, s * 10, fold), s - 0.5, s + 0.5, t - 0.45, t + 0.45,
-				y + fold * 0.3, y + (fold + 1) * 0.3 - 0.02, looks.ShirtWhite)
+			local id = string.format("%s_Towel_%d_%.0f_%d", name, level, s * 10, fold)
+			if props then
+				local a, d = wall.at(s, t)
+				propItem(kit, props, id, "Towel", (level * 3 + math.floor(s) + fold) % 6 + 1, a, d, y + fold * 0.26,
+					facingOut(kit, wall))
+			else
+				wall.item(id, s - 0.5, s + 0.5, t - 0.45, t + 0.45, y + fold * 0.3, y + (fold + 1) * 0.3 - 0.02, looks.ShirtWhite)
+			end
 		end
 	end
 end
 
-local function boxes(wall: Wall, name: string): (level: number, s: number, t: number, y: number) -> ()
+-- Shelf fill: a cardboard box per slot, short and tall ones mixed (Furniture_01's StorageBox, stretched).
+local function boxes(kit: Kit, wall: Wall, name: string): (level: number, s: number, t: number, y: number) -> ()
+	local props = propsFor({ "StorageBox" })
 	return function(level, s, t, y)
 		local tall = if (level + math.floor(s)) % 2 == 0 then 1.0 else 1.4
-		wall.item(string.format("%s_Box_%d_%.0f", name, level, s * 10), s - 0.5, s + 0.5, t - 0.6, t + 0.6, y, y + tall,
-			looks.Cardboard)
+		local id = string.format("%s_Box_%d_%.0f", name, level, s * 10)
+		if props then
+			local a, d = wall.at(s, t)
+			propItem(kit, props, id, "StorageBox", 1, a, d, y, facingOut(kit, wall), Vector3.new(1, tall, 1.2))
+		else
+			wall.item(id, s - 0.5, s + 0.5, t - 0.6, t + 0.6, y, y + tall, looks.Cardboard)
+		end
 	end
 end
 
-local function books(wall: Wall, name: string): (level: number, s: number, t: number, y: number) -> ()
+-- Shelf fill: four books per slot (Furniture_01's BookRow, each level in its own colour).
+local function books(kit: Kit, wall: Wall, name: string): (level: number, s: number, t: number, y: number) -> ()
+	local props = propsFor({ "BookRow" })
 	local colours = { looks.PlateRed, looks.PlateBlue, looks.Gadget, looks.ShirtWhite }
 	return function(level, s, t, y)
+		if props then
+			local a, d = wall.at(s, t)
+			propItem(kit, props, string.format("%s_Books_%d_%.0f", name, level, s * 10), "BookRow", (level - 1) % 6 + 1, a, d,
+				y, facingOut(kit, wall))
+			return
+		end
 		for k = 0, 3 do
 			local s0 = s - 0.5 + k * 0.25
 			wall.item(string.format("%s_Book_%d_%.0f_%d", name, level, s * 10, k), s0, s0 + 0.22, t - 0.5, t + 0.5, y,
@@ -500,7 +618,7 @@ local function warmGlow(part: BasePart, range: number, brightness: number)
 end
 
 -- A solid piece nobody sees: it stops players walking through a 3D prop (props are decor).
-local function hidden(part: BasePart): BasePart
+function hidden(part: BasePart): BasePart
 	part.Transparency = 1
 	part.CastShadow = false
 	return part
@@ -651,7 +769,7 @@ local function loadPropTemplates(): { [string]: Model }
 end
 
 -- The prop templates when every one of `items` has loaded, else nil (the room then uses simple props).
-local function propsFor(items: { string }): { [string]: Model }?
+function propsFor(items: { string }): { [string]: Model }?
 	local templates = loadPropTemplates()
 	for _, item in ipairs(items) do
 		if not templates[item] then
@@ -684,9 +802,9 @@ end
 
 -- A coloured copy of a 3D prop (Kit.place, so it must fit the room): every piece
 -- takes its colour from the item's StarterGymConfig.PropColourways colourway.
-local function propItem(kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number,
-	a: number, d: number, y: number, facing: string): Model
-	local copy = kit.place(name, templates[item], a, d, y, facing)
+function propItem(kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number,
+	a: number, d: number, y: number, facing: string, stretch: Vector3?): Model
+	local copy = kit.place(name, templates[item], a, d, y, facing, stretch)
 	paintProp(copy, item, colourway)
 	return copy
 end
@@ -803,7 +921,7 @@ local function simpleShowers(kit: Kit)
 		benchWall.item("Hook_" .. index, s - 0.1, s + 0.1, 0, 0.4, 6, 6.2, looks.Stainless)
 	end
 	local shelfWall = kit.wall(if kit.doorA < 0 then "left" else "right")
-	shelving(shelfWall, "TowelShelf", 10, 16, 1.2, 4.5, 3, looks.DeskBody, towels(shelfWall, "TowelShelf"))
+	shelving(kit, shelfWall, "TowelShelf", 10, 16, 1.2, 4.5, 3, looks.DeskBody, towels(kit, shelfWall, "TowelShelf"))
 end
 
 -- The first cafe (step 6a), kept for when the 3D props do not load.
@@ -864,7 +982,7 @@ local function simpleStaffRoom(kit: Kit)
 		stool(kit, "Stool_" .. index, a, 11.6)
 	end
 	local pantryWall = kit.wall(if kit.doorA > 0 then "left" else "right")
-	shelving(pantryWall, "Pantry", 9, 18, 1.4, 7, 3, looks.DeskBody, boxes(pantryWall, "Pantry"))
+	shelving(kit, pantryWall, "Pantry", 9, 18, 1.4, 7, 3, looks.DeskBody, boxes(kit, pantryWall, "Pantry"))
 	plant(kit, "Plant", if kit.doorA > 0 then -hw + 1.5 else hw - 1.5, 1.5)
 end
 
@@ -956,7 +1074,7 @@ FURNISH.Lockers = function(kit)
 		local a, d = right.at(c, 4.45)
 		put("Curtain_" .. index, "Curtain", index, a, d, 0.3, "-a")
 	end
-	shelving(right, "TowelShelf", 26.4, 30.3, 1.4, 6, 3, looks.LockersSlats, towels(right, "TowelShelf"))
+	shelving(kit, right, "TowelShelf", 26.4, 30.3, 1.4, 6, 3, looks.LockersSlats, towels(kit, right, "TowelShelf"))
 
 	-- Plants by the glass.
 	put("Plant_1", "SBarPlant", 1, -hw + 1.8, 1.7, 0.06, "+d")
@@ -1206,10 +1324,9 @@ FURNISH.Office = function(kit)
 	local hw, D = kit.W / 2, kit.D
 	desk(kit, "Desk", -5, 5, D - 7, D - 4.5)
 	monitor(kit, "Monitor", 0, D - 6.4)
-	kit.item("Keyboard", -1, 1, D - 5.6, D - 5.1, 3, 3.06, looks.Gadget)
 	chair(kit, "Chair", 0, D - 2.8, "-d")
 	local right = kit.wall("right")
-	shelving(right, "Bookshelf", 8, 20, 1.4, 8, 4, looks.Wood, books(right, "Bookshelf"))
+	shelving(kit, right, "Bookshelf", 8, 20, 1.4, 8, 4, looks.Wood, books(kit, right, "Bookshelf"))
 	local left = kit.wall("left")
 	left.block("Filing", 10, 14, 0, 2, 0, 4.5, looks.LockerBody)
 	for drawer = 1, 2 do
@@ -1467,7 +1584,7 @@ local function simpleRecovery(kit: Kit)
 		kit.cylinder("FoamRoller_" .. index, a, d, 0.5, 3, 0.8, left.axis, rollerLooks[index])
 	end
 	local right = kit.wall("right")
-	shelving(right, "TowelShelf", 9, 15, 1.4, 6, 3, looks.DeskBody, towels(right, "TowelShelf"))
+	shelving(kit, right, "TowelShelf", 9, 15, 1.4, 6, 3, looks.DeskBody, towels(kit, right, "TowelShelf"))
 	bench(kit, "Bench", -4, 4, 13, 14.4)
 	plant(kit, "Plant", hw - 1.5, 1.5)
 end
@@ -1480,7 +1597,7 @@ local function simpleMassage(kit: Kit)
 	stool(kit, "Stool_1", -3, 14)
 	stool(kit, "Stool_2", 3, 14)
 	local back = kit.wall("back")
-	shelving(back, "TowelShelf", -6, 6, 1.5, 6, 3, looks.Wood, towels(back, "TowelShelf"))
+	shelving(kit, back, "TowelShelf", -6, 6, 1.5, 6, 3, looks.Wood, towels(kit, back, "TowelShelf"))
 	local left = kit.wall("left")
 	for index = 0, 7 do
 		left.item("Slat_" .. index + 1, 8 + index * 1.4, 8.6 + index * 1.4, 0, 0.15, 1, 9, looks.Wood)
@@ -1493,7 +1610,7 @@ end
 -- three stacks of two on every board, the colours starting `colourOffset` on.
 local function towelShelf(kit: Kit, templates: { [string]: Model }, wall: Wall, facing: string, name: string, s0: number,
 	colourOffset: number)
-	shelving(wall, name, s0, s0 + 6, 1.4, 6.2, 3, looks.LockersSlats)
+	shelving(kit, wall, name, s0, s0 + 6, 1.4, 6.2, 3, looks.LockersSlats)
 	for level = 1, 3 do
 		local y = 0.3 + (level - 1) * 6.2 / 3
 		for k = 0, 2 do
@@ -1637,7 +1754,7 @@ FURNISH.Recovery = function(kit)
 		looks.GlowIce)
 
 	-- A shelf of foam rollers, rolled yoga mats, massage guns and bottles.
-	shelving(back, "GearShelf", 2, 12, 1.4, 5.6, 3, looks.LockersSlats)
+	shelving(kit, back, "GearShelf", 2, 12, 1.4, 5.6, 3, looks.LockersSlats)
 	local spacing = 5.6 / 3
 	for k = 0, 2 do
 		local s = 3.75 + k * 3.25
@@ -1857,7 +1974,7 @@ end
 FURNISH.Storage = function(kit)
 	local hw = kit.W / 2
 	local back = kit.wall("back")
-	shelving(back, "Shelving", -hw + 0.5, hw - 0.5, 2, 8, 4, looks.Stainless, boxes(back, "Shelving"))
+	shelving(kit, back, "Shelving", -hw + 0.5, hw - 0.5, 2, 8, 4, looks.Stainless, boxes(kit, back, "Shelving"))
 	local left = kit.wall("left")
 	local stacks = {
 		{ looks.PlateRed, looks.PlateRed, looks.PlateRed, looks.PlateRed, looks.PlateRed, looks.PlateRed },
@@ -2177,7 +2294,7 @@ FURNISH.SupplementBar = function(kit)
 		local fill = if props
 			then productRows(kit, props, wall, name, if which == "left" then "+a" else "-a", wallRows[which])
 			else tubs(kit, wall, name)
-		shelving(wall, name, 8, 18, 1.4, 7, 4, looks.SBarPlanks, fill)
+		shelving(kit, wall, name, 8, 18, 1.4, 7, 4, looks.SBarPlanks, fill)
 	end
 	for index, a in ipairs({ -6.5, 6.5 }) do
 		cafeTable(kit, "Table_" .. index, a, 10, looks.SBarMarble, props ~= nil)
@@ -2267,8 +2384,8 @@ FURNISH.MockMeet = function(kit)
 
 	-- Waiting chairs along both side walls, facing across the room.
 	for index, d in ipairs({ 8, 11, 14, 17, 20 }) do
-		chair(kit, "WaitChair_L" .. index, -hw + 1.5, d, "+a")
-		chair(kit, "WaitChair_R" .. index, hw - 1.5, d, "-a")
+		chair(kit, "WaitChair_L" .. index, -hw + 1.5, d, "+a", 2)
+		chair(kit, "WaitChair_R" .. index, hw - 1.5, d, "-a", 2)
 	end
 	plant(kit, "Plant_1", -7.5, D - 1.5)
 	plant(kit, "Plant_2", 7.5, D - 1.5)
@@ -2413,7 +2530,7 @@ FURNISH.Shop = function(kit)
 	end
 
 	-- The belt shelf on the right: lever belts on the upper boards, folded tees below.
-	shelving(right, "BeltShelf", 8, 20, 1.5, 6.5, 3, dark)
+	shelving(kit, right, "BeltShelf", 8, 20, 1.5, 6.5, 3, dark)
 	for level, y in ipairs({ 0.15 + 6.5 / 3 + 0.15, 0.15 + 2 * 6.5 / 3 + 0.15 }) do
 		for index, s in ipairs({ 10, 14, 18 }) do
 			local a, d = right.at(s, 0.8)

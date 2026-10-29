@@ -580,6 +580,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 77291688307242 }, -- RoomProps_09: the Cardio machines (treadmill, exercise bike, rower, ski erg)
 	{ id = 127520535803138 }, -- CardioTV_01: the Cardio room's wall TV and soundbar
 	{ id = 104295814087547 }, -- MockMeet_01: the Mock Meet's check-in desk, platform, wait bench, board frame, banner
+	{ id = 80843208048332 }, -- Furniture_01: office chair, desk, monitor + keyboard, shelf frames, storage box, books
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -799,6 +800,14 @@ StarterGymConfig.PropColourways = {
 	MeetBench = { { Slats = "Oak", Frame = "Yellow", Feet = "Black", Badge = "Navy", Logo = "White" } },
 	MeetBoard = { { Frame = "Black", Screen = "Black", Header = "Yellow", HeaderText = "Black", Trim = "Red" } },
 	MeetBanner = { { Cloth = "Navy", Rails = "Silver", Caps = "Yellow", Brackets = "Black" } },
+	-- The shared furniture (Furniture_01, art/scripts/build_furniture_01.py). The shelf frames take the room's
+	-- own look instead of a colourway.
+	OfficeChair = { { Seat = "Charcoal", Frame = "Black" }, { Seat = "Navy", Frame = "Black" } },
+	Desk = { { Top = "Oak", Frame = "Silver" } },
+	Workstation = { { Body = "Black", Screen = "Black", Keys = "Charcoal" } },
+	StorageBox = { { Body = "Kraft" } },
+	BookRow = { { Books = "Red" }, { Books = "Blue" }, { Books = "Navy" }, { Books = "Cream" }, { Books = "Forest" },
+		{ Books = "Mustard" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

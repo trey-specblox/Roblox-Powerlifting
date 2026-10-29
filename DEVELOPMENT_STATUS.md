@@ -1823,8 +1823,63 @@ and polish.
   - User in Studio after the commit (2026-10-28): "looks good, leave button
     works" (the models in the game, and LEAVE clicked by hand).
   - NOT checked: a full meet with good lifts on the new platform; a phone.
-  NEXT ACTION: ask the user what is next (the coach's block clipboard is
-  the last Mock Meet block piece). Optional:
+  BLOCKS -> BLENDER, WHOLE MAP (user 2026-10-28: "Go around the map, and
+  everything still made with blocks change into models through blender ...
+  If its a micro model/detail it does not have to be SUPER detailed ...
+  optimized for when there is actual players"). Read-only Studio count
+  (Play, server): 2,501 visible plain blocks. Plan (Claude's proposal,
+  shown to the user): architecture stays blocks (walls, floors, ceilings,
+  roof panels, glass panes, wall paint and stripes, floor markings, flat
+  light panels, hidden collision blocks: plain blocks are the cheapest
+  thing Roblox draws); everything that is an object becomes a Blender
+  model, in batches, each previewed for approval:
+    1 shared furniture (chair, desk, monitor+keyboard, shelf frames,
+      boxes, books; plants -> SBarPlant, towels -> Towel)  [BUILT, preview]
+    2 light fittings (hall pendants + cables, corridor lights, shed
+      lamps, stage lights, spotlights)
+    3 doors and the 13 hall-front name plaques
+    4 reception (desk, turnstiles, gate railings, merch wall, sign lamps)
+    5 Cafe, Supplement Bar, Shop (counters, back bars, tills, fridge,
+      blenders, tables, slatwall, podium, tee table, belt shelf)
+    6 spa wing (sauna benches/heater/stones/bucket/lamps, shower stalls,
+      recovery ladder, massage, spa reception desk)
+    7 Staff Room, Storage, Office, Lockers, Training Zone, Strongman Shed
+    8 themed fronts (bar rack and bars, judges' lights, foam, equaliser,
+      blinds, clocks, boards, slats, battens) and the coach's clipboard
+    9 structure details (stairs' railings, balcony railings, roof trusses)
+  Performance rule for every batch: one piece per colour, low detail,
+  one mesh reused for repeats, stretched meshes for size variants; watch
+  the 600 unique-mesh budget (422 now).
+  Batch 1: `art/scripts/build_furniture_01.py` -> `art/blender/
+  Furniture_01.blend` (OfficeChair, Desk, Workstation, ShelfThree,
+  ShelfFour, StorageBox, BookRow; 11 pieces, 1,300 triangles; check_models
+  CHECK PASSED; a "Preview" collection holds a staged office scene).
+  Approved by the user ("Approve, upload"); exported to
+  `art/exports/Furniture_01.glb` and uploaded as the group:
+  rbxassetid://80843208048332 (materials.json). COMMITTED and pushed with
+  the user's approval (see section 1).
+  - StarterGymConfig: PropAssets entry; colourways OfficeChair (2: charcoal,
+    navy), Desk, Workstation, StorageBox, BookRow (6 colours).
+  - RoomProps: new `stretchTo` and an optional `stretch` size on kit.place
+    and propItem (one mesh fits every desk/shelf/box size); propsFor,
+    propItem and hidden are declared before the furniture helpers so they
+    can use the props. chair() (optional colourway), desk() (stretched, on
+    a hidden solid block), monitor() (Workstation, keyboard included, the
+    separate Office keyboard block removed), plant() (SBarPlant, kept 1.8
+    off walls), shelving(kit, ...) (ShelfThree/ShelfFour stretched and
+    coloured with the room's old look, on a hidden solid block; fill
+    heights follow the stretched boards), towels/boxes/books(kit, ...)
+    (Towel, StorageBox, BookRow). Every helper keeps the old blocks as
+    the fallback. Mock Meet waiting chairs use the navy colourway.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Studio Play (by Claude):
+    17 rooms furnished, 0 errors; screenshots of the Office (desk, monitor,
+    chair, bookshelf, plants), Storage (box shelving) and Lockers (towel
+    shelf) look right. Audit: visible blocks 2,501 -> 2,119, parts 5,982
+    -> 5,821, MeshParts 3,467, unique meshes 433 (budget 600), shadow
+    casters 2,073, lights 144 (0 shadows), screens 74, solid decor 0,
+    precise collision 0; heaviest room Supplement Bar 584 (budget 600).
+  - NOT checked: the user's own look in the game.
+  NEXT ACTION: batch 2 (light fittings). Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
   the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
@@ -1893,7 +1948,9 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Replace the Mock Meet's block furniture with Blender models; `git log -1` for the hash.
+- 2026-10-28, pushed: Replace the shared block furniture with Blender models (blocks to Blender, batch 1); `git log -1` for the hash.
+- `1e9d3de` (2026-10-28, pushed) Record the user's Studio check of the Mock Meet models in DEVELOPMENT_STATUS.
+- `44375cd` (2026-10-28, pushed) Replace the Mock Meet's block furniture with Blender models.
 - `368eee0` (2026-10-28, pushed) Add weight-class builds (save v6) and let the Mock Meet save Competition Scale and best Total.
 - 2026-10-28, pushed: Add the Blender Cardio TV; `git log -1` for the hash.
 - `d5fa7d4` (2026-10-28, pushed) Performance pass: fewer decor shadows, triangle budgets, a performance audit tool.
