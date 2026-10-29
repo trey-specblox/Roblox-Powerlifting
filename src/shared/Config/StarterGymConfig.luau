@@ -586,6 +586,8 @@ StarterGymConfig.PropAssets = {
 	-- (StarterGymBuilder paints the Doors_01 pieces with each door's own looks, so they have no colourways.)
 	{ id = 78320327648297 }, -- Reception_01: reception desk, card reader, light strip, turnstile and arm, railing,
 	-- merch wall, outside sign lamp
+	{ id = 135516072435746 }, -- CafeShop_01: counter, wall shelf, till, round and high tables, window bar, blender,
+	-- drinks fridge, supplement bar counter, slatwall, podium, tee stack, tee table, shop counter top
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -649,6 +651,9 @@ StarterGymConfig.PropFabricPieces = {
 	Curtain_Cloth = true,
 	GymBag_Body = true,
 	StaffTee_Body = true,
+	TeeStack_TeeA = true,
+	TeeStack_TeeB = true,
+	TeeStack_TeeC = true,
 	Towel_Body = true,
 	Towel_Stripe = true,
 	HangingTowel_Body = true,
@@ -836,6 +841,27 @@ StarterGymConfig.PropColourways = {
 		ShakerC = "Blue", Lids = "White", ShirtA = "Black", ShirtB = "White", ShirtC = "Red", ShirtD = "Navy",
 		Lettering = "Yellow" } },
 	FloodLamp = { { Arm = "Silver", Head = "Black", Lens = "GlowWhite" } },
+	-- The Cafe, Supplement Bar and Shop (CafeShop_01, art/scripts/build_cafe_shop_01.py). RoomProps paints the
+	-- pieces made of the room's own surfaces (counters, boards, table tops) with the room's looks over these.
+	CounterUnit = { { Body = "White", Top = "White" } },
+	WallShelf = { { Board = "Oak", Brackets = "Black" } },
+	Till = { { Body = "Black", Screen = "Navy" } },
+	RoundTable = { { Top = "White", Stand = "Black" } },
+	HighTable = { { Top = "Black", Stand = "Silver" } },
+	WindowBar = { { Top = "White", Legs = "Black" } },
+	Blender = { { Body = "Black", Jug = "Glass" } },
+	DrinksFridge = { { Body = "Silver", Glass = "Glass", Glow = "GlowWhite", BottleA = "Blue", BottleB = "Red",
+		BottleC = "Green", BottleD = "Yellow" } },
+	SBarCounter = { { Plinth = "Black", Body = "Kraft", Top = "Black", Rail = "Silver" } },
+	Slatwall = { { Panel = "Black", Metal = "Silver" } },
+	Podium = { { Base = "Black", Glow = "RedGlow" } },
+	TeeStack = {
+		{ TeeA = "Black", TeeB = "Red", TeeC = "Black" },
+		{ TeeA = "Red", TeeB = "Black", TeeC = "White" },
+		{ TeeA = "White", TeeB = "Black", TeeC = "Red" },
+	},
+	DisplayTable = { { Body = "Black", Edge = "RedGlow" } },
+	ShopCounterTop = { { Top = "Black", Edge = "RedGlow" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

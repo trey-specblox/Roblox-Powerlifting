@@ -114,6 +114,22 @@ local function faceToward(direction: Vector3): Enum.NormalId
 	return if direction.Y > 0 then Enum.NormalId.Top else Enum.NormalId.Bottom
 end
 
+-- Paints the pieces of a placed prop ("<item>_<Piece>") named in `pieces` like blocks of those looks, so a
+-- counter or table top keeps the room's own surfaces (tiles, planks, marble) and their textures.
+local function paintLooks(copy: Model, item: string, pieces: { [string]: Look })
+	for _, part in ipairs(copy:GetDescendants()) do
+		local look = if part:IsA("BasePart") then pieces[string.sub(part.Name, #item + 2)] else nil
+		if look then
+			local basePart = part :: BasePart
+			basePart.Material = look.material
+			basePart.MaterialVariant = look.variant or ""
+			basePart.Color = look.color
+			basePart.Transparency = look.transparency or 0
+			basePart.Reflectance = look.reflectance or 0
+		end
+	end
+end
+
 local function kitFor(folder: Folder, room: BasePart, doorSpots: { Vector3 }): Kit
 	local centre, size = room.Position, room.Size
 	local low, high = centre - size / 2, centre + size / 2
@@ -343,6 +359,20 @@ local function facingOut(kit: Kit, wall: Wall): string
 	return "-d"
 end
 
+--[[
+	A 3D prop in place of an old block box on `wall` (s0..s1 along it, t0..t1 out from it, y0..y1 up): stretched
+	to the box, facing out of the wall, the pieces in `pieces` painted with the room's looks (paintLooks).
+]]
+local function wallProp(kit: Kit, templates: { [string]: Model }, wall: Wall, name: string, item: string, s0: number,
+	s1: number, t0: number, t1: number, y0: number, y1: number, pieces: { [string]: Look }?): Model
+	local a, d = wall.at((s0 + s1) / 2, (t0 + t1) / 2)
+	local copy = propItem(kit, templates, name, item, 1, a, d, y0, facingOut(kit, wall), Vector3.new(s1 - s0, y1 - y0, t1 - t0))
+	if pieces then
+		paintLooks(copy, item, pieces)
+	end
+	return copy
+end
+
 -- A potted plant: the 3D leafy plant (SBarPlant), kept 1.8 off the walls where it is wider than the old one.
 local function plant(kit: Kit, name: string, a: number, d: number)
 	local props = propsFor({ "SBarPlant" })
@@ -555,9 +585,17 @@ end
 
 -- A high table; with `noStools` the caller seats it.
 local function cafeTable(kit: Kit, name: string, a: number, d: number, top: Look?, noStools: boolean?)
-	kit.block(name .. "_Top", a - 1.3, a + 1.3, d - 1.3, d + 1.3, 3, 3.15, top or looks.Wood)
-	kit.block(name .. "_Pole", a - 0.15, a + 0.15, d - 0.15, d + 0.15, 0.1, 3, looks.SteelBeam)
-	kit.block(name .. "_Base", a - 0.7, a + 0.7, d - 0.7, d + 0.7, 0, 0.1, looks.Stainless)
+	-- The CafeShop_01 high table (its top in `top`) on a hidden solid top and pole, or blocks.
+	local props = propsFor({ "HighTable" })
+	if props then
+		paintLooks(propItem(kit, props, name, "HighTable", 1, a, d, 0, "+d"), "HighTable", { Top = top or looks.Wood })
+		hidden(kit.block(name .. "_Solid", a - 1.3, a + 1.3, d - 1.3, d + 1.3, 3, 3.15, looks.Glass))
+		hidden(kit.block(name .. "_PoleSolid", a - 0.15, a + 0.15, d - 0.15, d + 0.15, 0.1, 3, looks.Glass))
+	else
+		kit.block(name .. "_Top", a - 1.3, a + 1.3, d - 1.3, d + 1.3, 3, 3.15, top or looks.Wood)
+		kit.block(name .. "_Pole", a - 0.15, a + 0.15, d - 0.15, d + 0.15, 0.1, 3, looks.SteelBeam)
+		kit.block(name .. "_Base", a - 0.7, a + 0.7, d - 0.7, d + 0.7, 0, 0.1, looks.Stainless)
+	end
 	if not noStools then
 		stool(kit, name .. "_Stool_1", a - 2.3, d)
 		stool(kit, name .. "_Stool_2", a + 2.3, d)
@@ -567,6 +605,13 @@ end
 -- A see-through drinks fridge against a wall, full of bottles.
 local function drinksFridge(kit: Kit, wall: Wall, name: string, s0: number, s1: number)
 	local depth, height = 2.2, 7.5
+	-- The CafeShop_01 fridge (its door and handle reach 2.45 out), stretched to the width, on a hidden solid block.
+	local props = propsFor({ "DrinksFridge" })
+	if props then
+		wallProp(kit, props, wall, name, "DrinksFridge", s0, s1, 0, depth + 0.25, 0, height)
+		hidden(wall.block(name .. "_Solid", s0, s1, 0, depth, 0, height, looks.Glass))
+		return
+	end
 	wall.block(name .. "_Back", s0, s1, 0, 0.2, 0, height, looks.Stainless)
 	wall.block(name .. "_Side_1", s0, s0 + 0.2, 0.2, depth, 0, height, looks.Stainless)
 	wall.block(name .. "_Side_2", s1 - 0.2, s1, 0.2, depth, 0, height, looks.Stainless)
@@ -903,6 +948,14 @@ end
 
 -- A round table: a marble-topped disc on a black pole and base (only the pole and base are solid).
 local function roundTable(kit: Kit, name: string, a: number, d: number, top: Look, height: number)
+	-- The CafeShop_01 round table (its top in `top`), stretched to the height, on a hidden solid pole.
+	local props = propsFor({ "RoundTable" })
+	if props then
+		paintLooks(propItem(kit, props, name, "RoundTable", 1, a, d, 0, "+d", Vector3.new(2.8, height, 2.8)), "RoundTable",
+			{ Top = top })
+		hidden(kit.block(name .. "_Solid", a - 0.12, a + 0.12, d - 0.12, d + 0.12, 0.1, height - 0.16, looks.Glass))
+		return
+	end
 	kit.cylinder(name .. "_Top", a, d, height - 0.08, 0.16, 2.8, "up", top)
 	kit.block(name .. "_Pole", a - 0.12, a + 0.12, d - 0.12, d + 0.12, 0.1, height - 0.16, looks.Gadget)
 	kit.block(name .. "_Base", a - 0.6, a + 0.6, d - 0.6, d + 0.6, 0, 0.1, looks.Gadget)
@@ -1152,8 +1205,17 @@ FURNISH.Cafe = function(kit)
 
 	-- The back bar: green tiles under white marble, two espresso machines,
 	-- grinders, mugs; shelves of coffee bags, the menu and the neon sign.
-	back.block("BackBar", 1, 22.5, 0.08, 2.2, 0.06, 3.4, looks.CafeTiles)
-	back.block("BackBar_Top", 1, 22.5, 0.08, 2.35, 3.4, 3.6, looks.CafeMarble)
+	-- The counters, shelves, till and window bar are CafeShop_01 models (in the room's tiles and marble) on hidden
+	-- solid blocks; blocks if they did not load.
+	local furniture = propsFor({ "CounterUnit", "WallShelf", "Till", "WindowBar" })
+	local surfaces = { Body = looks.CafeTiles, Top = looks.CafeMarble }
+	if furniture then
+		wallProp(kit, furniture, back, "BackBar", "CounterUnit", 1, 22.5, 0.08, 2.35, 0.06, 3.6, surfaces)
+		hidden(back.block("BackBar_Solid", 1, 22.5, 0.08, 2.35, 0.06, 3.6, looks.Glass))
+	else
+		back.block("BackBar", 1, 22.5, 0.08, 2.2, 0.06, 3.4, looks.CafeTiles)
+		back.block("BackBar_Top", 1, 22.5, 0.08, 2.35, 3.4, 3.6, looks.CafeMarble)
+	end
 	onBack("Espresso_1", "Espresso", 1, 8, 1.2, 3.6)
 	onBack("Espresso_2", "Espresso", 2, 19, 1.2, 3.6)
 	onBack("Grinder_1", "Grinder", 1, 4.6, 1.2, 3.6)
@@ -1162,7 +1224,13 @@ FURNISH.Cafe = function(kit)
 		onBack("BarMug_" .. k + 1, "Mug", k % 5 + 1, 13.5 + k * 0.55, 1.4, 3.6)
 	end
 	for level, y in ipairs({ 5.2, 6.9 }) do
-		back.item("Shelf_" .. level, 2, 12, 0.08, 1, y, y + 0.15, looks.LockersSlats)
+		if furniture then
+			-- The board on brackets reaching 0.5 under it.
+			wallProp(kit, furniture, back, "Shelf_" .. level, "WallShelf", 2, 12, 0.08, 1, y - 0.5, y + 0.15,
+				{ Board = looks.LockersSlats })
+		else
+			back.item("Shelf_" .. level, 2, 12, 0.08, 1, y, y + 0.15, looks.LockersSlats)
+		end
 		for k = 0, 11 do
 			onBack(string.format("Shelf_%d_Bag_%d", level, k + 1), "CoffeeBag", (math.floor(k / 3) + level) % 4 + 1,
 				2.6 + k * 0.8, 0.55, y + 0.15)
@@ -1176,8 +1244,13 @@ FURNISH.Cafe = function(kit)
 
 	-- The serving counter: the pastry case, takeaway cups, mugs and a till;
 	-- pendant lamps over it.
-	back.block("Counter", 1, 20, 5.2, 6.8, 0.06, 3.6, looks.CafeTiles)
-	back.block("Counter_Top", 0.8, 20.2, 5, 7.1, 3.6, 3.85, looks.CafeMarble)
+	if furniture then
+		wallProp(kit, furniture, back, "Counter", "CounterUnit", 0.8, 20.2, 5, 7.1, 0.06, 3.85, surfaces)
+		hidden(back.block("Counter_Solid", 0.8, 20.2, 5, 7.1, 0.06, 3.85, looks.Glass))
+	else
+		back.block("Counter", 1, 20, 5.2, 6.8, 0.06, 3.6, looks.CafeTiles)
+		back.block("Counter_Top", 0.8, 20.2, 5, 7.1, 3.6, 3.85, looks.CafeMarble)
+	end
 	onBack("PastryCase", "PastryCase", 1, 5, 6.05, 3.85)
 	for k = 0, 4 do
 		onBack("Case_Donut_" .. k + 1, "Donut", k % 3 + 1, 3.6 + k * 0.65, 5.75, 4.15)
@@ -1190,8 +1263,13 @@ FURNISH.Cafe = function(kit)
 		onBack("Cup_" .. k + 1, "CoffeeCup", k + 1, 9 + k * 0.6, 5.6, 3.85)
 		onBack("CounterMug_" .. k + 1, "Mug", k + 2, 12.5 + k * 0.6, 5.6, 3.85)
 	end
-	back.item("Till", 16.5, 17.5, 5.4, 6, 3.85, 3.95, looks.Gadget)
-	back.item("Till_Screen", 16.7, 17.3, 5.5, 5.6, 3.95, 4.8, looks.Gadget)
+	if furniture then
+		-- Its screen at the back, toward the wall, like the old block screen.
+		onBack("Till", "Till", 1, 17, 5.7, 3.85)
+	else
+		back.item("Till", 16.5, 17.5, 5.4, 6, 3.85, 3.95, looks.Gadget)
+		back.item("Till_Screen", 16.7, 17.3, 5.5, 5.6, 3.95, 4.8, looks.Gadget)
+	end
 	for index, ps in ipairs({ 4, 10, 16 }) do
 		local a, d = back.at(ps, 6.1)
 		pendant(kit, props, "Pendant_" .. index, index, a, d, 7.2)
@@ -1226,9 +1304,17 @@ FURNISH.Cafe = function(kit)
 	end
 
 	-- A window bar along the glass with stools, looking out at the gym.
-	kit.block("WindowBar", -21.5, -6, 0.2, 1.5, 3.6, 3.85, looks.CafeMarble)
+	if furniture then
+		paintLooks(put("WindowBar", "WindowBar", 1, -13.75, 0.85, 0.06, "+d"), "WindowBar", { Top = looks.CafeMarble })
+		hidden(kit.block("WindowBar_Solid", -21.5, -6, 0.2, 1.5, 3.6, 3.85, looks.Glass))
+	else
+		kit.block("WindowBar", -21.5, -6, 0.2, 1.5, 3.6, 3.85, looks.CafeMarble)
+	end
 	for index, a in ipairs({ -20.8, -13.75, -6.7 }) do
-		kit.block("WindowBar_Leg_" .. index, a - 0.1, a + 0.1, 0.75, 0.95, 0.06, 3.6, looks.Gadget)
+		local leg = kit.block("WindowBar_Leg_" .. index, a - 0.1, a + 0.1, 0.75, 0.95, 0.06, 3.6, looks.Gadget)
+		if furniture then
+			hidden(leg)
+		end
 	end
 	for k = 0, 5 do
 		put("WindowStool_" .. k + 1, "SBarStool", 1, -20 + k * 2.6, 2.6, 0.06, "-d")
@@ -2203,14 +2289,27 @@ FURNISH.SupplementBar = function(kit)
 	end
 
 	-- The back bar: planked cabinets under a black marble top, blenders on it.
-	back.block("BackBar", -hw + 1, 6, 0.08, 2, 0.06, 3.4, looks.SBarPlanks)
-	back.block("BackBar_Top", -hw + 1, 6, 0.08, 2.15, 3.4, 3.6, looks.SBarMarble)
+	-- The counters, shelves, blenders and till are CafeShop_01 models (in the room's planks and marble) on hidden
+	-- solid blocks; blocks if they did not load.
+	local furniture = propsFor({ "CounterUnit", "WallShelf", "Till", "Blender", "SBarCounter" })
+	if furniture then
+		wallProp(kit, furniture, back, "BackBar", "CounterUnit", -hw + 1, 6, 0.08, 2.15, 0.06, 3.6,
+			{ Body = looks.SBarPlanks, Top = looks.SBarMarble })
+		hidden(back.block("BackBar_Solid", -hw + 1, 6, 0.08, 2.15, 0.06, 3.6, looks.Glass))
+	else
+		back.block("BackBar", -hw + 1, 6, 0.08, 2, 0.06, 3.4, looks.SBarPlanks)
+		back.block("BackBar_Top", -hw + 1, 6, 0.08, 2.15, 3.4, 3.6, looks.SBarMarble)
+	end
 	for index, s in ipairs({ -9, -5.5, -2 }) do
 		local blender = "Blender_" .. index
-		back.item(blender .. "_Base", s - 0.6, s + 0.6, 0.4, 1.6, 3.6, 4.2, looks.Gadget)
 		local a, d = back.at(s, 1)
-		kit.cylinder(blender .. "_Jug", a, d, 4.95, 1.5, 0.8, "up", looks.Glass)
-		kit.cylinder(blender .. "_Lid", a, d, 5.77, 0.14, 0.86, "up", looks.Gadget)
+		if furniture then
+			propItem(kit, furniture, blender, "Blender", 1, a, d, 3.6, "-d")
+		else
+			back.item(blender .. "_Base", s - 0.6, s + 0.6, 0.4, 1.6, 3.6, 4.2, looks.Gadget)
+			kit.cylinder(blender .. "_Jug", a, d, 4.95, 1.5, 0.8, "up", looks.Glass)
+			kit.cylinder(blender .. "_Lid", a, d, 5.77, 0.14, 0.86, "up", looks.Gadget)
+		end
 	end
 	-- Two floating shelves of products, each lit from underneath: small jars
 	-- and bottles below, whey and isolate tubs above.
@@ -2227,7 +2326,11 @@ FURNISH.SupplementBar = function(kit)
 	}
 	for level, y in ipairs({ 5, 6.7 }) do
 		local shelf = "Shelf_" .. level
-		back.item(shelf, -12, -3, 0.08, 1, y, y + 0.15, looks.SBarPlanks)
+		if furniture then
+			wallProp(kit, furniture, back, shelf, "WallShelf", -12, -3, 0.08, 1, y - 0.5, y + 0.15, { Board = looks.SBarPlanks })
+		else
+			back.item(shelf, -12, -3, 0.08, 1, y, y + 0.15, looks.SBarPlanks)
+		end
 		local strip = back.item(shelf .. "_Light", -11.8, -3.2, 0.7, 0.8, y - 0.05, y, looks.GlowWarm)
 		BuildParts.surfaceLight(strip, Enum.NormalId.Bottom, 4, 0.6, 120, looks.GlowWarm.color)
 		if props then
@@ -2262,23 +2365,31 @@ FURNISH.SupplementBar = function(kit)
 
 	-- The serving counter: dark plank slats, a black marble top, a red glow
 	-- under the front lip, a steel foot rail, shakers and a till; staff behind.
-	back.block("Counter_Plinth", -9.8, 7.8, 5.6, 6.7, 0.06, 0.4, looks.Gadget)
-	back.block("Counter", -10, 8, 5.5, 6.95, 0.4, 3.6, looks.SBarPlanks)
-	back.block("Counter_Top", -10.3, 8.3, 5.3, 7.45, 3.6, 3.85, looks.SBarMarble)
-	local slat = 0
-	local s = -9.85
-	while s + 0.3 <= 7.9 do
-		slat += 1
-		back.item("Counter_Slat_" .. slat, s, s + 0.3, 6.95, 7.07, 0.45, 3.55, looks.SBarPlanks)
-		s += 0.45
+	if furniture then
+		-- One model (s -10.3..8.3, t 5.3..7.83 with the foot rail), on hidden solid blocks like the old body and top.
+		wallProp(kit, furniture, back, "Counter", "SBarCounter", -10.3, 8.3, 5.3, 7.83, 0.06, 3.85,
+			{ Body = looks.SBarPlanks, Top = looks.SBarMarble })
+		hidden(back.block("Counter_Solid", -10, 8, 5.5, 6.95, 0.06, 3.6, looks.Glass))
+		hidden(back.block("Counter_TopSolid", -10.3, 8.3, 5.3, 7.45, 3.6, 3.85, looks.Glass))
+	else
+		back.block("Counter_Plinth", -9.8, 7.8, 5.6, 6.7, 0.06, 0.4, looks.Gadget)
+		back.block("Counter", -10, 8, 5.5, 6.95, 0.4, 3.6, looks.SBarPlanks)
+		back.block("Counter_Top", -10.3, 8.3, 5.3, 7.45, 3.6, 3.85, looks.SBarMarble)
+		local slat = 0
+		local s = -9.85
+		while s + 0.3 <= 7.9 do
+			slat += 1
+			back.item("Counter_Slat_" .. slat, s, s + 0.3, 6.95, 7.07, 0.45, 3.55, looks.SBarPlanks)
+			s += 0.45
+		end
+		local railA, railD = back.at(-1, 7.75)
+		kit.cylinder("FootRail", railA, railD, 0.9, 17.6, 0.16, "a", looks.Stainless)
+		for index, rs in ipairs({ -9, -1, 7 }) do
+			back.item("FootRail_Bracket_" .. index, rs - 0.06, rs + 0.06, 7.07, 7.75, 0.84, 0.96, looks.Stainless)
+		end
 	end
 	local glow = back.item("Counter_Glow", -9.8, 7.8, 6.8, 6.95, 0.33, 0.4, looks.GlowRed)
 	BuildParts.surfaceLight(glow, Enum.NormalId.Bottom, 3, 1, 120, looks.GlowRed.color)
-	local railA, railD = back.at(-1, 7.75)
-	kit.cylinder("FootRail", railA, railD, 0.9, 17.6, 0.16, "a", looks.Stainless)
-	for index, rs in ipairs({ -9, -1, 7 }) do
-		back.item("FootRail_Bracket_" .. index, rs - 0.06, rs + 0.06, 7.07, 7.75, 0.84, 0.96, looks.Stainless)
-	end
 	for index = 0, 5 do
 		local a, d = back.at(-8.5 + index * 2.6, 6.4)
 		if props then
@@ -2287,8 +2398,13 @@ FURNISH.SupplementBar = function(kit)
 			kit.cylinder("Shaker_" .. index + 1, a, d, 4.3, 0.9, 0.5, "up", if index % 2 == 0 then looks.PlateRed else looks.Gadget)
 		end
 	end
-	back.item("Till", 6.4, 7.4, 5.6, 6.2, 3.85, 3.95, looks.Gadget)
-	back.item("Till_Screen", 6.6, 7.2, 5.7, 5.8, 3.95, 4.8, looks.Gadget)
+	if furniture then
+		local tillA, tillD = back.at(6.9, 5.9)
+		propItem(kit, furniture, "Till", "Till", 1, tillA, tillD, 3.85, "-d")
+	else
+		back.item("Till", 6.4, 7.4, 5.6, 6.2, 3.85, 3.95, looks.Gadget)
+		back.item("Till_Screen", 6.6, 7.2, 5.7, 5.8, 3.95, 4.8, looks.Gadget)
+	end
 	for index, ss in ipairs({ -8, -5, -2, 1, 4 }) do
 		local a, d = back.at(ss, 8.6)
 		if props then
@@ -2520,8 +2636,17 @@ FURNISH.Shop = function(kit)
 
 	-- Mannequins on a black podium, each under a spotlight, with an invisible
 	-- solid column so nobody walks through them.
-	back.block("Podium", -7.5, 7.5, 1.5, 6, 0, 0.3, looks.Gadget)
-	back.item("Podium_Glow", -7.5, 7.5, 6, 6.06, 0.08, 0.2, looks.GlowRed)
+	-- The podium, slatwall, ledges, tees, table, counter top and till are CafeShop_01 models on hidden solid
+	-- blocks where the old blocks were solid; blocks if they did not load.
+	local furniture = propsFor({ "Podium", "Slatwall", "WallShelf", "TeeStack", "DisplayTable", "ShopCounterTop", "Till",
+		"CardReader" })
+	if furniture then
+		wallProp(kit, furniture, back, "Podium", "Podium", -7.5, 7.5, 1.5, 6.06, 0, 0.3)
+		hidden(back.block("Podium_Solid", -7.5, 7.5, 1.5, 6, 0, 0.3, looks.Glass))
+	else
+		back.block("Podium", -7.5, 7.5, 1.5, 6, 0, 0.3, looks.Gadget)
+		back.item("Podium_Glow", -7.5, 7.5, 6, 6.06, 0.08, 0.2, looks.GlowRed)
+	end
 	local mannequins = {
 		{ s = -4.6, item = "MannequinSinglet" },
 		{ s = 0, item = "MannequinTee" },
@@ -2560,25 +2685,41 @@ FURNISH.Shop = function(kit)
 
 	-- The slatwall on the left: hanging wraps on hooks, knee sleeves in pairs
 	-- on a ledge, rolled wraps on a lower ledge.
-	left.item("Slatwall", 6, 24, 0.15, 0.35, 0.5, 9.5, dark)
-	for k = 0, 14 do
-		local y = 0.8 + k * 0.6
-		left.item("Slatwall_Groove_" .. k + 1, 6, 24, 0.35, 0.37, y, y + 0.06, looks.Stainless)
+	if furniture then
+		-- The panel with its grooves and six hooks (to 0.97 out).
+		wallProp(kit, furniture, left, "Slatwall", "Slatwall", 6, 24, 0.15, 0.97, 0.5, 9.5, { Panel = dark })
+	else
+		left.item("Slatwall", 6, 24, 0.15, 0.35, 0.5, 9.5, dark)
+		for k = 0, 14 do
+			local y = 0.8 + k * 0.6
+			left.item("Slatwall_Groove_" .. k + 1, 6, 24, 0.35, 0.37, y, y + 0.06, looks.Stainless)
+		end
 	end
 	for index = 0, 5 do
 		local s = 8 + index * 2.8
-		left.item("Hook_" .. index + 1, s - 0.05, s + 0.05, 0.37, 0.95, 8.4, 8.5, looks.Stainless)
+		if not furniture then
+			left.item("Hook_" .. index + 1, s - 0.05, s + 0.05, 0.37, 0.95, 8.4, 8.5, looks.Stainless)
+		end
 		local a, d = left.at(s, 0.6)
 		showGear("WristWrapHanging", "WristWrapHanging_" .. index + 1, a, d, 8.45, "+a")
 	end
-	left.block("Ledge_Sleeves", 7, 23, 0.37, 1.3, 4, 4.15, dark)
+	-- The two ledges: boards on brackets reaching 0.5 under them, on hidden solid blocks.
+	local function ledge(name: string, y: number)
+		if furniture then
+			wallProp(kit, furniture, left, name, "WallShelf", 7, 23, 0.37, 1.3, y - 0.5, y + 0.15, { Board = dark })
+			hidden(left.block(name .. "_Solid", 7, 23, 0.37, 1.3, y, y + 0.15, looks.Glass))
+		else
+			left.block(name, 7, 23, 0.37, 1.3, y, y + 0.15, dark)
+		end
+	end
+	ledge("Ledge_Sleeves", 4)
 	for pair, s in ipairs({ 9, 13, 17, 21 }) do
 		for side, offset in ipairs({ -0.4, 0.4 }) do
 			local a, d = left.at(s + offset, 0.85)
 			showGear("KneeSleeve", string.format("KneeSleeve_%d_%d", pair, side), a, d, 4.15, "+a")
 		end
 	end
-	left.block("Ledge_Wraps", 7, 23, 0.37, 1.3, 2, 2.15, dark)
+	ledge("Ledge_Wraps", 2)
 	for index = 0, 5 do
 		local a, d = left.at(8.5 + index * 2.8, 0.85)
 		showGear("WristWrap", "WristWrap_" .. index + 1, a, d, 2.15, "+a")
@@ -2593,29 +2734,53 @@ FURNISH.Shop = function(kit)
 		end
 	end
 	for index, s in ipairs({ 10, 14, 18 }) do
-		for fold = 0, 3 do
-			right.item(string.format("Tee_Stack_%d_%d", index, fold + 1), s - 0.7, s + 0.7, 0.3, 1.3, 0.3 + fold * 0.25,
-				0.53 + fold * 0.25, if fold % 2 == 0 then looks.ShirtBlack else looks.ShirtRed)
+		if furniture then
+			local a, d = right.at(s, 0.8)
+			propItem(kit, furniture, "Tee_Stack_" .. index, "TeeStack", index, a, d, 0.3, facingOut(kit, right))
+		else
+			for fold = 0, 3 do
+				right.item(string.format("Tee_Stack_%d_%d", index, fold + 1), s - 0.7, s + 0.7, 0.3, 1.3, 0.3 + fold * 0.25,
+					0.53 + fold * 0.25, if fold % 2 == 0 then looks.ShirtBlack else looks.ShirtRed)
+			end
 		end
 	end
 
-	-- The counter by the door: black with the logo on its front, a till on top.
+	-- The counter by the door: black with the logo on its front (a block: the logo is drawn on it), a till on top.
 	local counter = kit.block("Counter", 5, 11.5, 8, 10, 0, 3.6, dark)
 	shopLogo(counter, kit.toward("-d"))
-	kit.block("Counter_Top", 4.9, 11.6, 7.9, 10.1, 3.6, 3.8, looks.Gadget)
-	kit.item("Counter_Edge", 4.9, 11.6, 7.84, 7.9, 3.6, 3.8, looks.GlowRed)
-	kit.item("Till", 9.5, 11, 8.6, 9.6, 3.8, 4.4, looks.Gadget)
-	kit.item("Till_Screen", 9.6, 10.9, 8.55, 8.6, 4.4, 5.2, looks.Gadget)
-	kit.item("CardReader", 6, 6.6, 8.2, 8.8, 3.8, 3.95, looks.Gadget)
+	if furniture then
+		-- The top with its red edge on the customers' side (-d), the till's screen toward the customers like the
+		-- old block screen, the Reception_01 card reader.
+		propItem(kit, furniture, "Counter_Top", "ShopCounterTop", 1, 8.25, 8.97, 3.6, "-d")
+		hidden(kit.block("Counter_TopSolid", 4.9, 11.6, 7.9, 10.1, 3.6, 3.8, looks.Glass))
+		propItem(kit, furniture, "Till", "Till", 1, 10.25, 9.1, 3.8, "+d")
+		propItem(kit, furniture, "CardReader", "CardReader", 1, 6.3, 8.5, 3.8, "-d")
+	else
+		kit.block("Counter_Top", 4.9, 11.6, 7.9, 10.1, 3.6, 3.8, looks.Gadget)
+		kit.item("Counter_Edge", 4.9, 11.6, 7.84, 7.9, 3.6, 3.8, looks.GlowRed)
+		kit.item("Till", 9.5, 11, 8.6, 9.6, 3.8, 4.4, looks.Gadget)
+		kit.item("Till_Screen", 9.6, 10.9, 8.55, 8.6, 4.4, 5.2, looks.Gadget)
+		kit.item("CardReader", 6, 6.6, 8.2, 8.8, 3.8, 3.95, looks.Gadget)
+	end
 
 	-- A table of folded tees.
-	kit.block("Table", -8, -2.5, 11, 14, 0, 2.6, dark)
+	if furniture then
+		propItem(kit, furniture, "Table", "DisplayTable", 1, -5.25, 12.5, 0, "-d")
+		hidden(kit.block("Table_Solid", -8, -2.5, 11, 14, 0, 2.6, looks.Glass))
+	else
+		kit.block("Table", -8, -2.5, 11, 14, 0, 2.6, dark)
+	end
 	for i = 0, 2 do
 		for j = 0, 1 do
 			local a0, d0 = -7.6 + i * 1.8, 11.3 + j * 1.4
-			for fold = 0, 2 do
-				kit.item(string.format("Table_Tee_%d_%d_%d", i + 1, j + 1, fold + 1), a0, a0 + 1.4, d0, d0 + 1.2,
-					2.6 + fold * 0.25, 2.83 + fold * 0.25, if (i + j + fold) % 3 == 0 then looks.ShirtRed else looks.ShirtBlack)
+			if furniture then
+				propItem(kit, furniture, string.format("Table_Tee_%d_%d", i + 1, j + 1), "TeeStack", (i + j) % 3 + 1, a0 + 0.7,
+					d0 + 0.6, 2.6, "-d")
+			else
+				for fold = 0, 2 do
+					kit.item(string.format("Table_Tee_%d_%d_%d", i + 1, j + 1, fold + 1), a0, a0 + 1.4, d0, d0 + 1.2,
+						2.6 + fold * 0.25, 2.83 + fold * 0.25, if (i + j + fold) % 3 == 0 then looks.ShirtRed else looks.ShirtBlack)
+				end
 			end
 		end
 	end

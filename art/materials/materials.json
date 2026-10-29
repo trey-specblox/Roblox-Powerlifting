@@ -726,6 +726,14 @@
       "ids": {
         "model": "rbxassetid://78320327648297"
       }
+    },
+    "CafeShop_01": {
+      "about": "The Cafe, Supplement Bar and Shop furniture: a stretched bar counter (CounterUnit) and wall shelf (WallShelf), a till (Till), round and high tables (RoundTable, HighTable), the cafe window bar (WindowBar), the bar blender (Blender), drinks fridge (DrinksFridge) and serving counter (SBarCounter), the shop slatwall (Slatwall), podium (Podium), folded tee stack (TeeStack), tee table (DisplayTable) and counter top (ShopCounterTop). Made by art/scripts/build_cafe_shop_01.py (art/blender/CafeShop_01.blend).",
+      "file": "art/exports/CafeShop_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://135516072435746"
+      }
     }
   },
   "images": {

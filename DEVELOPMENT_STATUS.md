@@ -2003,8 +2003,45 @@ and polish.
   - NOT checked: walking through the turnstile lanes and against the desk
     and railings (the hidden solids are where the old blocks were); the
     user's own look.
-  NEXT ACTION: batch 5 (Cafe, Supplement Bar, Shop) in Blender: preview,
-  the user's approval, upload, place, Studio test, commit on approval. Optional:
+  Batch 5 (Cafe, Supplement Bar, Shop): `art/scripts/build_cafe_shop_01.py`
+  -> `art/blender/CafeShop_01.blend`, 36 pieces, 4,808 triangles, CHECK
+  PASSED; previews sent (backface culling). Items: CounterUnit and WallShelf
+  (stretched), Till, RoundTable (stretched to the height), HighTable,
+  WindowBar, Blender, DrinksFridge, SBarCounter (39 slats in one mesh),
+  Slatwall, Podium, TeeStack (3 colourways), DisplayTable, ShopCounterTop;
+  the shop counter reuses the Reception_01 CardReader. Checked first in
+  Studio that a MeshPart painted with a textured look (the Supplement Bar's
+  ShelfFour in SBar_DarkPlanks) shows the texture, so the counters, shelves
+  and table tops are painted with the room's looks (new RoomProps
+  paintLooks). Stay blocks: the shop counter body (the logo is drawn on
+  it), menu screens, neon signs, the glow strips under shelves and the bar
+  counter (light only), the Cafe's STAFF ONLY sign, pendant cables.
+  Approved by the user ("Approve, upload"); exported to
+  `art/exports/CafeShop_01.glb`, uploaded as the group:
+  rbxassetid://135516072435746 (materials.json). COMMITTED and pushed with
+  user approval on 2026-10-29 ("Commit, then batch 6").
+  - StarterGymConfig: PropAssets entry, colourways for the 14 items, the
+    tees in PropFabricPieces.
+  - RoomProps: paintLooks and wallProp (a prop stretched to an old block box
+    on a wall, facing out); cafeTable, drinksFridge and roundTable use the
+    models (so the spa's two LowTables changed too); Cafe, SupplementBar and
+    Shop place the models with hidden solid blocks where the old blocks were
+    solid. Old blocks are the fallback everywhere.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Studio Play (by Claude): no
+    new errors, 17 rooms furnished as before. Visible blocks: Supplement Bar
+    111 -> 13, Cafe 52 -> 16, Shop 70 -> 8. Screenshots: the bar (planks,
+    black marble, fridge with bottles, blenders, till), the Cafe (green tiled
+    counters with marble tops, shelves, round tables), the Shop (slatwall with
+    hooks and gear, tee table, podium). Audit: visible blocks 1,604 -> 1,402,
+    parts 5,633, MeshParts 3,918, unique meshes 523 (budget 600), shadow
+    casters 1,962, lights 144 (0 shadows), screens 74, solid decor 0, precise
+    0; heaviest room Supplement Bar 584 -> 523 parts. StarterGym_VerifyShell
+    not re-run.
+  - NOT checked: walking into the counters and tables (the hidden solids are
+    where the old blocks were); the user's own look.
+  NEXT ACTION: batch 6 (spa wing) in Blender: preview, the user's approval,
+  upload, place, Studio test, commit on approval. Reuse meshes where possible
+  (unique meshes 523 of 600). Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
   the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
@@ -2073,7 +2110,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Replace the reception's block furniture with Blender models (blocks to Blender, batch 4); `git log -1` for the hash.
+- 2026-10-29, pushed: Replace the Cafe, Supplement Bar and Shop block furniture with Blender models (blocks to Blender, batch 5); `git log -1` for the hash.
+- `a29fb82` (2026-10-29, pushed) Replace the reception's block furniture with Blender models (blocks to Blender, batch 4).
 - `a0206d1` (2026-10-29, pushed) Replace the block door pieces and name plaques with Blender models (blocks to Blender, batch 3).
 - `177c37e` (2026-10-28, pushed) Replace the block light fittings with Blender models (blocks to Blender, batch 2).
 - `3d267e2` (2026-10-28, pushed) Replace the shared block furniture with Blender models (blocks to Blender, batch 1).
