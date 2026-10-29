@@ -661,12 +661,9 @@ local function propsFor(items: { string }): { [string]: Model }?
 	return templates
 end
 
--- A coloured copy of a 3D prop (Kit.place, so it must fit the room): every piece
--- takes its colour from the item's StarterGymConfig.PropColourways colourway.
-local function propItem(kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number,
-	a: number, d: number, y: number, facing: string): Model
+-- Paints every piece of a copy of `item` from the item's StarterGymConfig.PropColourways colourway.
+local function paintProp(copy: Model, item: string, colourway: number)
 	local cfg = StarterGymConfig
-	local copy = kit.place(name, templates[item], a, d, y, facing)
 	local scheme = cfg.PropColourways[item]
 	local colours = scheme and scheme[colourway]
 	if colours then
@@ -683,6 +680,35 @@ local function propItem(kit: Kit, templates: { [string]: Model }, name: string, 
 			end
 		end
 	end
+end
+
+-- A coloured copy of a 3D prop (Kit.place, so it must fit the room): every piece
+-- takes its colour from the item's StarterGymConfig.PropColourways colourway.
+local function propItem(kit: Kit, templates: { [string]: Model }, name: string, item: string, colourway: number,
+	a: number, d: number, y: number, facing: string): Model
+	local copy = kit.place(name, templates[item], a, d, y, facing)
+	paintProp(copy, item, colourway)
+	return copy
+end
+
+--[[
+	A coloured copy of the 3D prop `item` for building outside a room's kit (the
+	Mock Meet's private rooms), or nil when its asset did not load. Every piece is
+	decor; the copy is not parented, and its pivot is the bottom centre of its
+	bounds with its front toward the pivot's -Z.
+]]
+function RoomProps.propCopy(item: string, colourway: number): Model?
+	local template: Model? = loadPropTemplates()[item]
+	if template == nil then
+		return nil
+	end
+	local copy = template:Clone()
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") then
+			BuildParts.decor(part)
+		end
+	end
+	paintProp(copy, item, colourway)
 	return copy
 end
 
@@ -1341,19 +1367,9 @@ FURNISH.Cardio = function(kit)
 			screen.Name = "TV"
 			screen.Reflectance = 0.06
 			screen.Parent = unit.Parent
-			-- The pieces are turned, so pick each one's own face that looks along `direction`.
-			local function ownFace(part: BasePart, direction: Vector3): Enum.NormalId
-				local best, bestDot = Enum.NormalId.Front, -math.huge
-				for _, face in ipairs(Enum.NormalId:GetEnumItems()) do
-					local dot = part.CFrame:VectorToWorldSpace(Vector3.FromNormalId(face)):Dot(direction)
-					if dot > bestDot then
-						best, bestDot = face, dot
-					end
-				end
-				return best
-			end
-			BuildParts.surfaceLight(bezel, ownFace(bezel, -back.out), 9, 1.6, 120, Color3.fromRGB(70, 146, 255))
-			StyledScreen.build(screen, ownFace(screen, back.out), "CARDIO ZONE", { "Hop on any machine: hold E",
+			-- The pieces are turned, so pick each one's own face that looks along the direction.
+			BuildParts.surfaceLight(bezel, StyledScreen.faceToward(bezel, -back.out), 9, 1.6, 120, Color3.fromRGB(70, 146, 255))
+			StyledScreen.build(screen, StyledScreen.faceToward(screen, back.out), "CARDIO ZONE", { "Hop on any machine: hold E",
 				"Treadmills: the rhythm run", "Beat the boards on the side walls", "Jump to hop off" }, "corner")
 		end
 	end
@@ -2220,13 +2236,25 @@ FURNISH.MockMeet = function(kit)
 	end
 	kit.item("Runway", -2, 2, 0, D - 6, 0.06, 0.1, looks.PlateRed)
 
-	-- The check-in desk, facing the door.
-	kit.block("CheckInDesk_Body", -5, 5, D - 5, D - 3.2, 0.06, 3.1, looks.FrontCharcoal)
-	kit.block("CheckInDesk_Top", -5.2, 5.2, D - 5.2, D - 3, 3.1, 3.3, looks.Wood)
-	kit.item("CheckInDesk_Stripe", -5, 5, D - 5.08, D - 5, 0.9, 1.3, looks.PlateRed)
-	local sign = kit.item("CheckInDesk_Sign", -2.5, 2.5, D - 5.12, D - 5.04, 1.6, 2.8, looks.SignPanel)
-	plaque(sign, kit.toward("-d"), "CHECK-IN", Color3.fromRGB(16, 16, 18), WHITE)
-	kit.item("CheckInDesk_Screen", -3.6, -1.4, D - 3.9, D - 3.8, 3.3, 4.8, looks.Gadget)
+	-- The check-in desk, facing the door: the Blender model (MockMeet_01's MeetDesk, CHECK-IN on its
+	-- front) with a hidden solid block, and its monitor's screen facing the clerk. Blocks if it fails to load.
+	local deskProps = propsFor({ "MeetDesk" })
+	if deskProps then
+		local desk = propItem(kit, deskProps, "CheckInDesk", "MeetDesk", 1, 0, D - 4.1, 0.06, "-d")
+		hidden(kit.block("CheckInDesk_Solid", -5.25, 5.25, D - 5.25, D - 2.95, 0.06, 3.3, looks.Glass))
+		local monitor = desk:FindFirstChild("MeetDesk_MonitorScreen", true) :: BasePart?
+		if monitor then
+			StyledScreen.build(monitor, StyledScreen.faceToward(monitor, kit.toward("+d")), "CHECK-IN",
+				{ "Mock Meet desk", "Next lifter: you" }, "bar", 120)
+		end
+	else
+		kit.block("CheckInDesk_Body", -5, 5, D - 5, D - 3.2, 0.06, 3.1, looks.FrontCharcoal)
+		kit.block("CheckInDesk_Top", -5.2, 5.2, D - 5.2, D - 3, 3.1, 3.3, looks.Wood)
+		kit.item("CheckInDesk_Stripe", -5, 5, D - 5.08, D - 5, 0.9, 1.3, looks.PlateRed)
+		local sign = kit.item("CheckInDesk_Sign", -2.5, 2.5, D - 5.12, D - 5.04, 1.6, 2.8, looks.SignPanel)
+		plaque(sign, kit.toward("-d"), "CHECK-IN", Color3.fromRGB(16, 16, 18), WHITE)
+		kit.item("CheckInDesk_Screen", -3.6, -1.4, D - 3.9, D - 3.8, 3.3, 4.8, looks.Gadget)
+	end
 	chair(kit, "DeskChair", 0, D - 2, "-d")
 	local board = back.item("Board", -9, 9, 0.08, 0.3, 5, 10.4, looks.Gadget)
 	StyledScreen.build(board, faceToward(back.out), "MOCK MEET", { "Your own private meet room",

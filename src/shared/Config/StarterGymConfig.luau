@@ -579,6 +579,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 122294195016059 }, -- RoomProps_08: the open zone's machines (tricep pulldown, lat pulldown, seated row, leg extension)
 	{ id = 77291688307242 }, -- RoomProps_09: the Cardio machines (treadmill, exercise bike, rower, ski erg)
 	{ id = 127520535803138 }, -- CardioTV_01: the Cardio room's wall TV and soundbar
+	{ id = 104295814087547 }, -- MockMeet_01: the Mock Meet's check-in desk, platform, wait bench, board frame, banner
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -788,6 +789,16 @@ StarterGymConfig.PropColourways = {
 		PowerLight = "GlowGreen", Soundbar = "Black", SoundbarGrille = "Charcoal", SoundbarTrim = "Yellow",
 		SoundbarCaps = "Silver", SoundbarLogo = "White", SoundbarBrackets = "Silver",
 	} },
+	-- The Mock Meet's furniture (MockMeet_01, art/scripts/build_mock_meet_01.py): the check-in desk and the
+	-- private room's platform, wait bench, attempt board frame and banners, in the UI's yellow/white/navy.
+	MeetDesk = { {
+		Body = "Navy", Kick = "Black", Top = "Oak", Tag = "Black", Lettering = "White", Accent = "Yellow",
+		Monitor = "Black", MonitorScreen = "Black", Bell = "Brass", Clipboard = "Kraft", Paper = "White",
+	} },
+	MeetPlatform = { { Base = "Navy", Wood = "Oak", Rubber = "Charcoal", Edge = "Yellow", Logo = "White" } },
+	MeetBench = { { Slats = "Oak", Frame = "Yellow", Feet = "Black", Badge = "Navy", Logo = "White" } },
+	MeetBoard = { { Frame = "Black", Screen = "Black", Header = "Yellow", HeaderText = "Black", Trim = "Red" } },
+	MeetBanner = { { Cloth = "Navy", Rails = "Silver", Caps = "Yellow", Brackets = "Black" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

@@ -7,7 +7,8 @@ tested in Studio, approved by the user, COMMITTED, published, and saving
 checked in the live game; then the Mock Meet part 1 (private meet rooms),
 built, tested in Studio and COMMITTED; then Mock Meet part 2 (the meet
 itself) COMMITTED; next the game-wide UI restyle; 2026-10-28: weight-class
-builds (schema v6) and Mock Meet rewards, tested; newest entries at the end of the
+builds (schema v6) and Mock Meet rewards, tested; then the Mock Meet's
+Blender models, uploaded, tested and COMMITTED; newest entries at the end of the
 CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
@@ -1778,9 +1779,57 @@ and polish.
   - Rojo note: one file (ProfileOperations) stopped syncing mid-session; a
     rewrite of the file made it sync. If Studio behaves like old code,
     compare a script's Source with the file.
-  NEXT ACTION: the block-built pieces below (Blender models). Optional:
+  MOCK MEET BLENDER MODELS (2026-10-28; models approved by the user in
+  Blender previews ("Approve, upload"); uploaded; tested in Studio by Claude;
+  COMMITTED and pushed with the user's approval, see section 1):
+  - `art/scripts/build_mock_meet_01.py` -> `art/blender/MockMeet_01.blend`
+    (30 pieces, 5 items): MeetDesk (navy body, oak top, slanted black
+    CHECK-IN tag with yellow CENTRAL and // slashes, yellow band, monitor
+    facing the clerk, brass bell, clipboard), MeetPlatform (oak planks in
+    the middle, charcoal rubber mats on the sides, navy base, yellow edge,
+    CENTRAL on the wood in front of the rack), MeetBench (oak slats, yellow
+    frame, navy CENTRAL badge), MeetBoard (black frame round the 28 x 12
+    screen, yellow slanted CENTRAL header, red trim), MeetBanner (navy cloth
+    20 x 6 between steel rails with yellow caps, wall brackets; one mesh for
+    both banners). check_models CHECK PASSED (6,476 triangles, heaviest
+    piece 656); previewed with backface culling. Exported to
+    `art/exports/MockMeet_01.glb`, uploaded as the group:
+    rbxassetid://104295814087547 (materials.json).
+  - StarterGymConfig: PropAssets entry and the five colourways.
+  - RoomProps: `paintProp` split out of propItem; new `RoomProps.propCopy(item,
+    colourway)` (a painted decor copy for building outside a room kit); the
+    Mock Meet Room's check-in desk is the model with a hidden solid block,
+    and its monitor screen shows a small CHECK-IN screen to the clerk side.
+    Cardio TV's local face helper moved to `StyledScreen.faceToward` (same
+    behaviour).
+  - MockMeetArena: platform, attempt board frame, both banners and the wait
+    bench are the models (hidden solid blocks for the platform and bench;
+    board and banners are decor). The board's screen piece is renamed
+    "AttemptBoard" and moved into the room model, so setBoard finds it;
+    `hangOnWall` puts wall props' backs on the wall and their screens where
+    the old blocks' were. Every piece falls back to the old blocks if the
+    asset does not load.
+  - Checks: luau-lsp 0 problems on the 4 changed files, `rojo build` OK.
+    Studio (Play, by Claude): desk model in the Mock Meet Room (11 pieces,
+    no old blocks); checked in with the prompt (E), private room built with
+    every model at the old blocks' spots, board shows the live meet
+    (lifter, SQUAT ATTEMPT 1), banners show MOCK MEET / THE BIG THREE;
+    declared 22.5: lifter placed on the platform top (feet 0.60), meet ran
+    to NO LIFT (no minigame played) and attempt 2; leaving (the Leave
+    remote) cleared the room and returned the player. 0 errors in Output.
+    PerformanceAudit numbers (gym, server): parts 5,982, MeshParts 3,258,
+    unique meshes 422, shadow casters 2,139, lights 144 (0 shadows), world
+    screens 74, solid decor 0, precise collision 0: all within budget.
+  - NOT checked: the user's own look at the models in the game; clicking
+    the LEAVE button by hand (the test tool's simulated click did not press
+    it; the remote it fires works; no client code was changed); a full
+    meet with good lifts; a phone.
+  NEXT ACTION: the user looks at the Mock Meet Room and a private room in
+  Studio and clicks LEAVE by hand; then ask the user what is next (the
+  coach's block clipboard is the last Mock Meet block piece). Optional:
   turn Studio API access back off if it is not wanted on.
-  OLDER NEXT ACTION: per the user's newer rule (memory "models-made-in-blender",
+  OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
+  the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
   2026-10-28: every physical model is modelled in Blender, never stacked
   Roblox blocks in code), the block-built pieces from this work are
   candidates for Blender models: the Cardio TV unit (mount, bezel, logo
@@ -1846,6 +1895,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- 2026-10-28, pushed: Replace the Mock Meet's block furniture with Blender models; `git log -1` for the hash.
 - `368eee0` (2026-10-28, pushed) Add weight-class builds (save v6) and let the Mock Meet save Competition Scale and best Total.
 - 2026-10-28, pushed: Add the Blender Cardio TV; `git log -1` for the hash.
 - `d5fa7d4` (2026-10-28, pushed) Performance pass: fewer decor shadows, triangle budgets, a performance audit tool.

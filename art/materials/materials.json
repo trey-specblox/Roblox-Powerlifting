@@ -686,6 +686,14 @@
       "ids": {
         "model": "rbxassetid://127520535803138"
       }
+    },
+    "MockMeet_01": {
+      "about": "The Mock Meet's furniture: the check-in desk (MeetDesk), the private room's competition platform (MeetPlatform), wait bench (MeetBench), attempt board frame (MeetBoard) and side-wall banner (MeetBanner). The game draws its screens on MeetDesk_MonitorScreen, MeetBoard_Screen and MeetBanner_Cloth. Made by art/scripts/build_mock_meet_01.py (art/blender/MockMeet_01.blend).",
+      "file": "art/exports/MockMeet_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://104295814087547"
+      }
     }
   },
   "images": {

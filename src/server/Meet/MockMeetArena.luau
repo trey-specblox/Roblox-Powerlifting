@@ -33,6 +33,7 @@ local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
 local ServerFolder = script.Parent.Parent
 local BuildParts = require(ServerFolder:WaitForChild("World"):WaitForChild("BuildParts"))
 local RackConfigurator = require(ServerFolder:WaitForChild("Training"):WaitForChild("RackConfigurator"))
+local RoomProps = require(ServerFolder:WaitForChild("World"):WaitForChild("RoomProps"))
 local StyledScreen = require(ServerFolder:WaitForChild("World"):WaitForChild("StyledScreen"))
 
 local MockMeetArena = {}
@@ -74,9 +75,25 @@ local function roomsFolder(): Folder
 	return folder
 end
 
--- A board's screen on its `face`, in the game's one style (StyledScreen); `mark` picks its heading's mark.
-local function boardText(part: BasePart, face: Enum.NormalId, title: string, lines: { string }, mark: string?)
-	StyledScreen.build(part, face, title, lines, mark, 30)
+-- A board's screen on its face that looks along `out`, in the game's one style (StyledScreen); `mark` picks
+-- its heading's mark.
+local function boardText(part: BasePart, out: Vector3, title: string, lines: { string }, mark: string?)
+	StyledScreen.build(part, StyledScreen.faceToward(part, out), title, lines, mark, 30)
+end
+
+--[[
+	Hangs `copy` (a wall prop from RoomProps.propCopy, front toward its pivot's -Z)
+	on a wall: its front looks along `out`, the back of its bounds touches the wall
+	plane through `wallPoint`, and its piece `screen` is centred on `screenAt`
+	along the wall.
+]]
+local function hangOnWall(copy: Model, screen: BasePart, wallPoint: Vector3, out: Vector3, screenAt: Vector3)
+	copy:PivotTo(CFrame.lookAt(screenAt, screenAt + out))
+	local box, size = copy:GetBoundingBox()
+	local back = box.Position - out * size.Z / 2
+	local toScreen = screenAt - screen.Position
+	local alongWall = toScreen - out * toScreen:Dot(out)
+	copy:PivotTo(copy:GetPivot() + alongWall + out * (wallPoint - back):Dot(out))
 end
 --[[
 	The lifter's coach (GAME_DESIGN §22: what a coach does is still to be
@@ -253,6 +270,23 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 	local function decor(name: string, low: Vector3, high: Vector3, look: StarterGymConfig.Look): BasePart
 		return BuildParts.decor(box(name, low, high, look))
 	end
+	-- A solid box nobody sees: it stops players walking through a 3D prop (props are decor).
+	local function solid(name: string, low: Vector3, high: Vector3): BasePart
+		local part = box(name, low, high, looks.Glass)
+		part.Transparency = 1
+		part.CastShadow = false
+		return part
+	end
+	-- A coloured copy of the Blender prop `item` (MockMeet_01) in the room, or nil if its asset did not load
+	-- (the room then builds the old blocks).
+	local function prop(name: string, item: string): Model?
+		local copy = RoomProps.propCopy(item, 1)
+		if copy then
+			copy.Name = name
+			copy.Parent = model
+		end
+		return copy
+	end
 
 	-- The shell: floor, ceiling, four walls (solid, so nobody can walk or fall out).
 	box("Floor", Vector3.new(-hx - WALL, -WALL, -hz - WALL), Vector3.new(hx + WALL, 0, hz + WALL), looks.MaxBlack)
@@ -278,29 +312,85 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 	local half = PLATFORM_SIZE / 2
 	decor("Runway", Vector3.new(-2, 0.04, -hz + 3), Vector3.new(2, 0.08, PLATFORM_Z - half), looks.PlateRed)
 
-	-- The competition platform: a dark base with a wooden top.
-	box("Platform_Base", Vector3.new(-half - 0.3, 0, PLATFORM_Z - half - 0.3), Vector3.new(half + 0.3, PLATFORM_HEIGHT - 0.1,
-		PLATFORM_Z + half + 0.3), looks.FrontCharcoal)
-	box("Platform_Top", Vector3.new(-half, PLATFORM_HEIGHT - 0.1, PLATFORM_Z - half), Vector3.new(half, PLATFORM_HEIGHT,
-		PLATFORM_Z + half), looks.Wood)
+	-- The competition platform: the Blender model (oak planks in the middle, rubber mats on the sides, a
+	-- navy base, CENTRAL in front of the rack), its top PLATFORM_HEIGHT up, on a hidden solid block.
+	local platform = prop("Platform", "MeetPlatform")
+	if platform then
+		platform:PivotTo(CFrame.new(centre + Vector3.new(0, 0, PLATFORM_Z)))
+		solid("Platform_Solid", Vector3.new(-half - 0.3, 0, PLATFORM_Z - half - 0.3), Vector3.new(half + 0.3, PLATFORM_HEIGHT,
+			PLATFORM_Z + half + 0.3))
+	else
+		box("Platform_Base", Vector3.new(-half - 0.3, 0, PLATFORM_Z - half - 0.3), Vector3.new(half + 0.3, PLATFORM_HEIGHT - 0.1,
+			PLATFORM_Z + half + 0.3), looks.FrontCharcoal)
+		box("Platform_Top", Vector3.new(-half, PLATFORM_HEIGHT - 0.1, PLATFORM_Z - half), Vector3.new(half, PLATFORM_HEIGHT,
+			PLATFORM_Z + half), looks.Wood)
+	end
 
 	-- The lifter's coach, watching from the front corner of the platform (no judges in a Mock Meet).
 	local liftAt = centre + Vector3.new(0, PLATFORM_HEIGHT, PLATFORM_Z - LIFT_SPOT_IN_FRONT)
 	local coachLine = buildCoach(model, centre + Vector3.new(half + 3, 0, PLATFORM_Z - half + 1), liftAt)
 
-	-- The attempt board on the back wall, above the platform.
-	local board = decor("AttemptBoard", Vector3.new(-14, 9, hz - 0.4), Vector3.new(14, 21, hz - 0.06), looks.Gadget)
-	boardText(board, Enum.NormalId.Front, "ATTEMPT BOARD", { owner.DisplayName, "LIFT  —", "ATTEMPT  1   2   3",
-		"WEIGHT  —  KG" }, "bar")
-	-- A banner on each side wall.
-	local left = decor("Banner_Left", Vector3.new(-hx + 0.06, 8, -6), Vector3.new(-hx + 0.3, 14, 14), looks.Gadget)
-	boardText(left, Enum.NormalId.Right, "MOCK MEET", { "Your own private meet room", "Your coach is watching" }, "star")
-	local right = decor("Banner_Right", Vector3.new(hx - 0.3, 8, -6), Vector3.new(hx - 0.06, 14, 14), looks.Gadget)
-	boardText(right, Enum.NormalId.Left, "THE BIG THREE", { "Squat  ·  Bench  ·  Deadlift", "3 attempts each" }, "dots")
+	-- The attempt board on the back wall, above the platform: the screen (28 x 12, 9 to 21 up) in the Blender
+	-- frame with its CENTRAL header. The screen piece is named "AttemptBoard" and sits in the room's model,
+	-- where setBoard finds it.
+	local boardOut = -Vector3.zAxis
+	local boardFrame = prop("AttemptBoardFrame", "MeetBoard")
+	local boardScreen = boardFrame and boardFrame:FindFirstChild("MeetBoard_Screen", true) :: BasePart?
+	local board: BasePart
+	if boardFrame and boardScreen then
+		hangOnWall(boardFrame, boardScreen, centre + Vector3.new(0, 0, hz - 0.06), boardOut, centre + Vector3.new(0, 15, hz))
+		boardScreen.Name = "AttemptBoard"
+		boardScreen.Parent = model
+		board = boardScreen
+	else
+		if boardFrame then
+			boardFrame:Destroy()
+		end
+		board = decor("AttemptBoard", Vector3.new(-14, 9, hz - 0.4), Vector3.new(14, 21, hz - 0.06), looks.Gadget)
+	end
+	boardText(board, boardOut, "ATTEMPT BOARD", { owner.DisplayName, "LIFT  —", "ATTEMPT  1   2   3", "WEIGHT  —  KG" },
+		"bar")
+	-- A banner on each side wall (20 x 6, 8 to 14 up): the Blender banner (cloth between two rails), one
+	-- mesh for both, or a flat block.
+	local banners: { { side: string, x: number, title: string, lines: { string }, mark: string } } = {
+		{ side = "Left", x = -hx, title = "MOCK MEET", lines = { "Your own private meet room", "Your coach is watching" },
+			mark = "star" },
+		{ side = "Right", x = hx, title = "THE BIG THREE", lines = { "Squat  ·  Bench  ·  Deadlift", "3 attempts each" },
+			mark = "dots" },
+	}
+	for _, banner in ipairs(banners) do
+		local out = Vector3.new(-math.sign(banner.x), 0, 0)
+		local wallAt = centre + Vector3.new(banner.x, 0, 0)
+		local unit = prop("Banner_" .. banner.side, "MeetBanner")
+		local cloth = unit and unit:FindFirstChild("MeetBanner_Cloth", true) :: BasePart?
+		local face: BasePart
+		if unit and cloth then
+			hangOnWall(unit, cloth, wallAt, out, centre + Vector3.new(banner.x, 11, 4))
+			face = cloth
+		else
+			if unit then
+				unit:Destroy()
+			end
+			local x0 = banner.x + out.X * 0.06
+			local x1 = banner.x + out.X * 0.3
+			face = decor("Banner_" .. banner.side, Vector3.new(math.min(x0, x1), 8, -6), Vector3.new(math.max(x0, x1), 14, 14),
+				looks.Gadget)
+		end
+		boardText(face, out, banner.title, banner.lines, banner.mark)
+	end
 
-	-- A bench to wait on by the arrival spot.
-	box("WaitBench_Seat", Vector3.new(-hx + 1, 1.5, -hz + 6), Vector3.new(-hx + 3, 1.8, -hz + 16), looks.Wood)
-	box("WaitBench_Legs", Vector3.new(-hx + 1.2, 0, -hz + 6.4), Vector3.new(-hx + 2.8, 1.5, -hz + 15.6), looks.SteelBeam)
+	-- A bench to wait on by the arrival spot, along the left wall facing into the room: the Blender bench
+	-- (oak slats, yellow frame) on a hidden solid block, or blocks.
+	local benchLow, benchHigh = Vector3.new(-hx + 1, 0, -hz + 6), Vector3.new(-hx + 3, 1.8, -hz + 16)
+	local bench = prop("WaitBench", "MeetBench")
+	if bench then
+		local at = centre + Vector3.new((benchLow.X + benchHigh.X) / 2, 0, (benchLow.Z + benchHigh.Z) / 2)
+		bench:PivotTo(CFrame.lookAt(at, at + Vector3.xAxis))
+		solid("WaitBench_Solid", benchLow, benchHigh)
+	else
+		box("WaitBench_Seat", Vector3.new(-hx + 1, 1.5, -hz + 6), Vector3.new(-hx + 3, 1.8, -hz + 16), looks.Wood)
+		box("WaitBench_Legs", Vector3.new(-hx + 1.2, 0, -hz + 6.4), Vector3.new(-hx + 2.8, 1.5, -hz + 15.6), looks.SteelBeam)
+	end
 
 	-- Light: stage lights over the platform, and panels over the rest of the room
 	-- (Lighting.Ambient is black, so every room brings its own).
@@ -365,7 +455,7 @@ function MockMeetArena.setBoard(room: Room, lines: { string })
 	if old then
 		old:Destroy()
 	end
-	boardText(board, Enum.NormalId.Front, "ATTEMPT BOARD", lines, "bar")
+	boardText(board, -Vector3.zAxis, "ATTEMPT BOARD", lines, "bar")
 end
 
 return MockMeetArena

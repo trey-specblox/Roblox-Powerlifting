@@ -37,6 +37,18 @@ export type Handle = {
 	setLines: (lines: { string }) -> (),
 }
 
+-- The face of `part` that looks along `direction`, also when the part is turned (a Blender model's piece).
+function StyledScreen.faceToward(part: BasePart, direction: Vector3): Enum.NormalId
+	local best, bestDot = Enum.NormalId.Front, -math.huge
+	for _, face in ipairs(Enum.NormalId:GetEnumItems()) do
+		local dot = part.CFrame:VectorToWorldSpace(Vector3.FromNormalId(face)):Dot(direction)
+		if dot > bestDot then
+			best, bestDot = face, dot
+		end
+	end
+	return best
+end
+
 local function box(parent: Instance, name: string, position: UDim2, size: UDim2, colour: Color3, rotation: number?): Frame
 	local f = Instance.new("Frame")
 	f.Name = name
