@@ -802,6 +802,36 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 end
 
 --[[
+	A Blender piece of a door or a plaque (Doors_01, RoomProps.propCopy): `item`
+	stretched to `stretch` when given, its pivot (the bottom centre) at `pivot`,
+	in `parent` as `name`, every piece "<item>_<Piece>" painted like a block of
+	looks[Piece]. Decor (not solid). Returns nil when the model did not load (the
+	caller builds the old blocks).
+]]
+local function doorPiece(parent: Instance, name: string, item: string, pivot: CFrame, stretch: Vector3?,
+	looks: { [string]: StarterGymConfig.Look }): Model?
+	local copy = RoomProps.propCopy(item, 1, stretch)
+	if copy == nil then
+		return nil
+	end
+	copy.Name = name
+	copy:PivotTo(pivot)
+	for _, part in ipairs(copy:GetDescendants()) do
+		local look = if part:IsA("BasePart") then looks[string.match(part.Name, "_(%a+)$") or ""] else nil
+		if look then
+			local piece = part :: BasePart
+			piece.Material = look.material
+			piece.MaterialVariant = look.variant or ""
+			piece.Color = look.color
+			piece.Transparency = look.transparency or 0
+			piece.Reflectance = look.reflectance or 0
+		end
+	end
+	copy.Parent = parent
+	return copy
+end
+
+--[[
 	The automatic sliding doors (user, 2026-10-23: like the ones in stores),
 	in the entrance and in the lobby's wide opening into the hall. Glass panels
 	in aluminium frames close an opening in a glass wall, on one side of it.
@@ -846,10 +876,23 @@ local function autoDoor(parent: Instance, name: string, centreX: number, floorY:
 	local headerHalf = half + step + overlap + 0.5
 	local headerDepth = 0.85 + (perSide - 1) * layerStuds
 	part(door, "Header", at(centreX - headerHalf, topY, 0.05), at(centreX + headerHalf, topY + 1.2, headerDepth), looks.DoorFrame)
-	decor(part(door, "SensorBox", at(centreX - 0.6, topY - 0.3, headerDepth - 0.35), at(centreX + 0.6, topY, headerDepth),
-		looks.Gadget))
-	decor(part(door, "SensorLamp", at(centreX - 0.12, topY - 0.34, headerDepth - 0.23),
-		at(centreX + 0.12, topY - 0.3, headerDepth - 0.11), looks.GlowRed))
+	-- The sensor (Doors_01's DoorSensor); its lamp goes straight under the door as "SensorLamp", where the
+	-- client's AutoDoorAnimator looks for it. Blocks if the model did not load.
+	local sensorBox = doorPiece(door, "SensorBox", "DoorSensor", CFrame.new(at(centreX, topY - 0.34, headerDepth - 0.175)), nil,
+		{ Box = looks.Gadget, Lamp = looks.GlowRed })
+	local sensorLamp = sensorBox and sensorBox:FindFirstChild("DoorSensor_Lamp", true)
+	if sensorLamp then
+		sensorLamp.Name = "SensorLamp"
+		sensorLamp.Parent = door
+	else
+		if sensorBox then
+			sensorBox:Destroy()
+		end
+		decor(part(door, "SensorBox", at(centreX - 0.6, topY - 0.3, headerDepth - 0.35), at(centreX + 0.6, topY, headerDepth),
+			looks.Gadget))
+		decor(part(door, "SensorLamp", at(centreX - 0.12, topY - 0.34, headerDepth - 0.23),
+			at(centreX + 0.12, topY - 0.3, headerDepth - 0.11), looks.GlowRed))
+	end
 
 	-- The zone that opens the doors: the opening and a little past its sides,
 	-- DoorSensorReachStuds out on both sides of the wall.
@@ -881,12 +924,17 @@ local function autoDoor(parent: Instance, name: string, centreX: number, floorY:
 			local glass = part(panel, "Glass", at(math.min(xa, xb) + 0.1, y0 + 0.1, d0), at(math.max(xa, xb) - 0.1, y1 - 0.1, d1),
 				looks.Glass)
 			local f0, f1 = d0 - 0.02, d1 + 0.02
-			decor(part(panel, "Frame_Top", at(xa, y1 - frame, f0), at(xb, y1, f1), looks.DoorFrame))
-			decor(part(panel, "Frame_Bottom", at(xa, y0, f0), at(xb, y0 + frame, f1), looks.DoorFrame))
-			local ma, mb = xs(inner, inner + frame)
-			decor(part(panel, "Frame_Inner", at(ma, y0, f0), at(mb, y1, f1), looks.DoorFrame))
-			local sa, sb = xs(outer - frame, outer)
-			decor(part(panel, "Frame_Outer", at(sa, y0, f0), at(sb, y1, f1), looks.DoorFrame))
+			-- The aluminium frame: Doors_01's SlideDoorFrame stretched round the glass, or four blocks.
+			local frameAt = at((xa + xb) / 2, y0, (f0 + f1) / 2)
+			if not doorPiece(panel, "Frame", "SlideDoorFrame", CFrame.new(frameAt), Vector3.new(math.abs(xb - xa), y1 - y0, f1 - f0),
+				{ Frame = looks.DoorFrame }) then
+				decor(part(panel, "Frame_Top", at(xa, y1 - frame, f0), at(xb, y1, f1), looks.DoorFrame))
+				decor(part(panel, "Frame_Bottom", at(xa, y0, f0), at(xb, y0 + frame, f1), looks.DoorFrame))
+				local ma, mb = xs(inner, inner + frame)
+				decor(part(panel, "Frame_Inner", at(ma, y0, f0), at(mb, y1, f1), looks.DoorFrame))
+				local sa, sb = xs(outer - frame, outer)
+				decor(part(panel, "Frame_Outer", at(sa, y0, f0), at(sb, y1, f1), looks.DoorFrame))
+			end
 
 			panel.PrimaryPart = glass
 			panel:SetAttribute("ClosedPivot", panel:GetPivot())
@@ -945,15 +993,15 @@ local function swingDoor(parent: Instance, room: BasePart, spec: StarterGymConfi
 	slab(door, "Frame_Header", -doorHalf, doorHalf, hallFace, roomFace, doorHeight, openingHeight, frameLook)
 	-- A plaque with the room's name on the hall side of the header (unless the spec says no).
 	if spec.plaque ~= false then
-		local plaque = decor(slab(door, "Plaque", -1.2, 1.2, hallFace - 0.05, hallFace, doorHeight + 0.15,
-			doorHeight + 0.85, looks.SignPanel))
+		-- Doors_01's DoorSign facing the hall, or a block.
+		local signAt = wallLine + inward * (hallFace - 0.025) + Vector3.yAxis * (doorHeight + 0.15)
+		local sign = doorPiece(door, "PlaqueSign", "DoorSign", CFrame.lookAt(signAt, signAt - inward), nil,
+			{ Plate = looks.SignPanel })
+		local plaque = (sign and sign:FindFirstChild("DoorSign_Plate", true) :: BasePart?)
+			or decor(slab(door, "Plaque", -1.2, 1.2, hallFace - 0.05, hallFace, doorHeight + 0.15, doorHeight + 0.85,
+				looks.SignPanel))
 		local gui = Instance.new("SurfaceGui")
-		gui.Face = Enum.NormalId.Top
-		for _, normal in ipairs(Enum.NormalId:GetEnumItems()) do
-			if Vector3.fromNormalId(normal):Dot(-inward) > 0.9 then
-				gui.Face = normal
-			end
-		end
+		gui.Face = StyledScreen.faceToward(plaque, -inward)
 		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 		gui.PixelsPerStud = 50
 		gui.LightInfluence = 0
@@ -987,19 +1035,37 @@ local function swingDoor(parent: Instance, room: BasePart, spec: StarterGymConfi
 			hingeU, latchU = right, left
 		end
 		local inwardU = math.sign(latchU - hingeU) -- from the hinge toward the latch edge
-		slab(panel, "Stile_Hinge", hingeU, hingeU + inwardU * 0.6, d0, d1, y0, y1, leafLook)
-		slab(panel, "Stile_Latch", latchU - inwardU * 0.6, latchU, d0, d1, y0, y1, leafLook)
-		if spec.window then
-			slab(panel, "Rail_Bottom", left + 0.6, right - 0.6, d0, d1, y0, windowLow, leafLook)
-			slab(panel, "Rail_Top", left + 0.6, right - 0.6, d0, d1, windowHigh, y1, leafLook)
-			slab(panel, "Window", left + 0.6, right - 0.6, -0.04, 0.04, windowLow, windowHigh, looks.SaunaGlass)
+		local handleU = latchU - inwardU * 0.375
+		-- The leaf and its pull bars: Doors_01's models (stretched to the leaf, in the door's looks) with an
+		-- invisible solid slab, all inside the panel model the client swings. Blocks if they did not load.
+		local leafAt = wallLine + along * ((left + right) / 2) + Vector3.yAxis * y0
+		local handleAt = wallLine + along * handleU + Vector3.yAxis * 3
+		local leafModel = doorPiece(panel, "Leaf", if spec.window then "DoorLeafGlazed" else "DoorLeaf",
+			CFrame.lookAt(leafAt, leafAt - inward), Vector3.new(right - left, y1 - y0, d1 - d0),
+			{ Leaf = leafLook, Kick = handleLook, Glass = looks.SaunaGlass })
+		local handleModel = leafModel and doorPiece(panel, "Handles", "DoorHandle", CFrame.lookAt(handleAt, handleAt - inward), nil,
+			{ Bar = handleLook })
+		if leafModel and handleModel then
+			local solid = slab(panel, "Leaf_Solid", left, right, d0, d1, y0, y1, leafLook)
+			solid.Transparency = 1
+			solid.CastShadow = false
 		else
-			slab(panel, "Middle", left + 0.6, right - 0.6, d0, d1, y0, y1, leafLook)
-		end
-		for index, side in ipairs({ -1, 1 }) do
-			local v = side * 0.125
-			local handleU = latchU - inwardU * 0.375
-			decor(slab(panel, "Handle_" .. index, handleU - 0.075, handleU + 0.075, v, v + side * 0.3, 3, 5, handleLook))
+			if leafModel then
+				leafModel:Destroy()
+			end
+			slab(panel, "Stile_Hinge", hingeU, hingeU + inwardU * 0.6, d0, d1, y0, y1, leafLook)
+			slab(panel, "Stile_Latch", latchU - inwardU * 0.6, latchU, d0, d1, y0, y1, leafLook)
+			if spec.window then
+				slab(panel, "Rail_Bottom", left + 0.6, right - 0.6, d0, d1, y0, windowLow, leafLook)
+				slab(panel, "Rail_Top", left + 0.6, right - 0.6, d0, d1, windowHigh, y1, leafLook)
+				slab(panel, "Window", left + 0.6, right - 0.6, -0.04, 0.04, windowLow, windowHigh, looks.SaunaGlass)
+			else
+				slab(panel, "Middle", left + 0.6, right - 0.6, d0, d1, y0, y1, leafLook)
+			end
+			for index, side in ipairs({ -1, 1 }) do
+				local v = side * 0.125
+				decor(slab(panel, "Handle_" .. index, handleU - 0.075, handleU + 0.075, v, v + side * 0.3, 3, 5, handleLook))
+			end
 		end
 		-- The hinge: the room-side corner of the hinge edge. The open angle turns
 		-- the leaf's width (from the hinge toward the latch) to point into the room.
@@ -1088,21 +1154,33 @@ local function hallFront(parent: Instance, roomName: string, alongX: boolean, fr
 	local a0, a1 = opening.centre + side * near, opening.centre + side * (near + spec.widthStuds)
 	local lo, hi = math.min(a0, a1), math.max(a0, a1)
 	local bottom, top, out = y0 + spec.bottomStuds, y0 + spec.bottomStuds + spec.heightStuds, spec.standOffStuds
-	for index, corner in ipairs({ { lo + 0.2, bottom + 0.2 }, { hi - 0.32, bottom + 0.2 }, { lo + 0.2, top - 0.32 },
-		{ hi - 0.32, top - 0.32 } }) do
-		slab("Plaque_StandOff_" .. index, corner[1], corner[1] + 0.12, 0, out, corner[2], corner[2] + 0.12, looks.Stainless)
+	-- Doors_01's NamePlaque (made to NamePlaque's size, 0.37 deep from the wall), or blocks.
+	local outDir = if alongX then Vector3.new(0, 0, outward) else Vector3.new(outward, 0, 0)
+	local middle = (lo + hi) / 2
+	local plaqueAt = if alongX then Vector3.new(middle, bottom, face + outward * 0.185)
+		else Vector3.new(face + outward * 0.185, bottom, middle)
+	local model = doorPiece(parent, name .. "_Plaque", "NamePlaque", CFrame.lookAt(plaqueAt, plaqueAt + outDir), nil,
+		{ Steel = looks.Stainless, Face = looks.SignPanel })
+	local plate = model and model:FindFirstChild("NamePlaque_Face", true) :: BasePart?
+	if plate == nil then
+		if model then
+			model:Destroy()
+		end
+		for index, corner in ipairs({ { lo + 0.2, bottom + 0.2 }, { hi - 0.32, bottom + 0.2 }, { lo + 0.2, top - 0.32 },
+			{ hi - 0.32, top - 0.32 } }) do
+			slab("Plaque_StandOff_" .. index, corner[1], corner[1] + 0.12, 0, out, corner[2], corner[2] + 0.12, looks.Stainless)
+		end
+		slab("Plaque_Back", lo, hi, out, out + 0.06, bottom, top, looks.Stainless)
+		plate = slab("Plaque", lo + 0.12, hi - 0.12, out + 0.06, out + 0.12, bottom + 0.12, top - 0.12, looks.SignPanel)
+		slab("Plaque_Strip", lo + 0.12, hi - 0.12, out + 0.12, out + 0.13, top - 0.42, top - 0.38, looks.Stainless)
 	end
-	slab("Plaque_Back", lo, hi, out, out + 0.06, bottom, top, looks.Stainless)
-	local plate = slab("Plaque", lo + 0.12, hi - 0.12, out + 0.06, out + 0.12, bottom + 0.12, top - 0.12, looks.SignPanel)
-	slab("Plaque_Strip", lo + 0.12, hi - 0.12, out + 0.12, out + 0.13, top - 0.42, top - 0.38, looks.Stainless)
+	local namePlate = plate :: BasePart
 	local gui = Instance.new("SurfaceGui")
-	gui.Face = if alongX
-		then (if outward > 0 then Enum.NormalId.Back else Enum.NormalId.Front)
-		else (if outward > 0 then Enum.NormalId.Right else Enum.NormalId.Left)
+	gui.Face = StyledScreen.faceToward(namePlate, outDir)
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	gui.PixelsPerStud = 80
 	gui.LightInfluence = 0.3
-	gui.Parent = plate
+	gui.Parent = namePlate
 	local letters = Instance.new("TextLabel")
 	letters.AnchorPoint = Vector2.new(0.5, 0.5)
 	letters.Position = UDim2.fromScale(0.5, 0.58)

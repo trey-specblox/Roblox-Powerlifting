@@ -582,6 +582,8 @@ StarterGymConfig.PropAssets = {
 	{ id = 104295814087547 }, -- MockMeet_01: the Mock Meet's check-in desk, platform, wait bench, board frame, banner
 	{ id = 80843208048332 }, -- Furniture_01: office chair, desk, monitor + keyboard, shelf frames, storage box, books
 	{ id = 110775352617639 }, -- Lights_01: hall light bar, ceiling panel, shed lamp, stage light, track spot and rail
+	{ id = 138346322157297 }, -- Doors_01: door leaves, handles, name plaque, sliding-door frame and sensor, door sign
+	-- (StarterGymBuilder paints the Doors_01 pieces with each door's own looks, so they have no colourways.)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).

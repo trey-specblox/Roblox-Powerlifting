@@ -710,6 +710,14 @@
       "ids": {
         "model": "rbxassetid://110775352617639"
       }
+    },
+    "Doors_01": {
+      "about": "The doors' pieces and the hall-front name plaques: swing-door leaves (DoorLeaf, DoorLeafGlazed; stretched and coloured per door), pull handles (DoorHandle), the name plaque (NamePlaque), the sliding doors' panel frame (SlideDoorFrame) and sensor (DoorSensor), the sign over a swing door (DoorSign). Made by art/scripts/build_doors_01.py (art/blender/Doors_01.blend).",
+      "file": "art/exports/Doors_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://138346322157297"
+      }
     }
   },
   "images": {

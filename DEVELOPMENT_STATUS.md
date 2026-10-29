@@ -1923,7 +1923,50 @@ and polish.
     Supplement Bar 584. StarterGym_VerifyShell itself was not re-run.
   - NOT checked: the user's own look; the Shop spots and Supplement Bar
     pendants were checked by script only (no screenshot).
-  NEXT ACTION: batch 3 (doors and hall-front plaques). Optional:
+  Batch 3 (doors and plaques): `art/scripts/build_doors_01.py` ->
+  `art/blender/Doors_01.blend`: DoorLeaf (Leaf, Kick), DoorLeafGlazed
+  (Leaf, Glass, Kick), DoorHandle (pull bars both faces), NamePlaque
+  (Steel, Face), SlideDoorFrame, DoorSensor (Box, Lamp), DoorSign; 12
+  pieces, 760 triangles, CHECK PASSED; preview sent. Plan for placing:
+  swing leaves get the leaf model (coloured with the spec's look/handle
+  look, stretched) plus an invisible solid slab in the same panel model
+  (AutoDoorAnimator only pivots the panel model); sliding panels keep their
+  glass pane (PrimaryPart, solid) and get SlideDoorFrame instead of 4
+  frame blocks; the sensor lamp keeps the name "SensorLamp" straight under
+  the door (the animator finds it by name). Door frames (jambs, header)
+  and the hall-front paint, trims and skirting stay blocks (wall infill).
+  Approved by the user ("Approve, upload"); exported to
+  `art/exports/Doors_01.glb`, uploaded as the group:
+  rbxassetid://138346322157297 (materials.json). COMMITTED and pushed
+  with user approval on 2026-10-29 ("Commit, then batch 4").
+  - StarterGymConfig: PropAssets entry only (no colourways: the pieces are
+    painted with each door's own looks).
+  - StarterGymBuilder: new doorPiece (propCopy, pivot, paint each piece
+    like a block of looks[Piece]); swingDoor: DoorLeaf/DoorLeafGlazed
+    stretched to the leaf (Leaf = spec look, Kick = handle look, Glass =
+    SaunaGlass) + DoorHandle, inside the panel model, with an invisible
+    "Leaf_Solid" slab; the sign over the door is DoorSign (gui face via
+    StyledScreen.faceToward); autoDoor: SlideDoorFrame per panel round the
+    glass pane, DoorSensor whose lamp is renamed "SensorLamp" under the
+    door; hallFront: NamePlaque (gui on its Face piece). Old blocks are the
+    fallback everywhere.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Studio Play (by Claude):
+    0 errors; 18 leaves with solid slabs and handle pairs, 6 sliding-panel
+    frames, 5 door signs, 11 name plaques with text, both SensorLamps are
+    MeshParts. Office door: swings the full 90 degrees with leaf, slab and
+    handles together (a test character standing in the doorway was pushed
+    out by the closed door's slab first, as before). Entrance: both panels
+    slide the full 8.2 with their frames; the sensor lamp turns green.
+    Screenshot: Office door open, OFFICE plaque (the first capture showed
+    the plaque blank before its text loaded). Build summary "254 wall
+    parts" (was 320: the plaques are 2 pieces, not 8). Audit: visible
+    blocks 1,926 -> 1,722, parts 5,714, MeshParts 3,739, unique meshes 456,
+    shadow casters 2,004, lights 144 (0 shadows), screens 74, solid decor
+    0, precise 0. StarterGym_VerifyShell not re-run.
+  - NOT checked: the sauna's glazed doors and the lobby's hall door opening
+    (built the same way); the user's own look.
+  NEXT ACTION: batch 4 (reception) in Blender: preview, the user's
+  approval, upload, place, Studio test, commit on approval. Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
   the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
@@ -1992,7 +2035,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Replace the block light fittings with Blender models (blocks to Blender, batch 2); `git log -1` for the hash.
+- 2026-10-29, pushed: Replace the block door pieces and name plaques with Blender models (blocks to Blender, batch 3); `git log -1` for the hash.
+- `177c37e` (2026-10-28, pushed) Replace the block light fittings with Blender models (blocks to Blender, batch 2).
 - `3d267e2` (2026-10-28, pushed) Replace the shared block furniture with Blender models (blocks to Blender, batch 1).
 - `1e9d3de` (2026-10-28, pushed) Record the user's Studio check of the Mock Meet models in DEVELOPMENT_STATUS.
 - `44375cd` (2026-10-28, pushed) Replace the Mock Meet's block furniture with Blender models.
