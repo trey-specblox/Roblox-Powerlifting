@@ -20,7 +20,6 @@
 	platform.
 ]]
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
@@ -35,6 +34,7 @@ local BuildParts = require(ServerFolder:WaitForChild("World"):WaitForChild("Buil
 local RackConfigurator = require(ServerFolder:WaitForChild("Training"):WaitForChild("RackConfigurator"))
 local RoomProps = require(ServerFolder:WaitForChild("World"):WaitForChild("RoomProps"))
 local StyledScreen = require(ServerFolder:WaitForChild("World"):WaitForChild("StyledScreen"))
+local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 
 local MockMeetArena = {}
 
@@ -47,7 +47,6 @@ local PLATFORM_Z = 10 -- the platform's middle, towards the back
 local LIFT_SPOT_IN_FRONT = 4 -- how far in front of the rack's centre the lifter stands
 
 local looks = StarterGymConfig.Looks
-local WHITE = Color3.fromRGB(255, 255, 255)
 
 export type Room = {
 	slot: number,
@@ -85,9 +84,9 @@ end
 	Hangs `copy` (a wall prop from RoomProps.propCopy, front toward its pivot's -Z)
 	on a wall: its front looks along `out`, the back of its bounds touches the wall
 	plane through `wallPoint`, and its piece `screen` is centred on `screenAt`
-	along the wall.
+	along the wall. Also used by LocalMeetVenue.
 ]]
-local function hangOnWall(copy: Model, screen: BasePart, wallPoint: Vector3, out: Vector3, screenAt: Vector3)
+function MockMeetArena.hangOnWall(copy: Model, screen: BasePart, wallPoint: Vector3, out: Vector3, screenAt: Vector3)
 	copy:PivotTo(CFrame.lookAt(screenAt, screenAt + out))
 	local box, size = copy:GetBoundingBox()
 	local back = box.Position - out * size.Z / 2
@@ -95,151 +94,18 @@ local function hangOnWall(copy: Model, screen: BasePart, wallPoint: Vector3, out
 	local alongWall = toScreen - out * toScreen:Dot(out)
 	copy:PivotTo(copy:GetPivot() + alongWall + out * (wallPoint - back):Dot(out))
 end
---[[
-	The lifter's coach (GAME_DESIGN §22: what a coach does is still to be
-	decided; for now they watch and react). A standard Roblox figure in coach
-	colours (navy top, grey trousers) with a clipboard, a COACH name tag and a
-	speech bubble, standing at `at` and looking at `watching`. Anchored and not
-	solid, so they never get in the lifter's way. Returns the bubble's text, or
-	nil when no figure could be made (the meet works without one).
-]]
-local COACH_COLOURS = {
-	skin = Color3.fromRGB(198, 140, 104),
-	top = Color3.fromRGB(28, 40, 78),
-	trousers = Color3.fromRGB(62, 64, 70),
-}
+-- The lifter's coach, watching (MeetFigures, shared with the Local meet). Returns the speech bubble's text.
 local function buildCoach(model: Model, at: Vector3, watching: Vector3): TextLabel?
-	local description = Instance.new("HumanoidDescription")
-	description.HeadColor = COACH_COLOURS.skin
-	description.LeftArmColor = COACH_COLOURS.skin
-	description.RightArmColor = COACH_COLOURS.skin
-	description.TorsoColor = COACH_COLOURS.top
-	description.LeftLegColor = COACH_COLOURS.trousers
-	description.RightLegColor = COACH_COLOURS.trousers
-	local ok, result = pcall(function()
-		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
-	end)
-	if not ok or result == nil then
-		warn("[MockMeetArena] no coach figure: " .. tostring(result))
-		return nil
-	end
-	local coach = result :: Model
-	coach.Name = "Coach"
-	local humanoid = coach:FindFirstChildOfClass("Humanoid")
-	local root = coach:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if humanoid == nil or root == nil then
-		coach:Destroy()
-		return nil
-	end
-	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	for _, part in ipairs(coach:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.CanCollide = false
-			part.CanQuery = false
-		end
-	end
-	root.Anchored = true
-	local height = humanoid.HipHeight + root.Size.Y / 2
-	local standAt = at + Vector3.new(0, height, 0)
-	coach:PivotTo(CFrame.lookAt(standAt, Vector3.new(watching.X, standAt.Y, watching.Z)))
-	coach.Parent = model
-
-	-- A clipboard held in front of the chest: the Coach front's Blender clipboard scaled to 1.4 tall, or blocks.
-	local chest = root.CFrame * CFrame.new(0, 0.2, -0.9) * CFrame.Angles(math.rad(-25), 0, 0)
-	local clipboard = RoomProps.propCopy("Clipboard", 1)
-	if clipboard then
-		clipboard.Name = "Clipboard"
-		clipboard:ScaleTo(1.4 / clipboard:GetExtentsSize().Y)
-		clipboard:PivotTo(chest * CFrame.new(0, -0.7, 0)) -- its pivot is its bottom middle
-		for _, part in ipairs(clipboard:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.Anchored = true
-				part.CanQuery = false
-			end
-		end
-		clipboard.Parent = coach
-	else
-		BuildParts.decor(BuildParts.placed(coach, "Clipboard", Vector3.new(1.1, 1.4, 0.08), chest, looks.Wood))
-		BuildParts.decor(BuildParts.placed(coach, "Clipboard_Paper", Vector3.new(0.9, 1.15, 0.02),
-			chest * CFrame.new(0, -0.05, -0.05), looks.LaneWhite))
-	end
-
-	-- The name tag and the speech bubble over the head.
-	local head = coach:FindFirstChild("Head") :: BasePart?
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "CoachTag"
-	billboard.Size = UDim2.fromOffset(220, 90)
-	billboard.StudsOffset = Vector3.new(0, 2.6, 0)
-	billboard.LightInfluence = 0
-	billboard.MaxDistance = 80
-	billboard.Adornee = head or root
-	billboard.Parent = coach
-	local tag = Instance.new("TextLabel")
-	tag.Name = "Name"
-	tag.AnchorPoint = Vector2.new(0.5, 1)
-	tag.Position = UDim2.fromScale(0.5, 1)
-	tag.Size = UDim2.fromOffset(90, 22)
-	tag.Rotation = -4
-	tag.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
-	tag.Text = "COACH"
-	tag.TextColor3 = WHITE
-	tag.TextScaled = true
-	tag.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
-	tag.Parent = billboard
-	local tagEdge = Instance.new("UIStroke")
-	tagEdge.Color = StyledScreen.Colours.white
-	tagEdge.Thickness = 2
-	tagEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	tagEdge.Parent = tag
-	-- The speech bubble in the game's style: a white slab with an ink edge, a yellow accent bar down its
-	-- left side and a tail pointing at the coach.
-	local bubble = Instance.new("Frame")
-	bubble.Name = "Bubble"
-	bubble.Size = UDim2.new(1, 0, 0, 56)
-	bubble.Rotation = 3
-	bubble.BackgroundColor3 = StyledScreen.Colours.white
-	bubble.Visible = false
-	bubble.Parent = billboard
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = StyledScreen.Colours.ink
-	stroke.Thickness = 3
-	stroke.Parent = bubble
-	local accent = Instance.new("Frame")
-	accent.Name = "Accent"
-	accent.BorderSizePixel = 0
-	accent.BackgroundColor3 = StyledScreen.Colours.yellow
-	accent.Size = UDim2.new(0, 7, 1, 0)
-	accent.Parent = bubble
-	local tail = Instance.new("Frame")
-	tail.Name = "Tail"
-	tail.BorderSizePixel = 0
-	tail.BackgroundColor3 = StyledScreen.Colours.white
-	tail.AnchorPoint = Vector2.new(0.5, 0.5)
-	tail.Position = UDim2.new(0.5, 0, 1, 0)
-	tail.Size = UDim2.fromOffset(16, 16)
-	tail.Rotation = 45
-	tail.ZIndex = 0
-	tail.Parent = bubble
-	local tailEdge = Instance.new("UIStroke")
-	tailEdge.Color = StyledScreen.Colours.ink
-	tailEdge.Thickness = 3
-	tailEdge.Parent = tail
-	local line = Instance.new("TextLabel")
-	line.Name = "Line"
-	line.BackgroundTransparency = 1
-	line.Position = UDim2.fromScale(0.05, 0.1)
-	line.Size = UDim2.fromScale(0.9, 0.8)
-	line.Text = ""
-	line.TextColor3 = Color3.fromRGB(12, 12, 14)
-	line.TextScaled = true
-	line.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
-	line.Parent = bubble
-	return line
+	return MeetFigures.build(model, "Coach", at, watching)
 end
 
--- The gym's competition rack on the platform, set up like a gym rack but without the
--- station tag (nobody trains here). Returns false, and the reason, if it could not be built.
-local function placeRack(model: Model, centre: Vector3): (boolean, string?)
+--[[
+	The gym's competition rack standing on a platform at `platformTop` (the point
+	on the platform's top under the rack's middle), set up like a gym rack but
+	without the station tag (nobody trains here). Returns false, and the reason,
+	if it could not be built. Also used by LocalMeetVenue.
+]]
+function MockMeetArena.placeRack(model: Instance, platformTop: Vector3): (boolean, string?)
 	local templates = ServerStorage:FindFirstChild("RackTemplates")
 	local template = templates and templates:FindFirstChild(RACK_TEMPLATE)
 	if template == nil or not template:IsA("Model") then
@@ -258,7 +124,7 @@ local function placeRack(model: Model, centre: Vector3): (boolean, string?)
 	rack.Name = "CompetitionRack"
 	rack:SetAttribute("RackTemplate", RACK_TEMPLATE)
 	local standHeight = RackConfigurator.StandPointSize.Y / 2
-	rack:PivotTo(CFrame.new(centre + Vector3.new(0, PLATFORM_HEIGHT + standHeight, PLATFORM_Z)))
+	rack:PivotTo(CFrame.new(platformTop + Vector3.new(0, standHeight, 0)))
 	rack.Parent = model
 	return true, nil
 end
@@ -352,7 +218,7 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 	local boardScreen = boardFrame and boardFrame:FindFirstChild("MeetBoard_Screen", true) :: BasePart?
 	local board: BasePart
 	if boardFrame and boardScreen then
-		hangOnWall(boardFrame, boardScreen, centre + Vector3.new(0, 0, hz - 0.06), boardOut, centre + Vector3.new(0, 15, hz))
+		MockMeetArena.hangOnWall(boardFrame, boardScreen, centre + Vector3.new(0, 0, hz - 0.06), boardOut, centre + Vector3.new(0, 15, hz))
 		boardScreen.Name = "AttemptBoard"
 		boardScreen.Parent = model
 		board = boardScreen
@@ -379,7 +245,7 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 		local cloth = unit and unit:FindFirstChild("MeetBanner_Cloth", true) :: BasePart?
 		local face: BasePart
 		if unit and cloth then
-			hangOnWall(unit, cloth, wallAt, out, centre + Vector3.new(banner.x, 11, 4))
+			MockMeetArena.hangOnWall(unit, cloth, wallAt, out, centre + Vector3.new(banner.x, 11, 4))
 			face = cloth
 		else
 			if unit then
@@ -437,7 +303,7 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 	shine(panel("BoardWash", 0, hz - 7, Vector2.new(28, 2), Vector3.new(-14, h - 0.6, hz - 8), Vector3.new(14, h - 0.2, hz - 6)),
 		30, 1.6, 120)
 
-	local placed, problem = placeRack(model, centre)
+	local placed, problem = MockMeetArena.placeRack(model, centre + Vector3.new(0, PLATFORM_HEIGHT, PLATFORM_Z))
 	if not placed then
 		model:Destroy()
 		return nil, problem
@@ -463,13 +329,7 @@ end
 
 -- What the coach says in the speech bubble over their head; nil hides it.
 function MockMeetArena.coachSays(room: Room, line: string?)
-	local label = room.coachLine
-	if label == nil or label.Parent == nil then
-		return
-	end
-	label.Text = line or ""
-	local bubble = label.Parent :: GuiObject
-	bubble.Visible = line ~= nil
+	MeetFigures.say(room.coachLine, line)
 end
 
 -- Rewrites the attempt board: its title and lines.

@@ -6,7 +6,8 @@
 	Draws the Mock Meet on the player's screen from the server's state
 	(MockMeetRemotes.MeetState); it decides nothing. MockMeetController owns it
 	and wires its buttons and the weight box to the remotes. Built entirely from
-	UIStyle, the game's one look.
+	UIStyle, the game's one look. The Local meet uses the same screen with its
+	own title (Options), plus a "Waiting" step, the referees' lights and a note.
 
 		top left       the MOCK MEET tag; notices under it
 		top right      LEAVE
@@ -45,6 +46,15 @@ export type Handlers = {
 	lift: () -> (),
 }
 
+-- What differs between the meets that use this screen (the Local meet passes its own).
+export type Options = {
+	guiName: string,
+	tag: string,
+	sub: string,
+}
+
+local MOCK_MEET_OPTIONS: Options = { guiName = "MockMeet", tag = "MOCK MEET", sub = "PRIVATE ROOM  ·  COACH WATCHING" }
+
 export type Ui = {
 	gui: ScreenGui,
 	draw: (state: MockMeetRemotes.MeetState?, chosenKg: number?, problem: string?) -> (),
@@ -60,9 +70,20 @@ local function kgText(kg: number): string
 	return if kg == math.floor(kg) then string.format("%d", kg) else string.format("%.1f", kg)
 end
 
-function MockMeetUI.build(handlers: Handlers): Ui
+-- The referees' lights as coloured dots for a RichText label ("White" or "Red" each).
+local function lightDots(lights: { string }): string
+	local dots = {}
+	for _, light in ipairs(lights) do
+		local colour = if light == "White" then C.white else C.red
+		table.insert(dots, string.format('<font color="#%s">●</font>', colour:ToHex()))
+	end
+	return table.concat(dots, "  ")
+end
+
+function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
+	local look = options or MOCK_MEET_OPTIONS
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "MockMeet"
+	gui.Name = look.guiName
 	UIStyle.fitToScreen(gui) -- shrink on short screens so nothing overlaps
 	gui.ResetOnSpawn = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -75,9 +96,9 @@ function MockMeetUI.build(handlers: Handlers): Ui
 	title.Position = UDim2.fromOffset(24, 18)
 	title.Size = UDim2.fromOffset(260, 70)
 	title.Parent = gui
-	UIStyle.titleTag(title, "Tag", "MOCK MEET", UDim2.fromOffset(0, 0), UDim2.fromOffset(230, 44), nil, "star")
+	UIStyle.titleTag(title, "Tag", look.tag, UDim2.fromOffset(0, 0), UDim2.fromOffset(230, 44), nil, "star")
 	UIStyle.label(title, "Sub", UDim2.fromOffset(16, 48), UDim2.fromOffset(200, 18), C.yellow, UIStyle.heading()).Text =
-		"PRIVATE ROOM  ·  COACH WATCHING"
+		look.sub
 
 	local notice = UIStyle.frame(gui, "Notice", UDim2.fromOffset(24, 96), UDim2.fromOffset(420, 34), C.ink, -1)
 	UIStyle.stroke(notice, C.yellow, 2)
@@ -320,6 +341,7 @@ function MockMeetUI.build(handlers: Handlers): Ui
 
 		local liftName = string.upper(state.lift or "")
 		local attemptText = string.format("%s  ·  ATTEMPT %d", liftName, state.attemptNumber or 1)
+		sub.RichText = false
 		if state.phase == "Choose" then
 			stepTag.Text = attemptText
 			local cn = state.competitionNumber[state.lift or ""] or 0
@@ -346,7 +368,13 @@ function MockMeetUI.build(handlers: Handlers): Ui
 			stepTag.Text = attemptText
 			local good = state.verdict == "GoodLift"
 			setBanner(if good then "GOOD LIFT" else "NO LIFT", if good then C.white else C.red, if good then C.ink else C.white)
-			sub.Text = kgText(state.declaredKg or 0) .. " kg"
+			-- The Local meet's referees' lights after the weight.
+			sub.RichText = state.lights ~= nil
+			sub.Text = kgText(state.declaredKg or 0) .. " kg" .. (if state.lights then "     " .. lightDots(state.lights) else "")
+		elseif state.phase == "Waiting" then
+			stepTag.Text = attemptText
+			setBanner(if state.declaredKg then kgText(state.declaredKg) .. " KG DECLARED" else "PASSED", C.white, C.ink)
+			sub.Text = state.note or "Waiting for the other lifters."
 		elseif state.phase == "Done" then
 			stepTag.Text = "MEET OVER"
 			setBanner(if state.total then "TOTAL  " .. kgText(state.total) .. " KG" else "BOMBED OUT",
@@ -356,9 +384,9 @@ function MockMeetUI.build(handlers: Handlers): Ui
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
 				table.insert(parts, string.format("%s %s", string.upper(lift), if best[lift] then kgText(best[lift]) else "—"))
 			end
-			-- The server saves only a meet with a total (GAME_DESIGN 33.3b).
-			sub.Text = table.concat(parts, "   ·   ")
-				.. (if state.total then "     (proven lifts saved)" else "     (a bomb-out saves nothing)")
+			-- The server saves only a meet with a total (GAME_DESIGN 33.3b). A Local meet sends its place as the note.
+			sub.Text = state.note or (table.concat(parts, "   ·   ")
+				.. (if state.total then "     (proven lifts saved)" else "     (a bomb-out saves nothing)"))
 		end
 	end
 

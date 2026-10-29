@@ -30,6 +30,7 @@ local StarterGymConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("WeightClassConfig"))
 local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
 local MockMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("MockMeetConfig"))
+local LocalMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 local StyledScreen = require(script.Parent:WaitForChild("StyledScreen"))
 
@@ -2725,12 +2726,19 @@ FURNISH.MockMeet = function(kit)
 	chair(kit, "DeskChair", 0, D - 2, "-d")
 	local board = back.item("Board", -9, 9, 0.08, 0.3, 5, 10.4, looks.Gadget)
 	StyledScreen.build(board, faceToward(back.out), "MOCK MEET", { "Your own private meet room",
-		"Squat, bench, deadlift: 3 attempts each", "Check in at the desk to start" }, "star")
+		"Squat, bench, deadlift: 3 attempts each", "Check in at the desk to start",
+		"Local meet vs players: right of the desk" }, "star")
 
 	-- Where the prompt sits: in front of the desk, on the player's side.
 	local point = kit.item("CheckInPoint", -1, 1, D - 8, D - 6, 0.1, 4, looks.Glass)
 	point.Transparency = 1
 	point:AddTag(MockMeetConfig.CheckInTag)
+
+	-- TEMPORARY way to the Local meet venue (GAME_DESIGN 29.10, step 1) until the venue's own door
+	-- (step 3): a prompt point right of the desk.
+	local localMeetPoint = kit.item("LocalMeetEntrancePoint", 7, 9, D - 9, D - 7, 0.1, 4, looks.Glass)
+	localMeetPoint.Transparency = 1
+	localMeetPoint:AddTag(LocalMeetConfig.EntranceTag)
 
 	-- Waiting chairs along both side walls, facing across the room.
 	for index, d in ipairs({ 8, 11, 14, 17, 20 }) do

@@ -60,7 +60,10 @@ export type AttemptView = { weightKg: number, result: string? }
 		"Ready"    the bar is loaded at declaredKg; press LIFT (secondsLeft)
 		"Lifting"  the minigames are running
 		"Result"   the verdict (GOOD LIFT or NO LIFT)
+		"Waiting"  (Local meet) this lifter is done for the round; the others are still lifting
 		"Done"     the meet is over (best, total or bombedOut)
+	The Local meet (LocalMeetRemotes.STATE) sends the same state, plus the
+	referees' `lights` with a Result, and a `note` (the place) with Done.
 ]]
 export type MeetState = {
 	phase: string,
@@ -79,6 +82,10 @@ export type MeetState = {
 	best: { [string]: number }?,
 	total: number?,
 	bombedOut: boolean?,
+	-- The referees' lights ("White" or "Red", three of them), Local meet only.
+	lights: { string }?,
+	-- A line to show instead of the default one (Done: the place; Waiting: why).
+	note: string?,
 }
 
 --[[

@@ -57,6 +57,7 @@ local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig")
 local MeetFolder = Shared:WaitForChild("Meet")
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
 local AttemptRules = require(MeetFolder:WaitForChild("AttemptRules"))
+local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
 local MeetTotal = require(MeetFolder:WaitForChild("MeetTotal"))
 
 local ServerFolder = script.Parent.Parent
@@ -160,64 +161,23 @@ local function stillIn(player: Player, visit: Visit): boolean
 	return visits[player] == visit and player.Parent ~= nil
 end
 
--- ---------------------------------------------------------------- weights
-
-local function roundDown(kg: number): number
-	local step = MockMeetConfig.WeightStepKg
-	return math.floor(kg / step + 1e-6) * step
-end
-
-local function roundUp(kg: number): number
-	local step = MockMeetConfig.WeightStepKg
-	return math.ceil(kg / step - 1e-6) * step
-end
+-- ---------------------------------------------------------------- weights (AttemptChoice, shared with the Local meet)
 
 -- The range of weights the lifter may declare on this lift: the Competition Number's percentage bounds.
 local function bounds(visit: Visit, lift: string): (number, number)
-	local cn = visit.competitionNumber[lift]
-	return roundUp(cn * LiftAttemptConfig.MinimumAttemptPercent), roundDown(cn * LiftAttemptConfig.MaximumAttemptPercent)
+	return AttemptChoice.bounds(visit.competitionNumber[lift], MockMeetConfig.WeightStepKg)
 end
 
---[[
-	The lightest legal next weight and the default (what a time-out takes) for
-	the lift's next attempt, or nil when no legal weight lies inside the bounds
-	(the attempt is passed).
-]]
+-- The lightest legal next weight and the default, or nil when the attempt is passed.
 local function nextWeights(visit: Visit, lift: string): (number?, number?)
-	local minKg, maxKg = bounds(visit, lift)
-	local history = visit.lifts[lift].history
-	local lowest = AttemptRules.lowestLegalNextWeight(history)
-	if lowest == nil then
-		-- The opener: anything in range; the default is the suggestion.
-		local suggestion = roundDown(visit.competitionNumber[lift] * MockMeetConfig.OpenerSuggestionPercent)
-		return minKg, math.clamp(suggestion, minKg, maxKg)
-	end
-	local legal = math.max(roundUp(lowest), minKg)
-	if legal > maxKg then
-		return nil, nil
-	end
-	return legal, legal
+	return AttemptChoice.nextWeights(visit.competitionNumber[lift], visit.lifts[lift].history, MockMeetConfig.WeightStepKg,
+		MockMeetConfig.OpenerSuggestionPercent)
 end
 
 -- Checks a weight the client asked for. Returns the weight, or nil and a reason to show.
 local function checkChoice(visit: Visit, lift: string, requested: unknown): (number?, string?)
-	if typeof(requested) ~= "number" or requested ~= requested or requested == math.huge or requested == -math.huge then
-		return nil, "That is not a weight."
-	end
-	local kg = requested :: number
-	local step = MockMeetConfig.WeightStepKg
-	if math.abs(kg / step - math.floor(kg / step + 0.5)) > 1e-6 then
-		return nil, string.format("Weights go up in %.1f kg steps.", step)
-	end
-	local minKg, maxKg = bounds(visit, lift)
-	if kg < minKg - 1e-6 or kg > maxKg + 1e-6 then
-		return nil, string.format("Choose between %.1f and %.1f kg.", minKg, maxKg)
-	end
-	local ok, rejection = AttemptRules.validate(visit.lifts[lift].history, kg)
-	if not ok then
-		return nil, if rejection then rejection.message else "That weight is not allowed."
-	end
-	return kg, nil
+	return AttemptChoice.check(visit.competitionNumber[lift], visit.lifts[lift].history, MockMeetConfig.WeightStepKg,
+		requested)
 end
 
 -- ---------------------------------------------------------------- what the client and the board see

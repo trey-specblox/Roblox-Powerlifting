@@ -55,6 +55,10 @@ local MeetFolder = script:WaitForChild("Meet")
 local MockMeetController = require(MeetFolder:WaitForChild("MockMeetController"))
 MockMeetController.start()
 
+-- The Local meet: the venue screen (countdown, sign-up, standings) and the lifter's meet screen.
+local LocalMeetController = require(MeetFolder:WaitForChild("LocalMeetController"))
+task.spawn(LocalMeetController.start)
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

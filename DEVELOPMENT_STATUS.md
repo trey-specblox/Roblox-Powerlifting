@@ -2354,8 +2354,48 @@ and polish.
   server through a door. Build order: (1) the meet itself on a temporary
   venue, (2) rewards incl. the daily CN allowance (save-data change), (3) the
   venue in Blender. Money/equipment wait for the economy design.
-  NEXT ACTION (in progress): step 1, the Local meet itself on a temporary
-  venue. The user also has a Mock Meet and a deadlift to
+
+  LOCAL MEET STEP 1: THE MEET ITSELF ON A TEMPORARY VENUE (built
+  2026-10-29). COMMITTED and pushed 2026-10-29 (section 1). Saves nothing
+  (rewards are step 2).
+  - New: LocalMeetConfig (timetable 10 min / Studio 90 s, sign-ups close
+    60 s / 15 s before, min 2 lifters / Studio 1, max 8), LocalMeetRemotes,
+    AttemptChoice (the weight rules, moved out of MockMeetService),
+    MeetPlacing (score = total / class reference Total; ties lighter
+    bodyweight, then entry order), MeetFigures (coach + referee figures,
+    moved out of MockMeetArena), LocalMeetVenue (temporary hall at
+    -4000,1000,0: 8 platforms with rack and board, benches, sign-up desk,
+    exit point, scoreboard; referees + coach per used platform during a
+    meet), LocalMeetService (entrance, sign-up toggle, timetable, 9 rounds
+    together, lights, standings, final placing, withdraw/exit/death),
+    LocalMeetController + LocalMeetLobbyUI (venue screen: countdown, SIGN
+    UP, EXIT, standings; the lifter's screen reuses MockMeetUI).
+  - Changed: MockMeetService (uses AttemptChoice), MockMeetArena (uses
+    MeetFigures; placeRack and hangOnWall exported), MockMeetController
+    (attach() for either meet), MockMeetUI (options, "Waiting" step,
+    lights dots, note), MockMeetRemotes (lights, note), RoomProps (a
+    TEMPORARY LocalMeetEntrance point right of the Mock Meet desk + a
+    board line), server/client init.
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude, alone, with
+    TEMPORARY short timers and "time-out = good lift" for attempts 1-2,
+    both removed and Studio checked against disk): venue built (522 parts),
+    entrance prompt -> venue; sign-up refused in the closed window, then
+    accepted; meet started with 1 lifter; all 9 rounds (Choose, Waiting,
+    Ready, Result, Done); referees, coach, platform board, lights dots and
+    live score seen in a screenshot; final 1st, 75 kg total, 11.2%; back
+    to the lobby, boards Free, 0 figures left, no errors. LEAVE mid-meet ->
+    Withdrawn; EXIT -> back in the gym; meet ended early with nobody left.
+    Mock Meet after the refactor: coach present, range 10-30, suggestion
+    22.5, both bad weights refused. Venue screen layout fixed after a
+    screenshot (STATS tab overlap; standings moved right).
+  - NOT tested: two real players in one meet (Studio's Play is one
+    player; use Test > Clients and Servers with 2 players, or a friend);
+    real minigame lifts in a Local meet (same code path as the Mock Meet).
+  - Performance: the hall is ~522 parts (8 racks); a full meet adds up to
+    32 figures (3 referees + coach per lifter), removed after. 20 lights.
+  NEXT ACTION: the user tries a Local meet (ideally 2 players: Test >
+  Clients and Servers), then step 2 (rewards: the daily CN allowance, save
+  version 9). The user also has a Mock Meet and a deadlift to
   try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.
@@ -2426,7 +2466,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Decide the Local meet's first build (turns, placing, start, venue); `git log -1` for the hash.
+- 2026-10-29, pushed: Build the Local meet, step 1: the meet itself on a temporary venue; `git log -1` for the hash.
+- `29fae94` (2026-10-29, pushed) Decide the Local meet's first build (turns, placing, start, venue).
 - `ab14393` (2026-10-29, pushed) Keep the Scale challenge fixed for the whole meet, and record the user's Mock Meet test.
 - `dda82af` (2026-10-29, pushed) Save a Mock Meet's proven lifts only when it ends with a total.
 - `ca82437` (2026-10-29, pushed) Decide meet risk: a daily meet CN allowance, misses use it, a bomb-out saves nothing.

@@ -2162,6 +2162,14 @@ Worlds and Sheffield come later and are untouched here.
    pools, a save-data change), Scale, best Total, Local wins.
 3. The venue, modelled in Blender.
 
+> **Step 1 built (2026-10-29), saves nothing.** A temporary venue (plain walls,
+> the Mock Meet's Blender platform, board, bench and desk, 8 platforms) far from
+> the gym; until step 3's door, the way in is a **temporary prompt right of the
+> Mock Meet Room's check-in desk**. Referees' lights all agree (the minigames
+> decide; the referees show it). In Studio one signed-up player is enough to
+> hold a meet, and the timetable runs every 90 seconds, so it can be tested
+> alone; a live server needs 2.
+
 ### 29.11 Weight class and build interactions
 
 **[FROZEN]**

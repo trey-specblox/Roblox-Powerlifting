@@ -44,6 +44,11 @@ local MeetFolder = script:WaitForChild("Meet")
 local MockMeetService = require(MeetFolder:WaitForChild("MockMeetService"))
 MockMeetService.start()
 
+-- The Local meet against other players: the venue, the sign-up timetable and the meet itself.
+-- Step 1: nothing saved yet.
+local LocalMeetService = require(MeetFolder:WaitForChild("LocalMeetService"))
+LocalMeetService.start()
+
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the
 	Git-tracked templates and tagged before TrainingStationService looks for racks.

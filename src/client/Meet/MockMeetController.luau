@@ -30,16 +30,24 @@ local MockMeetUI = require(script.Parent:WaitForChild("MockMeetUI"))
 
 local MockMeetController = {}
 
+-- The remotes a meet screen needs: the Mock Meet's, or the Local meet's (LocalMeetRemotes) with the same meaning.
+export type ScreenRemotes = {
+	leave: RemoteEvent,
+	choose: RemoteEvent,
+	ready: RemoteEvent,
+	state: RemoteEvent,
+	notice: RemoteEvent,
+}
+
 local started = false
 
-function MockMeetController.start()
-	if started then
-		return
-	end
-	started = true
-
+--[[
+	Runs one meet screen: shown while the player attribute `attribute` is set,
+	drawing `remotes.state`, sending the choice, LIFT and LEAVE. The Mock Meet
+	and the Local meet (LocalMeetController) each run one.
+]]
+function MockMeetController.attach(remotes: ScreenRemotes, attribute: string, options: MockMeetUI.Options?)
 	local player = Players.LocalPlayer
-	local remotes = MockMeetRemotes.waitForClient(ReplicatedStorage)
 
 	local state: MockMeetRemotes.MeetState? = nil
 	local chosenKg: number? = nil
@@ -134,7 +142,7 @@ function MockMeetController.start()
 				remotes.ready:FireServer()
 			end
 		end,
-	})
+	}, options)
 	ui.gui.Parent = player:WaitForChild("PlayerGui")
 
 	remotes.state.OnClientEvent:Connect(function(newState: MockMeetRemotes.MeetState)
@@ -154,7 +162,7 @@ function MockMeetController.start()
 			-- Outside a meet (the cooldown): show just the notice for a moment.
 			ui.gui.Enabled = true
 			task.delay(4, function()
-				if player:GetAttribute(MockMeetConfig.SlotAttribute) == nil then
+				if player:GetAttribute(attribute) == nil then
 					ui.gui.Enabled = false
 				end
 			end)
@@ -162,7 +170,7 @@ function MockMeetController.start()
 	end)
 
 	local function refresh()
-		local inMeet = player:GetAttribute(MockMeetConfig.SlotAttribute) ~= nil
+		local inMeet = player:GetAttribute(attribute) ~= nil
 		ui.gui.Enabled = inMeet
 		if not inMeet then
 			state, chosenKg, deadline = nil, nil, nil
@@ -174,7 +182,7 @@ function MockMeetController.start()
 			end
 		end
 	end
-	player:GetAttributeChangedSignal(MockMeetConfig.SlotAttribute):Connect(refresh)
+	player:GetAttributeChangedSignal(attribute):Connect(refresh)
 	refresh()
 
 	RunService.Heartbeat:Connect(function()
@@ -182,6 +190,14 @@ function MockMeetController.start()
 			ui.setTimer(if deadline then deadline - os.clock() else nil)
 		end
 	end)
+end
+
+function MockMeetController.start()
+	if started then
+		return
+	end
+	started = true
+	MockMeetController.attach(MockMeetRemotes.waitForClient(ReplicatedStorage), MockMeetConfig.SlotAttribute, nil)
 end
 
 return MockMeetController
