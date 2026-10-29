@@ -54,6 +54,10 @@ RackSpawner.spawnAll()
 -- before the gateway is listening for joins.
 PlayerDataService.start()
 
+-- The stats screen's read-only answer: a player's own stats, never written.
+local PlayerStatsService = require(PlayerDataFolder:WaitForChild("PlayerStatsService"))
+PlayerStatsService.start()
+
 --[[
 	The orchestrator owns every lift attempt and all the lifting remotes. The phase
 	services are driven by it rather than started on their own, so phase order is a

@@ -2076,6 +2076,13 @@ multiplayer-only, not because progression requires it.
   mash becomes a coloured ring; the deadlift typing game shows a row of pattern
   boxes. The **stats screen** (Competition Numbers, the technique stats, weight class)
   opens with a key or an on-screen STATS button (phones).
+  - **The PLAYER STATS screen** (built 2026-10-28): **C** or the **STATS** tab on the
+    left edge opens and closes it. It shows the avatar, name, weight class,
+    bodyweight and target; the **Competition Number** per lift and their sum; the
+    lifts **proven in a meet** (Competition Scale, or UNPROVEN); and the five
+    technique stats as a **five-cornered radar** (effective values, the edge = 100).
+    It only shows numbers; the server answers with a read-only copy and nothing can
+    be changed from it.
 - **Meet first, rewards next.** The first build is the whole meet: weigh-in (class
   locked, §32.7), attempt choice, the 9 lifts with the existing minigames, judges'
   lights, the attempt board and the total. It **saves nothing permanent**: no

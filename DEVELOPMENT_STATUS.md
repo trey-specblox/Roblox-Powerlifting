@@ -1602,7 +1602,30 @@ and polish.
   - NOT tested: the technique view of the menu, Start/Stop/EXIT clicks, the
     prompt on a phone, the cardio and Mock Meet prompts.
   Step 3 COMMITTED with the user's approval on 2026-10-28 (see section 1).
-  NEXT ACTION: step 4, the STATS screen. After
+  STEP 4 BUILT (2026-10-28, user: "commit + stats"; NOT committed):
+  - New src/shared/Stats/StatsRemotes.luau (RemoteFunction GetMyStats, the
+    StatsSnapshot type) and src/server/PlayerData/PlayerStatsService.luau
+    (started after PlayerDataService): answers with a READ-ONLY snapshot of
+    the asker's own data (class from bodyweight, bodyweight and target, CN
+    and Competition Scale per lift, the five trainable technique stats as
+    effective values via TechniqueCurve); writes nothing; at most one ask per
+    0.5 s per player.
+  - New src/client/UI/StatsScreen.luau (started from init.client): a STATS
+    tab on the left edge and the key C (ignored while a text box is
+    focused) open a PLAYER STATS panel: avatar headshot, name, class,
+    bodyweight/target; COMPETITION NUMBER per lift + total; PROVEN IN A MEET
+    (Scale or UNPROVEN); TECHNIQUE radar (pentagon rings at 25/50/75/100,
+    yellow value shape, lift-coloured dots, name + value at each corner);
+    BACK.
+  - Checks: luau-lsp 0 problems in these files, `rojo build` OK. Studio:
+    the snapshot read 59 kg class, 53.0 kg, CN 25/25/25, Scale 0, all five
+    technique stats 10.0; pressing C (Studio keyboard input) opened the
+    panel (screenshots, corner labels fixed after the first), C again closed
+    it; 0 client and 0 server warnings.
+  - NOT tested: the STATS tab by a real click or tap, the screen with grown
+    stats, a phone.
+  Step 4 COMMITTED with the user's approval on 2026-10-28 (see section 1).
+  NEXT ACTION: step 5, the treadmill rhythm game's screens. After
   that: the rewards step needs the weight-class build decision (§33.11 item
   11) before any meet raises Competition Scale.
   Other open threads: the records
@@ -1663,7 +1686,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Restyle the rack menu and every "E" prompt (UI restyle step 3); `git log -1` for the hash.
+- 2026-10-28, pushed: Add the PLAYER STATS screen (UI restyle step 4); `git log -1` for the hash.
+- `5f85a67` (2026-10-28, pushed) Restyle the rack menu and every "E" prompt (UI restyle step 3).
 - `bd7f298` (2026-10-28, pushed) One UI style for the Mock Meet and all lift minigames (UI restyle steps 1-2).
 - `ea6f636` (2026-10-28, pushed) Run the Mock Meet itself: attempts, lifts, coach and results (Mock Meet part 2).
 - `023f46c` (2026-10-28, pushed) Add the Mock Meet Room and a private meet room per player (Mock Meet part 1).

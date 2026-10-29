@@ -12,6 +12,10 @@ local UIFolder = script:WaitForChild("UI")
 local PromptController = require(UIFolder:WaitForChild("PromptController"))
 PromptController.start()
 
+-- The PLAYER STATS screen: press C or the STATS tab. It only shows the server's read-only snapshot.
+local StatsScreen = require(UIFolder:WaitForChild("StatsScreen"))
+task.spawn(StatsScreen.start)
+
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))
 
