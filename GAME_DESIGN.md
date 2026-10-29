@@ -1716,7 +1716,9 @@ Aggressive by 21% in CN, and this is intended.
 > **Competition Scale**, a maximum raised only by success, while failure costs
 > **zero** (§33.6). Both sides of the old expected-value trade are gone, and the
 > optimal meet strategy becomes "attempt the heaviest weight with any chance of
-> succeeding". Whether the existing brakes suffice is **[TBD]** (§33.11).
+> succeeding". Whether the existing brakes suffice is ~~**[TBD]** (§33.11)~~
+> **DECIDED (user, 2026-10-29, §33.3b):** misses above CN use the daily meet
+> allowance, and a bomb-out saves nothing.
 >
 > This affects **meet** strategy only. The original reasoning may still hold for
 > training, scored against trained CN rather than Scale.
@@ -1881,12 +1883,14 @@ rate, so AFK-only progression is ~4x slower.
 
 ### 29.9 The three Competition Budgets
 
-> **DECIDED (user, 2026-10-29): KEPT, AND REUSED AS THE WEEKLY LIMIT ON MEET CN
-> RAISES (§33.3b).** One pool per lift; meet raises against other players may add
-> at most +25% of a lift's CN per week, and stop when the pool is empty until it
-> refills. The EV-based model below (9.43 EV, harmonic overflow) is replaced by
-> that rule when vs-player meets are built; until then the stored pools are kept
-> and nothing reads them.
+> **DECIDED (user, 2026-10-29): KEPT, AND REUSED AS THE DAILY ALLOWANCE FOR MEET
+> CN RAISES (§33.3b).** One pool per lift; it refills +4% of the lift's CN per day
+> and stacks for up to 3 days, shrinks near the world-record level, and meet raises
+> against other players (and misses above CN) use it. Raises stop when it is empty
+> until it refills. (First decided as +25% per week; changed to daily the same
+> day.) The EV-based model below (9.43 EV, harmonic overflow) is replaced by that
+> rule when vs-player meets are built; until then the stored pools are kept and
+> nothing reads them.
 
 > **⚠ THIS SYSTEM HAS LOST ITS SUBJECT — [TBD]**
 >
@@ -2112,8 +2116,11 @@ multiplayer-only, not because progression requires it.
   after the weight-class build question (§33.8, §33.11 item 11) is decided, because
   no meet may raise Scale before class scoping exists. **Decided 2026-10-28**
   (§29.11 "Weight-class builds"): a Mock Meet raises the Competition Scale of the
-  build for its weigh-in class with each good lift, and a finished meet's Total
+  build for its weigh-in class ~~with each good lift~~, and a finished meet's Total
   can become that build's best Total. Still no records and no money.
+  **[CHANGED BY THE USER, 2026-10-29, §33.3b]:** Scale is saved only when the meet
+  ends **with a total**; a bomb-out or leaving early saves nothing. (Built code
+  still saves after each good lift until this is changed.)
 - **Attempts are chosen one at a time**, like a real meet: the opener at weigh-in,
   then each next attempt right after a lift, in kilograms with ±2.5 kg steps and the
   % of Competition Number shown, with a short timer. The server checks every choice
@@ -3262,19 +3269,35 @@ repeated raises.
 |---|---|
 | Which meets | **Only meets against other players** (Local, Nationals, Worlds, Sheffield and any later multi-player meet). The **solo Mock Meet never raises CN**; it only raises Competition Scale (§33.7) |
 | What a good lift does | A **good** lift above the lift's current CN raises CN **all the way to the weight lifted** (200 kg CN and a good 250 kg lift: CN 250 kg). A failed lift does nothing (§33.6). CN never goes down |
-| The weekly limit | Meet raises may add at most **+25% per lift per week** in total, as a share of CN. One maximum-risk lift can use it all at once; several small raises add up to the same limit. **[PROVISIONAL]** value |
-| When it is used up | **Meet raises stop** for that lift until the limit refills over the week (no tapering). Good lifts still raise Competition Scale. A raise that would pass the limit is cut to what is left |
-| Where the limit lives | The **Competition Budget** (§29.9), reused for this: one pool per lift, refilling over a week. Its EV denomination, 9.43 EV capacity and harmonic overflow are replaced by this simpler rule when it is built |
+| ~~The weekly limit~~ | ~~at most +25% per lift per week~~ **[CHANGED BY THE USER, 2026-10-29: daily instead of weekly, "so players can have a NEED to play the game"; a weekly limit lets a once-a-week player gain as much as a daily one]** |
+| The daily allowance | Each lift's allowance **refills +4% of its CN per day** and **stacks for up to 3 days** (at most +12% waiting). One maximum-risk lift can use all that is waiting; several small raises add up to the same. Missing a day is not wasted; more than 3 days off is. **[PROVISIONAL]** values (user picked from options, 2026-10-29) |
+| Near the world record | The daily allowance **gets smaller the closer the lift's CN is to the weight class's world-record level** (the Progression Reference, §29.4), the same slowdown training uses (user, 2026-10-29). Its exact curve is decided when built |
+| When it is used up | **Meet raises stop** for that lift until it refills (no tapering). A raise that would pass what is left is cut to what is left |
+| What a miss costs | A **missed** attempt above the lift's CN **uses the allowance it would have used had it been good** (cut to what is left), even though CN does not rise (user, 2026-10-29). A miss at or below CN costs nothing. A Mock Meet raises no CN, so this applies to meets against other players only |
+| Bomb-out | A meet where any lift has **no good attempt** has **no total**, like a real meet, and **saves nothing**: no CN raise, no Competition Scale, no placing or money. Misses in it still use the allowance. **This applies to the Mock Meet too** (user, 2026-10-29), where leaving before the meet ends also means no total. So raises are applied **when the meet ends**, not after each lift |
+| Where the allowance lives | The **Competition Budget** (§29.9), reused for this: one pool per lift. Its EV denomination, 9.43 EV capacity, weekly refill and harmonic overflow are replaced by this simpler rule when it is built |
 | Training | **Unchanged.** Gym training stays a CN source with its own 4.00 EV daily cap and per-lift efficiency (§34); the two do not share a limit |
+
+**Why this answers maximum-risk play (§33.11 item 1):** a failed attempt now costs
+something. A miss far above CN burns the allowance a success would have earned, and
+a bomb-out throws away the whole meet, so a safe opener comes first and the gamble
+belongs on attempts 2 and 3. Big jumps are still possible for a lifter who saves up
+three days and makes the lift.
 
 > **Not built yet.** Meets against other players do not exist yet, so this rule
 > is recorded now and built with them. The Budget's stored pools are kept until
 > then (§29.9).
 >
-> **To decide when it is built:** how the raise interacts with the Progression
-> Reference near the world-record level (§29.4) — a meet raise is a jump, not an
-> EV award, so it bypasses the Hill slowdown — and whether the +25% is a share of
-> CN at the start of the week or of the CN at the time of the lift.
+> **To decide when it is built:** ~~how the raise interacts with the Progression
+> Reference~~ (decided: the allowance shrinks near the world-record level) — the
+> exact shrink curve; whether the +4% is a share of CN when it refills or at the
+> time of the lift; and whether it refills smoothly through the day or at a fixed
+> daily reset time.
+>
+> **The Mock Meet bomb-out rule changes built code.** The Mock Meet currently saves
+> Competition Scale right after each good lift, even when the lifter later bombs
+> out or leaves (§29.10, §33.11 item 9). Under the rule above it saves only when
+> the meet ends with a total.
 
 ### 33.4 The two difficulty roles
 
@@ -3405,7 +3428,9 @@ against reckless play came from failures being worth a constant fraction of
 successes, which made the EV-per-budget ratio identical either way (§29.9). With
 the credit at zero *and* Scale defined as a maximum (§33.7), a failed meet attempt
 costs nothing but time, and only the single heaviest success matters. Both sides of
-that balance have been removed. See §33.11, question 1.
+that balance have been removed. See §33.11, question 1 — **answered by §33.3b**
+(user, 2026-10-29): misses above CN use the daily meet allowance, and a bomb-out
+saves nothing.
 
 
 ### 33.7 Raising Competition Scale
@@ -3662,7 +3687,10 @@ Collected so none is lost. None of these should be answered by implementation
 choice. **Section 34 closed items 5, 7 and 8 and opened nine more of its own --
 see §34.13.**
 
-1. **What stops maximum-risk meet strategy?** With failures costing zero (§33.6)
+1. ~~**What stops maximum-risk meet strategy?**~~ — **DECIDED** (user, 2026-10-29,
+   §33.3b): a miss above CN uses the daily meet allowance it would have used had it
+   been good, and a bomb-out (no total) saves nothing from that meet, in the Mock
+   Meet too. Previously: With failures costing zero (§33.6)
    and Scale being a maximum (§33.7), the optimal meet strategy is to attempt the
    heaviest weight with any chance of succeeding. This **inverts** §29.5's frozen
    note that conservative play should out-earn aggressive play. Existing brakes:
@@ -3681,7 +3709,8 @@ see §34.13.**
    to~~ — **DECIDED** (§34.2, §34.4). One channel at 100%; `BaseRate` 1.00 EV/hour
    under `H(t)`, 4.00 EV/day account-wide. **[PROVISIONAL]** values, not [TBD].
 6. ~~**The fate of the Competition Budget**~~ — **DECIDED** (user, 2026-10-29):
-   kept as the weekly limit on meet CN raises (§33.3b, §29.9).
+   kept as the limit on meet CN raises (§33.3b, §29.9); since changed to a daily
+   allowance (+4% per day, stacking 3 days).
 7. ~~**Training Energy's scope**~~ — **DECIDED as a throttle** (§34.1 decision 2,
    §34.3): it no longer limits CN, and there is no hard training-hour limit. Its
    **fate as a persisted field remains [TBD]** — §34.13 item 8.
@@ -3689,8 +3718,10 @@ see §34.13.**
    neither does the Daily Set completion bonus. The question of whether completing
    it requires a meet no longer affects CN.
 9. **What "eligible meet" includes** for the purpose of raising Scale (§33.7).
-   **Partly decided** (2026-10-28): the Mock Meet is eligible, and its good lifts
-   count even when the lifter leaves early.
+   **Partly decided** (2026-10-28): the Mock Meet is eligible~~, and its good lifts
+   count even when the lifter leaves early~~ **[CHANGED BY THE USER, 2026-10-29,
+   §33.3b]**: a meet that ends without a total (a bomb-out, or leaving early) saves
+   nothing.
 10. ~~**What a stored Scale records**~~ — **DECIDED** (§33.8): a per-lift weight
     number only, no proof metadata. Implemented in schema v4.
 11. ~~**Scale across weight classes.**~~ — **DECIDED** (user, 2026-10-28, §29.11
@@ -4764,9 +4795,9 @@ choice:
 | 4 | **Whether H(t)'s per-lift scoping is intended**, given the 4.00 h versus 5.44 h result in §34.10. | **[TBD]** |
 | 5 | **How a meet's technique award is split** across a lift's two stats — evenly, or weighted by which phase the attempt tested. | **[TBD]** |
 | 6 | ~~Whether 8.44 hours is an intended full daily cycle~~ — **moot since 5B.7**: technique has no cap, so there is no fixed "full cycle". Four hours already yields 84.7% of the CN cap. | **[RESOLVED]** |
-| 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. **Training does not use them** — 5B.5 decision A (§34.12) — so that much is settled; what they are for is not. | **DECIDED** (user, 2026-10-29): kept as the weekly limit on meet CN raises, §33.3b |
+| 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. **Training does not use them** — 5B.5 decision A (§34.12) — so that much is settled; what they are for is not. | **DECIDED** (user, 2026-10-29): kept as the limit on meet CN raises, a daily allowance (+4% per day, stacking 3 days), §33.3b |
 | 8 | **The fate of Training Energy** (§29.8). Superseded as a CN throttle by decision 2 and by "no hard daily training-hour limit", but still persisted in the schema. Retire it, or give it a different job. | **DECIDED** (user, 2026-10-29): **retired**, removed in schema version 8 |
-| 9 | Everything still open in **§33.11** — the Scale challenge curve and cap, maximum-risk meet strategy, eligible-meet definition, Scale across weight classes, and Scale display. | **[TBD]** |
+| 9 | Everything still open in **§33.11** — ~~the Scale challenge curve and cap~~ (decided), ~~maximum-risk meet strategy~~ (decided, §33.3b), eligible-meet definition, ~~Scale across weight classes~~ (decided), and Scale display. | **[TBD]** (partly decided) |
 
 **Not open, for the avoidance of doubt:** the five decisions in §34.1, the single
 CN source in §34.2, the station rules in §34.3, the two-phase Deadlift and the

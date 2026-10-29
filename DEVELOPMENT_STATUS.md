@@ -2293,10 +2293,23 @@ and polish.
     `rojo build` OK. Studio Play (by Claude, DataStore API off):
     PlayerDataProbe 454/0, TrainingProgressionProbe 298/0,
     TechniqueTrainingProbe 73/0, TrainingStationProbe 205/0 (probes
-    switched back off). The test profile loaded at version 8.
-  NEXT ACTION: ask the user what is next (33.11 item 1, meet risk, is
-  the remaining open design question; the user also has a Mock Meet and a
-  deadlift to try in Studio).
+    switched back off). The test profile loaded at version 8. The user ran
+    the probes themself too: all pass.
+
+  MEET RISK (design only, user decisions 2026-10-29; GAME_DESIGN 33.3b,
+  33.11 item 1 decided). COMMITTED and pushed 2026-10-29. The meet CN limit changed from
+  +25% per week to a DAILY allowance: +4% of CN per lift per day, stacking
+  up to 3 days, shrinking near the class's world-record level (Progression
+  Reference). A missed attempt above CN uses the allowance it would have
+  used had it been good. A bomb-out (no total; leaving early counts) saves
+  nothing from the meet, in the Mock Meet too, so raises are applied when
+  the meet ends. Edited: 33.3b table, 29.9 note, 29.10 Mock Meet bullet,
+  33.6 note, the 29.5 obsolete note, 33.11 items 1, 6 and 9, 34.13 row 7,
+  34.14 row 9.
+  NEXT ACTION (in progress): the one buildable piece: change MockMeetService so Competition Scale is
+  saved only when the meet ends with a total (it now saves after each good
+  lift, even on a bomb-out or early leave). The rest waits for vs-player
+  meets. The user also has a Mock Meet and a deadlift to try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2366,7 +2379,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Retire Training Energy and record meet CN raises (checkpoint 8, save version 8); `git log -1` for the hash.
+- 2026-10-29, pushed: Decide meet risk: a daily meet CN allowance, misses use it, a bomb-out saves nothing; `git log -1` for the hash.
+- `84c48a4` (2026-10-29, pushed) Retire Training Energy and record meet CN raises (checkpoint 8, save version 8).
 - `d6a8c4b` (2026-10-29, pushed) Add the Competition Scale challenge to meet attempts (checkpoint 6).
 - `b67b8a7` (2026-10-29, pushed) Remove PullStrength (checkpoint 9, save version 7).
 - `56f7249` (2026-10-29, pushed) Count only real door panels and shop gear in StarterGym_VerifyShell.
