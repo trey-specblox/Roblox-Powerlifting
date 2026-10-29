@@ -1965,8 +1965,46 @@ and polish.
     0, precise 0. StarterGym_VerifyShell not re-run.
   - NOT checked: the sauna's glazed doors and the lobby's hall door opening
     (built the same way); the user's own look.
-  NEXT ACTION: batch 4 (reception) in Blender: preview, the user's
-  approval, upload, place, Studio test, commit on approval. Optional:
+  Batch 4 (reception): `art/scripts/build_reception_01.py` ->
+  `art/blender/Reception_01.blend`, 33 pieces, 4,346 triangles, CHECK PASSED;
+  previews sent (backface culling). Items: ReceptionDesk (round the picture
+  front, which stays a block: the logo picture is drawn on it and
+  StarterGym_VerifyShell checks it), CardReader, LightStrip (stretched),
+  Turnstile + TurnstileArm, RailPost + RailRun (stretched; reusable for the
+  batch 9 railings), MerchWall (navy, CENTRAL in yellow, shakers and shirts in
+  several colours), FloodLamp. The reception monitor reuses the Furniture_01
+  Workstation and the desk's light bar the Lights_01 LightBar. The two glowing
+  name signs (NameWall, FrontSign) and their halos stay blocks (flat picture
+  panels). Approved by the user ("Approve, upload"); exported to
+  `art/exports/Reception_01.glb`, uploaded as the group:
+  rbxassetid://78320327648297 (materials.json). COMMITTED and pushed with
+  user approval on 2026-10-29 ("Commit, then batch 5").
+  - StarterGymConfig: PropAssets entry and colourways for the 9 items.
+  - StarterGymBuilder buildReception: local prop() and solid() helpers; the
+    desk, monitor, card reader, desk light bar, ceiling strips, turnstiles
+    and arms, railings, merch wall and sign lamps are the models, with hidden
+    solid blocks where the old blocks were solid (desk 4, turnstiles 4,
+    railings 2, merch wall 4). Lights keep their names (Desk_LightBar,
+    Lobby_LightStrip_n via RoomProps.fitting); the sign lamps' SpotLights sit
+    on hidden parts FrontSign_Lamp_n_Aim aimed like the old lamps (the lens
+    is tilted in the mesh). The check-in screen is on Workstation_Screen.
+    Old blocks are the fallback everywhere.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Studio Play (by Claude): no
+    new errors; Reception has 75 MeshParts, 6 visible blocks left (Desk_Front,
+    NameWall + halo, FrontSign + halo, Lobby_Ceiling), 14 hidden solids, 10
+    lights (the verify script's CeilingStripCount + 6), CheckInScreen facing
+    the receptionist. Positions checked by script (ledge to the customers,
+    keyboard to the receptionist, lettering out of the wall, lamp lens on the
+    street side). Screenshots: desk with the logo front, turnstiles and
+    railing, merch wall, outside sign with its lamps. Audit: visible blocks
+    1,722 -> 1,604, parts 5,702, MeshParts 3,814, unique meshes 488 (budget
+    600), shadow casters 1,988, lights 144 (0 shadows), screens 74, solid
+    decor 0, precise 0. StarterGym_VerifyShell not re-run.
+  - NOT checked: walking through the turnstile lanes and against the desk
+    and railings (the hidden solids are where the old blocks were); the
+    user's own look.
+  NEXT ACTION: batch 5 (Cafe, Supplement Bar, Shop) in Blender: preview,
+  the user's approval, upload, place, Studio test, commit on approval. Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
   the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
@@ -2035,7 +2073,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Replace the block door pieces and name plaques with Blender models (blocks to Blender, batch 3); `git log -1` for the hash.
+- 2026-10-29, pushed: Replace the reception's block furniture with Blender models (blocks to Blender, batch 4); `git log -1` for the hash.
+- `a0206d1` (2026-10-29, pushed) Replace the block door pieces and name plaques with Blender models (blocks to Blender, batch 3).
 - `177c37e` (2026-10-28, pushed) Replace the block light fittings with Blender models (blocks to Blender, batch 2).
 - `3d267e2` (2026-10-28, pushed) Replace the shared block furniture with Blender models (blocks to Blender, batch 1).
 - `1e9d3de` (2026-10-28, pushed) Record the user's Studio check of the Mock Meet models in DEVELOPMENT_STATUS.

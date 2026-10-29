@@ -584,6 +584,8 @@ StarterGymConfig.PropAssets = {
 	{ id = 110775352617639 }, -- Lights_01: hall light bar, ceiling panel, shed lamp, stage light, track spot and rail
 	{ id = 138346322157297 }, -- Doors_01: door leaves, handles, name plaque, sliding-door frame and sensor, door sign
 	-- (StarterGymBuilder paints the Doors_01 pieces with each door's own looks, so they have no colourways.)
+	{ id = 78320327648297 }, -- Reception_01: reception desk, card reader, light strip, turnstile and arm, railing,
+	-- merch wall, outside sign lamp
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -821,6 +823,19 @@ StarterGymConfig.PropColourways = {
 	StageLight = { { Body = "Black", Lens = "GlowWhite" } },
 	TrackSpot = { { Head = "Black", Lens = "GlowWhite" } },
 	TrackRail = { { Rail = "Black" } },
+	-- The lobby (Reception_01, art/scripts/build_reception_01.py).
+	ReceptionDesk = { { Plinth = "Black", Glow = "GlowWhite", Body = "White", Work = "LightGrey", Ledge = "Oak",
+		Accent = "Yellow" } },
+	CardReader = { { Body = "Black", Screen = "GlowGreen" } },
+	LightStrip = { { Housing = "Silver", Diffuser = "GlowWhite" } },
+	Turnstile = { { Body = "Charcoal", Cap = "Silver", Light = "GlowGreen", Reader = "Black" } },
+	TurnstileArm = { { Arm = "Silver", Tips = "Yellow" } },
+	RailPost = { { Post = "Silver" } },
+	RailRun = { { Rails = "Silver" } },
+	MerchWall = { { Back = "Navy", Shelves = "White", Glow = "GlowWhite", ShakerA = "Black", ShakerB = "Yellow",
+		ShakerC = "Blue", Lids = "White", ShirtA = "Black", ShirtB = "White", ShirtC = "Red", ShirtD = "Navy",
+		Lettering = "Yellow" } },
+	FloodLamp = { { Arm = "Silver", Head = "Black", Lens = "GlowWhite" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

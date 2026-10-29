@@ -636,52 +636,108 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 	local frontX = backX - cfg.DeskDepthStuds -- the side customers stand at (-X)
 	local counterY, workY = floorY + cfg.DeskCounterHeightStuds, floorY + cfg.DeskWorkHeightStuds
 
-	-- A dark plinth set back under the desk, with a glowing strip along the front: the desk seems to float.
-	box(reception, "Desk_Plinth", Vector3.new(frontX + 0.5, floorY, z0 + 0.3), Vector3.new(backX - 0.2, floorY + 0.3, z1 - 0.3),
-		looks.DeskPlinth)
-	local baseGlow = box(reception, "Desk_BaseGlow", Vector3.new(frontX + 0.45, floorY, z0 + 0.3),
-		Vector3.new(frontX + 0.6, floorY + 0.25, z1 - 0.3), looks.GlowWhite)
-	surfaceLight(baseGlow, Enum.NormalId.Left, 6, 1.5, 150)
+	-- The Blender pieces (Reception_01, user 2026-10-28: blocks to Blender): `item` as `name` in the
+	-- reception, its pivot (the bottom centre of its bounds) at `pivot`, stretched to `stretch` when given.
+	-- Decor; nil when the model did not load (the caller builds the old blocks).
+	local function prop(name: string, item: string, pivot: CFrame, stretch: Vector3?): Model?
+		local copy = RoomProps.propCopy(item, 1, stretch)
+		if copy then
+			copy.Name = name
+			copy:PivotTo(pivot)
+			copy.Parent = reception
+		end
+		return copy
+	end
+	-- An invisible solid block where a model stands in for old solid blocks.
+	local function solid(name: string, low: Vector3, high: Vector3)
+		local part = box(reception, name, low, high, looks.DeskBody)
+		part.Transparency = 1
+		part.CastShadow = false
+	end
+
+	-- The picture front stays a block (the logo picture is drawn on it).
 	local frontPanel = box(reception, "Desk_Front", Vector3.new(frontX, floorY + 0.3, z0), Vector3.new(frontX + 0.6, counterY, z1),
 		looks.DeskBody)
 	deskFront(frontPanel, Enum.NormalId.Left) -- Left = -X, the customers' side
-	box(reception, "Desk_Ledge", Vector3.new(frontX - 0.15, counterY, z0), Vector3.new(frontX + 1.4, counterY + 0.2, z1),
-		looks.DeskBody)
-	box(reception, "Desk_Cabinet", Vector3.new(frontX + 0.6, floorY + 0.3, z0 + 0.5), Vector3.new(backX, workY - 0.2, z1 - 0.5),
-		looks.DeskBody)
-	box(reception, "Desk_Work", Vector3.new(frontX + 0.6, workY - 0.2, z0), Vector3.new(backX + 0.3, workY, z1), looks.DeskWork)
-	-- The end panels start behind the front panel: sharing its face made the picture flicker.
-	box(reception, "Desk_End_1", Vector3.new(frontX + 0.6, floorY + 0.3, z0), Vector3.new(backX, counterY, z0 + 0.5),
-		looks.DeskBody)
-	box(reception, "Desk_End_2", Vector3.new(frontX + 0.6, floorY + 0.3, z1 - 0.5), Vector3.new(backX, counterY, z1),
-		looks.DeskBody)
+	-- Round it, the ReceptionDesk model: from the ledge's yellow line (0.165 in front of the picture) to the
+	-- work top's back (0.3 behind the cabinet), facing the customers (-X), on hidden solid blocks.
+	local deskMiddle = Vector3.new((frontX - 0.165 + backX + 0.3) / 2, floorY, deskZ)
+	local desk = prop("Desk", "ReceptionDesk", CFrame.lookAt(deskMiddle, deskMiddle - Vector3.xAxis))
+	local deskGlow = desk and desk:FindFirstChild("ReceptionDesk_Glow", true) :: BasePart?
+	if desk and deskGlow then
+		surfaceLight(deskGlow, StyledScreen.faceToward(deskGlow, -Vector3.xAxis), 6, 1.5, 150)
+		solid("Desk_Solid", Vector3.new(frontX + 0.6, floorY, z0), Vector3.new(backX + 0.3, workY, z1))
+		solid("Desk_LedgeSolid", Vector3.new(frontX - 0.15, counterY, z0), Vector3.new(frontX + 1.4, counterY + 0.2, z1))
+		solid("Desk_EndSolid_1", Vector3.new(frontX + 0.6, workY, z0), Vector3.new(backX, counterY, z0 + 0.5))
+		solid("Desk_EndSolid_2", Vector3.new(frontX + 0.6, workY, z1 - 0.5), Vector3.new(backX, counterY, z1))
+	else
+		if desk then
+			desk:Destroy()
+		end
+		-- A dark plinth set back under the desk, with a glowing strip along the front: the desk seems to float.
+		box(reception, "Desk_Plinth", Vector3.new(frontX + 0.5, floorY, z0 + 0.3), Vector3.new(backX - 0.2, floorY + 0.3, z1 - 0.3),
+			looks.DeskPlinth)
+		local baseGlow = box(reception, "Desk_BaseGlow", Vector3.new(frontX + 0.45, floorY, z0 + 0.3),
+			Vector3.new(frontX + 0.6, floorY + 0.25, z1 - 0.3), looks.GlowWhite)
+		surfaceLight(baseGlow, Enum.NormalId.Left, 6, 1.5, 150)
+		box(reception, "Desk_Ledge", Vector3.new(frontX - 0.15, counterY, z0), Vector3.new(frontX + 1.4, counterY + 0.2, z1),
+			looks.DeskBody)
+		box(reception, "Desk_Cabinet", Vector3.new(frontX + 0.6, floorY + 0.3, z0 + 0.5), Vector3.new(backX, workY - 0.2, z1 - 0.5),
+			looks.DeskBody)
+		box(reception, "Desk_Work", Vector3.new(frontX + 0.6, workY - 0.2, z0), Vector3.new(backX + 0.3, workY, z1), looks.DeskWork)
+		-- The end panels start behind the front panel: sharing its face made the picture flicker.
+		box(reception, "Desk_End_1", Vector3.new(frontX + 0.6, floorY + 0.3, z0), Vector3.new(backX, counterY, z0 + 0.5),
+			looks.DeskBody)
+		box(reception, "Desk_End_2", Vector3.new(frontX + 0.6, floorY + 0.3, z1 - 0.5), Vector3.new(backX, counterY, z1),
+			looks.DeskBody)
+	end
 
-	-- On the desk: a monitor and keyboard for the receptionist, a card reader on the ledge.
+	-- On the desk: a monitor and keyboard for the receptionist (the Furniture_01 Workstation, its screen 1.075
+	-- in from the back and its pivot 0.475 in front of the screen), a card reader on the ledge.
 	local m = deskZ - 3
-	decor(box(reception, "Monitor_Base", Vector3.new(backX - 1.3, workY, m - 0.4), Vector3.new(backX - 0.5, workY + 0.08, m + 0.4),
-		looks.Gadget))
-	decor(box(reception, "Monitor_Neck", Vector3.new(backX - 1.0, workY, m - 0.08), Vector3.new(backX - 0.85, workY + 1.0, m + 0.08),
-		looks.Gadget))
-	local screen = decor(box(reception, "Monitor_Screen", Vector3.new(backX - 1.15, workY + 0.8, m - 1.2),
-		Vector3.new(backX - 1.0, workY + 2.2, m + 1.2), looks.Gadget))
-	checkInScreen(screen, Enum.NormalId.Right) -- Right = +X, toward the receptionist
-	decor(box(reception, "Keyboard", Vector3.new(backX - 0.6, workY, m - 0.9), Vector3.new(backX - 0.25, workY + 0.07, m + 0.9),
-		looks.Gadget))
+	local stationAt = Vector3.new(backX - 0.6, workY, m)
+	local station = prop("Monitor", "Workstation", CFrame.lookAt(stationAt, stationAt + Vector3.xAxis))
+	local stationScreen = station and station:FindFirstChild("Workstation_Screen", true) :: BasePart?
+	if station and stationScreen then
+		checkInScreen(stationScreen, StyledScreen.faceToward(stationScreen, Vector3.xAxis)) -- toward the receptionist
+	else
+		if station then
+			station:Destroy()
+		end
+		decor(box(reception, "Monitor_Base", Vector3.new(backX - 1.3, workY, m - 0.4), Vector3.new(backX - 0.5, workY + 0.08, m + 0.4),
+			looks.Gadget))
+		decor(box(reception, "Monitor_Neck", Vector3.new(backX - 1.0, workY, m - 0.08), Vector3.new(backX - 0.85, workY + 1.0, m + 0.08),
+			looks.Gadget))
+		local screen = decor(box(reception, "Monitor_Screen", Vector3.new(backX - 1.15, workY + 0.8, m - 1.2),
+			Vector3.new(backX - 1.0, workY + 2.2, m + 1.2), looks.Gadget))
+		checkInScreen(screen, Enum.NormalId.Right) -- Right = +X, toward the receptionist
+		decor(box(reception, "Keyboard", Vector3.new(backX - 0.6, workY, m - 0.9), Vector3.new(backX - 0.25, workY + 0.07, m + 0.9),
+			looks.Gadget))
+	end
 	local reader = deskZ + 6
-	decor(box(reception, "CardReader", Vector3.new(frontX + 0.1, counterY + 0.2, reader - 0.3),
-		Vector3.new(frontX + 0.6, counterY + 0.35, reader + 0.3), looks.Gadget))
-	decor(box(reception, "CardReader_Screen", Vector3.new(frontX + 0.2, counterY + 0.35, reader - 0.15),
-		Vector3.new(frontX + 0.5, counterY + 0.37, reader + 0.15), looks.GlowGreen))
+	local readerAt = Vector3.new(frontX + 0.35, counterY + 0.2, reader)
+	if prop("CardReader", "CardReader", CFrame.lookAt(readerAt, readerAt - Vector3.xAxis)) == nil then
+		decor(box(reception, "CardReader", Vector3.new(frontX + 0.1, counterY + 0.2, reader - 0.3),
+			Vector3.new(frontX + 0.6, counterY + 0.35, reader + 0.3), looks.Gadget))
+		decor(box(reception, "CardReader_Screen", Vector3.new(frontX + 0.2, counterY + 0.35, reader - 0.15),
+			Vector3.new(frontX + 0.5, counterY + 0.37, reader + 0.15), looks.GlowGreen))
+	end
 
-	-- A light bar hanging over the desk on two thin cables.
+	-- A light bar hanging over the desk on two thin cables (the Lights_01 LED bar, stretched).
 	local barX = frontX + 1.8
 	local barY = counterY + 5.4
-	local bar = box(reception, "Desk_LightBar", Vector3.new(barX - 0.2, barY, z0 + 2), Vector3.new(barX + 0.2, barY + 0.2, z1 - 2),
-		looks.GlowWhite)
-	surfaceLight(bar, Enum.NormalId.Bottom, 10, 1.3, 120)
-	for index, z in ipairs({ z0 + 4, z1 - 4 }) do
-		decor(box(reception, string.format("Desk_LightCable_%d", index), Vector3.new(barX - 0.04, barY + 0.2, z - 0.04),
-			Vector3.new(barX + 0.04, ceilingY - 0.2, z + 0.04), looks.Stainless))
+	local bar = RoomProps.fitting(reception, "Desk_LightBar", "LightBar", "Diffuser", CFrame.new(barX, barY, deskZ),
+		Vector3.new(0.5, ceilingY - 0.2 - barY, z1 - z0 - 4))
+	if bar then
+		surfaceLight(bar, StyledScreen.faceToward(bar, -Vector3.yAxis), 10, 1.3, 120)
+	else
+		local block = box(reception, "Desk_LightBar", Vector3.new(barX - 0.2, barY, z0 + 2), Vector3.new(barX + 0.2, barY + 0.2, z1 - 2),
+			looks.GlowWhite)
+		surfaceLight(block, Enum.NormalId.Bottom, 10, 1.3, 120)
+		for index, z in ipairs({ z0 + 4, z1 - 4 }) do
+			decor(box(reception, string.format("Desk_LightCable_%d", index), Vector3.new(barX - 0.04, barY + 0.2, z - 0.04),
+				Vector3.new(barX + 0.04, ceilingY - 0.2, z + 0.04), looks.Stainless))
+		end
 	end
 
 	-- ---------------------------------------------------------------- the name wall
@@ -698,10 +754,19 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 	for index = 1, cfg.CeilingStripCount do
 		local x = cx - lobbyHalf + (index - 0.5) * stripSpacing
 		local half = cfg.CeilingStripWidthStuds / 2
-		local strip = decor(box(reception, string.format("Lobby_LightStrip_%d", index),
-			Vector3.new(x - half, ceilingY - 0.3, lobbyFrontZ + 2), Vector3.new(x + half, ceilingY - 0.2, lobbyBackZ - 2),
-			looks.GlowWhite))
-		surfaceLight(strip, Enum.NormalId.Bottom, 16, 1, 160)
+		local stripName = string.format("Lobby_LightStrip_%d", index)
+		-- The Reception_01 light strip (0.12 deep, 0.1 wider than the old block), stretched to the length.
+		local strip = RoomProps.fitting(reception, stripName, "LightStrip", "Diffuser",
+			CFrame.new(x, ceilingY - 0.32, (lobbyFrontZ + lobbyBackZ) / 2),
+			Vector3.new(2 * half + 0.1, 0.12, (lobbyBackZ - 2) - (lobbyFrontZ + 2)))
+		if strip then
+			surfaceLight(strip, StyledScreen.faceToward(strip, -Vector3.yAxis), 16, 1, 160)
+		else
+			local block = decor(box(reception, stripName,
+				Vector3.new(x - half, ceilingY - 0.3, lobbyFrontZ + 2), Vector3.new(x + half, ceilingY - 0.2, lobbyBackZ - 2),
+				looks.GlowWhite))
+			surfaceLight(block, Enum.NormalId.Bottom, 16, 1, 160)
+		end
 	end
 
 	-- ---------------------------------------------------------------- the entrance gates
@@ -712,6 +777,16 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 	local function railing(name: string, xa: number, xb: number)
 		local x0, x1 = math.min(xa, xb), math.max(xa, xb)
 		local posts = math.max(1, math.ceil((x1 - x0) / 6))
+		-- The Reception_01 rails (from 1.6 to 3.4 up, stretched to the run) and round posts, on a hidden solid block.
+		local rails = prop(name .. "_Rails", "RailRun", CFrame.new((x0 + x1) / 2, floorY + 1.6, gateZ),
+			Vector3.new(x1 - x0, 1.8, 0.2))
+		if rails then
+			for index = 0, posts do
+				prop(string.format("%s_Post_%d", name, index), "RailPost", CFrame.new(x0 + (x1 - x0) * index / posts, floorY, gateZ))
+			end
+			solid(name .. "_Solid", Vector3.new(x0, floorY, gateZ - 0.15), Vector3.new(x1, floorY + 3.4, gateZ + 0.15))
+			return
+		end
 		for index = 0, posts do
 			local x = x0 + (x1 - x0) * index / posts
 			box(reception, string.format("%s_Post_%d", name, index), Vector3.new(x - 0.15, floorY, gateZ - 0.15),
@@ -729,16 +804,27 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 			local a, b = cx + sign * offset, cx + sign * (offset + 1)
 			local x0, x1 = math.min(a, b), math.max(a, b)
 			local prefix = string.format("Turnstile_%s_%d", label, index)
-			box(reception, prefix, Vector3.new(x0, floorY, gateZ - 0.6), Vector3.new(x1, floorY + 3.2, gateZ + 0.6),
-				looks.TurnstileBody)
-			box(reception, prefix .. "_Cap", Vector3.new(x0 - 0.05, floorY + 3.2, gateZ - 0.65),
-				Vector3.new(x1 + 0.05, floorY + 3.35, gateZ + 0.65), looks.Stainless)
-			decor(box(reception, prefix .. "_Light", Vector3.new(x0 + 0.3, floorY + 3.35, gateZ - 0.15),
-				Vector3.new(x1 - 0.3, floorY + 3.42, gateZ + 0.15), looks.GlowGreen))
 			-- The arm reaches across its lane; it is not solid, so the lane is always open.
 			local armA, armB = cx + sign * (offset + 1), cx + sign * (offset + 1 + cfg.GateLaneStuds - 0.6)
-			decor(box(reception, prefix .. "_Arm", Vector3.new(math.min(armA, armB), floorY + 2.7, gateZ - 0.07),
-				Vector3.new(math.max(armA, armB), floorY + 2.85, gateZ + 0.07), looks.Stainless))
+			-- The Reception_01 cabinet (on a hidden solid block) and its arm (the caps' bottom 0.09 under its middle).
+			local cabinet = prop(prefix, "Turnstile", CFrame.new((x0 + x1) / 2, floorY, gateZ))
+			local arm = cabinet and prop(prefix .. "_Arm", "TurnstileArm", CFrame.new((armA + armB) / 2, floorY + 2.685, gateZ),
+				Vector3.new(math.abs(armB - armA), 0.18, 0.18))
+			if cabinet and arm then
+				solid(prefix .. "_Solid", Vector3.new(x0, floorY, gateZ - 0.6), Vector3.new(x1, floorY + 3.35, gateZ + 0.6))
+			else
+				if cabinet then
+					cabinet:Destroy()
+				end
+				box(reception, prefix, Vector3.new(x0, floorY, gateZ - 0.6), Vector3.new(x1, floorY + 3.2, gateZ + 0.6),
+					looks.TurnstileBody)
+				box(reception, prefix .. "_Cap", Vector3.new(x0 - 0.05, floorY + 3.2, gateZ - 0.65),
+					Vector3.new(x1 + 0.05, floorY + 3.35, gateZ + 0.65), looks.Stainless)
+				decor(box(reception, prefix .. "_Light", Vector3.new(x0 + 0.3, floorY + 3.35, gateZ - 0.15),
+					Vector3.new(x1 - 0.3, floorY + 3.42, gateZ + 0.15), looks.GlowGreen))
+				decor(box(reception, prefix .. "_Arm", Vector3.new(math.min(armA, armB), floorY + 2.7, gateZ - 0.07),
+					Vector3.new(math.max(armA, armB), floorY + 2.85, gateZ + 0.07), looks.Stainless))
+			end
 			offset += 1 + cfg.GateLaneStuds
 		end
 		local railEnd = if sign == 1 then frontX - 0.5 else rightWallX
@@ -749,29 +835,41 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 	-- Opposite the desk: a dark back panel, three white shelves lit from below,
 	-- shakers on top, folded shirts below.
 	local merchZ = deskZ
-	box(reception, "Merch_Back", Vector3.new(rightWallX, floorY + 2.5, merchZ - 7), Vector3.new(rightWallX + 0.2, floorY + 9.5, merchZ + 7),
-		looks.SignPanel)
-	local shirtLooks = { looks.ShirtBlack, looks.ShirtWhite, looks.ShirtRed }
-	for shelf, height in ipairs({ 7.5, 5.5, 3.5 }) do
-		local y = floorY + height
-		box(reception, string.format("Merch_Shelf_%d", shelf), Vector3.new(rightWallX + 0.2, y, merchZ - 6),
-			Vector3.new(rightWallX + 1.5, y + 0.2, merchZ + 6), looks.DeskBody)
-		decor(box(reception, string.format("Merch_ShelfGlow_%d", shelf), Vector3.new(rightWallX + 0.3, y - 0.06, merchZ - 5.8),
-			Vector3.new(rightWallX + 1.3, y, merchZ + 5.8), looks.GlowWhite))
-		for item = 0, 5 do
-			local z = merchZ - 5 + item * 2
-			if shelf == 1 then
-				-- A cylinder runs along its X axis, so it is turned upright.
-				local shaker: any = decor(placed(reception, string.format("Merch_Shaker_%d", item + 1),
-					Vector3.new(0.9, 0.45, 0.45), CFrame.new(rightWallX + 0.85, y + 0.2 + 0.45, z) * CFrame.Angles(0, 0, math.pi / 2),
-					if item % 2 == 0 then looks.Gadget else looks.ShirtRed))
-				shaker.Shape = Enum.PartType.Cylinder
-			else
-				for fold = 0, 2 do
-					decor(box(reception, string.format("Merch_Shirt_%d_%d_%d", shelf, item + 1, fold + 1),
-						Vector3.new(rightWallX + 0.35, y + 0.2 + fold * 0.3, z - 0.7),
-						Vector3.new(rightWallX + 1.35, y + 0.2 + (fold + 1) * 0.3 - 0.02, z + 0.7),
-						shirtLooks[(item + fold + shelf) % 3 + 1]))
+	-- The Reception_01 merch wall (navy, CENTRAL in yellow; 1.5 deep, from 2.5 up), on hidden solid blocks.
+	local merchAt = Vector3.new(rightWallX + 0.75, floorY + 2.5, merchZ)
+	local merch = prop("MerchWall", "MerchWall", CFrame.lookAt(merchAt, merchAt + Vector3.xAxis))
+	if merch then
+		solid("Merch_BackSolid", Vector3.new(rightWallX, floorY + 2.5, merchZ - 7),
+			Vector3.new(rightWallX + 0.2, floorY + 9.5, merchZ + 7))
+		for shelf, height in ipairs({ 7.5, 5.5, 3.5 }) do
+			solid(string.format("Merch_ShelfSolid_%d", shelf), Vector3.new(rightWallX + 0.2, floorY + height, merchZ - 6),
+				Vector3.new(rightWallX + 1.5, floorY + height + 0.2, merchZ + 6))
+		end
+	else
+		box(reception, "Merch_Back", Vector3.new(rightWallX, floorY + 2.5, merchZ - 7),
+			Vector3.new(rightWallX + 0.2, floorY + 9.5, merchZ + 7), looks.SignPanel)
+		local shirtLooks = { looks.ShirtBlack, looks.ShirtWhite, looks.ShirtRed }
+		for shelf, height in ipairs({ 7.5, 5.5, 3.5 }) do
+			local y = floorY + height
+			box(reception, string.format("Merch_Shelf_%d", shelf), Vector3.new(rightWallX + 0.2, y, merchZ - 6),
+				Vector3.new(rightWallX + 1.5, y + 0.2, merchZ + 6), looks.DeskBody)
+			decor(box(reception, string.format("Merch_ShelfGlow_%d", shelf), Vector3.new(rightWallX + 0.3, y - 0.06, merchZ - 5.8),
+				Vector3.new(rightWallX + 1.3, y, merchZ + 5.8), looks.GlowWhite))
+			for item = 0, 5 do
+				local z = merchZ - 5 + item * 2
+				if shelf == 1 then
+					-- A cylinder runs along its X axis, so it is turned upright.
+					local shaker: any = decor(placed(reception, string.format("Merch_Shaker_%d", item + 1),
+						Vector3.new(0.9, 0.45, 0.45), CFrame.new(rightWallX + 0.85, y + 0.2 + 0.45, z) * CFrame.Angles(0, 0, math.pi / 2),
+						if item % 2 == 0 then looks.Gadget else looks.ShirtRed))
+					shaker.Shape = Enum.PartType.Cylinder
+				else
+					for fold = 0, 2 do
+						decor(box(reception, string.format("Merch_Shirt_%d_%d_%d", shelf, item + 1, fold + 1),
+							Vector3.new(rightWallX + 0.35, y + 0.2 + fold * 0.3, z - 0.7),
+							Vector3.new(rightWallX + 1.35, y + 0.2 + (fold + 1) * 0.3 - 0.02, z + 0.7),
+							shirtLooks[(item + fold + shelf) % 3 + 1]))
+					end
 				end
 			end
 		end
@@ -786,11 +884,22 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 		cfg.FrontSignArtHeightPixels)
 	for index, x in ipairs({ cx - cfg.FrontSignWidthStuds / 4, cx + cfg.FrontSignWidthStuds / 4 }) do
 		local lampY = signY + cfg.FrontSignHeightStuds / 2 + 1.4
-		decor(box(reception, string.format("FrontSign_LampArm_%d", index), Vector3.new(x - 0.08, lampY - 0.08, outsideZ - 2.2),
-			Vector3.new(x + 0.08, lampY + 0.08, outsideZ), looks.Stainless))
+		local lampName = string.format("FrontSign_Lamp_%d", index)
 		-- Tilted so its bottom face looks down and back onto the sign.
-		local lamp = decor(placed(reception, string.format("FrontSign_Lamp_%d", index), Vector3.new(0.8, 0.5, 0.8),
-			CFrame.new(x, lampY, outsideZ - 2.4) * CFrame.Angles(math.rad(-35), 0, 0), looks.Gadget))
+		local aim = CFrame.new(x, lampY, outsideZ - 2.4) * CFrame.Angles(math.rad(-35), 0, 0)
+		local lamp: BasePart
+		-- The Reception_01 flood lamp: its arm at lampY, 2.84 out from the wall and 0.41 down to the head's
+		-- lowest corner. Its lens is not square to the model, so the light sits on a hidden part aimed like the
+		-- old block lamp.
+		if RoomProps.fitting(reception, lampName, "FloodLamp", "Lens", CFrame.new(x, lampY - 0.406, outsideZ - 1.421)) then
+			lamp = decor(placed(reception, lampName .. "_Aim", Vector3.new(0.2, 0.2, 0.2), aim * CFrame.new(0, -0.3, 0),
+				looks.Gadget))
+			lamp.Transparency = 1
+		else
+			decor(box(reception, string.format("FrontSign_LampArm_%d", index), Vector3.new(x - 0.08, lampY - 0.08, outsideZ - 2.2),
+				Vector3.new(x + 0.08, lampY + 0.08, outsideZ), looks.Stainless))
+			lamp = decor(placed(reception, lampName, Vector3.new(0.8, 0.5, 0.8), aim, looks.Gadget))
+		end
 		local spot = Instance.new("SpotLight")
 		spot.Face = Enum.NormalId.Bottom
 		spot.Angle = 70
