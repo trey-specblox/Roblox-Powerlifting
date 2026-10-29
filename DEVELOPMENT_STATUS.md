@@ -2430,8 +2430,31 @@ and polish.
     saved "no total", nothing raised. All probes switched back off.
   - NOT tested: a two-player rewarded meet (live rule: 2 lifters); real
     minigame lifts in it.
-  NEXT ACTION: ask the user: step 3 (the venue in Blender) or the
-  Competition Budget cleanup; a rewarded two-player meet is worth a test. The user also has a Mock Meet and a deadlift to
+
+  COMPETITION BUDGET CLEANUP, SAVE VERSION 10 (2026-10-29, user: "Budget
+  cleanup"). COMMITTED and pushed 2026-10-29 (section 1).
+  - Removed: the save field (migrations[9] deletes competitionBudget; the
+    type and template entry are gone; migrations[2] no longer repairs it),
+    ProgressionConfig.CompetitionBudget, the CompetitionBudget module,
+    ProfileOperations get/getState/consume, PlayerDataService
+    get/getState/consume, and CompetitionNumberReward.calculate (the
+    budgeted meet-EV award, unused since 33.3; calculateTrainingAward is
+    unchanged). Comments updated (ProfileOperations, PlayerDataService,
+    ProgressionConfig, CompetitionNumberReward, ResourceRegeneration).
+  - Tests: PlayerDataProbe (budget-only sections 6-9 and 15-22 removed;
+    23 rewritten for the meet allowance; old-save fixtures still carry a
+    budget; post-migration checks now expect it removed; version 10; new
+    section 48 for 9 -> 10), TrainingProgressionProbe (section 13 now
+    checks the meet allowance), CompetitionNumberRewardProbe (calls moved
+    to calculateTrainingAward; budget sections 12-15 and 19 removed),
+    MigrationFixtureV6 (version 10, budget removed; not run).
+  - Checks: luau-lsp, no new errors (CompetitionNumberReward's old error at
+    the removed calculate is gone; DifficultyProbe's errors are older, file
+    untouched). Studio Play (by Claude, DataStore API off): PlayerDataProbe
+    409/0, TrainingProgressionProbe 298/0, CompetitionNumberRewardProbe
+    128/0; profile loaded at version 10. All probes switched back off.
+  NEXT ACTION: ask the user what is next (step 3, the Local meet venue in
+  Blender, is the planned one). A rewarded two-player meet is worth a test. The user also has a Mock Meet and a deadlift to
   try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.
@@ -2502,7 +2525,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Build the Local meet, step 2: rewards and the meet CN allowance (save version 9); `git log -1` for the hash.
+- 2026-10-29, pushed: Remove the Competition Budget (save version 10); `git log -1` for the hash.
+- `f76ffb8` (2026-10-29, pushed) Build the Local meet, step 2: rewards and the meet CN allowance (save version 9).
 - `baa73cb` (2026-10-29, pushed) Record the user's passing two-player Local meet test.
 - `db796f5` (2026-10-29, pushed) Build the Local meet, step 1: the meet itself on a temporary venue.
 - `29fae94` (2026-10-29, pushed) Decide the Local meet's first build (turns, placing, start, venue).

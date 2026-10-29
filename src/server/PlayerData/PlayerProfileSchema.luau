@@ -47,9 +47,10 @@ local PlayerProfileSchema = {}
 
 --[[
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
-	to the migrations table below (version 9: the meet CN allowance and career).
+	to the migrations table below (version 9: the meet CN allowance and career;
+	version 10: the Competition Budget removed).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 9
+PlayerProfileSchema.CURRENT_VERSION = 10
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -182,21 +183,8 @@ export type Career = {
 	localWins: number,
 }
 
---[[
-	The three per-lift Competition Budgets, from GAME_DESIGN.md section 29.9.
-
-	ACCOUNT-WIDE, NOT BUILD-SCOPED. A 59 kg squat build and a 120 kg squat build
-	draw from this same Squat pool, and Solo and Official meets share it too.
-	Spending Squat leaves Bench and Deadlift untouched.
-
-	`amount` may go NEGATIVE, and the magnitude is the overflow depth. That is
-	what keeps the model independent of how many meets were played.
-]]
-export type CompetitionBudget = {
-	Squat: Resource,
-	Bench: Resource,
-	Deadlift: Resource,
-}
+-- (The three account-wide Competition Budgets, section 29.9, added in version 3, were removed in
+-- version 10: the per-build meet allowance above replaced them.)
 
 --[[
 	One account-wide daily allowance, added in version 5. From GAME_DESIGN.md
@@ -323,11 +311,7 @@ export type ProfileData = {
 	technique: Technique,
 	bodyweight: Bodyweight,
 
-	--[[
-		ACCOUNT-WIDE, never build-scoped, so these stay OUTSIDE the `builds`
-		map above.
-	]]
-	competitionBudget: CompetitionBudget,
+	-- (competitionBudget, added in version 3, was removed in version 10: GAME_DESIGN 29.9.)
 	-- (trainingEnergy, added in version 3, was retired in version 8: GAME_DESIGN 29.8.)
 
 	--[[
@@ -377,27 +361,10 @@ local template: ProfileData = {
 	builds = {},
 
 	--[[
-		THE TEMPLATE STORES ZERO TIMESTAMPS, NOT os.time().
-
-		Same reasoning as meta.createdUnix below: a timestamp baked into the
-		template records when the SERVER started, not when the player first
-		played, and every profile created by that server would share it.
-
-		A zero timestamp means "never touched". ResourceRegeneration reads a full
-		amount and returns early without consulting the clock, so a brand new
-		profile is simply full. The first spend stamps a real server time.
-	]]
-	competitionBudget = {
-		Squat = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
-		Bench = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
-		Deadlift = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
-	},
-
-	--[[
 		A NEW LIFTER HAS SPENT NOTHING AND TRAINED NO HOURS TODAY.
 
-		Zero spent, zero hours, and an UNSTAMPED day key -- the same reasoning as
-		the zero timestamps above. A real day key baked into the template would
+		Zero spent, zero hours, and an UNSTAMPED day key. Same reasoning as
+		meta.createdUnix below: a real day key baked into the template would
 		record the day the SERVER started rather than the day the player first
 		trained, and every profile that server created would share it.
 
@@ -561,12 +528,9 @@ end
 	claiming to be the lifter's strength, and the next person to read the profile
 	would have to guess which one won.
 
-	2. THE NEW RESOURCES ARE STARTED FULL.
-
-	Reconcile already copies the template's full values, so this only repairs a
-	resource whose shape is wrong. Starting full rather than empty is deliberate:
-	an existing player must not log in to find a new allowance they have to wait
-	a week for.
+	2. THE NEW RESOURCES WERE STARTED FULL (the Competition Budget and Training
+	Energy). Both have since been removed (versions 8 and 10), so this part of
+	the step no longer does anything.
 
 	IDEMPOTENT. Running this twice is harmless. The second run finds no
 	`forecasted` field, finds every `competitionNumber` already a good number,
@@ -606,30 +570,9 @@ migrations[2] = function(data: ProfileData)
 	end
 
 	--[[
-		Repair rather than create: Reconcile has normally done this already.
-		A resource is only rebuilt when its shape is actually wrong, so a
-		player's part-spent budget survives a second pass.
-	]]
-	if typeof(data.competitionBudget) ~= "table" then
-		data.competitionBudget = {} :: any
-	end
-
-	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		local pool = (data.competitionBudget :: any)[lift]
-
-		if typeof(pool) ~= "table" or typeof(pool.amount) ~= "number" or pool.amount ~= pool.amount then
-			(data.competitionBudget :: any)[lift] = {
-				amount = ProgressionConfig.CompetitionBudget.CapacityEV,
-				lastUpdatedUnix = 0,
-			}
-		elseif typeof(pool.lastUpdatedUnix) ~= "number" then
-			pool.lastUpdatedUnix = 0
-		end
-	end
-
-	--[[
-		This step also used to repair Training Energy. Training Energy was retired
-		in version 8 (migrations[7] deletes it), so the repair is gone; the step
+		This step also used to repair the Competition Budget and Training Energy.
+		Both were removed (Training Energy in version 8, the budget in version 10;
+		migrations[7] and [9] delete them), so the repairs are gone; the step
 		itself stays, as every version gap needs one.
 	]]
 end
@@ -1120,8 +1063,8 @@ end
 
 	NOTHING ELSE IS READ, WRITTEN OR REMOVED. Competition Number, Scale, best
 	Totals, technique, the daily training counters, bodyweight and meta stay as
-	they are. The old account-wide Competition Budget stays too, unused (a
-	cleanup step removes it).
+	they are. (The old account-wide Competition Budget stayed too, unused, until
+	migrations[9] removed it.)
 
 	IDEMPOTENT: a second run finds every allowance and the career present and
 	changes nothing.
@@ -1141,6 +1084,22 @@ migrations[8] = function(data: ProfileData)
 	elseif not isUsableCounter(career.localWins) then
 		career.localWins = 0
 	end
+end
+
+--[[
+	Version 9 to 10: the Competition Budget is removed (user, 2026-10-29;
+	GAME_DESIGN 29.9).
+
+	The three account-wide pools limited meet CN in the old section 29 model;
+	section 33 stopped meets awarding that, and the per-build meet allowance
+	(version 9) now limits meet CN raises. No game code read the pools after
+	that. Reconcile only ADDS missing keys, so the saved field must be deleted
+	here. Nothing else is read, written or removed.
+
+	IDEMPOTENT: a second run finds no field and changes nothing.
+]]
+migrations[9] = function(data: ProfileData)
+	(data :: any).competitionBudget = nil
 end
 
 --[[

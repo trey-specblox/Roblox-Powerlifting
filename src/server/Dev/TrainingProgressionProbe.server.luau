@@ -249,7 +249,8 @@ local function untouchable(data: PlayerProfileSchema.ProfileData): any
 		competitionScale = scaleOf(data),
 		technique = data.technique,
 		bodyweight = data.bodyweight,
-		competitionBudget = data.competitionBudget,
+		meetAllowance = buildOf(data).meetAllowance,
+		career = (data :: any).career,
 		meta = data.meta,
 		techniqueSpent = data.techniqueAllowance.spentToday,
 	})
@@ -727,34 +728,36 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("13. the Competition Budget is neither spent nor consulted")
+print("13. the meet CN allowance is neither spent nor consulted")
 do
 	local ledger = newLedger()
 	local data = ledger.data
 	local now = DAY_START + 6 * HOUR
-	local budgetBefore = deepCopy(data.competitionBudget)
+	local allowanceBefore = deepCopy(buildOf(data).meetAllowance)
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
 		train(ledger, lift, now, 1.5 * HOUR)
 		now += 1.5 * HOUR
 	end
 
-	check("a full day of training leaves every budget pool unchanged", deepEqual(data.competitionBudget, budgetBefore))
-	check("and no Training Energy appears (retired in v8)", (data :: any).trainingEnergy == nil)
+	check("a full day of training leaves the meet allowance unchanged", deepEqual(buildOf(data).meetAllowance,
+		allowanceBefore))
+	check("no Training Energy (retired in v8) and no Competition Budget (removed in v10)",
+		(data :: any).trainingEnergy == nil and (data :: any).competitionBudget == nil)
 
-	-- A pool deep in overflow does not scale the award: training never reads it.
+	-- A used-up meet allowance does not scale the award: training never reads it.
 	local fresh = newProfile()
-	local overflowed = newProfile() :: any
-	overflowed.competitionBudget.Squat.amount = -50
+	local spent = newProfile() :: any
+	buildOf(spent).meetAllowance.Squat = { amount = 0, lastUpdatedUnix = DAY_START }
 
 	local freshResult = ProfileOperations.applyTrainingProgression(fresh, "Squat", DAY_START + HOUR, HOUR)
-	local overflowResult = ProfileOperations.applyTrainingProgression(overflowed, "Squat", DAY_START + HOUR, HOUR)
+	local spentResult = ProfileOperations.applyTrainingProgression(spent, "Squat", DAY_START + HOUR, HOUR)
 
-	check("an overflowed Squat budget pays the identical CN", freshResult.deltaCN == overflowResult.deltaCN,
-		string.format("%.12f vs %.12f", freshResult.deltaCN, overflowResult.deltaCN))
-	check("and the overflowed pool is left at -50", overflowed.competitionBudget.Squat.amount == -50)
+	check("a used-up Squat meet allowance pays the identical CN", freshResult.deltaCN == spentResult.deltaCN,
+		string.format("%.12f vs %.12f", freshResult.deltaCN, spentResult.deltaCN))
+	check("and the used-up allowance is left at 0", buildOf(spent).meetAllowance.Squat.amount == 0)
 
-	checkInvariants("after a budget-free day", ledger, now)
+	checkInvariants("after a day of training", ledger, now)
 end
 
 --------------------------------------------------------------------------------

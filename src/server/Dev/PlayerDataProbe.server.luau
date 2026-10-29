@@ -33,7 +33,7 @@
 	The foundation has been validated in Studio, so the whole suite on every Play
 	is noise rather than information. Turn it on whenever persistence changes:
 	the schema, a migration, ProfileOperations, ResourceRegeneration or
-	CompetitionBudget. Then turn it off again.
+	MeetCnAllowance. Then turn it off again.
 
 	THE TESTS THEMSELVES ARE NOT WEAKENED OR REMOVED by this flag, and must not
 	be. The whole suite is one word away whenever the persistence layer is
@@ -58,12 +58,9 @@ local PlayerProfileSchema = require(PlayerDataFolder:WaitForChild("PlayerProfile
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
-local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
 local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
 local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
 local ProgressionReferenceConfig = require(ConfigFolder:WaitForChild("ProgressionReferenceConfig"))
-
-local BUDGET = ProgressionConfig.CompetitionBudget
 
 local passed = 0
 local failed = 0
@@ -206,8 +203,12 @@ local function reconciledV3Save(squat: number, bench: number, deadlift: number):
 	data.bodyweight = { currentKg = 81.5, targetKg = 93 }
 	data.meta = { createdUnix = 1700000000, lastSessionUnix = 1700500000, sessionCount = 77 }
 
-	-- A part-spent Squat pool, so the upgrade has something it could destroy.
-	data.competitionBudget.Squat = { amount = 3.21, lastUpdatedUnix = 1700500000 }
+	-- A part-spent Squat pool, as old saves had (the field was removed in version 10).
+	data.competitionBudget = {
+		Squat = { amount = 3.21, lastUpdatedUnix = 1700500000 },
+		Bench = { amount = 9.43, lastUpdatedUnix = 0 },
+		Deadlift = { amount = 9.43, lastUpdatedUnix = 0 },
+	}
 	data.trainingEnergy = { amount = 45, lastUpdatedUnix = 1700500000 }
 
 	data.version = 3
@@ -256,7 +257,11 @@ local function reconciledV4Save(squat: number, bench: number, deadlift: number):
 	data.bodyweight = { currentKg = 82.4, targetKg = 93 }
 	data.meta = { createdUnix = 1700000000, lastSessionUnix = 1700500000, sessionCount = 103 }
 
-	data.competitionBudget.Squat = { amount = 2.75, lastUpdatedUnix = 1700500000 }
+	data.competitionBudget = {
+		Squat = { amount = 2.75, lastUpdatedUnix = 1700500000 },
+		Bench = { amount = 9.43, lastUpdatedUnix = 0 },
+		Deadlift = { amount = 9.43, lastUpdatedUnix = 0 },
+	}
 	data.trainingEnergy = { amount = 61, lastUpdatedUnix = 1700500000 }
 
 	data.version = 4
@@ -283,10 +288,10 @@ local DAY = 86400
 
 print("=== Player data persistence probe ===")
 print(string.format(
-	"schema version %d  |  budget %.2f EV cap, %.4f EV/h",
+	"schema version %d  |  meet allowance %.0f%% a day, %d days",
 	PlayerProfileSchema.CURRENT_VERSION,
-	BUDGET.CapacityEV,
-	BUDGET.RegenerationEVPerHour
+	ProgressionConfig.MeetCnAllowance.PercentPerDay * 100,
+	ProgressionConfig.MeetCnAllowance.MaxDays
 ))
 print("")
 
@@ -313,17 +318,16 @@ do
 			and data.technique.Lockout == 0
 			and (data.technique :: any).PullStrength == nil
 	)
+	local allowance = buildOf(data).meetAllowance
 	check(
-		"three budgets start full",
-		data.competitionBudget.Squat.amount == BUDGET.CapacityEV
-			and data.competitionBudget.Bench.amount == BUDGET.CapacityEV
-			and data.competitionBudget.Deadlift.amount == BUDGET.CapacityEV
+		"three meet allowances start full",
+		allowance.Squat.amount == ProgressionConfig.MeetCnAllowance.MaxDays
+			and allowance.Bench.amount == ProgressionConfig.MeetCnAllowance.MaxDays
+			and allowance.Deadlift.amount == ProgressionConfig.MeetCnAllowance.MaxDays
 	)
 	check("there is no Training Energy (retired in v8)", (data :: any).trainingEnergy == nil)
-	check(
-		"resource timestamps are 0, not a server start time",
-		data.competitionBudget.Squat.lastUpdatedUnix == 0
-	)
+	check("there is no Competition Budget (removed in v10)", (data :: any).competitionBudget == nil)
+	check("resource timestamps are 0, not a server start time", allowance.Squat.lastUpdatedUnix == 0)
 end
 
 --------------------------------------------------------------------------------
@@ -333,7 +337,7 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 9", finalVersion == 9 and data.version == 9)
+	check("migrated to version 10", finalVersion == 10 and data.version == 10)
 	check("Squat preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
 	check("Bench preserved at 117.5", near(cnOf(data).Bench, 117.5), tostring(cnOf(data).Bench))
 	check("Deadlift preserved at 215.0", near(cnOf(data).Deadlift, 215.0), tostring(cnOf(data).Deadlift))
@@ -348,9 +352,8 @@ do
 	local data = reconciledV2Save(300.0, 200.0, 350.0)
 	PlayerProfileSchema.migrate(data, 2)
 
-	-- Spend some budget so a second pass has something to destroy.
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", 4.0, 1000 * DAY)
-	local spentBudget = data.competitionBudget.Squat.amount
+	-- Use some meet allowance so a second pass has something to destroy.
+	buildOf(data).meetAllowance.Squat = { amount = 1.25, lastUpdatedUnix = 1000 * DAY }
 
 	-- Run the step again directly, as a double-migration bug would.
 	PlayerProfileSchema.migrate(data, 2)
@@ -359,11 +362,11 @@ do
 	check("Squat still 300 after three passes", near(cnOf(data).Squat, 300.0), tostring(cnOf(data).Squat))
 	check("Bench still 200", near(cnOf(data).Bench, 200.0))
 	check("Deadlift still 350", near(cnOf(data).Deadlift, 350.0))
-	check("version still 9", data.version == 9)
+	check("version still 10", data.version == 10)
 	check(
-		"part-spent budget was not silently refilled",
-		near(data.competitionBudget.Squat.amount, spentBudget),
-		string.format("%.4f vs %.4f", data.competitionBudget.Squat.amount, spentBudget)
+		"part-used meet allowance was not silently refilled",
+		buildOf(data).meetAllowance.Squat.amount == 1.25,
+		tostring(buildOf(data).meetAllowance.Squat.amount)
 	)
 end
 
@@ -490,122 +493,6 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("6. Competition Budget is account-wide per lift")
-do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	--[[
-		The frozen rule is that the pool belongs to the LIFT, not to a weight
-		class or a build slot. There is no build dimension in the schema to vary
-		yet, so what is checked here is the shape that guarantees it: exactly one
-		pool per lift, directly under competitionBudget, with nothing keyed by
-		class or slot anywhere near it.
-	]]
-	local poolCount = 0
-	for _ in pairs(data.competitionBudget) do
-		poolCount += 1
-	end
-
-	check("exactly three pools exist", poolCount == 3, tostring(poolCount))
-	check(
-		"one pool per lift, keyed by lift name",
-		data.competitionBudget.Squat ~= nil
-			and data.competitionBudget.Bench ~= nil
-			and data.competitionBudget.Deadlift ~= nil
-	)
-	check(
-		"pools sit outside the build map, at the profile root",
-		buildOf(data).competitionBudget == nil and data.competitionBudget ~= nil
-	)
-
-	-- Spending through the operation reaches the same single pool each time.
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", 2.0, now)
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", 2.0, now)
-
-	local remaining = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", now)
-	check(
-		"two spends hit one shared Squat pool (9.43 - 4 = 5.43)",
-		remaining ~= nil and near(remaining :: number, BUDGET.CapacityEV - 4.0),
-		tostring(remaining)
-	)
-end
-
---------------------------------------------------------------------------------
-print("")
-print("7. consuming Squat budget does not affect Bench or Deadlift")
-do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	local spent = ProfileOperations.consumeCompetitionBudget(data, "Squat", 9.0, now)
-
-	local squat = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", now)
-	local bench = ProfileOperations.getRegeneratedCompetitionBudget(data, "Bench", now)
-	local deadlift = ProfileOperations.getRegeneratedCompetitionBudget(data, "Deadlift", now)
-
-	check("the Squat spend returned effective EV", spent ~= nil and spent > 0)
-	check("Squat is nearly empty", squat ~= nil and near(squat :: number, 0.43), tostring(squat))
-	check("Bench is still full", bench ~= nil and near(bench :: number, BUDGET.CapacityEV), tostring(bench))
-	check("Deadlift is still full", deadlift ~= nil and near(deadlift :: number, BUDGET.CapacityEV), tostring(deadlift))
-end
-
---------------------------------------------------------------------------------
-print("")
-print("8. a resource cannot exceed capacity after regeneration")
-do
-	local data = newProfile()
-
-	-- Empty the Squat pool, then leave it alone for a year.
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", 9.43, 1000 * DAY)
-	local afterYear = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", 1365 * DAY)
-
-	check(
-		"a year of regeneration stops at the 9.43 EV cap",
-		afterYear ~= nil and near(afterYear :: number, BUDGET.CapacityEV),
-		tostring(afterYear)
-	)
-
-end
-
---------------------------------------------------------------------------------
-print("")
-print("9. offline Competition Budget regeneration")
-do
-	local data = newProfile()
-	local start = 1000 * DAY
-
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", 9.43, start)
-
-	local after10h = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", start + 10 * HOUR)
-	local expected10h = 10 * BUDGET.RegenerationEVPerHour
-
-	check(
-		string.format("10 hours offline regenerates %.4f EV", expected10h),
-		after10h ~= nil and near(after10h :: number, expected10h),
-		tostring(after10h)
-	)
-
-	local after1w = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", start + 7 * DAY)
-	check(
-		"a full week refills a spent pool (0.0561 x 168 = 9.42 EV)",
-		after1w ~= nil and near(after1w :: number, BUDGET.CapacityEV, 0.05),
-		tostring(after1w)
-	)
-
-	check("reading does not write: stored amount is still 0", near(data.competitionBudget.Squat.amount, 0))
-
-	-- A backward clock must pause regeneration, never drain the pool.
-	local backward = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", start - 5 * DAY)
-	check(
-		"a clock moving backward grants nothing and drains nothing",
-		backward ~= nil and near(backward :: number, 0),
-		tostring(backward)
-	)
-end
-
---------------------------------------------------------------------------------
-print("")
 print("10. Training Energy is retired (schema version 8)")
 do
 	check("no consumeTrainingEnergy operation", (ProfileOperations :: any).consumeTrainingEnergy == nil)
@@ -644,8 +531,6 @@ do
 	)
 	check("but reading one is still available", typeof(PlayerDataService.getCompetitionNumber) == "function")
 
-	check("consumeCompetitionBudget takes no timestamp", debug.info(PlayerDataService.consumeCompetitionBudget, "a") == 3)
-	check("getRegeneratedCompetitionBudget takes no timestamp", debug.info(PlayerDataService.getRegeneratedCompetitionBudget, "a") == 2)
 	check("awardTrainingProgression takes no timestamp", debug.info(PlayerDataService.awardTrainingProgression, "a") == 3)
 	check("awardTechniqueTraining takes (player, lift, primary, seconds) -- no points, no timestamp",
 		debug.info(PlayerDataService.awardTechniqueTraining, "a") == 4)
@@ -660,17 +545,19 @@ do
 	check("PlayerDataService exposes no RemoteEvent", (PlayerDataService :: any).Remote == nil)
 	check("and no Training Energy operations (retired in v8)", (PlayerDataService :: any).consumeTrainingEnergy == nil
 		and (PlayerDataService :: any).getRegeneratedTrainingEnergy == nil)
+	check("and no Competition Budget operations (removed in v10)", (PlayerDataService :: any).consumeCompetitionBudget == nil
+		and (PlayerDataService :: any).getRegeneratedCompetitionBudget == nil
+		and (ProfileOperations :: any).consumeCompetitionBudget == nil)
 
 	--[[
 		A corrupt stored timestamp must not become a windfall. A NaN or missing
 		timestamp grants nothing rather than a full refill.
 	]]
 	local data = newProfile()
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.CapacityEV, 1000 * DAY)
-	data.competitionBudget.Squat.lastUpdatedUnix = 0 / 0
+	buildOf(data).meetAllowance.Squat = { amount = 0, lastUpdatedUnix = 0 / 0 }
 
-	local fromNaN = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", 1001 * DAY)
-	check("a NaN stored timestamp grants nothing", fromNaN ~= nil and near(fromNaN :: number, 0), tostring(fromNaN))
+	local fromNaN = MeetCnAllowance.daysAvailable(buildOf(data).meetAllowance.Squat, 1001 * DAY)
+	check("a NaN stored timestamp grants nothing", near(fromNaN, 0), tostring(fromNaN))
 end
 
 --------------------------------------------------------------------------------
@@ -694,7 +581,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("bonus. a version-1 save reaches version 9 in one pass")
+print("bonus. a version-1 save reaches version 10 in one pass")
 do
 	--[[
 		The long path. A v1 save predates the rename, so every step from
@@ -716,7 +603,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 9", finalVersion == 9 and data.version == 9)
+	check("reached version 10", finalVersion == 10 and data.version == 10)
 	check("Squat 140 preserved across two migrations", near(cnOf(data).Squat, 140.0), tostring(cnOf(data).Squat))
 	check("Bench 95 preserved", near(cnOf(data).Bench, 95.0))
 	check("Deadlift 170 preserved", near(cnOf(data).Deadlift, 170.0))
@@ -741,345 +628,15 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("15. the first 9.43 EV receives full-rate treatment")
-do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	--[[
-		Consume exactly the capacity, in one span. Every bit of it is inside the
-		allowance, so effective must equal raw with no loss at all.
-	]]
-	local effective, remaining = ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.CapacityEV, now)
-
-	check(
-		"consuming exactly 9.43 EV returns 9.43 effective EV",
-		effective ~= nil and near(effective :: number, BUDGET.CapacityEV),
-		tostring(effective)
-	)
-	check("the pool is now exactly 0", remaining ~= nil and near(remaining :: number, 0), tostring(remaining))
-	check("the multiplier was 1.0 throughout", near(CompetitionBudget.multiplierAt(BUDGET.CapacityEV), 1.0))
-
-	-- Many small awards must behave the same as one large one.
-	local fresh = newProfile()
-	local total = 0
-	for _ = 1, 100 do
-		local e = ProfileOperations.consumeCompetitionBudget(fresh, "Squat", BUDGET.CapacityEV / 100, now)
-		total += (e :: number)
-	end
-	check(
-		"100 small awards totalling 9.43 EV also return 9.43 effective",
-		near(total, BUDGET.CapacityEV, 0.0001),
-		tostring(total)
-	)
-end
-
---------------------------------------------------------------------------------
-print("")
-print("16. overflow uses k = 3")
-do
-	-- Recomputed here from config, so a drift between config and module is caught.
-	local K = BUDGET.OverflowK * BUDGET.UnitEV
-
-	check(
-		"the curve scale is k x UnitEV = 3 x 1.886 = 5.658",
-		near(K, 5.658, 0.001) and near(CompetitionBudget.CurveScaleEV, K),
-		string.format("config %.4f, module %.4f", K, CompetitionBudget.CurveScaleEV)
-	)
-	check("OverflowK is 3 as frozen", BUDGET.OverflowK == 3)
-
-	--[[
-		The instantaneous multiplier at a depth of one normal meet must be
-		1/(1 + 1.886/5.658) = 0.75, which is exactly the discrete model's sixth-meet
-		multiplier. That shared value is what anchors the continuous curve to the
-		approved one.
-	]]
-	check(
-		"at one meet deep the multiplier is 0.75",
-		near(CompetitionBudget.multiplierAt(-BUDGET.UnitEV), 0.75, 0.0001),
-		tostring(CompetitionBudget.multiplierAt(-BUDGET.UnitEV))
-	)
-	check(
-		"at two meets deep it is 0.60",
-		near(CompetitionBudget.multiplierAt(-2 * BUDGET.UnitEV), 0.60, 0.0001),
-		tostring(CompetitionBudget.multiplierAt(-2 * BUDGET.UnitEV))
-	)
-	check(
-		"at three meets deep it is 0.50",
-		near(CompetitionBudget.multiplierAt(-3 * BUDGET.UnitEV), 0.50, 0.0001),
-		tostring(CompetitionBudget.multiplierAt(-3 * BUDGET.UnitEV))
-	)
-	check("at zero depth it is exactly 1.0", near(CompetitionBudget.multiplierAt(0), 1.0))
-	check("with allowance remaining it is exactly 1.0", near(CompetitionBudget.multiplierAt(5.0), 1.0))
-end
-
---------------------------------------------------------------------------------
-print("")
-print("17. additional legitimate EV never reaches a zero multiplier")
-do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	-- Five years of thirty meets a week, with no regeneration at all.
-	local absurd = 260 * 30 * BUDGET.UnitEV
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", absurd, now)
-
-	local amount = data.competitionBudget.Squat.amount
-	local multiplier = CompetitionBudget.multiplierAt(amount)
-
-	check("the pool went far negative, as intended", amount < -10000, tostring(amount))
-	check("the multiplier is still strictly above zero", multiplier > 0, tostring(multiplier))
-	check("and it is tiny, as intended", multiplier < 0.001, tostring(multiplier))
-
-	-- One more award must still pay something real.
-	local effective = ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.UnitEV, now)
-	check("a further meet still earns effective EV above zero", effective ~= nil and (effective :: number) > 0, tostring(effective))
-	check("that EV is not NaN", effective ~= nil and (effective :: number) == (effective :: number))
-
-	check("the amount is still finite after an absurd spend", amount == amount and amount > -math.huge)
-	check("no negative floor refused any of it", true)
-end
-
---------------------------------------------------------------------------------
-print("")
-print("18. the 5/10/20/30 normal-meet-equivalent curve")
-do
-	local now = 1000 * DAY
-
-	--[[
-		Each meet is consumed as THREE separate attempt-sized awards rather than
-		one lump, to prove the continuous form does not depend on award size.
-	]]
-	local function cumulativeEffective(meets: number): number
-		local data = newProfile()
-		local total = 0
-		for _ = 1, meets do
-			for _ = 1, 3 do
-				local e = ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.UnitEV / 3, now)
-				total += (e :: number)
-			end
-		end
-		return total
-	end
-
-	local at5 = cumulativeEffective(5)
-	local at10 = cumulativeEffective(10)
-	local at20 = cumulativeEffective(20)
-	local at30 = cumulativeEffective(30)
-
-	print(string.format(
-		"      cumulative effective EV:  5 -> %.4f   10 -> %.4f   20 -> %.4f   30 -> %.4f",
-		at5, at10, at20, at30
-	))
-	print(string.format(
-		"      normalised to 5 meets:     1.000      %.3f      %.3f      %.3f",
-		at10 / at5, at20 / at5, at30 / at5
-	))
-
-	check("5 meets is the full allowance, 9.43 EV", near(at5, BUDGET.CapacityEV, 0.001), tostring(at5))
-
-	--[[
-		Expected values are the closed form of the integral:
-
-			cumulative = C + K x ln(1 + (raw - C) / K)
-
-		These are the CONTINUOUS figures, which run about 3.8% above the discrete
-		sum that was approved. The difference and its cause are quantified in the
-		increment notes; k stays at 3 as frozen.
-	]]
-	local K = CompetitionBudget.CurveScaleEV
-	local function expected(meets: number): number
-		local raw = meets * BUDGET.UnitEV
-		if raw <= BUDGET.CapacityEV then
-			return raw
-		end
-		return BUDGET.CapacityEV + K * math.log(1 + (raw - BUDGET.CapacityEV) / K)
-	end
-
-	check("10 meets matches the closed form", near(at10, expected(10), 0.002), string.format("%.4f vs %.4f", at10, expected(10)))
-	check("20 meets matches the closed form", near(at20, expected(20), 0.002), string.format("%.4f vs %.4f", at20, expected(20)))
-	check("30 meets matches the closed form", near(at30, expected(30), 0.002), string.format("%.4f vs %.4f", at30, expected(30)))
-
-	check("the curve is monotonically increasing", at5 < at10 and at10 < at20 and at20 < at30)
-	check("and strongly diminishing: 6x the meets is under 2.4x the progression", at30 / at5 < 2.4, tostring(at30 / at5))
-	check("10 meets lands near the approved 1.53x meet-channel ratio", near(at10 / at5, 1.53, 0.07), tostring(at10 / at5))
-	check("20 meets lands near the approved 2.00x", near(at20 / at5, 2.00, 0.09), tostring(at20 / at5))
-	check("30 meets lands near the approved 2.26x", near(at30 / at5, 2.26, 0.09), tostring(at30 / at5))
-
-	-- Path independence: award size must not change the total.
-	local lump = newProfile()
-	local lumpTotal = 0
-	for _ = 1, 30 do
-		local e = ProfileOperations.consumeCompetitionBudget(lump, "Squat", BUDGET.UnitEV, now)
-		lumpTotal += (e :: number)
-	end
-	check(
-		"30 meets as 30 lumps equals 30 meets as 90 attempts",
-		near(lumpTotal, at30, 0.0001),
-		string.format("%.6f vs %.6f", lumpTotal, at30)
-	)
-end
-
---------------------------------------------------------------------------------
-print("")
-print("19. Squat overflow does not affect Bench or Deadlift")
-do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	-- Drive Squat deep into overflow: twenty meets' worth.
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", 20 * BUDGET.UnitEV, now)
-
-	local sq, sqMult, sqState = ProfileOperations.getCompetitionBudgetState(data, "Squat", now)
-	local be, beMult, beState = ProfileOperations.getCompetitionBudgetState(data, "Bench", now)
-	local dl, dlMult, dlState = ProfileOperations.getCompetitionBudgetState(data, "Deadlift", now)
-
-	check("Squat is deep in overflow", sq ~= nil and (sq :: number) < -25, tostring(sq))
-	check("Squat's multiplier is well below 1", sqMult ~= nil and (sqMult :: number) < 0.2, tostring(sqMult))
-	check("Squat reads FATIGUED", sqState == "FATIGUED", tostring(sqState))
-
-	check("Bench is untouched at full capacity", be ~= nil and near(be :: number, BUDGET.CapacityEV), tostring(be))
-	check("Bench's multiplier is exactly 1.0", beMult ~= nil and near(beMult :: number, 1.0))
-	check("Bench reads FRESH", beState == "FRESH", tostring(beState))
-
-	check("Deadlift is untouched at full capacity", dl ~= nil and near(dl :: number, BUDGET.CapacityEV), tostring(dl))
-	check("Deadlift's multiplier is exactly 1.0", dlMult ~= nil and near(dlMult :: number, 1.0))
-	check("Deadlift reads FRESH", dlState == "FRESH", tostring(dlState))
-
-	-- A Bench award earns full rate even while Squat is exhausted.
-	local benchEV = ProfileOperations.consumeCompetitionBudget(data, "Bench", BUDGET.UnitEV, now)
-	check(
-		"a Bench award still earns full effective EV",
-		benchEV ~= nil and near(benchEV :: number, BUDGET.UnitEV),
-		tostring(benchEV)
-	)
-end
-
---------------------------------------------------------------------------------
-print("")
-print("20. regeneration from overflow, and the 9.43 EV cap")
-do
-	local data = newProfile()
-	local start = 1000 * DAY
-
-	-- Thirty meets deep: the heaviest week the design treats as legitimate.
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", 30 * BUDGET.UnitEV, start)
-	local depleted = data.competitionBudget.Squat.amount
-
-	check("thirty meets lands at about -47.15 EV", near(depleted, -47.15, 0.01), tostring(depleted))
-	check(
-		"the earlier -5x capacity floor would have refused exactly this",
-		near(depleted, -5 * BUDGET.CapacityEV, 0.01),
-		"which is why that floor was removed"
-	)
-
-	local R = BUDGET.RegenerationEVPerHour
-	local checkpoints = { 1, 12, 24, 72, 168 }
-	local labels = { "1 hour", "12 hours", "24 hours", "72 hours", "1 week" }
-
-	for index, hours in ipairs(checkpoints) do
-		local amount = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", start + hours * HOUR)
-		local expected = depleted + hours * R
-		check(
-			string.format("%s recovers to %.4f EV", labels[index], expected),
-			amount ~= nil and near(amount :: number, expected, 0.0001),
-			tostring(amount)
-		)
-	end
-
-	-- Full recovery, and never above the cap.
-	local hoursToFull = (BUDGET.CapacityEV - depleted) / R
-	local atFull = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", start + math.ceil(hoursToFull) * HOUR)
-	check(
-		string.format("fully recovers after about %.0f hours (%.1f weeks)", hoursToFull, hoursToFull / 168),
-		atFull ~= nil and near(atFull :: number, BUDGET.CapacityEV, 0.01),
-		tostring(atFull)
-	)
-
-	local wayLater = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", start + 365 * DAY)
-	check(
-		"a year later it is still exactly 9.43, never banked above the cap",
-		wayLater ~= nil and near(wayLater :: number, BUDGET.CapacityEV),
-		tostring(wayLater)
-	)
-
-	-- Regeneration restores the multiplier toward full freshness.
-	local multAtDepleted = CompetitionBudget.multiplierAt(depleted)
-	local multAfterWeek = CompetitionBudget.multiplierAt(depleted + 168 * R)
-	check(
-		"one week of rest raises the multiplier",
-		multAfterWeek > multAtDepleted,
-		string.format("%.6f -> %.6f", multAtDepleted, multAfterWeek)
-	)
-	check("and a full recovery returns it to exactly 1.0", near(CompetitionBudget.multiplierAt(BUDGET.CapacityEV), 1.0))
-end
-
---------------------------------------------------------------------------------
-print("")
-print("21. Competition Budget can continue through overflow")
-do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	-- Exhaust the allowance exactly.
-	ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.CapacityEV, now)
-
-	--[[
-		THE KEY DISTINCTION. An all-or-nothing resource would refuse here. A
-		Competition Budget must not, because its overflow is never hard-zeroed.
-	]]
-	local e1, r1 = ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.UnitEV, now)
-	check("an award past empty is NOT refused", e1 ~= nil, "nil would mean refused")
-	check("it earns real effective EV", e1 ~= nil and (e1 :: number) > 0, tostring(e1))
-	check("but less than full rate", e1 ~= nil and (e1 :: number) < BUDGET.UnitEV, tostring(e1))
-	check("the pool is now negative", r1 ~= nil and (r1 :: number) < 0, tostring(r1))
-
-	-- Ten more, each still paying something, each paying less than the last.
-	local previous = e1 :: number
-	local allPositive = true
-	local allDecreasing = true
-	for _ = 1, 10 do
-		local e = ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.UnitEV, now)
-		if e == nil or (e :: number) <= 0 then
-			allPositive = false
-			break
-		end
-		if (e :: number) >= previous then
-			allDecreasing = false
-		end
-		previous = e :: number
-	end
-
-	check("ten further awards all pay above zero", allPositive)
-	check("and each pays strictly less than the one before", allDecreasing)
-
-	-- Malformed requests still fail, which is the only way a budget call fails.
-	check("a zero award is refused as malformed", ProfileOperations.consumeCompetitionBudget(data, "Squat", 0, now) == nil)
-	check("a negative award is refused (no refunds)", ProfileOperations.consumeCompetitionBudget(data, "Squat", -5, now) == nil)
-	check("a NaN award is refused", ProfileOperations.consumeCompetitionBudget(data, "Squat", 0 / 0, now) == nil)
-	check("an infinite award is refused", ProfileOperations.consumeCompetitionBudget(data, "Squat", math.huge, now) == nil)
-	check("an unknown lift is refused", ProfileOperations.consumeCompetitionBudget(data, "Curl", 1, now) == nil)
-	check("the amount survived every malformed request", data.competitionBudget.Squat.amount == data.competitionBudget.Squat.amount)
-end
-
---------------------------------------------------------------------------------
-print("")
-print("22. a budget call returns a number (effective EV)")
-do
-	local budgetReturn = ProfileOperations.consumeCompetitionBudget(newProfile(), "Squat", 1, 1000 * DAY)
-	check("consumeCompetitionBudget returns a number", typeof(budgetReturn) == "number", typeof(budgetReturn))
-end
-
---------------------------------------------------------------------------------
-print("")
 print("23. no meet counter is stored anywhere")
 do
 	local data = newProfile()
 
 	--[[
-		The frozen rule is that the data model is independent of how many meets
-		were played. What is checked is that no such field exists, at the profile
-		root or inside a budget pool.
+		The data model does not count meets: the meet allowance is driven by the
+		weights lifted, not by how many meets were played. No such field exists at
+		the profile root or inside a meet allowance. (Local wins are a career
+		count, career.localWins, not a meet counter.)
 	]]
 	local forbidden = {
 		"meetCount", "meetsThisWeek", "meetNumber", "meets", "attemptCount",
@@ -1088,72 +645,30 @@ do
 
 	local rootClean = true
 	local poolClean = true
+	local allowance = buildOf(data).meetAllowance
 
 	for _, name in ipairs(forbidden) do
 		if (data :: any)[name] ~= nil then
 			rootClean = false
 		end
 		for _, lift in ipairs(ProgressionConfig.Lifts) do
-			if ((data.competitionBudget :: any)[lift] :: any)[name] ~= nil then
+			if allowance[lift][name] ~= nil then
 				poolClean = false
 			end
 		end
 	end
 
 	check("no meet or attempt counter at the profile root", rootClean)
-	check("no meet or attempt counter inside any budget pool", poolClean)
+	check("no meet or attempt counter inside any meet allowance", poolClean)
 
-	-- A pool holds exactly the two fields the regeneration model needs.
+	-- An allowance holds exactly the two fields the regeneration model needs.
 	local fieldCount = 0
-	for _ in pairs(data.competitionBudget.Squat) do
+	for _ in pairs(allowance.Squat) do
 		fieldCount += 1
 	end
-	check("a budget pool holds exactly 2 fields: amount and lastUpdatedUnix", fieldCount == 2, tostring(fieldCount))
-	check(
-		"and they are those two",
-		data.competitionBudget.Squat.amount ~= nil and data.competitionBudget.Squat.lastUpdatedUnix ~= nil
-	)
-
-	--[[
-		The decisive behavioural proof: consumption responds to EV SIZE, not to a
-		count of events. Six awards of 1/6 of a meet must equal one award of a
-		whole meet, which no counter-driven implementation could manage.
-	]]
-	local now = 1000 * DAY
-	local bySix = newProfile()
-	local byOne = newProfile()
-
-	ProfileOperations.consumeCompetitionBudget(bySix, "Squat", 12 * BUDGET.UnitEV, now)
-	local sixTotal = 0
-	for _ = 1, 6 do
-		local e = ProfileOperations.consumeCompetitionBudget(bySix, "Squat", BUDGET.UnitEV / 6, now)
-		sixTotal += (e :: number)
-	end
-
-	ProfileOperations.consumeCompetitionBudget(byOne, "Squat", 12 * BUDGET.UnitEV, now)
-	local oneTotal = ProfileOperations.consumeCompetitionBudget(byOne, "Squat", BUDGET.UnitEV, now)
-
-	check(
-		"six fractional awards equal one whole award: EV drives it, not counts",
-		near(sixTotal, oneTotal :: number, 0.0001),
-		string.format("%.8f vs %.8f", sixTotal, oneTotal :: number)
-	)
-
-	-- A 0.4 EV attempt and a 1.0 EV attempt must advance the state differently.
-	local small = newProfile()
-	local large = newProfile()
-	ProfileOperations.consumeCompetitionBudget(small, "Squat", 0.4, now)
-	ProfileOperations.consumeCompetitionBudget(large, "Squat", 1.0, now)
-	check(
-		"a 0.4 EV attempt advances the state by 0.4, not by one event",
-		near(small.competitionBudget.Squat.amount, BUDGET.CapacityEV - 0.4),
-		tostring(small.competitionBudget.Squat.amount)
-	)
-	check(
-		"a 1.0 EV attempt advances it by 1.0",
-		near(large.competitionBudget.Squat.amount, BUDGET.CapacityEV - 1.0),
-		tostring(large.competitionBudget.Squat.amount)
-	)
+	check("a meet allowance holds exactly 2 fields: amount and lastUpdatedUnix", fieldCount == 2, tostring(fieldCount))
+	check("and they are those two", allowance.Squat.amount ~= nil and allowance.Squat.lastUpdatedUnix ~= nil)
+	check("the Competition Budget is gone from a new profile", (data :: any).competitionBudget == nil)
 end
 --------------------------------------------------------------------------------
 print("")
@@ -1204,7 +719,7 @@ do
 	local data = reconciledV3Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 3)
 
-	check("migrated to version 9", finalVersion == 9 and data.version == 9)
+	check("migrated to version 10", finalVersion == 10 and data.version == 10)
 
 	-- The rule that this whole checkpoint exists to get right.
 	check("Squat Scale is UNPROVEN after migration", scaleOf(data).Squat == 0, tostring(scaleOf(data).Squat))
@@ -1221,8 +736,7 @@ do
 	check("trained Squat CN preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
 	check("trained Bench CN preserved at 117.5", near(cnOf(data).Bench, 117.5))
 	check("trained Deadlift CN preserved at 215.0", near(cnOf(data).Deadlift, 215.0))
-	check("part-spent Squat budget preserved at 3.21", near(data.competitionBudget.Squat.amount, 3.21), tostring(data.competitionBudget.Squat.amount))
-	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
+	check("the old Competition Budget is removed (v10)", (data :: any).competitionBudget == nil)
 	check("Training Energy removed by the v8 step", data.trainingEnergy == nil)
 	check("technique PressPower 2200 preserved", data.technique.PressPower == 2200)
 	check("technique PullStrength 350 removed by the v7 step", (data.technique :: any).PullStrength == nil)
@@ -1592,7 +1106,7 @@ do
 		Bench = cnOf(data).Bench,
 		Deadlift = cnOf(data).Deadlift,
 	}
-	local budgetBefore = data.competitionBudget.Squat.amount
+	local allowanceBefore = buildOf(data).meetAllowance.Squat.amount
 	local techniqueBefore = data.technique.PressPower
 	local bodyweightBefore = data.bodyweight.currentKg
 	local versionBefore = data.version
@@ -1617,7 +1131,7 @@ do
 	check("CN is still the 25 kg starting value", near(cnOf(data).Squat, 25.0))
 
 	-- AND NOTHING ELSE MOVED EITHER.
-	check("Competition Budget untouched", near(data.competitionBudget.Squat.amount, budgetBefore))
+	check("meet allowance untouched", buildOf(data).meetAllowance.Squat.amount == allowanceBefore)
 	check("technique untouched", data.technique.PressPower == techniqueBefore)
 	check("bodyweight untouched", near(data.bodyweight.currentKg, bodyweightBefore))
 	check("schema version untouched", data.version == versionBefore)
@@ -1632,7 +1146,7 @@ do
 		debug.info(ProfileOperations.raiseCompetitionScale, "a") == 4,
 		tostring(debug.info(ProfileOperations.raiseCompetitionScale, "a"))
 	)
-	check("no budget timestamp was stamped", data.competitionBudget.Squat.lastUpdatedUnix == 0)
+	check("no allowance timestamp was stamped", buildOf(data).meetAllowance.Squat.lastUpdatedUnix == 0)
 end
 
 --------------------------------------------------------------------------------
@@ -1681,7 +1195,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 4)
 
-	check("migrated 4 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
+	check("migrated 4 to 10", finalVersion == 10 and data.version == 10, tostring(data.version))
 
 	--[[
 		NO OFFLINE TRAINING CREDIT. A save that predates the station cannot
@@ -1719,15 +1233,14 @@ do
 	]]
 	check("PullStrength removed (checkpoint 9)", (data.technique :: any).PullStrength == nil)
 
-	check("part-spent Squat budget preserved", near(data.competitionBudget.Squat.amount, 2.75))
-	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
+	check("the old Competition Budget is removed (v10)", (data :: any).competitionBudget == nil)
 	check("Training Energy removed by the v8 step", data.trainingEnergy == nil)
 	check("bodyweight preserved", near(data.bodyweight.currentKg, 82.4) and near(data.bodyweight.targetKg, 93))
 	check("meta preserved", data.meta.sessionCount == 103 and data.meta.createdUnix == 1700000000)
 end
 
 --------------------------------------------------------------------------------
-print("35. EVERY historical version gap still reaches version 9")
+print("35. EVERY historical version gap still reaches version 10")
 do
 	--[[
 		The rule this guards is in PlayerProfileSchema: a step must exist for every
@@ -1741,7 +1254,7 @@ do
 	oneToFive.technique.PullStrength = nil
 
 	local v1 = PlayerProfileSchema.migrate(oneToFive, 1)
-	check("version 1 reaches 9", v1 == 9 and oneToFive.version == 9, tostring(v1))
+	check("version 1 reaches 10", v1 == 10 and oneToFive.version == 10, tostring(v1))
 	check("v1 ends without PullStrength (removed in v7)", oneToFive.technique.PullStrength == nil)
 	check("v1 gained the CN allowance", typeof(oneToFive.cnAllowance) == "table"
 		and oneToFive.cnAllowance.spentToday == 0)
@@ -1750,17 +1263,17 @@ do
 
 	local twoToFive = reconciledV2Save(182.5, 117.5, 215.0)
 	local v2 = PlayerProfileSchema.migrate(twoToFive, 2)
-	check("version 2 reaches 9", v2 == 9 and twoToFive.version == 9, tostring(v2))
+	check("version 2 reaches 10", v2 == 10 and twoToFive.version == 10, tostring(v2))
 	check("v2 kept its real lifts through four steps", near(cnOf(twoToFive).Squat, 182.5))
 	check("v2 gained the technique allowance", typeof(twoToFive.techniqueAllowance) == "table"
 		and twoToFive.techniqueAllowance.dayKey == DayKey.UNSTAMPED)
 
 	local threeToFive = reconciledV3Save(200.0, 130.0, 240.0)
 	local v3 = PlayerProfileSchema.migrate(threeToFive, 3)
-	check("version 3 reaches 9", v3 == 9 and threeToFive.version == 9, tostring(v3))
+	check("version 3 reaches 10", v3 == 10 and threeToFive.version == 10, tostring(v3))
 	check("v3 is still UNPROVEN, never seeded from CN", scaleOf(threeToFive).Squat == 0,
 		tostring(scaleOf(threeToFive).Squat))
-	check("v3 kept its part-spent budget", near(threeToFive.competitionBudget.Squat.amount, 3.21))
+	check("v3 lost its old budget (removed in v10)", (threeToFive :: any).competitionBudget == nil)
 	check("v3 gained all three version-5 records", typeof(threeToFive.cnAllowance) == "table"
 		and typeof(threeToFive.techniqueAllowance) == "table"
 		and typeof(threeToFive.trainingTimeToday) == "table")
@@ -1768,7 +1281,7 @@ do
 	-- A brand new profile is already current and must skip every step.
 	local fresh = newProfile() :: any
 	local vNew = PlayerProfileSchema.migrate(fresh, 0)
-	check("a new profile is already version 9", vNew == 9 and fresh.version == 9)
+	check("a new profile is already version 10", vNew == 10 and fresh.version == 10)
 
 	--[[
 		IDEMPOTENT. Running the step again on an already-migrated profile must not
@@ -1827,7 +1340,7 @@ do
 	check("the reload is a separate table", near(data.cnAllowance.spentToday, 2.8109))
 
 	-- MIGRATING AN ALREADY-CURRENT PROFILE AGAIN MUST NOT RESET A LIVE DAY.
-	check("reload is still version 9", reloaded.version == 9)
+	check("reload is still version 10", reloaded.version == 10)
 end
 
 --------------------------------------------------------------------------------
@@ -1922,7 +1435,7 @@ do
 	check("repair left CN alone", near(cnOf(negative).Squat, 165.0))
 	check("repair left Scale alone", near(scaleOf(negative).Squat, 177.5))
 	check("repair left technique alone", negative.technique.PressPower == 2350)
-	check("repair left the budget alone", near(negative.competitionBudget.Squat.amount, 2.75))
+	check("the old budget is removed (v10)", (negative :: any).competitionBudget == nil)
 end
 
 --[[
@@ -1958,7 +1471,7 @@ do
 	local finalVersion = PlayerProfileSchema.migrate(data, 5)
 	local build = data.builds["83 kg"]
 
-	check("migrated to version 9", finalVersion == 9 and data.version == 9)
+	check("migrated to version 10", finalVersion == 10 and data.version == 10)
 	check("the build is filed under the bodyweight's class, 83 kg", typeof(build) == "table")
 	check("and it is the only build (no phantom 59 kg)", countBuilds(data) == 1, tostring(countBuilds(data)))
 	check("Squat CN moved exactly", build and build.competitionNumber.Squat == 182.5)
@@ -1974,7 +1487,7 @@ do
 
 	-- NOTHING ACCOUNT-WIDE MOVED.
 	check("technique untouched", data.technique.PressPower == 2350 and data.technique.Lockout == 128)
-	check("budget untouched", near(data.competitionBudget.Squat.amount, 2.75))
+	check("the old budget is removed (v10)", (data :: any).competitionBudget == nil)
 	check("daily allowance untouched", data.cnAllowance.spentToday == 1.5 and data.cnAllowance.dayKey == "2026-10-27")
 	check("bodyweight untouched", data.bodyweight.currentKg == 82.4)
 	check("meta untouched", data.meta.sessionCount == 103)
@@ -2036,7 +1549,7 @@ do
 	check("the best Total survived", build and build.bestTotalKg == 575.0)
 	check("no flat field was planted back", data.competitionNumber == nil and data.competitionScale == nil)
 	check("still one build", countBuilds(data) == 1)
-	check("back at version 9", data.version == 9)
+	check("back at version 10", data.version == 10)
 end
 
 --------------------------------------------------------------------------------
@@ -2143,7 +1656,7 @@ do
 	local build = data.builds["83 kg"]
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 6)
-	check("migrated 6 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
+	check("migrated 6 to 10", finalVersion == 10 and data.version == 10, tostring(data.version))
 	check("PullStrength is gone", data.technique.PullStrength == nil)
 	check("the five technique stats are untouched", data.technique.SquatControl == 1550
 		and data.technique.DepthAwareness == 975 and data.technique.StartControl == 525
@@ -2151,8 +1664,8 @@ do
 	check("the build is the same build, numbers exact", data.builds["83 kg"] == build
 		and build.competitionNumber.Squat == 182.5 and build.competitionScale.Deadlift == 212.5
 		and build.bestTotalKg == PlayerProfileSchema.NO_TOTAL)
-	check("budget, allowance, bodyweight and meta untouched (Training Energy removed)",
-		near(data.competitionBudget.Squat.amount, 2.75) and data.trainingEnergy == nil
+	check("allowance, bodyweight and meta untouched (Training Energy and the budget removed)",
+		(data :: any).competitionBudget == nil and data.trainingEnergy == nil
 			and data.cnAllowance.spentToday == 1.5 and data.bodyweight.currentKg == 82.4
 			and data.meta.sessionCount == 103)
 
@@ -2160,15 +1673,15 @@ do
 	PlayerProfileSchema.migrate(data, 6)
 	data.version = 2
 	PlayerProfileSchema.migrate(data, 2)
-	check("running it again changes nothing", data.version == 9 and data.technique.PullStrength == nil
+	check("running it again changes nothing", data.version == 10 and data.technique.PullStrength == nil
 		and data.technique.Lockout == 128 and data.builds["83 kg"].competitionNumber.Squat == 182.5)
 
-	-- A save with no technique table at all still reaches version 9 (no crash).
+	-- A save with no technique table at all still reaches version 10 (no crash).
 	local broken = reconciledV5Save(150.0, 100.0, 180.0, 53)
 	PlayerProfileSchema.migrate(broken, 5)
 	broken.version = 6
 	broken.technique = nil
-	check("a v6 save with no technique table reaches 9", PlayerProfileSchema.migrate(broken, 6) == 9)
+	check("a v6 save with no technique table reaches 10", PlayerProfileSchema.migrate(broken, 6) == 10)
 
 	local reloaded = saveAndReload(data)
 	check("still no PullStrength after a save and reload", reloaded.technique.PullStrength == nil)
@@ -2178,25 +1691,24 @@ end
 print("")
 print("45. version 7 to 8 removes Training Energy and nothing else")
 do
-	-- A version-7 save as it is live today: one build, the budget, and the old trainingEnergy field.
+	-- A version-7 save: one build, the old budget, and the old trainingEnergy field.
 	local data = reconciledV5Save(182.5, 117.5, 215.0, 82.4)
 	PlayerProfileSchema.migrate(data, 5)
 	data.version = 7
 	data.trainingEnergy = { amount = 61, lastUpdatedUnix = 1700500000 }
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 7)
-	check("migrated 7 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
+	check("migrated 7 to 10", finalVersion == 10 and data.version == 10, tostring(data.version))
 	check("Training Energy is gone", data.trainingEnergy == nil)
-	check("the Competition Budget is kept, part-spent amount exact", near(data.competitionBudget.Squat.amount, 2.75)
-		and data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
+	check("the old Competition Budget is gone too (v10)", (data :: any).competitionBudget == nil)
 	check("CN, Scale and technique untouched", data.builds["83 kg"].competitionNumber.Squat == 182.5
 		and data.builds["83 kg"].competitionScale.Deadlift == 212.5 and data.technique.Lockout == 128)
 	check("allowance, bodyweight and meta untouched", data.cnAllowance.spentToday == 1.5
 		and data.bodyweight.currentKg == 82.4 and data.meta.sessionCount == 103)
 
 	PlayerProfileSchema.migrate(data, 7)
-	check("running it again changes nothing", data.version == 9 and data.trainingEnergy == nil
-		and near(data.competitionBudget.Squat.amount, 2.75))
+	check("running it again changes nothing", data.version == 10 and data.trainingEnergy == nil
+		and (data :: any).competitionBudget == nil)
 
 	local reloaded = saveAndReload(data)
 	check("still no Training Energy after a save and reload", reloaded.trainingEnergy == nil)
@@ -2216,7 +1728,7 @@ do
 	data.career = nil
 	local finalVersion = PlayerProfileSchema.migrate(data, 8)
 	local build = data.builds["83 kg"]
-	check("migrated 8 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
+	check("migrated 8 to 10", finalVersion == 10 and data.version == 10, tostring(data.version))
 	local allFull = true
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
 		local resource = build.meetAllowance and build.meetAllowance[lift]
@@ -2228,15 +1740,15 @@ do
 	check("the career starts at 0 Local wins", data.career and data.career.localWins == 0)
 	check("CN, Scale, best Total untouched", build.competitionNumber.Squat == 182.5
 		and build.competitionScale.Deadlift == 212.5 and build.bestTotalKg == PlayerProfileSchema.NO_TOTAL)
-	check("budget, daily allowance, technique, bodyweight and meta untouched",
-		near(data.competitionBudget.Squat.amount, 2.75) and data.cnAllowance.spentToday == 1.5
+	check("daily allowance, technique, bodyweight and meta untouched (the budget removed)",
+		(data :: any).competitionBudget == nil and data.cnAllowance.spentToday == 1.5
 			and data.technique.Lockout == 128 and data.bodyweight.currentKg == 82.4 and data.meta.sessionCount == 103)
 
 	-- Idempotent: a part-spent allowance and a win survive running the step again.
 	build.meetAllowance.Squat = { amount = 0.75, lastUpdatedUnix = 1761600000 }
 	data.career.localWins = 4
 	PlayerProfileSchema.migrate(data, 8)
-	check("running it again changes nothing", data.version == 9 and build.meetAllowance.Squat.amount == 0.75
+	check("running it again changes nothing", data.version == 10 and build.meetAllowance.Squat.amount == 0.75
 		and build.meetAllowance.Squat.lastUpdatedUnix == 1761600000 and data.career.localWins == 4)
 	local reloaded = saveAndReload(data)
 	check("kept after a save and reload", reloaded.builds["83 kg"].meetAllowance.Squat.amount == 0.75
@@ -2337,6 +1849,39 @@ do
 	check("a Local win counts", ProfileOperations.addLocalWin(d10) == 1 and ProfileOperations.addLocalWin(d10) == 2)
 	d10.career = { localWins = 0 / 0 }
 	check("a corrupt career is refused", ProfileOperations.addLocalWin(d10) == nil)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("48. version 9 to 10 removes the Competition Budget and nothing else")
+do
+	-- A version-9 save as it is live today: builds with a part-used meet allowance, a win, and the old budget.
+	local data = reconciledV5Save(182.5, 117.5, 215.0, 82.4)
+	PlayerProfileSchema.migrate(data, 5)
+	data.version = 9
+	data.competitionBudget = {
+		Squat = { amount = 2.75, lastUpdatedUnix = 1700500000 },
+		Bench = { amount = 9.43, lastUpdatedUnix = 0 },
+		Deadlift = { amount = 9.43, lastUpdatedUnix = 0 },
+	}
+	local build = data.builds["83 kg"]
+	build.meetAllowance.Squat = { amount = 0.75, lastUpdatedUnix = 1761600000 }
+	data.career.localWins = 3
+
+	local finalVersion = PlayerProfileSchema.migrate(data, 9)
+	check("migrated 9 to 10", finalVersion == 10 and data.version == 10, tostring(data.version))
+	check("the Competition Budget is gone", (data :: any).competitionBudget == nil)
+	check("the meet allowance and the wins are untouched", build.meetAllowance.Squat.amount == 0.75
+		and build.meetAllowance.Squat.lastUpdatedUnix == 1761600000 and data.career.localWins == 3)
+	check("CN, Scale, technique, daily counters, bodyweight and meta untouched",
+		build.competitionNumber.Squat == 182.5 and build.competitionScale.Deadlift == 212.5
+			and data.technique.Lockout == 128 and data.cnAllowance.spentToday == 1.5
+			and data.bodyweight.currentKg == 82.4 and data.meta.sessionCount == 103)
+
+	PlayerProfileSchema.migrate(data, 9)
+	check("running it again changes nothing", data.version == 10 and (data :: any).competitionBudget == nil
+		and build.meetAllowance.Squat.amount == 0.75)
+	check("still gone after a save and reload", (saveAndReload(data) :: any).competitionBudget == nil)
 end
 
 --------------------------------------------------------------------------------

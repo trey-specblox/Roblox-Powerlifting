@@ -21,7 +21,7 @@
 	There is deliberately no setField(path, value) here. Every function below
 	expresses a legitimate thing the game may do, validates its own arguments,
 	and can therefore enforce an invariant that a generic path-setter could not.
-	A future reward system asks to ADD Competition Number or to SPEND budget; it
+	A reward system asks to ADD Competition Number or to SETTLE an allowance; it
 	never replaces an authoritative value outright.
 
 	SERVER ONLY, AND NO CLIENT INPUT REACHES HERE
@@ -48,8 +48,6 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
-local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceRegeneration"))
-local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
 local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
 local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
@@ -64,30 +62,9 @@ local ProfileOperations = {}
 type ProfileData = PlayerProfileSchema.ProfileData
 
 --[[
-	=========================================================================
-	TWO RESOURCES, TWO DELIBERATELY DIFFERENT SPENDING SEMANTICS
-	=========================================================================
-
-	These must not be made to behave alike. The difference is a frozen design
-	rule, not an implementation detail.
-
-	COMPETITION BUDGET -- CONSUMPTION CANNOT FAIL ON AMOUNT.
-
-		There is no floor and no "insufficient budget". Once the allowance is
-		spent the pool goes negative and progression continues at a diminishing
-		multiplier, because section 29.9 freezes that active meet progression is
-		never hard-zeroed. A player at the keyboard must never be told their
-		effort was worth nothing.
-
-		consumeCompetitionBudget returns the EFFECTIVE EV earned, which falls
-		toward zero without reaching it. It fails only on a malformed request:
-		an unknown lift, a corrupt pool, or a non-finite or non-positive EV.
-
-	(Training Energy, the all-or-nothing resource this note once contrasted,
-	was retired in schema version 8.)
-
-	So: a budget call returns "here is what you earned", possibly very little.
-	=========================================================================
+	(The Competition Budget, whose consumption could never fail on amount, and
+	Training Energy, the all-or-nothing resource it was once contrasted with,
+	were removed in schema versions 10 and 8.)
 
 	ON VALIDATING THE SIZE OF A COMPETITION NUMBER AWARD
 
@@ -640,128 +617,7 @@ function ProfileOperations.addLocalWin(data: ProfileData): number?
 	return career.localWins
 end
 
---[[
-	=========================================================================
-	COMPETITION BUDGET  (three pools, account-wide per lift)
-	=========================================================================
-]]
-
-local BUDGET = ProgressionConfig.CompetitionBudget
-
---[[
-	The budget pool table for one lift, or nil if the name or shape is wrong.
-]]
-local function budgetPool(data: ProfileData, lift: string): PlayerProfileSchema.Resource?
-	if not ProgressionConfig.isLift(lift) then
-		return nil
-	end
-
-	local pool = (data.competitionBudget :: any)[lift]
-
-	if typeof(pool) ~= "table" then
-		return nil
-	end
-
-	return pool
-end
-
---[[
-	One lift's Competition Budget as it stands right now, in EV units, WITHOUT
-	writing anything.
-
-	The returned value includes everything that regenerated since the pool was
-	last touched, including while the player was offline. A negative result means
-	the player is in harmonic overflow for that lift, and the magnitude is how
-	deep.
-
-	Named to match the frozen design's vocabulary: this is the regenerated value,
-	never the stale stored one.
-]]
-function ProfileOperations.getRegeneratedCompetitionBudget(
-	data: ProfileData,
-	lift: string,
-	nowUnix: number
-): number?
-	local pool = budgetPool(data, lift)
-	if pool == nil then
-		return nil
-	end
-
-	return ResourceRegeneration.current(pool, nowUnix, BUDGET.CapacityEV, BUDGET.RegenerationEVPerHour)
-end
-
---[[
-	The multiplier progression would receive on this lift right now, and the
-	player-facing freshness state. Reads without writing.
-
-	The multiplier is the INSTANTANEOUS rate. An award spans a range of overflow
-	depths, so its actual scaling comes from consumeCompetitionBudget, not from
-	multiplying by this.
-]]
-function ProfileOperations.getCompetitionBudgetState(
-	data: ProfileData,
-	lift: string,
-	nowUnix: number
-): (number?, number?, string?)
-	local amount = ProfileOperations.getRegeneratedCompetitionBudget(data, lift, nowUnix)
-	if amount == nil then
-		return nil, nil, nil
-	end
-
-	return amount, CompetitionBudget.multiplierAt(amount), CompetitionBudget.freshness(amount)
-end
-
---[[
-	Consumes `rawEV` of progression from one lift's Competition Budget and
-	returns the EFFECTIVE EV it earned.
-
-	THIS CANNOT FAIL ON AMOUNT. See the semantics note at
-	the top of this file. The returned effective EV falls toward zero as overflow
-	deepens but never reaches it, so legitimate progression always pays
-	something. Failure means the REQUEST was malformed: an unknown lift, a
-	corrupt pool, or a non-finite or non-positive rawEV.
-
-	Returns (effectiveEV, remainingAmount), or nil on a malformed request.
-
-	SPENDING ONE LIFT LEAVES THE OTHER TWO UNTOUCHED. That is the whole point of
-	three pools rather than one: see the note in ProgressionConfig.
-
-	The state advances by the RAW EV, never the effective EV, which is what makes
-	overflow actually diminish. Raw EV already encodes whatever the caller
-	decided the event was worth, and the effective-per-raw ratio at a given state
-	does not depend on the magnitude consumed, so an award cannot be gamed by
-	splitting or sizing it. Under GAME_DESIGN.md section 33.6 a failed attempt is
-	worth zero raw EV, so it consumes nothing and awards nothing.
-
-	Nothing here knows what a meet is. No meet or attempt count is read or
-	stored.
-]]
-function ProfileOperations.consumeCompetitionBudget(
-	data: ProfileData,
-	lift: string,
-	rawEV: number,
-	nowUnix: number
-): (number?, number?)
-	local pool = budgetPool(data, lift)
-	if pool == nil then
-		return nil, nil
-	end
-
-	if not isFiniteNumber(rawEV) or rawEV <= 0 then
-		--[[
-			A zero or negative award is a caller bug, not a refund. Section 29.9:
-			leaving a meet or disconnecting consumes exactly what was earned and
-			is never given back.
-		]]
-		return nil, nil
-	end
-
-	local effective, remaining = CompetitionBudget.consume(pool, nowUnix, rawEV)
-
-	return effective, remaining
-end
-
--- (TRAINING ENERGY was retired in schema version 8, GAME_DESIGN 29.8.)
+-- (TRAINING ENERGY was retired in schema version 8, GAME_DESIGN 29.8, and the COMPETITION BUDGET in version 10, 29.9.)
 
 --[[
 	=========================================================================
@@ -771,9 +627,9 @@ end
 	The ONLY operation that awards Competition Number. It debits the daily
 	training accounting and awards the CN that debit paid for, together.
 
-	THE COMPETITION BUDGET IS NOT TOUCHED. Section 34.12, decision A: the
-	account-wide 4.00 EV daily allowance is training's only throttle. The budget
-	pools stay exactly as stored (kept for meet CN raises, section 33.3b).
+	Section 34.12, decision A: the account-wide 4.00 EV daily allowance is
+	training's only throttle. The meet CN allowance is not touched: it limits
+	meet raises only (section 33.3b).
 ]]
 
 --[[

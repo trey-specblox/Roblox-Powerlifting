@@ -17,7 +17,7 @@
 	  2  MIGRATE  load in production order (detectVersion BEFORE Reconcile),
 	              migrate, check every rule, then raise a Scale and a best Total
 	              through the real meet operations, save and release
-	  3  RELOAD   load again: version 9 persisted, a re-run migrate changes
+	  3  RELOAD   load again: version 10 persisted, a re-run migrate changes
 	              nothing, the "83 kg" key and the zero Scales survived JSON
 	  -  CLEANUP  RemoveAsync deletes the key
 
@@ -155,7 +155,7 @@ session("migrate", function(profile)
 
 	local finalVersion = PlayerProfileSchema.migrate(data, fromVersion)
 	local build = data.builds[CLASS]
-	check("migrated to version 9", finalVersion == 9 and data.version == 9, finalVersion)
+	check("migrated to version 10", finalVersion == 10 and data.version == 10, finalVersion)
 	check("one build, filed under 83 kg", typeof(build) == "table" and countKeys(data.builds) == 1, countKeys(data.builds))
 	check("CN moved exactly", build and build.competitionNumber.Squat == 182.5
 		and build.competitionNumber.Bench == 117.25 and build.competitionNumber.Deadlift == 215.0)
@@ -164,8 +164,8 @@ session("migrate", function(profile)
 	check("best Total starts at none", build and build.bestTotalKg == 0)
 	check("flat fields removed", data.competitionNumber == nil and data.competitionScale == nil)
 	check("technique kept, PullStrength removed", data.technique.Lockout == 128.5 and data.technique.PullStrength == nil)
-	check("budget untouched", data.competitionBudget.Squat.amount == 2.75
-		and data.competitionBudget.Squat.lastUpdatedUnix == 1761600000)
+	check("Competition Budget removed (v10), meet allowance full", data.competitionBudget == nil
+		and build and build.meetAllowance.Squat.amount == 3)
 	check("Training Energy removed", data.trainingEnergy == nil)
 	check("daily counters untouched", data.cnAllowance.spentToday == 2.8109
 		and data.trainingTimeToday.Squat == 1.5 and data.trainingTimeToday.dayKey == "2026-10-27")
@@ -179,15 +179,15 @@ session("migrate", function(profile)
 end)
 
 print("")
-print("SESSION 3. reload and confirm version 9 persisted")
+print("SESSION 3. reload and confirm version 10 persisted")
 session("reload", function(profile)
 	local data = profile.Data
 	local fromVersion = PlayerProfileSchema.detectVersion(data)
-	check("detectVersion reads 9", fromVersion == 9, fromVersion)
+	check("detectVersion reads 10", fromVersion == 10, fromVersion)
 	profile:Reconcile()
 	local finalVersion = PlayerProfileSchema.migrate(data, fromVersion)
 	local build = data.builds[CLASS]
-	check("still version 9, nothing re-migrated", finalVersion == 9)
+	check("still version 10, nothing re-migrated", finalVersion == 10)
 	check("the \"83 kg\" key survived JSON, still one build", typeof(build) == "table" and countKeys(data.builds) == 1)
 	check("CN survived two round trips", build and build.competitionNumber.Squat == 182.5
 		and build.competitionNumber.Bench == 117.25)

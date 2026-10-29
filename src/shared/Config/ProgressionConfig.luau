@@ -8,9 +8,8 @@
 
 	WHAT IS AND IS NOT USED YET
 
-	Only the RESOURCE constants -- Competition Budget capacity and
-	regeneration -- are consumed by anything today. They drive
-	ResourceRegeneration and the persistence foundation.
+	The meet CN allowance (MeetCnAllowance) drives ResourceRegeneration for the
+	Local meet's CN raises.
 
 	BaseProgressRate and the Hill parameters are read by CompetitionNumberReward.
 	Its training entry point is called by the 5B.5 training award on the data
@@ -45,7 +44,8 @@ local ProgressionConfig = {}
 
 		PP       = CN / ProgressionReference(lift, class)
 		Hill(PP) = 1 / (1 + (PP / h)^m)
-		dCN      = ProgressionReference x BaseProgressRate x EV x Hill(PP) x BudgetMultiplier
+		dCN      = ProgressionReference x BaseProgressRate x EV x Hill(PP)
+	(The section 29.3 BudgetMultiplier went with the Competition Budget, schema version 10.)
 ]]
 
 --[[
@@ -107,77 +107,8 @@ ProgressionConfig.Hill = {
 	Competition Scale increase. Do not re-add it.
 ]]
 
---[[
-	=========================================================================
-	COMPETITION BUDGET (section 29.9) -- ACTIVELY USED
-	=========================================================================
-
-	THREE SEPARATE POOLS: Squat, Bench, Deadlift.
-
-	Each pool is ACCOUNT-WIDE FOR THAT LIFT and shared across every
-	weight-class build and across Solo and Official meets. A pool is NOT per
-	weight class, NOT per build slot, and NOT shared between the three lifts.
-
-	Why three pools rather than one: with a single shared pool, a squat-only
-	player earns three times the squat progression of a full powerlifter per
-	unit of budget, because a full 9-attempt meet spends three lifts' worth of
-	allowance to advance each lift once. Per-lift pools invert that, so
-	specialising becomes a trade rather than a multiplier.
-
-	THE STORED RESOURCE IS THE BUDGET, NOT A MEET COUNT. Consumption is
-	proportional to the Competition Number actually awarded. The "overflowMeets"
-	figure in section 29.9 is a balancing interpretation based on roughly
-	1.886 EV per lift per normal meet; it is deliberately not part of the data
-	model, so nothing here depends on how many meets a player has played.
-]]
-ProgressionConfig.CompetitionBudget = {
-	-- EV units. Equivalent to five meets at the Normal attempt strategy.
-	CapacityEV = 9.43,
-
-	-- EV units per hour. 9.43 per week, so a fully spent pool refills in a week.
-	RegenerationEVPerHour = 0.0561,
-
-	--[[
-		Overflow softness, from section 29.9. Read by CompetitionBudget, which
-		is the only module that touches the harmonic curve:
-
-			M(d) = 1 / (1 + d / (OverflowK x UnitEV))
-
-		where d is how far the pool has gone below zero, in EV.
-	]]
-	OverflowK = 3,
-
-	--[[
-		The EV one normal-strategy meet contributes to ONE lift. Derived in
-		section 29.5 from the three attempts of a Normal meet.
-
-		THIS IS A CURVE SCALE, NOT A COUNT. It exists so that one meet's worth
-		of overflow costs what it did in the discrete model that was approved,
-		and it appears in exactly one expression, the K above. Nothing divides
-		by it to ask "which meet is this": the data model stores no meet counter
-		and consumption is driven by actual per-lift progression EV, so a 0.4 EV
-		attempt advances the state by 0.4.
-	]]
-	UnitEV = 1.886,
-
-	--[[
-		THERE IS DELIBERATELY NO NEGATIVE FLOOR.
-
-		A spent pool goes negative and the magnitude is the overflow depth. An
-		earlier draft clamped it at -5 x capacity as a "corruption guard", which
-		was a bug: thirty meets in one week lands at exactly -47.15 EV, which
-		was exactly that clamp, so the guard silently refused the busiest week
-		the design explicitly treats as legitimate.
-
-		No floor is needed, because the multiplier already makes deep overflow
-		worthless and therefore self-limiting. Five years of thirty meets a week
-		reaches about -12,259 EV, a multiplier of 0.00046 -- vanishing but never
-		zero, and nowhere near the limits of a double.
-
-		Corrupt values are handled where that concern belongs: finite-number
-		validation on the way in, and the schema's migration repair on load.
-	]]
-}
+-- (THE COMPETITION BUDGET, section 29.9, was removed in schema version 10 by the user, 2026-10-29: the
+-- per-build meet CN allowance below replaced it.)
 
 --[[
 	=========================================================================
@@ -197,9 +128,7 @@ ProgressionConfig.CompetitionBudget = {
 	A new build copies the allowance of the build it copies its kilograms
 	from (MeetCnAllowance, PlayerProfileSchema.ensureBuild).
 
-	THE COMPETITION BUDGET ABOVE IS NOT USED FOR THIS. The user decided a
-	per-class allowance (2026-10-29); the budget's stored pools stay untouched
-	until a cleanup step removes them.
+	It replaced the account-wide Competition Budget (removed in schema version 10).
 ]]
 ProgressionConfig.MeetCnAllowance = {
 	-- [PROVISIONAL] The share of CN one day's allowance is worth far from the record (4%).
@@ -236,7 +165,7 @@ ProgressionConfig.MeetCnAllowance = {
 		EV(t) = BaseRate x t                                    for t <= FullRateHours
 		EV(t) = BaseRate x (F + K x ln(1 + (t - F) / K))        for t >  FullRateHours
 
-	The harmonic form is the same shape as the Competition Budget overflow above,
+	The harmonic form is the same shape as the old Competition Budget overflow had,
 	for the same reason: it never hard-zeroes, so a player at the keyboard is
 	never told their time is worth literally nothing, while the marginal rate
 	still falls fast enough that grinding one lift all day is poor value.
@@ -364,8 +293,8 @@ ProgressionConfig.TrainableTechnique = {
 --[[
 	The three competition lifts, in display order.
 
-	Shared by the Competition Number and the three Competition Budgets, so a new
-	lift cannot be added to one and forgotten in the other.
+	Shared by the Competition Number and the meet CN allowance, so a new lift
+	cannot be added to one and forgotten in the other.
 ]]
 ProgressionConfig.Lifts = { "Squat", "Bench", "Deadlift" }
 

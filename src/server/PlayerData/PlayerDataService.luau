@@ -26,7 +26,7 @@
 
 	PREFER THE NAMED OPERATIONS OVER update()
 
-		PlayerDataService.consumeCompetitionBudget(player, "Squat", 1.886)
+		PlayerDataService.awardTrainingProgression(...)
 
 	NOTE that the only operation here that writes a Competition Number is
 	awardTrainingProgression, and it accepts station seconds, never kilograms.
@@ -346,9 +346,8 @@ end
 	regeneration can be trusted.
 
 	The two training awards -- Competition Number (5B.5) and technique (5B.7) --
-	are called by TrainingStationService and by nothing else. No meet consumes budget yet (it is kept for the
-	meet CN raises of GAME_DESIGN 33.3b, built with meets against other players); that operation exists so
-	the system that will do it has one validated path.
+	are called by TrainingStationService and by nothing else. Meets write through update() with the named
+	ProfileOperations raises (the Mock Meet's Scale and best Total; the Local meet's allowance settlement).
 ]]
 
 --[[
@@ -451,7 +450,7 @@ end
 
 	Returns the ProfileOperations.TrainingResult, or nil when the player has no
 	active session. A "Rejected" or "ClockWentBackward" result wrote NOTHING.
-	The Competition Budget is never touched (decision A).
+	The meet CN allowance is never touched (decision A).
 ]]
 function PlayerDataService.awardTrainingProgression(
 	player: Player,
@@ -528,62 +527,6 @@ function PlayerDataService.awardTechniqueTraining(
 	return result
 end
 
---[[
-	One lift's Competition Budget in EV units, including everything that
-	regenerated while the player was away. Reads without writing.
-
-	A negative result means that lift is in harmonic overflow, and the magnitude
-	is how deep.
-]]
-function PlayerDataService.getRegeneratedCompetitionBudget(player: Player, lift: string): number?
-	local data = activeData(player, "getRegeneratedCompetitionBudget")
-	if data == nil then
-		return nil
-	end
-
-	return ProfileOperations.getRegeneratedCompetitionBudget(data, lift, os.time())
-end
-
---[[
-	One lift's current budget amount, harmonic multiplier and freshness state
-	(FRESH / WORKED / FATIGUED). Reads without writing.
-]]
-function PlayerDataService.getCompetitionBudgetState(
-	player: Player,
-	lift: string
-): (number?, number?, string?)
-	local data = activeData(player, "getCompetitionBudgetState")
-	if data == nil then
-		return nil, nil, nil
-	end
-
-	return ProfileOperations.getCompetitionBudgetState(data, lift, os.time())
-end
-
---[[
-	Consumes `rawEV` of progression from one lift's Competition Budget and
-	returns the EFFECTIVE EV earned, after harmonic overflow.
-
-	THIS DOES NOT FAIL WHEN THE BUDGET IS SPENT. Progression continues at a
-	diminishing multiplier, because active meet progression is never hard-zeroed.
-	A nil return means the request was malformed, not that the player was short.
-
-	Spending Squat does not touch Bench or Deadlift. The three pools are separate
-	and each is account-wide for its own lift.
-]]
-function PlayerDataService.consumeCompetitionBudget(
-	player: Player,
-	lift: string,
-	rawEV: number
-): (number?, number?)
-	local data = activeData(player, "consumeCompetitionBudget")
-	if data == nil then
-		return nil, nil
-	end
-
-	return ProfileOperations.consumeCompetitionBudget(data, lift, rawEV, os.time())
-end
-
--- (Training Energy was retired in schema version 8, GAME_DESIGN 29.8.)
+-- (Training Energy was retired in schema version 8, GAME_DESIGN 29.8, and the Competition Budget in version 10, 29.9.)
 
 return PlayerDataService

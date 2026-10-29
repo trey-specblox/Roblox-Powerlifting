@@ -39,9 +39,7 @@ local ProgressionReferenceConfig = require(ConfigFolder:WaitForChild("Progressio
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
-local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
 
-local BUDGET = ProgressionConfig.CompetitionBudget
 local BPR = ProgressionConfig.BaseProgressRate
 local CAPPED = ProgressionReferenceConfig.CappedClassLabels
 local LIFTS = ProgressionReferenceConfig.Lifts
@@ -63,20 +61,13 @@ local function near(a: number, b: number, tolerance: number?): boolean
 	return math.abs(a - b) <= (tolerance or 1e-9)
 end
 
---[[
-	A fresh budget, for the many checks that want one.
-]]
-local FRESH = BUDGET.CapacityEV
-
 print("")
 print("=== Competition Number reward engine probe ===")
 print(string.format(
-	"  Hill h=%.2f m=%d  |  BaseProgressRate=%.8f  |  budget cap %.2f EV, K=%.3f  |  FitVersion %d",
+	"  Hill h=%.2f m=%d  |  BaseProgressRate=%.8f  |  FitVersion %d",
 	ProgressionConfig.Hill.h,
 	ProgressionConfig.Hill.m,
 	BPR,
-	FRESH,
-	CompetitionBudget.CurveScaleEV,
 	ProgressionReferenceConfig.FIT_VERSION
 ))
 print("")
@@ -288,7 +279,7 @@ do
 	]]
 	local reference = ProgressionReferenceConfig.get("Squat", "59 kg") :: number
 	local tiny = 1e-6
-	local award = CompetitionNumberReward.calculate("Squat", "59 kg", reference * tiny, 1.0, FRESH)
+	local award = CompetitionNumberReward.calculateTrainingAward("Squat", "59 kg", reference * tiny, 1.0)
 
 	check(
 		"at negligible PP, one EV grants reference x BaseProgressRate",
@@ -304,20 +295,14 @@ do
 	local reference = ProgressionReferenceConfig.get("Bench", "83 kg") :: number
 	local cn = reference * 0.60
 
-	local award, reason = CompetitionNumberReward.calculate("Bench", "83 kg", cn, 0, FRESH)
+	local award, reason = CompetitionNumberReward.calculateTrainingAward("Bench", "83 kg", cn, 0)
 
 	check("zero raw EV is VALID, not an error", award ~= nil, tostring(reason))
 
 	if award ~= nil then
 		local a = award :: any
 		check("it yields exactly zero delta CN", a.deltaCN == 0, tostring(a.deltaCN))
-		check("it yields exactly zero effective EV", a.effectiveEV == 0, tostring(a.effectiveEV))
 		check("CN after equals CN before", a.competitionNumberAfter == cn)
-		check(
-			"and it consumes NOTHING from the budget",
-			a.budgetAfter == a.budgetBefore,
-			string.format("%.10f vs %.10f", a.budgetAfter, a.budgetBefore)
-		)
 		check("but the result still reports real PP and Hill, so it is inspectable", near(a.progressionProximity, 0.60))
 	end
 end
@@ -330,7 +315,7 @@ do
 	local cn = reference * 0.5
 
 	local function rejects(label: string, rawEV: number, expected: string)
-		local award, reason = CompetitionNumberReward.calculate("Squat", "74 kg", cn, rawEV, FRESH)
+		local award, reason = CompetitionNumberReward.calculateTrainingAward("Squat", "74 kg", cn, rawEV)
 		check(label .. " is rejected", award == nil)
 		check(label .. " reports " .. expected, reason == expected, tostring(reason))
 	end
@@ -339,13 +324,6 @@ do
 	rejects("+infinity raw EV", math.huge, "InvalidRawEV")
 	rejects("-infinity raw EV", -math.huge, "InvalidRawEV")
 	rejects("negative raw EV", -1.0, "InvalidRawEV")
-
-	-- A negative budget amount is legitimate overflow; a non-finite one is not.
-	local nanBudget, nanReason = CompetitionNumberReward.calculate("Squat", "74 kg", cn, 1.0, 0 / 0)
-	check("NaN budget amount is rejected", nanBudget == nil and nanReason == "InvalidBudgetAmount", tostring(nanReason))
-
-	local negBudget = CompetitionNumberReward.calculate("Squat", "74 kg", cn, 1.0, -9.43)
-	check("a NEGATIVE budget amount is accepted, because that is overflow", negBudget ~= nil)
 end
 
 --------------------------------------------------------------------------------
@@ -353,7 +331,7 @@ print("")
 print("9. invalid Competition Number is rejected")
 do
 	local function rejects(label: string, cn: number)
-		local award, reason = CompetitionNumberReward.calculate("Deadlift", "93 kg", cn, 1.0, FRESH)
+		local award, reason = CompetitionNumberReward.calculateTrainingAward("Deadlift", "93 kg", cn, 1.0)
 		check(label .. " is rejected", award == nil)
 		check(label .. " reports InvalidCompetitionNumber", reason == "InvalidCompetitionNumber", tostring(reason))
 	end
@@ -369,7 +347,7 @@ print("")
 print("10. invalid lift is rejected")
 do
 	local function rejects(label: string, lift: any)
-		local award, reason = CompetitionNumberReward.calculate(lift, "59 kg", 200, 1.0, FRESH)
+		local award, reason = CompetitionNumberReward.calculateTrainingAward(lift, "59 kg", 200, 1.0)
 		check(label .. " is rejected", award == nil)
 		check(label .. " reports InvalidLift", reason == "InvalidLift", tostring(reason))
 	end
@@ -384,7 +362,7 @@ print("")
 print("11. invalid class is rejected")
 do
 	local function rejects(label: string, class: any, expected: string)
-		local award, reason = CompetitionNumberReward.calculate("Squat", class, 200, 1.0, FRESH)
+		local award, reason = CompetitionNumberReward.calculateTrainingAward("Squat", class, 200, 1.0)
 		check(label .. " is rejected", award == nil)
 		check(label .. " reports " .. expected, reason == expected, tostring(reason))
 	end
@@ -397,154 +375,12 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("12-15. budget states: fresh, boundary, overflow, deep overflow")
-do
-	local reference = ProgressionReferenceConfig.get("Squat", "59 kg") :: number
-	local cn = reference * 0.60
-	local rawEV = BUDGET.UnitEV
-
-	--[[
-		Named fields rather than a mixed {string, number} array. A positional
-		pair makes Luau unify the element type to whichever came first, so the
-		second slot then fails to type-check.
-	]]
-	local states: { { label: string, amount: number } } = {
-		{ label = "fresh", amount = FRESH },
-		{ label = "boundary (0)", amount = 0 },
-		{ label = "overflow (-9.43)", amount = -9.43 },
-		{ label = "deep overflow (-47.15)", amount = -47.15 },
-	}
-
-	print("      budget before |    effEV |      dCN | budget after | vs fresh")
-	local baseline = 0
-	local deltas: { number } = {}
-	local effectives: { number } = {}
-
-	for index, state in ipairs(states) do
-		local label = state.label
-		local amount = state.amount
-
-		local award = CompetitionNumberReward.calculate("Squat", "59 kg", cn, rawEV, amount)
-
-		if award == nil then
-			check(string.format("%s produces an award", label), false, "rejected")
-		else
-			local a = award :: any
-			if index == 1 then
-				baseline = a.deltaCN
-			end
-			table.insert(deltas, a.deltaCN)
-			table.insert(effectives, a.effectiveEV)
-
-			print(string.format(
-				"      %13.2f | %8.6f | %8.6f | %12.3f | %6.2f%%",
-				amount, a.effectiveEV, a.deltaCN, a.budgetAfter, 100 * a.deltaCN / baseline
-			))
-
-			check(string.format("%s produces an award", label), true)
-
-			--[[
-				16. RAW EV CONSUMPTION. The state must advance by the raw EV,
-				never the effective EV, whatever the overflow depth.
-			]]
-			check(
-				string.format("%s consumes exactly the RAW EV, not the effective EV", label),
-				near(a.budgetAfter, amount - rawEV, 1e-9),
-				string.format("%.10f, expected %.10f", a.budgetAfter, amount - rawEV)
-			)
-
-			--[[
-				18. NEVER EXACTLY ZERO under finite legitimate overflow.
-			]]
-			check(
-				string.format("%s still awards strictly above zero", label),
-				a.deltaCN > 0,
-				string.format("%.12f", a.deltaCN)
-			)
-		end
-	end
-
-	-- 17. EFFECTIVE EV REDUCTION, and the delta falling with it.
-	local effDecreasing = true
-	local deltaDecreasing = true
-	for i = 2, #effectives do
-		if effectives[i] >= effectives[i - 1] then
-			effDecreasing = false
-		end
-		if deltas[i] >= deltas[i - 1] then
-			deltaDecreasing = false
-		end
-	end
-
-	check("effective EV decreases as the budget empties", effDecreasing)
-	check("and delta CN decreases with it", deltaDecreasing)
-	check(
-		"a fresh budget passes raw EV through untouched",
-		near(effectives[1], rawEV, 1e-9),
-		tostring(effectives[1])
-	)
-	check(
-		"deep overflow is heavily penalised but not zeroed",
-		deltas[4] > 0 and deltas[4] < 0.2 * deltas[1],
-		string.format("%.2f%% of fresh", 100 * deltas[4] / deltas[1])
-	)
-end
-
---------------------------------------------------------------------------------
-print("")
-print("19. split-EV path independence")
-do
-	local reference = ProgressionReferenceConfig.get("Deadlift", "105 kg") :: number
-	local cn = reference * 0.70
-	local total = 3 * BUDGET.UnitEV
-
-	-- One lump, deliberately crossing from allowance into overflow.
-	local lump = CompetitionNumberReward.calculate("Deadlift", "105 kg", cn, total, 2.0)
-	local lumpEV = if lump ~= nil then (lump :: any).effectiveEV else -1
-
-	--[[
-		The same total in many pieces. CN is deliberately held CONSTANT across
-		the pieces so this isolates the BUDGET path; compounding CN would change
-		Hill between pieces and confuse the two effects.
-	]]
-	local function splitInto(pieces: number): (number, number)
-		local amount = 2.0
-		local sum = 0
-		for _ = 1, pieces do
-			local award = CompetitionNumberReward.calculate("Deadlift", "105 kg", cn, total / pieces, amount)
-			if award == nil then
-				return -1, amount
-			end
-			sum += (award :: any).effectiveEV
-			amount = (award :: any).budgetAfter
-		end
-		return sum, amount
-	end
-
-	local twoEV, twoAmount = splitInto(2)
-	local tenEV = select(1, splitInto(10))
-	local hundredEV, hundredAmount = splitInto(100)
-
-	print(string.format("      lump %.10f | 2 pieces %.10f | 10 %.10f | 100 %.10f", lumpEV, twoEV, tenEV, hundredEV))
-
-	check("2 pieces equal one lump", near(twoEV, lumpEV, 1e-9), string.format("%.12f vs %.12f", twoEV, lumpEV))
-	check("10 pieces equal one lump", near(tenEV, lumpEV, 1e-9), string.format("%.12f vs %.12f", tenEV, lumpEV))
-	check("100 pieces equal one lump", near(hundredEV, lumpEV, 1e-8), string.format("%.12f vs %.12f", hundredEV, lumpEV))
-	check(
-		"and the final budget state matches too",
-		near(hundredAmount, 2.0 - total, 1e-9) and near(twoAmount, 2.0 - total, 1e-9),
-		string.format("%.10f vs %.10f", hundredAmount, 2.0 - total)
-	)
-end
-
---------------------------------------------------------------------------------
-print("")
 print("20. R2 INVARIANT across all 21 capped combinations")
 do
 	--[[
 		THE CENTRAL NORMALIZATION PROPERTY.
 
-		At identical PP, identical raw EV and identical budget state, every class
+		At identical PP and identical EV, every class
 		and lift must advance by the same NORMALIZED amount:
 
 			deltaPP = deltaCN / P
@@ -567,7 +403,7 @@ do
 			local reference = ProgressionReferenceConfig.get(lift, label) :: number
 			local cn = reference * targetPP
 
-			local award = CompetitionNumberReward.calculate(lift, label, cn, rawEV, FRESH)
+			local award = CompetitionNumberReward.calculateTrainingAward(lift, label, cn, rawEV)
 
 			if award == nil then
 				check(string.format("%s %s produces an award", label, lift), false, "rejected")
@@ -586,8 +422,8 @@ do
 
 				-- Each one must also agree with Hill x BaseProgressRate x EV directly.
 				check(
-					string.format("%s %s: deltaPP = BPR x effEV x Hill", label, lift),
-					near(a.deltaPP, BPR * a.effectiveEV * a.hillMultiplier, 1e-15)
+					string.format("%s %s: deltaPP = BPR x EV x Hill", label, lift),
+					near(a.deltaPP, BPR * a.earnedEV * a.hillMultiplier, 1e-15)
 				)
 			end
 		end
@@ -609,15 +445,15 @@ do
 	)
 
 	-- And the kilograms genuinely do differ, which is the other half of R2.
-	local lightest = CompetitionNumberReward.calculate(
+	local lightest = CompetitionNumberReward.calculateTrainingAward(
 		"Bench", "59 kg",
 		(ProgressionReferenceConfig.get("Bench", "59 kg") :: number) * targetPP,
-		rawEV, FRESH
+		rawEV
 	)
-	local heaviest = CompetitionNumberReward.calculate(
+	local heaviest = CompetitionNumberReward.calculateTrainingAward(
 		"Squat", "120 kg",
 		(ProgressionReferenceConfig.get("Squat", "120 kg") :: number) * targetPP,
-		rawEV, FRESH
+		rawEV
 	)
 
 	check(
@@ -631,7 +467,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("21-22. representative 59 kg and 120 kg rewards, rawEV = 1.0, fresh budget")
+print("21-22. representative 59 kg and 120 kg rewards, rawEV = 1.0")
 do
 	local combos = {
 		{ "Squat", "59 kg" }, { "Bench", "59 kg" }, { "Deadlift", "59 kg" },
@@ -653,7 +489,7 @@ do
 		for _, pp in ipairs(proximities) do
 			local reference = ProgressionReferenceConfig.get(lift, label) :: number
 			local cn = reference * pp
-			local award = CompetitionNumberReward.calculate(lift, label, cn, 1.0, FRESH)
+			local award = CompetitionNumberReward.calculateTrainingAward(lift, label, cn, 1.0)
 
 			if award == nil then
 				allPositive = false
@@ -680,11 +516,11 @@ do
 	check("and each award shrinks as PP rises, within every lift/class", allShrinking)
 
 	-- The headline comparison the matrix exists to demonstrate.
-	local light = CompetitionNumberReward.calculate(
-		"Bench", "59 kg", (ProgressionReferenceConfig.get("Bench", "59 kg") :: number) * 0.60, 1.0, FRESH
+	local light = CompetitionNumberReward.calculateTrainingAward(
+		"Bench", "59 kg", (ProgressionReferenceConfig.get("Bench", "59 kg") :: number) * 0.60, 1.0
 	)
-	local heavy = CompetitionNumberReward.calculate(
-		"Squat", "120 kg", (ProgressionReferenceConfig.get("Squat", "120 kg") :: number) * 0.60, 1.0, FRESH
+	local heavy = CompetitionNumberReward.calculateTrainingAward(
+		"Squat", "120 kg", (ProgressionReferenceConfig.get("Squat", "120 kg") :: number) * 0.60, 1.0
 	)
 
 	if light ~= nil and heavy ~= nil then
@@ -705,33 +541,24 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("23. delta CN per unit of budget consumed is EV-magnitude independent")
+print("23. delta CN per unit of EV is EV-magnitude independent")
 do
 	--[[
-		THE FAILURE-CREDIT CHECKS THAT USED TO LIVE HERE ARE GONE.
-
-		They asserted that a failed attempt was worth exactly 20% of the same
-		attempt succeeded, and that a failure still awarded above zero. Both
-		rules were superseded by GAME_DESIGN.md section 33.6: a failed attempt
-		now yields zero EV, so there is no ratio left to assert and nothing above
-		zero to award. `ProgressionConfig.FailureCredit` was removed with them.
-
-		What remains is the part that was never about failure at all. At a fixed
-		budget state, delta CN per unit of budget consumed must not depend on how
-		large the EV amount is -- the engine must not pay a better rate for one
-		big award than for one small one. The two magnitudes below are arbitrary;
-		any two would do.
+		The engine must not pay a better rate for one big award than for one
+		small one: delta CN per unit of EV is the same at any magnitude. (The
+		failure-credit checks once here went with section 33.6, and the budget
+		version of this check with the Competition Budget, schema version 10.)
 	]]
 	local reference = ProgressionReferenceConfig.get("Squat", "83 kg") :: number
 	local cn = reference * 0.60
 
-	local big = CompetitionNumberReward.calculate("Squat", "83 kg", cn, 1.0, FRESH) :: any
-	local small = CompetitionNumberReward.calculate("Squat", "83 kg", cn, 0.2, FRESH) :: any
-	local bigRatio = big.deltaCN / (big.budgetBefore - big.budgetAfter)
-	local smallRatio = small.deltaCN / (small.budgetBefore - small.budgetAfter)
+	local big = CompetitionNumberReward.calculateTrainingAward("Squat", "83 kg", cn, 1.0) :: any
+	local small = CompetitionNumberReward.calculateTrainingAward("Squat", "83 kg", cn, 0.2) :: any
+	local bigRatio = big.deltaCN / big.earnedEV
+	local smallRatio = small.deltaCN / small.earnedEV
 
 	check(
-		"delta CN per unit of budget consumed is the same at either magnitude",
+		"delta CN per unit of EV is the same at either magnitude",
 		near(bigRatio, smallRatio, 1e-9),
 		string.format("%.10f vs %.10f", bigRatio, smallRatio)
 	)
@@ -745,7 +572,7 @@ do
 	local cn = reference * 0.60
 
 	-- A deliberately awkward EV, so a rounded result would be obvious.
-	local award = CompetitionNumberReward.calculate("Bench", "59 kg", cn, 0.37, FRESH)
+	local award = CompetitionNumberReward.calculateTrainingAward("Bench", "59 kg", cn, 0.37)
 
 	if award == nil then
 		check("the award was produced", false)
@@ -763,7 +590,7 @@ do
 			carried, because AFK and daily gains are genuinely this small at
 			high PP and discarding them would silently lose progression.
 		]]
-		local atRecord = CompetitionNumberReward.calculate("Bench", "59 kg", reference, 0.2591, FRESH)
+		local atRecord = CompetitionNumberReward.calculateTrainingAward("Bench", "59 kg", reference, 0.2591)
 		check(
 			"a sub-0.1 kg award is preserved rather than discarded",
 			atRecord ~= nil and (atRecord :: any).deltaCN > 0 and (atRecord :: any).deltaCN < 0.1,
@@ -785,7 +612,7 @@ do
 		are checked for.
 	]]
 	for _, lift in ipairs(LIFTS) do
-		local award, reason = CompetitionNumberReward.calculate(lift, "120+ kg", 400, 1.0, FRESH)
+		local award, reason = CompetitionNumberReward.calculateTrainingAward(lift, "120+ kg", 400, 1.0)
 
 		check(string.format("%s 120+ returns no award", lift), award == nil)
 		check(
@@ -809,8 +636,8 @@ do
 		And the distinction between "unsupported" and "unknown" is preserved:
 		120+ is a real class we do not yet serve, while "77 kg" is not a class.
 	]]
-	local _, unsupported = CompetitionNumberReward.calculate("Squat", "120+ kg", 400, 1.0, FRESH)
-	local _, invalid = CompetitionNumberReward.calculate("Squat", "77 kg", 400, 1.0, FRESH)
+	local _, unsupported = CompetitionNumberReward.calculateTrainingAward("Squat", "120+ kg", 400, 1.0)
+	local _, invalid = CompetitionNumberReward.calculateTrainingAward("Squat", "77 kg", 400, 1.0)
 	check(
 		"unsupported and invalid classes are distinguishable",
 		unsupported == "UnsupportedClass" and invalid == "InvalidClass",
@@ -843,7 +670,7 @@ do
 		mistake, this award comes out 2.31x too large and this check fails.
 	]]
 	local reference = ProgressionReferenceConfig.get("Squat", "59 kg") :: number
-	local award = CompetitionNumberReward.calculate("Squat", "59 kg", reference * 1e-6, 1.0, FRESH)
+	local award = CompetitionNumberReward.calculateTrainingAward("Squat", "59 kg", reference * 1e-6, 1.0)
 
 	check(
 		"an award still uses the LIVE rate, not the candidate",

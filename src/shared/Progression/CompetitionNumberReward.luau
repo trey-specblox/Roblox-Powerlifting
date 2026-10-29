@@ -9,41 +9,32 @@
 		Competition Number
 		  -> Progression Proximity (PP)
 		  -> Hill soft cap
-		  -> raw EV
-		  -> Competition Budget
-		  -> effective EV
+		  -> earned EV
 		  -> delta Competition Number
 
 	=========================================================================
 	PURE. IT CALCULATES AND NEVER MUTATES.
 	=========================================================================
 
-	calculate() takes authoritative state and returns a result. It writes
-	nothing: no profile, no resource, no timestamp. The budget amount comes in
-	as a number and the new amount goes out as a number.
+	calculateTrainingAward() takes authoritative state and returns a result. It
+	writes nothing: no profile, no resource, no timestamp. A server-authoritative
+	operation (ProfileOperations.applyTrainingProgression) computes an award,
+	inspects it, and only then applies it -- or discards it.
 
-	That separation is the point. A future server-authoritative operation can
-	compute an award, inspect it, log it, and only then apply it through
-	ProfileOperations -- or discard it. Nothing here can half-apply anything,
-	because nothing here applies anything.
-
-	NOTHING IN GAMEPLAY CALLS THIS YET. No attempt, meet, daily or AFK tick
-	awards Competition Number. This increment proves the arithmetic.
-
-	TWO ENTRY POINTS. `calculate` is the budgeted path above. Gym-station
-	training, which section 34 makes the ONLY source of Competition Number,
-	uses `calculateTrainingAward` instead: the same formula with no Competition
-	Budget stage, because the 4.00 EV daily allowance is its only throttle.
+	ONE ENTRY POINT. Gym-station training, which section 34 makes the ONLY
+	source of Competition Number, uses `calculateTrainingAward`. The old
+	budgeted meet path (`calculate`, with the section 29.9 Competition Budget)
+	was removed with the budget in schema version 10: meets never award EV
+	(section 33.3), and their CN raises use the meet allowance (MeetCnAllowance).
+	`hill` and `progressionProximity` are also read by MeetCnAllowance, the meet
+	CN allowance.
 
 	=========================================================================
 	EVERY INPUT IS SERVER-DERIVED
 	=========================================================================
 
 	The client may never supply, and this module never accepts from a client:
-	final CN, delta CN, PP, the Hill multiplier, effective EV, the budget
-	amount, or a timestamp. There is no timestamp parameter at all -- budget
-	regeneration is settled by the caller before the amount is handed over, on
-	the server, from os.time().
+	final CN, delta CN, PP, the Hill multiplier, earned EV, or a timestamp.
 
 	What a client legitimately influences is its raw INPUTS to a minigame, which
 	the server replays to decide whether an attempt passed. The EV that follows
@@ -57,18 +48,7 @@
 		PP   = CN / P
 		Hill = 1 / (1 + (PP / h)^m)                      h = 0.75, m = 5
 
-		effectiveEV = CompetitionBudget.effectiveEV(budgetAmount, rawEV)
-
-		deltaCN = P x BaseProgressRate x effectiveEV x Hill(PP)
-
-	THE BUDGET EFFECT IS APPLIED EXACTLY ONCE, by converting rawEV into
-	effectiveEV. There is no separate multiplier afterwards. Multiplying the
-	result by the instantaneous multiplier as well would square the penalty.
-
-	THE BUDGET IS DENOMINATED IN EV, NEVER KILOGRAMS, and its state advances by
-	the RAW EV. Consuming effective EV would let a player in deep overflow
-	spend almost nothing and so never sink further, flattening harmonic overflow
-	into a plateau.
+		deltaCN = P x BaseProgressRate x earnedEV x Hill(PP)
 
 	PP IS COMPUTED FROM THE INCOMING CN, before the award. An attempt is scored
 	against the lifter who attempted it.
@@ -92,9 +72,6 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 local ProgressionReferenceConfig = require(ConfigFolder:WaitForChild("ProgressionReferenceConfig"))
 
-local ProgressionFolder = Shared:WaitForChild("Progression")
-local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
-
 local CompetitionNumberReward = {}
 
 local HILL = ProgressionConfig.Hill
@@ -113,46 +90,6 @@ export type RejectionReason =
 	| "MissingReference"
 	| "InvalidCompetitionNumber"
 	| "InvalidRawEV"
-	| "InvalidBudgetAmount"
-
---[[
-	Everything the calculation looked at and everything it concluded.
-
-	Deliberately wide. A single delta would be impossible to debug and
-	impossible to test: when a reward looks wrong, the useful question is which
-	STAGE went wrong, and that needs PP, the Hill multiplier and both EV values
-	side by side. Every field is a number, so the whole thing logs and compares
-	cleanly.
-]]
-export type Award = {
-	lift: string,
-	weightClassLabel: string,
-
-	-- The frozen reference, so a caller never has to look it up again.
-	progressionReference: number,
-
-	competitionNumberBefore: number,
-	competitionNumberAfter: number,
-
-	-- CN / P, before the award.
-	progressionProximity: number,
-	hillMultiplier: number,
-
-	rawEV: number,
-	effectiveEV: number,
-
-	budgetBefore: number,
-	budgetAfter: number,
-
-	deltaCN: number,
-
-	--[[
-		deltaCN / P. The R2 invariant: at equal PP, equal raw EV and equal
-		budget state, this is identical for every class and lift. Returned
-		rather than left to callers so the invariant is cheap to assert.
-	]]
-	deltaPP: number,
-}
 
 --[[
 	A number safe to store and to do arithmetic with: not NaN, not either
@@ -207,40 +144,8 @@ function CompetitionNumberReward.progressionProximity(
 end
 
 --[[
-	Calculates an award without applying it.
-
-	Returns the Award on success, or nil plus a RejectionReason.
-
-	ZERO RAW EV IS VALID, not an error. It yields exactly 0 delta CN and
-	consumes exactly nothing, leaving the budget amount untouched. A legitimate
-	attempt can genuinely be worth nothing -- anything at or below 60% relative
-	intensity has an intensity factor of 0.00 -- and the caller should not have
-	to special-case the commonest opener in the game. The result still carries
-	the real PP, Hill and reference, so a zero award is inspectable rather than
-	indistinguishable from a failure.
-
-	REJECTS:
-	  - a lift that is not Squat, Bench or Deadlift
-	  - a class label that is not a string
-	  - the unlimited class, distinctly, as UnsupportedClass
-	  - a capped class with no reference, as MissingReference
-	  - a non-finite or non-positive Competition Number: zero means "cannot
-	    lift" and PP would divide by a reference into nothing meaningful
-	  - a non-finite or negative raw EV
-	  - a non-finite budget amount
-
-	A NEGATIVE RAW EV IS REFUSED rather than treated as a deduction. Section
-	29.9: leaving a meet or disconnecting consumes exactly what was earned and
-	is never given back. There is no mechanism that takes EV away.
-
-	A NEGATIVE BUDGET AMOUNT IS ACCEPTED, because that is harmonic overflow and
-	the magnitude is its depth.
-]]
---[[
 	The checks every award makes before any EV is considered: lift, class,
-	reference and the incoming Competition Number, IN THAT ORDER. Shared by
-	calculate and calculateTrainingAward so the two engines can never disagree
-	about which lifter or class is scorable.
+	reference and the incoming Competition Number, IN THAT ORDER.
 
 	Returns the frozen reference on success, or nil plus a RejectionReason.
 ]]
@@ -286,77 +191,10 @@ local function resolveReference(
 	return reference, nil
 end
 
-function CompetitionNumberReward.calculate(
-	liftName: string,
-	weightClassLabel: string,
-	competitionNumberKg: number,
-	rawEV: number,
-	budgetAmountEV: number
-): (Award?, RejectionReason?)
-	local resolved, rejection = resolveReference(liftName, weightClassLabel, competitionNumberKg)
-	if resolved == nil then
-		return nil, rejection
-	end
-
-	local reference: number = resolved
-
-	if not isFiniteNumber(rawEV) or rawEV < 0 then
-		return nil, "InvalidRawEV"
-	end
-
-	if not isFiniteNumber(budgetAmountEV) then
-		return nil, "InvalidBudgetAmount"
-	end
-
-	-- Scored against the lifter as they were before the award.
-	local progressionProximity = competitionNumberKg / reference
-	local hillMultiplier = CompetitionNumberReward.hill(progressionProximity)
-
-	--[[
-		The ONLY place the budget effect is applied. effectiveEV integrates the
-		harmonic multiplier across the span consumed and returns the new amount,
-		which has advanced by the RAW EV.
-	]]
-	local effectiveEV, budgetAfter = CompetitionBudget.effectiveEV(budgetAmountEV, rawEV)
-
-	local deltaCN = reference * ProgressionConfig.BaseProgressRate * effectiveEV * hillMultiplier
-
-	--[[
-		Guard the product, not just the inputs. Finite factors can still
-		overflow, and a NaN or infinite delta reaching a profile would poison
-		that stat permanently.
-	]]
-	if not isFiniteNumber(deltaCN) then
-		return nil, "InvalidRawEV"
-	end
-
-	return {
-		lift = liftName,
-		weightClassLabel = weightClassLabel,
-
-		progressionReference = reference,
-
-		competitionNumberBefore = competitionNumberKg,
-		competitionNumberAfter = competitionNumberKg + deltaCN,
-
-		progressionProximity = progressionProximity,
-		hillMultiplier = hillMultiplier,
-
-		rawEV = rawEV,
-		effectiveEV = effectiveEV,
-
-		budgetBefore = budgetAmountEV,
-		budgetAfter = budgetAfter,
-
-		deltaCN = deltaCN,
-		deltaPP = deltaCN / reference,
-	},
-		nil
-end
-
 --[[
-	A station-training award. The same stages as Award minus the budget, because
-	training never touches the Competition Budget. See calculateTrainingAward.
+	A station-training award: everything the calculation looked at and
+	concluded, side by side, so a wrong reward shows which STAGE went wrong.
+	See calculateTrainingAward.
 ]]
 export type TrainingAward = {
 	lift: string,
@@ -382,16 +220,11 @@ export type TrainingAward = {
 
 		deltaCN = P x BaseProgressRate x earnedEV x Hill(PP)
 
-	THE COMPETITION BUDGET IS BYPASSED ENTIRELY. GAME_DESIGN.md section 34.12,
-	decision A of checkpoint 5B.5: the account-wide 4.00 EV daily allowance is
-	the only throttle on training. Routing training EV through the budget as well
-	would stack a second limiter on the first and make "4.00 EV a day" untrue. So
-	there is no budget parameter, and no budget is read, consumed or scaled.
-
-	Everything else is the formula `calculate` uses -- the same frozen reference,
-	the same live BaseProgressRate, the same Hill soft cap scored on the incoming
-	Competition Number -- and the same lift, class and CN checks, shared through
-	resolveReference.
+	GAME_DESIGN.md section 34.12, decision A of checkpoint 5B.5: the
+	account-wide 4.00 EV daily allowance is the only throttle on training, so
+	nothing else scales the EV here. The frozen reference, the live
+	BaseProgressRate and the Hill soft cap are scored on the incoming
+	Competition Number, after resolveReference's lift, class and CN checks.
 
 	`earnedEV` IS NEVER A CALLER'S CLAIM. Its only legitimate source is a
 	TrainingAllowance plan computed on the server from observed station time,
@@ -423,7 +256,11 @@ function CompetitionNumberReward.calculateTrainingAward(
 
 	local deltaCN = reference * ProgressionConfig.BaseProgressRate * earnedEV * hillMultiplier
 
-	-- Guard the product, as calculate does.
+	--[[
+		Guard the product, not just the inputs. Finite factors can still
+		overflow, and a NaN or infinite delta reaching a profile would poison
+		that stat permanently.
+	]]
 	if not isFiniteNumber(deltaCN) then
 		return nil, "InvalidRawEV"
 	end

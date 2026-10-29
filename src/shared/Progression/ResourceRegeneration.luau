@@ -5,10 +5,10 @@
 
 	Lazy, timestamp-driven regeneration for continuously refilling resources.
 
-	Used by the three Competition Budgets (and by Training Energy until it was
-	retired in schema version 8). They regenerate in real time, including while
-	the player is offline, so they cannot be modelled as "add some amount every
-	tick".
+	Used by the meet CN allowance (MeetCnAllowance; earlier by the Competition
+	Budgets, removed in schema version 10, and Training Energy, retired in
+	version 8). It regenerates in real time, including while the player is
+	offline, so it cannot be modelled as "add some amount every tick".
 
 	NO LOOP IS REQUIRED. A resource is stored as
 
@@ -150,9 +150,8 @@ end
 	and then fail.
 
 	`floor` is the lowest value the resource may reach. Pass 0 for a resource
-	that simply runs out. Pass a negative value for one
-	that models overflow, such as a Competition Budget, where a negative amount
-	IS the overflow depth.
+	that simply runs out. Pass a negative value for one that models overflow,
+	where a negative amount IS the overflow depth.
 ]]
 function ResourceRegeneration.trySpend(
 	resource: Resource,
