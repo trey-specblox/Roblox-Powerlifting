@@ -55,11 +55,28 @@ function BuildParts.surfaceLight(part: BasePart, face: Enum.NormalId, range: num
 	light.Parent = part
 end
 
--- Small decoration (items on shelves and desks, cables, turnstile arms): not
--- solid, so it never snags a player, and ignored by spatial checks.
+--[[
+	Decoration (items on shelves and desks, cables, turnstile arms, wall
+	coverings): not solid, so it never snags a player, ignored by spatial checks
+	and touch events.
+
+	PERFORMANCE (user 2026-10-28: "optimize everything"): a small piece (no side
+	longer than SHADOW_MIN_SIZE studs) or a flat one (thinner than SHADOW_FLAT
+	studs: wall coverings, stripes, signs) casts no shadow. Their shadows are too
+	small to see or fall onto the wall they cover, and in the 2026-10-28 audit
+	they were 3,633 of the world's 5,876 shadow casters. Bigger decor (sofas,
+	machines) keeps its shadow.
+]]
+local SHADOW_MIN_SIZE = 4
+local SHADOW_FLAT = 0.15
 function BuildParts.decor(part: BasePart): BasePart
 	part.CanCollide = false
 	part.CanQuery = false
+	part.CanTouch = false
+	local size = part.Size
+	if math.max(size.X, size.Y, size.Z) <= SHADOW_MIN_SIZE or math.min(size.X, size.Y, size.Z) <= SHADOW_FLAT then
+		part.CastShadow = false
+	end
 	part:SetAttribute("Decor", true)
 	return part
 end

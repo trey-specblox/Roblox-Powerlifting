@@ -136,6 +136,8 @@ Roblox draws each face of a mesh from one side only. A piece whose faces point i
 - Build props with `art/scripts/prop_helpers.py` where possible: its `Builder` checks every piece and stops the build if one is inside out or folded.
 - Before exporting or uploading ANY model file, run `blender -b <file>.blend --python art/scripts/check_models.py`. It must end with `CHECK PASSED`. Do not upload a model that fails.
 - Preview new or rebuilt models with backface culling on (as Roblox draws them) before asking the user to approve an upload.
+- Every physical model is made in Blender and uploaded; code only places meshes and puts screens or text on them.
+- Performance: `check_models.py` also fails any object over its triangle budget (5,000 by default; a written per-object `tri_budget` for a genuinely big piece) or over Roblox's 20,000 limit. Reuse one mesh for repeated objects. Decor made with `BuildParts.decor` gets no collision and no touch events, and casts no shadow when it is small or flat. After big changes, run `tools/studio/PerformanceAudit.luau` (read-only) in a Studio play test. Warn the user up front when something costs performance.
 
 ## Development Status Handoff
 

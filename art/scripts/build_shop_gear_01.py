@@ -609,6 +609,9 @@ for side in (-1, 1):
 neck_cut = cutter("_Cut_TeeNeck", cylinders([(MT + Vector((0, -0.04, STAND_TOP + 2.65)), Vector((0, 0, 1)), 0.37, 0.7)]))
 obj = finish("MannequinTee_Black", tee["Black"], MAT["Black"], solidify=0.012)
 booleans_and_apply(obj, [("DIFFERENCE", neck_cut)])
+# check_models.py budget (default 5,000): the tee is a large hero display piece, a smooth body-sized shell with
+# sleeves; it came out at 5,464 triangles and was uploaded before the budgets existed.
+obj["tri_budget"] = 6000
 bpy.data.objects.remove(neck_cut, do_unlink=True)
 finish("MannequinTee_Logo", chest_badge(MT, 1.6, 0.48, 0.15, 0.041, 0.04, 0.22), MAT["Red"])
 

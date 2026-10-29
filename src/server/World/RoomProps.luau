@@ -502,6 +502,7 @@ end
 -- A solid piece nobody sees: it stops players walking through a 3D prop (props are decor).
 local function hidden(part: BasePart): BasePart
 	part.Transparency = 1
+	part.CastShadow = false
 	return part
 end
 

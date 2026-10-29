@@ -1650,6 +1650,23 @@ and polish.
   - Known: the boards' screens are only 8.8 x 7.2 studs (RoomProps), so the
     rows are small from across the room; the wall TV's idle sign is still the
     old RoomProps "CENTRAL TV" writing; the round's TV view was not captured.
+  CARDIO TV MADE IN BLENDER (2026-10-28; user: "I want every model to be
+  made in blender" -> memory rule models-made-in-blender; "Yes, upload it";
+  NOT committed): art/scripts/build_cardio_tv_01.py ->
+  art/blender/CardioTV_01.blend (12 pieces: Bezel, Screen, Back, Mount,
+  Logo, PowerLight, Soundbar, SoundbarGrille, SoundbarTrim, SoundbarCaps,
+  SoundbarLogo, SoundbarBrackets), check_models CHECK PASSED, previewed
+  with backface culling, art/exports/CardioTV_01.glb uploaded as group Model
+  rbxassetid://127520535803138 (art/materials/materials.json).
+  StarterGymConfig: PropAssets + CardioTV_01, PropColourways.CardioTV.
+  RoomProps FURNISH.Cardio places it (facing "-d", screen centre at 8.5),
+  renames its screen piece "TV" for the rhythm game, puts the CARDIO ZONE
+  StyledScreen sign and the blue backlight on it (faces picked from the
+  turned pieces); the old block TV is only the fallback if the asset fails
+  to load. Studio: model loaded (11 pieces + the TV screen), sign faces into
+  the room, screenshot OK; 0 client warnings; 2 server warnings not from
+  this change (StreamingMinRadius, 'Technology' capability). Not seen: the
+  rhythm round on the new screen.
   CARDIO WALL TV REBUILT (2026-10-28; user: "This Tv is very bland and just
   a square", and "Make sure models are getting updated through context of
   our history of conversations" -> saved as a memory rule; NOT committed):
@@ -1690,6 +1707,28 @@ and polish.
     banners and coach bubble, the live attempt board; 0 server warnings; a
     last run showed 0 client warnings.
   COMMITTED with the user's approval on 2026-10-28 (see section 1).
+  PERFORMANCE PASS (2026-10-28, user: "Yes, do the pass"; COMMITTED with
+  the user's approval, see section 1; RoomProps: only the hidden() line, the
+  Blender TV's RoomProps lines stay with that work):
+  - BuildParts.decor: CanTouch off, and CastShadow off for small (longest
+    side <= 4 studs) or flat (thinnest <= 0.15) decor; RoomProps.hidden
+    blockers cast no shadow.
+  - art/scripts/check_models.py: also counts triangles per object; fails
+    over TRI_BUDGET (5,000) or an object's own "tri_budget", and over
+    Roblox's 20,000; prints the heaviest objects and the file total. Every
+    model file passes; ShopGear_01's MannequinTee_Black (5,464, uploaded
+    earlier) got tri_budget 6000 in build_shop_gear_01.py and the saved
+    .blend (property only, no shape change, no re-upload).
+  - New tools/studio/PerformanceAudit.luau (Command Bar, read-only): parts,
+    MeshParts, unique meshes, shadow casters, lights, world screens, solid
+    decor, precise collision, heaviest rooms, each OK/WARN vs budgets.
+  - CLAUDE.md "3D Models": Blender-only models and the performance rules.
+  - Measured (Studio Play, server): shadow casters 5,876 -> 2,138; parts
+    5,975, MeshParts 3,247, unique meshes 411, lights 144 (0 with shadows),
+    world screens 74, solid decor 0, precise collision 0; heaviest room
+    Supplement Bar 596 (budget 600): ALL OK. 0 server warnings.
+  - NOT checked: how the gym looks with fewer small shadows (user's eyes),
+    frame rate on a phone.
   NEXT ACTION: per the user's newer rule (memory "models-made-in-blender",
   2026-10-28: every physical model is modelled in Blender, never stacked
   Roblox blocks in code), the block-built pieces from this work are
@@ -1757,7 +1796,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Vary the heading marks and restyle the Mock Meet signs and coach bubble; `git log -1` for the hash.
+- 2026-10-28, pushed: Performance pass: fewer decor shadows, triangle budgets, a performance audit tool; `git log -1` for the hash.
+- `8b17791` (2026-10-28, pushed) Vary the heading marks and restyle the Mock Meet signs and coach bubble. (It also carried part of the Blender Cardio TV's RoomProps code from a parallel session; without that session's PropAssets entry it falls back to the block TV.)
 - `ca8dc47` (2026-10-28, pushed) Restyle the treadmill game, its leaderboards, and rebuild the Cardio TV (UI restyle step 5).
 - `4039899` (2026-10-28, pushed) Add the PLAYER STATS screen (UI restyle step 4).
 - `5f85a67` (2026-10-28, pushed) Restyle the rack menu and every "E" prompt (UI restyle step 3).
