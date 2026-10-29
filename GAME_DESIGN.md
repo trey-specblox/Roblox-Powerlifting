@@ -2140,6 +2140,28 @@ actual currency/item formula belongs to economy design and is **not specified
 here**; raw absolute kilograms is explicitly **not** frozen, since it would create
 a heavier-class economic advantage.
 
+#### The Local meet — first build (user, 2026-10-29, picked from options)
+
+The first meet against other players is the **Local meet** (§15). Nationals,
+Worlds and Sheffield come later and are untouched here.
+
+| Question | Decision |
+|---|---|
+| Turns | **Everyone lifts together.** Each lifter has their own platform, side by side; every lifter takes squat attempt 1 at the same time, then attempt 2, and so on (9 rounds). A whole meet takes about 15 minutes even with 8 players. Chosen over one platform with the lightest bar first (about 50 minutes for 8 players) |
+| Placing | **One ranking by score** for everyone in the meet: **Score = Total ÷ the weight class's reference Total** (`ReferenceRecordConfig`, the same yardstick Sheffield uses, §32.4), shown as a percentage. A light lifter can beat a heavy one, and a lifter alone in their class does not win automatically. Class winners are shown too. A bomb-out has no score and no place. **[PROVISIONAL]**: the tie rule (lighter bodyweight first, as in real meets) |
+| Start | **On a timer.** A Local meet starts every **10 minutes** if at least **2 real players** (`MeetConfig.OfficialLocalMeetMinimumRealPlayers`) have signed up at the sign-up desk; sign-ups close **1 minute** before the start. Fewer than 2: no meet, and the sign-ups carry to the next start. **[PROVISIONAL]** times |
+| Venue | **A separate building on the same server**, reached through a door from the gym (like the Mock Meet rooms), so friends and chat stay together. Not a separate Roblox place. Modelled in Blender like the rest of the map (§15's list: platforms, judges, seating, scoreboard, attempt board, warm-up, awards area) |
+| Rules inside a meet | Everything the Mock Meet already has: weigh-in with the class locked, 3 attempts per lift in 2.5 kg steps inside 40-125% of CN, a choose timer and a ready timer, the existing minigames. **Plus three referees with lights** (official meets keep referees, §29.10) and the coach watching |
+| What it saves | §33.3b in full: CN raises within the daily allowance, misses above CN use it, Competition Scale and best Total, and **a bomb-out or leaving early saves nothing**. A **win** (1st place in a meet with at least 2 real players) counts toward the 10 Local wins that unlock Nationals (`MeetConfig.LocalVictoriesForNationals`) |
+| Not in the first build | Money, equipment, the gym record wall bonus (§30.3-§30.5) wait for the economy design; Nationals and above |
+
+**Build order** (one step at a time, each tested before the next):
+1. The meet itself: sign-up desk, timer, weigh-in, rounds, referees, placing and
+   the results screen, on a simple temporary venue so it can be played at once.
+2. Its rewards: the daily CN allowance (replacing the Competition Budget's stored
+   pools, a save-data change), Scale, best Total, Local wins.
+3. The venue, modelled in Blender.
+
 ### 29.11 Weight class and build interactions
 
 **[FROZEN]**

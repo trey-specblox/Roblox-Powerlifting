@@ -2343,8 +2343,19 @@ and polish.
     challenge reads the Scale proven BEFORE the meet, fixed for the whole
     meet. Matches the built code; no code change. COMMITTED and pushed
     2026-10-29 (section 1).
-  NEXT ACTION: ask the user what is next. The rest of 33.3b waits for
-  vs-player meets. The user also has a Mock Meet and a deadlift to
+
+  LOCAL MEET (vs other players) — DESIGN DECIDED (user, 2026-10-29,
+  GAME_DESIGN 29.10 "The Local meet — first build"), COMMITTED and pushed
+  2026-10-29 (section 1).
+  Picked from options: everyone lifts together on their own platforms (9
+  rounds); one ranking by score = Total / class reference Total (class
+  winners shown); starts on a 10-minute timer with at least 2 signed-up
+  players, sign-ups close 1 minute before; a separate building on the same
+  server through a door. Build order: (1) the meet itself on a temporary
+  venue, (2) rewards incl. the daily CN allowance (save-data change), (3) the
+  venue in Blender. Money/equipment wait for the economy design.
+  NEXT ACTION (in progress): step 1, the Local meet itself on a temporary
+  venue. The user also has a Mock Meet and a deadlift to
   try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.
@@ -2415,7 +2426,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Keep the Scale challenge fixed for the whole meet, and record the user's Mock Meet test; `git log -1` for the hash.
+- 2026-10-29, pushed: Decide the Local meet's first build (turns, placing, start, venue); `git log -1` for the hash.
+- `ab14393` (2026-10-29, pushed) Keep the Scale challenge fixed for the whole meet, and record the user's Mock Meet test.
 - `dda82af` (2026-10-29, pushed) Save a Mock Meet's proven lifts only when it ends with a total.
 - `ca82437` (2026-10-29, pushed) Decide meet risk: a daily meet CN allowance, misses use it, a bomb-out saves nothing.
 - `84c48a4` (2026-10-29, pushed) Retire Training Energy and record meet CN raises (checkpoint 8, save version 8).
