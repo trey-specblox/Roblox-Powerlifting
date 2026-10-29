@@ -578,6 +578,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 122130943505239 }, -- RoomProps_07: themed room fronts, batch 2b (mic, ON AIR lamp, headphones, band, roller, rack, clipboard)
 	{ id = 122294195016059 }, -- RoomProps_08: the open zone's machines (tricep pulldown, lat pulldown, seated row, leg extension)
 	{ id = 77291688307242 }, -- RoomProps_09: the Cardio machines (treadmill, exercise bike, rower, ski erg)
+	{ id = 127520535803138 }, -- CardioTV_01: the Cardio room's wall TV and soundbar
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -781,6 +782,12 @@ StarterGymConfig.PropColourways = {
 	},
 	Kettle = { { Body = "Cream", Trim = "Black" }, { Body = "Sage", Trim = "Silver" }, { Body = "Red", Trim = "Black" } },
 	WaterCooler = { { Body = "White", Bottle = "WaterBlue", Tap = "Blue", Dark = "Black" } },
+	-- The Cardio wall TV (CardioTV_01, art/scripts/build_cardio_tv_01.py).
+	CardioTV = { {
+		Bezel = "Black", Screen = "Black", Back = "Charcoal", Mount = "Silver", Logo = "White",
+		PowerLight = "GlowGreen", Soundbar = "Black", SoundbarGrille = "Charcoal", SoundbarTrim = "Yellow",
+		SoundbarCaps = "Silver", SoundbarLogo = "White", SoundbarBrackets = "Silver",
+	} },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

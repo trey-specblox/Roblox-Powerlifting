@@ -1652,7 +1652,7 @@ and polish.
     old RoomProps "CENTRAL TV" writing; the round's TV view was not captured.
   CARDIO TV MADE IN BLENDER (2026-10-28; user: "I want every model to be
   made in blender" -> memory rule models-made-in-blender; "Yes, upload it";
-  NOT committed): art/scripts/build_cardio_tv_01.py ->
+  COMMITTED with the user's approval on 2026-10-28, see section 1): art/scripts/build_cardio_tv_01.py ->
   art/blender/CardioTV_01.blend (12 pieces: Bezel, Screen, Back, Mount,
   Logo, PowerLight, Soundbar, SoundbarGrille, SoundbarTrim, SoundbarCaps,
   SoundbarLogo, SoundbarBrackets), check_models CHECK PASSED, previewed
@@ -1796,7 +1796,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Performance pass: fewer decor shadows, triangle budgets, a performance audit tool; `git log -1` for the hash.
+- 2026-10-28, pushed: Add the Blender Cardio TV; `git log -1` for the hash.
+- `d5fa7d4` (2026-10-28, pushed) Performance pass: fewer decor shadows, triangle budgets, a performance audit tool.
 - `8b17791` (2026-10-28, pushed) Vary the heading marks and restyle the Mock Meet signs and coach bubble. (It also carried part of the Blender Cardio TV's RoomProps code from a parallel session; without that session's PropAssets entry it falls back to the block TV.)
 - `ca8dc47` (2026-10-28, pushed) Restyle the treadmill game, its leaderboards, and rebuild the Cardio TV (UI restyle step 5).
 - `4039899` (2026-10-28, pushed) Add the PLAYER STATS screen (UI restyle step 4).

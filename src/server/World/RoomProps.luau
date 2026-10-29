@@ -1334,15 +1334,26 @@ FURNISH.Cardio = function(kit)
 	local tvProps = propsFor({ "CardioTV" })
 	if tvProps then
 		local a, d = back.at(0, 0.5)
-		local unit = propItem(kit, tvProps, "CardioTV", "CardioTV", 1, a, d, 3.81, "+d")
+		local unit = propItem(kit, tvProps, "CardioTV", "CardioTV", 1, a, d, 3.81, "-d")
 		local screen = unit:FindFirstChild("CardioTV_Screen", true) :: BasePart?
 		local bezel = unit:FindFirstChild("CardioTV_Bezel", true) :: BasePart?
 		if screen and bezel then
 			screen.Name = "TV"
 			screen.Reflectance = 0.06
 			screen.Parent = unit.Parent
-			BuildParts.surfaceLight(bezel, faceToward(-back.out), 9, 1.6, 120, Color3.fromRGB(70, 146, 255))
-			StyledScreen.build(screen, faceToward(back.out), "CARDIO ZONE", { "Hop on any machine: hold E",
+			-- The pieces are turned, so pick each one's own face that looks along `direction`.
+			local function ownFace(part: BasePart, direction: Vector3): Enum.NormalId
+				local best, bestDot = Enum.NormalId.Front, -math.huge
+				for _, face in ipairs(Enum.NormalId:GetEnumItems()) do
+					local dot = part.CFrame:VectorToWorldSpace(Vector3.FromNormalId(face)):Dot(direction)
+					if dot > bestDot then
+						best, bestDot = face, dot
+					end
+				end
+				return best
+			end
+			BuildParts.surfaceLight(bezel, ownFace(bezel, -back.out), 9, 1.6, 120, Color3.fromRGB(70, 146, 255))
+			StyledScreen.build(screen, ownFace(screen, back.out), "CARDIO ZONE", { "Hop on any machine: hold E",
 				"Treadmills: the rhythm run", "Beat the boards on the side walls", "Jump to hop off" }, "corner")
 		end
 	end
