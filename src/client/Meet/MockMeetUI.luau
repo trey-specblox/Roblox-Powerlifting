@@ -356,7 +356,9 @@ function MockMeetUI.build(handlers: Handlers): Ui
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
 				table.insert(parts, string.format("%s %s", string.upper(lift), if best[lift] then kgText(best[lift]) else "—"))
 			end
-			sub.Text = table.concat(parts, "   ·   ") .. "     (nothing is saved yet)"
+			-- The server saves only a meet with a total (GAME_DESIGN 33.3b).
+			sub.Text = table.concat(parts, "   ·   ")
+				.. (if state.total then "     (proven lifts saved)" else "     (a bomb-out saves nothing)")
 		end
 	end
 

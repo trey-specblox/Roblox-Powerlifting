@@ -408,6 +408,8 @@ export type ScaleRaiseOutcome = "Raised" | "Unchanged" | "Rejected"
 	     never the bodyweight at the end of the meet. A Scale proven in one
 	     class is NOT proof in another (section 29.11), and naming the class
 	     here is what keeps it in its own build.
+	  5. The meet ENDED WITH A TOTAL (section 33.3b, user 2026-10-29). A
+	     bomb-out, or leaving before the meet is over, saves nothing.
 
 	NO CLIENT, REMOTE, DEV TRIGGER OR NON-MEET GAMEPLAY SYSTEM MAY REACH THIS.
 	A client-supplied weight arriving here would let a player write their own

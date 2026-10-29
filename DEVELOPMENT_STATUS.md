@@ -2306,10 +2306,37 @@ and polish.
   the meet ends. Edited: 33.3b table, 29.9 note, 29.10 Mock Meet bullet,
   33.6 note, the 29.5 obsolete note, 33.11 items 1, 6 and 9, 34.13 row 7,
   34.14 row 9.
-  NEXT ACTION (in progress): the one buildable piece: change MockMeetService so Competition Scale is
-  saved only when the meet ends with a total (it now saves after each good
-  lift, even on a bomb-out or early leave). The rest waits for vs-player
-  meets. The user also has a Mock Meet and a deadlift to try in Studio.
+
+  MOCK MEET SAVES ONLY WITH A TOTAL (built 2026-10-29, GAME_DESIGN 33.3b).
+  COMMITTED and pushed 2026-10-29 (section 1).
+  - MockMeetService: saveScale (after each good lift) and saveBestTotal are
+    replaced by saveMeetResult, run once when the meet ends: with a total it
+    raises all three lifts' Scale and the best Total in ONE
+    PlayerDataService.update; a bomb-out logs "bombed out: nothing saved".
+    Leaving (or dying) before the end saves nothing ("left before the meet
+    ended"); leaving during the LAST verdict counts as finished
+    (allAttemptsTaken). Header comment updated.
+  - ProfileOperations.raiseCompetitionScale: caller rule 5 added (the meet
+    ended with a total).
+  - MockMeetUI: the Done screen's stale "(nothing is saved yet)" now reads
+    "(proven lifts saved)" or "(a bomb-out saves nothing)".
+  - Checks: luau-lsp, no new errors (only the known pre-existing ones).
+    Studio Play (by Claude, DataStore API off), with TEMPORARY 1 s
+    choose/ready timers (restored, Studio matches disk): (1) 9 timed-out
+    no-lifts -> "bombed out: nothing saved", screen "(a bomb-out saves
+    nothing)"; (2) leave after squat 1 -> "left before the meet ended:
+    nothing saved"; (3) leave during the last verdict -> "bombed out:
+    nothing saved" (the finished path); (4) with a TEMPORARY "time-out
+    counts as good lift" line (removed): no Scale notice during the meet,
+    then at the end Squat/Bench/Deadlift Scale 27.5 kg and best Total
+    82.5 kg Raised, screen "(proven lifts saved)". Not seen: a real
+    minigame good lift (the user's Mock Meet test covers it).
+  - Rojo half-synced the first edit once (new function in, old runMeet
+    kept); fixed by a nudge edit, then Studio's Source lengths were checked
+    against the disk files.
+  NEXT ACTION: ask the user what is next. The rest of 33.3b waits for
+  vs-player meets. The user also has a Mock Meet and a deadlift to
+  try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2379,7 +2406,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Decide meet risk: a daily meet CN allowance, misses use it, a bomb-out saves nothing; `git log -1` for the hash.
+- 2026-10-29, pushed: Save a Mock Meet's proven lifts only when it ends with a total; `git log -1` for the hash.
+- `ca82437` (2026-10-29, pushed) Decide meet risk: a daily meet CN allowance, misses use it, a bomb-out saves nothing.
 - `84c48a4` (2026-10-29, pushed) Retire Training Energy and record meet CN raises (checkpoint 8, save version 8).
 - `d6a8c4b` (2026-10-29, pushed) Add the Competition Scale challenge to meet attempts (checkpoint 6).
 - `b67b8a7` (2026-10-29, pushed) Remove PullStrength (checkpoint 9, save version 7).

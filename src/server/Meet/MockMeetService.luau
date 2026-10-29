@@ -7,13 +7,14 @@
 	2026-10-27): the check-in, the move in and out of the private rooms, and the
 	meet itself.
 
-	WHAT IT SAVES (GAME_DESIGN.md 29.11 and 33.7, user 2026-10-28): only into the
-	build of the class locked at the weigh-in. Each GOOD LIFT raises that
-	lift's Competition Scale at once (it counts even if the lifter leaves
-	early); a FINISHED meet's Total can raise the build's best Total. Both go
-	through the monotone ProfileOperations raises, fed by MeetTotal (good lifts
-	only). No records (never the GYM RECORD wall, never a World Record), no
-	money, and never Competition Number (33.3).
+	WHAT IT SAVES (GAME_DESIGN.md 29.11, 33.7 and 33.3b): only into the build of
+	the class locked at the weigh-in, and only when the meet ENDS WITH A TOTAL
+	(user 2026-10-29: a bomb-out, or leaving before the last attempt, saves
+	nothing). Then each lift's best good lift raises its Competition Scale and
+	the Total can raise the build's best Total, in one write. Both go through
+	the monotone ProfileOperations raises, fed by MeetTotal (good lifts only).
+	No records (never the GYM RECORD wall, never a World Record), no money, and
+	never Competition Number (33.3).
 
 	CHECK-IN. The check-in point in the gym's Mock Meet Room (tagged
 	MockMeetConfig.CheckInTag by RoomProps) gets a "Start Mock Meet" prompt. The
@@ -306,44 +307,58 @@ end
 
 -- ---------------------------------------------------------------- what the meet saves
 
---[[
-	After a GOOD LIFT: raises this lift's Competition Scale in the build of the
-	weigh-in class to the heaviest good lift of the meet so far. MeetTotal's
-	bestSuccessful only ever returns a GoodLift weight, so a miss can never
-	reach the raise. Saved at once, so leaving early keeps it (33.7).
-]]
-local function saveScale(player: Player, visit: Visit, lift: string)
-	local provenKg = MeetTotal.bestSuccessful(visit.lifts[lift].history)
-	if provenKg == nil then
-		return
+-- True once every attempt of every lift was taken or passed, so the meet is over.
+local function allAttemptsTaken(visit: Visit): boolean
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		local record = visit.lifts[lift]
+		if #record.history + record.passed < MeetConfig.AttemptsPerLift then
+			return false
+		end
 	end
-	local outcome: ProfileOperations.ScaleRaiseOutcome = "Rejected"
-	local scaleKg: number? = nil
-	PlayerDataService.update(player, function(data)
-		outcome, scaleKg = ProfileOperations.raiseCompetitionScale(data, visit.classLabel, lift, provenKg)
-	end)
-	if outcome == "Raised" and scaleKg then
-		notify(player, string.format("New %s Competition Scale: %s kg (%s class)", lift, kgText(scaleKg), visit.classLabel))
-	elseif outcome == "Rejected" then
-		warn(string.format("[MockMeetService] %s's %s Scale (%s kg, %s) was not saved", player.Name, lift,
-			kgText(provenKg), visit.classLabel))
-	end
-	log("%s %s Scale (%s): %s", player.Name, lift, visit.classLabel, outcome)
+	return true
 end
 
--- At the end of a FINISHED meet with a total: raises the build's best Total.
-local function saveBestTotal(player: Player, visit: Visit, totalKg: number)
-	local outcome: ProfileOperations.ScaleRaiseOutcome = "Rejected"
+--[[
+	At the end of a meet WITH A TOTAL (33.3b): raises each lift's Competition
+	Scale in the build of the weigh-in class to that lift's best good lift, and
+	the build's best Total, in one write. MeetTotal only ever counts GoodLift
+	weights, so a miss can never reach a raise. A bomb-out has no total and
+	saves nothing.
+]]
+local function saveMeetResult(player: Player, visit: Visit, result: MeetTotal.MeetResult)
+	local totalKg = result.total
+	if totalKg == nil then
+		log("%s bombed out: nothing saved", player.Name)
+		return
+	end
+	local scaleOutcomes: { [string]: ProfileOperations.ScaleRaiseOutcome } = {}
+	local scaleKgs: { [string]: number? } = {}
+	local totalOutcome: ProfileOperations.ScaleRaiseOutcome = "Rejected"
 	PlayerDataService.update(player, function(data)
-		outcome = ProfileOperations.raiseBestTotal(data, visit.classLabel, totalKg)
+		for _, lift in ipairs(MeetConfig.LiftOrder) do
+			scaleOutcomes[lift], scaleKgs[lift] =
+				ProfileOperations.raiseCompetitionScale(data, visit.classLabel, lift, result.best[lift])
+		end
+		totalOutcome = ProfileOperations.raiseBestTotal(data, visit.classLabel, totalKg)
 	end)
-	if outcome == "Raised" then
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		local outcome = scaleOutcomes[lift] or "Rejected"
+		local scaleKg = scaleKgs[lift]
+		if outcome == "Raised" and scaleKg then
+			notify(player, string.format("New %s Competition Scale: %s kg (%s class)", lift, kgText(scaleKg), visit.classLabel))
+		elseif outcome == "Rejected" then
+			warn(string.format("[MockMeetService] %s's %s Scale (%s kg, %s) was not saved", player.Name, lift,
+				kgText(result.best[lift]), visit.classLabel))
+		end
+		log("%s %s Scale (%s): %s", player.Name, lift, visit.classLabel, outcome)
+	end
+	if totalOutcome == "Raised" then
 		notify(player, string.format("New best Total: %s kg (%s class)", kgText(totalKg), visit.classLabel))
-	elseif outcome == "Rejected" then
+	elseif totalOutcome == "Rejected" then
 		warn(string.format("[MockMeetService] %s's total (%s kg, %s) was not saved", player.Name, kgText(totalKg),
 			visit.classLabel))
 	end
-	log("%s best Total (%s): %s", player.Name, visit.classLabel, outcome)
+	log("%s best Total (%s): %s", player.Name, visit.classLabel, totalOutcome)
 end
 
 -- ---------------------------------------------------------------- the meet
@@ -443,9 +458,6 @@ local function runAttempt(player: Player, visit: Visit, lift: string, attemptNum
 
 	-- Result.
 	table.insert(record.history, { weightKg = weightKg, result = result })
-	if result == "GoodLift" then
-		saveScale(player, visit, lift)
-	end
 	MockMeetArena.coachSays(visit.room, pick(if result == "GoodLift" then COACH_GOOD else COACH_MISS))
 	updateBoard(player, visit, lift, attemptNumber, weightKg, result)
 	sendState(player, visit, "Result", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
@@ -467,14 +479,18 @@ local function runMeet(player: Player, visit: Visit)
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
 		for attemptNumber = 1, MeetConfig.AttemptsPerLift do
 			if not stillIn(player, visit) or not runAttempt(player, visit, lift, attemptNumber) then
+				-- Gone before the end: nothing is saved, unless it was during the last verdict.
+				if allAttemptsTaken(visit) and player.Parent then
+					saveMeetResult(player, visit, MeetTotal.resolve(meetAttempts(visit)))
+				else
+					log("%s left before the meet ended: nothing saved", player.Name)
+				end
 				return
 			end
 		end
 	end
 	local result = MeetTotal.resolve(meetAttempts(visit))
-	if result.total then
-		saveBestTotal(player, visit, result.total)
-	end
+	saveMeetResult(player, visit, result)
 	MockMeetArena.coachSays(visit.room, if result.total then "Great meet. Proud of you." else "We'll get them next time.")
 	updateBoard(player, visit, nil, nil, result.total)
 	sendState(player, visit, "Done", { best = result.best, total = result.total, bombedOut = result.bombedOut })
