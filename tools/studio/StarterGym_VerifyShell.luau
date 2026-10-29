@@ -396,8 +396,10 @@ local function run()
 			local entranceMax = plan.centreX + spec.width / 2
 			local panels, good, problems = 0, 0, {}
 			local covered, openBoxes = {}, {}
+			-- Panels as AutoDoorAnimator sees them: child Models with a ClosedPivot (the door's other
+			-- models, like the Blender sensor box, are not panels).
 			for _, panel in ipairs(door:GetChildren()) do
-				if panel:IsA("Model") then
+				if panel:IsA("Model") and panel:GetAttribute("ClosedPivot") ~= nil then
 					panels += 1
 					local closed = panel:GetAttribute("ClosedPivot")
 					local offset = panel:GetAttribute("OpenOffset")
@@ -475,8 +477,9 @@ local function run()
 		local door = doorsFolder and doorsFolder:FindFirstChild(roomName .. "Door")
 		local panels = {}
 		if door then
+			-- Panels as AutoDoorAnimator sees them (not the Blender sign over the door).
 			for _, child in ipairs(door:GetChildren()) do
-				if child:IsA("Model") then
+				if child:IsA("Model") and child:GetAttribute("ClosedPivot") ~= nil then
 					table.insert(panels, child)
 				end
 			end
@@ -881,12 +884,15 @@ local function run()
 	check(#outside == 0, string.format("all room furniture stays inside its room%s",
 		if #outside > 0 then " (" .. table.concat(outside, ", ", 1, math.min(#outside, 6)) .. ")" else ""))
 	-- The shop's gear models (art/roblox/ShopGear_01.rbxmx): 3 mannequins, 6
-	-- hanging wraps, 8 knee sleeves, 6 rolled wraps, 6 belts.
+	-- hanging wraps, 8 knee sleeves, 6 rolled wraps, 6 belts. Counted by their
+	-- item names: the shop's furniture is Blender models too (CafeShop_01).
+	local gearItems = { MannequinSinglet = true, MannequinTee = true, WristWrapHanging = true, KneeSleeve = true,
+		WristWrap = true, LeverBelt = true }
 	local shopProps = propsFolder and propsFolder:FindFirstChild("Shop")
 	local gearCount = 0
 	if shopProps then
 		for _, child in ipairs(shopProps:GetChildren()) do
-			if child:IsA("Model") then
+			if child:IsA("Model") and gearItems[string.match(child.Name, "^(%a+)_") or ""] then
 				gearCount += 1
 			end
 		end

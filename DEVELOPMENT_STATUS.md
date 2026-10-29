@@ -2180,9 +2180,21 @@ and polish.
   - NOT checked: StarterGym_VerifyShell has not been re-run since batch 1
     (57 KB, not Rojo-synced, so it has to be pasted into the Command Bar in
     a Play test); the user's own look of every batch.
-  NEXT ACTION: blocks to Blender is done (batches 1-9 committed). Run
-  StarterGym_VerifyShell in a Play test (Server view) and look round the gym;
-  then ask the user what is next.
+  StarterGym_VerifyShell, run by the user after batch 9 (2026-10-29): three
+  FAILs, all the script counting the new Blender models wrongly (the game was
+  fine): the sliding doors counted the DoorSensor model (SensorBox) as a
+  panel (3 and 5 found), five swing doors counted the DoorSign model
+  (PlaqueSign) as a leaf (Sauna, Recovery, Massage, Lounge, TrophyRoom), and
+  the shop counted its CafeShop_01 furniture as gear (51 found). Fixed in
+  the script (committed and pushed with user approval, 2026-10-29): door panels are child Models with a
+  ClosedPivot (AutoDoorAnimator's own rule; a missing or broken panel still
+  fails), and shop gear is counted by its item names. luau-lsp 0 problems.
+  Studio Play (by Claude), the same counting run on the server: entrance 2
+  and hall 4 panels, all 17 swing doors with their leaf counts, 29 shop gear
+  models. The full script not re-run after the fix. (Its INFO about
+  Lighting.Technology is not a failure.)
+  NEXT ACTION: the user re-runs StarterGym_VerifyShell (Server view, Play) to
+  see the full result; then ask what is next.
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2252,7 +2264,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Replace the gym's block steel with Blender I-beams and handrails (blocks to Blender, batch 9); `git log -1` for the hash.
+- 2026-10-29, pushed: Count only real door panels and shop gear in StarterGym_VerifyShell; `git log -1` for the hash.
+- `bc4d903` (2026-10-29, pushed) Replace the gym's block steel with Blender I-beams and handrails (blocks to Blender, batch 9).
 - `8a62d1b` (2026-10-29, pushed) Replace the themed fronts' block details with Blender models (blocks to Blender, batch 8).
 - `5ed9cb2` (2026-10-29, pushed) Replace the back rooms' block furniture with Blender models (blocks to Blender, batch 7).
 - `83234f1` (2026-10-29, pushed) Replace the spa wing's block furniture with Blender models (blocks to Blender, batch 6).
