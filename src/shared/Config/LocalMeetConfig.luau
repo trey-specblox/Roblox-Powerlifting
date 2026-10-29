@@ -8,9 +8,9 @@
 	their own platform, one ranking by score, a meet every 10 minutes with at
 	least 2 signed-up players, in a separate building on the same server.
 
-	STEP 1 (this build): the meet itself on a TEMPORARY venue. Nothing is saved
-	yet; the rewards (§33.3b) are step 2 and the Blender venue step 3.
-	The numbers are [PROVISIONAL].
+	STEP 1: the meet itself on a TEMPORARY venue. STEP 2: its rewards (§33.3b:
+	CN raises within the meet allowance, Competition Scale, best Total, Local
+	wins). Step 3 is the Blender venue. The numbers are [PROVISIONAL].
 ]]
 
 local MeetConfig = require(script.Parent:WaitForChild("MeetConfig"))
@@ -49,10 +49,19 @@ LocalMeetConfig.SignUpClosesSeconds = 60
 LocalMeetConfig.StudioCycleSeconds = 90
 LocalMeetConfig.StudioSignUpClosesSeconds = 15
 
--- Real players needed to hold a meet. In Studio one is enough, so a test can run alone; a one-lifter
--- meet never counts as a win (that rule comes with the rewards, step 2).
+-- Real players needed to hold a meet. In Studio one is enough, so a test can run alone.
 LocalMeetConfig.MinimumLifters = MeetConfig.OfficialLocalMeetMinimumRealPlayers
 LocalMeetConfig.StudioMinimumLifters = 1
+
+--[[
+	STEP 2, THE REWARDS (§33.3b): a meet raises CN (within the build's meet
+	allowance) and counts a win only when it STARTED with at least this many
+	lifters, so only meets against other players reward. In Studio a one-lifter
+	meet counts too, so the rewards can be tested alone; a live server never
+	uses that.
+]]
+LocalMeetConfig.RewardMinimumLifters = MeetConfig.OfficialLocalMeetMinimumRealPlayers
+LocalMeetConfig.StudioRewardMinimumLifters = 1
 
 -- The timers of each round: everyone chooses, then everyone lifts (each presses LIFT when ready), then
 -- the referees' lights show. A round moves on as soon as every lifter is done.

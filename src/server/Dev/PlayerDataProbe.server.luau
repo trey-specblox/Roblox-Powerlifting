@@ -60,6 +60,8 @@ local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperatio
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBudget"))
 local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
+local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
+local ProgressionReferenceConfig = require(ConfigFolder:WaitForChild("ProgressionReferenceConfig"))
 
 local BUDGET = ProgressionConfig.CompetitionBudget
 
@@ -331,7 +333,7 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 8", finalVersion == 8 and data.version == 8)
+	check("migrated to version 9", finalVersion == 9 and data.version == 9)
 	check("Squat preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
 	check("Bench preserved at 117.5", near(cnOf(data).Bench, 117.5), tostring(cnOf(data).Bench))
 	check("Deadlift preserved at 215.0", near(cnOf(data).Deadlift, 215.0), tostring(cnOf(data).Deadlift))
@@ -357,7 +359,7 @@ do
 	check("Squat still 300 after three passes", near(cnOf(data).Squat, 300.0), tostring(cnOf(data).Squat))
 	check("Bench still 200", near(cnOf(data).Bench, 200.0))
 	check("Deadlift still 350", near(cnOf(data).Deadlift, 350.0))
-	check("version still 8", data.version == 8)
+	check("version still 9", data.version == 9)
 	check(
 		"part-spent budget was not silently refilled",
 		near(data.competitionBudget.Squat.amount, spentBudget),
@@ -692,7 +694,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("bonus. a version-1 save reaches version 8 in one pass")
+print("bonus. a version-1 save reaches version 9 in one pass")
 do
 	--[[
 		The long path. A v1 save predates the rename, so every step from
@@ -714,7 +716,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 8", finalVersion == 8 and data.version == 8)
+	check("reached version 9", finalVersion == 9 and data.version == 9)
 	check("Squat 140 preserved across two migrations", near(cnOf(data).Squat, 140.0), tostring(cnOf(data).Squat))
 	check("Bench 95 preserved", near(cnOf(data).Bench, 95.0))
 	check("Deadlift 170 preserved", near(cnOf(data).Deadlift, 170.0))
@@ -1202,7 +1204,7 @@ do
 	local data = reconciledV3Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 3)
 
-	check("migrated to version 8", finalVersion == 8 and data.version == 8)
+	check("migrated to version 9", finalVersion == 9 and data.version == 9)
 
 	-- The rule that this whole checkpoint exists to get right.
 	check("Squat Scale is UNPROVEN after migration", scaleOf(data).Squat == 0, tostring(scaleOf(data).Squat))
@@ -1679,7 +1681,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 4)
 
-	check("migrated 4 to 8", finalVersion == 8 and data.version == 8, tostring(data.version))
+	check("migrated 4 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
 
 	--[[
 		NO OFFLINE TRAINING CREDIT. A save that predates the station cannot
@@ -1725,7 +1727,7 @@ do
 end
 
 --------------------------------------------------------------------------------
-print("35. EVERY historical version gap still reaches version 8")
+print("35. EVERY historical version gap still reaches version 9")
 do
 	--[[
 		The rule this guards is in PlayerProfileSchema: a step must exist for every
@@ -1739,7 +1741,7 @@ do
 	oneToFive.technique.PullStrength = nil
 
 	local v1 = PlayerProfileSchema.migrate(oneToFive, 1)
-	check("version 1 reaches 8", v1 == 8 and oneToFive.version == 8, tostring(v1))
+	check("version 1 reaches 9", v1 == 9 and oneToFive.version == 9, tostring(v1))
 	check("v1 ends without PullStrength (removed in v7)", oneToFive.technique.PullStrength == nil)
 	check("v1 gained the CN allowance", typeof(oneToFive.cnAllowance) == "table"
 		and oneToFive.cnAllowance.spentToday == 0)
@@ -1748,14 +1750,14 @@ do
 
 	local twoToFive = reconciledV2Save(182.5, 117.5, 215.0)
 	local v2 = PlayerProfileSchema.migrate(twoToFive, 2)
-	check("version 2 reaches 8", v2 == 8 and twoToFive.version == 8, tostring(v2))
+	check("version 2 reaches 9", v2 == 9 and twoToFive.version == 9, tostring(v2))
 	check("v2 kept its real lifts through four steps", near(cnOf(twoToFive).Squat, 182.5))
 	check("v2 gained the technique allowance", typeof(twoToFive.techniqueAllowance) == "table"
 		and twoToFive.techniqueAllowance.dayKey == DayKey.UNSTAMPED)
 
 	local threeToFive = reconciledV3Save(200.0, 130.0, 240.0)
 	local v3 = PlayerProfileSchema.migrate(threeToFive, 3)
-	check("version 3 reaches 8", v3 == 8 and threeToFive.version == 8, tostring(v3))
+	check("version 3 reaches 9", v3 == 9 and threeToFive.version == 9, tostring(v3))
 	check("v3 is still UNPROVEN, never seeded from CN", scaleOf(threeToFive).Squat == 0,
 		tostring(scaleOf(threeToFive).Squat))
 	check("v3 kept its part-spent budget", near(threeToFive.competitionBudget.Squat.amount, 3.21))
@@ -1766,7 +1768,7 @@ do
 	-- A brand new profile is already current and must skip every step.
 	local fresh = newProfile() :: any
 	local vNew = PlayerProfileSchema.migrate(fresh, 0)
-	check("a new profile is already version 8", vNew == 8 and fresh.version == 8)
+	check("a new profile is already version 9", vNew == 9 and fresh.version == 9)
 
 	--[[
 		IDEMPOTENT. Running the step again on an already-migrated profile must not
@@ -1825,7 +1827,7 @@ do
 	check("the reload is a separate table", near(data.cnAllowance.spentToday, 2.8109))
 
 	-- MIGRATING AN ALREADY-CURRENT PROFILE AGAIN MUST NOT RESET A LIVE DAY.
-	check("reload is still version 8", reloaded.version == 8)
+	check("reload is still version 9", reloaded.version == 9)
 end
 
 --------------------------------------------------------------------------------
@@ -1956,7 +1958,7 @@ do
 	local finalVersion = PlayerProfileSchema.migrate(data, 5)
 	local build = data.builds["83 kg"]
 
-	check("migrated to version 8", finalVersion == 8 and data.version == 8)
+	check("migrated to version 9", finalVersion == 9 and data.version == 9)
 	check("the build is filed under the bodyweight's class, 83 kg", typeof(build) == "table")
 	check("and it is the only build (no phantom 59 kg)", countBuilds(data) == 1, tostring(countBuilds(data)))
 	check("Squat CN moved exactly", build and build.competitionNumber.Squat == 182.5)
@@ -2034,7 +2036,7 @@ do
 	check("the best Total survived", build and build.bestTotalKg == 575.0)
 	check("no flat field was planted back", data.competitionNumber == nil and data.competitionScale == nil)
 	check("still one build", countBuilds(data) == 1)
-	check("back at version 8", data.version == 8)
+	check("back at version 9", data.version == 9)
 end
 
 --------------------------------------------------------------------------------
@@ -2141,7 +2143,7 @@ do
 	local build = data.builds["83 kg"]
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 6)
-	check("migrated 6 to 8", finalVersion == 8 and data.version == 8, tostring(data.version))
+	check("migrated 6 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
 	check("PullStrength is gone", data.technique.PullStrength == nil)
 	check("the five technique stats are untouched", data.technique.SquatControl == 1550
 		and data.technique.DepthAwareness == 975 and data.technique.StartControl == 525
@@ -2158,15 +2160,15 @@ do
 	PlayerProfileSchema.migrate(data, 6)
 	data.version = 2
 	PlayerProfileSchema.migrate(data, 2)
-	check("running it again changes nothing", data.version == 8 and data.technique.PullStrength == nil
+	check("running it again changes nothing", data.version == 9 and data.technique.PullStrength == nil
 		and data.technique.Lockout == 128 and data.builds["83 kg"].competitionNumber.Squat == 182.5)
 
-	-- A save with no technique table at all still reaches version 8 (no crash).
+	-- A save with no technique table at all still reaches version 9 (no crash).
 	local broken = reconciledV5Save(150.0, 100.0, 180.0, 53)
 	PlayerProfileSchema.migrate(broken, 5)
 	broken.version = 6
 	broken.technique = nil
-	check("a v6 save with no technique table reaches 8", PlayerProfileSchema.migrate(broken, 6) == 8)
+	check("a v6 save with no technique table reaches 9", PlayerProfileSchema.migrate(broken, 6) == 9)
 
 	local reloaded = saveAndReload(data)
 	check("still no PullStrength after a save and reload", reloaded.technique.PullStrength == nil)
@@ -2183,7 +2185,7 @@ do
 	data.trainingEnergy = { amount = 61, lastUpdatedUnix = 1700500000 }
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 7)
-	check("migrated 7 to 8", finalVersion == 8 and data.version == 8, tostring(data.version))
+	check("migrated 7 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
 	check("Training Energy is gone", data.trainingEnergy == nil)
 	check("the Competition Budget is kept, part-spent amount exact", near(data.competitionBudget.Squat.amount, 2.75)
 		and data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
@@ -2193,11 +2195,148 @@ do
 		and data.bodyweight.currentKg == 82.4 and data.meta.sessionCount == 103)
 
 	PlayerProfileSchema.migrate(data, 7)
-	check("running it again changes nothing", data.version == 8 and data.trainingEnergy == nil
+	check("running it again changes nothing", data.version == 9 and data.trainingEnergy == nil
 		and near(data.competitionBudget.Squat.amount, 2.75))
 
 	local reloaded = saveAndReload(data)
 	check("still no Training Energy after a save and reload", reloaded.trainingEnergy == nil)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("46. version 8 to 9: the meet CN allowance and the career (GAME_DESIGN 33.3b)")
+do
+	local MAX_DAYS = ProgressionConfig.MeetCnAllowance.MaxDays
+
+	-- A version-8 save as it is live today: one build without an allowance, no career.
+	local data = reconciledV5Save(182.5, 117.5, 215.0, 82.4)
+	PlayerProfileSchema.migrate(data, 5)
+	data.version = 8
+	data.builds["83 kg"].meetAllowance = nil
+	data.career = nil
+	local finalVersion = PlayerProfileSchema.migrate(data, 8)
+	local build = data.builds["83 kg"]
+	check("migrated 8 to 9", finalVersion == 9 and data.version == 9, tostring(data.version))
+	local allFull = true
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local resource = build.meetAllowance and build.meetAllowance[lift]
+		if not (resource and resource.amount == MAX_DAYS and resource.lastUpdatedUnix == 0) then
+			allFull = false
+		end
+	end
+	check("every lift's allowance starts full (3 days)", allFull)
+	check("the career starts at 0 Local wins", data.career and data.career.localWins == 0)
+	check("CN, Scale, best Total untouched", build.competitionNumber.Squat == 182.5
+		and build.competitionScale.Deadlift == 212.5 and build.bestTotalKg == PlayerProfileSchema.NO_TOTAL)
+	check("budget, daily allowance, technique, bodyweight and meta untouched",
+		near(data.competitionBudget.Squat.amount, 2.75) and data.cnAllowance.spentToday == 1.5
+			and data.technique.Lockout == 128 and data.bodyweight.currentKg == 82.4 and data.meta.sessionCount == 103)
+
+	-- Idempotent: a part-spent allowance and a win survive running the step again.
+	build.meetAllowance.Squat = { amount = 0.75, lastUpdatedUnix = 1761600000 }
+	data.career.localWins = 4
+	PlayerProfileSchema.migrate(data, 8)
+	check("running it again changes nothing", data.version == 9 and build.meetAllowance.Squat.amount == 0.75
+		and build.meetAllowance.Squat.lastUpdatedUnix == 1761600000 and data.career.localWins == 4)
+	local reloaded = saveAndReload(data)
+	check("kept after a save and reload", reloaded.builds["83 kg"].meetAllowance.Squat.amount == 0.75
+		and reloaded.career.localWins == 4)
+
+	-- A new profile.
+	local fresh = newProfile()
+	check("a new profile has a full allowance and no wins", buildOf(fresh).meetAllowance.Bench.amount == MAX_DAYS
+		and fresh.career.localWins == 0)
+
+	-- A new build COPIES the allowance of the lighter build it copies its kg from (user, 2026-10-29).
+	local upper = PlayerProfileSchema.ensureBuild(data, "93 kg")
+	check("moving up copies the used-up allowance, not a fresh one", upper ~= nil
+		and upper.meetAllowance.Squat.amount == 0.75 and upper.meetAllowance.Squat.lastUpdatedUnix == 1761600000
+		and upper.meetAllowance.Squat ~= build.meetAllowance.Squat and upper.meetAllowance.Bench.amount == MAX_DAYS)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("47. settling a meet against the allowance (MeetCnAllowance, 33.3b)")
+do
+	local NOW = 1761800000
+	-- A 100 kg squat in the 83 kg class, far below the record: one day is worth about 4%.
+	local function freshData(): any
+		local data = reconciledV5Save(100, 100, 100, 82.4)
+		PlayerProfileSchema.migrate(data, 5)
+		return data
+	end
+	local daily = MeetCnAllowance.dailyShare("Squat", "83 kg", 100) :: number
+	check("far from the record a day is worth almost 4%", daily ~= nil and daily > 0.035 and daily <= 0.04,
+		tostring(daily))
+	local reference = ProgressionReferenceConfig.get("Squat", "83 kg") :: number
+	check("at 0.75 of the reference a day is worth 2% (training's curve)",
+		near(MeetCnAllowance.dailyShare("Squat", "83 kg", reference * 0.75) :: number, 0.02))
+	check("the unlimited class has no allowance", MeetCnAllowance.dailyShare("Squat", "120+ kg", 100) == nil)
+
+	local function settle(data: any, history: any, raises: boolean): (string, number?, number)
+		return ProfileOperations.settleMeetCompetitionNumber(data, "83 kg", "Squat", 100, history, raises, NOW)
+	end
+	local function squat(data: any): number
+		return data.builds["83 kg"].competitionNumber.Squat
+	end
+	local function daysLeft(data: any): number
+		return data.builds["83 kg"].meetAllowance.Squat.amount
+	end
+
+	local d1 = freshData()
+	local outcome, cn, used = settle(d1, { { weightKg = 110, result = "GoodLift" } }, true)
+	check("a good 110 kg raises CN 100 to 110", outcome == "Raised" and near(cn :: number, 110) and near(squat(d1), 110))
+	check("and uses 10% worth of days", near(used, 0.1 / daily) and near(daysLeft(d1), 3 - 0.1 / daily))
+
+	local d2 = freshData()
+	settle(d2, { { weightKg = 125, result = "GoodLift" } }, true)
+	check("a good 125 kg is cut to what 3 days pay for", near(squat(d2), 100 * (1 + 3 * daily)) and near(daysLeft(d2), 0))
+
+	local d3 = freshData()
+	outcome, cn, used = settle(d3, { { weightKg = 110, result = "NoLift" } }, true)
+	check("a miss at 110 kg raises nothing but uses what it would have cost", outcome == "Unchanged"
+		and squat(d3) == 100 and near(used, 0.1 / daily))
+
+	local d4 = freshData()
+	settle(d4, { { weightKg = 95, result = "NoLift" } }, true)
+	check("a miss at or below CN costs nothing", near(daysLeft(d4), 3))
+
+	local d5 = freshData()
+	settle(d5, { { weightKg = 104, result = "GoodLift" }, { weightKg = 106, result = "NoLift" } }, false)
+	check("a bomb-out raises nothing; only the miss costs (from CN, 6%)", squat(d5) == 100
+		and near(daysLeft(d5), 3 - 0.06 / daily))
+
+	local d6 = freshData()
+	settle(d6, { { weightKg = 105, result = "GoodLift" }, { weightKg = 112.5, result = "NoLift" } }, true)
+	check("in order: good 105 then a miss at 112.5 uses the rest", near(squat(d6), 105) and near(daysLeft(d6), 0))
+
+	local d7 = freshData()
+	d7.builds["83 kg"].meetAllowance.Squat = { amount = 0, lastUpdatedUnix = NOW }
+	check("empty: a raise waits for the refill", select(1, ProfileOperations.settleMeetCompetitionNumber(d7, "83 kg",
+		"Squat", 100, { { weightKg = 104, result = "GoodLift" } }, true, NOW)) == "Unchanged" and squat(d7) == 100)
+	check("half a day back after 12 hours", near(MeetCnAllowance.daysAvailable(d7.builds["83 kg"].meetAllowance.Squat,
+		NOW + 12 * HOUR), 0.5))
+	check("never more than 3 days, however long offline",
+		near(MeetCnAllowance.daysAvailable(d7.builds["83 kg"].meetAllowance.Squat, NOW + 30 * DAY), 3))
+	check("the lobby's share is days x one day's worth", near(ProfileOperations.getMeetAllowanceShare(d7, "83 kg",
+		"Squat", NOW + DAY) :: number, daily))
+
+	local d8 = freshData()
+	d8.builds["83 kg"].competitionNumber.Squat = 120
+	outcome = settle(d8, { { weightKg = 110, result = "GoodLift" } }, true)
+	check("monotone: a CN already above the result stays", outcome == "Unchanged" and squat(d8) == 120)
+
+	local d9 = freshData()
+	PlayerProfileSchema.ensureBuild(d9, "120+ kg")
+	outcome = ProfileOperations.settleMeetCompetitionNumber(d9, "120+ kg", "Squat", 100,
+		{ { weightKg = 110, result = "GoodLift" } }, true, NOW)
+	check("the unlimited class is never raised", outcome == "Rejected" and d9.builds["120+ kg"].competitionNumber.Squat == 100)
+	check("a corrupt allowance copies as full", MeetCnAllowance.copy({ amount = 0 / 0, lastUpdatedUnix = 1 }).amount == 3)
+
+	local d10 = freshData()
+	check("a Local win counts", ProfileOperations.addLocalWin(d10) == 1 and ProfileOperations.addLocalWin(d10) == 2)
+	d10.career = { localWins = 0 / 0 }
+	check("a corrupt career is refused", ProfileOperations.addLocalWin(d10) == nil)
 end
 
 --------------------------------------------------------------------------------

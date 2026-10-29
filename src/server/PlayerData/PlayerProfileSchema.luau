@@ -41,14 +41,15 @@ local ProgressionFolder = Shared:WaitForChild("Progression")
 local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceRegeneration"))
 local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
 local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
+local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
 
 local PlayerProfileSchema = {}
 
 --[[
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
-	to the migrations table below.
+	to the migrations table below (version 9: the meet CN allowance and career).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 8
+PlayerProfileSchema.CURRENT_VERSION = 9
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -138,11 +139,15 @@ PlayerProfileSchema.NO_TOTAL = 0
 		bestTotalKg         the best Total from ONE finished meet in this class,
 		                    or NO_TOTAL. Personal only: never a record, never the
 		                    gym records wall, and never a sum of Scales (33.8)
+		meetAllowance       (version 9) how far meets against other players may
+		                    still raise each lift's CN, in DAYS saved up
+		                    (MeetCnAllowance, section 33.3b)
 ]]
 export type Build = {
 	competitionNumber: CompetitionNumber,
 	competitionScale: CompetitionScale,
 	bestTotalKg: number,
+	meetAllowance: MeetAllowance,
 }
 
 --[[
@@ -150,6 +155,32 @@ export type Build = {
 	timestamp is stored rather than the resource being ticked by a loop.
 ]]
 export type Resource = ResourceRegeneration.Resource
+
+--[[
+	The meet CN allowance of one build, added in version 9 (GAME_DESIGN.md
+	33.3b, user 2026-10-29). One Resource per lift whose amount is DAYS saved
+	up (0 .. ProgressionConfig.MeetCnAllowance.MaxDays), refilling one day per
+	24 hours. PER BUILD, so each class keeps its own and restores it on return;
+	a new build copies the allowance of the lighter build it copies its
+	kilograms from, so moving up never hands out a fresh one.
+]]
+export type MeetAllowance = {
+	Squat: Resource,
+	Bench: Resource,
+	Deadlift: Resource,
+}
+
+--[[
+	The lifter's meet career, account-wide, added in version 9.
+
+		localWins   Local meets won (1st place in a meet against at least
+		            MeetConfig.OfficialLocalMeetMinimumRealPlayers lifters);
+		            MeetConfig.LocalVictoriesForNationals of them unlock
+		            Nationals (section 15)
+]]
+export type Career = {
+	localWins: number,
+}
 
 --[[
 	The three per-lift Competition Budgets, from GAME_DESIGN.md section 29.9.
@@ -317,6 +348,9 @@ export type ProfileData = {
 	techniqueAllowance: DailyAllowance,
 	trainingTimeToday: TrainingTimeToday,
 
+	-- Account-wide meet results that are not a build's (version 9).
+	career: Career,
+
 	meta: Meta,
 }
 
@@ -403,6 +437,11 @@ local template: ProfileData = {
 		StartControl = StartingValuesConfig.Technique.StartControl,
 		PressPower = StartingValuesConfig.Technique.PressPower,
 		Lockout = StartingValuesConfig.Technique.Lockout,
+	},
+
+	-- A new lifter has won nothing.
+	career = {
+		localWins = 0,
 	},
 
 	bodyweight = {
@@ -816,28 +855,41 @@ local function classIndex(classKey: string): number?
 end
 
 --[[
-	A new build. Its Competition Number is `fromCN` (copied, never shared) or
-	the starting values; its Scale is UNPROVEN and it has no best Total.
+	A new build. Its Competition Number and meet allowance are copied from
+	`from` (the closest lighter build; copied, never shared) or are the
+	starting values and a full allowance; its Scale is UNPROVEN and it has no
+	best Total.
 
 	SCALE AND BEST TOTAL ALWAYS START EMPTY. Section 29.11: proof never carries
 	between classes, so a new build has proven nothing.
+
+	THE ALLOWANCE IS COPIED (user, 2026-10-29, section 33.3b): a used-up
+	allowance stays used up in the new class, so moving up never hands out a
+	fresh one.
 ]]
-local function newBuild(fromCN: CompetitionNumber?): Build
+local function newBuild(from: any): Build
+	local fromCN = if typeof(from) == "table" and typeof(from.competitionNumber) == "table" then from.competitionNumber
+		else nil
+	local fromAllowance = if typeof(from) == "table" and typeof(from.meetAllowance) == "table" then from.meetAllowance
+		else nil
 	local competitionNumber: any = {}
 	local competitionScale: any = {}
+	local meetAllowance: any = {}
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
-		local copied = if fromCN then (fromCN :: any)[lift] else nil
+		local copied = if fromCN then fromCN[lift] else nil
 		competitionNumber[lift] = if isUsableCompetitionNumber(copied)
 			then copied
 			else StartingValuesConfig.Forecasted[lift]
 		competitionScale[lift] = PlayerProfileSchema.UNPROVEN_SCALE
+		meetAllowance[lift] = if fromAllowance then MeetCnAllowance.copy(fromAllowance[lift]) else MeetCnAllowance.newFull()
 	end
 
 	return {
 		competitionNumber = competitionNumber,
 		competitionScale = competitionScale,
 		bestTotalKg = PlayerProfileSchema.NO_TOTAL,
+		meetAllowance = meetAllowance,
 	}
 end
 
@@ -867,6 +919,15 @@ local function fillMissing(build: any)
 	end
 	if build.bestTotalKg == nil then
 		build.bestTotalKg = PlayerProfileSchema.NO_TOTAL
+	end
+	-- Version 9: a build saved before the meet allowance existed gets a full one.
+	if typeof(build.meetAllowance) ~= "table" then
+		build.meetAllowance = {}
+	end
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		if build.meetAllowance[lift] == nil then
+			build.meetAllowance[lift] = MeetCnAllowance.newFull()
+		end
 	end
 end
 
@@ -903,16 +964,16 @@ function PlayerProfileSchema.ensureBuild(data: ProfileData, classKey: string): B
 		return existing
 	end
 
-	local fromCN: CompetitionNumber? = nil
+	local from: Build? = nil
 	for lighter = index - 1, 1, -1 do
 		local below = data.builds[WeightClassConfig.Classes[lighter].label]
 		if typeof(below) == "table" and typeof(below.competitionNumber) == "table" then
-			fromCN = below.competitionNumber
+			from = below
 			break
 		end
 	end
 
-	local created = newBuild(fromCN)
+	local created = newBuild(from)
 	data.builds[classKey] = created
 	return created
 end
@@ -995,12 +1056,13 @@ migrations[5] = function(data: ProfileData)
 		competitionScale[lift] = if isUsableProvenWeight(scale) then scale else PlayerProfileSchema.UNPROVEN_SCALE
 	end
 
+	-- (No meet allowance yet: migrations[8] gives every build one in version 9.)
 	data.builds = {
 		[classKey :: string] = {
 			competitionNumber = competitionNumber,
 			competitionScale = competitionScale,
 			bestTotalKg = PlayerProfileSchema.NO_TOTAL,
-		},
+		} :: any,
 	}
 
 	(data :: any).competitionNumber = nil;
@@ -1042,6 +1104,43 @@ end
 ]]
 migrations[7] = function(data: ProfileData)
 	(data :: any).trainingEnergy = nil
+end
+
+--[[
+	Version 8 to 9: the meet CN allowance and the meet career (user, 2026-10-29;
+	GAME_DESIGN 33.3b, 29.10 "The Local meet").
+
+	EVERY BUILD GETS A FULL MEET ALLOWANCE (three days saved up for each lift).
+	No meet against other players has ever raised anyone's CN, so nobody has
+	used any; full is the honest starting point, as ResourceRegeneration.newFull
+	explains for every new allowance. fillMissing does it, so a build that
+	already has one keeps it exactly.
+
+	THE CAREER STARTS AT ZERO LOCAL WINS: no Local meet has ever saved a result.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED. Competition Number, Scale, best
+	Totals, technique, the daily training counters, bodyweight and meta stay as
+	they are. The old account-wide Competition Budget stays too, unused (a
+	cleanup step removes it).
+
+	IDEMPOTENT: a second run finds every allowance and the career present and
+	changes nothing.
+]]
+migrations[8] = function(data: ProfileData)
+	local builds = (data :: any).builds
+	if typeof(builds) == "table" then
+		for _, build in pairs(builds) do
+			if typeof(build) == "table" then
+				fillMissing(build)
+			end
+		end
+	end
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0 }
+	elseif not isUsableCounter(career.localWins) then
+		career.localWins = 0
+	end
 end
 
 --[[

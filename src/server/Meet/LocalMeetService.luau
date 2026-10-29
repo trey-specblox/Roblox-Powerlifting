@@ -5,9 +5,18 @@
 
 	The Local meet, the first meet against other players (GAME_DESIGN.md §29.10
 	"The Local meet — first build", user 2026-10-29). STEP 1: the meet itself on
-	the temporary venue (LocalMeetVenue). NOTHING IS SAVED YET: the rewards
-	(§33.3b: the daily CN allowance, Competition Scale, best Total, Local wins)
-	are step 2.
+	the temporary venue (LocalMeetVenue). STEP 2: what it saves (§33.3b), into
+	the build of each lifter's weigh-in class, in one write per lifter:
+		- a meet WITH A TOTAL: each lift's best good lift raises its
+		  Competition Scale, and the Total can raise the best Total
+		- a meet that started with RewardMinimumLifters (against other players):
+		  each lift's CN is settled against the build's meet allowance
+		  (ProfileOperations.settleMeetCompetitionNumber): good lifts above CN
+		  raise it as far as the allowance pays, misses above CN still use it;
+		  without a total nothing is raised and only the misses cost
+		- 1st place in such a meet: one Local win (career.localWins)
+	A lifter who withdraws, exits, dies or leaves has no total: only their
+	misses are settled, at once.
 
 	GETTING THERE. A tagged point in the gym (LocalMeetConfig.EntranceTag) gets a
 	"Go to the Local Meet" prompt; the server checks the player is alive, on
@@ -116,6 +125,8 @@ type Meet = {
 	byPlayer: { [Player]: Lifter },
 	heading: string,
 	final: boolean,
+	-- Whether it started with enough lifters to raise CN and count a win (RewardMinimumLifters).
+	rewards: boolean,
 	-- The final placing, by UserId (set when the meet ends).
 	places: { [number]: MeetPlacing.Placing },
 }
@@ -151,6 +162,11 @@ end
 
 local function minimumLifters(): number
 	return if RunService:IsStudio() then LocalMeetConfig.StudioMinimumLifters else LocalMeetConfig.MinimumLifters
+end
+
+local function rewardMinimumLifters(): number
+	return if RunService:IsStudio() then LocalMeetConfig.StudioRewardMinimumLifters
+		else LocalMeetConfig.RewardMinimumLifters
 end
 
 local function now(): number
@@ -231,11 +247,29 @@ end
 
 -- ---------------------------------------------------------------- what the venue sees
 
+-- How far a meet could raise each lift's CN for the player's current class right now, in percent.
+local function allowancePercent(player: Player): { [string]: number }
+	local percent: { [string]: number } = {}
+	local data = PlayerDataService.getData(player)
+	local classKey = data and ProfileOperations.getActiveClassKey(data)
+	if data == nil or classKey == nil then
+		return percent
+	end
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		local share = ProfileOperations.getMeetAllowanceShare(data, classKey, lift, os.time())
+		if share then
+			percent[lift] = share * 100
+		end
+	end
+	return percent
+end
+
 local function sendLobby(player: Player)
 	if remotes == nil or visits[player] == nil then
 		return
 	end
 	local state: LocalMeetRemotes.LobbyState = {
+		allowancePercent = allowancePercent(player),
 		nextStartAt = nextStartAt,
 		signUpClosesAt = nextStartAt - closesSeconds(),
 		signedUpCount = #signUps,
@@ -370,6 +404,77 @@ local function updateStandings(current: Meet)
 	end
 end
 
+-- ---------------------------------------------------------------- what the meet saves (step 2)
+
+--[[
+	Saves one lifter's meet in ONE write (see the header): Competition Scale and
+	best Total when `totalKg` is set; the CN settlement, and a win for 1st place,
+	when the meet rewards. `totalKg` nil = no total (a bomb-out, or withdrawn):
+	nothing is raised and only the misses above CN use the meet allowance.
+	Returns short lines for the lifter's result screen.
+]]
+local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best: { [string]: number },
+	place: number?): { string }
+	local player = lifter.player
+	local lines: { string } = {}
+	if totalKg == nil and not current.rewards then
+		return lines
+	end
+	local nowUnix = os.time()
+	local scaleOutcomes: { [string]: ProfileOperations.ScaleRaiseOutcome } = {}
+	local cnOutcomes: { [string]: string } = {}
+	local cnAfter: { [string]: number } = {}
+	local totalOutcome: ProfileOperations.ScaleRaiseOutcome? = nil
+	local wins: number? = nil
+	local saved = PlayerDataService.update(player, function(data)
+		if totalKg then
+			for _, lift in ipairs(MeetConfig.LiftOrder) do
+				local kg = best[lift]
+				if kg then
+					scaleOutcomes[lift] = ProfileOperations.raiseCompetitionScale(data, lifter.classLabel, lift, kg)
+				end
+			end
+			totalOutcome = ProfileOperations.raiseBestTotal(data, lifter.classLabel, totalKg)
+		end
+		if current.rewards then
+			for _, lift in ipairs(MeetConfig.LiftOrder) do
+				local outcome, cnKg = ProfileOperations.settleMeetCompetitionNumber(data, lifter.classLabel, lift,
+					lifter.competitionNumber[lift], lifter.lifts[lift].history, totalKg ~= nil, nowUnix)
+				cnOutcomes[lift] = outcome
+				if cnKg then
+					cnAfter[lift] = cnKg
+				end
+			end
+			if totalKg and place == 1 then
+				wins = ProfileOperations.addLocalWin(data)
+			end
+		end
+	end)
+	if not saved then
+		warn(string.format("[LocalMeetService] %s's meet result was not saved", player.Name))
+		return { "Your result could not be saved." }
+	end
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		if cnOutcomes[lift] == "Raised" and cnAfter[lift] then
+			table.insert(lines, string.format("%s CN %.1f → %.1f kg", lift, lifter.competitionNumber[lift], cnAfter[lift]))
+		end
+		if scaleOutcomes[lift] == "Rejected" or cnOutcomes[lift] == "Rejected" then
+			warn(string.format("[LocalMeetService] %s's %s (%s) was not fully saved: Scale %s, CN %s", player.Name, lift,
+				lifter.classLabel, tostring(scaleOutcomes[lift]), tostring(cnOutcomes[lift])))
+		end
+	end
+	if totalOutcome == "Raised" and totalKg then
+		table.insert(lines, string.format("New best Total %s kg", kgText(totalKg)))
+	end
+	if wins then
+		table.insert(lines, string.format("Local wins: %d of %d for Nationals", wins, MeetConfig.LocalVictoriesForNationals))
+	end
+	log("%s saved (%s, total %s, rewards %s): CN S %s B %s D %s, best Total %s, wins %s", player.Name, lifter.classLabel,
+		if totalKg then kgText(totalKg) else "none", tostring(current.rewards), tostring(cnOutcomes.Squat),
+		tostring(cnOutcomes.Bench), tostring(cnOutcomes.Deadlift), tostring(totalOutcome), tostring(wins))
+	return lines
+end
+
 local function lightsText(lights: { string }?): string
 	if lights == nil then
 		return ""
@@ -424,6 +529,11 @@ local function withdraw(player: Player, why: string)
 		return
 	end
 	lifter.withdrawn = true
+	-- No total: nothing is raised, and the misses so far use the meet allowance (§33.3b). Saved at once,
+	-- while the player's data is still loaded.
+	if not current.final then
+		saveLifter(current, lifter, nil, {}, nil)
+	end
 	LiftAttemptService.abandon(player)
 	LiftAttemptService.setFreeAttemptsBlocked(player, false)
 	if player.Parent then
@@ -595,14 +705,19 @@ local function finishMeet(current: Meet)
 	for _, lifter in ipairs(current.lifters) do
 		local result = MeetTotal.resolve(meetAttempts(lifter))
 		local placing = current.places[lifter.player.UserId]
+		local saved: { string } = {}
+		if not lifter.withdrawn then
+			saved = saveLifter(current, lifter, result.total, result.best, placing and placing.place)
+		end
 		local note: string
 		if placing and placing.place and placing.score then
-			note = string.format("%s PLACE of %d  ·  SCORE %.1f%%  ·  Rewards come in the next build step: nothing is saved yet.",
-				string.upper(placeText(placing.place)), #current.lifters, placing.score * 100)
+			note = string.format("%s PLACE of %d  ·  SCORE %.1f%%%s", string.upper(placeText(placing.place)),
+				#current.lifters, placing.score * 100, if #saved > 0 then "  ·  " .. table.concat(saved, "  ·  ") else "")
 			boardFor(lifter, { string.format("%s PLACE", string.upper(placeText(placing.place))),
 				string.format("TOTAL %s KG", kgText(result.total or 0)), string.format("SCORE %.1f%%", placing.score * 100) })
 		else
-			note = "No total, no place  ·  Nothing is saved yet."
+			note = "No total, no place  ·  A bomb-out saves nothing" .. (if current.rewards
+				then " (misses above your CN still used your meet allowance)" else "")
 			boardFor(lifter, { if lifter.withdrawn then "WITHDRAWN" else "BOMBED OUT" })
 		end
 		LocalMeetVenue.coachSays(lifter.platform, if result.total and not lifter.withdrawn then "Great meet. Proud of you."
@@ -612,7 +727,7 @@ local function finishMeet(current: Meet)
 			if placing and placing.place then string.format("%s, total %s", placeText(placing.place), kgText(result.total or 0))
 				else "no total")
 	end
-	log("Local meet over: %d lifters, %d placed (nothing saved: step 1)", #current.lifters, placed)
+	log("Local meet over: %d lifters, %d placed (rewards: %s)", #current.lifters, placed, tostring(current.rewards))
 
 	task.wait(LocalMeetConfig.DoneSeconds)
 	local v = venue
@@ -717,7 +832,8 @@ local function tryStartMeet()
 		return
 	end
 
-	local current: Meet = { lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, places = {} }
+	local current: Meet = { lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, rewards = false,
+		places = {} }
 	for _, player in ipairs(ready) do
 		if #current.lifters >= LocalMeetConfig.MaxLifters then
 			notify(player, "This meet is full. You stay on the list for the next one.")
@@ -763,8 +879,9 @@ local function tryStartMeet()
 		log("not enough lifters could weigh in: no meet")
 		return
 	end
+	current.rewards = #current.lifters >= rewardMinimumLifters()
 	meet = current
-	log("Local meet starts: %d lifters", #current.lifters)
+	log("Local meet starts: %d lifters (rewards: %s)", #current.lifters, tostring(current.rewards))
 	task.spawn(runMeet, current)
 end
 

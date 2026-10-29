@@ -36,8 +36,9 @@
 	applyTrainingProgression (checkpoint 5B.5) is the only Competition Number
 	award; applyTechniqueTraining (checkpoint 5B.7) is the only rack technique
 	award. Their only gameplay caller is the gym training rack
-	(TrainingStationService, through PlayerDataService). No budget consumption
-	is wired to meets yet.
+	(TrainingStationService, through PlayerDataService). Meets against other
+	players raise CN only through the meet allowance (settleMeetCompetitionNumber);
+	the old Competition Budget is not wired to anything.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -53,6 +54,8 @@ local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("Competit
 local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
 local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
 local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
+local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
+local AttemptRules = require(Shared:WaitForChild("Meet"):WaitForChild("AttemptRules"))
 
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
 
@@ -317,6 +320,18 @@ end
 ]]
 
 -- One lift's stored Scale in a build, or nil when the lift or the value is unusable.
+-- A build's Competition Number for one lift, or nil when it is unusable (not a positive finite weight).
+local function buildCompetitionNumber(build: PlayerProfileSchema.Build?, lift: string): number?
+	if build == nil or not ProgressionConfig.isLift(lift) then
+		return nil
+	end
+	local value = (build.competitionNumber :: any)[lift]
+	if not isFiniteNumber(value) or value <= 0 then
+		return nil
+	end
+	return value
+end
+
 local function buildScale(build: PlayerProfileSchema.Build?, lift: string): number?
 	if build == nil or not ProgressionConfig.isLift(lift) then
 		return nil
@@ -535,6 +550,94 @@ function ProfileOperations.raiseBestTotal(
 	build.bestTotalKg = totalKg
 
 	return "Raised", totalKg
+end
+
+--[[
+	=========================================================================
+	MEET CN ALLOWANCE AND CAREER  (GAME_DESIGN.md 33.3b, schema version 9)
+	=========================================================================
+
+	SECURITY BOUNDARY: the same as raiseCompetitionScale above. These cannot
+	know that a meet happened; their only caller is a server-run meet against
+	other players (LocalMeetService) that has established the attempts, their
+	verdicts, the weigh-in class and Competition Number, and whether the meet
+	had a total. No client, remote or dev trigger may reach them.
+]]
+
+-- One lift's meet allowance in a build, or nil when the build, lift or shape is wrong.
+local function meetAllowanceOf(data: ProfileData, classKey: string, lift: string): PlayerProfileSchema.Resource?
+	if not ProgressionConfig.isLift(lift) then
+		return nil
+	end
+	local build = ProfileOperations.getBuild(data, classKey)
+	local allowance = build and (build :: any).meetAllowance
+	local resource = if typeof(allowance) == "table" then allowance[lift] else nil
+	if typeof(resource) ~= "table" then
+		return nil
+	end
+	return resource
+end
+
+--[[
+	How far a meet could raise this lift's CN right now, as a share of the CN
+	(0.12 = +12%), WITHOUT writing anything. Nil when the class has no
+	allowance (the unlimited class) or the data is unusable. For screens.
+]]
+function ProfileOperations.getMeetAllowanceShare(data: ProfileData, classKey: string, lift: string,
+	nowUnix: number): number?
+	local resource = meetAllowanceOf(data, classKey, lift)
+	local build = ProfileOperations.getBuild(data, classKey)
+	local cn = build and buildCompetitionNumber(build, lift)
+	if resource == nil or cn == nil then
+		return nil
+	end
+	return MeetCnAllowance.shareAvailable(resource, nowUnix, lift, classKey, cn)
+end
+
+export type MeetCnOutcome = "Raised" | "Unchanged" | "Rejected"
+
+--[[
+	Settles one lift of a meet against other players (MeetCnAllowance.settle)
+	and writes the raise. `cnAtWeighInKg` is the CN the meet used; `raises`
+	false for a meet without a total, where only the misses cost.
+
+	Returns the outcome, the lift's CN afterwards, and the days used.
+	"Raised": the CN went up. "Unchanged": settled, no raise (misses may still
+	have used allowance). "Rejected": nothing written (unusable data, or a class
+	with no allowance).
+
+	MONOTONE: the CN is only ever raised, and never past what the allowance
+	paid for. If training moved the CN since the weigh-in (it cannot during a
+	meet), the higher of the two stays.
+]]
+function ProfileOperations.settleMeetCompetitionNumber(data: ProfileData, classKey: string, lift: string,
+	cnAtWeighInKg: number, history: AttemptRules.AttemptHistory, raises: boolean,
+	nowUnix: number): (MeetCnOutcome, number?, number)
+	local resource = meetAllowanceOf(data, classKey, lift)
+	local build = ProfileOperations.getBuild(data, classKey)
+	local current = build and buildCompetitionNumber(build, lift)
+	if resource == nil or build == nil or current == nil or not isFiniteNumber(cnAtWeighInKg) or cnAtWeighInKg <= 0 then
+		return "Rejected", nil, 0
+	end
+	local outcome = MeetCnAllowance.settle(resource, nowUnix, lift, classKey, cnAtWeighInKg, history, raises)
+	if outcome == nil then
+		return "Rejected", current, 0
+	end
+	if outcome.newCnKg > current + 1e-9 then
+		(build.competitionNumber :: any)[lift] = outcome.newCnKg
+		return "Raised", outcome.newCnKg, outcome.daysUsed
+	end
+	return "Unchanged", current, outcome.daysUsed
+end
+
+-- Counts one Local meet win (1st place in a meet against other players). Returns the new count, or nil.
+function ProfileOperations.addLocalWin(data: ProfileData): number?
+	local career = (data :: any).career
+	if typeof(career) ~= "table" or not isFiniteNumber(career.localWins) or career.localWins < 0 then
+		return nil
+	end
+	career.localWins += 1
+	return career.localWins
 end
 
 --[[

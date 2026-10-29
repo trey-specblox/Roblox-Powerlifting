@@ -10,7 +10,8 @@
 		top right    EXIT (back to the gym); hidden while lifting, where the meet
 		             screen's LEAVE takes its place
 		left, top    the LOCAL MEET card: the countdown to the next meet, the
-		             sign-ups, whether you are on the list, SIGN UP; hidden while
+		             sign-ups, whether you are on the list, how far a meet could
+		             still raise each lift's CN, SIGN UP; hidden while
 		             lifting (the meet screen's title is there)
 		right        the STANDINGS: place, name, class, subtotal or total, score;
 		             on the left in the card's place while lifting (the meet
@@ -81,12 +82,14 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 	local exit = UIStyle.exitButton(gui, "Exit", "EXIT", UDim2.new(1, -194, 0, 22), handlers.exit)
 
 	-- ------------------------------------------------ the LOCAL MEET card
-	local cardHolder, card = UIStyle.panel(gui, "Card", UDim2.fromOffset(LEFT, CARD_TOP), UDim2.fromOffset(330, 176))
+	local cardHolder, card = UIStyle.panel(gui, "Card", UDim2.fromOffset(LEFT, CARD_TOP), UDim2.fromOffset(330, 200))
 	UIStyle.titleTag(cardHolder, "Tag", "LOCAL MEET", UDim2.fromOffset(-14, -24), UDim2.fromOffset(210, 40), nil, "star")
 	local countdown = UIStyle.label(card, "Countdown", UDim2.fromOffset(18, 26), UDim2.new(1, -36, 0, 34), C.white,
 		UIStyle.heading())
 	local signUps = UIStyle.label(card, "SignUps", UDim2.fromOffset(18, 66), UDim2.new(1, -36, 0, 18), C.muted)
 	local you = UIStyle.label(card, "You", UDim2.fromOffset(18, 88), UDim2.new(1, -36, 0, 18), C.yellow, UIStyle.heading())
+	-- How far a meet could still raise each lift's CN (the meet allowance, GAME_DESIGN 33.3b).
+	local allowance = UIStyle.label(card, "Allowance", UDim2.fromOffset(18, 112), UDim2.new(1, -36, 0, 16), C.white)
 	local signUpButton = UIStyle.button(card, "SignUp", "SIGN UP", UDim2.new(0, 18, 1, -54), UDim2.new(1, -36, 0, 40),
 		"primary", handlers.signUp)
 
@@ -136,8 +139,16 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 			countdown.Text = "…"
 			signUps.Text = ""
 			you.Text = ""
+			allowance.Text = ""
 			return
 		end
+		local raises = {}
+		for _, lift in ipairs(MeetConfig.LiftOrder) do
+			local percent = lobby.allowancePercent and lobby.allowancePercent[lift]
+			table.insert(raises, string.format("%s %s", string.sub(lift, 1, 1),
+				if percent then string.format("+%.1f%%", percent) else "—"))
+		end
+		allowance.Text = "CN RAISE LEFT  " .. table.concat(raises, "  ·  ")
 		local closesIn = secondsToStart - (lobby.nextStartAt - lobby.signUpClosesAt)
 		if lobby.meetRunning then
 			countdown.Text = "MEET IN PROGRESS"

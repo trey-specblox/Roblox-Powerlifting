@@ -32,7 +32,8 @@
 			The live and final ranking, for everyone in the venue.
 
 	Going INTO the venue is not a remote: it is the gym entrance's
-	ProximityPrompt, which the server listens to. Nothing here is saved yet.
+	ProximityPrompt, which the server listens to. What a meet saves is the
+	server's (LocalMeetService); nothing here writes anything.
 ]]
 
 local LocalMeetRemotes = {}
@@ -78,6 +79,9 @@ export type LobbyState = {
 	meetRunning: boolean,
 	minimumLifters: number,
 	maxLifters: number,
+	-- How far a meet could raise each lift's CN right now (8.5 = +8.5%), for THIS player's current
+	-- class; absent for a class with no allowance.
+	allowancePercent: { [string]: number },
 }
 
 -- One lifter's line on the standings.

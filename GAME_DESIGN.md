@@ -1883,14 +1883,10 @@ rate, so AFK-only progression is ~4x slower.
 
 ### 29.9 The three Competition Budgets
 
-> **DECIDED (user, 2026-10-29): KEPT, AND REUSED AS THE DAILY ALLOWANCE FOR MEET
-> CN RAISES (§33.3b).** One pool per lift; it refills +4% of the lift's CN per day
-> and stacks for up to 3 days, shrinks near the world-record level, and meet raises
-> against other players (and misses above CN) use it. Raises stop when it is empty
-> until it refills. (First decided as +25% per week; changed to daily the same
-> day.) The EV-based model below (9.43 EV, harmonic overflow) is replaced by that
-> rule when vs-player meets are built; until then the stored pools are kept and
-> nothing reads them.
+> **SUPERSEDED (user, 2026-10-29).** First kept to limit meet CN raises (§33.3b),
+> then replaced by a **per-build meet allowance** when the Local meet's rewards were
+> built (save version 9). Nothing reads these account-wide pools; they stay in
+> the save untouched until a cleanup step removes them.
 
 > **⚠ THIS SYSTEM HAS LOST ITS SUBJECT — [TBD]**
 >
@@ -2169,6 +2165,11 @@ Worlds and Sheffield come later and are untouched here.
 > decide; the referees show it). In Studio one signed-up player is enough to
 > hold a meet, and the timetable runs every 90 seconds, so it can be tested
 > alone; a live server needs 2.
+>
+> **Step 2 built (2026-10-29), save version 9.** The rewards of §33.3b: CN raises
+> within each build's meet allowance, misses above CN using it, Competition Scale
+> and best Total for a meet with a total, and Local wins (`career.localWins`). The
+> venue card shows how far each lift's CN could still be raised.
 
 ### 29.11 Weight class and build interactions
 
@@ -3301,11 +3302,14 @@ repeated raises.
 | What a good lift does | A **good** lift above the lift's current CN raises CN **all the way to the weight lifted** (200 kg CN and a good 250 kg lift: CN 250 kg). A failed lift does nothing (§33.6). CN never goes down |
 | ~~The weekly limit~~ | ~~at most +25% per lift per week~~ **[CHANGED BY THE USER, 2026-10-29: daily instead of weekly, "so players can have a NEED to play the game"; a weekly limit lets a once-a-week player gain as much as a daily one]** |
 | The daily allowance | Each lift's allowance **refills +4% of its CN per day** and **stacks for up to 3 days** (at most +12% waiting). One maximum-risk lift can use all that is waiting; several small raises add up to the same. Missing a day is not wasted; more than 3 days off is. **[PROVISIONAL]** values (user picked from options, 2026-10-29) |
-| Near the world record | The daily allowance **gets smaller the closer the lift's CN is to the weight class's world-record level** (the Progression Reference, §29.4), the same slowdown training uses (user, 2026-10-29). Its exact curve is decided when built |
+| Near the world record | The daily allowance **gets smaller the closer the lift's CN is to the weight class's world-record level** (the Progression Reference, §29.4), **on the same curve training uses** (user, 2026-10-29): one day is worth `4% x Hill(PP)` (§29.3), so about +4% far from the reference, +2% at 0.75 of it, under +1% at the reference, never zero. The unlimited class (120+ kg) has no reference, so meets never raise its CN, as training never does |
+| Refill | **Smoothly all day** (user, 2026-10-29): one day's worth every 24 hours, offline too, no reset time. Stored as days saved up (0 to 3); what a day is worth uses the lift's CN **at the time it is used** |
 | When it is used up | **Meet raises stop** for that lift until it refills (no tapering). A raise that would pass what is left is cut to what is left |
 | What a miss costs | A **missed** attempt above the lift's CN **uses the allowance it would have used had it been good** (cut to what is left), even though CN does not rise (user, 2026-10-29). A miss at or below CN costs nothing. A Mock Meet raises no CN, so this applies to meets against other players only |
 | Bomb-out | A meet where any lift has **no good attempt** has **no total**, like a real meet, and **saves nothing**: no CN raise, no Competition Scale, no placing or money. Misses in it still use the allowance. **This applies to the Mock Meet too** (user, 2026-10-29), where leaving before the meet ends also means no total. So raises are applied **when the meet ends**, not after each lift |
-| Where the allowance lives | The **Competition Budget** (§29.9), reused for this: one pool per lift. Its EV denomination, 9.43 EV capacity, weekly refill and harmonic overflow are replaced by this simpler rule when it is built |
+| ~~Where the allowance lives~~ | ~~The Competition Budget (§29.9), reused for this~~ **[CHANGED BY THE USER, 2026-10-29]:** **one allowance per lift in each weight-class build**, kept and restored with the build like its CN. A build entered for the first time **copies the allowance of the lighter build it copies its kilograms from**, so moving up never hands out a fresh one. The old account-wide Competition Budget is not used (a cleanup step removes it) |
+| In what order a meet is settled | Each lift's attempts **in the order they were taken**: a good lift above what is raised so far uses what its raise costs; a miss above it uses what it would have cost. All measured against the CN at the weigh-in |
+| Which meets reward | A meet that **started with at least 2 lifters** (`LocalMeetConfig.RewardMinimumLifters`). A **win** is 1st place in such a meet with a total. In Studio a one-lifter meet counts too, so it can be tested alone |
 | Training | **Unchanged.** Gym training stays a CN source with its own 4.00 EV daily cap and per-lift efficiency (§34); the two do not share a limit |
 
 **Why this answers maximum-risk play (§33.11 item 1):** a failed attempt now costs
@@ -3314,20 +3318,11 @@ a bomb-out throws away the whole meet, so a safe opener comes first and the gamb
 belongs on attempts 2 and 3. Big jumps are still possible for a lifter who saves up
 three days and makes the lift.
 
-> **Not built yet.** Meets against other players do not exist yet, so this rule
-> is recorded now and built with them. The Budget's stored pools are kept until
-> then (§29.9).
->
-> **To decide when it is built:** ~~how the raise interacts with the Progression
-> Reference~~ (decided: the allowance shrinks near the world-record level) — the
-> exact shrink curve; whether the +4% is a share of CN when it refills or at the
-> time of the lift; and whether it refills smoothly through the day or at a fixed
-> daily reset time.
->
-> **The Mock Meet bomb-out rule changes built code.** The Mock Meet currently saves
-> Competition Scale right after each good lift, even when the lifter later bombs
-> out or leaves (§29.10, §33.11 item 9). Under the rule above it saves only when
-> the meet ends with a total.
+> **Built (2026-10-29), Local meet step 2, save version 9.** The allowance
+> (`MeetCnAllowance`, `ProgressionConfig.MeetCnAllowance`), the per-build data,
+> the Local meet's settlement and `career.localWins`. The three points once left
+> "to decide when built" are decided in the table above (curve, refill, where it
+> lives). The Mock Meet saves only with a total since dda82af.
 
 ### 33.4 The two difficulty roles
 

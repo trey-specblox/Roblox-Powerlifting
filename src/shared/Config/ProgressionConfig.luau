@@ -179,6 +179,35 @@ ProgressionConfig.CompetitionBudget = {
 	]]
 }
 
+--[[
+	=========================================================================
+	MEET CN ALLOWANCE (section 33.3b, user 2026-10-29) -- schema version 9
+	=========================================================================
+
+	How far meets against other players may raise Competition Number. Each
+	weight-class BUILD has one allowance per lift, stored in DAYS saved up:
+	it refills smoothly, one day every 24 hours (also offline), and holds at
+	most MaxDays. Using it is worth
+
+		PercentPerDay x Hill(PP) of the lift's CN, per day saved up
+
+	with Hill the training's own slow-down near the class's Progression
+	Reference (section 29.3), at the CN when it is used. A good lift above CN
+	uses what its raise costs; a miss above CN uses what it would have cost.
+	A new build copies the allowance of the build it copies its kilograms
+	from (MeetCnAllowance, PlayerProfileSchema.ensureBuild).
+
+	THE COMPETITION BUDGET ABOVE IS NOT USED FOR THIS. The user decided a
+	per-class allowance (2026-10-29); the budget's stored pools stay untouched
+	until a cleanup step removes them.
+]]
+ProgressionConfig.MeetCnAllowance = {
+	-- [PROVISIONAL] The share of CN one day's allowance is worth far from the record (4%).
+	PercentPerDay = 0.04,
+	-- [PROVISIONAL] Days that can be saved up (3 days: +12% far from the record).
+	MaxDays = 3,
+}
+
 -- (TRAINING ENERGY, section 29.8, was retired in schema version 8 by the user, 2026-10-29.)
 
 --[[

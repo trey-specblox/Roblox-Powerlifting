@@ -2395,7 +2395,43 @@ and polish.
     32 figures (3 referees + coach per lifter), removed after. 20 lights.
   - USER'S TEST (2026-10-29, reported by the user): a two-player Local meet
     in Studio and a full meet; "It all works out". Not seen by Claude.
-  NEXT ACTION: step 2 (rewards: the daily CN allowance, save version 9). The user also has a Mock Meet and a deadlift to
+
+  LOCAL MEET STEP 2: THE REWARDS, SAVE VERSION 9 (built 2026-10-29).
+  COMMITTED and pushed 2026-10-29 (section 1). User decisions (2026-10-29, picked from options): the
+  allowance shrinks on training's Hill curve (4% x Hill(PP) per day); refills
+  smoothly; lives PER WEIGHT-CLASS BUILD, and a new build COPIES the lighter
+  build's allowance (asked after the user questioned the abuse risk of
+  per-class allowances).
+  - New: MeetCnAllowance (shared, pure: days saved up 0..3, 1 day / 24 h;
+    settle() in attempt order; nil for 120+ kg), ProgressionConfig
+    .MeetCnAllowance (PercentPerDay 0.04, MaxDays 3).
+  - Save v9: Build.meetAllowance {Squat, Bench, Deadlift: Resource in
+    days}; career {localWins}; migrations[8] fills every build (full) and
+    the career (0); newBuild copies the lighter build's allowance;
+    fillMissing adds a full one to an older build.
+  - ProfileOperations: getMeetAllowanceShare, settleMeetCompetitionNumber
+    (monotone), addLocalWin, buildCompetitionNumber helper.
+  - LocalMeetService: one write per lifter at the end (Scale + best Total
+    with a total; CN settlement and a win when the meet rewards: started
+    with RewardMinimumLifters, 2 live / 1 in Studio); withdraw settles the
+    misses at once; the Done note lists the raises; the lobby sends
+    allowancePercent. LocalMeetLobbyUI: "CN RAISE LEFT" line.
+  - The old account-wide competitionBudget stays in the save, unread (a
+    cleanup step removes it with its module, config and probe sections).
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude, DataStore API
+    off): PlayerDataProbe 482/0 (new sections 46-47: v8 -> v9, copy on
+    entry, settle cases, refill, 120+, monotone, wins);
+    TrainingProgressionProbe 298/0; profile loaded at version 9. A real
+    Local meet alone (TEMPORARY short timers and "time-out = good lift" for
+    attempts 1-2, both removed, Studio checked against disk): squat 22.5 /
+    27.5 / 30x, bench and deadlift 22.5 / 25 / 27.5x -> Squat CN 25 -> 27.5,
+    bench/deadlift unchanged, Scale 27.5/25/25, best Total 77.5, Local wins
+    1; allowance left S 0 %, B 2 %, D 2 % (as calculated); LEAVE mid-meet
+    saved "no total", nothing raised. All probes switched back off.
+  - NOT tested: a two-player rewarded meet (live rule: 2 lifters); real
+    minigame lifts in it.
+  NEXT ACTION: ask the user: step 3 (the venue in Blender) or the
+  Competition Budget cleanup; a rewarded two-player meet is worth a test. The user also has a Mock Meet and a deadlift to
   try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.
@@ -2466,7 +2502,9 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Build the Local meet, step 1: the meet itself on a temporary venue; `git log -1` for the hash.
+- 2026-10-29, pushed: Build the Local meet, step 2: rewards and the meet CN allowance (save version 9); `git log -1` for the hash.
+- `baa73cb` (2026-10-29, pushed) Record the user's passing two-player Local meet test.
+- `db796f5` (2026-10-29, pushed) Build the Local meet, step 1: the meet itself on a temporary venue.
 - `29fae94` (2026-10-29, pushed) Decide the Local meet's first build (turns, placing, start, venue).
 - `ab14393` (2026-10-29, pushed) Keep the Scale challenge fixed for the whole meet, and record the user's Mock Meet test.
 - `dda82af` (2026-10-29, pushed) Save a Mock Meet's proven lifts only when it ends with a total.
