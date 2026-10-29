@@ -394,21 +394,34 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 
 	-- Light: stage lights over the platform, and panels over the rest of the room
 	-- (Lighting.Ambient is black, so every room brings its own).
+	-- The fittings are Blender models (Lights_01), with a glowing block where one did not load. Every light
+	-- shines from its glowing piece's face that looks down.
+	local function shine(part: BasePart, range: number, brightness: number, angle: number)
+		BuildParts.surfaceLight(part, StyledScreen.faceToward(part, -Vector3.yAxis), range, brightness, angle)
+	end
 	for _, x in ipairs({ -6, 0, 6 }) do
-		local can = decor("StageLight_" .. (x / 6 + 2), Vector3.new(x - 1, h - 1, PLATFORM_Z - 1), Vector3.new(x + 1, h - 0.2,
-			PLATFORM_Z + 1), looks.GlowWhite)
-		BuildParts.surfaceLight(can, Enum.NormalId.Bottom, 24, 2.2, 70)
+		-- A stage spotlight on the ceiling pointing down: turned so its front looks down and its wall plate is
+		-- on the ceiling (the pivot sits 0.425 under the plate and 0.43 behind the can's middle).
+		local name = "StageLight_" .. (x / 6 + 2)
+		local at = centre + Vector3.new(x, h - 0.425, PLATFORM_Z - 0.43)
+		local can = RoomProps.fitting(model, name, "StageLight", "Lens", CFrame.lookAt(at, at - Vector3.yAxis, Vector3.zAxis))
+			or decor(name, Vector3.new(x - 1, h - 1, PLATFORM_Z - 1), Vector3.new(x + 1, h - 0.2, PLATFORM_Z + 1), looks.GlowWhite)
+		shine(can, 24, 2.2, 70)
+	end
+	-- A ceiling panel stretched to `size` (across, along) with its top on the ceiling.
+	local function panel(name: string, x: number, z: number, size: Vector2, fallbackLow: Vector3, fallbackHigh: Vector3): BasePart
+		return RoomProps.fitting(model, name, "CeilingPanel", "Diffuser", CFrame.new(centre + Vector3.new(x, h - 0.12, z)),
+			Vector3.new(size.X, 0.12, size.Y)) or decor(name, fallbackLow, fallbackHigh, looks.GlowWhite)
 	end
 	for _, z in ipairs({ -hz + 8, -hz + 22, -hz + 36, -hz + 50, -hz + 64 }) do
 		for _, x in ipairs({ -18, 18 }) do
-			local panel = decor(string.format("CeilingLight_%d_%d", x, z), Vector3.new(x - 3, h - 0.2, z - 3),
-				Vector3.new(x + 3, h, z + 3), looks.GlowWhite)
-			BuildParts.surfaceLight(panel, Enum.NormalId.Bottom, 36, 2.4, 100)
+			shine(panel(string.format("CeilingLight_%d_%d", x, z), x, z, Vector2.new(6, 6), Vector3.new(x - 3, h - 0.2, z - 3),
+				Vector3.new(x + 3, h, z + 3)), 36, 2.4, 100)
 		end
 	end
 	-- A wash of light on the back wall, so the attempt board and the platform stand out.
-	local wash = decor("BoardWash", Vector3.new(-14, h - 0.6, hz - 8), Vector3.new(14, h - 0.2, hz - 6), looks.GlowWhite)
-	BuildParts.surfaceLight(wash, Enum.NormalId.Bottom, 30, 1.6, 120)
+	shine(panel("BoardWash", 0, hz - 7, Vector2.new(28, 2), Vector3.new(-14, h - 0.6, hz - 8), Vector3.new(14, h - 0.2, hz - 6)),
+		30, 1.6, 120)
 
 	local placed, problem = placeRack(model, centre)
 	if not placed then

@@ -811,16 +811,20 @@ end
 
 --[[
 	A coloured copy of the 3D prop `item` for building outside a room's kit (the
-	Mock Meet's private rooms), or nil when its asset did not load. Every piece is
-	decor; the copy is not parented, and its pivot is the bottom centre of its
-	bounds with its front toward the pivot's -Z.
+	Mock Meet's private rooms, the gym's light fittings), or nil when its asset
+	did not load. Every piece is decor; the copy is not parented, and its pivot is
+	the bottom centre of its bounds with its front toward the pivot's -Z. With
+	`stretch` (width, height, depth) it is stretched to that size first.
 ]]
-function RoomProps.propCopy(item: string, colourway: number): Model?
+function RoomProps.propCopy(item: string, colourway: number, stretch: Vector3?): Model?
 	local template: Model? = loadPropTemplates()[item]
 	if template == nil then
 		return nil
 	end
 	local copy = template:Clone()
+	if stretch then
+		stretchTo(copy, stretch)
+	end
 	for _, part in ipairs(copy:GetDescendants()) do
 		if part:IsA("BasePart") then
 			BuildParts.decor(part)
@@ -828,6 +832,38 @@ function RoomProps.propCopy(item: string, colourway: number): Model?
 	end
 	paintProp(copy, item, colourway)
 	return copy
+end
+
+--[[
+	A light fitting (Lights_01) in `parent`: `item` (stretched to `stretch` when
+	given) with its pivot, the bottom centre, at `pivot`. Its glowing piece
+	("<item>_<glowPiece>") takes the old block light's `name` and goes straight
+	into `parent` (StarterGym_VerifyShell finds the lights by name); the rest is
+	the model "<name>_Fitting". No piece casts a shadow: the light is inside.
+	Returns the glowing piece for the caller's light, or nil when the model did
+	not load (the caller builds the old blocks).
+]]
+function RoomProps.fitting(parent: Instance, name: string, item: string, glowPiece: string, pivot: CFrame,
+	stretch: Vector3?): BasePart?
+	local copy = RoomProps.propCopy(item, 1, stretch)
+	local glow = if copy then copy:FindFirstChild(item .. "_" .. glowPiece, true) :: BasePart? else nil
+	if copy == nil or glow == nil then
+		if copy then
+			copy:Destroy()
+		end
+		return nil
+	end
+	copy:PivotTo(pivot)
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CastShadow = false
+		end
+	end
+	copy.Name = name .. "_Fitting"
+	copy.Parent = parent
+	glow.Name = name
+	glow.Parent = parent
+	return glow
 end
 
 -- Shelving fill: every level holds one product line, `perSlot` side by side,
@@ -2263,12 +2299,18 @@ FURNISH.SupplementBar = function(kit)
 	end
 	-- Three pendant lamps over the counter, hung low enough that the neon sign
 	-- shows above them from the customers' side.
+	-- The 3D pendant lamp (as in the Cafe), or blocks if it did not load.
+	local lampProps = propsFor({ "PendantLamp" })
 	for index, ps in ipairs({ -7, -1, 5 }) do
 		local a, d = back.at(ps, 6.2)
 		local lamp = "Pendant_" .. index
-		kit.cylinder(lamp .. "_Cable", a, d, (H + 7.55) / 2, H - 7.55, 0.06, "up", looks.Gadget)
-		kit.cylinder(lamp .. "_Shade", a, d, 7.2, 0.7, 1.3, "up", looks.Gadget)
-		warmGlow(kit.ball(lamp .. "_Bulb", a, d, 6.75, 0.45, looks.GlowWarm), 14, 1.1)
+		if lampProps then
+			pendant(kit, lampProps, lamp, index, a, d, 6.6)
+		else
+			kit.cylinder(lamp .. "_Cable", a, d, (H + 7.55) / 2, H - 7.55, 0.06, "up", looks.Gadget)
+			kit.cylinder(lamp .. "_Shade", a, d, 7.2, 0.7, 1.3, "up", looks.Gadget)
+			warmGlow(kit.ball(lamp .. "_Bulb", a, d, 6.75, 0.45, looks.GlowWarm), 14, 1.1)
+		end
 	end
 
 	-- Planked shelves of products on both side walls (one product line per
@@ -2490,9 +2532,17 @@ FURNISH.Shop = function(kit)
 		showGear(spec.item, string.format("%s_%d", spec.item, index), a, d, 0.3, "-d")
 		local column = kit.block("Mannequin_Collision_" .. index, a - 0.8, a + 0.8, d - 0.6, d + 0.6, 0.3, 6, looks.Glass)
 		column.Transparency = 1
-		local spot = kit.item("Spotlight_" .. index, a - 0.3, a + 0.3, d - 1.6, d - 1, 11.9, 12.4, looks.Gadget)
+		-- The 3D track spotlight (Lights_01) under the track, or a block if it did not load.
+		local spotProps = propsFor({ "TrackSpot" })
+		local spot: BasePart
+		if spotProps then
+			local head = propItem(kit, spotProps, "Spotlight_" .. index, "TrackSpot", 1, a, d - 1.3, 11.9, "-d")
+			spot = head:FindFirstChild("TrackSpot_Lens", true) :: BasePart
+		else
+			spot = kit.item("Spotlight_" .. index, a - 0.3, a + 0.3, d - 1.6, d - 1, 11.9, 12.4, looks.Gadget)
+		end
 		local light = Instance.new("SpotLight")
-		light.Face = Enum.NormalId.Bottom
+		light.Face = StyledScreen.faceToward(spot, -Vector3.yAxis)
 		light.Range = 14
 		light.Brightness = 2
 		light.Angle = 60
@@ -2501,7 +2551,12 @@ FURNISH.Shop = function(kit)
 		light.Parent = spot
 	end
 	local _, spotD = back.at(0, 3.75 + 1.3)
-	kit.item("Spotlight_Track", -6, 6, spotD - 0.1, spotD + 0.1, 12.4, 12.55, looks.Gadget)
+	local railProps = propsFor({ "TrackRail" })
+	if railProps then
+		propItem(kit, railProps, "Spotlight_Track", "TrackRail", 1, 0, spotD, 12.4, "-d")
+	else
+		kit.item("Spotlight_Track", -6, 6, spotD - 0.1, spotD + 0.1, 12.4, 12.55, looks.Gadget)
+	end
 
 	-- The slatwall on the left: hanging wraps on hooks, knee sleeves in pairs
 	-- on a ledge, rolled wraps on a lower ledge.
@@ -2913,11 +2968,18 @@ FRONT.MockMeet = function(front)
 	local lightY = front.H - 1.6
 	local at = front.aMin + 2
 	local count = 0
+	-- The 3D stage spotlight (Lights_01): its plate on the wall at 0.06, its pivot in the middle of its 0.85
+	-- depth, the can's middle at lightY. Blocks if it did not load.
+	local stageProps = propsFor({ "StageLight" })
 	while at <= front.aMax - 2 do
 		count += 1
-		front.item("StageLight_" .. count, at - 0.45, at + 0.45, 0.06, 0.25, lightY - 0.2, lightY + 0.2, looks.Gadget)
-		front.cylinder("StageLight_" .. count .. "_Can", at, 0.55, lightY, 0.6, 0.8, "d", looks.Gadget)
-		front.cylinder("StageLight_" .. count .. "_Lens", at, 0.87, lightY, 0.04, 0.6, "d", looks.GlowWhite)
+		if stageProps then
+			frontProp(front, stageProps, "StageLight_" .. count, "StageLight", 1, at, 0.06 + 0.425, lightY - 0.4, "+d")
+		else
+			front.item("StageLight_" .. count, at - 0.45, at + 0.45, 0.06, 0.25, lightY - 0.2, lightY + 0.2, looks.Gadget)
+			front.cylinder("StageLight_" .. count .. "_Can", at, 0.55, lightY, 0.6, 0.8, "d", looks.Gadget)
+			front.cylinder("StageLight_" .. count .. "_Lens", at, 0.87, lightY, 0.04, 0.6, "d", looks.GlowWhite)
+		end
 		at += 4
 	end
 	front.item("JudgesLights", -27, -19, 0.06, 0.4, 5, 8, looks.Gadget)

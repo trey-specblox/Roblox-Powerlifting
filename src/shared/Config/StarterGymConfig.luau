@@ -581,6 +581,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 127520535803138 }, -- CardioTV_01: the Cardio room's wall TV and soundbar
 	{ id = 104295814087547 }, -- MockMeet_01: the Mock Meet's check-in desk, platform, wait bench, board frame, banner
 	{ id = 80843208048332 }, -- Furniture_01: office chair, desk, monitor + keyboard, shelf frames, storage box, books
+	{ id = 110775352617639 }, -- Lights_01: hall light bar, ceiling panel, shed lamp, stage light, track spot and rail
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -631,6 +632,9 @@ StarterGymConfig.PropPaints = {
 	Bronze = { color = Color3.fromRGB(176, 110, 60), material = Enum.Material.Metal },
 	-- RoomProps_07 (themed room fronts, batch 2b): the ON AIR lamp's light.
 	RedGlow = { color = Color3.fromRGB(230, 40, 40), material = Enum.Material.Neon },
+	-- Lights_01 (the light fittings' glowing parts; the same as Looks.GlowWhite) and the Cardio TV's power light.
+	GlowWhite = { color = Color3.fromRGB(255, 250, 240), material = Enum.Material.Neon },
+	GlowGreen = { color = Color3.fromRGB(60, 220, 110), material = Enum.Material.Neon },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -808,6 +812,13 @@ StarterGymConfig.PropColourways = {
 	StorageBox = { { Body = "Kraft" } },
 	BookRow = { { Books = "Red" }, { Books = "Blue" }, { Books = "Navy" }, { Books = "Cream" }, { Books = "Forest" },
 		{ Books = "Mustard" } },
+	-- The light fittings (Lights_01, art/scripts/build_lights_01.py).
+	LightBar = { { Housing = "Silver", Diffuser = "GlowWhite" } },
+	CeilingPanel = { { Frame = "White", Diffuser = "GlowWhite" } },
+	HighBayLamp = { { Shade = "Charcoal", Lens = "GlowWhite" } },
+	StageLight = { { Body = "Black", Lens = "GlowWhite" } },
+	TrackSpot = { { Head = "Black", Lens = "GlowWhite" } },
+	TrackRail = { { Rail = "Black" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

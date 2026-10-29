@@ -702,6 +702,14 @@
       "ids": {
         "model": "rbxassetid://80843208048332"
       }
+    },
+    "Lights_01": {
+      "about": "The gym's light fittings: the rack hall's hanging LED bar (LightBar, stretched), the ceiling light panel (CeilingPanel, stretched), the Strongman Shed's dome lamp (HighBayLamp), the stage spotlight (StageLight), the Shop's track spotlight (TrackSpot) and track (TrackRail). Made by art/scripts/build_lights_01.py (art/blender/Lights_01.blend).",
+      "file": "art/exports/Lights_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://110775352617639"
+      }
     }
   },
   "images": {

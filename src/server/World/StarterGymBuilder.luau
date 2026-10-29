@@ -55,6 +55,7 @@ local TrainingStationConfig = require(ConfigFolder:WaitForChild("TrainingStation
 local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 local RoomProps = require(script.Parent:WaitForChild("RoomProps"))
+local StyledScreen = require(script.Parent:WaitForChild("StyledScreen"))
 
 local StarterGymBuilder = {}
 
@@ -1167,7 +1168,8 @@ local function buildLights(model: Model, plan: StarterGymConfig.Footprint, corri
 	lights.Parent = model
 	local count = 0
 	local function shining(part: BasePart, range: number, brightness: number, angle: number)
-		surfaceLight(part, Enum.NormalId.Bottom, range, brightness, angle)
+		-- The fittings' pieces may be turned, so take the part's own face that looks down.
+		surfaceLight(part, StyledScreen.faceToward(part, -Vector3.yAxis), range, brightness, angle)
 		count += 1
 	end
 
@@ -1212,8 +1214,11 @@ local function buildLights(model: Model, plan: StarterGymConfig.Footprint, corri
 				end
 				for index, spot in ipairs(spots) do
 					local panelName = if index == 1 then "RoomLight_" .. name else string.format("RoomLight_%s_%d", name, index)
-					local panel = decor(box(lights, panelName, Vector3.new(spot.X - half, underside - 0.1, spot.Z - half),
-						Vector3.new(spot.X + half, underside, spot.Z + half), looks.GlowWhite))
+					-- The Blender ceiling panel (Lights_01), or a glowing block if it did not load.
+					local panel = RoomProps.fitting(lights, panelName, "CeilingPanel", "Diffuser",
+						CFrame.new(spot.X, underside - 0.12, spot.Z), Vector3.new(2 * half, 0.12, 2 * half))
+						or decor(box(lights, panelName, Vector3.new(spot.X - half, underside - 0.1, spot.Z - half),
+							Vector3.new(spot.X + half, underside, spot.Z + half), looks.GlowWhite))
 					shining(panel, cfg.RoomLightRange, cfg.RoomLightBrightness, 150)
 				end
 			end
@@ -1231,8 +1236,10 @@ local function buildLights(model: Model, plan: StarterGymConfig.Footprint, corri
 			local at = (if alongX then corridor.low.X else corridor.low.Z) + (k - 0.5) * length / panels
 			local centre = if alongX then Vector3.new(at, corridor.high.Y, mid.Z) else Vector3.new(mid.X, corridor.high.Y, at)
 			local panelHalf = if alongX then Vector3.new(1.5, 0, 1) else Vector3.new(1, 0, 1.5)
-			local panel = decor(box(lights, string.format("CorridorLight_%d_%d", index, k), centre - panelHalf - Vector3.new(0, 0.1, 0),
-				centre + panelHalf, looks.GlowWhite))
+			local panelName = string.format("CorridorLight_%d_%d", index, k)
+			local panel = RoomProps.fitting(lights, panelName, "CeilingPanel", "Diffuser",
+				CFrame.new(centre - Vector3.new(0, 0.12, 0)), Vector3.new(2 * panelHalf.X, 0.12, 2 * panelHalf.Z))
+				or decor(box(lights, panelName, centre - panelHalf - Vector3.new(0, 0.1, 0), centre + panelHalf, looks.GlowWhite))
 			shining(panel, cfg.RoomLightRange, cfg.RoomLightBrightness, 150)
 		end
 	end
@@ -1253,13 +1260,19 @@ local function buildLights(model: Model, plan: StarterGymConfig.Footprint, corri
 		for segment = 1, segments do
 			local za = z0 + (segment - 1) * (segmentLength + gap)
 			local zb = za + segmentLength
-			local bar = decor(box(lights, string.format("HallLight_%d_%d", index, segment), Vector3.new(x - width / 2, barBottom, za),
-				Vector3.new(x + width / 2, barTop, zb), looks.GlowWhite))
-			shining(bar, cfg.HallLightRange, cfg.HallLightBrightness, 140)
-			for cable, z in ipairs({ za + 1, zb - 1 }) do
-				decor(box(lights, string.format("HallLight_%d_%d_Cable_%d", index, segment, cable),
-					Vector3.new(x - 0.04, barTop, z - 0.04), Vector3.new(x + 0.04, beamBottom, z + 0.04), looks.Stainless))
+			local barName = string.format("HallLight_%d_%d", index, segment)
+			-- The Blender LED bar with its cables (Lights_01), stretched to the segment; blocks if it did not load.
+			local bar = RoomProps.fitting(lights, barName, "LightBar", "Diffuser", CFrame.new(x, barBottom, (za + zb) / 2),
+				Vector3.new(width, beamBottom - barBottom, segmentLength))
+			if bar == nil then
+				bar = decor(box(lights, barName, Vector3.new(x - width / 2, barBottom, za), Vector3.new(x + width / 2, barTop, zb),
+					looks.GlowWhite))
+				for cable, z in ipairs({ za + 1, zb - 1 }) do
+					decor(box(lights, string.format("HallLight_%d_%d_Cable_%d", index, segment, cable),
+						Vector3.new(x - 0.04, barTop, z - 0.04), Vector3.new(x + 0.04, beamBottom, z + 0.04), looks.Stainless))
+				end
 			end
+			shining(bar :: BasePart, cfg.HallLightRange, cfg.HallLightBrightness, 140)
 		end
 	end
 
@@ -1707,12 +1720,18 @@ local function buildGym(model: Model): string
 		for index, offset in ipairs({ -half / 2, half / 2 }) do
 			local x = shedX + offset
 			local id = string.format("Lamp_%d_%d", k, index)
-			decor(box(shed, id .. "_Cable", Vector3.new(x - 0.05, wallTop - 3, z - 0.05), Vector3.new(x + 0.05, wallTop - 0.6, z + 0.05),
-				looks.Gadget))
-			decor(box(shed, id .. "_Shade", Vector3.new(x - 1, wallTop - 3.6, z - 1), Vector3.new(x + 1, wallTop - 3, z + 1), looks.Gadget))
-			local lens = decor(box(shed, id .. "_Lens", Vector3.new(x - 0.8, wallTop - 3.7, z - 0.8), Vector3.new(x + 0.8, wallTop - 3.6,
-				z + 0.8), looks.GlowWhite))
-			surfaceLight(lens, Enum.NormalId.Bottom, 28, 1.3, 120)
+			-- The Blender dome lamp on its cable (Lights_01), or blocks if it did not load.
+			local lens = RoomProps.fitting(shed, id .. "_Lens", "HighBayLamp", "Lens", CFrame.new(x, wallTop - 3.7, z))
+			if lens == nil then
+				decor(box(shed, id .. "_Cable", Vector3.new(x - 0.05, wallTop - 3, z - 0.05), Vector3.new(x + 0.05, wallTop - 0.6,
+					z + 0.05), looks.Gadget))
+				decor(box(shed, id .. "_Shade", Vector3.new(x - 1, wallTop - 3.6, z - 1), Vector3.new(x + 1, wallTop - 3, z + 1),
+					looks.Gadget))
+				lens = decor(box(shed, id .. "_Lens", Vector3.new(x - 0.8, wallTop - 3.7, z - 0.8), Vector3.new(x + 0.8,
+					wallTop - 3.6, z + 0.8), looks.GlowWhite))
+			end
+			local glow = lens :: BasePart
+			surfaceLight(glow, StyledScreen.faceToward(glow, -Vector3.yAxis), 28, 1.3, 120)
 		end
 	end
 	box(shed, "Ridge_Beam", Vector3.new(shedX - 0.3, wallTop + rise - 0.9, shedZ0 + t), Vector3.new(shedX + 0.3, wallTop + rise - 0.3,

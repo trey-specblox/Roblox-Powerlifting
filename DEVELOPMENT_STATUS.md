@@ -1879,7 +1879,51 @@ and polish.
     casters 2,073, lights 144 (0 shadows), screens 74, solid decor 0,
     precise collision 0; heaviest room Supplement Bar 584 (budget 600).
   - NOT checked: the user's own look in the game.
-  NEXT ACTION: batch 2 (light fittings). Optional:
+  Batch 2 (light fittings): `art/scripts/build_lights_01.py` ->
+  `art/blender/Lights_01.blend`: LightBar (hall bar with its cables,
+  stretched), CeilingPanel (room/corridor/Mock Meet room panels,
+  stretched), HighBayLamp (Strongman Shed), StageLight (Mock Meet front and
+  private room), TrackSpot + TrackRail (Shop); 11 pieces, 1,032 triangles,
+  CHECK PASSED; previews sent. The Supplement Bar's block pendants will use
+  the existing PendantLamp model. Thin pendant cables under prop lamps stay
+  Roblox cylinders (their length differs per room; a mesh adds nothing).
+  Approved by the user ("Approve, upload"); exported to
+  `art/exports/Lights_01.glb`, uploaded as the group:
+  rbxassetid://110775352617639 (materials.json). COMMITTED and pushed with
+  the user's approval (see section 1).
+  - StarterGymConfig: PropAssets entry, colourways for the six items, and
+    PropPaints GlowWhite and GlowGreen (GlowGreen also fixes the Cardio
+    TV's power light, which named it but was left unpainted).
+  - RoomProps: propCopy takes an optional stretch; new RoomProps.fitting
+    (a light model whose glowing piece takes the old block light's name and
+    sits straight in the folder, so StarterGym_VerifyShell still finds
+    HallLight_* / RoomLight_* with their lights; the rest is
+    "<name>_Fitting"; no fitting piece casts a shadow). Supplement Bar
+    pendants -> PendantLamp via pendant(); Shop spots -> TrackSpot (the
+    SpotLight on its lens) and TrackRail; Mock Meet front stage lights ->
+    StageLight (frontProp).
+  - StarterGymBuilder: hall bars (LightBar stretched to each segment, with
+    its cables), room and corridor panels (CeilingPanel stretched), shed
+    lamps (HighBayLamp); `shining` takes the glowing piece's own downward
+    face (StyledScreen.faceToward, now required there).
+  - MockMeetArena: ceiling-hung StageLight cans pointing down, CeilingPanel
+    ceiling lights and board wash.
+  - Each keeps the old blocks as the fallback.
+  - Checks: luau-lsp 0 problems on the 4 changed scripts, `rojo build` OK.
+    Studio Play (by Claude): first run still had the old scripts (Rojo had
+    not synced yet); after the sync: 60 room and hall lights, 17 rooms, 10
+    fronts, 0 errors; hall 27/27 bars and 26/26 room panels are MeshParts
+    with their SurfaceLights, 60 fitting models; shed lens, stage lights
+    and shop spot (with its SpotLight) are models; private Mock Meet room:
+    stage cans hang from the ceiling over the platform, panels and wash
+    lit; screenshots of the hall bars, the Mock Meet front and the private
+    room look right. Audit: visible blocks 2,119 -> 1,926, parts 5,807,
+    MeshParts 3,646, unique meshes 444, shadow casters 2,046, lights 144
+    (0 shadows), screens 74, solid decor 0, precise 0; heaviest room
+    Supplement Bar 584. StarterGym_VerifyShell itself was not re-run.
+  - NOT checked: the user's own look; the Shop spots and Supplement Bar
+    pendants were checked by script only (no screenshot).
+  NEXT ACTION: batch 3 (doors and hall-front plaques). Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
   the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
@@ -1948,7 +1992,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Replace the shared block furniture with Blender models (blocks to Blender, batch 1); `git log -1` for the hash.
+- 2026-10-28, pushed: Replace the block light fittings with Blender models (blocks to Blender, batch 2); `git log -1` for the hash.
+- `3d267e2` (2026-10-28, pushed) Replace the shared block furniture with Blender models (blocks to Blender, batch 1).
 - `1e9d3de` (2026-10-28, pushed) Record the user's Studio check of the Mock Meet models in DEVELOPMENT_STATUS.
 - `44375cd` (2026-10-28, pushed) Replace the Mock Meet's block furniture with Blender models.
 - `368eee0` (2026-10-28, pushed) Add weight-class builds (save v6) and let the Mock Meet save Competition Scale and best Total.
