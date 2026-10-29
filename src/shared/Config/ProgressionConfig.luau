@@ -8,8 +8,8 @@
 
 	WHAT IS AND IS NOT USED YET
 
-	Only the RESOURCE constants -- Competition Budget and Training Energy
-	capacity and regeneration -- are consumed by anything today. They drive
+	Only the RESOURCE constants -- Competition Budget capacity and
+	regeneration -- are consumed by anything today. They drive
 	ResourceRegeneration and the persistence foundation.
 
 	BaseProgressRate and the Hill parameters are read by CompetitionNumberReward.
@@ -179,38 +179,7 @@ ProgressionConfig.CompetitionBudget = {
 	]]
 }
 
---[[
-	=========================================================================
-	TRAINING ENERGY (section 29.8) -- ACTIVELY USED
-	=========================================================================
-
-	Limits PASSIVE AFK Competition Number only.
-
-	IT MUST NEVER LIMIT MUSCLE. Muscle progresses independently and continues
-	when Training Energy is empty. Nothing in this table may be wired to the
-	Muscle system.
-
-	Account-wide, never build-scoped.
-
-	At zero, AFK Competition Number STOPS rather than entering overflow. That
-	asymmetry with the Competition Budget is deliberate: meets are active play,
-	and a player at the keyboard must never be told their effort is worth
-	nothing, whereas a hard allowance on passive gain is what holds the intended
-	ratio of roughly 0.25x the reference active rate.
-]]
-ProgressionConfig.TrainingEnergy = {
-	-- Minutes. Two hours.
-	CapacityMinutes = 120,
-
-	-- Minutes per hour. A fully spent pool refills in 24 hours.
-	RegenerationMinutesPerHour = 5,
-
-	--[[
-		Unlike the Competition Budget, this resource cannot go below zero.
-		Spending stops at empty; there is no overflow.
-	]]
-	MinimumMinutes = 0,
-}
+-- (TRAINING ENERGY, section 29.8, was retired in schema version 8 by the user, 2026-10-29.)
 
 --[[
 	=========================================================================

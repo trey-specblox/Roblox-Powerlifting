@@ -5,9 +5,10 @@
 
 	Lazy, timestamp-driven regeneration for continuously refilling resources.
 
-	Used by the three Competition Budgets and by Training Energy. Both regenerate
-	in real time, including while the player is offline, so neither can be
-	modelled as "add some amount every tick".
+	Used by the three Competition Budgets (and by Training Energy until it was
+	retired in schema version 8). They regenerate in real time, including while
+	the player is offline, so they cannot be modelled as "add some amount every
+	tick".
 
 	NO LOOP IS REQUIRED. A resource is stored as
 
@@ -149,7 +150,7 @@ end
 	and then fail.
 
 	`floor` is the lowest value the resource may reach. Pass 0 for a resource
-	that simply runs out, such as Training Energy. Pass a negative value for one
+	that simply runs out. Pass a negative value for one
 	that models overflow, such as a Competition Budget, where a negative amount
 	IS the overflow depth.
 ]]

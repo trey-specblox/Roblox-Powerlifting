@@ -1812,6 +1812,10 @@ the gain PP-equivalent regardless of class, that choice is cosmetic.
 
 ### 29.8 AFK progression and Training Energy
 
+> **RETIRED (user, 2026-10-29).** Training Energy is removed from the game and
+> from save data (schema version 8). It limited nothing since §34; this section is
+> historical.
+
 > **⚠ SUPERSEDED AS A CN THROTTLE BY SECTION 34. THE WHOLE OF §29.8 IS NOW
 > HISTORICAL.** Two approved decisions remove its job:
 >
@@ -1876,6 +1880,13 @@ rate, so AFK-only progression is ~4x slower.
 > not. *Background training only.*
 
 ### 29.9 The three Competition Budgets
+
+> **DECIDED (user, 2026-10-29): KEPT, AND REUSED AS THE WEEKLY LIMIT ON MEET CN
+> RAISES (§33.3b).** One pool per lift; meet raises against other players may add
+> at most +25% of a lift's CN per week, and stop when the pool is empty until it
+> refills. The EV-based model below (9.43 EV, harmonic overflow) is replaced by
+> that rule when vs-player meets are built; until then the stored pools are kept
+> and nothing reads them.
 
 > **⚠ THIS SYSTEM HAS LOST ITS SUBJECT — [TBD]**
 >
@@ -3201,6 +3212,12 @@ The intended player experience:
 
 ### 33.3 Meets never increase Competition Number
 
+> **⚠ CHANGED BY THE USER, 2026-10-29 — see §33.3b.** Meets **against other
+> players** may now raise Competition Number, within a weekly per-lift limit.
+> Everything below still holds for the **solo** Mock Meet and for every prohibited
+> source except the one §33.3b allows. Kept for its reasoning: the farming risk it
+> describes is exactly what §33.3b's limits answer.
+
 **[FROZEN]** A meet **never** increases Competition Number — not during it, not
 on completion, and not as a reward for placing, winning, qualifying or setting a
 record.
@@ -3232,6 +3249,32 @@ for all of those.
 > Supersedes: §29.5 attempt rows, §29.6 meet share, §29.10 CN parity row, §30.1
 > category 1, §30.2 in full, §32.11's CN bullet.
 
+
+### 33.3b Meet CN raises against other players — [APPROVED] (user, 2026-10-29)
+
+**The user's design:** a lifter who makes a big lift at a meet against other
+players — say 125% of their Competition Number, to beat an opponent — should have
+their CN go up to that weight. Big risks get big rewards, but a lifter who is simply
+very good at the minigames must not be able to keep stepping CN up with small,
+repeated raises.
+
+| Rule | Decision |
+|---|---|
+| Which meets | **Only meets against other players** (Local, Nationals, Worlds, Sheffield and any later multi-player meet). The **solo Mock Meet never raises CN**; it only raises Competition Scale (§33.7) |
+| What a good lift does | A **good** lift above the lift's current CN raises CN **all the way to the weight lifted** (200 kg CN and a good 250 kg lift: CN 250 kg). A failed lift does nothing (§33.6). CN never goes down |
+| The weekly limit | Meet raises may add at most **+25% per lift per week** in total, as a share of CN. One maximum-risk lift can use it all at once; several small raises add up to the same limit. **[PROVISIONAL]** value |
+| When it is used up | **Meet raises stop** for that lift until the limit refills over the week (no tapering). Good lifts still raise Competition Scale. A raise that would pass the limit is cut to what is left |
+| Where the limit lives | The **Competition Budget** (§29.9), reused for this: one pool per lift, refilling over a week. Its EV denomination, 9.43 EV capacity and harmonic overflow are replaced by this simpler rule when it is built |
+| Training | **Unchanged.** Gym training stays a CN source with its own 4.00 EV daily cap and per-lift efficiency (§34); the two do not share a limit |
+
+> **Not built yet.** Meets against other players do not exist yet, so this rule
+> is recorded now and built with them. The Budget's stored pools are kept until
+> then (§29.9).
+>
+> **To decide when it is built:** how the raise interacts with the Progression
+> Reference near the world-record level (§29.4) — a meet raise is a jump, not an
+> EV award, so it bypasses the Hill slowdown — and whether the +25% is a share of
+> CN at the start of the week or of the CN at the time of the lift.
 
 ### 33.4 The two difficulty roles
 
@@ -3637,7 +3680,8 @@ see §34.13.**
 5. ~~**Training EV rates**, and the replacement channel distribution they belong
    to~~ — **DECIDED** (§34.2, §34.4). One channel at 100%; `BaseRate` 1.00 EV/hour
    under `H(t)`, 4.00 EV/day account-wide. **[PROVISIONAL]** values, not [TBD].
-6. **The fate of the Competition Budget** (§29.9, §33.10).
+6. ~~**The fate of the Competition Budget**~~ — **DECIDED** (user, 2026-10-29):
+   kept as the weekly limit on meet CN raises (§33.3b, §29.9).
 7. ~~**Training Energy's scope**~~ — **DECIDED as a throttle** (§34.1 decision 2,
    §34.3): it no longer limits CN, and there is no hard training-hour limit. Its
    **fate as a persisted field remains [TBD]** — §34.13 item 8.
@@ -3855,6 +3899,10 @@ sitting outside the pacing window — is documented honestly in §34.11 instead 
 being tuned away.
 
 ### 34.2 Competition Number has exactly one source — [FINAL]
+
+> **⚠ CHANGED BY THE USER, 2026-10-29:** meets **against other players** are now a
+> second, limited CN source (§33.3b). Gym training stays the only CN source
+> everywhere else, and every other prohibition below still holds.
 
 **[FINAL]** Competition Number is awarded **only** by training at an eligible gym
 training station.
@@ -4716,8 +4764,8 @@ choice:
 | 4 | **Whether H(t)'s per-lift scoping is intended**, given the 4.00 h versus 5.44 h result in §34.10. | **[TBD]** |
 | 5 | **How a meet's technique award is split** across a lift's two stats — evenly, or weighted by which phase the attempt tested. | **[TBD]** |
 | 6 | ~~Whether 8.44 hours is an intended full daily cycle~~ — **moot since 5B.7**: technique has no cap, so there is no fixed "full cycle". Four hours already yields 84.7% of the CN cap. | **[RESOLVED]** |
-| 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. **Training does not use them** — 5B.5 decision A (§34.12) — so that much is settled; what they are for is not. | **[TBD]** — §33.12 step 8 |
-| 8 | **The fate of Training Energy** (§29.8). Superseded as a CN throttle by decision 2 and by "no hard daily training-hour limit", but still persisted in the schema. Retire it, or give it a different job. | **[TBD]** |
+| 7 | **The fate of the three Competition Budgets** (§29.9). The 4.00 EV daily cap does **not** resolve them and must not be confused with them: the cap is a daily account ceiling, the budgets are three persisted weekly per-lift pools with a 9.43 EV capacity. They are still attached to nothing. **Training does not use them** — 5B.5 decision A (§34.12) — so that much is settled; what they are for is not. | **DECIDED** (user, 2026-10-29): kept as the weekly limit on meet CN raises, §33.3b |
+| 8 | **The fate of Training Energy** (§29.8). Superseded as a CN throttle by decision 2 and by "no hard daily training-hour limit", but still persisted in the schema. Retire it, or give it a different job. | **DECIDED** (user, 2026-10-29): **retired**, removed in schema version 8 |
 | 9 | Everything still open in **§33.11** — the Scale challenge curve and cap, maximum-risk meet strategy, eligible-meet definition, Scale across weight classes, and Scale display. | **[TBD]** |
 
 **Not open, for the avoidance of doubt:** the five decisions in §34.1, the single
@@ -4769,7 +4817,7 @@ should begin before the decisions it depends on:
 | later | **Game Pass:** automatic CN-to-technique fallback with a player-configured primary stat (§34.12). Never raises a cap or a rate | 5B.7; a monetization decision |
 | 6 | The Scale challenge modifier — **DONE 2026-10-29** (§33.4 decisions approved by the user) | §33.4 curve, cap and target |
 | 7 | Wire meets to raise Scale | a meet system; §33.7 eligibility; **and the class-scoped build system** per §33.8 |
-| 8 | Resolve the Competition Budget | §29.9, §34.13 item 7 |
+| 8 | Resolve the Competition Budget — **DECIDED 2026-10-29** (kept for §33.3b; built with vs-player meets). Training Energy retired in schema v8 | §29.9, §34.13 items 7 and 8 |
 | 9 | **Remove `PullStrength`** — schema-version migration, `TypingPhaseConfig` rebase, test updates, and the §3 / §11 / §28 / mechanic-table documentation. **See the migration requirements below** — **DONE 2026-10-29** (schema version 7; PlayerDataProbe 470/0, TrainingProgressionProbe 298/0, TrainingStationProbe 205/0, TechniqueTrainingProbe 73/0) | §34.6, §34.9. Must be **one controlled change**, because a partial removal degrades silently |
 | 10 | Meet technique awards | §34.8; blocked on meet duration, §34.13 item 1 |
 | 11 | Cosmetic currency for Deadlift typing | §34.9; blocked on §34.13 item 2 |

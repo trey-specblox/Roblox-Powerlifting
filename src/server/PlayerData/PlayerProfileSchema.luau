@@ -48,7 +48,7 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below.
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 7
+PlayerProfileSchema.CURRENT_VERSION = 8
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -297,7 +297,7 @@ export type ProfileData = {
 		map above.
 	]]
 	competitionBudget: CompetitionBudget,
-	trainingEnergy: Resource,
+	-- (trainingEnergy, added in version 3, was retired in version 8: GAME_DESIGN 29.8.)
 
 	--[[
 		DAILY TRAINING ACCOUNTING, added in version 5. GAME_DESIGN.md section
@@ -357,11 +357,6 @@ local template: ProfileData = {
 		Squat = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
 		Bench = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
 		Deadlift = { amount = ProgressionConfig.CompetitionBudget.CapacityEV, lastUpdatedUnix = 0 },
-	},
-
-	trainingEnergy = {
-		amount = ProgressionConfig.TrainingEnergy.CapacityMinutes,
-		lastUpdatedUnix = 0,
 	},
 
 	--[[
@@ -593,16 +588,11 @@ migrations[2] = function(data: ProfileData)
 		end
 	end
 
-	local energy = data.trainingEnergy
-
-	if typeof(energy) ~= "table" or typeof(energy.amount) ~= "number" or energy.amount ~= energy.amount then
-		data.trainingEnergy = {
-			amount = ProgressionConfig.TrainingEnergy.CapacityMinutes,
-			lastUpdatedUnix = 0,
-		}
-	elseif typeof(energy.lastUpdatedUnix) ~= "number" then
-		energy.lastUpdatedUnix = 0
-	end
+	--[[
+		This step also used to repair Training Energy. Training Energy was retired
+		in version 8 (migrations[7] deletes it), so the repair is gone; the step
+		itself stays, as every version gap needs one.
+	]]
 end
 
 --[[
@@ -1037,6 +1027,21 @@ migrations[6] = function(data: ProfileData)
 	if typeof(technique) == "table" then
 		technique.PullStrength = nil
 	end
+end
+
+--[[
+	Version 7 to 8: Training Energy is retired (user, 2026-10-29; GAME_DESIGN
+	29.8, 34.13 item 8).
+
+	It limited nothing since section 34 replaced it with the 4.00 EV daily cap and
+	no hour limit, and no game code read it. Reconcile only ADDS missing keys, so
+	the saved field must be deleted here. Nothing else is read, written or
+	removed; the Competition Budget stays (kept for meet CN raises, section 33.3b).
+
+	IDEMPOTENT: a second run finds no field and changes nothing.
+]]
+migrations[7] = function(data: ProfileData)
+	(data :: any).trainingEnergy = nil
 end
 
 --[[

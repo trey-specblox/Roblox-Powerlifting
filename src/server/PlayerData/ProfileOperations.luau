@@ -80,16 +80,10 @@ type ProfileData = PlayerProfileSchema.ProfileData
 		toward zero without reaching it. It fails only on a malformed request:
 		an unknown lift, a corrupt pool, or a non-finite or non-positive EV.
 
-	TRAINING ENERGY -- CONSUMPTION FAILS WHEN SHORT.
-
-		It floors at zero and is all-or-nothing. At empty, passive AFK
-		Competition Number stops; there is no overflow. This is the asymmetry
-		that holds the intended ratio of roughly 0.25x the reference active
-		rate, and it is correct precisely BECAUSE the player is not at the
-		keyboard to be discouraged.
+	(Training Energy, the all-or-nothing resource this note once contrasted,
+	was retired in schema version 8.)
 
 	So: a budget call returns "here is what you earned", possibly very little.
-	An energy call returns "yes" or "no".
 	=========================================================================
 
 	ON VALIDATING THE SIZE OF A COMPETITION NUMBER AWARD
@@ -616,7 +610,7 @@ end
 	Consumes `rawEV` of progression from one lift's Competition Budget and
 	returns the EFFECTIVE EV it earned.
 
-	THIS CANNOT FAIL ON AMOUNT, unlike Training Energy. See the semantics note at
+	THIS CANNOT FAIL ON AMOUNT. See the semantics note at
 	the top of this file. The returned effective EV falls toward zero as overflow
 	deepens but never reaches it, so legitimate progression always pays
 	something. Failure means the REQUEST was malformed: an unknown lift, a
@@ -662,71 +656,7 @@ function ProfileOperations.consumeCompetitionBudget(
 	return effective, remaining
 end
 
---[[
-	=========================================================================
-	TRAINING ENERGY  (account-wide, passive AFK Competition Number only)
-	=========================================================================
-
-	NOTHING HERE MAY BE WIRED TO MUSCLE. Section 29.8 is explicit: Training
-	Energy limits passive AFK Competition Number and never limits Muscle, which
-	progresses independently and continues when this is empty.
-]]
-
-local ENERGY = ProgressionConfig.TrainingEnergy
-
---[[
-	Training Energy in minutes as it stands right now, WITHOUT writing anything.
-
-	Includes offline regeneration, per section 29.8.
-]]
-function ProfileOperations.getRegeneratedTrainingEnergy(data: ProfileData, nowUnix: number): number?
-	local energy = data.trainingEnergy
-
-	if typeof(energy) ~= "table" then
-		return nil
-	end
-
-	return ResourceRegeneration.current(
-		energy,
-		nowUnix,
-		ENERGY.CapacityMinutes,
-		ENERGY.RegenerationMinutesPerHour
-	)
-end
-
---[[
-	Spends `minutes` of Training Energy.
-
-	Returns whether it was spent and what remains.
-
-	UNLIKE THE COMPETITION BUDGET, THIS CANNOT GO BELOW ZERO. At empty, passive
-	AFK Competition Number stops; there is no overflow. The asymmetry is
-	deliberate and is explained in ProgressionConfig: a player at the keyboard
-	must never be told their effort is worth nothing, whereas a hard allowance on
-	passive gain is what holds the intended ratio.
-]]
-function ProfileOperations.consumeTrainingEnergy(
-	data: ProfileData,
-	minutes: number,
-	nowUnix: number
-): (boolean, number?)
-	local energy = data.trainingEnergy
-
-	if typeof(energy) ~= "table" then
-		return false, nil
-	end
-
-	local spent, remaining = ResourceRegeneration.trySpend(
-		energy,
-		nowUnix,
-		ENERGY.CapacityMinutes,
-		ENERGY.RegenerationMinutesPerHour,
-		minutes,
-		ENERGY.MinimumMinutes
-	)
-
-	return spent, remaining
-end
+-- (TRAINING ENERGY was retired in schema version 8, GAME_DESIGN 29.8.)
 
 --[[
 	=========================================================================
@@ -736,9 +666,9 @@ end
 	The ONLY operation that awards Competition Number. It debits the daily
 	training accounting and awards the CN that debit paid for, together.
 
-	THE COMPETITION BUDGET AND TRAINING ENERGY ARE NOT TOUCHED. Section 34.12,
-	decision A: the account-wide 4.00 EV daily allowance is training's only
-	throttle. The budget pools and Training Energy stay exactly as stored.
+	THE COMPETITION BUDGET IS NOT TOUCHED. Section 34.12, decision A: the
+	account-wide 4.00 EV daily allowance is training's only throttle. The budget
+	pools stay exactly as stored (kept for meet CN raises, section 33.3b).
 ]]
 
 --[[

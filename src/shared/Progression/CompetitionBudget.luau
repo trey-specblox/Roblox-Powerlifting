@@ -170,10 +170,9 @@ end
 	at a diminishing multiplier. That is the frozen rule that active meet
 	progression never hard-zeros.
 
-	Contrast ResourceRegeneration.trySpend, which Training Energy uses: that is
-	all-or-nothing and refuses when short, because passive gain DOES stop at
-	empty. The two resources deliberately behave differently and the difference
-	is the whole reason they are separate functions.
+	Contrast ResourceRegeneration.trySpend: that is all-or-nothing and refuses
+	when short (it served Training Energy, retired in schema version 8). The two
+	behave differently on purpose, which is why they are separate functions.
 
 	Regenerates before consuming, so the span starts from the state the player
 	actually has rather than a stale stored value.

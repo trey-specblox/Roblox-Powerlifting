@@ -62,7 +62,6 @@ local CompetitionBudget = require(ProgressionFolder:WaitForChild("CompetitionBud
 local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
 
 local BUDGET = ProgressionConfig.CompetitionBudget
-local ENERGY = ProgressionConfig.TrainingEnergy
 
 local passed = 0
 local failed = 0
@@ -282,12 +281,10 @@ local DAY = 86400
 
 print("=== Player data persistence probe ===")
 print(string.format(
-	"schema version %d  |  budget %.2f EV cap, %.4f EV/h  |  energy %d min cap, %d min/h",
+	"schema version %d  |  budget %.2f EV cap, %.4f EV/h",
 	PlayerProfileSchema.CURRENT_VERSION,
 	BUDGET.CapacityEV,
-	BUDGET.RegenerationEVPerHour,
-	ENERGY.CapacityMinutes,
-	ENERGY.RegenerationMinutesPerHour
+	BUDGET.RegenerationEVPerHour
 ))
 print("")
 
@@ -320,10 +317,10 @@ do
 			and data.competitionBudget.Bench.amount == BUDGET.CapacityEV
 			and data.competitionBudget.Deadlift.amount == BUDGET.CapacityEV
 	)
-	check("training energy starts full", data.trainingEnergy.amount == ENERGY.CapacityMinutes)
+	check("there is no Training Energy (retired in v8)", (data :: any).trainingEnergy == nil)
 	check(
 		"resource timestamps are 0, not a server start time",
-		data.competitionBudget.Squat.lastUpdatedUnix == 0 and data.trainingEnergy.lastUpdatedUnix == 0
+		data.competitionBudget.Squat.lastUpdatedUnix == 0
 	)
 end
 
@@ -334,7 +331,7 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 7", finalVersion == 7 and data.version == 7)
+	check("migrated to version 8", finalVersion == 8 and data.version == 8)
 	check("Squat preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
 	check("Bench preserved at 117.5", near(cnOf(data).Bench, 117.5), tostring(cnOf(data).Bench))
 	check("Deadlift preserved at 215.0", near(cnOf(data).Deadlift, 215.0), tostring(cnOf(data).Deadlift))
@@ -360,7 +357,7 @@ do
 	check("Squat still 300 after three passes", near(cnOf(data).Squat, 300.0), tostring(cnOf(data).Squat))
 	check("Bench still 200", near(cnOf(data).Bench, 200.0))
 	check("Deadlift still 350", near(cnOf(data).Deadlift, 350.0))
-	check("version still 7", data.version == 7)
+	check("version still 8", data.version == 8)
 	check(
 		"part-spent budget was not silently refilled",
 		near(data.competitionBudget.Squat.amount, spentBudget),
@@ -567,25 +564,6 @@ do
 		tostring(afterYear)
 	)
 
-	-- Same for Training Energy.
-	ProfileOperations.consumeTrainingEnergy(data, 120, 1000 * DAY)
-	local energyAfterYear = ProfileOperations.getRegeneratedTrainingEnergy(data, 1365 * DAY)
-
-	check(
-		"a year of regeneration stops at the 120 minute cap",
-		energyAfterYear ~= nil and near(energyAfterYear :: number, ENERGY.CapacityMinutes),
-		tostring(energyAfterYear)
-	)
-
-	-- A value stored above the cap is brought down, not left there.
-	data.trainingEnergy.amount = 9999
-	data.trainingEnergy.lastUpdatedUnix = 1000 * DAY
-	local clamped = ProfileOperations.getRegeneratedTrainingEnergy(data, 1000 * DAY)
-	check(
-		"a stored value above the cap is clamped down",
-		clamped ~= nil and near(clamped :: number, ENERGY.CapacityMinutes),
-		tostring(clamped)
-	)
 end
 
 --------------------------------------------------------------------------------
@@ -626,85 +604,12 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("10. Training Energy depletion")
+print("10. Training Energy is retired (schema version 8)")
 do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	local ok30, left30 = ProfileOperations.consumeTrainingEnergy(data, 30, now)
-	check("spending 30 of 120 minutes works", ok30 and left30 ~= nil and near(left30 :: number, 90), tostring(left30))
-
-	local ok90, left90 = ProfileOperations.consumeTrainingEnergy(data, 90, now)
-	check("spending the remaining 90 works", ok90 and left90 ~= nil and near(left90 :: number, 0), tostring(left90))
-
-	local okOver, leftOver = ProfileOperations.consumeTrainingEnergy(data, 1, now)
-	check("spending past empty is refused", not okOver)
-	check("refusal leaves it at exactly 0, never negative", leftOver ~= nil and near(leftOver :: number, 0), tostring(leftOver))
-	check("stored amount is 0, not negative", data.trainingEnergy.amount >= 0)
-
-	-- All-or-nothing: an unaffordable cost must change nothing at all.
-	data.trainingEnergy.amount = 10
-	local okPartial = ProfileOperations.consumeTrainingEnergy(data, 40, now)
-	check("an unaffordable cost is all-or-nothing", not okPartial and near(data.trainingEnergy.amount, 10))
-
-	-- Nonsense costs.
-	check("NaN cost rejected", not ProfileOperations.consumeTrainingEnergy(data, 0 / 0, now))
-	check("infinite cost rejected", not ProfileOperations.consumeTrainingEnergy(data, math.huge, now))
-	check("negative cost rejected (no refunds)", not ProfileOperations.consumeTrainingEnergy(data, -50, now))
-	check("amount survived every bad cost", near(data.trainingEnergy.amount, 10), tostring(data.trainingEnergy.amount))
-end
-
---------------------------------------------------------------------------------
-print("")
-print("11. Training Energy regeneration, online and offline")
-do
-	local data = newProfile()
-	local start = 1000 * DAY
-
-	ProfileOperations.consumeTrainingEnergy(data, 120, start)
-
-	local after6h = ProfileOperations.getRegeneratedTrainingEnergy(data, start + 6 * HOUR)
-	check(
-		"6 hours regenerates 30 minutes at 5 min/h",
-		after6h ~= nil and near(after6h :: number, 30),
-		tostring(after6h)
-	)
-
-	local after24h = ProfileOperations.getRegeneratedTrainingEnergy(data, start + DAY)
-	check(
-		"24 hours fully refills the 120 minute pool",
-		after24h ~= nil and near(after24h :: number, 120),
-		tostring(after24h)
-	)
-
-	--[[
-		Offline is not a separate code path, which is the point: the same
-		timestamp arithmetic serves a player who logged off and one who idled.
-	]]
-	local after3d = ProfileOperations.getRegeneratedTrainingEnergy(data, start + 3 * DAY)
-	check("3 days offline is still capped at 120", after3d ~= nil and near(after3d :: number, 120), tostring(after3d))
-end
-
---------------------------------------------------------------------------------
-print("")
-print("12. Training Energy caps at 120")
-do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	check("a fresh pool reads exactly 120", near(ProfileOperations.getRegeneratedTrainingEnergy(data, now) :: number, 120))
-
-	-- Regeneration from full must not bank time above the cap.
-	local later = ProfileOperations.getRegeneratedTrainingEnergy(data, now + 30 * DAY)
-	check("30 days at full still reads 120", later ~= nil and near(later :: number, 120), tostring(later))
-
-	ProfileOperations.consumeTrainingEnergy(data, 5, now + 30 * DAY)
-	local afterSpend = ProfileOperations.getRegeneratedTrainingEnergy(data, now + 30 * DAY)
-	check(
-		"time at full did not bank: spending 5 leaves 115, not more",
-		afterSpend ~= nil and near(afterSpend :: number, 115),
-		tostring(afterSpend)
-	)
+	check("no consumeTrainingEnergy operation", (ProfileOperations :: any).consumeTrainingEnergy == nil)
+	check("no Training Energy reader", (ProfileOperations :: any).getRegeneratedTrainingEnergy == nil)
+	check("no Training Energy config", (ProgressionConfig :: any).TrainingEnergy == nil)
+	check("not in the template", (PlayerProfileSchema.template :: any).trainingEnergy == nil)
 end
 
 --------------------------------------------------------------------------------
@@ -738,8 +643,6 @@ do
 	check("but reading one is still available", typeof(PlayerDataService.getCompetitionNumber) == "function")
 
 	check("consumeCompetitionBudget takes no timestamp", debug.info(PlayerDataService.consumeCompetitionBudget, "a") == 3)
-	check("consumeTrainingEnergy takes no timestamp", debug.info(PlayerDataService.consumeTrainingEnergy, "a") == 2)
-	check("getRegeneratedTrainingEnergy takes no timestamp", debug.info(PlayerDataService.getRegeneratedTrainingEnergy, "a") == 1)
 	check("getRegeneratedCompetitionBudget takes no timestamp", debug.info(PlayerDataService.getRegeneratedCompetitionBudget, "a") == 2)
 	check("awardTrainingProgression takes no timestamp", debug.info(PlayerDataService.awardTrainingProgression, "a") == 3)
 	check("awardTechniqueTraining takes (player, lift, primary, seconds) -- no points, no timestamp",
@@ -753,16 +656,18 @@ do
 
 	-- And no remote exists through which a client could reach any of it.
 	check("PlayerDataService exposes no RemoteEvent", (PlayerDataService :: any).Remote == nil)
+	check("and no Training Energy operations (retired in v8)", (PlayerDataService :: any).consumeTrainingEnergy == nil
+		and (PlayerDataService :: any).getRegeneratedTrainingEnergy == nil)
 
 	--[[
 		A corrupt stored timestamp must not become a windfall. A NaN or missing
 		timestamp grants nothing rather than a full refill.
 	]]
 	local data = newProfile()
-	ProfileOperations.consumeTrainingEnergy(data, 120, 1000 * DAY)
-	data.trainingEnergy.lastUpdatedUnix = 0 / 0
+	ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.CapacityEV, 1000 * DAY)
+	data.competitionBudget.Squat.lastUpdatedUnix = 0 / 0
 
-	local fromNaN = ProfileOperations.getRegeneratedTrainingEnergy(data, 1001 * DAY)
+	local fromNaN = ProfileOperations.getRegeneratedCompetitionBudget(data, "Squat", 1001 * DAY)
 	check("a NaN stored timestamp grants nothing", fromNaN ~= nil and near(fromNaN :: number, 0), tostring(fromNaN))
 end
 
@@ -787,7 +692,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("bonus. a version-1 save reaches version 7 in one pass")
+print("bonus. a version-1 save reaches version 8 in one pass")
 do
 	--[[
 		The long path. A v1 save predates the rename, so every step from
@@ -809,7 +714,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 7", finalVersion == 7 and data.version == 7)
+	check("reached version 8", finalVersion == 8 and data.version == 8)
 	check("Squat 140 preserved across two migrations", near(cnOf(data).Squat, 140.0), tostring(cnOf(data).Squat))
 	check("Bench 95 preserved", near(cnOf(data).Bench, 95.0))
 	check("Deadlift 170 preserved", near(cnOf(data).Deadlift, 170.0))
@@ -1118,8 +1023,8 @@ do
 	ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.CapacityEV, now)
 
 	--[[
-		THE KEY DISTINCTION. Training Energy would refuse here. A Competition
-		Budget must not, because active meet progression is never hard-zeroed.
+		THE KEY DISTINCTION. An all-or-nothing resource would refuse here. A
+		Competition Budget must not, because its overflow is never hard-zeroed.
 	]]
 	local e1, r1 = ProfileOperations.consumeCompetitionBudget(data, "Squat", BUDGET.UnitEV, now)
 	check("an award past empty is NOT refused", e1 ~= nil, "nil would mean refused")
@@ -1157,26 +1062,9 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("22. Training Energy still cannot spend below zero")
+print("22. a budget call returns a number (effective EV)")
 do
-	local data = newProfile()
-	local now = 1000 * DAY
-
-	--[[
-		The deliberate asymmetry with the Competition Budget above. Passive gain
-		stops at empty; there is no overflow.
-	]]
-	local okAll = ProfileOperations.consumeTrainingEnergy(data, ENERGY.CapacityMinutes, now)
-	check("the full 120 minutes can be spent", okAll)
-	check("the pool is exactly 0", near(data.trainingEnergy.amount, 0))
-
-	local okMore, leftMore = ProfileOperations.consumeTrainingEnergy(data, 1, now)
-	check("one more minute is REFUSED", not okMore, "unlike a Competition Budget")
-	check("the pool is still 0, never negative", leftMore ~= nil and near(leftMore :: number, 0) and data.trainingEnergy.amount >= 0)
-
-	-- And it returns a boolean, where the budget returns effective EV.
-	check("consumeTrainingEnergy returns a boolean", typeof(okMore) == "boolean")
-	local budgetReturn = ProfileOperations.consumeCompetitionBudget(newProfile(), "Squat", 1, now)
+	local budgetReturn = ProfileOperations.consumeCompetitionBudget(newProfile(), "Squat", 1, 1000 * DAY)
 	check("consumeCompetitionBudget returns a number", typeof(budgetReturn) == "number", typeof(budgetReturn))
 end
 
@@ -1314,7 +1202,7 @@ do
 	local data = reconciledV3Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 3)
 
-	check("migrated to version 7", finalVersion == 7 and data.version == 7)
+	check("migrated to version 8", finalVersion == 8 and data.version == 8)
 
 	-- The rule that this whole checkpoint exists to get right.
 	check("Squat Scale is UNPROVEN after migration", scaleOf(data).Squat == 0, tostring(scaleOf(data).Squat))
@@ -1333,7 +1221,7 @@ do
 	check("trained Deadlift CN preserved at 215.0", near(cnOf(data).Deadlift, 215.0))
 	check("part-spent Squat budget preserved at 3.21", near(data.competitionBudget.Squat.amount, 3.21), tostring(data.competitionBudget.Squat.amount))
 	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
-	check("part-spent Training Energy preserved at 45", near(data.trainingEnergy.amount, 45))
+	check("Training Energy removed by the v8 step", data.trainingEnergy == nil)
 	check("technique PressPower 2200 preserved", data.technique.PressPower == 2200)
 	check("technique PullStrength 350 removed by the v7 step", (data.technique :: any).PullStrength == nil)
 	check("bodyweight 81.5 kg preserved", near(data.bodyweight.currentKg, 81.5))
@@ -1703,7 +1591,6 @@ do
 		Deadlift = cnOf(data).Deadlift,
 	}
 	local budgetBefore = data.competitionBudget.Squat.amount
-	local energyBefore = data.trainingEnergy.amount
 	local techniqueBefore = data.technique.PressPower
 	local bodyweightBefore = data.bodyweight.currentKg
 	local versionBefore = data.version
@@ -1729,7 +1616,6 @@ do
 
 	-- AND NOTHING ELSE MOVED EITHER.
 	check("Competition Budget untouched", near(data.competitionBudget.Squat.amount, budgetBefore))
-	check("Training Energy untouched", near(data.trainingEnergy.amount, energyBefore))
 	check("technique untouched", data.technique.PressPower == techniqueBefore)
 	check("bodyweight untouched", near(data.bodyweight.currentKg, bodyweightBefore))
 	check("schema version untouched", data.version == versionBefore)
@@ -1745,7 +1631,6 @@ do
 		tostring(debug.info(ProfileOperations.raiseCompetitionScale, "a"))
 	)
 	check("no budget timestamp was stamped", data.competitionBudget.Squat.lastUpdatedUnix == 0)
-	check("no Training Energy timestamp was stamped", data.trainingEnergy.lastUpdatedUnix == 0)
 end
 
 --------------------------------------------------------------------------------
@@ -1794,7 +1679,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 4)
 
-	check("migrated 4 to 7", finalVersion == 7 and data.version == 7, tostring(data.version))
+	check("migrated 4 to 8", finalVersion == 8 and data.version == 8, tostring(data.version))
 
 	--[[
 		NO OFFLINE TRAINING CREDIT. A save that predates the station cannot
@@ -1834,14 +1719,13 @@ do
 
 	check("part-spent Squat budget preserved", near(data.competitionBudget.Squat.amount, 2.75))
 	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
-	check("Training Energy preserved", near(data.trainingEnergy.amount, 61))
-	check("Training Energy timestamp preserved", data.trainingEnergy.lastUpdatedUnix == 1700500000)
+	check("Training Energy removed by the v8 step", data.trainingEnergy == nil)
 	check("bodyweight preserved", near(data.bodyweight.currentKg, 82.4) and near(data.bodyweight.targetKg, 93))
 	check("meta preserved", data.meta.sessionCount == 103 and data.meta.createdUnix == 1700000000)
 end
 
 --------------------------------------------------------------------------------
-print("35. EVERY historical version gap still reaches version 7")
+print("35. EVERY historical version gap still reaches version 8")
 do
 	--[[
 		The rule this guards is in PlayerProfileSchema: a step must exist for every
@@ -1855,7 +1739,7 @@ do
 	oneToFive.technique.PullStrength = nil
 
 	local v1 = PlayerProfileSchema.migrate(oneToFive, 1)
-	check("version 1 reaches 7", v1 == 7 and oneToFive.version == 7, tostring(v1))
+	check("version 1 reaches 8", v1 == 8 and oneToFive.version == 8, tostring(v1))
 	check("v1 ends without PullStrength (removed in v7)", oneToFive.technique.PullStrength == nil)
 	check("v1 gained the CN allowance", typeof(oneToFive.cnAllowance) == "table"
 		and oneToFive.cnAllowance.spentToday == 0)
@@ -1864,14 +1748,14 @@ do
 
 	local twoToFive = reconciledV2Save(182.5, 117.5, 215.0)
 	local v2 = PlayerProfileSchema.migrate(twoToFive, 2)
-	check("version 2 reaches 7", v2 == 7 and twoToFive.version == 7, tostring(v2))
+	check("version 2 reaches 8", v2 == 8 and twoToFive.version == 8, tostring(v2))
 	check("v2 kept its real lifts through four steps", near(cnOf(twoToFive).Squat, 182.5))
 	check("v2 gained the technique allowance", typeof(twoToFive.techniqueAllowance) == "table"
 		and twoToFive.techniqueAllowance.dayKey == DayKey.UNSTAMPED)
 
 	local threeToFive = reconciledV3Save(200.0, 130.0, 240.0)
 	local v3 = PlayerProfileSchema.migrate(threeToFive, 3)
-	check("version 3 reaches 7", v3 == 7 and threeToFive.version == 7, tostring(v3))
+	check("version 3 reaches 8", v3 == 8 and threeToFive.version == 8, tostring(v3))
 	check("v3 is still UNPROVEN, never seeded from CN", scaleOf(threeToFive).Squat == 0,
 		tostring(scaleOf(threeToFive).Squat))
 	check("v3 kept its part-spent budget", near(threeToFive.competitionBudget.Squat.amount, 3.21))
@@ -1882,7 +1766,7 @@ do
 	-- A brand new profile is already current and must skip every step.
 	local fresh = newProfile() :: any
 	local vNew = PlayerProfileSchema.migrate(fresh, 0)
-	check("a new profile is already version 7", vNew == 7 and fresh.version == 7)
+	check("a new profile is already version 8", vNew == 8 and fresh.version == 8)
 
 	--[[
 		IDEMPOTENT. Running the step again on an already-migrated profile must not
@@ -1941,7 +1825,7 @@ do
 	check("the reload is a separate table", near(data.cnAllowance.spentToday, 2.8109))
 
 	-- MIGRATING AN ALREADY-CURRENT PROFILE AGAIN MUST NOT RESET A LIVE DAY.
-	check("reload is still version 7", reloaded.version == 7)
+	check("reload is still version 8", reloaded.version == 8)
 end
 
 --------------------------------------------------------------------------------
@@ -2072,7 +1956,7 @@ do
 	local finalVersion = PlayerProfileSchema.migrate(data, 5)
 	local build = data.builds["83 kg"]
 
-	check("migrated to version 7", finalVersion == 7 and data.version == 7)
+	check("migrated to version 8", finalVersion == 8 and data.version == 8)
 	check("the build is filed under the bodyweight's class, 83 kg", typeof(build) == "table")
 	check("and it is the only build (no phantom 59 kg)", countBuilds(data) == 1, tostring(countBuilds(data)))
 	check("Squat CN moved exactly", build and build.competitionNumber.Squat == 182.5)
@@ -2132,7 +2016,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("40. running migrations again on a version-7 profile changes nothing")
+print("40. running migrations again on a version-8 profile changes nothing")
 do
 	local data = reconciledV5Save(200.0, 140.0, 250.0, 82.4)
 	PlayerProfileSchema.migrate(data, 5)
@@ -2150,7 +2034,7 @@ do
 	check("the best Total survived", build and build.bestTotalKg == 575.0)
 	check("no flat field was planted back", data.competitionNumber == nil and data.competitionScale == nil)
 	check("still one build", countBuilds(data) == 1)
-	check("back at version 7", data.version == 7)
+	check("back at version 8", data.version == 8)
 end
 
 --------------------------------------------------------------------------------
@@ -2257,7 +2141,7 @@ do
 	local build = data.builds["83 kg"]
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 6)
-	check("migrated 6 to 7", finalVersion == 7 and data.version == 7, tostring(data.version))
+	check("migrated 6 to 8", finalVersion == 8 and data.version == 8, tostring(data.version))
 	check("PullStrength is gone", data.technique.PullStrength == nil)
 	check("the five technique stats are untouched", data.technique.SquatControl == 1550
 		and data.technique.DepthAwareness == 975 and data.technique.StartControl == 525
@@ -2265,8 +2149,8 @@ do
 	check("the build is the same build, numbers exact", data.builds["83 kg"] == build
 		and build.competitionNumber.Squat == 182.5 and build.competitionScale.Deadlift == 212.5
 		and build.bestTotalKg == PlayerProfileSchema.NO_TOTAL)
-	check("budget, energy, allowance, bodyweight and meta untouched",
-		near(data.competitionBudget.Squat.amount, 2.75) and near(data.trainingEnergy.amount, 61)
+	check("budget, allowance, bodyweight and meta untouched (Training Energy removed)",
+		near(data.competitionBudget.Squat.amount, 2.75) and data.trainingEnergy == nil
 			and data.cnAllowance.spentToday == 1.5 and data.bodyweight.currentKg == 82.4
 			and data.meta.sessionCount == 103)
 
@@ -2274,18 +2158,46 @@ do
 	PlayerProfileSchema.migrate(data, 6)
 	data.version = 2
 	PlayerProfileSchema.migrate(data, 2)
-	check("running it again changes nothing", data.version == 7 and data.technique.PullStrength == nil
+	check("running it again changes nothing", data.version == 8 and data.technique.PullStrength == nil
 		and data.technique.Lockout == 128 and data.builds["83 kg"].competitionNumber.Squat == 182.5)
 
-	-- A save with no technique table at all still reaches version 7 (no crash).
+	-- A save with no technique table at all still reaches version 8 (no crash).
 	local broken = reconciledV5Save(150.0, 100.0, 180.0, 53)
 	PlayerProfileSchema.migrate(broken, 5)
 	broken.version = 6
 	broken.technique = nil
-	check("a v6 save with no technique table reaches 7", PlayerProfileSchema.migrate(broken, 6) == 7)
+	check("a v6 save with no technique table reaches 8", PlayerProfileSchema.migrate(broken, 6) == 8)
 
 	local reloaded = saveAndReload(data)
 	check("still no PullStrength after a save and reload", reloaded.technique.PullStrength == nil)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("45. version 7 to 8 removes Training Energy and nothing else")
+do
+	-- A version-7 save as it is live today: one build, the budget, and the old trainingEnergy field.
+	local data = reconciledV5Save(182.5, 117.5, 215.0, 82.4)
+	PlayerProfileSchema.migrate(data, 5)
+	data.version = 7
+	data.trainingEnergy = { amount = 61, lastUpdatedUnix = 1700500000 }
+
+	local finalVersion = PlayerProfileSchema.migrate(data, 7)
+	check("migrated 7 to 8", finalVersion == 8 and data.version == 8, tostring(data.version))
+	check("Training Energy is gone", data.trainingEnergy == nil)
+	check("the Competition Budget is kept, part-spent amount exact", near(data.competitionBudget.Squat.amount, 2.75)
+		and data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
+	check("CN, Scale and technique untouched", data.builds["83 kg"].competitionNumber.Squat == 182.5
+		and data.builds["83 kg"].competitionScale.Deadlift == 212.5 and data.technique.Lockout == 128)
+	check("allowance, bodyweight and meta untouched", data.cnAllowance.spentToday == 1.5
+		and data.bodyweight.currentKg == 82.4 and data.meta.sessionCount == 103)
+
+	PlayerProfileSchema.migrate(data, 7)
+	check("running it again changes nothing", data.version == 8 and data.trainingEnergy == nil
+		and near(data.competitionBudget.Squat.amount, 2.75))
+
+	local reloaded = saveAndReload(data)
+	check("still no Training Energy after a save and reload", reloaded.trainingEnergy == nil)
 end
 
 --------------------------------------------------------------------------------

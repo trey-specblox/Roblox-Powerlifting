@@ -2263,10 +2263,40 @@ and polish.
     unproven weight +10" (45 + 10). A practice squat after leaving: difficulty
     65, no bonus line. Not seen in play: a partial bonus after a proven lift
     (needs a good meet lift first; the rule covers it).
-  NEXT ACTION: the user tries a Mock Meet (and a deadlift) in Studio to
-  confirm they feel right; then ask what is next (GAME_DESIGN 34.14:
-  checkpoint 8, the Competition Budget, and 33.11 item 1, meet risk, are
-  open design questions).
+
+  CHECKPOINT 8: THE COMPETITION BUDGET AND TRAINING ENERGY, AND MEET CN
+  RAISES (user decisions, 2026-10-29). The user first chose to retire both,
+  then proposed that meets should raise CN (a big lift, e.g. 125% to beat a
+  player, sets CN to that weight). Asked and answered: only meets AGAINST
+  OTHER PLAYERS raise CN (the solo Mock Meet stays Scale-only); a good lift
+  raises CN all the way to the weight lifted; at most +25% per lift per week
+  in total; when used up, meet raises stop until it refills (no tapering);
+  the Competition Budget is KEPT as that weekly limit; Training Energy is
+  retired. COMMITTED and pushed 2026-10-29 (section 1).
+  - GAME_DESIGN: new 33.3b (the rule, [APPROVED], value PROVISIONAL, two
+    points to decide when built), 33.3 and 34.2 marked changed, 29.9 kept and
+    repointed, 29.8 retired, 33.11 item 6, 34.13 items 7 and 8, 34.14 row 8
+    decided. Not built: vs-player meets do not exist yet; the budget's stored
+    pools stay untouched until then.
+  - Save data version 8: migrations[7] deletes trainingEnergy (nothing
+    else); migrations[2] keeps its step but no longer repairs Training
+    Energy. Removed: the type field and template entry,
+    ProgressionConfig.TrainingEnergy, ProfileOperations
+    get/consumeTrainingEnergy, PlayerDataService get/consumeTrainingEnergy;
+    comments updated (ProfileOperations, PlayerDataService, ProgressionConfig,
+    CompetitionBudget, ResourceRegeneration).
+  - Tests: PlayerDataProbe (Training Energy sections 10-12 and 22 replaced
+    by retirement checks, migrations expect version 8 and no trainingEnergy,
+    new section 45 for 7 -> 8), TrainingProgressionProbe, MigrationFixtureV6
+    (v8; not run, needs the real DataStore).
+  - Checks: luau-lsp, no new errors (only the known pre-existing ones);
+    `rojo build` OK. Studio Play (by Claude, DataStore API off):
+    PlayerDataProbe 454/0, TrainingProgressionProbe 298/0,
+    TechniqueTrainingProbe 73/0, TrainingStationProbe 205/0 (probes
+    switched back off). The test profile loaded at version 8.
+  NEXT ACTION: ask the user what is next (33.11 item 1, meet risk, is
+  the remaining open design question; the user also has a Mock Meet and a
+  deadlift to try in Studio).
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2336,7 +2366,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Add the Competition Scale challenge to meet attempts (checkpoint 6); `git log -1` for the hash.
+- 2026-10-29, pushed: Retire Training Energy and record meet CN raises (checkpoint 8, save version 8); `git log -1` for the hash.
+- `d6a8c4b` (2026-10-29, pushed) Add the Competition Scale challenge to meet attempts (checkpoint 6).
 - `b67b8a7` (2026-10-29, pushed) Remove PullStrength (checkpoint 9, save version 7).
 - `56f7249` (2026-10-29, pushed) Count only real door panels and shop gear in StarterGym_VerifyShell.
 - `bc4d903` (2026-10-29, pushed) Replace the gym's block steel with Blender I-beams and handrails (blocks to Blender, batch 9).

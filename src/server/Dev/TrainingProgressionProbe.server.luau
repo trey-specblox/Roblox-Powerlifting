@@ -250,7 +250,6 @@ local function untouchable(data: PlayerProfileSchema.ProfileData): any
 		technique = data.technique,
 		bodyweight = data.bodyweight,
 		competitionBudget = data.competitionBudget,
-		trainingEnergy = data.trainingEnergy,
 		meta = data.meta,
 		techniqueSpent = data.techniqueAllowance.spentToday,
 	})
@@ -734,7 +733,6 @@ do
 	local data = ledger.data
 	local now = DAY_START + 6 * HOUR
 	local budgetBefore = deepCopy(data.competitionBudget)
-	local energyBefore = deepCopy(data.trainingEnergy)
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
 		train(ledger, lift, now, 1.5 * HOUR)
@@ -742,7 +740,7 @@ do
 	end
 
 	check("a full day of training leaves every budget pool unchanged", deepEqual(data.competitionBudget, budgetBefore))
-	check("and Training Energy unchanged", deepEqual(data.trainingEnergy, energyBefore))
+	check("and no Training Energy appears (retired in v8)", (data :: any).trainingEnergy == nil)
 
 	-- A pool deep in overflow does not scale the award: training never reads it.
 	local fresh = newProfile()
@@ -788,7 +786,7 @@ do
 	-- Two days later, with a rollover in between.
 	local later = train(ledger, "Squat", now + 2 * DAY, 600)
 
-	check("technique, Scale, bodyweight, budget, energy, meta and version are identical",
+	check("technique, Scale, bodyweight, budget, meta and version are identical",
 		deepEqual(untouchable(data), guarded))
 	check("no PullStrength appears", data.technique.PullStrength == nil)
 	check("Competition Scale is still 140, not raised by training", scaleOf(data).Squat == 140)

@@ -27,7 +27,6 @@
 	PREFER THE NAMED OPERATIONS OVER update()
 
 		PlayerDataService.consumeCompetitionBudget(player, "Squat", 1.886)
-		PlayerDataService.consumeTrainingEnergy(player, 30)
 
 	NOTE that the only operation here that writes a Competition Number is
 	awardTrainingProgression, and it accepts station seconds, never kilograms.
@@ -347,9 +346,9 @@ end
 	regeneration can be trusted.
 
 	The two training awards -- Competition Number (5B.5) and technique (5B.7) --
-	are called by TrainingStationService and by nothing else. No meet consumes budget yet, and no AFK system consumes
-	Training Energy. Those operations exist so the systems that will do those
-	things have one validated path.
+	are called by TrainingStationService and by nothing else. No meet consumes budget yet (it is kept for the
+	meet CN raises of GAME_DESIGN 33.3b, built with meets against other players); that operation exists so
+	the system that will do it has one validated path.
 ]]
 
 --[[
@@ -452,7 +451,7 @@ end
 
 	Returns the ProfileOperations.TrainingResult, or nil when the player has no
 	active session. A "Rejected" or "ClockWentBackward" result wrote NOTHING.
-	The Competition Budget and Training Energy are never touched (decision A).
+	The Competition Budget is never touched (decision A).
 ]]
 function PlayerDataService.awardTrainingProgression(
 	player: Player,
@@ -569,8 +568,6 @@ end
 	diminishing multiplier, because active meet progression is never hard-zeroed.
 	A nil return means the request was malformed, not that the player was short.
 
-	Contrast consumeTrainingEnergy below, which returns false when short.
-
 	Spending Squat does not touch Bench or Deadlift. The three pools are separate
 	and each is account-wide for its own lift.
 ]]
@@ -587,37 +584,6 @@ function PlayerDataService.consumeCompetitionBudget(
 	return ProfileOperations.consumeCompetitionBudget(data, lift, rawEV, os.time())
 end
 
---[[
-	Training Energy in minutes, including offline regeneration. Reads without
-	writing.
-]]
-function PlayerDataService.getRegeneratedTrainingEnergy(player: Player): number?
-	local data = activeData(player, "getRegeneratedTrainingEnergy")
-	if data == nil then
-		return nil
-	end
-
-	return ProfileOperations.getRegeneratedTrainingEnergy(data, os.time())
-end
-
---[[
-	Spends `minutes` of Training Energy. Returns success and what remains.
-
-	ALL-OR-NOTHING, AND IT DOES FAIL WHEN SHORT. Training Energy floors at zero:
-	at empty, passive AFK Competition Number stops and there is no overflow. That
-	is deliberately unlike the Competition Budget above, and the asymmetry is
-	what holds the intended ratio of roughly 0.25x the reference active rate.
-
-	This gates passive AFK Competition Number ONLY. It must never be made to gate
-	Muscle, which progresses independently.
-]]
-function PlayerDataService.consumeTrainingEnergy(player: Player, minutes: number): (boolean, number?)
-	local data = activeData(player, "consumeTrainingEnergy")
-	if data == nil then
-		return false, nil
-	end
-
-	return ProfileOperations.consumeTrainingEnergy(data, minutes, os.time())
-end
+-- (Training Energy was retired in schema version 8, GAME_DESIGN 29.8.)
 
 return PlayerDataService
