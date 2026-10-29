@@ -1731,7 +1731,8 @@ and polish.
   - NOT checked: how the gym looks with fewer small shadows (user's eyes),
     frame rate on a phone.
   MOCK MEET REWARDS: WEIGHT-CLASS BUILDS, SCHEMA v6 (2026-10-28; decisions,
-  plan and save change approved by the user; tested; NOT YET COMMITTED):
+  plan and save change approved by the user; tested; COMMITTED with the
+  user's approval as 368eee0 and pushed):
   - Decisions (GAME_DESIGN §29.11 "Weight-class builds", §33.7, §33.8,
     §33.11 items 9/11, §29.4 note): one build per class, free, kept forever;
     returning restores a build exactly; a first-time class copies the
@@ -1777,8 +1778,8 @@ and polish.
   - Rojo note: one file (ProfileOperations) stopped syncing mid-session; a
     rewrite of the file made it sync. If Studio behaves like old code,
     compare a script's Source with the file.
-  NEXT ACTION: commit the schema v6 / Mock Meet rewards work with the
-  user's approval. Then the block-built pieces below.
+  NEXT ACTION: the block-built pieces below (Blender models). Optional:
+  turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION: per the user's newer rule (memory "models-made-in-blender",
   2026-10-28: every physical model is modelled in Blender, never stacked
   Roblox blocks in code), the block-built pieces from this work are
@@ -1845,6 +1846,7 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
+- `368eee0` (2026-10-28, pushed) Add weight-class builds (save v6) and let the Mock Meet save Competition Scale and best Total.
 - 2026-10-28, pushed: Add the Blender Cardio TV; `git log -1` for the hash.
 - `d5fa7d4` (2026-10-28, pushed) Performance pass: fewer decor shadows, triangle budgets, a performance audit tool.
 - `8b17791` (2026-10-28, pushed) Vary the heading marks and restyle the Mock Meet signs and coach bubble. (It also carried part of the Blender Cardio TV's RoomProps code from a parallel session; without that session's PropAssets entry it falls back to the block TV.)
