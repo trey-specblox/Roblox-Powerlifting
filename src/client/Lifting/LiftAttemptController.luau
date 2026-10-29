@@ -18,6 +18,18 @@
 	TEMPORARY TESTING lives in client/Dev. This file exposes requestAttempt, and the
 	real rack interaction will eventually call it the same way the debug trigger
 	does now.
+
+	THE BANNER at the top (phase name, NEXT phase, GOOD LIFT / NO LIFT) and the
+	status line under it are built from UIStyle (client/UI), the one style of every
+	screen: a slanted slab with a white edge and two slashes, black for a phase,
+	yellow for the next phase, white with black text for a good lift and red with
+	white text for a no lift. Each hides while it has no text.
+
+	SIZES AND PLACE (user 2026-10-28: "centered, Bigger, Easier to read"): the
+	banner text is 32 px (above UIStyle.TextSizes.heading), the status line a
+	fixed TextSizes.body. Both are centred at the top and anchored at their top
+	centre, and together stay inside the top ~110 px of the screen, clear of the
+	minigame panels, which sit centred at 52% of the screen's height.
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -35,6 +47,8 @@ local PowerUI = require(script.Parent.PowerUI)
 local SequenceInput = require(script.Parent.SequenceInput)
 local TypingUI = require(script.Parent.TypingUI)
 local SkillCheckUI = require(script.Parent.SkillCheckUI)
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local C = UIStyle.Colours
 
 local LiftAttemptController = {}
 
@@ -71,53 +85,137 @@ local activePhaseKind: string? = nil
 ]]
 local shownPhaseKind: string? = nil
 
+--[[
+	The banner's looks: a phase on screen, the next phase coming, and the attempt's
+	GOOD LIFT or NO LIFT (white and red, like a meet's lights).
+]]
+type BannerKind = "phase" | "next" | "good" | "noLift"
+
+type BannerStyle = { slab: Color3, text: Color3, edge: Color3, slashes: Color3 }
+
+local BANNER_STYLES: { [BannerKind]: BannerStyle } = {
+	phase = { slab = C.ink, text = C.white, edge = C.white, slashes = C.yellow },
+	next = { slab = C.yellow, text = C.ink, edge = C.white, slashes = C.ink },
+	good = { slab = C.white, text = C.ink, edge = C.ink, slashes = C.ink },
+	noLift = { slab = C.red, text = C.white, edge = C.white, slashes = C.white },
+}
+
+-- The banner's top edge, its height and text size, then the status line under it (pixels).
+local BANNER_TOP = 14
+local BANNER_HEIGHT = 50
+local BANNER_TEXT_SIZE = math.max(32, UIStyle.TextSizes.heading)
+local STATUS_GAP = 14
+local STATUS_HEIGHT = 32
+local STATUS_TEXT_SIZE = UIStyle.TextSizes.body
+
+type BannerParts = {
+	slab: Frame,
+	edge: UIStroke,
+	slashes: { Frame },
+}
+
 local bannerLabel: TextLabel? = nil
+local bannerParts: BannerParts? = nil
 local statusLabel: TextLabel? = nil
 
 -- Set by the dev trigger (or later, the rack) so the HUD can show context.
 local lastRequestedPercent = 1.0
 
-local function buildBanner(parent: Instance): (TextLabel, TextLabel)
+--[[
+	Builds the banner and the status line. Both size themselves to their text
+	(AutomaticSize) and hide while their text is empty.
+]]
+local function buildBanner(parent: Instance): (TextLabel, BannerParts, TextLabel)
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "LiftAttemptBanner"
+	UIStyle.fitToScreen(gui) -- shrink on short screens so nothing overlaps
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = parent
 
-	local banner = Instance.new("TextLabel")
-	banner.Name = "Banner"
-	banner.AnchorPoint = Vector2.new(0.5, 0)
-	banner.Position = UDim2.new(0.5, 0, 0, 24)
-	banner.Size = UDim2.fromOffset(620, 44)
-	banner.BackgroundTransparency = 1
-	banner.Font = Enum.Font.GothamBold
-	banner.TextSize = 32
-	banner.TextColor3 = Color3.fromRGB(236, 240, 246)
-	banner.Text = ""
-	banner.Parent = gui
+	-- The slab: the text and then the slashes, side by side.
+	local slab = UIStyle.frame(gui, "Banner", UDim2.new(0.5, 0, 0, BANNER_TOP), UDim2.fromOffset(0, BANNER_HEIGHT), C.ink, -3)
+	slab.AnchorPoint = Vector2.new(0.5, 0)
+	slab.AutomaticSize = Enum.AutomaticSize.X
+	slab.Visible = false
+	local edge = UIStyle.stroke(slab, C.white, 2)
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 22)
+	padding.PaddingRight = UDim.new(0, 18)
+	padding.Parent = slab
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 10)
+	layout.Parent = slab
 
-	local status = Instance.new("TextLabel")
-	status.Name = "Status"
+	local banner = UIStyle.label(slab, "Text", UDim2.fromOffset(0, 0), UDim2.new(0, 0, 1, 0), C.white, UIStyle.heading())
+	banner.TextScaled = false
+	banner.TextSize = BANNER_TEXT_SIZE
+	banner.AutomaticSize = Enum.AutomaticSize.X
+	banner.LayoutOrder = 1
+
+	local slashHolder = Instance.new("Frame")
+	slashHolder.Name = "Slashes"
+	slashHolder.BackgroundTransparency = 1
+	slashHolder.Size = UDim2.fromOffset(24, BANNER_HEIGHT * 0.6)
+	slashHolder.LayoutOrder = 2
+	slashHolder.Parent = slab
+	UIStyle.slashes(slashHolder, UDim2.fromOffset(0, 0), BANNER_HEIGHT * 0.6)
+	local slashes: { Frame } = {}
+	for _, child in slashHolder:GetChildren() do
+		if child:IsA("Frame") then
+			table.insert(slashes, child)
+		end
+	end
+
+	banner:GetPropertyChangedSignal("Text"):Connect(function()
+		slab.Visible = banner.Text ~= ""
+	end)
+
+	--[[
+		The status line: white text on a dark strip so it reads over the gym, at a
+		FIXED size (like UIStyle.text, but on one line: the strip grows sideways
+		with AutomaticSize, which wrapping would fight).
+	]]
+	local status = UIStyle.label(gui, "Status", UDim2.new(0.5, 0, 0, BANNER_TOP + BANNER_HEIGHT + STATUS_GAP),
+		UDim2.fromOffset(0, STATUS_HEIGHT), C.white, UIStyle.font(Enum.FontWeight.Bold), Enum.TextXAlignment.Center)
 	status.AnchorPoint = Vector2.new(0.5, 0)
-	status.Position = UDim2.new(0.5, 0, 0, 68)
-	status.Size = UDim2.fromOffset(620, 22)
-	status.BackgroundTransparency = 1
-	status.Font = Enum.Font.Gotham
-	status.TextSize = 15
-	status.TextColor3 = Color3.fromRGB(168, 176, 190)
-	status.Text = ""
-	status.Parent = gui
+	status.AutomaticSize = Enum.AutomaticSize.X
+	status.TextScaled = false
+	status.TextWrapped = false
+	status.TextSize = STATUS_TEXT_SIZE
+	status.BackgroundTransparency = 0.2
+	status.BackgroundColor3 = C.navyDeep
+	status.Visible = false
+	UIStyle.stroke(status, C.white, 1, 0.6)
+	local statusPadding = Instance.new("UIPadding")
+	statusPadding.PaddingLeft = UDim.new(0, 16)
+	statusPadding.PaddingRight = UDim.new(0, 16)
+	statusPadding.Parent = status
+	status:GetPropertyChangedSignal("Text"):Connect(function()
+		status.Visible = status.Text ~= ""
+	end)
 
-	return banner, status
+	return banner, { slab = slab, edge = edge, slashes = slashes }, status
 end
 
-local function setBanner(text: string, color: Color3?)
+-- Sets the banner's text, and its look if `kind` is given (an empty text hides it).
+local function setBanner(text: string, kind: BannerKind?)
 	local label = bannerLabel
-	if label ~= nil then
+	local parts = bannerParts
+	if label ~= nil and parts ~= nil then
 		label.Text = text
-		if color ~= nil then
-			label.TextColor3 = color
+		if kind ~= nil then
+			local style = BANNER_STYLES[kind]
+			parts.slab.BackgroundColor3 = style.slab
+			parts.edge.Color = style.edge
+			label.TextColor3 = style.text
+			for _, slash in parts.slashes do
+				slash.BackgroundColor3 = style.slashes
+			end
 		end
 	end
 end
@@ -258,7 +356,7 @@ local function onPresentPhase(payload: any)
 
 	setBanner(
 		string.format("%s  %d / %d", challenge.displayName or payload.phaseName, payload.phaseIndex, payload.phaseCount),
-		Color3.fromRGB(236, 240, 246)
+		"phase"
 	)
 	setStatus(string.format(
 		"%.1f kg  -  %.0f%% of forecasted max  -  difficulty %.0f",
@@ -344,7 +442,7 @@ local function onAnnouncePhaseResult(payload: any)
 		hidePhaseUI()
 		-- Named by the server from the next phase's config, so a bench says PRESS
 		-- where a squat says DEPTH.
-		setBanner(payload.nextPhaseDisplayName or "NEXT", Color3.fromRGB(255, 214, 92))
+		setBanner(payload.nextPhaseDisplayName or "NEXT", "next")
 		setStatus(payload.verdict)
 		return
 	end
@@ -370,9 +468,9 @@ local function onAnnounceAttemptResult(payload: any)
 	activeAttemptId = nil
 
 	local passed = payload.verdict == LiftAttempt.Verdict.GoodLift
-	local color = if passed then Color3.fromRGB(96, 214, 128) else Color3.fromRGB(240, 92, 92)
+	local kind: BannerKind = if passed then "good" else "noLift"
 
-	setBanner(payload.verdictText, color)
+	setBanner(payload.verdictText, kind)
 	setStatus(string.format(
 		"%s  %.1f kg  (%.0f%%)%s",
 		payload.liftName,
@@ -414,7 +512,7 @@ function LiftAttemptController.start()
 	]]
 	SequenceInput.mount(playerGui)
 	SkillCheckUI.mount(playerGui, SKILL_CHECK_PROMPT)
-	bannerLabel, statusLabel = buildBanner(playerGui)
+	bannerLabel, bannerParts, statusLabel = buildBanner(playerGui)
 
 	-- SetStateEnabled applies to a Humanoid, and a respawn creates a new one.
 	player.CharacterAdded:Connect(function()

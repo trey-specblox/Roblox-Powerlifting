@@ -5,36 +5,56 @@
 
 	Draws the deadlift's typing pull and steps its simulation for display.
 
-	A CONTINUOUS LINE OF WORDS
+	THE LOOK
 
-	One scrolling line, typed left to right:
+	Built from UIStyle, the game's one look (user 2026-10-28: a wide navy panel
+	with a row of square key boxes, one per letter, the current box lit up). The
+	deadlift's colour is blue (UIStyle.LiftColours).
 
-		BRACE DRIVE PULL HIPS LOCK GRIP
-		^^^^^^^^^^^^|
-		done        current
+	Second pass (user 2026-10-28: "They need to be centered, Bigger, Easier to
+	read"): the panel is anchored at its CENTRE in the middle of the screen
+	(so UIStyle.fitToScreen shrinks it in place on short screens), the boxes are
+	about 1.3x larger, and every line uses a fixed UIStyle.TextSizes size: the
+	letters TextSizes.big or larger, NEXT words and the percentage
+	TextSizes.heading, the attempt line and the instruction TextSizes.body, the
+	LOCKOUT / FLOOR labels TextSizes.small. Nothing is smaller than that.
 
-	Completed characters are dimmed green. The current character keeps its normal
-	size and sits in the line, marked by a highlight block and an underline cursor.
-	Upcoming characters are plain, fading out further ahead so the eye is drawn
-	forward without the line ending abruptly.
+		 DEADLIFT · PULL //                                   <- title tag
+		+------------------------------------------------------------+
+		| LOCKOUT  58 kg · 90% · difficulty 45 · 30 characters  62%   |
+		|  [  ]                                                       |
+		|  [  ]     [B] [R] [A] [C] [E]       <- one box per key       |
+		|  [##]                                                       |
+		|  [##]    NEXT  DRIVE  ·  PULL  ·  HIPS                      |
+		|  [##]    ------------------------------------------------   |
+		|  FLOOR   instruction line                                   |
+		|          [dev] readout (only with UIStyle.ShowDevReadouts)  |
+		+------------------------------------------------------------+
+		            [ BAR AT LOCKOUT ]        <- the server's verdict
 
-	The player reads ahead and types fluidly. When a word finishes the line carries
-	straight into the next one with no interruption, and SPACES ARE NEVER TYPED --
-	they are rendered for legibility and skipped automatically.
+	The testing numbers (seconds left, correct / wrong counts, the needed rate
+	and the server's detail line) are only shown when UIStyle.ShowDevReadouts is
+	true; the panel is shorter without them. The player's progress is the
+	percentage and the bar.
 
-	This replaced a giant single-letter prompt. Reacting to one huge character at a
-	time made typing feel like a reaction test rather than typing, and it capped a
-	fluent player at the speed they could read one letter. The giant-token idea is
-	kept for a future CONTROLLER vocabulary, where a prompt really is one button at
-	a time and there is nothing to read ahead to.
+	THE KEY BOXES
 
-	SCROLLING
+	The row shows the CURRENT cue (one word), one box per token:
 
-	Characters are laid out at fixed cell widths in a monospaced font, so a cell's x
-	position is just its index times the cell width. The strip is then slid left to
-	keep the current character at a fixed anchor point, which makes the line
-	effectively endless without ever reflowing it. The slide is eased so the line
-	drifts rather than snapping on every keystroke.
+		typed      filled in the lift's colour, white letter
+		current    dark, a thick lift-coloured edge, a glow and an underline,
+		           and larger (it eases up to size)
+		upcoming   dark navy with a white edge, grey letter
+		wrong key  the current box flashes red
+		passed     every box turns white with a black letter (good = white)
+
+	Box size shrinks to fit the word: the longest cue (10 letters, STRAIGHTEN)
+	still fits in one row at 69 pixels a box; words of up to 7 letters get the
+	full 92.
+
+	Fluent typists read ahead, so the next few words sit under the row ("NEXT").
+	When a word's last letter lands the row simply becomes the next word, and
+	SPACES ARE NEVER TYPED -- word boundaries advance on their own.
 
 	THE BAR
 
@@ -53,9 +73,9 @@
 
 	WHAT IT OWNS AND WHAT IT DOES NOT
 
-	It runs TypingSimulation locally so the bar and the cursor move the instant a
-	key lands, and it records every token press. When the local simulation concludes
-	it hands those presses upward.
+	It runs TypingSimulation locally so the bar and the boxes move the instant a
+	key lands, and it records every token press. When the local simulation
+	concludes it hands those presses upward.
 
 	It does NOT decide anything. The verdict it shows is whatever the server sent
 	back after replaying those same presses against its own expected sequence.
@@ -74,40 +94,67 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LiftingFolder = Shared:WaitForChild("Lifting")
 local Simulation = require(LiftingFolder:WaitForChild("TypingSimulation"))
+local TypingPhaseConfig = require(Shared:WaitForChild("Config"):WaitForChild("TypingPhaseConfig"))
+
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local C = UIStyle.Colours
 
 local TypingUI = {}
 
 -- The challenge arrives across a remote, so it is a plain table here.
 type TypingChallengeType = any
 
--- Bar geometry, in pixels. Presentation only.
-local BAR_HEIGHT = 300
-local BAR_WIDTH = 46
+--[[
+	Panel geometry, in pixels. Presentation only.
+
+	The bar sits in a column on the left; everything else is in the content area
+	to its right. The panel is anchored at its centre at PANEL_POSITION.
+]]
+local TEXT = UIStyle.TextSizes
+local SHOW_DEV = UIStyle.ShowDevReadouts
+
+local PANEL_POSITION = UIStyle.MinigameCentre
+local PANEL_WIDTH = 940
+-- The dev readout line adds a row at the bottom, only when it is shown.
+local DEV_ROW_HEIGHT = 24
+local PANEL_HEIGHT = 312 + (if SHOW_DEV then DEV_ROW_HEIGHT else 0)
+local CONTENT_X = 130
+local CONTENT_WIDTH = PANEL_WIDTH - CONTENT_X - 28
+
+-- The bar, inside the left column.
+local TRACK_X = 40
+local TRACK_WIDTH = 40
+local TRACK_Y = 56
+local TRACK_HEIGHT = PANEL_HEIGHT - TRACK_Y - 50
+-- LOCKOUT / FLOOR labels, centred on the track.
+local TRACK_LABEL_WIDTH = 104
+
+-- Lines in the content area, top to bottom.
+local DETAIL_Y = 26
+local PERCENT_WIDTH = 130
+local NEXT_Y = 206
+local RULE_Y = 250
+local INSTRUCTION_Y = 260
+local READOUT_Y = 292
 
 --[[
-	Line geometry. CELL_WIDTH must suit the monospaced font below, or the cursor
-	will drift away from the character it is marking.
+	The key row. Boxes are as large as BOX_MAX but shrink so the longest cue still
+	fits on one line: 10 letters -> (782 - 9 * 10) / 10 = 69 pixels.
 ]]
-local LINE_WIDTH = 720
-local LINE_HEIGHT = 64
-local CELL_WIDTH = 30
-local CHAR_TEXT_SIZE = 38
--- Where the current character sits inside the line, measured from the left edge.
-local CURSOR_ANCHOR_X = 220
--- How quickly the strip slides toward its target. Higher is snappier.
-local SCROLL_LERP = 14
-
-local COLOR_TRACK = Color3.fromRGB(30, 33, 40)
-local COLOR_BAR = Color3.fromRGB(240, 148, 64)
-local COLOR_BAR_DONE = Color3.fromRGB(96, 214, 128)
-local COLOR_TEXT = Color3.fromRGB(226, 232, 240)
-local COLOR_DIM = Color3.fromRGB(120, 128, 140)
-local COLOR_DONE = Color3.fromRGB(96, 214, 128)
-local COLOR_CURRENT = Color3.fromRGB(255, 255, 255)
-local COLOR_CURSOR = Color3.fromRGB(255, 196, 64)
-local COLOR_WRONG = Color3.fromRGB(240, 92, 92)
-local COLOR_PASS = Color3.fromRGB(96, 214, 128)
-local COLOR_FAIL = Color3.fromRGB(240, 92, 92)
+local ROW_Y = 64
+local ROW_HEIGHT = 128
+local BOX_MAX = 92
+local BOX_GAP = 10
+-- A letter is at least TextSizes.big, larger in larger boxes.
+local LETTER_FRACTION = 0.62
+-- How much larger the current box is than the others.
+local CURRENT_SCALE = 1.18
+-- How quickly a box eases to its size. Higher is snappier.
+local BOX_LERP = 18
+-- A new word's boxes start this small and ease up, so the change reads as a step.
+local NEW_WORD_SCALE = 0.82
+-- How many following words are shown under the row for reading ahead.
+local NEXT_PREVIEW = 3
 
 -- How long the red flash after a wrong key lasts. Feedback only.
 local WRONG_FLASH_SECONDS = 0.18
@@ -116,17 +163,19 @@ export type Reporter = (events: { Simulation.TokenEvent }) -> ()
 
 type Visuals = {
 	gui: ScreenGui,
+	title: TextLabel,
+	detail: TextLabel,
+	percent: TextLabel,
+	-- The key row; boxes, the glow and the underline live in it.
+	keys: Frame,
+	glow: Frame,
+	cursor: Frame,
+	nextWords: TextLabel,
 	barFill: Frame,
 	lockoutLabel: TextLabel,
-	headline: TextLabel,
-	detail: TextLabel,
 	readout: TextLabel,
+	verdictBanner: Frame,
 	verdict: TextLabel,
-	-- Clipping window; the strip slides inside it.
-	lineWindow: Frame,
-	strip: Frame,
-	cursor: Frame,
-	highlight: Frame,
 }
 
 local visuals: Visuals? = nil
@@ -149,23 +198,36 @@ local recordedEvents: { Simulation.TokenEvent } = {}
 local pendingEvents: { Simulation.TokenEvent } = {}
 
 --[[
-	The rendered line, one entry per CELL. A cell is either a token the player must
-	type or a rendered space between words.
-
-	Built once per challenge. The simulation only knows a flat token index, so
-	`cellForToken` maps that back onto a position in the line.
+	One key box. Boxes are pooled: the row reuses them word after word and only
+	grows the pool when a longer word arrives.
 ]]
-type Cell = {
-	char: string,
-	-- nil for a space, which is rendered but never typed.
-	tokenIndex: number?,
-	label: TextLabel,
+type KeyBox = {
+	frame: Frame,
+	edge: UIStroke,
+	letter: TextLabel,
+	-- Displayed size relative to the row's box size; eased toward its target.
+	scale: number,
 }
 
-local cells: { Cell } = {}
-local cellForToken: { number } = {}
--- Smoothed scroll offset, so the line drifts instead of snapping.
-local scrollX = 0
+local boxes: { KeyBox } = {}
+
+--[[
+	The simulation only knows a flat token index. These map it back onto the cue
+	(word) it belongs to, built once per challenge.
+]]
+local tokenCue: { number } = {}
+local cueFirstToken: { number } = {}
+-- The cue the row is showing, how many boxes it uses and how big they are.
+local shownCue = 0
+local shownCount = 0
+local boxSize = BOX_MAX
+-- The lift's colour for this challenge.
+local liftColour = UIStyle.LiftColours.Deadlift
+--[[
+	Whether the current box is marked. Cleared once the server's verdict is shown,
+	as the old highlight and cursor were.
+]]
+local markCurrent = true
 -- Wrong-key count last seen, to detect a new mistake and flash.
 local lastWrongCount = 0
 local flashUntil = 0
@@ -173,193 +235,147 @@ local flashUntil = 0
 local function build(instructionText: string): Visuals
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "TypingUI"
+	UIStyle.fitToScreen(gui) -- shrink on short screens so nothing overlaps
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Enabled = false
 
-	local headline = Instance.new("TextLabel")
-	headline.Name = "Headline"
-	headline.AnchorPoint = Vector2.new(0.5, 0)
-	headline.Position = UDim2.new(0.5, 0, 0, 56)
-	headline.Size = UDim2.fromOffset(420, 32)
-	headline.BackgroundTransparency = 1
-	headline.Font = Enum.Font.GothamBold
-	headline.TextSize = 26
-	headline.TextColor3 = COLOR_TEXT
-	headline.Text = ""
-	headline.Parent = gui
+	--[[
+		Anchored at its CENTRE, in the middle of the screen. fitToScreen shrinks a
+		piece about its AnchorPoint, so a centre-anchored panel stays centred on
+		short screens.
+	]]
+	local holder, body = UIStyle.panel(gui, "Panel", PANEL_POSITION, UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = PANEL_POSITION
+	local title = UIStyle.titleTag(holder, "Tag", "", UDim2.fromOffset(-14, -26), UDim2.fromOffset(400, 48),
+		UIStyle.LiftColours.Deadlift)
 
-	local detail = Instance.new("TextLabel")
-	detail.Name = "Detail"
-	detail.AnchorPoint = Vector2.new(0.5, 0)
-	detail.Position = UDim2.new(0.5, 0, 0, 88)
-	detail.Size = UDim2.fromOffset(600, 20)
-	detail.BackgroundTransparency = 1
-	detail.Font = Enum.Font.Gotham
-	detail.TextSize = 14
-	detail.TextColor3 = Color3.fromRGB(176, 184, 196)
-	detail.Text = ""
-	detail.Parent = gui
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.BackgroundTransparency = 1
+	content.Size = UDim2.fromScale(1, 1)
+	content.ZIndex = 2
+	content.Parent = body
+
+	-- The attempt line: kg, %, difficulty, characters to lockout.
+	local detail = UIStyle.text(content, "Detail", UDim2.fromOffset(CONTENT_X, DETAIL_Y),
+		UDim2.fromOffset(CONTENT_WIDTH - PERCENT_WIDTH - 10, 28), TEXT.body, C.muted, UIStyle.font(Enum.FontWeight.SemiBold))
+	detail.TextWrapped = false
+	detail.TextTruncate = Enum.TextTruncate.AtEnd
+
+	-- Progress as a percentage, top right.
+	local percent = UIStyle.text(content, "Percent", UDim2.fromOffset(CONTENT_X + CONTENT_WIDTH - PERCENT_WIDTH, DETAIL_Y - 6),
+		UDim2.fromOffset(PERCENT_WIDTH, 40), TEXT.heading, liftColour, UIStyle.heading(), Enum.TextXAlignment.Right)
+	percent.TextWrapped = false
 
 	--[[
-		The line window clips the strip, which is what makes the line scroll rather
-		than overflow once it is wider than the UI.
+		The key row. Boxes are anchored at their centres, so the current one grows
+		in place instead of pushing its neighbours.
 	]]
-	local lineWindow = Instance.new("Frame")
-	lineWindow.Name = "LineWindow"
-	lineWindow.AnchorPoint = Vector2.new(0.5, 0.5)
-	lineWindow.Position = UDim2.fromScale(0.5, 0.46)
-	lineWindow.Size = UDim2.fromOffset(LINE_WIDTH, LINE_HEIGHT)
-	lineWindow.BackgroundColor3 = Color3.fromRGB(18, 20, 25)
-	lineWindow.BackgroundTransparency = 0.35
-	lineWindow.BorderSizePixel = 0
-	lineWindow.ClipsDescendants = true
-	lineWindow.Parent = gui
-
-	local windowCorner = Instance.new("UICorner")
-	windowCorner.CornerRadius = UDim.new(0, 10)
-	windowCorner.Parent = lineWindow
-
-	local strip = Instance.new("Frame")
-	strip.Name = "Strip"
-	strip.AnchorPoint = Vector2.new(0, 0.5)
-	strip.Position = UDim2.new(0, 0, 0.5, 0)
-	strip.Size = UDim2.new(0, 0, 1, 0)
-	strip.BackgroundTransparency = 1
-	strip.Parent = lineWindow
+	local keys = Instance.new("Frame")
+	keys.Name = "Keys"
+	keys.BackgroundTransparency = 1
+	keys.Position = UDim2.fromOffset(CONTENT_X, ROW_Y)
+	keys.Size = UDim2.fromOffset(CONTENT_WIDTH, ROW_HEIGHT)
+	keys.ZIndex = 2
+	keys.Parent = content
 
 	--[[
-		The highlight sits BEHIND the current character and the cursor underneath it.
-		Two cues rather than one, so the current position is unmistakable without
-		changing the character's size and breaking the line's rhythm.
+		The glow sits BEHIND the current box and the underline under it. Two cues
+		rather than one, so the current key is unmistakable at a glance.
 	]]
-	local highlight = Instance.new("Frame")
-	highlight.Name = "Highlight"
-	highlight.AnchorPoint = Vector2.new(0, 0.5)
-	highlight.Size = UDim2.fromOffset(CELL_WIDTH, 48)
-	highlight.BackgroundColor3 = COLOR_CURSOR
-	highlight.BackgroundTransparency = 0.78
-	highlight.BorderSizePixel = 0
-	highlight.ZIndex = 1
-	highlight.Parent = strip
+	local glow = UIStyle.frame(keys, "Glow", UDim2.fromOffset(0, 0), UDim2.fromOffset(BOX_MAX, BOX_MAX), liftColour)
+	glow.AnchorPoint = Vector2.new(0.5, 0.5)
+	glow.BackgroundTransparency = 0.45
+	glow.ZIndex = 1
+	glow.Visible = false
 
-	local highlightCorner = Instance.new("UICorner")
-	highlightCorner.CornerRadius = UDim.new(0, 4)
-	highlightCorner.Parent = highlight
-
-	local cursor = Instance.new("Frame")
-	cursor.Name = "Cursor"
-	cursor.AnchorPoint = Vector2.new(0, 0.5)
-	cursor.Size = UDim2.fromOffset(CELL_WIDTH - 6, 3)
-	cursor.BackgroundColor3 = COLOR_CURSOR
-	cursor.BorderSizePixel = 0
+	local cursor = UIStyle.frame(keys, "Cursor", UDim2.fromOffset(0, 0), UDim2.fromOffset(BOX_MAX, 5), liftColour)
+	cursor.AnchorPoint = Vector2.new(0.5, 0)
 	cursor.ZIndex = 3
-	cursor.Parent = strip
+	cursor.Visible = false
 
-	-- The bar, to the left of the line.
-	local barTrack = Instance.new("Frame")
-	barTrack.Name = "BarTrack"
-	barTrack.AnchorPoint = Vector2.new(0.5, 0.5)
-	barTrack.Position = UDim2.new(0.5, -(LINE_WIDTH / 2) - 70, 0.46, 0)
-	barTrack.Size = UDim2.fromOffset(BAR_WIDTH, BAR_HEIGHT)
-	barTrack.BackgroundColor3 = COLOR_TRACK
-	barTrack.BorderSizePixel = 0
-	barTrack.Parent = gui
+	-- The next words, for reading ahead.
+	local nextHead = UIStyle.text(content, "NextHead", UDim2.fromOffset(CONTENT_X, NEXT_Y), UDim2.fromOffset(80, 32),
+		TEXT.heading, C.yellow, UIStyle.heading())
+	nextHead.TextWrapped = false
+	nextHead.Text = "NEXT"
+	local nextWords = UIStyle.text(content, "NextWords", UDim2.fromOffset(CONTENT_X + 90, NEXT_Y),
+		UDim2.fromOffset(CONTENT_WIDTH - 90, 32), TEXT.heading, C.white, UIStyle.font(Enum.FontWeight.Bold, true))
+	nextWords.TextWrapped = false
+	nextWords.TextTruncate = Enum.TextTruncate.AtEnd
 
-	local trackCorner = Instance.new("UICorner")
-	trackCorner.CornerRadius = UDim.new(0, 6)
-	trackCorner.Parent = barTrack
+	local rule = UIStyle.frame(content, "Rule", UDim2.fromOffset(CONTENT_X, RULE_Y), UDim2.fromOffset(CONTENT_WIDTH, 1),
+		C.white)
+	rule.BackgroundTransparency = 0.6
+	local instruction = UIStyle.text(content, "Instruction", UDim2.fromOffset(CONTENT_X, INSTRUCTION_Y),
+		UDim2.fromOffset(CONTENT_WIDTH, 28), TEXT.body, C.white, UIStyle.font(Enum.FontWeight.SemiBold))
+	instruction.Text = instructionText
+
+	-- Testing numbers only; hidden unless UIStyle.ShowDevReadouts is on.
+	local readout = UIStyle.text(content, "Readout", UDim2.fromOffset(CONTENT_X, READOUT_Y),
+		UDim2.fromOffset(CONTENT_WIDTH, DEV_ROW_HEIGHT - 2), TEXT.small, C.muted, UIStyle.font(Enum.FontWeight.Medium))
+	readout.TextWrapped = false
+	readout.TextTruncate = Enum.TextTruncate.AtEnd
+	readout.Visible = SHOW_DEV
+
+	-- The bar, in the left column.
+	local trackLabelX = TRACK_X + TRACK_WIDTH / 2 - TRACK_LABEL_WIDTH / 2
+	local lockoutLabel = UIStyle.text(content, "LockoutLabel", UDim2.fromOffset(trackLabelX, TRACK_Y - 30),
+		UDim2.fromOffset(TRACK_LABEL_WIDTH, 22), TEXT.small, C.muted, UIStyle.heading(), Enum.TextXAlignment.Center)
+	lockoutLabel.TextWrapped = false
+	lockoutLabel.Text = "LOCKOUT"
+	local floorLabel = UIStyle.text(content, "FloorLabel", UDim2.fromOffset(trackLabelX, TRACK_Y + TRACK_HEIGHT + 10),
+		UDim2.fromOffset(TRACK_LABEL_WIDTH, 22), TEXT.small, C.muted, UIStyle.heading(), Enum.TextXAlignment.Center)
+	floorLabel.TextWrapped = false
+	floorLabel.Text = "FLOOR"
+
+	local barTrack = UIStyle.frame(content, "BarTrack", UDim2.fromOffset(TRACK_X, TRACK_Y),
+		UDim2.fromOffset(TRACK_WIDTH, TRACK_HEIGHT), C.navyDeep)
+	UIStyle.stroke(barTrack, C.white, 2)
 
 	--[[
 		Fills from the BOTTOM upward: the anchor sits at the bottom edge so growing
 		the height raises the top of the bar, which is the direction a deadlift goes.
 	]]
-	local barFill = Instance.new("Frame")
-	barFill.Name = "BarFill"
+	local barFill = UIStyle.frame(barTrack, "BarFill", UDim2.fromScale(0.5, 1), UDim2.new(1, -6, 0, 0), liftColour)
 	barFill.AnchorPoint = Vector2.new(0.5, 1)
-	barFill.Position = UDim2.fromScale(0.5, 1)
-	barFill.Size = UDim2.new(1, 0, 0, 0)
-	barFill.BackgroundColor3 = COLOR_BAR
-	barFill.BorderSizePixel = 0
-	barFill.Parent = barTrack
 
-	local fillCorner = Instance.new("UICorner")
-	fillCorner.CornerRadius = UDim.new(0, 6)
-	fillCorner.Parent = barFill
+	-- The lockout line across the top of the track.
+	local notch = UIStyle.frame(barTrack, "Lockout", UDim2.new(0.5, 0, 0, -2), UDim2.new(1, 14, 0, 3), C.yellow)
+	notch.AnchorPoint = Vector2.new(0.5, 0.5)
 
-	local lockoutLabel = Instance.new("TextLabel")
-	lockoutLabel.Name = "LockoutLabel"
-	lockoutLabel.AnchorPoint = Vector2.new(0.5, 1)
-	lockoutLabel.Position = UDim2.new(0.5, 0, 0, -8)
-	lockoutLabel.Size = UDim2.fromOffset(140, 18)
-	lockoutLabel.BackgroundTransparency = 1
-	lockoutLabel.Font = Enum.Font.GothamBold
-	lockoutLabel.TextSize = 13
-	lockoutLabel.TextColor3 = COLOR_DIM
-	lockoutLabel.Text = "LOCKOUT"
-	lockoutLabel.Parent = barTrack
-
-	local floorLabel = Instance.new("TextLabel")
-	floorLabel.Name = "FloorLabel"
-	floorLabel.AnchorPoint = Vector2.new(0.5, 0)
-	floorLabel.Position = UDim2.new(0.5, 0, 1, 8)
-	floorLabel.Size = UDim2.fromOffset(140, 18)
-	floorLabel.BackgroundTransparency = 1
-	floorLabel.Font = Enum.Font.GothamBold
-	floorLabel.TextSize = 13
-	floorLabel.TextColor3 = COLOR_DIM
-	floorLabel.Text = "FLOOR"
-	floorLabel.Parent = barTrack
-
-	local instruction = Instance.new("TextLabel")
-	instruction.Name = "Instruction"
-	instruction.AnchorPoint = Vector2.new(0.5, 0)
-	instruction.Position = UDim2.fromScale(0.5, 0.62)
-	instruction.Size = UDim2.fromOffset(720, 20)
-	instruction.BackgroundTransparency = 1
-	instruction.Font = Enum.Font.GothamMedium
-	instruction.TextSize = 13
-	instruction.TextColor3 = COLOR_DIM
-	instruction.Text = instructionText
-	instruction.Parent = gui
-
-	local readout = Instance.new("TextLabel")
-	readout.Name = "Readout"
-	readout.AnchorPoint = Vector2.new(0.5, 0)
-	readout.Position = UDim2.fromScale(0.5, 0.67)
-	readout.Size = UDim2.fromOffset(760, 20)
-	readout.BackgroundTransparency = 1
-	readout.Font = Enum.Font.Code
-	readout.TextSize = 13
-	readout.TextColor3 = Color3.fromRGB(140, 150, 165)
-	readout.Text = ""
-	readout.Parent = gui
-
-	local verdict = Instance.new("TextLabel")
-	verdict.Name = "Verdict"
-	verdict.AnchorPoint = Vector2.new(0.5, 0.5)
-	verdict.Position = UDim2.fromScale(0.5, 0.86)
-	verdict.Size = UDim2.fromOffset(760, 40)
-	verdict.BackgroundTransparency = 1
-	verdict.Font = Enum.Font.GothamBold
-	verdict.TextSize = 28
-	verdict.TextColor3 = COLOR_TEXT
-	verdict.Text = ""
-	verdict.Parent = gui
+	--[[
+		The verdict, a slanted slab centred under the panel: white for a pass, red
+		for a fail. Anchored at its top centre, so on a short screen it shrinks
+		toward its top edge and never covers the panel.
+	]]
+	local verdictBanner = UIStyle.frame(gui, "Verdict", UDim2.new(0.5, 0, PANEL_POSITION.Y.Scale, PANEL_HEIGHT / 2 + 30),
+		UDim2.fromOffset(640, 72), C.white, -2)
+	verdictBanner.AnchorPoint = Vector2.new(0.5, 0)
+	verdictBanner.Position = UDim2.new(0.5, 0, PANEL_POSITION.Y.Scale, PANEL_HEIGHT / 2 + 30)
+	verdictBanner.Visible = false
+	UIStyle.stroke(verdictBanner, C.ink, 2)
+	local verdict = UIStyle.text(verdictBanner, "Text", UDim2.fromOffset(16, 0), UDim2.new(1, -32, 1, 0), TEXT.big, C.ink,
+		UIStyle.heading(), Enum.TextXAlignment.Center)
+	verdict.TextWrapped = false
 
 	return {
 		gui = gui,
+		title = title,
+		detail = detail,
+		percent = percent,
+		keys = keys,
+		glow = glow,
+		cursor = cursor,
+		nextWords = nextWords,
 		barFill = barFill,
 		lockoutLabel = lockoutLabel,
-		headline = headline,
-		detail = detail,
 		readout = readout,
+		verdictBanner = verdictBanner,
 		verdict = verdict,
-		lineWindow = lineWindow,
-		strip = strip,
-		cursor = cursor,
-		highlight = highlight,
 	}
 end
 
@@ -382,73 +398,98 @@ local function completionFraction(challenge: TypingChallengeType, progress: numb
 	return math.clamp(progress / challenge.completionThreshold, 0, 1)
 end
 
+-- Box `index` from the pool, made on first use.
+local function getBox(keys: Frame, index: number): KeyBox
+	local existing = boxes[index]
+	if existing ~= nil then
+		return existing
+	end
+
+	local frame = UIStyle.frame(keys, "Key" .. index, UDim2.fromOffset(0, 0), UDim2.fromOffset(BOX_MAX, BOX_MAX), C.empty)
+	frame.AnchorPoint = Vector2.new(0.5, 0.5)
+	frame.ZIndex = 2
+	local edge = UIStyle.stroke(frame, C.white, 2)
+	-- A fixed text size (set per word in showCue), so letters never shrink below TextSizes.big.
+	local letter = UIStyle.text(frame, "Letter", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), TEXT.big, C.white,
+		UIStyle.heading(), Enum.TextXAlignment.Center)
+	letter.TextWrapped = false
+	letter.ZIndex = 3
+
+	local box: KeyBox = { frame = frame, edge = edge, letter = letter, scale = 1 }
+	boxes[index] = box
+	return box
+end
+
+local function hideBoxes()
+	for _, box in ipairs(boxes) do
+		box.frame.Visible = false
+	end
+	shownCue = 0
+	shownCount = 0
+end
+
 --[[
-	Lays out the whole line as character cells.
-
-	Words are separated by a rendered space cell that carries no token index, which
-	is how word boundaries advance without the player ever typing a space.
-
-	Only as many cues are laid out as could possibly be reached, because the
-	challenge deliberately carries far more than a pull needs and building labels
-	for all of them would be wasted work.
+	Maps every token to its cue. Built once per challenge, because the simulation
+	only knows a flat token index.
 ]]
-local function layoutLine(challenge: TypingChallengeType)
+local function indexCues(challenge: TypingChallengeType)
+	tokenCue = {}
+	cueFirstToken = {}
+
+	local tokenIndex = 0
+	for cueIndex, cue in ipairs(challenge.cues) do
+		cueFirstToken[cueIndex] = tokenIndex + 1
+		for _ in ipairs(cue.tokens) do
+			tokenIndex += 1
+			tokenCue[tokenIndex] = cueIndex
+		end
+	end
+end
+
+--[[
+	Lays the row out for one cue: one box per token, centred, shrunk so the whole
+	word fits on one line. Also fills the NEXT preview.
+]]
+local function showCue(challenge: TypingChallengeType, cueIndex: number)
 	local current = visuals
 	if current == nil then
 		return
 	end
 
-	for _, cell in ipairs(cells) do
-		cell.label:Destroy()
+	local cue = challenge.cues[cueIndex]
+	local count = if cue ~= nil then #cue.tokens else 0
+
+	boxSize = if count > 0
+		then math.min(BOX_MAX, math.floor((CONTENT_WIDTH - (count - 1) * BOX_GAP) / count))
+		else BOX_MAX
+	local rowWidth = count * boxSize + math.max(count - 1, 0) * BOX_GAP
+	local startX = (CONTENT_WIDTH - rowWidth) / 2
+	local letterSize = math.max(TEXT.big, math.floor(boxSize * LETTER_FRACTION))
+
+	for index = 1, count do
+		local box = getBox(current.keys, index)
+		box.frame.Visible = true
+		box.frame.Position = UDim2.fromOffset(startX + (index - 1) * (boxSize + BOX_GAP) + boxSize / 2, ROW_HEIGHT / 2)
+		box.letter.Text = cue.tokens[index]
+		box.letter.TextSize = letterSize
+		box.scale = NEW_WORD_SCALE
 	end
-	cells = {}
-	cellForToken = {}
-
-	local x = 0
-	local tokenIndex = 0
-
-	for cueIndex, cue in ipairs(challenge.cues) do
-		if cueIndex > 1 then
-			-- A rendered space. Never typed.
-			local spacer = Instance.new("TextLabel")
-			spacer.Name = "Space"
-			spacer.AnchorPoint = Vector2.new(0, 0.5)
-			spacer.Position = UDim2.new(0, x, 0.5, 0)
-			spacer.Size = UDim2.fromOffset(CELL_WIDTH, 48)
-			spacer.BackgroundTransparency = 1
-			spacer.Font = Enum.Font.Code
-			spacer.TextSize = CHAR_TEXT_SIZE
-			spacer.TextColor3 = COLOR_DIM
-			spacer.Text = ""
-			spacer.ZIndex = 2
-			spacer.Parent = current.strip
-			table.insert(cells, { char = " ", tokenIndex = nil, label = spacer })
-			x += CELL_WIDTH
-		end
-
-		for _, char in ipairs(cue.tokens) do
-			tokenIndex += 1
-
-			local label = Instance.new("TextLabel")
-			label.Name = "C" .. tokenIndex
-			label.AnchorPoint = Vector2.new(0, 0.5)
-			label.Position = UDim2.new(0, x, 0.5, 0)
-			label.Size = UDim2.fromOffset(CELL_WIDTH, 48)
-			label.BackgroundTransparency = 1
-			label.Font = Enum.Font.Code
-			label.TextSize = CHAR_TEXT_SIZE
-			label.TextColor3 = COLOR_TEXT
-			label.Text = char
-			label.ZIndex = 2
-			label.Parent = current.strip
-
-			table.insert(cells, { char = char, tokenIndex = tokenIndex, label = label })
-			cellForToken[tokenIndex] = #cells
-			x += CELL_WIDTH
-		end
+	for index = count + 1, #boxes do
+		boxes[index].frame.Visible = false
 	end
 
-	current.strip.Size = UDim2.new(0, x, 1, 0)
+	shownCue = cueIndex
+	shownCount = count
+
+	local upcoming: { string } = {}
+	for offset = 1, NEXT_PREVIEW do
+		local nextCue = challenge.cues[cueIndex + offset]
+		if nextCue == nil then
+			break
+		end
+		table.insert(upcoming, nextCue.label)
+	end
+	current.nextWords.Text = table.concat(upcoming, "   ·   ")
 end
 
 local function redraw(delta: number)
@@ -460,11 +501,14 @@ local function redraw(delta: number)
 	end
 
 	local fraction = completionFraction(challenge, state.progress)
-	current.barFill.Size = UDim2.new(1, 0, fraction, 0)
+	current.barFill.Size = UDim2.new(1, -6, fraction, 0)
 
+	-- A completed pull turns white, like a meet's white light.
 	local done = state.outcome == "Passed"
-	current.barFill.BackgroundColor3 = if done then COLOR_BAR_DONE else COLOR_BAR
-	current.lockoutLabel.TextColor3 = if done then COLOR_DONE else COLOR_DIM
+	current.barFill.BackgroundColor3 = if done then C.white else liftColour
+	current.lockoutLabel.TextColor3 = if done then C.white else C.muted
+	current.percent.Text = string.format("%.0f%%", fraction * 100)
+	current.percent.TextColor3 = if done then C.white else liftColour
 
 	-- A new wrong key starts a brief red flash. Feedback only; nothing is withheld.
 	if state.wrongTokens > lastWrongCount then
@@ -473,80 +517,97 @@ local function redraw(delta: number)
 	end
 	local flashing = os.clock() < flashUntil
 
-	local activeCell = cellForToken[state.expectedIndex]
-
 	--[[
-		Slide the strip so the current character sits at the anchor. Clamped at zero
-		so the line never scrolls past its own start, and eased so it drifts rather
-		than jumping on every keystroke.
+		Which word the row shows. Once the generated cues run out (which should not
+		happen) the last word stays up, fully typed.
 	]]
-	local targetX = 0
-	if activeCell ~= nil then
-		targetX = math.max((activeCell - 1) * CELL_WIDTH - CURSOR_ANCHOR_X, 0)
+	local expected = state.expectedIndex
+	local activeCue = tokenCue[expected]
+	local cueIndex = activeCue or #challenge.cues
+	if cueIndex ~= shownCue then
+		showCue(challenge, cueIndex)
 	end
-	local alpha = math.clamp(delta * SCROLL_LERP, 0, 1)
-	scrollX += (targetX - scrollX) * alpha
-	current.strip.Position = UDim2.new(0, -math.floor(scrollX + 0.5), 0.5, 0)
+	local firstToken = cueFirstToken[cueIndex] or 1
+
+	local alpha = math.clamp(delta * BOX_LERP, 0, 1)
+	local currentBox: KeyBox? = nil
 
 	--[[
-		Colour every cell by its position relative to the cursor. Completed green,
-		current bright, upcoming fading forward.
+		Colour every box by where it sits relative to the expected token: typed in
+		the lift's colour, the current one dark and lit, upcoming plain.
 	]]
-	for index, cell in ipairs(cells) do
-		if cell.tokenIndex == nil then
-			-- Rendered space.
-			cell.label.TextTransparency = 0.8
-			continue
-		end
+	for index = 1, shownCount do
+		local box = boxes[index]
+		local tokenIndex = firstToken + index - 1
+		local isCurrent = activeCue ~= nil and tokenIndex == expected and not done and markCurrent
 
-		if done or cell.tokenIndex < state.expectedIndex then
-			cell.label.TextColor3 = COLOR_DONE
-			cell.label.TextTransparency = 0.5
-		elseif cell.tokenIndex == state.expectedIndex then
-			cell.label.TextColor3 = if flashing then COLOR_WRONG else COLOR_CURRENT
-			cell.label.TextTransparency = 0
+		if done then
+			box.frame.BackgroundColor3 = C.white
+			box.letter.TextColor3 = C.ink
+			box.edge.Color = C.white
+			box.edge.Thickness = 2
+			box.edge.Transparency = 0
+		elseif tokenIndex < expected then
+			box.frame.BackgroundColor3 = liftColour
+			box.letter.TextColor3 = C.white
+			box.edge.Color = C.white
+			box.edge.Thickness = 2
+			box.edge.Transparency = 0.3
+		elseif isCurrent then
+			box.frame.BackgroundColor3 = if flashing then C.red else C.navyDeep
+			box.letter.TextColor3 = C.white
+			box.edge.Color = if flashing then C.red else liftColour
+			box.edge.Thickness = 4
+			box.edge.Transparency = 0
+			currentBox = box
 		else
-			--[[
-				Fade with distance so the line reads as continuing rather than stopping,
-				and so the eye is pulled toward the cursor.
-			]]
-			local ahead = cell.tokenIndex - state.expectedIndex
-			cell.label.TextColor3 = COLOR_TEXT
-			cell.label.TextTransparency = math.clamp(0.15 + ahead * 0.035, 0, 0.8)
+			box.frame.BackgroundColor3 = C.empty
+			box.letter.TextColor3 = C.muted
+			box.edge.Color = C.white
+			box.edge.Thickness = 2
+			box.edge.Transparency = 0.45
 		end
-		local _ = index
+
+		local target = if isCurrent then CURRENT_SCALE else 1
+		box.scale += (target - box.scale) * alpha
+		local pixels = math.floor(boxSize * box.scale + 0.5)
+		box.frame.Size = UDim2.fromOffset(pixels, pixels)
 	end
 
-	-- Park the highlight and cursor on the current cell.
-	if activeCell ~= nil and not done then
-		local cellX = (activeCell - 1) * CELL_WIDTH
-		current.highlight.Visible = true
+	-- Park the glow and underline on the current box.
+	if currentBox ~= nil then
+		local centre = currentBox.frame.Position
+		local pixels = boxSize * currentBox.scale
+		local markColour = if flashing then C.red else liftColour
+		current.glow.Visible = true
 		current.cursor.Visible = true
-		current.highlight.Position = UDim2.new(0, cellX, 0.5, 0)
-		current.highlight.BackgroundColor3 = if flashing then COLOR_WRONG else COLOR_CURSOR
-		current.cursor.Position = UDim2.new(0, cellX + 3, 0.5, 26)
-		current.cursor.BackgroundColor3 = if flashing then COLOR_WRONG else COLOR_CURSOR
+		current.glow.Position = centre
+		current.glow.Size = UDim2.fromOffset(pixels + 16, pixels + 16)
+		current.glow.BackgroundColor3 = markColour
+		current.cursor.Position = centre + UDim2.fromOffset(0, boxSize * CURRENT_SCALE / 2 + 8)
+		current.cursor.Size = UDim2.fromOffset(boxSize * 0.7, 5)
+		current.cursor.BackgroundColor3 = markColour
 	else
-		current.highlight.Visible = false
+		current.glow.Visible = false
 		current.cursor.Visible = false
 	end
 
 	--[[
-		Progress as a plain percentage of completion, because that is the only thing
-		the player needs: the bar already says how far there is to go.
-
-		Everything after it is DEV ONLY and labelled so.
+		The player's progress is the percentage (top right) and the bar. The raw
+		numbers below are DEV ONLY, labelled so, and only shown when
+		UIStyle.ShowDevReadouts is on.
 	]]
-	local remaining = math.max(challenge.durationSeconds - state.elapsedSeconds, 0)
-	current.readout.Text = string.format(
-		"progress %3.0f%%      [dev]  %.1fs left   %d/%d correct   %d wrong   need %.1f/s",
-		fraction * 100,
-		remaining,
-		state.correctTokens,
-		challenge.tokensNeeded,
-		state.wrongTokens,
-		challenge.requiredTokensPerSecond
-	)
+	if SHOW_DEV then
+		local remaining = math.max(challenge.durationSeconds - state.elapsedSeconds, 0)
+		current.readout.Text = string.format(
+			"[dev]  %.1fs left   %d/%d correct   %d wrong   need %.1f/s",
+			remaining,
+			state.correctTokens,
+			challenge.tokensNeeded,
+			state.wrongTokens,
+			challenge.requiredTokensPerSecond
+		)
+	end
 end
 
 local function stopStepping()
@@ -595,24 +656,32 @@ function TypingUI.run(challenge: TypingChallengeType, report: Reporter)
 	accumulator = 0
 	recordedEvents = {}
 	pendingEvents = {}
-	scrollX = 0
 	lastWrongCount = 0
 	flashUntil = 0
+	markCurrent = true
 	phaseClock = os.clock()
 	reporter = report
 	finished = false
 
-	layoutLine(challenge)
+	local phase = TypingPhaseConfig.Phases[challenge.phase]
+	local liftName = if phase ~= nil then phase.lift else "Deadlift"
+	liftColour = UIStyle.LiftColours[liftName] or C.blue
+	current.glow.BackgroundColor3 = liftColour
+	current.cursor.BackgroundColor3 = liftColour
 
-	current.headline.Text = challenge.displayName
+	indexCues(challenge)
+	hideBoxes()
+
+	current.title.Text = string.format("%s  ·  %s", string.upper(liftName), challenge.displayName)
 	current.detail.Text = string.format(
-		"%.1f kg  -  %.0f%%  -  difficulty %.0f  -  %d characters to lockout",
+		"%.1f kg  ·  %.0f%%  ·  difficulty %.0f  ·  %d characters to lockout",
 		challenge.attemptWeightKg,
 		challenge.intensityPercent,
 		challenge.baseDifficulty,
 		challenge.tokensNeeded
 	)
 	current.verdict.Text = ""
+	current.verdictBanner.Visible = false
 	current.gui.Enabled = true
 	redraw(1)
 
@@ -692,11 +761,16 @@ function TypingUI.showVerdict(verdictText: string, passed: boolean, detailLine: 
 	finished = true
 	stopStepping()
 
-	current.highlight.Visible = false
+	-- The current box stops being marked; the boxes otherwise stay as they ended.
+	markCurrent = false
+	redraw(1)
+	current.glow.Visible = false
 	current.cursor.Visible = false
 
-	current.verdict.TextColor3 = if passed then COLOR_PASS else COLOR_FAIL
+	current.verdictBanner.BackgroundColor3 = if passed then C.white else C.red
+	current.verdict.TextColor3 = if passed then C.ink else C.white
 	current.verdict.Text = verdictText
+	current.verdictBanner.Visible = verdictText ~= ""
 
 	if detailLine then
 		current.readout.Text = detailLine
@@ -717,17 +791,18 @@ function TypingUI.hide()
 
 	current.gui.Enabled = false
 	current.verdict.Text = ""
+	current.verdictBanner.Visible = false
 	current.readout.Text = ""
-	current.headline.Text = ""
+	current.title.Text = ""
 	current.detail.Text = ""
-	current.highlight.Visible = false
+	current.percent.Text = ""
+	current.nextWords.Text = ""
+	current.glow.Visible = false
 	current.cursor.Visible = false
 
-	for _, cell in ipairs(cells) do
-		cell.label:Destroy()
-	end
-	cells = {}
-	cellForToken = {}
+	hideBoxes()
+	tokenCue = {}
+	cueFirstToken = {}
 end
 
 --[[

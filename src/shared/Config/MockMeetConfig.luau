@@ -63,8 +63,9 @@ MockMeetConfig.ChooseSeconds = 60
 -- Once the bar is loaded the lifter has this long to press LIFT, like a real meet's one-minute
 -- clock; when it runs out the attempt is a no lift.
 MockMeetConfig.ReadySeconds = 60
--- How long the verdict (and the coach's reaction) shows before the next choice.
-MockMeetConfig.ResultSeconds = 4
+-- How long the verdict (and the coach's reaction) shows before the next choice. The lift's own verdict
+-- shows first (LiftAttemptConfig.ResultHoldSeconds, 2.5 s), then the meet's, so the two never overlap.
+MockMeetConfig.ResultSeconds = 5
 
 -- The opener suggestion: this share of the Competition Number, rounded down to WeightStepKg.
 MockMeetConfig.OpenerSuggestionPercent = 0.90

@@ -5,6 +5,23 @@
 
 	Draws the control phase and steps its simulation for display.
 
+	THE LOOK is built from UIStyle (client/UI), the one style of every screen: a
+	navy panel with a title tag ("SQUAT  CONTROL //"), the track in deep navy with
+	a white edge, the player's bar in the lift's colour (squat yellow), the marker
+	white while it is on the bar and red while it is off it (good = white, no
+	lift = red), and the verdict on a white or red slab under the panel.
+
+	LAYOUT (user 2026-10-28: "They need to be centered, Bigger, Easier to read"):
+	one composition (the title tag, the panel and the verdict slab under it)
+	anchored at its own centre at (0.5, 0.52) of the screen, so it stays centred
+	when fitToScreen shrinks it. Left: the track and the progress meter. Right,
+	a few big plain lines: the instruction (TextSizes.body), the meter's reading
+	"CONTROL 27%" (TextSizes.heading), whether the marker is ON or OFF the bar
+	(in white or red, which also teaches the colours), and the attempt line
+	(kg / % / difficulty, TextSizes.body). The raw testing numbers ("progress",
+	"clicks", the server's "server: ..." line) show only when
+	UIStyle.ShowDevReadouts is on. The verdict is TextSizes.big.
+
 	WHAT IT OWNS AND WHAT IT DOES NOT
 
 	It runs ControlSimulation locally so the bar responds the instant the player
@@ -39,6 +56,8 @@ local LiftingFolder = Shared:WaitForChild("Lifting")
 local ConfigFolder = Shared:WaitForChild("Config")
 local Simulation = require(LiftingFolder:WaitForChild("ControlSimulation"))
 local ControlPhaseConfig = require(ConfigFolder:WaitForChild("ControlPhaseConfig"))
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local C = UIStyle.Colours
 
 -- Must match what the server enforces when it replays the reported clicks.
 local MINIMUM_CLICK_GAP = 1 / ControlPhaseConfig.MaxClicksPerSecond
@@ -49,21 +68,53 @@ local ControlUI = {}
 type ControlChallengeType = any
 
 -- Presentation only. None of this affects the simulation.
-local TRACK_WIDTH = 96
-local TRACK_SCREEN_HEIGHT = 400
-local MARKER_THICKNESS = 6
-local METER_WIDTH = 26
-local METER_GAP = 18
+--[[
+	The track's on-screen size. TRACK_SCREEN_HEIGHT is the one number the
+	position maths uses (toScreenY and redraw's scale both read it), and the
+	track frame is built at exactly this size, so changing it stays consistent.
+]]
+local TRACK_WIDTH = 130
+local TRACK_SCREEN_HEIGHT = 460
+-- The player's bar is this much narrower than the track (build and redraw both use BAR_WIDTH).
+local BAR_WIDTH = TRACK_WIDTH - 14
+local MARKER_THICKNESS = 8
+local MARKER_OVERHANG = 18
+local METER_WIDTH = 44
+local METER_GAP = 22
 
-local COLOR_TRACK = Color3.fromRGB(32, 35, 42)
-local COLOR_BAR = Color3.fromRGB(240, 244, 250)
-local COLOR_MARKER_IN = Color3.fromRGB(96, 214, 128)
-local COLOR_MARKER_OUT = Color3.fromRGB(240, 92, 92)
-local COLOR_METER_FILL = Color3.fromRGB(64, 156, 255)
-local COLOR_METER_BACK = Color3.fromRGB(26, 29, 35)
-local COLOR_TEXT = Color3.fromRGB(226, 232, 240)
-local COLOR_PASS = Color3.fromRGB(96, 214, 128)
-local COLOR_FAIL = Color3.fromRGB(240, 92, 92)
+-- The panel around it all: the track and the meter on the left, the words in a
+-- column on the right.
+local PANEL_PAD = 24
+local PANEL_TOP = 24
+local COLUMN_GAP = 30
+local COLUMN_WIDTH = 340
+local COLUMN_X = PANEL_PAD + TRACK_WIDTH + METER_GAP + METER_WIDTH + COLUMN_GAP
+local PANEL_WIDTH = COLUMN_X + COLUMN_WIDTH + PANEL_PAD
+local PANEL_HEIGHT = PANEL_TOP + TRACK_SCREEN_HEIGHT + PANEL_TOP
+
+-- The title tag pokes this far above the panel; the composition includes it.
+local TAG_OVERHANG = 22
+local TAG_WIDTH, TAG_HEIGHT = 340, 46
+local VERDICT_GAP = 14
+local VERDICT_HEIGHT = 64
+
+-- The whole composition (tag + panel + verdict), anchored at its centre here.
+local COMPOSITION_WIDTH = PANEL_WIDTH
+local COMPOSITION_HEIGHT = TAG_OVERHANG + PANEL_HEIGHT + VERDICT_GAP + VERDICT_HEIGHT
+local COMPOSITION_CENTRE = UIStyle.MinigameCentre
+
+local SIZES = UIStyle.TextSizes
+
+-- The control phase is the squat's; liftColourFor picks another lift's colour if
+-- a phase for one is ever added.
+local COLOR_LIFT_DEFAULT = UIStyle.LiftColours.Squat
+local COLOR_MARKER_IN = C.white
+local COLOR_MARKER_OUT = C.red
+-- GOOD = white slab with black text, NO LIFT = red slab with white text.
+local COLOR_PASS_SLAB = C.white
+local COLOR_PASS_TEXT = C.ink
+local COLOR_FAIL_SLAB = C.red
+local COLOR_FAIL_TEXT = C.white
 
 export type Reporter = (clickTimes: { number }) -> ()
 
@@ -73,10 +124,18 @@ type Visuals = {
 	bar: Frame,
 	marker: Frame,
 	meterFill: Frame,
+	-- The title tag's text.
 	headline: TextLabel,
 	instruction: TextLabel,
+	-- "CONTROL 27%": the meter's reading, big.
+	progress: TextLabel,
+	-- "MARKER ON THE BAR" in white / "MARKER OFF THE BAR" in red.
+	onBar: TextLabel,
+	-- The attempt line: kg / % / difficulty.
 	detail: TextLabel,
+	-- Raw testing numbers; only visible when UIStyle.ShowDevReadouts is on.
 	readout: TextLabel,
+	verdictSlab: Frame,
 	verdict: TextLabel,
 }
 
@@ -95,149 +154,119 @@ local lastAcceptedClick = -math.huge
 local reporter: Reporter? = nil
 local finished = true
 
+-- A column text block: a FIXED text size (UIStyle.text, not scaled), so it stays readable and live numbers do not flicker.
+local function columnText(parent: Instance, name: string, y: number, height: number, colour: Color3, textSize: number,
+	font: Font, yAlign: Enum.TextYAlignment?): TextLabel
+	local text = UIStyle.text(parent, name, UDim2.fromOffset(COLUMN_X, y), UDim2.fromOffset(COLUMN_WIDTH, height), textSize,
+		colour, font)
+	text.TextYAlignment = yAlign or Enum.TextYAlignment.Top
+	text.ZIndex = 2
+	return text
+end
+
 local function build(instructionText: string): Visuals
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "ControlUI"
+	UIStyle.fitToScreen(gui) -- shrink on short screens so nothing overlaps
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Enabled = false
 
+	--[[
+		The one top-level piece: the whole composition (title tag, panel, verdict
+		slab), anchored at its own centre, so fitToScreen shrinks it about the
+		screen's centre and it never drifts.
+	]]
 	local root = Instance.new("Frame")
 	root.Name = "Root"
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
-	root.Position = UDim2.fromScale(0.5, 0.5)
-	root.Size = UDim2.fromOffset(TRACK_WIDTH + METER_GAP + METER_WIDTH, TRACK_SCREEN_HEIGHT)
+	root.Position = COMPOSITION_CENTRE
+	root.Size = UDim2.fromOffset(COMPOSITION_WIDTH, COMPOSITION_HEIGHT)
 	root.BackgroundTransparency = 1
 	root.Parent = gui
 
-	local track = Instance.new("Frame")
-	track.Name = "Track"
-	track.AnchorPoint = Vector2.new(0, 0)
-	track.Position = UDim2.fromOffset(0, 0)
-	track.Size = UDim2.fromOffset(TRACK_WIDTH, TRACK_SCREEN_HEIGHT)
-	track.BackgroundColor3 = COLOR_TRACK
-	track.BorderSizePixel = 0
-	track.Parent = root
+	local holder, body = UIStyle.panel(root, "Panel", UDim2.fromOffset(0, TAG_OVERHANG),
+		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
+	-- Its text is set per challenge ("SQUAT  CONTROL").
+	local headline = UIStyle.titleTag(holder, "Tag", "", UDim2.fromOffset(-16, -TAG_OVERHANG),
+		UDim2.fromOffset(TAG_WIDTH, TAG_HEIGHT))
 
-	local trackCorner = Instance.new("UICorner")
-	trackCorner.CornerRadius = UDim.new(0, 8)
-	trackCorner.Parent = track
+	--[[
+		The track. Exactly TRACK_WIDTH x TRACK_SCREEN_HEIGHT, and the bar and the
+		marker are its children positioned from its top edge, which is what
+		toScreenY assumes. Nothing reads its screen position.
+	]]
+	local track = UIStyle.frame(body, "Track", UDim2.fromOffset(PANEL_PAD, PANEL_TOP),
+		UDim2.fromOffset(TRACK_WIDTH, TRACK_SCREEN_HEIGHT), C.navyDeep)
+	track.ZIndex = 2
+	UIStyle.stroke(track, C.white, 2)
+	-- Faint quarter lines, decoration only.
+	for quarter = 1, 3 do
+		local line = UIStyle.frame(track, "Quarter_" .. quarter, UDim2.new(0, 0, quarter / 4, 0), UDim2.new(1, 0, 0, 1), C.grid)
+		line.BackgroundTransparency = 0.6
+	end
 
-	-- The player's bar. Position and height are set per challenge.
-	local bar = Instance.new("Frame")
-	bar.Name = "Bar"
+	-- The player's bar, in the lift's colour. Position and height are set per challenge.
+	local bar = UIStyle.frame(track, "Bar", UDim2.fromOffset(0, 0), UDim2.fromOffset(BAR_WIDTH, 80), COLOR_LIFT_DEFAULT)
 	bar.AnchorPoint = Vector2.new(0.5, 0.5)
-	bar.Size = UDim2.fromOffset(TRACK_WIDTH - 10, 80)
-	bar.BackgroundColor3 = COLOR_BAR
-	bar.BackgroundTransparency = 0.25
-	bar.BorderSizePixel = 0
+	bar.BackgroundTransparency = 0.3
 	bar.ZIndex = 2
-	bar.Parent = track
+	UIStyle.stroke(bar, C.white, 1, 0.2)
 
-	local barCorner = Instance.new("UICorner")
-	barCorner.CornerRadius = UDim.new(0, 6)
-	barCorner.Parent = bar
-
-	-- The success marker. Green while inside the bar, red while outside.
-	local marker = Instance.new("Frame")
-	marker.Name = "Marker"
+	-- The success marker. White while inside the bar, red while outside.
+	local marker = UIStyle.frame(track, "Marker", UDim2.fromOffset(0, 0),
+		UDim2.fromOffset(TRACK_WIDTH + MARKER_OVERHANG, MARKER_THICKNESS), COLOR_MARKER_IN)
 	marker.AnchorPoint = Vector2.new(0.5, 0.5)
-	marker.Size = UDim2.fromOffset(TRACK_WIDTH + 14, MARKER_THICKNESS)
-	marker.BackgroundColor3 = COLOR_MARKER_IN
-	marker.BorderSizePixel = 0
 	marker.ZIndex = 4
-	marker.Parent = track
-
-	local markerCorner = Instance.new("UICorner")
-	markerCorner.CornerRadius = UDim.new(0, 3)
-	markerCorner.Parent = marker
+	UIStyle.stroke(marker, C.ink, 2)
 
 	-- Progress meter, filling from the bottom.
-	local meterBack = Instance.new("Frame")
-	meterBack.Name = "MeterBack"
-	meterBack.Position = UDim2.fromOffset(TRACK_WIDTH + METER_GAP, 0)
-	meterBack.Size = UDim2.fromOffset(METER_WIDTH, TRACK_SCREEN_HEIGHT)
-	meterBack.BackgroundColor3 = COLOR_METER_BACK
-	meterBack.BorderSizePixel = 0
-	meterBack.Parent = root
+	local meterBack = UIStyle.frame(body, "MeterBack", UDim2.fromOffset(PANEL_PAD + TRACK_WIDTH + METER_GAP, PANEL_TOP),
+		UDim2.fromOffset(METER_WIDTH, TRACK_SCREEN_HEIGHT), C.empty)
+	meterBack.ZIndex = 2
+	UIStyle.stroke(meterBack, C.white, 1, 0.4)
 
-	local meterBackCorner = Instance.new("UICorner")
-	meterBackCorner.CornerRadius = UDim.new(0, 6)
-	meterBackCorner.Parent = meterBack
-
-	local meterFill = Instance.new("Frame")
-	meterFill.Name = "MeterFill"
+	local meterFill = UIStyle.frame(meterBack, "MeterFill", UDim2.fromScale(0, 1), UDim2.new(1, 0, 0, 0), COLOR_LIFT_DEFAULT)
 	meterFill.AnchorPoint = Vector2.new(0, 1)
-	meterFill.Position = UDim2.fromScale(0, 1)
-	meterFill.Size = UDim2.new(1, 0, 0, 0)
-	meterFill.BackgroundColor3 = COLOR_METER_FILL
-	meterFill.BorderSizePixel = 0
-	meterFill.Parent = meterBack
+	meterFill.ZIndex = 2
 
-	local meterFillCorner = Instance.new("UICorner")
-	meterFillCorner.CornerRadius = UDim.new(0, 6)
-	meterFillCorner.Parent = meterFill
-
-	local headline = Instance.new("TextLabel")
-	headline.Name = "Headline"
-	headline.AnchorPoint = Vector2.new(0.5, 1)
-	headline.Position = UDim2.new(0.5, 0, 0, -58)
-	headline.Size = UDim2.fromOffset(320, 32)
-	headline.BackgroundTransparency = 1
-	headline.Font = Enum.Font.GothamBold
-	headline.TextSize = 26
-	headline.TextColor3 = COLOR_TEXT
-	headline.Text = ""
-	headline.Parent = root
-
-	local instruction = Instance.new("TextLabel")
-	instruction.Name = "Instruction"
-	instruction.AnchorPoint = Vector2.new(0.5, 1)
-	instruction.Position = UDim2.new(0.5, 0, 0, -36)
-	instruction.Size = UDim2.fromOffset(460, 20)
-	instruction.BackgroundTransparency = 1
-	instruction.Font = Enum.Font.GothamMedium
-	instruction.TextSize = 13
-	instruction.TextColor3 = Color3.fromRGB(150, 160, 175)
+	--[[
+		The column: a few big, plain lines, top to bottom.
+			what to do                          body, white
+			CONTROL 27%  (the meter's reading)  heading, the lift's colour
+			MARKER ON / OFF THE BAR             body, white or red
+			testing numbers (dev only)          small, grey
+			the attempt (kg / % / difficulty)   body, white, at the bottom
+	]]
+	local instruction = columnText(body, "Instruction", PANEL_TOP, 76, C.white, SIZES.body, UIStyle.font(Enum.FontWeight.Bold))
 	instruction.Text = instructionText
-	instruction.Parent = root
 
-	local detail = Instance.new("TextLabel")
-	detail.Name = "Detail"
-	detail.AnchorPoint = Vector2.new(0.5, 0)
-	detail.Position = UDim2.new(0.5, 0, 1, 14)
-	detail.Size = UDim2.fromOffset(460, 20)
-	detail.BackgroundTransparency = 1
-	detail.Font = Enum.Font.Gotham
-	detail.TextSize = 14
-	detail.TextColor3 = Color3.fromRGB(176, 184, 196)
-	detail.Text = ""
-	detail.Parent = root
+	local progress = columnText(body, "Progress", PANEL_TOP + 96, 34, COLOR_LIFT_DEFAULT, SIZES.heading, UIStyle.heading())
 
-	local readout = Instance.new("TextLabel")
-	readout.Name = "Readout"
-	readout.AnchorPoint = Vector2.new(0.5, 0)
-	readout.Position = UDim2.new(0.5, 0, 1, 36)
-	readout.Size = UDim2.fromOffset(460, 20)
-	readout.BackgroundTransparency = 1
-	readout.Font = Enum.Font.Code
-	readout.TextSize = 13
-	readout.TextColor3 = Color3.fromRGB(140, 150, 165)
-	readout.Text = ""
-	readout.Parent = root
+	local onBar = columnText(body, "OnBar", PANEL_TOP + 138, 28, COLOR_MARKER_IN, SIZES.body, UIStyle.font(Enum.FontWeight.Heavy))
 
-	local verdict = Instance.new("TextLabel")
-	verdict.Name = "Verdict"
-	verdict.AnchorPoint = Vector2.new(0.5, 0.5)
-	verdict.Position = UDim2.fromScale(0.5, 0.86)
-	verdict.Size = UDim2.fromOffset(560, 40)
-	verdict.BackgroundTransparency = 1
-	verdict.Font = Enum.Font.GothamBold
-	verdict.TextSize = 28
-	verdict.TextColor3 = COLOR_TEXT
-	verdict.Text = ""
-	verdict.Parent = gui
+	local readout = columnText(body, "Readout", PANEL_TOP + 186, 150, C.muted, SIZES.small, UIStyle.font(Enum.FontWeight.Medium))
+	readout.Visible = UIStyle.ShowDevReadouts
+
+	local detail = columnText(body, "Detail", PANEL_TOP + TRACK_SCREEN_HEIGHT - 60, 60, C.white, SIZES.body,
+		UIStyle.font(Enum.FontWeight.Bold), Enum.TextYAlignment.Bottom)
+
+	-- The server's verdict, on a slab under the panel. Hidden while it has no text.
+	local verdictSlab = UIStyle.frame(root, "VerdictSlab", UDim2.fromOffset(0, TAG_OVERHANG + PANEL_HEIGHT + VERDICT_GAP),
+		UDim2.fromOffset(PANEL_WIDTH, VERDICT_HEIGHT), COLOR_PASS_SLAB, -2)
+	verdictSlab.Visible = false
+	UIStyle.stroke(verdictSlab, C.white, 2)
+	-- Big (TextSizes.big); only a verdict too long for the slab's width shrinks, never below TextSizes.small.
+	local verdict = UIStyle.label(verdictSlab, "Verdict", UDim2.fromOffset(16, 6), UDim2.new(1, -32, 1, -12), COLOR_PASS_TEXT,
+		UIStyle.heading(), Enum.TextXAlignment.Center)
+	local verdictLimit = Instance.new("UITextSizeConstraint")
+	verdictLimit.MaxTextSize = SIZES.big
+	verdictLimit.MinTextSize = SIZES.small
+	verdictLimit.Parent = verdict
+	verdict:GetPropertyChangedSignal("Text"):Connect(function()
+		verdictSlab.Visible = verdict.Text ~= ""
+	end)
 
 	return {
 		gui = gui,
@@ -247,8 +276,11 @@ local function build(instructionText: string): Visuals
 		meterFill = meterFill,
 		headline = headline,
 		instruction = instruction,
+		progress = progress,
+		onBar = onBar,
 		detail = detail,
 		readout = readout,
+		verdictSlab = verdictSlab,
 		verdict = verdict,
 	}
 end
@@ -283,7 +315,7 @@ local function redraw()
 
 	local scale = TRACK_SCREEN_HEIGHT / challenge.trackHeightPx
 
-	current.bar.Size = UDim2.fromOffset(TRACK_WIDTH - 10, challenge.barHeightPx * scale)
+	current.bar.Size = UDim2.fromOffset(BAR_WIDTH, challenge.barHeightPx * scale)
 	current.bar.Position = UDim2.new(0.5, 0, 0, toScreenY(challenge, state.barPosition))
 
 	current.marker.Position = UDim2.new(0.5, 0, 0, toScreenY(challenge, state.markerPosition))
@@ -292,6 +324,12 @@ local function redraw()
 	local fraction = math.clamp(state.progress / challenge.maxProgress, 0, 1)
 	current.meterFill.Size = UDim2.new(1, 0, fraction, 0)
 
+	-- The plain reading of the meter, and the marker's state in its own colour.
+	current.progress.Text = string.format("CONTROL  %d%%", math.floor(fraction * 100))
+	current.onBar.Text = if state.effectiveInside then "MARKER ON THE BAR" else "MARKER OFF THE BAR"
+	current.onBar.TextColor3 = if state.effectiveInside then COLOR_MARKER_IN else COLOR_MARKER_OUT
+
+	-- Testing numbers: always written (as before), shown only with UIStyle.ShowDevReadouts.
 	current.readout.Text = string.format(
 		"progress %5.1f / 100     on target %.2fs / %.2fs     clicks %d",
 		state.progress,
@@ -299,6 +337,23 @@ local function redraw()
 		state.elapsedSeconds,
 		state.clicksApplied
 	)
+end
+
+--[[
+	The lift a phase belongs to, read from the front of its phase name
+	("SquatControl" -> "Squat"), or nil if it names no known lift. Presentation
+	only: it picks the colour of the bar and meter and the word on the title tag.
+]]
+local function liftOf(challenge: ControlChallengeType): string?
+	local phase = challenge.phase
+	if typeof(phase) ~= "string" then
+		return nil
+	end
+	local lift = string.match(phase, "^%u%l+")
+	if lift ~= nil and (UIStyle.LiftColours[lift] :: Color3?) ~= nil then
+		return lift
+	end
+	return nil
 end
 
 local function stopStepping()
@@ -362,13 +417,19 @@ function ControlUI.run(challenge: ControlChallengeType, report: Reporter)
 	reporter = report
 	finished = false
 
-	current.headline.Text = challenge.displayName
+	local lift = liftOf(challenge)
+	local liftColour = if lift ~= nil then UIStyle.LiftColours[lift] else COLOR_LIFT_DEFAULT
+	current.bar.BackgroundColor3 = liftColour
+	current.meterFill.BackgroundColor3 = liftColour
+	current.progress.TextColor3 = liftColour
+	current.headline.Text = if lift ~= nil
+		then string.upper(lift) .. "  " .. challenge.displayName
+		else challenge.displayName
 	current.detail.Text = string.format(
-		"%.1f kg  -  %.0f%%  -  difficulty %.0f  -  hold %.1fs",
+		"%.1f kg  -  %.0f%%  -  difficulty %.0f",
 		challenge.attemptWeightKg,
 		challenge.intensityPercent,
-		challenge.baseDifficulty,
-		challenge.holdDurationSeconds
+		challenge.baseDifficulty
 	)
 	current.verdict.Text = ""
 	current.gui.Enabled = true
@@ -432,7 +493,8 @@ end
 
 	`detailLine` carries the server's own numbers, which is worth seeing during
 	tuning: if it ever disagrees with what the local readout showed, the server is
-	right and the difference is a bug worth knowing about.
+	right and the difference is a bug worth knowing about. It goes into the
+	testing readout, so it is seen only with UIStyle.ShowDevReadouts on.
 ]]
 function ControlUI.showVerdict(verdictText: string, passed: boolean, detailLine: string?)
 	local current = visuals
@@ -443,7 +505,8 @@ function ControlUI.showVerdict(verdictText: string, passed: boolean, detailLine:
 	finished = true
 	stopStepping()
 
-	current.verdict.TextColor3 = if passed then COLOR_PASS else COLOR_FAIL
+	current.verdictSlab.BackgroundColor3 = if passed then COLOR_PASS_SLAB else COLOR_FAIL_SLAB
+	current.verdict.TextColor3 = if passed then COLOR_PASS_TEXT else COLOR_FAIL_TEXT
 	current.verdict.Text = verdictText
 
 	if detailLine then
@@ -482,6 +545,8 @@ function ControlUI.hide()
 	current.readout.Text = ""
 	current.headline.Text = ""
 	current.detail.Text = ""
+	current.progress.Text = ""
+	current.onBar.Text = ""
 end
 
 --[[

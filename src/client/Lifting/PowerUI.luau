@@ -3,21 +3,48 @@
 	PowerUI
 	Client / Lifting
 
-	Draws the circular Test Your Might power phase and steps its simulation for
-	display.
+	Draws the bench's Test Your Might power phase and steps its simulation for
+	display. Built from UIStyle, the game's one look (user 2026-10-28: the power
+	circle becomes the coloured timing ring): the lift's coloured target with a
+	white four-point star at the centre, and an outer ring in the same colour
+	closing in on it as the player mashes.
+
+	Everything is ONE centred group (user 2026-10-28: "They need to be centered,
+	Bigger, Easier to read"), anchored at its own centre at 50% / 52% of the
+	screen, so UIStyle.fitToScreen shrinks it in place on short screens and
+	nothing drifts to one side. Top to bottom:
+
+		ring           the target on a dark backing disc, the outer ring (6 px,
+		               with a soft glow) closing in; above the target the cue
+		               tag (MASH! / GET READY TO HOLD / HOLD! / POWER!) at
+		               heading size, below it the hold bar during a hold
+		panel          directly under the ring, centred: the BENCH // POWER tag,
+		               the instruction and the attempt line (body size), then
+		               "POWER 62%" (heading size) and "HOLDS 0/2" (body size)
+		verdict        the server's verdict at TextSizes.big, centred under the
+		               panel, as a slanted tag (good = white, fail = red, like a
+		               meet's lights)
+
+	Testing readouts (seconds left, presses, the required rate, the server's
+	detail line) appear on an extra small line in the panel ONLY when
+	UIStyle.ShowDevReadouts is on; players never see them.
+
+	The ring's colour is the lift's (UIStyle.LiftColours; bench is red), read from
+	the phase's `lift` in PowerPhaseConfig.
 
 	THE RADIAL MAPPING
 
 		fraction = progress / completion threshold          clamped to 0..1
-		radius   = outerRadius - (outerRadius - innerRadius) x fraction
+		outer ring closing = fraction                       (UIStyle ring: 0 = wide, 1 = on the target)
 
-	The outer edge is 0% complete. The inner success circle is 100% complete. That
-	is the whole mental model, and there is nothing else for the player to satisfy:
-	the ring touching the inner circle IS the pass condition, because `fraction`
-	reaches 1 exactly when `progress` reaches `completionThreshold`, which is the
-	single condition the simulation tests.
+	The wide start is 0% complete. The outer ring sitting on the target is 100%
+	complete. That is the whole mental model, and there is nothing else for the
+	player to satisfy: the ring touching the target IS the pass condition, because
+	`fraction` reaches 1 exactly when `progress` reaches `completionThreshold`, which
+	is the single condition the simulation tests. Decay shows as the ring slipping
+	back outward.
 
-	The inner circle is therefore the SAME SIZE on every attempt. An earlier version
+	The target is therefore the SAME SIZE on every attempt. An earlier version
 	mapped progress across a fixed 0-100 scale and drew the target at the threshold,
 	which made a harder attempt show a visibly smaller circle. That was dropped
 	deliberately: difficulty belongs in how hard the ring is to move, not in where
@@ -27,12 +54,17 @@
 
 	This is purely presentational. The authoritative model is a single progress
 	value, there is no two-dimensional cursor, and nothing about the simulation
-	changed to accommodate the circle.
+	changed to accommodate the ring.
 
-	Circles are square frames with a 50% UICorner, so no arc segments are needed
-	here, unlike the skill check's ring.
+	WHAT THE CUES MEAN
 
-	WHEN THE RING REACHES THE SUCCESS CIRCLE IT STOPS, FOR GOOD
+		Mash          ring in the lift's colour, black tag "MASH!"; the target
+		              flashes on every press that counts
+		HoldWarning   ring yellow, black tag with yellow edge "GET READY TO HOLD"
+		Hold          ring white, yellow tag "HOLD!", the hold bar filling
+		Passed        ring white, white tag "POWER!"
+
+	WHEN THE RING REACHES THE TARGET IT STOPS, FOR GOOD
 
 	Reaching the completion threshold is terminal in the simulation, so stepping halts the
 	moment it happens. The ring cannot drift back out while the player waits for the
@@ -57,6 +89,10 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LiftingFolder = Shared:WaitForChild("Lifting")
 local Simulation = require(LiftingFolder:WaitForChild("PowerSimulation"))
+local PowerPhaseConfig = require(Shared:WaitForChild("Config"):WaitForChild("PowerPhaseConfig"))
+
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local C = UIStyle.Colours
 
 local PowerUI = {}
 
@@ -64,34 +100,56 @@ local PowerUI = {}
 type PowerChallengeType = any
 
 --[[
-	Geometry, in pixels. Presentation only.
+	Geometry, in pixels, at the design screen height (UIStyle.fitToScreen
+	shrinks the whole group on shorter screens). Presentation only.
 
-	OUTER_RADIUS is power 0, INNER_RADIUS is power 100. The gap between them is the
-	travel the player's ring covers.
+	TARGET_SIZE is the target's diameter (power 100), 1.4 times the old 116.
+	UIStyle's ring opens to 2.6 times that (power 0), so FIELD_SIZE, the dark
+	disc the ring moves on, is just over 2.6 * TARGET_SIZE.
 ]]
-local OUTER_RADIUS = 150
-local INNER_RADIUS = 20
-local RING_THICKNESS = 6
-local SUCCESS_THICKNESS = 4
+local TARGET_SIZE = 162
+local FIELD_SIZE = 424
+local TARGET_RADIUS = TARGET_SIZE / 2
 
-local COLOR_TRACK = Color3.fromRGB(40, 44, 52)
-local COLOR_RING_LOW = Color3.fromRGB(240, 148, 64)
-local COLOR_RING_HELD = Color3.fromRGB(120, 180, 255)
-local COLOR_RING_DONE = Color3.fromRGB(96, 214, 128)
-local COLOR_SUCCESS = Color3.fromRGB(255, 255, 255)
-local COLOR_TEXT = Color3.fromRGB(226, 232, 240)
-local COLOR_PASS = Color3.fromRGB(96, 214, 128)
-local COLOR_FAIL = Color3.fromRGB(240, 92, 92)
+-- The closing ring: thicker than UIStyle's default, with a soft glow either side.
+local RING_THICKNESS = 6
+local GLOW_WIDTH = 14
+
+-- The cue tag above the target and the hold bar below it.
+local PROMPT_HEIGHT = 50
+local PROMPT_OFFSET = TARGET_RADIUS + 42 -- from the ring's centre up to the tag's centre
+local HOLD_BAR_WIDTH = 260
+local HOLD_BAR_HEIGHT = 20
+local HOLD_BAR_OFFSET = TARGET_RADIUS + 30 -- from the ring's centre down to the bar's centre
+
+-- The info panel under the ring. The dev line only exists when ShowDevReadouts is on.
+local TEXT = UIStyle.TextSizes
+local SHOW_DEV = UIStyle.ShowDevReadouts
+local PANEL_WIDTH = 680
+local TITLE_WIDTH = 320
+local TITLE_HEIGHT = 44
+local INSTRUCTION_Y = 32
+local DETAIL_Y = 62
+local PROGRESS_Y = 94
+local DEV_Y = 134
+local PANEL_HEIGHT = if SHOW_DEV then 166 else 142
+local PANEL_GAP = 36 -- ring to panel; the title tag straddles the panel's top edge
+
+-- The verdict under the panel.
+local VERDICT_HEIGHT = 64
+local VERDICT_GAP = 20
+
+local GROUP_WIDTH = PANEL_WIDTH
+local GROUP_HEIGHT = FIELD_SIZE + PANEL_GAP + PANEL_HEIGHT + VERDICT_GAP + VERDICT_HEIGHT
+local GROUP_POSITION = UIStyle.MinigameCentre
+
+-- Used when a phase names no lift colour.
+local DEFAULT_LIFT_COLOUR = UIStyle.LiftColours.Bench
 
 --[[
-	The three instruction states must be unmistakable. Each one changes the prompt
-	text, the prompt colour and the ring's colour together rather than relying on
-	any single cue.
+	The instruction states must be unmistakable. Each one changes the tag text, the
+	tag colours and the ring's colour together rather than relying on any single cue.
 ]]
-local COLOR_STATE_MASH = Color3.fromRGB(96, 214, 128)
-local COLOR_STATE_WARNING = Color3.fromRGB(255, 196, 64)
-local COLOR_STATE_HOLD = Color3.fromRGB(120, 180, 255)
-
 local TEXT_STATE_MASH = "MASH!"
 local TEXT_STATE_WARNING = "GET READY TO HOLD"
 local TEXT_STATE_HOLD = "HOLD!"
@@ -99,18 +157,32 @@ local TEXT_STATE_DONE = "POWER!"
 
 export type Reporter = (events: { Simulation.InputEvent }) -> ()
 
+type Ring = {
+	holder: Frame,
+	setClosing: (amount: number) -> (),
+	setColour: (colour: Color3) -> (),
+	flash: () -> (),
+}
+
 type Visuals = {
 	gui: ScreenGui,
-	successCircle: Frame,
-	playerRing: Frame,
-	playerRingStroke: UIStroke,
-	headline: TextLabel,
-	detail: TextLabel,
-	readout: TextLabel,
-	verdict: TextLabel,
-	statePrompt: TextLabel,
+	target: Ring,
+	-- The soft glow around the closing ring; recoloured with it.
+	glowStrokes: { UIStroke },
+	promptTag: Frame,
+	promptStroke: UIStroke,
+	promptText: TextLabel,
 	holdBar: Frame,
 	holdBarFill: Frame,
+	titleText: TextLabel,
+	detail: TextLabel,
+	-- "POWER 62%   HOLDS 0/2", for players.
+	readout: TextLabel,
+	-- The testing line; nil unless UIStyle.ShowDevReadouts is on.
+	devReadout: TextLabel?,
+	verdictTag: Frame,
+	verdictStroke: UIStroke,
+	verdictText: TextLabel,
 }
 
 local visuals: Visuals? = nil
@@ -123,6 +195,10 @@ local accumulator = 0
 local phaseClock = 0
 local reporter: Reporter? = nil
 local finished = true
+
+-- The running phase's lift colour, and the colour the ring was last given.
+local liftColour: Color3 = DEFAULT_LIFT_COLOUR
+local shownRingColour: Color3? = nil
 
 --[[
 	Every transition the player produced, in order, reported to the server at the
@@ -146,206 +222,214 @@ local inputHeld = false
 local liveHeld = false
 local lastAcceptedPress = -math.huge
 
+local function round(target: GuiObject)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.5, 0)
+	corner.Parent = target
+end
+
+--[[
+	A one-line row of panel text (UIStyle.text at `textSize`), centred, drawn
+	above the panel's grid. Never wraps into the row below: a line that is too
+	long for the panel shrinks just enough to fit, but never below
+	TextSizes.small.
+]]
+local function panelLine(parent: Instance, name: string, y: number, height: number, textSize: number, colour: Color3,
+	font: Font?): TextLabel
+	local label = UIStyle.text(parent, name, UDim2.fromOffset(18, y), UDim2.new(1, -36, 0, height), textSize, colour, font,
+		Enum.TextXAlignment.Center)
+	label.ZIndex = 3
+	label.TextWrapped = false
+	label.TextScaled = true
+	local fit = Instance.new("UITextSizeConstraint")
+	fit.MaxTextSize = textSize
+	fit.MinTextSize = math.min(textSize, TEXT.small)
+	fit.Parent = label
+	return label
+end
+
+--[[
+	Gives the closing ring its 6 px line and a soft glow: two faint, wide strokes,
+	one just outside the line and one just inside it. They are children of the
+	ring's outer circle, so they close in with it exactly. Returns the glow strokes
+	so setRingColour can keep them in the ring's colour.
+]]
+local function thickenAndGlow(target: Ring, colour: Color3): { UIStroke }
+	local outer = target.holder:FindFirstChild("Outer")
+	if outer == nil or not outer:IsA("GuiObject") then
+		return {}
+	end
+	local line = outer:FindFirstChildOfClass("UIStroke")
+	if line then
+		line.Thickness = RING_THICKNESS
+	end
+
+	local strokes = {}
+	local glows = {
+		{ name = "GlowOut", inset = 0, transparency = 0.78 },
+		{ name = "GlowIn", inset = GLOW_WIDTH * 2, transparency = 0.86 },
+	}
+	for _, spec in ipairs(glows) do
+		local glow = Instance.new("Frame")
+		glow.Name = spec.name
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.Position = UDim2.fromScale(0.5, 0.5)
+		glow.Size = UDim2.new(1, -spec.inset, 1, -spec.inset)
+		glow.BackgroundTransparency = 1
+		round(glow)
+		glow.Parent = outer
+		table.insert(strokes, UIStyle.stroke(glow, colour, GLOW_WIDTH, spec.transparency))
+	end
+	return strokes
+end
+
 local function build(instructionText: string): Visuals
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "PowerUI"
+	UIStyle.fitToScreen(gui) -- shrink on short screens so nothing overlaps
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Enabled = false
 
+	--[[
+		The one top-level piece: ring, panel and verdict stacked in a single group,
+		anchored at its centre so it stays centred however it is scaled.
+	]]
+	local group = Instance.new("Frame")
+	group.Name = "Group"
+	group.AnchorPoint = Vector2.new(0.5, 0.5)
+	group.Position = GROUP_POSITION
+	group.Size = UDim2.fromOffset(GROUP_WIDTH, GROUP_HEIGHT)
+	group.BackgroundTransparency = 1
+	group.Parent = gui
+
 	local field = Instance.new("Frame")
 	field.Name = "Field"
-	field.AnchorPoint = Vector2.new(0.5, 0.5)
-	field.Position = UDim2.fromScale(0.5, 0.5)
-	field.Size = UDim2.fromOffset(OUTER_RADIUS * 2, OUTER_RADIUS * 2)
+	field.AnchorPoint = Vector2.new(0.5, 0)
+	field.Position = UDim2.fromScale(0.5, 0)
+	field.Size = UDim2.fromOffset(FIELD_SIZE, FIELD_SIZE)
 	field.BackgroundTransparency = 1
-	field.Parent = gui
-
-	-- The static outer circle: where the ring begins at power zero.
-	local track = Instance.new("Frame")
-	track.Name = "Track"
-	track.AnchorPoint = Vector2.new(0.5, 0.5)
-	track.Position = UDim2.fromScale(0.5, 0.5)
-	track.Size = UDim2.fromOffset(OUTER_RADIUS * 2, OUTER_RADIUS * 2)
-	track.BackgroundTransparency = 1
-	track.ZIndex = 1
-	track.Parent = field
-
-	local trackCorner = Instance.new("UICorner")
-	trackCorner.CornerRadius = UDim.new(0.5, 0)
-	trackCorner.Parent = track
-
-	local trackStroke = Instance.new("UIStroke")
-	trackStroke.Thickness = 2
-	trackStroke.Color = COLOR_TRACK
-	trackStroke.Parent = track
+	field.Parent = group
 
 	--[[
-		The inner success circle. Sized per challenge from radius at 100% completion, so its
-		size communicates the attempt's difficulty before the player presses anything.
+		A dark see-through disc behind the whole ring, so the lift's colour reads
+		against any scene, with a faint white edge where the outer ring starts at
+		power zero.
 	]]
-	local successCircle = Instance.new("Frame")
-	successCircle.Name = "SuccessCircle"
-	successCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-	successCircle.Position = UDim2.fromScale(0.5, 0.5)
-	successCircle.Size = UDim2.fromOffset(INNER_RADIUS * 2, INNER_RADIUS * 2)
-	successCircle.BackgroundColor3 = COLOR_SUCCESS
-	successCircle.BackgroundTransparency = 0.88
-	successCircle.BorderSizePixel = 0
-	successCircle.ZIndex = 2
-	successCircle.Parent = field
-
-	local successCorner = Instance.new("UICorner")
-	successCorner.CornerRadius = UDim.new(0.5, 0)
-	successCorner.Parent = successCircle
-
-	local successStroke = Instance.new("UIStroke")
-	successStroke.Thickness = SUCCESS_THICKNESS
-	successStroke.Color = COLOR_SUCCESS
-	successStroke.Parent = successCircle
-
-	-- The player's ring. Contracts inward as power builds.
-	local playerRing = Instance.new("Frame")
-	playerRing.Name = "PlayerRing"
-	playerRing.AnchorPoint = Vector2.new(0.5, 0.5)
-	playerRing.Position = UDim2.fromScale(0.5, 0.5)
-	playerRing.Size = UDim2.fromOffset(OUTER_RADIUS * 2, OUTER_RADIUS * 2)
-	playerRing.BackgroundTransparency = 1
-	playerRing.ZIndex = 4
-	playerRing.Parent = field
-
-	local playerCorner = Instance.new("UICorner")
-	playerCorner.CornerRadius = UDim.new(0.5, 0)
-	playerCorner.Parent = playerRing
-
-	local playerRingStroke = Instance.new("UIStroke")
-	playerRingStroke.Thickness = RING_THICKNESS
-	playerRingStroke.Color = COLOR_RING_LOW
-	playerRingStroke.Parent = playerRing
-
-	local headline = Instance.new("TextLabel")
-	headline.Name = "Headline"
-	headline.AnchorPoint = Vector2.new(0.5, 1)
-	headline.Position = UDim2.new(0.5, 0, 0, -58)
-	headline.Size = UDim2.fromOffset(360, 32)
-	headline.BackgroundTransparency = 1
-	headline.Font = Enum.Font.GothamBold
-	headline.TextSize = 26
-	headline.TextColor3 = COLOR_TEXT
-	headline.Text = ""
-	headline.Parent = field
-
-	local instruction = Instance.new("TextLabel")
-	instruction.Name = "Instruction"
-	instruction.AnchorPoint = Vector2.new(0.5, 1)
-	instruction.Position = UDim2.new(0.5, 0, 0, -36)
-	instruction.Size = UDim2.fromOffset(520, 20)
-	instruction.BackgroundTransparency = 1
-	instruction.Font = Enum.Font.GothamMedium
-	instruction.TextSize = 13
-	instruction.TextColor3 = Color3.fromRGB(150, 160, 175)
-	instruction.Text = instructionText
-	instruction.Parent = field
+	local backing = UIStyle.frame(field, "Backing", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), C.navyDeep)
+	backing.BackgroundTransparency = 0.55
+	backing.ZIndex = 1
+	round(backing)
+	UIStyle.stroke(backing, C.white, 2, 0.7)
 
 	--[[
-		The instruction prompt, in the middle of the circle. Deliberately the largest
-		thing on screen: the player should never have to work out whether they are
-		meant to be mashing or holding.
+		The target and the outer ring. The target is 100% completion and the same
+		size on every attempt; the outer ring closes in on it as power builds.
 	]]
-	local statePrompt = Instance.new("TextLabel")
-	statePrompt.Name = "StatePrompt"
-	statePrompt.AnchorPoint = Vector2.new(0.5, 0.5)
-	statePrompt.Position = UDim2.fromScale(0.5, 0.5)
-	statePrompt.Size = UDim2.fromOffset(360, 52)
-	statePrompt.BackgroundTransparency = 1
-	statePrompt.Font = Enum.Font.GothamBlack
-	statePrompt.TextSize = 36
-	statePrompt.TextColor3 = COLOR_STATE_MASH
-	statePrompt.TextStrokeTransparency = 0.4
-	statePrompt.Text = ""
-	statePrompt.ZIndex = 6
-	statePrompt.Parent = field
+	local target = UIStyle.ring(field, "Target", UDim2.fromScale(0.5, 0.5), TARGET_SIZE, DEFAULT_LIFT_COLOUR) :: any
+	target.holder.ZIndex = 2
+	local glowStrokes = thickenAndGlow(target :: Ring, DEFAULT_LIFT_COLOUR)
 
 	--[[
-		Hold progress, shown only during a hold. Fills as the continuous run builds
-		toward the required duration, so the player can see that holding is working
-		and roughly when it will be done.
+		The cue tag, just above the target. Deliberately the boldest thing on screen:
+		the player should never have to work out whether they are meant to be
+		mashing or holding. It grows to fit its text.
 	]]
-	local holdBar = Instance.new("Frame")
-	holdBar.Name = "HoldBar"
-	holdBar.AnchorPoint = Vector2.new(0.5, 0)
-	holdBar.Position = UDim2.fromScale(0.5, 0.62)
-	holdBar.Size = UDim2.fromOffset(200, 10)
-	holdBar.BackgroundColor3 = Color3.fromRGB(24, 27, 33)
-	holdBar.BorderSizePixel = 0
+	local promptTag = UIStyle.frame(field, "PromptTag", UDim2.new(0.5, 0, 0.5, -PROMPT_OFFSET),
+		UDim2.fromOffset(0, PROMPT_HEIGHT), C.ink, -3)
+	promptTag.AnchorPoint = Vector2.new(0.5, 0.5)
+	promptTag.AutomaticSize = Enum.AutomaticSize.X
+	promptTag.ZIndex = 4
+	promptTag.Visible = false
+	local promptStroke = UIStyle.stroke(promptTag, C.white, 2)
+	local promptPadding = Instance.new("UIPadding")
+	promptPadding.PaddingLeft = UDim.new(0, 22)
+	promptPadding.PaddingRight = UDim.new(0, 22)
+	promptPadding.Parent = promptTag
+	local promptText = UIStyle.text(promptTag, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(0, 1), TEXT.heading,
+		C.white, UIStyle.heading(), Enum.TextXAlignment.Center)
+	promptText.AutomaticSize = Enum.AutomaticSize.X
+	promptText.TextWrapped = false
+	promptText.ZIndex = 4
+
+	--[[
+		Hold progress, shown only during a hold, just below the target. Fills as the
+		continuous run builds toward the required duration, so the player can see that
+		holding is working and roughly when it will be done.
+	]]
+	local holdBar = UIStyle.frame(field, "HoldBar", UDim2.new(0.5, 0, 0.5, HOLD_BAR_OFFSET),
+		UDim2.fromOffset(HOLD_BAR_WIDTH, HOLD_BAR_HEIGHT), C.navyDeep)
+	holdBar.AnchorPoint = Vector2.new(0.5, 0.5)
+	holdBar.ZIndex = 4
 	holdBar.Visible = false
-	holdBar.ZIndex = 6
-	holdBar.Parent = field
+	UIStyle.stroke(holdBar, C.white, 2)
 
-	local holdCorner = Instance.new("UICorner")
-	holdCorner.CornerRadius = UDim.new(0, 5)
-	holdCorner.Parent = holdBar
+	local holdBarFill = UIStyle.frame(holdBar, "Fill", UDim2.fromScale(0, 0), UDim2.fromScale(0, 1), C.yellow)
+	holdBarFill.ZIndex = 4
 
-	local holdBarFill = Instance.new("Frame")
-	holdBarFill.Name = "Fill"
-	holdBarFill.Size = UDim2.fromScale(0, 1)
-	holdBarFill.BackgroundColor3 = COLOR_STATE_HOLD
-	holdBarFill.BorderSizePixel = 0
-	holdBarFill.Parent = holdBar
+	--[[
+		The panel directly under the ring, centred: the title tag straddling its top
+		edge, the instruction, the attempt line, then the progress and holds.
+	]]
+	local panelHolder, panel = UIStyle.panel(group, "Info", UDim2.new(0.5, -PANEL_WIDTH / 2, 0, FIELD_SIZE + PANEL_GAP),
+		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
+	local titleText = UIStyle.titleTag(panelHolder, "Tag", "",
+		UDim2.new(0.5, -TITLE_WIDTH / 2, 0, -TITLE_HEIGHT / 2 - 4), UDim2.fromOffset(TITLE_WIDTH, TITLE_HEIGHT))
 
-	local holdFillCorner = Instance.new("UICorner")
-	holdFillCorner.CornerRadius = UDim.new(0, 5)
-	holdFillCorner.Parent = holdBarFill
+	local instruction = panelLine(panel, "Instruction", INSTRUCTION_Y, 26, TEXT.body, C.white, UIStyle.heading())
+	instruction.Text = instructionText
 
-	local detail = Instance.new("TextLabel")
-	detail.Name = "Detail"
-	detail.AnchorPoint = Vector2.new(0.5, 0)
-	detail.Position = UDim2.new(0.5, 0, 1, 14)
-	detail.Size = UDim2.fromOffset(520, 20)
-	detail.BackgroundTransparency = 1
-	detail.Font = Enum.Font.Gotham
-	detail.TextSize = 14
-	detail.TextColor3 = Color3.fromRGB(176, 184, 196)
-	detail.Text = ""
-	detail.Parent = field
+	local detail = panelLine(panel, "Detail", DETAIL_Y, 26, TEXT.body, C.muted)
 
-	local readout = Instance.new("TextLabel")
-	readout.Name = "Readout"
-	readout.AnchorPoint = Vector2.new(0.5, 0)
-	readout.Position = UDim2.new(0.5, 0, 1, 36)
-	readout.Size = UDim2.fromOffset(560, 20)
-	readout.BackgroundTransparency = 1
-	readout.Font = Enum.Font.Code
-	readout.TextSize = 13
-	readout.TextColor3 = Color3.fromRGB(140, 150, 165)
-	readout.Text = ""
-	readout.Parent = field
+	-- "POWER 62%" at heading size, then "HOLDS 0/2" at body size (rich text, see redraw).
+	local readout = panelLine(panel, "Readout", PROGRESS_Y, 34, TEXT.body, C.white, UIStyle.heading())
+	readout.RichText = true
+	readout.TextScaled = false -- short and fixed: keep the rich-text sizes exact
 
-	local verdict = Instance.new("TextLabel")
-	verdict.Name = "Verdict"
-	verdict.AnchorPoint = Vector2.new(0.5, 0.5)
-	verdict.Position = UDim2.fromScale(0.5, 0.88)
-	verdict.Size = UDim2.fromOffset(620, 40)
-	verdict.BackgroundTransparency = 1
-	verdict.Font = Enum.Font.GothamBold
-	verdict.TextSize = 28
-	verdict.TextColor3 = COLOR_TEXT
-	verdict.Text = ""
-	verdict.Parent = gui
+	local devReadout: TextLabel? = nil
+	if SHOW_DEV then
+		devReadout = panelLine(panel, "DevReadout", DEV_Y, 20, TEXT.small, C.muted, UIStyle.font(Enum.FontWeight.Medium))
+	end
+
+	--[[
+		The server's verdict: a slanted tag centred under the panel, white for a pass
+		and red for a fail. It grows to fit its text and is hidden while it has none.
+	]]
+	local verdictTag = UIStyle.frame(group, "Verdict", UDim2.new(0.5, 0, 1, -VERDICT_HEIGHT / 2),
+		UDim2.fromOffset(0, VERDICT_HEIGHT), C.white, -2)
+	verdictTag.AnchorPoint = Vector2.new(0.5, 0.5)
+	verdictTag.AutomaticSize = Enum.AutomaticSize.X
+	verdictTag.ZIndex = 10
+	verdictTag.Visible = false
+	local verdictStroke = UIStyle.stroke(verdictTag, C.white, 2)
+	local verdictPadding = Instance.new("UIPadding")
+	verdictPadding.PaddingLeft = UDim.new(0, 28)
+	verdictPadding.PaddingRight = UDim.new(0, 28)
+	verdictPadding.Parent = verdictTag
+
+	local verdictText = UIStyle.text(verdictTag, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(0, 1), TEXT.big, C.ink,
+		UIStyle.heading(), Enum.TextXAlignment.Center)
+	verdictText.AutomaticSize = Enum.AutomaticSize.X
+	verdictText.TextWrapped = false
+	verdictText.ZIndex = 10
 
 	return {
 		gui = gui,
-		successCircle = successCircle,
-		playerRing = playerRing,
-		playerRingStroke = playerRingStroke,
-		headline = headline,
-		detail = detail,
-		readout = readout,
-		verdict = verdict,
-		statePrompt = statePrompt,
+		target = target :: Ring,
+		glowStrokes = glowStrokes,
+		promptTag = promptTag,
+		promptStroke = promptStroke,
+		promptText = promptText,
 		holdBar = holdBar,
 		holdBarFill = holdBarFill,
+		titleText = titleText,
+		detail = detail,
+		readout = readout,
+		devReadout = devReadout,
+		verdictTag = verdictTag,
+		verdictStroke = verdictStroke,
+		verdictText = verdictText,
 	}
 end
 
@@ -362,14 +446,39 @@ function PowerUI.mount(parent: Instance, instructionText: string)
 end
 
 --[[
-	The radial mapping. Power 0 is the outer edge, power progressMax the innermost.
+	The radial mapping. Power 0 is the wide start, the completion threshold is the
+	outer ring sitting on the target.
 ]]
 local function completionFraction(challenge: PowerChallengeType, progress: number): number
 	return math.clamp(progress / challenge.completionThreshold, 0, 1)
 end
 
-local function radiusForProgress(challenge: PowerChallengeType, progress: number): number
-	return OUTER_RADIUS - (OUTER_RADIUS - INNER_RADIUS) * completionFraction(challenge, progress)
+-- The lift this phase belongs to ("Bench"), from its config, or nil.
+local function liftNameFor(challenge: PowerChallengeType): string?
+	local phase = (PowerPhaseConfig.Phases :: any)[challenge.phase]
+	if phase ~= nil and typeof(phase.lift) == "string" then
+		return phase.lift
+	end
+	return nil
+end
+
+local function setRingColour(current: Visuals, colour: Color3)
+	if shownRingColour ~= colour then
+		shownRingColour = colour
+		current.target.setColour(colour)
+		for _, glow in ipairs(current.glowStrokes) do
+			glow.Color = colour
+		end
+	end
+end
+
+-- Shows the cue tag with its text and colours, or hides it when `text` is empty.
+local function setPrompt(current: Visuals, text: string, fill: Color3, textColour: Color3, edge: Color3)
+	current.promptTag.Visible = text ~= ""
+	current.promptText.Text = text
+	current.promptTag.BackgroundColor3 = fill
+	current.promptText.TextColor3 = textColour
+	current.promptStroke.Color = edge
 end
 
 local function redraw()
@@ -380,65 +489,68 @@ local function redraw()
 		return
 	end
 
-	local radius = radiusForProgress(challenge, state.progress)
-	current.playerRing.Size = UDim2.fromOffset(radius * 2, radius * 2)
+	current.target.setClosing(completionFraction(challenge, state.progress))
 
 	--[[
-		Every state cue moves together: prompt text, prompt colour and ring colour.
+		Every state cue moves together: tag text, tag colours and ring colour.
 
-		During a hold the ring turns blue and stops moving, which makes the paused
+		During a hold the ring turns white and stops moving, which makes the paused
 		decay legible rather than looking like a freeze.
 	]]
 	if state.outcome == "Passed" then
-		-- Terminal. The ring is parked on the success circle and will not move again.
-		current.statePrompt.Text = TEXT_STATE_DONE
-		current.statePrompt.TextColor3 = COLOR_RING_DONE
-		current.playerRingStroke.Color = COLOR_RING_DONE
+		-- Terminal. The ring is parked on the target and will not move again.
+		setPrompt(current, TEXT_STATE_DONE, C.white, C.ink, C.white)
+		setRingColour(current, C.white)
 		current.holdBar.Visible = false
 	elseif state.phaseState == "Hold" then
-		current.statePrompt.Text = TEXT_STATE_HOLD
-		current.statePrompt.TextColor3 = COLOR_STATE_HOLD
-		current.playerRingStroke.Color = COLOR_RING_HELD
+		setPrompt(current, TEXT_STATE_HOLD, C.yellow, C.ink, C.white)
+		setRingColour(current, C.white)
 
 		current.holdBar.Visible = true
 		local progress = math.clamp(state.heldRunSeconds / challenge.requiredHoldSeconds, 0, 1)
 		current.holdBarFill.Size = UDim2.fromScale(progress, 1)
 		current.holdBarFill.BackgroundColor3 = if progress >= 1
-			then COLOR_RING_DONE
-			else COLOR_STATE_HOLD
+			then C.white
+			else C.yellow
 	elseif state.phaseState == "HoldWarning" then
-		current.statePrompt.Text = TEXT_STATE_WARNING
-		current.statePrompt.TextColor3 = COLOR_STATE_WARNING
-		current.playerRingStroke.Color = COLOR_STATE_WARNING
+		setPrompt(current, TEXT_STATE_WARNING, C.ink, C.yellow, C.yellow)
+		setRingColour(current, C.yellow)
 		current.holdBar.Visible = false
 	else
-		current.statePrompt.Text = TEXT_STATE_MASH
-		current.statePrompt.TextColor3 = COLOR_STATE_MASH
-		current.playerRingStroke.Color = COLOR_RING_LOW
+		setPrompt(current, TEXT_STATE_MASH, C.ink, C.white, liftColour)
+		setRingColour(current, liftColour)
 		current.holdBar.Visible = false
 	end
 
 	--[[
 		Progress as a plain percentage of completion, because that is the only thing
-		the player needs: the circle already says how far there is to go.
+		the player needs: the ring already says how far there is to go.
 
 		This deliberately no longer reads "power X / Y". That phrasing implied a
 		second stat to satisfy on top of finishing the circle, which was never true
 		and read as a bug when the two appeared to disagree.
 
-		Everything after the percentage is DEV ONLY and is labelled so. It goes when
-		the phase stops being tuned.
+		The holds count sits beside it at body size. The raw testing numbers are
+		DEV ONLY: they go on their own small line, which exists only while
+		UIStyle.ShowDevReadouts is on.
 	]]
-	local remaining = math.max(challenge.durationSeconds - state.elapsedSeconds, 0)
-	current.readout.Text = string.format(
-		"progress %3.0f%%      [dev]  %.1fs left   %d presses   need %.1f/s   holds %d/%d",
-		completionFraction(challenge, state.progress) * 100,
-		remaining,
-		state.inputsApplied,
-		challenge.requiredInputsPerSecond,
-		state.holdsCompleted,
-		#challenge.holdTriggers
-	)
+	local percent = string.format("%.0f%%", completionFraction(challenge, state.progress) * 100)
+	local holdCount = #challenge.holdTriggers
+	current.readout.Text = if holdCount > 0
+		then string.format('<font size="%d">POWER %s</font>      HOLDS %d/%d', TEXT.heading, percent,
+			state.holdsCompleted, holdCount)
+		else string.format('<font size="%d">POWER %s</font>', TEXT.heading, percent)
+
+	local devReadout = current.devReadout
+	if devReadout then
+		local remaining = math.max(challenge.durationSeconds - state.elapsedSeconds, 0)
+		devReadout.Text = string.format(
+			"[dev]  %.1fs left   %d presses   need %.1f/s",
+			remaining,
+			state.inputsApplied,
+			challenge.requiredInputsPerSecond
+		)
+	end
 end
 
 local function stopStepping()
@@ -515,22 +627,26 @@ function PowerUI.run(challenge: PowerChallengeType, report: Reporter)
 	finished = false
 
 	--[[
-		The success circle is 100% completion, so it sits at INNER_RADIUS on every
-		attempt. Set here rather than left at its built size so it cannot drift if the
-		geometry constants change.
+		The ring takes the lift's colour (bench red). The target stays the same size
+		on every attempt: it is 100% completion, never a measure of difficulty.
 	]]
-	current.successCircle.Size = UDim2.fromOffset(INNER_RADIUS * 2, INNER_RADIUS * 2)
+	local liftName = liftNameFor(challenge)
+	liftColour = if liftName ~= nil then UIStyle.LiftColours[liftName] or DEFAULT_LIFT_COLOUR else DEFAULT_LIFT_COLOUR
+	shownRingColour = nil
 
-	current.headline.Text = challenge.displayName
+	current.titleText.Text = if liftName ~= nil
+		then string.format("%s // %s", string.upper(liftName), challenge.displayName)
+		else challenge.displayName
 	current.detail.Text = string.format(
-		"%.1f kg  -  %.0f%%  -  difficulty %.0f  -  %d holds of %.2fs",
+		"%.1f kg - %.0f%% - difficulty %.0f - %d holds of %.2fs",
 		challenge.attemptWeightKg,
 		challenge.intensityPercent,
 		challenge.baseDifficulty,
 		#challenge.holdTriggers,
 		challenge.requiredHoldSeconds
 	)
-	current.verdict.Text = ""
+	current.verdictText.Text = ""
+	current.verdictTag.Visible = false
 	current.holdBar.Visible = false
 	current.gui.Enabled = true
 	redraw()
@@ -549,6 +665,9 @@ function PowerUI.run(challenge: PowerChallengeType, report: Reporter)
 
 		local dt = challenge.fixedTimestepSeconds
 		local minimumGap = 1 / challenge.maxInputsPerSecond
+
+		-- Whether any press this frame paid progress, for the target's flash. Display only.
+		local pressPaid = false
 
 		--[[
 			Fixed-timestep accumulator, so the local simulation steps exactly as the
@@ -581,11 +700,19 @@ function PowerUI.run(challenge: PowerChallengeType, report: Reporter)
 			end
 			pendingEvents = keep
 
+			-- Mash and the warning are the states where a press pays (PowerSimulation).
+			if pressesThisStep > 0 and (state.phaseState == "Mash" or state.phaseState == "HoldWarning") then
+				pressPaid = true
+			end
+
 			Simulation.step(challenge, state, pressesThisStep, liveHeld)
 			accumulator -= dt
 			stepsThisFrame += 1
 		end
 
+		if pressPaid then
+			current.target.flash()
+		end
 		redraw()
 
 		if state.outcome ~= "Running" then
@@ -619,14 +746,21 @@ function PowerUI.showVerdict(verdictText: string, passed: boolean, detailLine: s
 	finished = true
 	stopStepping()
 
-	current.statePrompt.Text = if passed then TEXT_STATE_DONE else ""
-	current.statePrompt.TextColor3 = COLOR_RING_DONE
+	-- Good = white, fail = red, on the ring as on the verdict.
+	setPrompt(current, if passed then TEXT_STATE_DONE else "", C.white, C.ink, C.white)
+	setRingColour(current, if passed then C.white else C.red)
 	current.holdBar.Visible = false
-	current.verdict.TextColor3 = if passed then COLOR_PASS else COLOR_FAIL
-	current.verdict.Text = verdictText
 
-	if detailLine then
-		current.readout.Text = detailLine
+	current.verdictText.Text = verdictText
+	current.verdictTag.Visible = verdictText ~= ""
+	current.verdictTag.BackgroundColor3 = if passed then C.white else C.red
+	current.verdictText.TextColor3 = if passed then C.ink else C.white
+	current.verdictStroke.Color = C.white
+
+	-- The server's raw detail line is a testing readout: dev line only.
+	local devReadout = current.devReadout
+	if detailLine and devReadout then
+		devReadout.Text = detailLine
 	end
 end
 
@@ -643,11 +777,16 @@ function PowerUI.hide()
 	stopStepping()
 
 	current.gui.Enabled = false
-	current.verdict.Text = ""
+	current.verdictText.Text = ""
+	current.verdictTag.Visible = false
 	current.readout.Text = ""
-	current.headline.Text = ""
+	local devReadout = current.devReadout
+	if devReadout then
+		devReadout.Text = ""
+	end
+	current.titleText.Text = ""
 	current.detail.Text = ""
-	current.statePrompt.Text = ""
+	setPrompt(current, "", C.ink, C.white, C.white)
 	current.holdBar.Visible = false
 end
 

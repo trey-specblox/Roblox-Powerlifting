@@ -1520,7 +1520,68 @@ and polish.
   STATS screen (a key plus a button; Competition Numbers, technique stats,
   class); the "E" prompts in the same style. Rollout order: style kit +
   Mock Meet (overlap fix) first for the user's approval, then the lift
-  minigames, the rack menu and prompts, the stats screen, the rhythm game. After
+  minigames, the rack menu and prompts, the stats screen, the rhythm game.
+  STEP 1 BUILT (2026-10-28, NOT committed): new src/client/UI/UIStyle.luau
+  (colours, the lift colours, panel with grid + yellow slab, titleTag,
+  sectionHead, button outline/primary/danger, exitButton, ring); MockMeetUI
+  rebuilt from it (title top left, LEAVE top right, SCORECARD panel, action
+  panel); the action panel stays hidden while lifting AND during the lift's
+  own verdict hold (2.5 s), then the meet's verdict (ResultSeconds 4 -> 5).
+  Checks: luau-lsp 0 errors in these files, `rojo build` OK; Studio: the new
+  look drawn (screenshots); panel visibility measured: hidden while lifting,
+  at the verdict and 1.5 s later, shown after the hold; no new warnings.
+  STEP 2 BUILT (2026-10-28, user: "Yes, the minigames"; NOT committed):
+  ControlUI (squat control: UIStyle panel, yellow bar, white/red marker,
+  HOW TO / ATTEMPT / LIVE sections), SkillCheckUI (the lockout of all three
+  lifts as a ring closing onto a target; colour by lift via
+  SkillCheckConfig.Phases[..].lift; ONE success band drawn exactly at the
+  radii of the judged arc, a white line at its centre: SkillCheckConfig has
+  no "perfect" zone, so none is drawn; late = the ring keeps shrinking to
+  the band's inner edge at the timeout), PowerUI (bench mash: red ring
+  closing on the target as progress rises, flash per counted press, yellow
+  "get ready" / white HOLD states), TypingUI (deadlift: one box per letter,
+  current blue, typed filled, wrong flashes red, NEXT words, vertical bar),
+  LiftAttemptController (banner and status as slanted slabs: phase black,
+  next yellow, GOOD LIFT white, NO LIFT red). UIStyle.fitToScreen: every
+  restyled screen shrinks (UIScale = height/900, min 0.5) on short screens.
+  All public functions, inputs, timing and remote calls unchanged (four
+  parallel helpers, one file each; reviewed after). Checks: luau-lsp 0 new
+  problems (LiftAttemptController keeps its old unused-variable warning),
+  `rojo build` OK, LF kept. Studio (556 px tall window, free lifts via the
+  RequestLiftAttempt remote, no input): screenshots of squat CONTROL, squat
+  DEPTH ring (yellow), bench POWER ring (red), deadlift PULL boxes; banner
+  no longer covered by the panels; verdicts as before (squat failed
+  SquatDepth, bench failed BenchStart, deadlift failed DeadliftPull, same as
+  before the restyle); 0 client and 0 server warnings.
+  NOT seen yet: the bench and deadlift lockout rings (red, blue: only reached
+  by passing phase 1, needs a person), the bench HOLD states, a good lift.
+  STEP 2b (2026-10-28, user from screenshots: "They need to be centered,
+  Bigger, Easier to read, The lock out games are really hard to visually tell
+  when to press space"; NOT committed): UIStyle gets TextSizes (big 44,
+  heading 26, body 20, small 16), UIStyle.text (fixed-size text),
+  ShowDevReadouts = false (testing readouts hidden), MinigameCentre
+  (0.5, +40 px below centre, clear of the banner), fitToScreen now
+  re-anchors top-left pieces at their centre before shrinking (the drift),
+  design height 860, min scale 0.6. Second pass on the four minigames (one
+  helper per file, reviewed): each is one group anchored at its centre at
+  MinigameCentre, ~1.3-1.6x bigger, readable text; the LOCKOUT ring now has a
+  thick WHITE press band at exactly the judged radii, the closing ring in the
+  lift colour with a glow, and while it is inside the band the target fills
+  with the lift colour and a big "NOW!" shows (same clock/angle as the
+  press), "WAIT..." before, "TOO LATE" after, a SPACE key cap; squat control
+  shows "CONTROL x%" and "MARKER ON/OFF THE BAR"; bench "POWER x%" and
+  "HOLDS x/y"; deadlift boxes up to 92 px; banner 32 px text, status 20 px.
+  MockMeetUI's action panel anchored by its bottom middle. Checks: luau-lsp
+  0 new problems, `rojo build` OK, LF kept. Studio (556 px window, free
+  lifts, no input): screenshots of squat CONTROL, the squat DEPTH ring caught
+  at NOW!, bench POWER, deadlift PULL; centred, below the banner (bench's
+  ring glow just touches the status line in this very small window); lifts
+  judged as before; 0 server warnings; 1 client start-up warning
+  ("Infinite yield possible on LiftingRemotes": the server took >5 s to
+  create the lift remotes while building the gym; not from the restyle).
+  Steps 1, 2 and 2b COMMITTED with the user's approval on 2026-10-28 (see
+  section 1).
+  NEXT ACTION: step 3, the rack's stat picker and the "E" prompts. After
   that: the rewards step needs the weight-class build decision (§33.11 item
   11) before any meet raises Competition Scale.
   Other open threads: the records
@@ -1581,7 +1642,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Run the Mock Meet itself: attempts, lifts, coach and results (Mock Meet part 2); `git log -1` for the hash.
+- 2026-10-28, pushed: One UI style for the Mock Meet and all lift minigames (UI restyle steps 1-2); `git log -1` for the hash.
+- `ea6f636` (2026-10-28, pushed) Run the Mock Meet itself: attempts, lifts, coach and results (Mock Meet part 2).
 - `023f46c` (2026-10-28, pushed) Add the Mock Meet Room and a private meet room per player (Mock Meet part 1).
 - `3eb5be1` (2026-10-27, pushed) Design: player-set World Records, Sheffield vs configured records, gym record rules.
 - `2d137c1` (2026-10-27, pushed) Add the rhythm game's saved leaderboards (part 2: all-time and weekly boards).

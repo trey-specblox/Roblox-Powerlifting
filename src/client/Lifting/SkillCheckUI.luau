@@ -3,72 +3,176 @@
 	SkillCheckUI
 	Client / Lifting
 
-	Draws the circular skill check and reports when the player pressed.
+	Draws the timing check ("lockout" style) and reports when the player pressed.
+	Used by every timing phase: SquatDepth, BenchPress and DeadliftLockout.
 
 	Everything is built in code so there are no Studio GUI assets to keep in sync
-	with Rojo.
+	with Rojo. The look comes from UIStyle (GAME_DESIGN.md "One UI style for the
+	whole game"): a navy panel with a slanted title tag naming the phase. Each
+	lift has its own colour (user 2026-10-28: squat yellow, bench red, deadlift
+	blue). After the first test the user asked for it "centered, Bigger, Easier
+	to read" and said it was "really hard to visually tell when to press space",
+	so this version is about making the moment to press unmistakable.
 
-	HOW THE NEEDLE PIVOTS
+	WHAT THE PLAYER SEES
 
-	The needle is a child of a square PIVOT container that is exactly the size of
-	the circle, centred on it, with AnchorPoint 0.5, 0.5. Only the container's
-	Rotation changes.
+	One panel, anchored at its centre in the middle of the screen. In it a big
+	dark disc holds the target:
 
-	This matters. Rotating the needle frame directly makes its pivot depend on how
-	Rotation and AnchorPoint interact, which is easy to get subtly wrong and reads
-	as a line sweeping ACROSS the circle rather than a hand sweeping around its
-	centre. Because the container's anchor point and its centre are the same point,
-	and that point is the circle's centre, it pivots correctly regardless.
+		- a THICK WHITE BAND. That band is the whole success zone: press while the
+		  closing ring is inside it. Thin black lines edge it so it reads against
+		  any lift colour. (They sit just OUTSIDE the band; they are not part of
+		  the zone.)
+		- inside the band, the target face in the lift colour, with an inner ring
+		  and a white four-point star;
+		- a thick CLOSING RING in the lift colour (with a black edge and a soft
+		  glow) that starts wide and closes in on the band.
 
-	The needle sits in the container's upper half, running from the centre outward,
-	so 0 degrees points at 12 o'clock and increasing rotation sweeps clockwise.
+	Under the disc sits a white KEY CAP showing the key to press ("SPACE"), and
+	under that the attempt line (kg, % of max, difficulty).
 
-	HOW THE ZONES ARE DRAWN WITHOUT IMAGES
+	THE STATES (display only, decided from the SAME angle the press reports)
 
-	Roblox UI cannot draw an arc, so each zone is a row of small frames placed
-	around the rim, one every few degrees. A point at angle A sits at
-	(sin A, -cos A) from the centre.
+		WAIT      angle before the zone. The band is dimmed, the face is faint and
+		          a calm "WAIT..." sits in the middle.
+		NOW!      angle inside the zone. The band goes full white, the whole face
+		          lights up in the lift colour and a big "NOW!" pops in the middle.
+		TOO LATE  the zone has passed (this is the moment the check times out).
+		          The band dims and "TOO LATE" shows in red until the server's
+		          verdict arrives.
+		verdict   the server's verdict replaces the key cap and the attempt line,
+		          white for a good lift and red for a no lift, and the closing ring
+		          takes the same colour where it stopped.
+
+	A press freezes the ring where it was caught. If it was caught inside the
+	zone, NOW! stays lit; if it was caught early, the middle goes blank. Either
+	way the server's verdict decides the outcome, not this screen.
+
+	HOW TIME MAPS TO THE RING
+
+	The server judges by the needle angle it always has (SkillCheckGrade):
+
+		angle at time t = needleSpeedDegPerSec * t
+		success         = targetStartDeg <= angle <= targetStartDeg + targetArcDeg
+
+	There is no visible needle, but the ring is driven by that same angle, so
+	nothing about the judging changes. The ring's radius falls in a straight
+	line with the angle, and reaches TARGET_RADIUS at the CENTRE of the zone:
+
+		centreDeg = targetStartDeg + targetArcDeg / 2
+		radius    = START_RADIUS + (TARGET_RADIUS - START_RADIUS) * angle / centreDeg
+
+	Because the mapping is a straight line, the band is drawn between the two
+	radii the ring has at the zone's first and last degree:
+
+		band outer = radius at targetStartDeg
+		band inner = radius at targetStartDeg + targetArcDeg
+
+	So "ring inside the white band" on screen is exactly "inside the target" for
+	the server. The band's thickness is the real window, so a harder check has a
+	thinner band; it is never padded to look easier.
+
+	There is ONE zone and no perfect tier anywhere in this system
+	(SkillCheckConfig), so only one band is drawn and nothing marks a "best"
+	spot inside it.
+
+	HOW CIRCLES ARE DRAWN WITHOUT IMAGES
+
+	A circle is a round frame with a UIStroke. A UIStroke is drawn OUTSIDE its
+	frame's edge, so a ring covering radii a..b is a round frame of radius a with
+	a stroke b - a thick. The band, its edges and the closing ring all go through
+	placeRing, so their radii are exact.
 
 	This module decides nothing about gameplay. It renders the numbers the server
 	sent and reports when the key went down. The verdict comes back from the
 	server.
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local SkillCheckConfig = require(Shared:WaitForChild("Config"):WaitForChild("SkillCheckConfig"))
+
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local C = UIStyle.Colours
+local TEXT = UIStyle.TextSizes
 
 local SkillCheckUI = {}
 
 -- Visual constants. Presentation only; no effect on difficulty or timing.
-local CIRCLE_PIXELS = 300
-local RING_THICKNESS = 16
--- Zones are tiled finely so their edges are precise.
-local SEGMENT_STEP_DEGREES = 2
--- The track is a solid band with no edges that matter, so it can be coarser.
-local TRACK_STEP_DEGREES = 4
-local NEEDLE_WIDTH = 6
-local TIP_SIZE = 18
-local HUB_SIZE = 20
 
-local COLOR_RING = Color3.fromRGB(48, 52, 60)
--- The one and only target. Inside it succeeds, outside it fails.
-local COLOR_TARGET = Color3.fromRGB(255, 214, 92)
-local COLOR_NEEDLE = Color3.fromRGB(236, 240, 246)
-local COLOR_TIP = Color3.fromRGB(255, 255, 255)
-local COLOR_HUB = Color3.fromRGB(24, 27, 33)
-local COLOR_PASS = Color3.fromRGB(96, 214, 128)
-local COLOR_FAIL = Color3.fromRGB(240, 92, 92)
+-- Where the middle of the zone lands (1.6x the first version's 56 px).
+local TARGET_RADIUS = 90
+-- Where the closing ring starts.
+local START_RADIUS = TARGET_RADIUS * 2.4
+-- The closing ring: its line, its black edge and its soft glow, in pixels.
+local CLOSING_WIDTH = 6
+local CLOSING_EDGE = 2
+local GLOW_WIDTH = 5
+-- The dark disc behind everything: just wider than the closing ring's glow at its start.
+local FIELD_RADIUS = START_RADIUS + CLOSING_WIDTH / 2 + CLOSING_EDGE + GLOW_WIDTH + 2
+-- The thin black lines just outside the white band.
+local BAND_EDGE = 2
+
+-- The panel and where things sit in it (pixels from the panel's top).
+local PANEL_WIDTH = 500
+local PANEL_HEIGHT = 520
+local RING_CENTRE_Y = FIELD_RADIUS + 4
+-- The key cap sits on the bottom rim of the dark disc.
+local KEYCAP_Y = RING_CENTRE_Y + FIELD_RADIUS
+local KEYCAP_HEIGHT = 44
+local KEYCAP_KEY_WIDTH = 180
+local KEYCAP_TEXT_WIDTH = 400
+local KEYCAP_DEPTH = 5
+local DETAIL_Y = PANEL_HEIGHT - 20
+-- The verdict takes the key cap's and attempt line's place (both are cleared then).
+local VERDICT_Y = PANEL_HEIGHT - 58
+local VERDICT_HEIGHT = 100
+
+-- How each state looks.
+local BAND_DIM = 0.45
+local BAND_LATE = 0.6
+local FACE_FAINT = 0.82
+local FACE_LIT = 0.05
+local GLOW_TRANSPARENCY = 0.7
+local POP_SCALE = 0.4
+local POP_SECONDS = 0.12
+local FLASH_SECONDS = 0.15
 
 export type PressReporter = (pressTimeSeconds: number?) -> ()
 
+type Ring = {
+	frame: Frame,
+	stroke: UIStroke,
+}
+
 type Visuals = {
 	gui: ScreenGui,
-	circle: Frame,
-	-- The rotating container. Its Rotation is the needle angle.
-	pivot: Frame,
+	-- The phase name, in the title tag.
 	headline: TextLabel,
-	instruction: TextLabel,
+	-- The title tag itself, so its slashes can take the lift's colour.
+	tag: Frame,
+	-- The key cap: a holder (shown or hidden), its coloured base and its white face.
+	keyCap: Frame,
+	keyBase: Frame,
+	keyFace: Frame,
+	keyText: TextLabel,
+	-- The instruction the controller passed, kept so the key cap can be rebuilt from it.
+	instructionText: string,
 	detail: TextLabel,
 	verdict: TextLabel,
+	-- The big word in the middle (WAIT... / NOW! / TOO LATE) and its pop.
+	word: TextLabel,
+	wordScale: UIScale,
+	face: Frame,
+	innerRing: UIStroke,
+	band: Ring,
+	bandEdgeInner: Ring,
+	bandEdgeOuter: Ring,
+	closing: Ring,
+	closingEdge: Ring,
+	glow: Ring,
 }
 
 local visuals: Visuals? = nil
@@ -85,275 +189,383 @@ local activeConnection: RBXScriptConnection? = nil
 local activeStartClock: number? = nil
 local activeReport: PressReporter? = nil
 local activeFinished = true
-local segments: { Frame } = {}
 
-local function radiusPixels(): number
-	return CIRCLE_PIXELS / 2
+-- The running check's numbers, kept so a press can draw the ring where it landed.
+local activeSpeed = 0
+local activeCentreDeg = 1
+local activeZoneStartDeg = 0
+local activeZoneArcDeg = 0
+local activeLiftColour: Color3 = C.yellow
+
+-- What the screen is showing. Display only: the server judges the press.
+type DisplayState = "idle" | "wait" | "now" | "late"
+local displayState: DisplayState = "idle"
+local nowShownClock = 0
+
+--[[
+	Which lift a phase belongs to, read from the phase's own config entry, so a new
+	timing phase picks up its lift's colour with no change here.
+]]
+local function liftColourFor(phaseName: any): Color3
+	local phase = if typeof(phaseName) == "string" then (SkillCheckConfig.Phases :: any)[phaseName] else nil
+	local lift = if phase ~= nil then phase.lift else nil
+	return (if typeof(lift) == "string" then UIStyle.LiftColours[lift] else nil) or C.yellow
+end
+
+local function makeRound(target: GuiObject, radius: UDim?)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = radius or UDim.new(0.5, 0)
+	corner.Parent = target
+end
+
+-- A round frame centred in `parent`, drawn only by its stroke. Size it with placeRing.
+local function makeRing(parent: Instance, name: string, colour: Color3, zIndex: number): Ring
+	local f = UIStyle.frame(parent, name, UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(0, 0), colour)
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.BackgroundTransparency = 1
+	f.ZIndex = zIndex
+	makeRound(f)
+	return {
+		frame = f,
+		stroke = UIStyle.stroke(f, colour, 1),
+	}
 end
 
 --[[
-	Distance from the centre to the middle of the ring band. The needle's tip sits
-	here, so it visibly touches the coloured zone.
+	Makes a ring cover exactly the radii innerRadius..outerRadius. The stroke is
+	drawn outside the frame's edge, so the frame takes the inner radius and the
+	stroke the difference.
 ]]
-local function ringCentreRadius(): number
-	return radiusPixels() - RING_THICKNESS / 2
+local function placeRing(ring: Ring, innerRadius: number, outerRadius: number)
+	local inner = math.max(0, innerRadius)
+	local outer = math.max(inner, outerRadius)
+	ring.frame.Size = UDim2.fromOffset(inner * 2, inner * 2)
+	ring.stroke.Thickness = outer - inner
+	ring.stroke.Enabled = outer > inner
+end
+
+-- The closing ring's radius when the needle the server times is at `angle`.
+local function radiusAtAngle(angleDeg: number, centreDeg: number): number
+	local progress = if centreDeg > 0 then angleDeg / centreDeg else 1
+	return START_RADIUS + (TARGET_RADIUS - START_RADIUS) * progress
 end
 
 --[[
-	Places one small frame on the rim at the given angle.
-
-	`collect` receives the frame when it belongs to a single check and must be
-	cleaned up afterwards. Pass nil for permanent scenery such as the track.
+	Which state an angle is in: the same comparison SkillCheckGrade makes (minus
+	its 0.01 degree float tolerance, which no eye can see).
 ]]
-local function addSegment(
-	parent: Frame,
-	angleDegrees: number,
-	color: Color3,
-	stepDegrees: number,
-	zIndex: number,
-	collect: { Frame }?
-)
-	local radians = math.rad(angleDegrees)
-	local r = ringCentreRadius()
+local function stateForAngle(angleDeg: number): DisplayState
+	if angleDeg < activeZoneStartDeg then
+		return "wait"
+	elseif angleDeg <= activeZoneStartDeg + activeZoneArcDeg then
+		return "now"
+	end
+	return "late"
+end
 
-	local segment = Instance.new("Frame")
-	-- Anchor and centre coincide, so this frame's own rotation is unambiguous.
-	segment.AnchorPoint = Vector2.new(0.5, 0.5)
-	segment.Position = UDim2.new(
-		0.5,
-		math.sin(radians) * r,
-		0.5,
-		-math.cos(radians) * r
+-- Draws the closing ring, its black edge and its glow, all centred on `radius`.
+local function placeClosing(current: Visuals, radius: number)
+	local half = CLOSING_WIDTH / 2
+	placeRing(current.closing, radius - half, radius + half)
+	placeRing(current.closingEdge, radius - half - CLOSING_EDGE, radius + half + CLOSING_EDGE)
+	placeRing(
+		current.glow,
+		radius - half - CLOSING_EDGE - GLOW_WIDTH,
+		radius + half + CLOSING_EDGE + GLOW_WIDTH
 	)
-	segment.Rotation = angleDegrees
-	-- Slight overlap so neighbouring segments read as a continuous band.
-	segment.Size = UDim2.fromOffset(
-		math.ceil(math.rad(stepDegrees) * r) + 2,
-		RING_THICKNESS
-	)
-	segment.BackgroundColor3 = color
-	segment.BorderSizePixel = 0
-	segment.ZIndex = zIndex
-	segment.Parent = parent
+end
 
-	if collect then
-		table.insert(collect, segment)
+--[[
+	Places the white band on exactly bandInner..bandOuter, the black edge lines
+	just outside it, and the face filling everything inside it.
+]]
+local function placeBand(current: Visuals, bandInner: number, bandOuter: number)
+	placeRing(current.band, bandInner, bandOuter)
+	placeRing(current.bandEdgeInner, bandInner - BAND_EDGE, bandInner)
+	placeRing(current.bandEdgeOuter, bandOuter, bandOuter + BAND_EDGE)
+	local faceRadius = math.max(0, bandInner - BAND_EDGE)
+	current.face.Size = UDim2.fromOffset(faceRadius * 2, faceRadius * 2)
+end
+
+-- Paints everything that takes the lift's colour.
+local function applyLiftColour(current: Visuals, colour: Color3)
+	current.face.BackgroundColor3 = colour
+	current.innerRing.Color = colour
+	current.closing.stroke.Color = colour
+	current.glow.stroke.Color = colour
+	current.keyBase.BackgroundColor3 = colour
+	for _, child in ipairs(current.tag:GetChildren()) do
+		if child:IsA("Frame") and string.sub(child.Name, 1, 6) == "Slash_" then
+			child.BackgroundColor3 = colour
+		end
 	end
 end
 
 --[[
-	Draws an arc as a band of segments.
-
-	The track, the success zone and the perfect zone all go through here, so they
-	share one radius and one thickness and therefore line up exactly. An earlier
-	version drew the track with a UIStroke instead, which renders OUTSIDE the
-	frame's bounds and left the coloured zones sitting visibly inside the track
-	rather than on it.
+	Shows the key to press. When the controller's instruction names Space, the
+	cap shows just "SPACE", big; otherwise it shows the instruction as written.
 ]]
-local function drawArc(
-	parent: Frame,
-	startDegrees: number,
-	arcDegrees: number,
-	color: Color3,
-	stepDegrees: number,
-	zIndex: number,
-	collect: { Frame }?
-)
-	if arcDegrees <= 0 then
+local function applyInstruction(current: Visuals, instructionText: string)
+	current.instructionText = instructionText
+	local mentionsSpace = string.find(string.upper(instructionText), "SPACE", 1, true) ~= nil
+	current.keyText.Text = if mentionsSpace then "SPACE" else instructionText
+	current.keyCap.Size = UDim2.fromOffset(
+		if mentionsSpace then KEYCAP_KEY_WIDTH else KEYCAP_TEXT_WIDTH,
+		KEYCAP_HEIGHT + KEYCAP_DEPTH
+	)
+	current.keyCap.Visible = instructionText ~= ""
+end
+
+--[[
+	Shows one state. Display only; see the header. `force` re-applies a state
+	that is already showing (used when a new check starts).
+]]
+local function showState(current: Visuals, state: DisplayState, force: boolean?)
+	if state == displayState and not force then
 		return
 	end
+	displayState = state
+	current.wordScale.Scale = 1
 
-	local angle = startDegrees
-	local finish = startDegrees + arcDegrees
-
-	while angle < finish do
-		addSegment(parent, angle, color, stepDegrees, zIndex, collect)
-		angle += stepDegrees
+	if state == "now" then
+		current.band.stroke.Transparency = 0
+		current.face.BackgroundTransparency = FACE_LIT
+		current.word.Text = "NOW!"
+		current.word.TextSize = TEXT.big
+		current.word.TextColor3 = C.white
+		nowShownClock = os.clock()
+		current.wordScale.Scale = 1 + POP_SCALE
+	elseif state == "late" then
+		current.band.stroke.Transparency = BAND_LATE
+		current.face.BackgroundTransparency = FACE_FAINT
+		current.word.Text = "TOO LATE"
+		current.word.TextSize = TEXT.big
+		current.word.TextColor3 = C.red
+	elseif state == "wait" then
+		current.band.stroke.Transparency = BAND_DIM
+		current.face.BackgroundTransparency = FACE_FAINT
+		current.word.Text = "WAIT..."
+		current.word.TextSize = TEXT.heading
+		current.word.TextColor3 = C.muted
+	else
+		current.band.stroke.Transparency = BAND_DIM
+		current.face.BackgroundTransparency = FACE_FAINT
+		current.word.Text = ""
 	end
-	-- Always mark the exact end so the zone's edge is truthful.
-	addSegment(parent, finish, color, stepDegrees, zIndex, collect)
 end
 
-local function clearSegments()
-	for _, segment in ipairs(segments) do
-		segment:Destroy()
+-- The NOW! pop: starts large and settles to normal size in POP_SECONDS.
+local function updatePop(current: Visuals)
+	if displayState ~= "now" then
+		return
 	end
-	segments = {}
-end
-
---[[
-	Builds the rotating needle assembly: a pivot container holding a shaft that
-	runs from the centre outward, plus a bright round tip that marks the exact
-	contact point.
-]]
-local function buildNeedle(circle: Frame): Frame
-	local pivot = Instance.new("Frame")
-	pivot.Name = "NeedlePivot"
-	pivot.AnchorPoint = Vector2.new(0.5, 0.5)
-	pivot.Position = UDim2.fromScale(0.5, 0.5)
-	pivot.Size = UDim2.fromOffset(CIRCLE_PIXELS, CIRCLE_PIXELS)
-	pivot.BackgroundTransparency = 1
-	pivot.ZIndex = 5
-	pivot.Parent = circle
-
-	--[[
-		The shaft runs from the container's centre straight up. AnchorPoint 0.5, 1
-		puts its bottom edge on the centre, and its height carries the tip out to
-		the ring band.
-	]]
-	local shaft = Instance.new("Frame")
-	shaft.Name = "Shaft"
-	shaft.AnchorPoint = Vector2.new(0.5, 1)
-	shaft.Position = UDim2.fromScale(0.5, 0.5)
-	shaft.Size = UDim2.fromOffset(NEEDLE_WIDTH, ringCentreRadius())
-	shaft.BackgroundColor3 = COLOR_NEEDLE
-	shaft.BorderSizePixel = 0
-	shaft.ZIndex = 5
-	shaft.Parent = pivot
-
-	local shaftCorner = Instance.new("UICorner")
-	shaftCorner.CornerRadius = UDim.new(0, NEEDLE_WIDTH / 2)
-	shaftCorner.Parent = shaft
-
-	--[[
-		The hit indicator. A circle rather than a triangle: it reads identically at
-		every angle, where a triangle would tumble as the needle sweeps. It is
-		slightly wider than the ring band, so the overlap with the coloured zone is
-		unmistakable.
-	]]
-	local tip = Instance.new("Frame")
-	tip.Name = "Tip"
-	tip.AnchorPoint = Vector2.new(0.5, 0.5)
-	tip.Position = UDim2.new(0.5, 0, 0.5, -ringCentreRadius())
-	tip.Size = UDim2.fromOffset(TIP_SIZE, TIP_SIZE)
-	tip.BackgroundColor3 = COLOR_TIP
-	tip.BorderSizePixel = 0
-	tip.ZIndex = 6
-	tip.Parent = pivot
-
-	local tipCorner = Instance.new("UICorner")
-	tipCorner.CornerRadius = UDim.new(0.5, 0)
-	tipCorner.Parent = tip
-
-	local tipStroke = Instance.new("UIStroke")
-	tipStroke.Thickness = 2
-	tipStroke.Color = Color3.fromRGB(20, 22, 28)
-	tipStroke.Parent = tip
-
-	return pivot
+	local settled = math.clamp((os.clock() - nowShownClock) / POP_SECONDS, 0, 1)
+	current.wordScale.Scale = 1 + POP_SCALE * (1 - settled)
 end
 
 local function build(instructionText: string): Visuals
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "SkillCheckUI"
+	UIStyle.fitToScreen(gui) -- shrink on short screens so nothing overlaps
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Enabled = false
 
-	local circle = Instance.new("Frame")
-	circle.Name = "Circle"
-	circle.AnchorPoint = Vector2.new(0.5, 0.5)
-	circle.Position = UDim2.fromScale(0.5, 0.45)
-	circle.Size = UDim2.fromOffset(CIRCLE_PIXELS, CIRCLE_PIXELS)
-	circle.BackgroundTransparency = 1
-	circle.Parent = gui
+	-- One panel, anchored at its own centre, so it stays centred at any size or scale.
+	local holder, body = UIStyle.panel(
+		gui,
+		"Panel",
+		UIStyle.MinigameCentre,
+		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT)
+	)
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = UIStyle.MinigameCentre
 
-	--[[
-		The empty track the needle sweeps over, drawn once and left in place. Built
-		from the same segment helper as the zones so all three bands share a radius
-		and a thickness, which is what makes the needle's tip land exactly on the
-		coloured zone.
-	]]
-	drawArc(circle, 0, 360, COLOR_RING, TRACK_STEP_DEGREES, 1, nil)
+	-- The phase name ("DEPTH", "PRESS", "LOCKOUT"), set by run.
+	local headline = UIStyle.titleTag(
+		holder,
+		"Tag",
+		"",
+		UDim2.fromOffset(-14, -24),
+		UDim2.fromOffset(240, 44)
+	)
+	local tag = headline.Parent :: Frame
 
-	local headline = Instance.new("TextLabel")
-	headline.Name = "Headline"
-	headline.AnchorPoint = Vector2.new(0.5, 0.5)
-	headline.Position = UDim2.fromScale(0.5, 0.31)
-	headline.Size = UDim2.fromOffset(200, 32)
-	headline.BackgroundTransparency = 1
-	headline.Font = Enum.Font.GothamBold
-	headline.TextSize = 26
-	headline.TextColor3 = COLOR_NEEDLE
-	headline.Text = ""
-	headline.ZIndex = 3
-	headline.Parent = circle
+	-- The ring area. Every circle below is centred in it.
+	local area = Instance.new("Frame")
+	area.Name = "Ring"
+	area.AnchorPoint = Vector2.new(0.5, 0.5)
+	area.Position = UDim2.new(0.5, 0, 0, RING_CENTRE_Y)
+	area.Size = UDim2.fromOffset(FIELD_RADIUS * 2, FIELD_RADIUS * 2)
+	area.BackgroundTransparency = 1
+	area.ZIndex = 2
+	area.Parent = body
 
-	-- Sits directly under the phase name, so the control is never a mystery.
-	local instruction = Instance.new("TextLabel")
-	instruction.Name = "Instruction"
-	instruction.AnchorPoint = Vector2.new(0.5, 0.5)
-	instruction.Position = UDim2.fromScale(0.5, 0.41)
-	instruction.Size = UDim2.fromOffset(240, 18)
-	instruction.BackgroundTransparency = 1
-	instruction.Font = Enum.Font.GothamMedium
-	instruction.TextSize = 13
-	instruction.TextColor3 = Color3.fromRGB(150, 160, 175)
-	instruction.Text = instructionText
-	instruction.ZIndex = 3
-	instruction.Parent = circle
+	-- The dark disc everything sits on, so the white band and the ring stand out.
+	local field = UIStyle.frame(area, "Field", UDim2.fromScale(0.5, 0.5), UDim2.fromScale(1, 1), C.navyDeep)
+	field.AnchorPoint = Vector2.new(0.5, 0.5)
+	field.BackgroundTransparency = 0.08
+	field.ZIndex = 1
+	makeRound(field)
+	UIStyle.stroke(field, C.white, 2, 0.7)
 
-	local detail = Instance.new("TextLabel")
-	detail.Name = "Detail"
+	-- The target face, filling the inside of the band. Lights up during NOW.
+	local face = UIStyle.frame(area, "Face", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(0, 0), C.yellow)
+	face.AnchorPoint = Vector2.new(0.5, 0.5)
+	face.BackgroundTransparency = FACE_FAINT
+	face.ZIndex = 2
+	makeRound(face)
+
+	-- The inner ring, as in UIStyle.ring.
+	local inner = makeRing(area, "InnerRing", C.yellow, 3)
+	placeRing(inner, TARGET_RADIUS * 0.5 - 3, TARGET_RADIUS * 0.5)
+
+	-- The success zone (white) and the black lines just outside it, sized per check by run.
+	local bandEdgeInner = makeRing(area, "SuccessBandEdgeInner", C.ink, 3)
+	local bandEdgeOuter = makeRing(area, "SuccessBandEdgeOuter", C.ink, 3)
+	local band = makeRing(area, "SuccessBand", C.white, 4)
+	band.stroke.Transparency = BAND_DIM
+
+	-- The star: two thin tapered rays crossed, as in UIStyle.ring.
+	for index, rotation in ipairs({ 0, 90 }) do
+		local ray = UIStyle.frame(
+			area,
+			"Star_" .. index,
+			UDim2.fromScale(0.5, 0.5),
+			UDim2.fromOffset(TARGET_RADIUS * 0.14, TARGET_RADIUS * 0.6),
+			C.white,
+			rotation
+		)
+		ray.AnchorPoint = Vector2.new(0.5, 0.5)
+		ray.ZIndex = 5
+		local taper = Instance.new("UIGradient")
+		taper.Rotation = 90
+		taper.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(0.5, 0),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		taper.Parent = ray
+	end
+
+	-- The closing ring: a soft glow, a black edge so it reads over the white band, and the ring itself.
+	local glow = makeRing(area, "ClosingGlow", C.yellow, 6)
+	glow.stroke.Transparency = GLOW_TRANSPARENCY
+	local closingEdge = makeRing(area, "ClosingEdge", C.ink, 7)
+	closingEdge.stroke.Transparency = 0.1
+	local closing = makeRing(area, "Closing", C.yellow, 8)
+
+	-- The big word in the middle: WAIT... / NOW! / TOO LATE.
+	local word = UIStyle.text(
+		area,
+		"Word",
+		UDim2.fromScale(0.5, 0.5),
+		UDim2.fromOffset(340, 64),
+		TEXT.big,
+		C.white,
+		UIStyle.heading(),
+		Enum.TextXAlignment.Center
+	)
+	word.AnchorPoint = Vector2.new(0.5, 0.5)
+	word.TextWrapped = false
+	word.ZIndex = 10
+	local wordStroke = UIStyle.stroke(word, C.ink, 3)
+	wordStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	local wordScale = Instance.new("UIScale")
+	wordScale.Parent = word
+
+	-- The key cap: a white key on a coloured base, sitting on the disc's bottom rim.
+	local keyCap = Instance.new("Frame")
+	keyCap.Name = "KeyCap"
+	keyCap.AnchorPoint = Vector2.new(0.5, 0.5)
+	keyCap.Position = UDim2.new(0.5, 0, 0, KEYCAP_Y)
+	keyCap.Size = UDim2.fromOffset(KEYCAP_KEY_WIDTH, KEYCAP_HEIGHT + KEYCAP_DEPTH)
+	keyCap.BackgroundTransparency = 1
+	keyCap.ZIndex = 4
+	keyCap.Parent = body
+	local keyBase = UIStyle.frame(
+		keyCap,
+		"Base",
+		UDim2.fromOffset(0, KEYCAP_DEPTH),
+		UDim2.new(1, 0, 0, KEYCAP_HEIGHT),
+		C.yellow
+	)
+	keyBase.ZIndex = 4
+	makeRound(keyBase, UDim.new(0, 8))
+	local keyFace = UIStyle.frame(keyCap, "Face", UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, KEYCAP_HEIGHT), C.white)
+	keyFace.ZIndex = 5
+	makeRound(keyFace, UDim.new(0, 8))
+	UIStyle.stroke(keyFace, C.ink, 2)
+	local keyText = UIStyle.text(
+		keyFace,
+		"Key",
+		UDim2.fromOffset(8, 0),
+		UDim2.new(1, -16, 1, 0),
+		TEXT.heading,
+		C.ink,
+		UIStyle.heading(),
+		Enum.TextXAlignment.Center
+	)
+	keyText.ZIndex = 5
+
+	-- The attempt line: kg, % of max and difficulty.
+	local detail = UIStyle.text(
+		body,
+		"Detail",
+		UDim2.new(0.5, 0, 0, DETAIL_Y),
+		UDim2.fromOffset(PANEL_WIDTH - 40, 24),
+		TEXT.body,
+		C.white,
+		UIStyle.font(Enum.FontWeight.Bold),
+		Enum.TextXAlignment.Center
+	)
 	detail.AnchorPoint = Vector2.new(0.5, 0.5)
-	detail.Position = UDim2.fromScale(0.5, 0.68)
-	detail.Size = UDim2.fromOffset(260, 20)
-	detail.BackgroundTransparency = 1
-	detail.Font = Enum.Font.Gotham
-	detail.TextSize = 14
-	detail.TextColor3 = Color3.fromRGB(176, 184, 196)
-	detail.Text = ""
-	detail.ZIndex = 3
-	detail.Parent = circle
+	detail.ZIndex = 4
 
-	local pivot = buildNeedle(circle)
-
-	--[[
-		The hub is drawn after the needle and above it, so the shaft's inner end is
-		covered and the centre reads as a clean pivot point rather than a blunt
-		rectangle end.
-	]]
-	local hub = Instance.new("Frame")
-	hub.Name = "Hub"
-	hub.AnchorPoint = Vector2.new(0.5, 0.5)
-	hub.Position = UDim2.fromScale(0.5, 0.5)
-	hub.Size = UDim2.fromOffset(HUB_SIZE, HUB_SIZE)
-	hub.BackgroundColor3 = COLOR_HUB
-	hub.BorderSizePixel = 0
-	hub.ZIndex = 7
-	hub.Parent = circle
-
-	local hubCorner = Instance.new("UICorner")
-	hubCorner.CornerRadius = UDim.new(0.5, 0)
-	hubCorner.Parent = hub
-
-	local hubStroke = Instance.new("UIStroke")
-	hubStroke.Thickness = 2
-	hubStroke.Color = COLOR_NEEDLE
-	hubStroke.Parent = hub
-
-	local verdict = Instance.new("TextLabel")
-	verdict.Name = "Verdict"
+	-- The server's verdict, in the key cap's place.
+	local verdict = UIStyle.text(
+		body,
+		"Verdict",
+		UDim2.new(0.5, 0, 0, VERDICT_Y),
+		UDim2.fromOffset(PANEL_WIDTH - 24, VERDICT_HEIGHT),
+		TEXT.big,
+		C.white,
+		UIStyle.heading(),
+		Enum.TextXAlignment.Center
+	)
 	verdict.AnchorPoint = Vector2.new(0.5, 0.5)
-	verdict.Position = UDim2.fromScale(0.5, 0.78)
-	verdict.Size = UDim2.fromOffset(520, 40)
-	verdict.BackgroundTransparency = 1
-	verdict.Font = Enum.Font.GothamBold
-	verdict.TextSize = 28
-	verdict.TextColor3 = COLOR_NEEDLE
-	verdict.Text = ""
-	verdict.Parent = gui
+	verdict.ZIndex = 6
+	local verdictStroke = UIStyle.stroke(verdict, C.ink, 3)
+	verdictStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 
-	return {
+	local built: Visuals = {
 		gui = gui,
-		circle = circle,
-		pivot = pivot,
 		headline = headline,
-		instruction = instruction,
+		tag = tag,
+		keyCap = keyCap,
+		keyBase = keyBase,
+		keyFace = keyFace,
+		keyText = keyText,
+		instructionText = instructionText,
 		detail = detail,
 		verdict = verdict,
+		word = word,
+		wordScale = wordScale,
+		face = face,
+		innerRing = inner.stroke,
+		band = band,
+		bandEdgeInner = bandEdgeInner,
+		bandEdgeOuter = bandEdgeOuter,
+		closing = closing,
+		closingEdge = closingEdge,
+		glow = glow,
 	}
+	applyInstruction(built, instructionText)
+	placeBand(built, TARGET_RADIUS, TARGET_RADIUS)
+	placeClosing(built, START_RADIUS)
+	showState(built, "idle", true)
+	return built
 end
 
 --[[
@@ -398,11 +610,19 @@ local function finish(pressTimeSeconds: number?)
 	end
 end
 
+-- A short bright flash of the closing ring's glow: the press landed.
+local function flash(current: Visuals)
+	current.glow.stroke.Transparency = 0.15
+	task.delay(FLASH_SECONDS, function()
+		current.glow.stroke.Transparency = GLOW_TRANSPARENCY
+	end)
+end
+
 --[[
 	Runs one challenge.
 
 	`report` is called exactly once, with the press time in seconds, or nil if the
-	needle ran out before any press. The caller supplies the press by calling
+	ring ran out before any press. The caller supplies the press by calling
 	pressNow; this module never reads input itself.
 ]]
 function SkillCheckUI.run(challenge: any, report: PressReporter)
@@ -412,20 +632,25 @@ function SkillCheckUI.run(challenge: any, report: PressReporter)
 	end
 
 	stopTracking()
-	clearSegments()
 
-	-- One target zone, drawn above the track.
-	drawArc(
-		current.circle,
-		challenge.targetStartDeg,
-		challenge.targetArcDeg,
-		COLOR_TARGET,
-		SEGMENT_STEP_DEGREES,
-		2,
-		segments
-	)
+	-- The zone's centre is where the ring reaches TARGET_RADIUS.
+	local centreDeg = challenge.targetStartDeg + challenge.targetArcDeg / 2
+	activeSpeed = challenge.needleSpeedDegPerSec
+	activeCentreDeg = centreDeg
+	activeZoneStartDeg = challenge.targetStartDeg
+	activeZoneArcDeg = challenge.targetArcDeg
+
+	-- The band covers exactly the radii the ring passes through inside the zone.
+	local bandOuter = radiusAtAngle(challenge.targetStartDeg, centreDeg)
+	local bandInner = radiusAtAngle(challenge.targetStartDeg + challenge.targetArcDeg, centreDeg)
+	placeBand(current, bandInner, bandOuter)
+
+	activeLiftColour = liftColourFor(challenge.phase)
+	applyLiftColour(current, activeLiftColour)
+	current.glow.stroke.Transparency = GLOW_TRANSPARENCY
 
 	current.headline.Text = challenge.displayName
+	current.keyCap.Visible = current.instructionText ~= ""
 	current.detail.Text = string.format(
 		"%.1f kg  -  %.0f%%  -  difficulty %.0f",
 		challenge.attemptWeightKg,
@@ -433,7 +658,8 @@ function SkillCheckUI.run(challenge: any, report: PressReporter)
 		challenge.baseDifficulty
 	)
 	current.verdict.Text = ""
-	current.pivot.Rotation = 0
+	placeClosing(current, START_RADIUS)
+	showState(current, stateForAngle(0), true)
 	current.gui.Enabled = true
 
 	local startClock = os.clock()
@@ -447,22 +673,28 @@ function SkillCheckUI.run(challenge: any, report: PressReporter)
 		end
 
 		local elapsed = os.clock() - startClock
-		-- Only the pivot container rotates, so the needle sweeps around the
-		-- circle's exact centre.
-		current.pivot.Rotation = challenge.needleSpeedDegPerSec * elapsed
+		-- The same angle the server grades, turned into the ring's radius and the state.
+		local angle = challenge.needleSpeedDegPerSec * elapsed
+		placeClosing(current, radiusAtAngle(angle, centreDeg))
 
 		if elapsed >= challenge.timeoutSeconds then
-			-- The needle ran past the zone without a press.
+			-- The ring passed the zone without a press.
+			showState(current, "late")
 			finish(nil)
+			return
 		end
+
+		showState(current, stateForAngle(angle))
+		updatePop(current)
 	end)
 end
 
 --[[
 	Registers the player's press. Called by the controller that owns input.
 
-	The press is timed from the same clock the needle is drawn from, so what the
-	player saw on screen is exactly what gets reported to the server.
+	The press is timed from the same clock the ring is drawn from, so what the
+	player saw on screen is exactly what gets reported to the server. The ring is
+	left where the press caught it, so the player can see how close it was.
 
 	Does nothing when no check is running, so a stray press cannot resolve a check
 	that has already ended.
@@ -472,13 +704,30 @@ function SkillCheckUI.pressNow()
 	if activeFinished or startClock == nil then
 		return
 	end
-	finish(os.clock() - startClock)
+	local elapsed = os.clock() - startClock
+
+	local current = visuals
+	if current ~= nil then
+		local angle = activeSpeed * elapsed
+		placeClosing(current, radiusAtAngle(angle, activeCentreDeg))
+		showState(current, stateForAngle(angle))
+		current.wordScale.Scale = 1
+		if displayState == "wait" then
+			-- Caught before the zone: no WAIT any more; the verdict will say.
+			current.word.Text = ""
+		end
+		flash(current)
+	end
+
+	finish(elapsed)
 end
 
 --[[
-	Shows the server's verdict and hides the circle.
+	Shows the server's verdict under the ring, in the key cap's place.
 
-	The outcome is binary, so there is no grade to append.
+	The outcome is binary, so there is no grade to append. A good lift is white
+	and a no lift is red, like a meet's lights; the closing ring takes the same
+	colour where it stopped.
 ]]
 function SkillCheckUI.showVerdict(verdictText: string, passed: boolean)
 	local current = visuals
@@ -489,17 +738,17 @@ function SkillCheckUI.showVerdict(verdictText: string, passed: boolean)
 	-- A verdict always ends the check, even if one were somehow still live.
 	activeFinished = true
 	stopTracking()
-	clearSegments()
 
-	local color = if passed then COLOR_PASS else COLOR_FAIL
+	local color = if passed then C.white else C.red
 
-	current.headline.Text = ""
-	current.instruction.Text = ""
+	applyInstruction(current, "")
 	current.detail.Text = ""
+	current.word.Text = ""
+	current.wordScale.Scale = 1
 	current.verdict.TextColor3 = color
 	current.verdict.Text = verdictText
-
-	current.pivot.Rotation = 0
+	current.closing.stroke.Color = color
+	current.glow.stroke.Color = color
 
 	--[[
 		This does NOT schedule its own disappearance, for the same reason ControlUI
@@ -519,22 +768,23 @@ function SkillCheckUI.hide()
 
 	activeFinished = true
 	stopTracking()
-	clearSegments()
 
 	current.gui.Enabled = false
 	current.verdict.Text = ""
 	current.headline.Text = ""
 	current.detail.Text = ""
-	current.pivot.Rotation = 0
+	placeBand(current, TARGET_RADIUS, TARGET_RADIUS)
+	placeClosing(current, START_RADIUS)
+	showState(current, "idle", true)
 end
 
 --[[
-	Restores the instruction line, which showVerdict clears.
+	Restores the instruction (the key cap), which showVerdict clears.
 ]]
 function SkillCheckUI.setInstruction(instructionText: string)
 	local current = visuals
 	if current ~= nil then
-		current.instruction.Text = instructionText
+		applyInstruction(current, instructionText)
 	end
 end
 
