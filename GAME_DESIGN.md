@@ -4046,32 +4046,13 @@ stored "capped" field and no event that can be missed:
 technique stat and that asymmetry is accepted. Inventing a sixth stat to restore
 symmetry would reintroduce the thing being removed under a new name.
 
-> **The code still contains `PullStrength`, and that is correct for now.** Verified
-> live in five places:
->
-> | File | What it holds |
-> |---|---|
-> | `PlayerProfileSchema.luau` | the `technique.PullStrength` type field, the template default, and the v1 and v2 migration repair steps |
-> | `StartingValuesConfig.luau` | `PullStrength = 0`, the starting value |
-> | `TypingPhaseConfig.luau` | `techniqueStat = "PullStrength"` and the three curves it drives -- progress per character, sag, and the mistake penalty |
-> | `PlayerDataProbe.server.luau` | migration and preservation assertions that read the field |
-> | *(read path)* `LiftAttemptService.luau` | reads it by name out of the technique snapshot |
->
-> Removing it is a **later implementation checkpoint** (§34.14) and requires four
-> things in one change:
->
-> 1. a **schema migration** dropping the field, and the starting value with it;
-> 2. **Deadlift typing difficulty retuned** independently of it (§34.9);
-> 3. the dev-probe assertions that read it updated or removed;
-> 4. the design-document references in the mechanic-assignment table, §3, §11 and
->    §28 brought into line.
->
-> It must **not** be deleted from code as part of documenting this decision.
-> `LiftAttemptService` reads the technique snapshot with an `or 0` fallback, so an
-> absent `PullStrength` would silently read as the curve's base anchor rather than
-> raising an error — meaning a partial removal would **quietly** retune the
-> Deadlift instead of failing loudly. That is precisely why the retune has to be
-> deliberate and in the same checkpoint.
+> **Removed from the code in checkpoint 9 (2026-10-29, schema version 7).** The
+> `technique.PullStrength` field, its starting value and the typing curves it drove
+> are gone; a version 6 to 7 migration deletes the field from every saved profile,
+> and the version-1-to-2 step stays as a repair-only step so old saves are not
+> stranded (§34.14). The Deadlift's typing phase now names no technique stat at
+> all, and the config refuses one at startup, so the silent `or 0` fallback this
+> note used to warn about can no longer retune the Deadlift by accident.
 
 ### 34.7 AFK technique specialization — [FINAL rule, PROVISIONAL rates]
 
@@ -4237,12 +4218,12 @@ permanently stronger than a slow one with the same character, which contradicts
 §1's premise that character progression and player skill are separate inputs.
 Paying it in cosmetics rewards the skill without pricing it into competition.
 
-**[PROVISIONAL] Two quantities are approved in direction and uncalibrated in
-magnitude. Neither may be implemented until it is calibrated:**
+**One quantity is approved in direction and uncalibrated in magnitude, and may
+not be implemented until it is calibrated; the other is now settled:**
 
 | Quantity | Status |
 |---|---|
-| The **typing difficulty rebase** — how Phase 1's character count, sag and mistake penalty derive from attempt intensity alone | **[PROVISIONAL]** — the approach is approved; **no curve exists yet**. Checkpoint 9, §34.14 |
+| The **typing difficulty rebase** — how Phase 1's character count, sag and mistake penalty derive from attempt intensity alone | **[APPROVED]** (user, 2026-10-29: "keep it the same") — the existing curves from attempt difficulty, unchanged: 9 characters at 80% to 24 at 110%, the window 8 to 12 s, sag and mistake penalty rising with intensity. Every lifter had `PullStrength` at 0, where its curves multiplied by 1, so nobody's pull changed. A shorter window at high intensity was considered and rejected: it would raise the required rate past what a slow typist can do (§11's rate band). Done in checkpoint 9 |
 | The **cosmetic currency reward quantities** — per-attempt award, rate and daily cap | **[PROVISIONAL]** — the approach is approved; **no value exists yet**. Checkpoint 11, §34.14 |
 
 **§12's note that Deadlift training yields cosmetic currency is consistent with
@@ -4782,7 +4763,7 @@ should begin before the decisions it depends on:
 | 6 | The Scale challenge modifier | §33.4 curve, cap and target — still **[TBD]** |
 | 7 | Wire meets to raise Scale | a meet system; §33.7 eligibility; **and the class-scoped build system** per §33.8 |
 | 8 | Resolve the Competition Budget | §29.9, §34.13 item 7 |
-| 9 | **Remove `PullStrength`** — schema-version migration, `TypingPhaseConfig` rebase, test updates, and the §3 / §11 / §28 / mechanic-table documentation. **See the migration requirements below** | §34.6, §34.9. Must be **one controlled change**, because a partial removal degrades silently |
+| 9 | **Remove `PullStrength`** — schema-version migration, `TypingPhaseConfig` rebase, test updates, and the §3 / §11 / §28 / mechanic-table documentation. **See the migration requirements below** — **DONE 2026-10-29** (schema version 7; PlayerDataProbe 470/0, TrainingProgressionProbe 298/0, TrainingStationProbe 205/0, TechniqueTrainingProbe 73/0) | §34.6, §34.9. Must be **one controlled change**, because a partial removal degrades silently |
 | 10 | Meet technique awards | §34.8; blocked on meet duration, §34.13 item 1 |
 | 11 | Cosmetic currency for Deadlift typing | §34.9; blocked on §34.13 item 2 |
 
@@ -4801,7 +4782,8 @@ should begin before the decisions it depends on:
 
 #### The `PullStrength` removal — migration requirements
 
-**Do not implement any of this now.** This is the specification for checkpoint 9.
+**Implemented in checkpoint 9 (2026-10-29, schema version 7).** This was its
+specification; every requirement below is met.
 
 The intended game has exactly five technique stats (§34.6, §34.9). Removing the
 sixth is a **schema-version migration**, not a field deletion, and the schema's

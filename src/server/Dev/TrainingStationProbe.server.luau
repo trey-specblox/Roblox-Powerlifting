@@ -740,9 +740,9 @@ do
 		sim.data.techniqueAllowance.spentToday == legacyBefore.spentToday
 			and sim.data.techniqueAllowance.dayKey == legacyBefore.dayKey
 			and sim.data.techniqueAllowance.lastUpdatedUnix == legacyBefore.lastUpdatedUnix)
-	check("Bench, Deadlift and PullStrength stats untouched",
+	check("Bench and Deadlift stats untouched, and no PullStrength appears",
 		raw(sim.data, "StartControl") == 0 and raw(sim.data, "PressPower") == 0 and raw(sim.data, "Lockout") == 0
-			and raw(sim.data, "PullStrength") == TEMPLATE.technique.PullStrength)
+			and raw(sim.data, "PullStrength") == nil)
 
 	local fresh = newSim(DAY_START + 10 * HOUR)
 	local freshRegistry = newRegistry()

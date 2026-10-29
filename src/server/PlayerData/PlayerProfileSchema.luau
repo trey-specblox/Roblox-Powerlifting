@@ -48,7 +48,7 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below.
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 6
+PlayerProfileSchema.CURRENT_VERSION = 7
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -245,11 +245,9 @@ export type Technique = {
 	StartControl: number,
 	PressPower: number,
 	--[[
-		Added in version 2. Drives the Deadlift's first phase, the character-first
-		typing pull. One stat per lift-phase: the deadlift's two phases are
-		PullStrength off the floor and Lockout at the top.
+		The Deadlift's one stat: its typing pull reads none (GAME_DESIGN 34.6,
+		34.9). PullStrength, added in version 2, was removed in version 7.
 	]]
-	PullStrength: number,
 	Lockout: number,
 }
 
@@ -409,7 +407,6 @@ local template: ProfileData = {
 		DepthAwareness = StartingValuesConfig.Technique.DepthAwareness,
 		StartControl = StartingValuesConfig.Technique.StartControl,
 		PressPower = StartingValuesConfig.Technique.PressPower,
-		PullStrength = StartingValuesConfig.Technique.PullStrength,
 		Lockout = StartingValuesConfig.Technique.Lockout,
 	},
 
@@ -470,16 +467,14 @@ local function hasMovedToBuilds(data: ProfileData): boolean
 end
 
 --[[
-	Version 1 to 2: the Deadlift gained its own first-phase technique stat.
+	Version 1 to 2: originally gave every lifter the Deadlift's PullStrength stat
+	at 0. That stat was removed in version 7 (migrations[6] deletes it), so this
+	step no longer adds it.
 
-	Every pre-existing lifter receives PullStrength = 0, which is what a brand new
-	lifter starts with, so nobody is advantaged or disadvantaged by having played
-	before the deadlift existed. Nothing else is read, written or removed.
-
-	Reconcile() runs BEFORE this (see PlayerDataService), so in practice it has
-	already filled the field from the template. Writing it here anyway means the
-	migration does not silently depend on Reconcile's behaviour staying the same,
-	and the `if` keeps it from overwriting a value that is somehow already set.
+	THE STEP ITSELF MUST STAY. migrate() abandons a profile at its old version if
+	a gap has no step, so deleting this would strand every version-1 save
+	(GAME_DESIGN 34.14, checkpoint 9). It keeps its one remaining job: repairing a
+	missing technique table, so the later steps find one.
 ]]
 migrations[1] = function(data: ProfileData)
 	if typeof(data.technique) ~= "table" then
@@ -493,14 +488,8 @@ migrations[1] = function(data: ProfileData)
 			DepthAwareness = StartingValuesConfig.Technique.DepthAwareness,
 			StartControl = StartingValuesConfig.Technique.StartControl,
 			PressPower = StartingValuesConfig.Technique.PressPower,
-			PullStrength = StartingValuesConfig.Technique.PullStrength,
 			Lockout = StartingValuesConfig.Technique.Lockout,
 		}
-		return
-	end
-
-	if typeof(data.technique.PullStrength) ~= "number" then
-		data.technique.PullStrength = StartingValuesConfig.Technique.PullStrength
 	end
 end
 
@@ -1026,6 +1015,28 @@ migrations[5] = function(data: ProfileData)
 
 	(data :: any).competitionNumber = nil;
 	(data :: any).competitionScale = nil
+end
+
+--[[
+	Version 6 to 7: PullStrength is removed (GAME_DESIGN 34.6, 34.9, checkpoint 9).
+
+	The Deadlift's typing pull reads no trainable stat any more. Every lifter had
+	PullStrength at 0 (it was never trainable), where its curves multiplied by 1,
+	so removing it changes nobody's lifting.
+
+	Dropping it from the template is not enough: Reconcile only ADDS missing keys,
+	so a saved profile would keep the field for ever. This deletes it. Nothing
+	else is read, written or removed: Competition Number, Competition Scale, the
+	five technique stats, budgets, Training Energy, bodyweight and meta stay
+	exactly as they are.
+
+	IDEMPOTENT: a second run finds no field and changes nothing.
+]]
+migrations[6] = function(data: ProfileData)
+	local technique = (data :: any).technique
+	if typeof(technique) == "table" then
+		technique.PullStrength = nil
+	end
 end
 
 --[[

@@ -82,8 +82,8 @@ function TechniqueTraining.statsFor(lift: any): { string }?
 end
 
 --[[
-	Whether `primary` is a stat this lift can train at a rack. PullStrength and
-	any typing stat are never in the table, so they are always false.
+	Whether `primary` is a stat this lift can train at a rack. The removed
+	PullStrength, or any typing stat, is never in the table, so always false.
 ]]
 function TechniqueTraining.isValidPrimary(lift: any, primary: any): boolean
 	if typeof(primary) ~= "string" then

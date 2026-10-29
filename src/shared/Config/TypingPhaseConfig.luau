@@ -53,17 +53,13 @@
 	feel too demanding in play, the approved levers are the WINDOW and the SAG, not
 	a faster required rate.
 
-	PULLSTRENGTH SUBSTITUTES FOR TYPING ABILITY
+	NO TECHNIQUE STAT (GAME_DESIGN section 34.9, checkpoint 9)
 
-	A trained lifter needs FEWER keystrokes, not faster ones. At a 110% pull:
-
-		PullStrength      0  ->  24 characters at 36 WPM
-		PullStrength 10,000  ->  18 characters at 24 WPM
-		PullStrength max     ->  17 characters at 22 WPM
-
-	It never becomes automatic: seventeen characters still have to be typed
-	correctly against a live sag, and PullStrength never touches the bar target,
-	the time window or the cue content.
+	The pull is the game's one pure player-skill gate: no trainable stat and no
+	equipment changes it. Its difficulty comes from the attempt's intensity alone
+	and the player at the keyboard. The former PullStrength stat was removed; every
+	lifter had it at 0, where its curves multiplied by exactly 1, so the numbers
+	below are the pull as it always played (user, 2026-10-29: keep it the same).
 ]]
 
 local Curve = require(script.Parent.Parent.Util.Curve)
@@ -183,7 +179,7 @@ end
 --[[
 	The shared profile. PROVISIONAL.
 
-	Resulting experience at PullStrength 0:
+	Resulting experience:
 
 		attempt  diff  target  window  sag  miss | chars | required |  WPM
 		    80%    32      35     8.0  2.0   2.0 |     9 |  1.59/s  |   19
@@ -251,13 +247,6 @@ local defaultProfile: ParameterMapper.MinigameSpec = {
 			{ x = 95, y = 4.1 },
 			{ x = 100, y = 4.4 },
 		}),
-		fromTechnique = linear({
-			{ x = 10, y = 1.00 },
-			{ x = 30, y = 0.92 },
-			{ x = 55, y = 0.82 },
-			{ x = 82, y = 0.70 },
-			{ x = 99.5, y = 0.62 },
-		}),
 		minimum = 0.4,
 	},
 
@@ -266,21 +255,11 @@ local defaultProfile: ParameterMapper.MinigameSpec = {
 
 		Flat across difficulty on purpose: a heavier bar does not make a keystroke
 		worth less, it makes the climb longer and the sag faster.
-
-		PullStrength raises it, which is how a trained lifter needs FEWER keystrokes
-		rather than faster ones. This is the single most important curve in the file.
 	]]
 	progressPerToken = {
 		fromDifficulty = linear({
 			{ x = 0, y = 4.0 },
 			{ x = 100, y = 4.0 },
-		}),
-		fromTechnique = linear({
-			{ x = 10, y = 1.00 },
-			{ x = 30, y = 1.10 },
-			{ x = 55, y = 1.22 },
-			{ x = 82, y = 1.35 },
-			{ x = 99.5, y = 1.45 },
 		}),
 		minimum = 0.5,
 	},
@@ -290,8 +269,6 @@ local defaultProfile: ParameterMapper.MinigameSpec = {
 
 		At a 100% pull this is 4.0, exactly one correct character's gain, so a mistake
 		costs the character you just earned. At 110% it is one and a half.
-
-		PullStrength softens it.
 	]]
 	mistakePenalty = {
 		fromDifficulty = linear({
@@ -300,13 +277,6 @@ local defaultProfile: ParameterMapper.MinigameSpec = {
 			{ x = 65, y = 4.0 },
 			{ x = 95, y = 6.0 },
 			{ x = 100, y = 6.4 },
-		}),
-		fromTechnique = linear({
-			{ x = 10, y = 1.00 },
-			{ x = 30, y = 0.92 },
-			{ x = 55, y = 0.82 },
-			{ x = 82, y = 0.70 },
-			{ x = 99.5, y = 0.62 },
 		}),
 		minimum = 0.5,
 	},
@@ -326,7 +296,7 @@ TypingPhaseConfig.Profiles = {
 TypingPhaseConfig.Phases = {
 	DeadliftPull = {
 		lift = "Deadlift",
-		techniqueStat = "PullStrength",
+		-- No techniqueStat: the pull reads no trainable stat (see the header).
 		profile = "Default",
 		displayName = "PULL",
 		--[[
@@ -355,9 +325,15 @@ for phaseName, phase in pairs(TypingPhaseConfig.Phases) do
 		string.format("[TypingPhaseConfig] phase %s must name the lift it reads", phaseName)
 	)
 	assert(
-		typeof(phase.techniqueStat) == "string" and phase.techniqueStat ~= "",
-		string.format("[TypingPhaseConfig] phase %s must name its technique stat", phaseName)
+		(phase :: any).techniqueStat == nil,
+		string.format("[TypingPhaseConfig] phase %s must not read a technique stat (GAME_DESIGN 34.9)", phaseName)
 	)
+	for _, parameter in pairs(TypingPhaseConfig.Profiles[phase.profile] :: any) do
+		assert(
+			parameter.fromTechnique == nil,
+			string.format("[TypingPhaseConfig] phase %s's profile must not scale with technique (GAME_DESIGN 34.9)", phaseName)
+		)
+	end
 	assert(
 		typeof(phase.displayName) == "string" and phase.displayName ~= "",
 		string.format("[TypingPhaseConfig] phase %s must have a displayName", phaseName)

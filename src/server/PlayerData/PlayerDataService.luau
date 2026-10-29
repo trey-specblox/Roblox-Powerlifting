@@ -485,7 +485,7 @@ end
 
 	NO EARNING CAP, NO CLOCK: technique has no daily allowance (5B.7), so this
 	reads no time at all. CN, every allowance record, the per-lift CN hours,
-	Competition Scale and PullStrength are never touched.
+	and Competition Scale are never touched.
 
 	Returns the ProfileOperations.TechniqueResult, or nil when the player has
 	no active session. A "Rejected" result wrote NOTHING.

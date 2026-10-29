@@ -353,8 +353,8 @@ ProgressionConfig.DailyTraining = {
 		                                          other stat the rest)
 		Deadlift  Lockout                        (100%)
 
-	PullStrength is NEVER trainable, and the Deadlift's typing phase has no
-	trainable stat. Every other module -- the award, the rack rules, the menu --
+	The Deadlift's typing phase has no trainable stat (PullStrength was removed
+	in schema version 7, section 34.6). Every other module -- the award, the rack rules, the menu --
 	reads this table rather than keeping its own copy.
 ]]
 ProgressionConfig.TrainableTechnique = {
@@ -497,8 +497,8 @@ assert(
 
 --[[
 	THE PAIRING TABLE MUST NAME ONLY THE FIVE TRAINABLE STATS (section 34.6):
-	one or two per lift, every lift covered, no stat listed twice, never
-	PullStrength.
+	one or two per lift, every lift covered, no stat listed twice, nothing
+	else (the removed PullStrength included).
 ]]
 do
 	local trainable = {

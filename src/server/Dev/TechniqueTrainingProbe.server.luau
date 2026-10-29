@@ -102,7 +102,10 @@ local function deepEqual(a: any, b: any): boolean
 end
 
 local function newProfile(): PlayerProfileSchema.ProfileData
-	return deepCopy(TEMPLATE)
+	local data = deepCopy(TEMPLATE)
+	-- The template's `builds` is empty; every real load creates the starting build (schema v6).
+	PlayerProfileSchema.ensureActiveBuild(data)
+	return data
 end
 
 local function raw(data: PlayerProfileSchema.ProfileData, stat: string): number
@@ -232,7 +235,7 @@ do
 	local data = newProfile()
 	local result = apply(data, "Deadlift", "Lockout", HOUR)
 	check("Lockout: one hour gives +2.00 Lockout", result.outcome == "Awarded" and near(raw(data, "Lockout"), 2, 1e-12))
-	check("and PullStrength never moves", raw(data, "PullStrength") == TEMPLATE.technique.PullStrength)
+	check("and no PullStrength appears", raw(data, "PullStrength") == nil)
 	check("the result reports the gains primary first",
 		#result.gains == 1 and result.gains[1].stat == "Lockout" and result.after.Lockout == raw(data, "Lockout"))
 end
@@ -412,7 +415,7 @@ do
 	apply(data, "Squat", "SquatControl", 1800)
 	local after = withoutStats(data, { "SquatControl", "DepthAwareness" })
 
-	check("CN, CN allowance, CN hours, Scale, legacy technique allowance, PullStrength, budgets: all unchanged",
+	check("CN, CN allowance, CN hours, Scale, legacy technique allowance, budgets: all unchanged",
 		deepEqual(before, after))
 	check("the legacy record keeps its old value exactly", data.techniqueAllowance.spentToday == 4.8)
 end

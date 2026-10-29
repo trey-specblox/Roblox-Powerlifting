@@ -269,8 +269,8 @@ do
 	check("the daily cap is 4.00 EV", TRAINING.DailyCapEV == 4.00)
 	check("a new lifter's 53 kg resolves to a supported class",
 		ProgressionReferenceConfig.get("Squat", STARTING_CLASS) ~= nil)
-	check("PullStrength is still in the template (not removed by 5B.5)",
-		(PlayerProfileSchema.template.technique :: any).PullStrength ~= nil)
+	check("PullStrength is gone from the template (checkpoint 9)",
+		(PlayerProfileSchema.template.technique :: any).PullStrength == nil)
 end
 
 --------------------------------------------------------------------------------
@@ -767,7 +767,6 @@ do
 
 	-- Non-default values everywhere, so an accidental reset would show.
 	data.technique.SquatControl = 123.5
-	data.technique.PullStrength = 77
 	data.technique.Lockout = 9.25
 	-- Into the 83 kg class first: its build is the one trained and checked (schema v6).
 	data.bodyweight.currentKg = 82.4
@@ -791,7 +790,7 @@ do
 
 	check("technique, Scale, bodyweight, budget, energy, meta and version are identical",
 		deepEqual(untouchable(data), guarded))
-	check("PullStrength survives at 77", data.technique.PullStrength == 77)
+	check("no PullStrength appears", data.technique.PullStrength == nil)
 	check("Competition Scale is still 140, not raised by training", scaleOf(data).Squat == 140)
 	check("the technique allowance was never spent", data.techniqueAllowance.spentToday == 0)
 	check("an 82.4 kg lifter is scored in the 83 kg class", later.weightClassLabel == "83 kg",

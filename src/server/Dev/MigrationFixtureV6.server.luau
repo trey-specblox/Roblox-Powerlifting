@@ -5,6 +5,8 @@
 
 	DEV TOOL, NOT GAMEPLAY. Proves the version 5 -> 6 migration (weight-class
 	builds, GAME_DESIGN.md 29.11) against the REAL DataStore, on a throwaway key.
+	Since version 7 the same load also runs the 6 -> 7 step, which removes
+	PullStrength (GAME_DESIGN 34.14, checkpoint 9), so it checks that too.
 
 	Three real ProfileStore sessions on one disposable key in the "PlayerData"
 	store, then the key is deleted:
@@ -14,7 +16,7 @@
 	  2  MIGRATE  load in production order (detectVersion BEFORE Reconcile),
 	              migrate, check every rule, then raise a Scale and a best Total
 	              through the real meet operations, save and release
-	  3  RELOAD   load again: version 6 persisted, a re-run migrate changes
+	  3  RELOAD   load again: version 7 persisted, a re-run migrate changes
 	              nothing, the "83 kg" key and the zero Scales survived JSON
 	  -  CLEANUP  RemoveAsync deletes the key
 
@@ -152,7 +154,7 @@ session("migrate", function(profile)
 
 	local finalVersion = PlayerProfileSchema.migrate(data, fromVersion)
 	local build = data.builds[CLASS]
-	check("migrated to version 6", finalVersion == 6 and data.version == 6, finalVersion)
+	check("migrated to version 7", finalVersion == 7 and data.version == 7, finalVersion)
 	check("one build, filed under 83 kg", typeof(build) == "table" and countKeys(data.builds) == 1, countKeys(data.builds))
 	check("CN moved exactly", build and build.competitionNumber.Squat == 182.5
 		and build.competitionNumber.Bench == 117.25 and build.competitionNumber.Deadlift == 215.0)
@@ -160,7 +162,7 @@ session("migrate", function(profile)
 		and build.competitionScale.Bench == 0 and build.competitionScale.Deadlift == 0)
 	check("best Total starts at none", build and build.bestTotalKg == 0)
 	check("flat fields removed", data.competitionNumber == nil and data.competitionScale == nil)
-	check("technique untouched", data.technique.Lockout == 128.5 and data.technique.PullStrength == 410)
+	check("technique kept, PullStrength removed", data.technique.Lockout == 128.5 and data.technique.PullStrength == nil)
 	check("budget untouched", data.competitionBudget.Squat.amount == 2.75
 		and data.competitionBudget.Squat.lastUpdatedUnix == 1761600000)
 	check("energy untouched", data.trainingEnergy.amount == 61)
@@ -176,15 +178,15 @@ session("migrate", function(profile)
 end)
 
 print("")
-print("SESSION 3. reload and confirm version 6 persisted")
+print("SESSION 3. reload and confirm version 7 persisted")
 session("reload", function(profile)
 	local data = profile.Data
 	local fromVersion = PlayerProfileSchema.detectVersion(data)
-	check("detectVersion reads 6", fromVersion == 6, fromVersion)
+	check("detectVersion reads 7", fromVersion == 7, fromVersion)
 	profile:Reconcile()
 	local finalVersion = PlayerProfileSchema.migrate(data, fromVersion)
 	local build = data.builds[CLASS]
-	check("still version 6, nothing re-migrated", finalVersion == 6)
+	check("still version 7, nothing re-migrated", finalVersion == 7)
 	check("the \"83 kg\" key survived JSON, still one build", typeof(build) == "table" and countKeys(data.builds) == 1)
 	check("CN survived two round trips", build and build.competitionNumber.Squat == 182.5
 		and build.competitionNumber.Bench == 117.25)

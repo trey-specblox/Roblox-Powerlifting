@@ -163,7 +163,8 @@ local function phaseDisplayName(spec: PhaseSpec): string
 end
 
 local function resolvePhaseDifficulty(attempt: Attempt, spec: PhaseSpec): any
-	local techniqueStatName: string
+	-- nil for a phase that reads no stat (the deadlift's typing pull, GAME_DESIGN 34.9).
+	local techniqueStatName: string?
 	if spec.kind == LiftAttempt.PhaseKind.Control then
 		techniqueStatName = ControlChallenge.techniqueStatFor(spec.phaseName)
 	elseif spec.kind == LiftAttempt.PhaseKind.Power then
@@ -174,7 +175,7 @@ local function resolvePhaseDifficulty(attempt: Attempt, spec: PhaseSpec): any
 		techniqueStatName = SkillCheckChallenge.techniqueStatFor(spec.phaseName)
 	end
 
-	local techniqueStat = attempt.techniqueSnapshot[techniqueStatName] or 0
+	local techniqueStat = if techniqueStatName then attempt.techniqueSnapshot[techniqueStatName] or 0 else 0
 
 	return DifficultyResolver.resolve({
 		attemptWeight = attempt.attemptWeightKg,

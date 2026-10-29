@@ -258,12 +258,13 @@ function TypingChallenge.build(
 end
 
 --[[
-	The technique stat a phase reads, e.g. "PullStrength" for the deadlift's pull.
+	The technique stat a phase reads: always nil. The deadlift's pull is pure player
+	skill and reads no trainable stat (GAME_DESIGN section 34.9).
 ]]
-function TypingChallenge.techniqueStatFor(phaseName: string): string
+function TypingChallenge.techniqueStatFor(phaseName: string): string?
 	local phase = TypingPhaseConfig.Phases[phaseName]
 	assert(phase ~= nil, string.format("[TypingChallenge] unknown phase %q", phaseName))
-	return phase.techniqueStat
+	return nil
 end
 
 --[[

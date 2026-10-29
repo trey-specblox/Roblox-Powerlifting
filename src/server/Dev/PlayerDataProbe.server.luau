@@ -306,13 +306,13 @@ do
 	check("no legacy forecasted field in the template", (data :: any).forecasted == nil)
 	check("bodyweight starts at 53 kg, maintaining", data.bodyweight.currentKg == 53 and data.bodyweight.targetKg == 53)
 	check(
-		"all six technique stats start at 0",
+		"all five technique stats start at 0, and there is no PullStrength (checkpoint 9)",
 		data.technique.SquatControl == 0
 			and data.technique.DepthAwareness == 0
 			and data.technique.StartControl == 0
 			and data.technique.PressPower == 0
-			and data.technique.PullStrength == 0
 			and data.technique.Lockout == 0
+			and (data.technique :: any).PullStrength == nil
 	)
 	check(
 		"three budgets start full",
@@ -334,7 +334,7 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 6", finalVersion == 6 and data.version == 6)
+	check("migrated to version 7", finalVersion == 7 and data.version == 7)
 	check("Squat preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
 	check("Bench preserved at 117.5", near(cnOf(data).Bench, 117.5), tostring(cnOf(data).Bench))
 	check("Deadlift preserved at 215.0", near(cnOf(data).Deadlift, 215.0), tostring(cnOf(data).Deadlift))
@@ -360,7 +360,7 @@ do
 	check("Squat still 300 after three passes", near(cnOf(data).Squat, 300.0), tostring(cnOf(data).Squat))
 	check("Bench still 200", near(cnOf(data).Bench, 200.0))
 	check("Deadlift still 350", near(cnOf(data).Deadlift, 350.0))
-	check("version still 6", data.version == 6)
+	check("version still 7", data.version == 7)
 	check(
 		"part-spent budget was not silently refilled",
 		near(data.competitionBudget.Squat.amount, spentBudget),
@@ -777,7 +777,7 @@ do
 	check("DepthAwareness 800 survived", data.technique.DepthAwareness == 800)
 	check("StartControl 450 survived", data.technique.StartControl == 450)
 	check("PressPower 2000 survived", data.technique.PressPower == 2000)
-	check("PullStrength 300 survived", data.technique.PullStrength == 300)
+	check("PullStrength 300 removed by the v7 step", (data.technique :: any).PullStrength == nil)
 	check("Lockout 95 survived", data.technique.Lockout == 95)
 	check("bodyweight 81.5 kg survived", near(data.bodyweight.currentKg, 81.5))
 	check("target bodyweight 93 kg survived", near(data.bodyweight.targetKg, 93))
@@ -787,11 +787,12 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("bonus. a version-1 save reaches version 6 in one pass")
+print("bonus. a version-1 save reaches version 7 in one pass")
 do
 	--[[
-		The two-step path. A v1 save predates both PullStrength and the rename,
-		so migrations[1] and migrations[2] must both run, in order.
+		The long path. A v1 save predates the rename, so every step from
+		migrations[1] on must run, in order; migrations[1] stays (as a repair
+		only) since PullStrength was removed, or this save would be stranded.
 	]]
 	local data = newProfile() :: any
 	data.competitionNumber = { Squat = 25, Bench = 25, Deadlift = 25 }
@@ -808,11 +809,11 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 6", finalVersion == 6 and data.version == 6)
+	check("reached version 7", finalVersion == 7 and data.version == 7)
 	check("Squat 140 preserved across two migrations", near(cnOf(data).Squat, 140.0), tostring(cnOf(data).Squat))
 	check("Bench 95 preserved", near(cnOf(data).Bench, 95.0))
 	check("Deadlift 170 preserved", near(cnOf(data).Deadlift, 170.0))
-	check("PullStrength added at 0 by the v1 step", data.technique.PullStrength == 0)
+	check("no PullStrength at the end (the v1 step no longer adds it)", data.technique.PullStrength == nil)
 	check("pre-existing technique untouched", data.technique.PressPower == 600)
 	check("legacy forecasted removed", data.forecasted == nil)
 end
@@ -1313,7 +1314,7 @@ do
 	local data = reconciledV3Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 3)
 
-	check("migrated to version 6", finalVersion == 6 and data.version == 6)
+	check("migrated to version 7", finalVersion == 7 and data.version == 7)
 
 	-- The rule that this whole checkpoint exists to get right.
 	check("Squat Scale is UNPROVEN after migration", scaleOf(data).Squat == 0, tostring(scaleOf(data).Squat))
@@ -1334,7 +1335,7 @@ do
 	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
 	check("part-spent Training Energy preserved at 45", near(data.trainingEnergy.amount, 45))
 	check("technique PressPower 2200 preserved", data.technique.PressPower == 2200)
-	check("technique PullStrength 350 preserved", data.technique.PullStrength == 350)
+	check("technique PullStrength 350 removed by the v7 step", (data.technique :: any).PullStrength == nil)
 	check("bodyweight 81.5 kg preserved", near(data.bodyweight.currentKg, 81.5))
 	check("sessionCount 77 preserved", data.meta.sessionCount == 77)
 	check("createdUnix preserved", data.meta.createdUnix == 1700000000)
@@ -1793,7 +1794,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 4)
 
-	check("migrated 4 to 6", finalVersion == 6 and data.version == 6, tostring(data.version))
+	check("migrated 4 to 7", finalVersion == 7 and data.version == 7, tostring(data.version))
 
 	--[[
 		NO OFFLINE TRAINING CREDIT. A save that predates the station cannot
@@ -1829,7 +1830,7 @@ do
 		checkpoint 9 removes it from the CODE, together with the Deadlift typing
 		rebase. 5B.1 must not touch it, so this asserts it survived.
 	]]
-	check("PullStrength preserved, pending checkpoint 9", data.technique.PullStrength == 410)
+	check("PullStrength removed (checkpoint 9)", (data.technique :: any).PullStrength == nil)
 
 	check("part-spent Squat budget preserved", near(data.competitionBudget.Squat.amount, 2.75))
 	check("budget timestamp preserved", data.competitionBudget.Squat.lastUpdatedUnix == 1700500000)
@@ -1840,7 +1841,7 @@ do
 end
 
 --------------------------------------------------------------------------------
-print("35. EVERY historical version gap still reaches version 6")
+print("35. EVERY historical version gap still reaches version 7")
 do
 	--[[
 		The rule this guards is in PlayerProfileSchema: a step must exist for every
@@ -1854,8 +1855,8 @@ do
 	oneToFive.technique.PullStrength = nil
 
 	local v1 = PlayerProfileSchema.migrate(oneToFive, 1)
-	check("version 1 reaches 6", v1 == 6 and oneToFive.version == 6, tostring(v1))
-	check("v1 gained PullStrength at 0 on the way", oneToFive.technique.PullStrength == 0)
+	check("version 1 reaches 7", v1 == 7 and oneToFive.version == 7, tostring(v1))
+	check("v1 ends without PullStrength (removed in v7)", oneToFive.technique.PullStrength == nil)
 	check("v1 gained the CN allowance", typeof(oneToFive.cnAllowance) == "table"
 		and oneToFive.cnAllowance.spentToday == 0)
 	check("v1 gained the training-time record", typeof(oneToFive.trainingTimeToday) == "table"
@@ -1863,14 +1864,14 @@ do
 
 	local twoToFive = reconciledV2Save(182.5, 117.5, 215.0)
 	local v2 = PlayerProfileSchema.migrate(twoToFive, 2)
-	check("version 2 reaches 6", v2 == 6 and twoToFive.version == 6, tostring(v2))
+	check("version 2 reaches 7", v2 == 7 and twoToFive.version == 7, tostring(v2))
 	check("v2 kept its real lifts through four steps", near(cnOf(twoToFive).Squat, 182.5))
 	check("v2 gained the technique allowance", typeof(twoToFive.techniqueAllowance) == "table"
 		and twoToFive.techniqueAllowance.dayKey == DayKey.UNSTAMPED)
 
 	local threeToFive = reconciledV3Save(200.0, 130.0, 240.0)
 	local v3 = PlayerProfileSchema.migrate(threeToFive, 3)
-	check("version 3 reaches 6", v3 == 6 and threeToFive.version == 6, tostring(v3))
+	check("version 3 reaches 7", v3 == 7 and threeToFive.version == 7, tostring(v3))
 	check("v3 is still UNPROVEN, never seeded from CN", scaleOf(threeToFive).Squat == 0,
 		tostring(scaleOf(threeToFive).Squat))
 	check("v3 kept its part-spent budget", near(threeToFive.competitionBudget.Squat.amount, 3.21))
@@ -1881,7 +1882,7 @@ do
 	-- A brand new profile is already current and must skip every step.
 	local fresh = newProfile() :: any
 	local vNew = PlayerProfileSchema.migrate(fresh, 0)
-	check("a new profile is already version 6", vNew == 6 and fresh.version == 6)
+	check("a new profile is already version 7", vNew == 7 and fresh.version == 7)
 
 	--[[
 		IDEMPOTENT. Running the step again on an already-migrated profile must not
@@ -1940,7 +1941,7 @@ do
 	check("the reload is a separate table", near(data.cnAllowance.spentToday, 2.8109))
 
 	-- MIGRATING AN ALREADY-CURRENT PROFILE AGAIN MUST NOT RESET A LIVE DAY.
-	check("reload is still version 6", reloaded.version == 6)
+	check("reload is still version 7", reloaded.version == 7)
 end
 
 --------------------------------------------------------------------------------
@@ -2034,7 +2035,7 @@ do
 	-- AND THE REPAIR TOUCHED NOTHING ELSE.
 	check("repair left CN alone", near(cnOf(negative).Squat, 165.0))
 	check("repair left Scale alone", near(scaleOf(negative).Squat, 177.5))
-	check("repair left technique alone", negative.technique.PullStrength == 410)
+	check("repair left technique alone", negative.technique.PressPower == 2350)
 	check("repair left the budget alone", near(negative.competitionBudget.Squat.amount, 2.75))
 end
 
@@ -2071,7 +2072,7 @@ do
 	local finalVersion = PlayerProfileSchema.migrate(data, 5)
 	local build = data.builds["83 kg"]
 
-	check("migrated to version 6", finalVersion == 6 and data.version == 6)
+	check("migrated to version 7", finalVersion == 7 and data.version == 7)
 	check("the build is filed under the bodyweight's class, 83 kg", typeof(build) == "table")
 	check("and it is the only build (no phantom 59 kg)", countBuilds(data) == 1, tostring(countBuilds(data)))
 	check("Squat CN moved exactly", build and build.competitionNumber.Squat == 182.5)
@@ -2086,7 +2087,7 @@ do
 		and ProfileOperations.getCompetitionScale(data, "Squat") == 177.5)
 
 	-- NOTHING ACCOUNT-WIDE MOVED.
-	check("technique untouched", data.technique.PullStrength == 410)
+	check("technique untouched", data.technique.PressPower == 2350 and data.technique.Lockout == 128)
 	check("budget untouched", near(data.competitionBudget.Squat.amount, 2.75))
 	check("daily allowance untouched", data.cnAllowance.spentToday == 1.5 and data.cnAllowance.dayKey == "2026-10-27")
 	check("bodyweight untouched", data.bodyweight.currentKg == 82.4)
@@ -2131,7 +2132,7 @@ end
 
 --------------------------------------------------------------------------------
 print("")
-print("40. running migrations again on a version-6 profile changes nothing")
+print("40. running migrations again on a version-7 profile changes nothing")
 do
 	local data = reconciledV5Save(200.0, 140.0, 250.0, 82.4)
 	PlayerProfileSchema.migrate(data, 5)
@@ -2149,7 +2150,7 @@ do
 	check("the best Total survived", build and build.bestTotalKg == 575.0)
 	check("no flat field was planted back", data.competitionNumber == nil and data.competitionScale == nil)
 	check("still one build", countBuilds(data) == 1)
-	check("back at version 6", data.version == 6)
+	check("back at version 7", data.version == 7)
 end
 
 --------------------------------------------------------------------------------
@@ -2242,6 +2243,49 @@ do
 	check("builds survive a save and reload", reloaded.builds["66 kg"].bestTotalKg == 412.5
 		and reloaded.builds["66 kg"].competitionScale.Squat == 140.0
 		and reloaded.builds["59 kg"].competitionNumber.Squat == StartingValuesConfig.Forecasted.Squat)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("44. version 6 to 7 removes PullStrength and nothing else (checkpoint 9)")
+do
+	-- A version-6 save as it is live today: one build, and the old PullStrength field.
+	local data = reconciledV5Save(182.5, 117.5, 215.0, 82.4)
+	PlayerProfileSchema.migrate(data, 5)
+	data.version = 6
+	data.technique.PullStrength = 410
+	local build = data.builds["83 kg"]
+
+	local finalVersion = PlayerProfileSchema.migrate(data, 6)
+	check("migrated 6 to 7", finalVersion == 7 and data.version == 7, tostring(data.version))
+	check("PullStrength is gone", data.technique.PullStrength == nil)
+	check("the five technique stats are untouched", data.technique.SquatControl == 1550
+		and data.technique.DepthAwareness == 975 and data.technique.StartControl == 525
+		and data.technique.PressPower == 2350 and data.technique.Lockout == 128)
+	check("the build is the same build, numbers exact", data.builds["83 kg"] == build
+		and build.competitionNumber.Squat == 182.5 and build.competitionScale.Deadlift == 212.5
+		and build.bestTotalKg == PlayerProfileSchema.NO_TOTAL)
+	check("budget, energy, allowance, bodyweight and meta untouched",
+		near(data.competitionBudget.Squat.amount, 2.75) and near(data.trainingEnergy.amount, 61)
+			and data.cnAllowance.spentToday == 1.5 and data.bodyweight.currentKg == 82.4
+			and data.meta.sessionCount == 103)
+
+	-- Idempotent: again from 6, and the whole chain from 2.
+	PlayerProfileSchema.migrate(data, 6)
+	data.version = 2
+	PlayerProfileSchema.migrate(data, 2)
+	check("running it again changes nothing", data.version == 7 and data.technique.PullStrength == nil
+		and data.technique.Lockout == 128 and data.builds["83 kg"].competitionNumber.Squat == 182.5)
+
+	-- A save with no technique table at all still reaches version 7 (no crash).
+	local broken = reconciledV5Save(150.0, 100.0, 180.0, 53)
+	PlayerProfileSchema.migrate(broken, 5)
+	broken.version = 6
+	broken.technique = nil
+	check("a v6 save with no technique table reaches 7", PlayerProfileSchema.migrate(broken, 6) == 7)
+
+	local reloaded = saveAndReload(data)
+	check("still no PullStrength after a save and reload", reloaded.technique.PullStrength == nil)
 end
 
 --------------------------------------------------------------------------------

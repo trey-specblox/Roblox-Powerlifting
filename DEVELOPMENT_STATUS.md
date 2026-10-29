@@ -2194,8 +2194,47 @@ and polish.
   models. The full script not re-run after the fix. (Its INFO about
   Lighting.Technology is not a failure.)
   Re-run by the user after the fix (2026-10-29): ALL CHECKS PASSED.
-  NEXT ACTION: blocks to Blender is finished and verified; ask the user what
-  is next.
+  Blocks to Blender is finished and verified.
+
+  CHECKPOINT 9: REMOVE PULLSTRENGTH (GAME_DESIGN 34.6, 34.9, 34.14), 2026-10-29.
+  The user chose it as the next step and approved keeping the Deadlift typing
+  pull's difficulty exactly as it is ("keep it the same"; asked whether the
+  pull should still scale with intensity: it does, more characters, faster sag
+  and bigger mistakes as the attempt gets heavier; a shorter window at 110% was
+  advised against, it would make the pull a typing-speed test). Every lifter
+  had PullStrength at 0 (never trainable), where its curves multiplied by 1, so
+  nobody's pull changes. COMMITTED and pushed with user approval on
+  2026-10-29 ("Commit and push").
+  - TypingPhaseConfig: the three fromTechnique curves and techniqueStat are
+    gone; startup asserts refuse a technique stat or curve on a typing phase.
+    TypingChallenge.techniqueStatFor returns nil; LiftAttemptService reads a
+    nil stat as 0 (no curve uses it).
+  - Save data version 7: PlayerProfileSchema drops the field (type and
+    template); migrations[1] stays as a repair-only step (deleting it would
+    strand version-1 saves); new migrations[6] deletes technique.PullStrength,
+    nothing else. StartingValuesConfig drops it. Comments elsewhere updated.
+  - Tests: PlayerDataProbe (versions 7, PullStrength absent after every
+    migration, new section 44 for the 6 -> 7 step), MigrationFixtureV6 (v7,
+    not run: needs the real DataStore), TrainingProgressionProbe,
+    TechniqueTrainingProbe, TrainingStationProbe. Also fixed a PRE-EXISTING
+    TechniqueTrainingProbe failure since schema v6 (its newProfile made no
+    build; now ensureActiveBuild, like the other probes).
+  - Checks: luau-lsp, no new errors (only the known pre-existing ones);
+    `rojo build` OK. Studio Play (by Claude, DataStore API off so no real save
+    touched): PlayerDataProbe 470/0, TrainingProgressionProbe 298/0,
+    TrainingStationProbe 205/0, TechniqueTrainingProbe 73/0 (probes switched
+    back off afterwards). The test profile loaded at version 7. The pull's
+    numbers at 80/90/100/105/110% match the old table exactly (9/13/18/22/24
+    characters, windows 8-12 s, 1.59-3.00 tokens/s). A real deadlift started
+    and its pull ran and was judged with no errors (simulated keys arrived
+    after the 10 s window, so it timed out); a replay through
+    TypingSimulation passed at 40 WPM (100% and 110%) and 80% at 25 WPM, and
+    failed 110% at 25 WPM, as designed.
+  - GAME_DESIGN: 34.6 note (removed), 34.9 rebase [APPROVED], 34.14 row 9
+    DONE and the migration requirements marked implemented.
+  NEXT ACTION: the user plays a deadlift in Studio to confirm it feels the
+  same; then ask what is next (GAME_DESIGN 34.14: checkpoint 6, the Scale
+  challenge modifier, needs design decisions first).
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2265,7 +2304,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Count only real door panels and shop gear in StarterGym_VerifyShell; `git log -1` for the hash.
+- 2026-10-29, pushed: Remove PullStrength (checkpoint 9, save version 7); `git log -1` for the hash.
+- `56f7249` (2026-10-29, pushed) Count only real door panels and shop gear in StarterGym_VerifyShell.
 - `bc4d903` (2026-10-29, pushed) Replace the gym's block steel with Blender I-beams and handrails (blocks to Blender, batch 9).
 - `8a62d1b` (2026-10-29, pushed) Replace the themed fronts' block details with Blender models (blocks to Blender, batch 8).
 - `5ed9cb2` (2026-10-29, pushed) Replace the back rooms' block furniture with Blender models (blocks to Blender, batch 7).

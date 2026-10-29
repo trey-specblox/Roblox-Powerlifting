@@ -1150,8 +1150,8 @@ end
 
 	UNTOUCHED, ALWAYS: Competition Number, the CN allowance, the per-lift CN
 	hours, Competition Scale, the legacy `techniqueAllowance` record (5B.7
-	removed the technique cap; the record is unused legacy data) and
-	PullStrength (never trainable, section 34.6).
+	removed the technique cap; the record is unused legacy data). (PullStrength,
+	never trainable, was removed in schema version 7, section 34.6.)
 
 	NO WEIGHT-CLASS CHECK. Technique needs no Progression Reference, so a 120+
 	lifter, refused by the CN award, may train technique.

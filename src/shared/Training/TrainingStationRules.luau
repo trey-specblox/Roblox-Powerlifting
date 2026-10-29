@@ -337,7 +337,7 @@ end
 --[[
 	Whether `primary` is a technique stat this lift can train at a rack. The
 	pairing table is ProgressionConfig.TrainableTechnique, through
-	TechniqueTraining; PullStrength is never valid.
+	TechniqueTraining; anything else (the removed PullStrength too) is invalid.
 ]]
 function TrainingStationRules.isValidPrimary(lift: any, primary: any): boolean
 	return TechniqueTraining.isValidPrimary(lift, primary)
