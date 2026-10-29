@@ -358,11 +358,14 @@ local function onPresentPhase(payload: any)
 		string.format("%s  %d / %d", challenge.displayName or payload.phaseName, payload.phaseIndex, payload.phaseCount),
 		"phase"
 	)
+	-- A meet attempt above the lifter's proven weight shows its Scale challenge on its own (GAME_DESIGN 33.4).
+	local scaleBonus = payload.scaleChallengeBonus
 	setStatus(string.format(
-		"%.1f kg  -  %.0f%% of forecasted max  -  difficulty %.0f",
+		"%.1f kg  -  %.0f%% of forecasted max  -  difficulty %.0f%s",
 		challenge.attemptWeightKg,
 		challenge.intensityPercent,
-		challenge.baseDifficulty
+		challenge.baseDifficulty,
+		if scaleBonus and scaleBonus > 0 then string.format("  -  unproven weight +%.0f", scaleBonus) else ""
 	))
 
 	if payload.kind == LiftAttempt.PhaseKind.Control then

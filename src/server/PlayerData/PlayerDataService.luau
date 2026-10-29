@@ -390,6 +390,21 @@ function PlayerDataService.getCompetitionNumber(player: Player, lift: string): n
 end
 
 --[[
+	The player's Competition Scale for one lift, in kilograms, from the current
+	class's build: the heaviest weight they have proven in a meet, 0 when unproven.
+	Read-only (the meet raises it through ProfileOperations). Returns nil when the
+	data is not loaded or the lift is not one of the three.
+]]
+function PlayerDataService.getCompetitionScale(player: Player, lift: string): number?
+	local data = activeData(player, "getCompetitionScale")
+	if data == nil then
+		return nil
+	end
+
+	return ProfileOperations.getCompetitionScale(data, lift)
+end
+
+--[[
 	THERE IS DELIBERATELY NO METHOD HERE THAT WRITES AN ARBITRARY COMPETITION
 	NUMBER.
 

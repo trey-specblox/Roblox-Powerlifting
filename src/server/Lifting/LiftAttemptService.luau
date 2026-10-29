@@ -60,6 +60,7 @@ local TypingChallenge = require(LiftingFolder:WaitForChild("TypingChallenge"))
 local SkillCheckChallenge = require(LiftingFolder:WaitForChild("SkillCheckChallenge"))
 local DifficultyResolver = require(DifficultyFolder:WaitForChild("DifficultyResolver"))
 local ModifierRegistry = require(ModifiersFolder:WaitForChild("ModifierRegistry"))
+local ScaleChallenge = require(Shared:WaitForChild("Progression"):WaitForChild("ScaleChallenge"))
 
 local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
 local ControlPhaseService = require(script.Parent.ControlPhaseService)
@@ -103,6 +104,8 @@ type Attempt = {
 	attemptWeightKg: number,
 	techniqueSnapshot: { [string]: number },
 	modifierSnapshot: any,
+	-- The Competition Scale challenge's extra difficulty points (meet attempts only; 0 otherwise), for the HUD.
+	scaleChallengeBonus: number,
 
 	phases: { PhaseSpec },
 	phaseIndex: number,
@@ -404,6 +407,7 @@ function beginPhaseAtIndex(attempt: Attempt)
 				phaseIndex = phaseIndex,
 				phaseCount = #attempt.phases,
 				challenge = challenge,
+				scaleChallengeBonus = if attempt.scaleChallengeBonus > 0 then attempt.scaleChallengeBonus else nil,
 			}
 			set.presentPhase:FireClient(player, payload)
 		end,
@@ -435,7 +439,7 @@ function beginPhaseAtIndex(attempt: Attempt)
 end
 
 local createAttempt: (player: Player, liftName: string, requestedPercent: number?, weightKg: number?,
-	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?) -> (boolean, string?)
+	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?, isCompetition: boolean) -> (boolean, string?)
 
 local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requestedPercent: unknown)
 	local set = remotes
@@ -474,17 +478,18 @@ local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requ
 		return
 	end
 
-	createAttempt(player, liftName, percent, nil, nil)
+	createAttempt(player, liftName, percent, nil, nil, false)
 end
 
 --[[
 	Creates and starts one attempt. Exactly one of `percent` (of the player's
 	Competition Number) and `weightKg` (an exact bar weight, which must lie
-	within the same percentage bounds) is given. Returns false and the reason
-	when no attempt was started.
+	within the same percentage bounds) is given. `isCompetition` marks a meet
+	attempt, the only kind that carries the Competition Scale challenge
+	(GAME_DESIGN 33.4). Returns false and the reason when no attempt was started.
 ]]
 function createAttempt(player: Player, liftName: string, requestedPercent: number?, weightKg: number?,
-	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?): (boolean, string?)
+	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?, isCompetition: boolean): (boolean, string?)
 	local sequence = LiftAttemptConfig.Sequences[liftName]
 	if sequence == nil or not ENABLED_LIFTS[liftName] then
 		return false, "unknown lift " .. tostring(liftName)
@@ -534,12 +539,18 @@ function createAttempt(player: Player, liftName: string, requestedPercent: numbe
 		end
 	end
 
+	-- A meet attempt above the lifter's proven weight carries the Scale challenge (ScaleChallenge source).
+	local competitionScale = if isCompetition then PlayerDataService.getCompetitionScale(player, sequence.lift) else nil
 	local modifierSnapshot = ModifierRegistry.gather({
 		liftName = sequence.lift,
 		phase = nil,
 		profile = data,
 		isTraining = false,
+		isCompetition = isCompetition,
+		attemptWeightKg = attemptWeightKg,
+		competitionScaleKg = competitionScale,
 	})
+	local scaleChallengeBonus = if isCompetition then ScaleChallenge.bonusFor(attemptWeightKg, competitionScale) else 0
 
 	nextAttemptId += 1
 
@@ -555,6 +566,7 @@ function createAttempt(player: Player, liftName: string, requestedPercent: numbe
 		attemptWeightKg = attemptWeightKg,
 		techniqueSnapshot = techniqueSnapshot,
 		modifierSnapshot = modifierSnapshot,
+		scaleChallengeBonus = scaleChallengeBonus,
 
 		phases = sequence.phases,
 		phaseIndex = 1,
@@ -572,13 +584,16 @@ function createAttempt(player: Player, liftName: string, requestedPercent: numbe
 	attempts[player] = attempt
 
 	log(
-		"%s started %s at %.1f kg (%.1f%% of %.1f kg), %d phases",
+		"%s started %s at %.1f kg (%.1f%% of %.1f kg), %d phases%s",
 		player.Name,
 		attempt.displayName,
 		attempt.attemptWeightKg,
 		percent * 100,
 		forecastedMax,
-		#attempt.phases
+		#attempt.phases,
+		if isCompetition
+			then string.format(", meet attempt, Scale %.1f kg -> +%.1f difficulty", competitionScale or 0, scaleChallengeBonus)
+			else ""
 	)
 
 	--[[
@@ -615,7 +630,8 @@ function LiftAttemptService.startServerAttempt(player: Player, liftName: string,
 	if typeof(weightKg) ~= "number" or weightKg ~= weightKg or weightKg <= 0 or weightKg == math.huge then
 		return false, "invalid weight"
 	end
-	return createAttempt(player, liftName, nil, weightKg, onFinished)
+	-- Every server-started attempt is a meet attempt (the Mock Meet is the only caller).
+	return createAttempt(player, liftName, nil, weightKg, onFinished, true)
 end
 
 -- Whether the player's own attempt requests (the test keys) are ignored. The Mock Meet blocks them during a meet.
@@ -707,6 +723,9 @@ function LiftAttemptService.start()
 
 	local set = LiftingRemotes.createOnServer(ReplicatedStorage)
 	remotes = set
+
+	-- The Competition Scale challenge (GAME_DESIGN 33.4): meet attempts above proven weight feel a little harder.
+	ModifierRegistry.register(ScaleChallenge.SourceName, ScaleChallenge.producer)
 
 	set.requestLiftAttempt.OnServerEvent:Connect(onRequestLiftAttempt)
 	set.reportPhaseInput.OnServerEvent:Connect(onReportPhaseInput)

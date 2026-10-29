@@ -2232,9 +2232,41 @@ and polish.
     failed 110% at 25 WPM, as designed.
   - GAME_DESIGN: 34.6 note (removed), 34.9 rebase [APPROVED], 34.14 row 9
     DONE and the migration requirements marked implemented.
-  NEXT ACTION: the user plays a deadlift in Studio to confirm it feels the
-  same; then ask what is next (GAME_DESIGN 34.14: checkpoint 6, the Scale
-  challenge modifier, needs design decisions first).
+
+  CHECKPOINT 6: THE COMPETITION SCALE CHALLENGE MODIFIER (GAME_DESIGN 33.4),
+  2026-10-29. The user approved all six recommended decisions ("Use them"),
+  recorded in GAME_DESIGN 33.4 [APPROVED] (values PROVISIONAL), 33.11 item 2
+  DECIDED, 34.14 row 6 DONE: extra BASE-DIFFICULTY points added after the
+  IntensityConfig curve; 0 at or below proven Scale (no easing), rising
+  linearly to the +10 cap at attempt/Scale 1.50; unproven (Scale 0) = +10;
+  meet attempts only; shown on the attempt screen as its own line.
+  COMMITTED and pushed with user approval on 2026-10-29 ("Commit and push").
+  - New: src/shared/Config/ScaleChallengeConfig.luau (MaxBonus 10, FullRatio
+    1.5, UnprovenBonus 10, startup asserts) and
+    src/shared/Progression/ScaleChallenge.luau (pure bonusFor and the
+    ModifierRegistry producer: one BaseDifficulty "Add" modifier, meet
+    attempts only).
+  - ModifierRegistry: context gains isCompetition, attemptWeightKg,
+    competitionScaleKg (header updated: ScaleChallenge is the one source).
+  - PlayerDataService.getCompetitionScale (read-only, the current build).
+  - LiftAttemptService: registers the source in start(); createAttempt takes
+    isCompetition (startServerAttempt, the Mock Meet's only path, passes true;
+    the test keys pass false), passes Scale and weight to the registry, keeps
+    the bonus on the attempt, logs it, and sends scaleChallengeBonus in the
+    phase payload (LiftAttempt.PresentPhasePayload). LiftAttemptController
+    shows "unproven weight +N" after the difficulty.
+  - Checks: luau-lsp, no new errors (only the known pre-existing ones);
+    `rojo build` OK. Studio Play (by Claude): the rule 12/12 by script (at,
+    below, 1.11, 1.25, 1.50, 2.2 times, unproven 0 and nil, bad input). A
+    real Mock Meet (prompt, choose 22.5 kg, ready): log "meet attempt, Scale
+    0.0 kg -> +10.0 difficulty", HUD "22.5 kg - 90% - difficulty 55 -
+    unproven weight +10" (45 + 10). A practice squat after leaving: difficulty
+    65, no bonus line. Not seen in play: a partial bonus after a proven lift
+    (needs a good meet lift first; the rule covers it).
+  NEXT ACTION: the user tries a Mock Meet (and a deadlift) in Studio to
+  confirm they feel right; then ask what is next (GAME_DESIGN 34.14:
+  checkpoint 8, the Competition Budget, and 33.11 item 1, meet risk, are
+  open design questions).
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2304,7 +2336,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Remove PullStrength (checkpoint 9, save version 7); `git log -1` for the hash.
+- 2026-10-29, pushed: Add the Competition Scale challenge to meet attempts (checkpoint 6); `git log -1` for the hash.
+- `b67b8a7` (2026-10-29, pushed) Remove PullStrength (checkpoint 9, save version 7).
 - `56f7249` (2026-10-29, pushed) Count only real door panels and shop gear in StarterGym_VerifyShell.
 - `bc4d903` (2026-10-29, pushed) Replace the gym's block steel with Blender I-beams and handrails (blocks to Blender, batch 9).
 - `8a62d1b` (2026-10-29, pushed) Replace the themed fronts' block details with Blender models (blocks to Blender, batch 8).

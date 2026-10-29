@@ -24,10 +24,11 @@
 
 	No change to DifficultyResolver, ParameterMapper, or any minigame.
 
-	NOTHING IS REGISTERED YET. Equipment, height, origins and coaches all have
-	undefined magnitudes, and Q4 forbids inventing them. Each registers itself when
-	it is built, with its numbers in its own config. Until then the registry
-	returns an empty set and every lift resolves exactly as it does today.
+	ONE SOURCE IS REGISTERED: the Competition Scale challenge (ScaleChallenge,
+	GAME_DESIGN 33.4), by LiftAttemptService.start, and it only contributes to meet
+	attempts. Equipment, height, origins and coaches all have undefined
+	magnitudes, and Q4 forbids inventing them. Each registers itself when it is
+	built, with its numbers in its own config.
 ]]
 
 local ModifierSet = require(script.Parent.ModifierSet)
@@ -51,6 +52,11 @@ export type ModifierContext = {
 	profile: any?,
 	-- Set when the context is a training action rather than a competition lift.
 	isTraining: boolean?,
+	-- Set for a meet attempt (the Mock Meet). The Scale challenge applies only then.
+	isCompetition: boolean?,
+	-- The attempt's bar weight and the lift's Competition Scale (0 = unproven), in kg.
+	attemptWeightKg: number?,
+	competitionScaleKg: number?,
 }
 
 -- (context) -> modifiers contributed by this source

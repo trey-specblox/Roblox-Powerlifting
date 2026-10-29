@@ -85,6 +85,8 @@ export type PresentPhasePayload = {
 	phaseIndex: number,
 	phaseCount: number,
 	challenge: any,
+	-- The Competition Scale challenge's extra difficulty points, when a meet attempt carries any (GAME_DESIGN 33.4).
+	scaleChallengeBonus: number?,
 }
 
 -- server -> client: that phase is decided

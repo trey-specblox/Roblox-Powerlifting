@@ -3114,8 +3114,9 @@ TBD / REQUIRES FUTURE DESIGN APPROVAL:
 > only CN source**. Where §33.9 and §34.2 differ, **§34 wins**.
 >
 > **Do NOT implement these systems merely because they are documented here.** The
-> Scale challenge curve and cap and the fate of the Competition Budget are still
-> **[TBD]** and must be approved before implementation. The starting Scale and the
+> fate of the Competition Budget is still **[TBD]** and must be approved before
+> implementation. (The Scale challenge curve and cap were approved and built on
+> 2026-10-29, §33.4.) The starting Scale and the
 > migration backfill are **decided and implemented** (schema v4), and the training
 > EV rates are now **[PROVISIONAL]** in §34.4. See §33.11 and §33.12.
 
@@ -3283,17 +3284,21 @@ modifier reflecting that.
 - It must **never** make an attempt impossible. A player may always attempt what
   their CN and the legal attempt rules allow (§33.5).
 
-**[TBD] The exact curve, the cap, and the shape of its effect are NOT decided.**
-No values are specified here and none should be inferred. The open questions:
+**[APPROVED] The curve, the cap and the shape of its effect** (user, 2026-10-29,
+checkpoint 6; the values are **[PROVISIONAL]** balance, the shape is decided):
 
-| Question | Status |
+| Question | Decision |
 |---|---|
-| The curve mapping Scale Challenge Ratio to a modifier | **[TBD]** |
-| The cap value | **[TBD]** |
-| What the modifier actually modifies — base difficulty, effective technique, a minigame parameter, or a new channel | **[TBD]** |
-| Behaviour at ratio <= 1.00, i.e. a weight at or below proven Scale — neutral, or an easing bonus | **[TBD]** |
-| Behaviour when Scale is absent or zero | **[TBD]**, and blocked on §33.8 |
-| Whether the modifier is shown to the player as its own number or folded into the displayed difficulty | **[TBD]** |
+| What the modifier modifies | **Base difficulty**, as extra points added on the 0-100 scale AFTER the `IntensityConfig` curve (the `BaseDifficulty` modifier channel), so every phase of the lift feels it and the curve itself is never fed the ratio |
+| The curve | **Linear**: 0 points at ratio 1.00, rising evenly to the cap at ratio **1.50** |
+| The cap | **+10 points** (a 100% attempt is difficulty 65 and a 110% one 95, so +10 feels like about 3% more on the bar) |
+| Behaviour at ratio <= 1.00, a weight at or below proven Scale | **Neutral**: no easing bonus |
+| Behaviour when Scale is unproven (0) | **The full +10.** The first meet in a lift carries the most pressure; one good lift sets the Scale and removes most of it |
+| Where it applies | **Meet attempts only** (the Mock Meet now, other meets later). Practice and training lifts never carry it |
+| Shown to the player | **As its own line** on the attempt screen (for example "unproven weight +5"), and included in the displayed difficulty |
+
+Worked example, a proven Squat of 180 kg: 180 kg +0, 200 kg (1.11) about +2,
+225 kg (1.25) +5, 270 kg or more (1.50+) +10.
 
 > **Implementation note, not a design rule.** `DifficultyResolver.resolve` asserts
 > its denominator is above zero, and the attempt flow rejects a non-positive
@@ -3621,8 +3626,10 @@ see §34.13.**
    three attempts per lift, the no-lowering rule, bomb-out consequences, entry
    costs, and placement money. Whether those suffice, or whether Scale needs a
    per-meet increment cap, is undecided.
-2. **The Scale challenge curve, its cap, and what it modifies** (§33.4). Including
-   its behaviour at ratio <= 1.00 and with an absent Scale.
+2. ~~**The Scale challenge curve, its cap, and what it modifies**~~ — **DECIDED**
+   (§33.4, user 2026-10-29): base-difficulty points, linear from ratio 1.00 to the
+   +10 cap at 1.50, neutral at or below Scale, the full +10 when unproven, meets
+   only, shown as its own line. Implemented in checkpoint 6.
 3. ~~**The starting Competition Scale**~~ — **DECIDED** (§33.8): unproven, stored
    as `0`. Implemented in schema v4.
 4. ~~**The migration backfill for existing players**~~ — **DECIDED** (§33.8):
@@ -4760,7 +4767,7 @@ should begin before the decisions it depends on:
 | 5B.6 | Wire the universal gym training racks: hold-E Training Selection menu, server-validated requests, presence check, manual CN lift selection, the accrual tick, **stop at the CN cap** for free players — **DONE (revised design)**, verified in Studio; see §34.12 | 5B.3, 5B.4, 5B.5; §34.13 item 4 |
 | 5B.7 | Technique rewards for the manually selected technique mode: the 80/20 (or 100% Lockout) award path, float-stored, **no cap**, 120+ eligible, legacy `techniqueAllowance` kept — **DONE**, verified in Studio (TechniqueTrainingProbe 73/0, TrainingStationProbe 205/0), committed as `5999fa1`; see §34.7 and §34.12 | 5B.4, 5B.6 |
 | later | **Game Pass:** automatic CN-to-technique fallback with a player-configured primary stat (§34.12). Never raises a cap or a rate | 5B.7; a monetization decision |
-| 6 | The Scale challenge modifier | §33.4 curve, cap and target — still **[TBD]** |
+| 6 | The Scale challenge modifier — **DONE 2026-10-29** (§33.4 decisions approved by the user) | §33.4 curve, cap and target |
 | 7 | Wire meets to raise Scale | a meet system; §33.7 eligibility; **and the class-scoped build system** per §33.8 |
 | 8 | Resolve the Competition Budget | §29.9, §34.13 item 7 |
 | 9 | **Remove `PullStrength`** — schema-version migration, `TypingPhaseConfig` rebase, test updates, and the §3 / §11 / §28 / mechanic-table documentation. **See the migration requirements below** — **DONE 2026-10-29** (schema version 7; PlayerDataProbe 470/0, TrainingProgressionProbe 298/0, TrainingStationProbe 205/0, TechniqueTrainingProbe 73/0) | §34.6, §34.9. Must be **one controlled change**, because a partial removal degrades silently |
