@@ -2193,8 +2193,9 @@ and polish.
   and hall 4 panels, all 17 swing doors with their leaf counts, 29 shop gear
   models. The full script not re-run after the fix. (Its INFO about
   Lighting.Technology is not a failure.)
-  NEXT ACTION: the user re-runs StarterGym_VerifyShell (Server view, Play) to
-  see the full result; then ask what is next.
+  Re-run by the user after the fix (2026-10-29): ALL CHECKS PASSED.
+  NEXT ACTION: blocks to Blender is finished and verified; ask the user what
+  is next.
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
