@@ -1820,13 +1820,11 @@ and polish.
     PerformanceAudit numbers (gym, server): parts 5,982, MeshParts 3,258,
     unique meshes 422, shadow casters 2,139, lights 144 (0 shadows), world
     screens 74, solid decor 0, precise collision 0: all within budget.
-  - NOT checked: the user's own look at the models in the game; clicking
-    the LEAVE button by hand (the test tool's simulated click did not press
-    it; the remote it fires works; no client code was changed); a full
-    meet with good lifts; a phone.
-  NEXT ACTION: the user looks at the Mock Meet Room and a private room in
-  Studio and clicks LEAVE by hand; then ask the user what is next (the
-  coach's block clipboard is the last Mock Meet block piece). Optional:
+  - User in Studio after the commit (2026-10-28): "looks good, leave button
+    works" (the models in the game, and LEAVE clicked by hand).
+  - NOT checked: a full meet with good lifts on the new platform; a phone.
+  NEXT ACTION: ask the user what is next (the coach's block clipboard is
+  the last Mock Meet block piece). Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
   the coach's block clipboard is the one block piece left there): per the user's newer rule (memory "models-made-in-blender",
