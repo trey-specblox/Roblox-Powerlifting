@@ -750,6 +750,14 @@
       "ids": {
         "model": "rbxassetid://106359740301632"
       }
+    },
+    "Fronts_01": {
+      "about": "The themed room fronts' details no earlier model covers: a barbell lying and standing (Barbell, BarbellUpright; each bar painted its colour), the Mock Meet front's wall bar rack (WallBarRack) and upright rack (GunRack), the judges' lights (JudgesLights), a chalk stick or marker (Stick), a duster (Duster), an acoustic foam tile (FoamTile) and the Office window blinds (Blinds). Made by art/scripts/build_fronts_01.py (art/blender/Fronts_01.blend).",
+      "file": "art/exports/Fronts_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://82188043511002"
+      }
     }
   },
   "images": {

@@ -2110,10 +2110,47 @@ and polish.
     decor 0, precise 0. StarterGym_VerifyShell not re-run.
   - NOT checked: the Office, Coach, Lockers and Training Zone by screenshot
     (counts and names only); walking into the new pieces; the user's own look.
-  NEXT ACTION: batch 8 (themed fronts, the coach's clipboard) in Blender:
+  Batch 8 (themed fronts, the coach's clipboard): `art/scripts/build_fronts_01.py`
+  -> `art/blender/Fronts_01.blend`, 12 pieces, 1,912 triangles, CHECK PASSED;
+  previews sent (backface culling). New items: Barbell and BarbellUpright
+  (one model per bar, the shaft and steel painted with each bar's looks),
+  WallBarRack, GunRack, JudgesLights, Stick (chalk and markers, stretched and
+  painted), Duster, FoamTile (painted each panel's colour), Blinds. Reused:
+  WallClock (the Classroom and Coach front clocks, scaled to the radius),
+  WhiteboardFrame (the Coach front's board, stretched), the Coach front's
+  Clipboard (the private meet room's coach, scaled to 1.4 tall). Stay
+  blocks: stripes, battens, slats, panelling, dado rails, kick bands, track
+  and lane lines, door portals, window frames, signs and screens, the
+  chalkboards, the Media Room equaliser (a light display), the Coach clip
+  rail and the Warm-up band rail (a stretched HangRail would flatten).
+  Approved by the user ("Approve, upload"); exported to
+  `art/exports/Fronts_01.glb`, uploaded as the group:
+  rbxassetid://82188043511002 (materials.json). COMMITTED and pushed with
+  user approval on 2026-10-29 ("Commit, then batch 9").
+  - StarterGymConfig: PropAssets entry and colourways for the 9 items.
+  - RoomProps: front.place (and the FrontKit type) take an optional stretch
+    like Kit.place; barbell() places the bar models; new stick() for chalk
+    and markers; wallClock() places the clock model; MockMeet (racks,
+    judges' lights), Office (blinds), Classroom (chalk, duster), Coach
+    (whiteboard frame, markers), MediaRoom (foam tiles), RecordsWall (chalk).
+    MockMeetArena: the coach holds the Clipboard model (anchored, not
+    queryable). Old blocks are the fallback everywhere.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Studio Play (by Claude): no
+    script errors, every front built. Front visible blocks 355 -> 166
+    (Mock Meet 134 -> 8, Media Room 33 -> 9, Office 34 -> 18, Classroom 20 ->
+    11, Coach 22 -> 12, Records Wall 10 -> 6). Screenshot: the Mock Meet front
+    (wall rack with seven coloured bars, judges' lights, upright rack with
+    eleven bars). The coach's clipboard checked by script on the server
+    (0.94 x 1.4 x 0.13, pivot at its bottom middle), not seen in a running
+    meet. Audit: visible blocks 1,067 -> 878, parts 5,360, MeshParts 4,129,
+    unique meshes 580 (budget 600), shadow casters 1,915, lights 144 (0
+    shadows), screens 74, solid decor 0, precise 0. StarterGym_VerifyShell
+    not re-run.
+  - NOT checked: the other fronts by screenshot (counts only); the coach in
+    a running mock meet; the user's own look.
+  NEXT ACTION: batch 9 (stair and balcony railings, roof trusses) in Blender:
   preview, the user's approval, upload, place, Studio test, commit on
-  approval. Unique meshes 568 of 600: reuse first (WallClock,
-  WhiteboardFrame, WallShelf, RailPost/RailRun...).
+  approval. Unique meshes 580 of 600: reuse RailPost/RailRun first.
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2183,7 +2220,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Replace the back rooms' block furniture with Blender models (blocks to Blender, batch 7); `git log -1` for the hash.
+- 2026-10-29, pushed: Replace the themed fronts' block details with Blender models (blocks to Blender, batch 8); `git log -1` for the hash.
+- `5ed9cb2` (2026-10-29, pushed) Replace the back rooms' block furniture with Blender models (blocks to Blender, batch 7).
 - `83234f1` (2026-10-29, pushed) Replace the spa wing's block furniture with Blender models (blocks to Blender, batch 6).
 - `3118407` (2026-10-29, pushed) Replace the Cafe, Supplement Bar and Shop block furniture with Blender models (blocks to Blender, batch 5).
 - `a29fb82` (2026-10-29, pushed) Replace the reception's block furniture with Blender models (blocks to Blender, batch 4).

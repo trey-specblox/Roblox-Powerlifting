@@ -3063,7 +3063,7 @@ type FrontKit = {
 	-- A strip along the wall from a0 to a1, cut round the doorway (and its trim) where it crosses it.
 	band: (name: string, a0: number, a1: number, y0: number, y1: number, d0: number, d1: number, look: Look) -> (),
 	toward: (direction: string) -> Vector3,
-	place: (name: string, template: Model, a: number, d: number, y: number, facing: string) -> Model,
+	place: (name: string, template: Model, a: number, d: number, y: number, facing: string, stretch: Vector3?) -> Model,
 }
 
 local FRONT: { [string]: (front: FrontKit) -> () } = {}
@@ -3148,9 +3148,12 @@ local function frontFor(folder: Folder, region: BasePart): FrontKit
 		return -right
 	end
 	-- Like Kit.place; a front's details may touch or sink into the wall, but not stand out too far.
-	front.place = function(name, template, a, d, y, facing)
+	front.place = function(name, template, a, d, y, facing, stretch)
 		local copy = template:Clone()
 		copy.Name = name
+		if stretch then
+			stretchTo(copy, stretch)
+		end
 		local position = world(a, d, y)
 		copy:PivotTo(CFrame.lookAt(position, position + front.toward(facing)))
 		local box, size = copy:GetBoundingBox()
@@ -3264,6 +3267,14 @@ end
 -- steel collars and sleeves (a rusted bar is rusted all over).
 local function barbell(front: FrontKit, name: string, a: number, d: number, y: number, axis: string, shaft: Look)
 	local steel = if shaft == looks.RustBar then looks.RustSleeve else looks.Stainless
+	-- The Fronts_01 barbell (lying, or standing for axis "up"), its middle at y, or block cylinders.
+	local props = propsFor({ "Barbell", "BarbellUpright" })
+	if props then
+		local item = if axis == "a" then "Barbell" else "BarbellUpright"
+		local bottom = if axis == "a" then y - 0.17 else y - 4.9
+		paintLooks(frontProp(front, props, name, item, 1, a, d, bottom, "+d"), item, { Shaft = shaft, Steel = steel })
+		return
+	end
 	local function at(offset: number): (number, number)
 		if axis == "a" then
 			return a + offset, y
@@ -3294,23 +3305,35 @@ FRONT.MockMeet = function(front)
 	-- horizontal rack left of the door, a vertical "gun rack" right of it.
 	local shafts = { looks.Stainless, looks.RustBar, looks.PlateRed, looks.Stainless, looks.PlateBlue, looks.RustBar, looks.PlateRed }
 	local left = -(front.doorHalf + 8)
-	for _, offset in ipairs({ -2.6, 2.6 }) do
-		front.item("BarRack_Upright_" .. (if offset < 0 then 1 else 2), left + offset - 0.2, left + offset + 0.2, 0.06, 0.25, 4.2,
-			9.6, looks.Gadget)
+	-- The racks and the judges' lights are Fronts_01 models (their bounds' middles out from the wall), or blocks.
+	local rackProps = propsFor({ "WallBarRack", "GunRack", "JudgesLights" })
+	if rackProps then
+		frontProp(front, rackProps, "BarRack", "WallBarRack", 1, left, 0.34, 4.2, "+d")
+	else
+		for _, offset in ipairs({ -2.6, 2.6 }) do
+			front.item("BarRack_Upright_" .. (if offset < 0 then 1 else 2), left + offset - 0.2, left + offset + 0.2, 0.06, 0.25, 4.2,
+				9.6, looks.Gadget)
+		end
 	end
 	for k, shaft in ipairs(shafts) do
 		local y = 4.6 + (k - 1) * 0.72
-		for side, offset in ipairs({ -2.6, 2.6 }) do
-			local id = string.format("BarRack_Hook_%d_%d", k, side)
-			front.item(id, left + offset - 0.15, left + offset + 0.15, 0.25, 0.62, y - 0.2, y - 0.12, looks.Gadget)
-			front.item(id .. "_Lip", left + offset - 0.15, left + offset + 0.15, 0.56, 0.62, y - 0.12, y + 0.06, looks.Gadget)
+		if not rackProps then
+			for side, offset in ipairs({ -2.6, 2.6 }) do
+				local id = string.format("BarRack_Hook_%d_%d", k, side)
+				front.item(id, left + offset - 0.15, left + offset + 0.15, 0.25, 0.62, y - 0.2, y - 0.12, looks.Gadget)
+				front.item(id .. "_Lip", left + offset - 0.15, left + offset + 0.15, 0.56, 0.62, y - 0.12, y + 0.06, looks.Gadget)
+			end
 		end
 		barbell(front, "Bar_H_" .. k, left, 0.42, y, "a", shaft)
 	end
 	local right = front.doorHalf + 9 -- clear of the name plaque right of the door
 	local bars = 11
-	front.item("GunRack_Top", right - 5.2, right + 5.2, 0.06, 0.6, 7.7, 8.0, looks.Gadget)
-	front.item("GunRack_Bottom", right - 5.2, right + 5.2, 0.06, 0.6, 1.0, 1.2, looks.Gadget)
+	if rackProps then
+		frontProp(front, rackProps, "GunRack", "GunRack", 1, right, 0.33, 1.0, "+d")
+	else
+		front.item("GunRack_Top", right - 5.2, right + 5.2, 0.06, 0.6, 7.7, 8.0, looks.Gadget)
+		front.item("GunRack_Bottom", right - 5.2, right + 5.2, 0.06, 0.6, 1.0, 1.2, looks.Gadget)
+	end
 	for k = 1, bars do
 		local a = right + (k - (bars + 1) / 2) * 0.9
 		local shaft = if k == 4 then looks.PlateRed elseif k == 8 then looks.PlateBlue elseif k % 2 == 0 then looks.RustBar else looks.Stainless
@@ -3339,9 +3362,13 @@ FRONT.MockMeet = function(front)
 		end
 		at += 4
 	end
-	front.item("JudgesLights", -27, -19, 0.06, 0.4, 5, 8, looks.Gadget)
-	for index, a in ipairs({ -25, -23, -21 }) do
-		front.cylinder("JudgesLight_" .. index, a, 0.46, 6.5, 0.12, 1.4, "d", looks.GlowWhite)
+	if rackProps then
+		frontProp(front, rackProps, "JudgesLights", "JudgesLights", 1, -23, 0.29, 5, "+d")
+	else
+		front.item("JudgesLights", -27, -19, 0.06, 0.4, 5, 8, looks.Gadget)
+		for index, a in ipairs({ -25, -23, -21 }) do
+			front.cylinder("JudgesLight_" .. index, a, 0.46, 6.5, 0.12, 1.4, "d", looks.GlowWhite)
+		end
 	end
 end
 
@@ -3438,11 +3465,18 @@ FRONT.Office = function(front)
 	-- The window: a dark panel (the room behind), white blinds, frosted glass, a black frame and a steel sill.
 	local w0, w1, y0, y1 = 5.6, 12.4, 3.9, 8.3
 	front.item("Window_Back", w0, w1, 0.06, 0.09, y0, y1, looks.SBarWall) -- over the grooves
-	local slat, y = 0, y0 + 0.15
-	while y + 0.16 <= y1 - 0.1 do
-		slat += 1
-		front.item("Blind_" .. slat, w0 + 0.1, w1 - 0.1, 0.09, 0.12, y, y + 0.18, looks.Whiteboard)
-		y += 0.26
+	-- The Fronts_01 blinds (sixteen slats and a head rail, d 0.09..0.15), or block slats.
+	local blindProps = propsFor({ "Blinds" })
+	if blindProps then
+		paintLooks(frontProp(front, blindProps, "Blinds", "Blinds", 1, (w0 + w1) / 2, 0.12, y0 + 0.15, "+d"), "Blinds",
+			{ Slats = looks.Whiteboard })
+	else
+		local slat, y = 0, y0 + 0.15
+		while y + 0.16 <= y1 - 0.1 do
+			slat += 1
+			front.item("Blind_" .. slat, w0 + 0.1, w1 - 0.1, 0.09, 0.12, y, y + 0.18, looks.Whiteboard)
+			y += 0.26
+		end
 	end
 	front.item("Window_Glass", w0, w1, 0.13, 0.16, y0, y1, looks.FrostedGlass)
 	front.item("Window_Frame_1", w0 - 0.18, w0, 0.06, 0.24, y0, y1, looks.Gadget)
@@ -3517,10 +3551,31 @@ end
 
 -- A round wall clock on a front: a black rim, a white face, two hands.
 local function wallClock(front: FrontKit, name: string, a: number, y: number, radius: number)
+	-- The BackRooms_01 wall clock (1.62 across, 0.185 deep at radius 0.8), scaled to the radius, or blocks.
+	local props = propsFor({ "WallClock" })
+	if props then
+		local scale = radius / 0.8
+		frontProp(front, props, name, "WallClock", 1, a, 0.06 + 0.0925 * scale, y - 0.81 * scale, "+d",
+			if scale ~= 1 then scale else nil)
+		return
+	end
 	front.cylinder(name .. "_Rim", a, 0.12, y, 0.12, radius * 2, "d", looks.Gadget)
 	front.cylinder(name .. "_Face", a, 0.19, y, 0.02, radius * 1.8, "d", looks.Whiteboard)
 	front.item(name .. "_Hour", a - 0.04, a + 0.04, 0.2, 0.22, y, y + radius * 0.5, looks.Gadget)
 	front.item(name .. "_Minute", a, a + radius * 0.75, 0.22, 0.24, y - 0.03, y + 0.03, looks.Gadget)
+end
+
+-- A stick of chalk or a marker lying along the wall on a tray, its middle at (a, d, y): the Fronts_01 stick
+-- stretched to its size and painted `look`, or a block cylinder.
+local function stick(front: FrontKit, name: string, a: number, d: number, y: number, length: number, diameter: number,
+	look: Look)
+	local props = propsFor({ "Stick" })
+	if props then
+		paintLooks(propItem((front :: any) :: Kit, props, name, "Stick", 1, a, d, y - diameter / 2, "+d",
+			Vector3.new(length, diameter, diameter)), "Stick", { Body = look })
+		return
+	end
+	front.cylinder(name, a, d, y, length, diameter, "a", look)
 end
 
 -- A planter of leafy plants standing on a front (it is solid).
@@ -3554,11 +3609,16 @@ FRONT.Classroom = function(front)
 		front.item("Frame_Side_" .. index, span[1], span[2], 0.06, 0.16, 2.6, 9.7, oak)
 	end
 	-- Chalk sticks and a duster on the tray.
-	for index, stick in ipairs({ { a = -11.5, look = looks.Whiteboard }, { a = -10.9, look = looks.PlateYellow },
+	for index, chalk in ipairs({ { a = -11.5, look = looks.Whiteboard }, { a = -10.9, look = looks.PlateYellow },
 		{ a = 9.8, look = looks.Whiteboard }, { a = 10.5, look = looks.MatCoral } }) do
-		front.cylinder("Chalk_" .. index, stick.a, 0.25, 2.8, 0.45, 0.09, "a", stick.look)
+		stick(front, "Chalk_" .. index, chalk.a, 0.25, 2.8, 0.45, 0.09, chalk.look)
 	end
-	front.item("Duster", 11.6, 12.5, 0.12, 0.4, 2.75, 2.95, looks.Wood)
+	local dusterProps = propsFor({ "Duster" })
+	if dusterProps then
+		paintLooks(frontProp(front, dusterProps, "Duster", "Duster", 1, 12.05, 0.26, 2.75, "+d"), "Duster", { Body = looks.Wood })
+	else
+		front.item("Duster", 11.6, 12.5, 0.12, 0.4, 2.75, 2.95, looks.Wood)
+	end
 	-- The drawings, two each side of the door (portrait, 3 : 4).
 	local width, height, bottom = 3.45, 3.45 * 4 / 3, 3.97
 	for index, a0 in ipairs({ -13.1, -9.4, 5.95, 9.65 }) do
@@ -3588,13 +3648,20 @@ end
 FRONT.MediaRoom = function(front)
 	local colours = { looks.FoamRed, looks.FoamBlue, looks.FoamYellow, looks.FoamGreen, looks.FoamPurple, looks.FoamGrey }
 	local size, gap = 2.0, 0.15
+	-- Each panel the Fronts_01 pyramid foam tile in its colour, or a block.
+	local foamProps = propsFor({ "FoamTile" })
 	local function foam(id: string, a0: number, columns: number, skip: ((column: number, row: number) -> boolean)?)
 		for column = 1, columns do
 			for row = 1, 4 do
 				if not (skip and skip(column, row)) then
 					local a, y = a0 + (column - 1) * (size + gap), 1.0 + (row - 1) * (size + gap)
-					front.item(string.format("Foam_%s_%d_%d", id, column, row), a, a + size, 0.06, 0.36, y, y + size,
-						colours[(column + row * 2) % #colours + 1])
+					local name, look = string.format("Foam_%s_%d_%d", id, column, row), colours[(column + row * 2) % #colours + 1]
+					if foamProps then
+						paintLooks(frontProp(front, foamProps, name, "FoamTile", 1, a + size / 2, 0.21, y, "+d"), "FoamTile",
+							{ Foam = look })
+					else
+						front.item(name, a, a + size, 0.06, 0.36, y, y + size, look)
+					end
 				end
 			end
 		end
@@ -3683,7 +3750,14 @@ FRONT.Coach = function(front)
 	end
 	-- The whiteboard: a steel frame, the board and its marker tray.
 	local w0, w1, y0, y1 = -26, -6, 3.2, 9.4
-	front.item("Whiteboard_Frame", w0 - 0.2, w1 + 0.2, 0.06, 0.18, y0 - 0.2, y1 + 0.2, looks.Stainless)
+	-- The BackRooms_01 whiteboard frame and tray stretched round the board, or blocks.
+	local frameProps = propsFor({ "WhiteboardFrame" })
+	if frameProps then
+		propItem((front :: any) :: Kit, frameProps, "Whiteboard_Frame", "WhiteboardFrame", 1, (w0 + w1) / 2, 0.28, y0 - 0.45, "+d",
+			Vector3.new(w1 - w0 + 0.4, y1 - y0 + 0.65, 0.44))
+	else
+		front.item("Whiteboard_Frame", w0 - 0.2, w1 + 0.2, 0.06, 0.18, y0 - 0.2, y1 + 0.2, looks.Stainless)
+	end
 	local board = front.item("Whiteboard", w0, w1, 0.18, 0.22, y0, y1, looks.Whiteboard)
 	writing(board, front.toward("+d"), "THIS WEEK'S PROGRAMME", {
 		"MON   SQUAT 5 x 5   ·   BENCH 4 x 6",
@@ -3691,10 +3765,12 @@ FRONT.Coach = function(front)
 		"FRI   BENCH 5 x 3   ·   SQUAT 3 x 8",
 		"SAT   TECHNIQUE + MOBILITY",
 	}, Color3.fromRGB(250, 250, 250), Color3.fromRGB(30, 48, 98))
-	front.item("Whiteboard_Tray", w0, w1, 0.06, 0.5, y0 - 0.45, y0 - 0.25, looks.Stainless)
+	if not frameProps then
+		front.item("Whiteboard_Tray", w0, w1, 0.06, 0.5, y0 - 0.45, y0 - 0.25, looks.Stainless)
+	end
 	for index, marker in ipairs({ { a = -24, look = looks.PlateRed }, { a = -23.3, look = looks.PlateBlue },
 		{ a = -22.6, look = looks.Gadget }, { a = -21.9, look = looks.PlateGreen } }) do
-		front.cylinder("Marker_" .. index, marker.a, 0.3, y0 - 0.17, 0.55, 0.12, "a", marker.look)
+		stick(front, "Marker_" .. index, marker.a, 0.3, y0 - 0.17, 0.55, 0.12, marker.look)
 	end
 	wallClock(front, "Clock", 15, 11.4, 0.8)
 	front.item("ClipRail", 7.0, 25.0, 0.06, 0.2, 6.95, 7.1, looks.Stainless)
@@ -3805,9 +3881,9 @@ FRONT.RecordsWall = function(front)
 		front.item("Frame_Side_" .. index, a, a + 0.4, 0.06, 0.24, b0, b1, oak)
 	end
 	front.item("Tray", w0, w1, 0.24, 0.6, b0 - 0.4, b0 - 0.25, oak)
-	for index, stick in ipairs({ { a = -40, look = looks.Whiteboard }, { a = -39.3, look = looks.PlateYellow },
+	for index, chalk in ipairs({ { a = -40, look = looks.Whiteboard }, { a = -39.3, look = looks.PlateYellow },
 		{ a = 22, look = looks.MatCoral }, { a = 70, look = looks.Whiteboard } }) do
-		front.cylinder("Chalk_" .. index, stick.a, 0.42, b0 - 0.2, 0.45, 0.09, "a", stick.look)
+		stick(front, "Chalk_" .. index, chalk.a, 0.42, b0 - 0.2, 0.45, 0.09, chalk.look)
 	end
 
 	-- The records table.

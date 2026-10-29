@@ -144,11 +144,25 @@ local function buildCoach(model: Model, at: Vector3, watching: Vector3): TextLab
 	coach:PivotTo(CFrame.lookAt(standAt, Vector3.new(watching.X, standAt.Y, watching.Z)))
 	coach.Parent = model
 
-	-- A clipboard held in front of the chest.
+	-- A clipboard held in front of the chest: the Coach front's Blender clipboard scaled to 1.4 tall, or blocks.
 	local chest = root.CFrame * CFrame.new(0, 0.2, -0.9) * CFrame.Angles(math.rad(-25), 0, 0)
-	BuildParts.decor(BuildParts.placed(coach, "Clipboard", Vector3.new(1.1, 1.4, 0.08), chest, looks.Wood))
-	BuildParts.decor(BuildParts.placed(coach, "Clipboard_Paper", Vector3.new(0.9, 1.15, 0.02),
-		chest * CFrame.new(0, -0.05, -0.05), looks.LaneWhite))
+	local clipboard = RoomProps.propCopy("Clipboard", 1)
+	if clipboard then
+		clipboard.Name = "Clipboard"
+		clipboard:ScaleTo(1.4 / clipboard:GetExtentsSize().Y)
+		clipboard:PivotTo(chest * CFrame.new(0, -0.7, 0)) -- its pivot is its bottom middle
+		for _, part in ipairs(clipboard:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+				part.CanQuery = false
+			end
+		end
+		clipboard.Parent = coach
+	else
+		BuildParts.decor(BuildParts.placed(coach, "Clipboard", Vector3.new(1.1, 1.4, 0.08), chest, looks.Wood))
+		BuildParts.decor(BuildParts.placed(coach, "Clipboard_Paper", Vector3.new(0.9, 1.15, 0.02),
+			chest * CFrame.new(0, -0.05, -0.05), looks.LaneWhite))
+	end
 
 	-- The name tag and the speech bubble over the head.
 	local head = coach:FindFirstChild("Head") :: BasePart?

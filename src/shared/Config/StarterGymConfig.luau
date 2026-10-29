@@ -592,6 +592,8 @@ StarterGymConfig.PropAssets = {
 	-- wall ladder, plunge step, floor mat
 	{ id = 106359740301632 }, -- BackRooms_01: kitchen unit, cork board, hang rail, coat hook, filing cabinet, wall
 	-- clock, whiteboard frame, laptop, flat plate, bar stand, flat bench, chalk stand, strongman rig
+	{ id = 82188043511002 }, -- Fronts_01: barbell (lying, standing), wall bar rack, gun rack, judges' lights, stick,
+	-- duster, foam tile, blinds
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -893,6 +895,17 @@ StarterGymConfig.PropColourways = {
 	FlatBench = { { Pad = "Red", Frame = "Black" } },
 	ChalkStand = { { Stand = "Charcoal", Bowl = "White" } },
 	StrongmanRig = { { Frame = "Charcoal", Bar = "Silver" } },
+	-- The themed fronts (Fronts_01, art/scripts/build_fronts_01.py). RoomProps paints each bar's shaft, stick and
+	-- foam tile with its look over these.
+	Barbell = { { Shaft = "Silver", Steel = "Silver" } },
+	BarbellUpright = { { Shaft = "Silver", Steel = "Silver" } },
+	WallBarRack = { { Rack = "Black" } },
+	GunRack = { { Rack = "Black" } },
+	JudgesLights = { { Housing = "Black", Lamps = "GlowWhite" } },
+	Stick = { { Body = "White" } },
+	Duster = { { Body = "Oak" } },
+	FoamTile = { { Foam = "Blue" } },
+	Blinds = { { Slats = "White" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },
