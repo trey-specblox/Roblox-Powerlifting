@@ -2148,9 +2148,41 @@ and polish.
     not re-run.
   - NOT checked: the other fronts by screenshot (counts only); the coach in
     a running mock meet; the user's own look.
-  NEXT ACTION: batch 9 (stair and balcony railings, roof trusses) in Blender:
-  preview, the user's approval, upload, place, Studio test, commit on
-  approval. Unique meshes 580 of 600: reuse RailPost/RailRun first.
+  Batch 9 (structural steel, the last batch): `art/scripts/build_steel_01.py` ->
+  `art/blender/Steel_01.blend`, 2 pieces, 72 triangles, CHECK PASSED; preview
+  sent. SteelBeam (an I-beam) and Handrail (a round tube), both stretched to
+  every piece. Stay blocks: the glass railing panels (glass panes), the
+  shed's outside roof ridge cap and roller-door rails (roof and door trim),
+  the Training Zone's painted columns. Approved by the user ("Approve,
+  upload"); exported to `art/exports/Steel_01.glb`, uploaded as the group:
+  rbxassetid://139793685980962 (materials.json). COMMITTED and pushed with
+  user approval on 2026-10-29 ("Commit and push").
+  - StarterGymConfig: PropAssets entry and colourways.
+  - StarterGymBuilder: new steelOver(part, item, look) lays the stretched
+    model over a block (the part's longest side is the length, the side
+    nearest upright an I-beam's depth) and hides the block under it (kept for
+    collision and the verify script's Column_ names); used for the hall
+    roof's rafters, tie beams and ridge beam, the balcony columns and
+    handrails, the stairs' handrails and stringers, the Strongman Shed's
+    truss ties and posts and its ridge beam. Blocks stay visible if the model
+    did not load.
+  - Checks: luau-lsp 0 problems, `rojo build` OK. Studio Play (by Claude): no
+    script errors; 56 steel models, each old block hidden under its model;
+    a rafter, a column and a stair handrail checked: same size and centre
+    (difference 0.000), the column still solid. Screenshot: the hall's roof
+    I-beams and the stair handrails. Audit: visible blocks 878 -> 822,
+    parts 5,416, MeshParts 4,185, unique meshes 582 (budget 600), shadow
+    casters 1,915, lights 144 (0 shadows), screens 74, solid decor 0,
+    precise 0.
+  - Whole map (batches 1-9, 2026-10-28/29): visible blocks 2,501 -> 822; what
+    is left is architecture (walls, floors, ceilings, glass, trims, frames,
+    floor and wall markings, flat light strips), screens and signs.
+  - NOT checked: StarterGym_VerifyShell has not been re-run since batch 1
+    (57 KB, not Rojo-synced, so it has to be pasted into the Command Bar in
+    a Play test); the user's own look of every batch.
+  NEXT ACTION: blocks to Blender is done (batches 1-9 committed). Run
+  StarterGym_VerifyShell in a Play test (Server view) and look round the gym;
+  then ask the user what is next.
   Optional:
   turn Studio API access back off if it is not wanted on.
   OLDER NEXT ACTION (done above for the Mock Meet pieces and the Cardio TV;
@@ -2220,7 +2252,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Replace the themed fronts' block details with Blender models (blocks to Blender, batch 8); `git log -1` for the hash.
+- 2026-10-29, pushed: Replace the gym's block steel with Blender I-beams and handrails (blocks to Blender, batch 9); `git log -1` for the hash.
+- `8a62d1b` (2026-10-29, pushed) Replace the themed fronts' block details with Blender models (blocks to Blender, batch 8).
 - `5ed9cb2` (2026-10-29, pushed) Replace the back rooms' block furniture with Blender models (blocks to Blender, batch 7).
 - `83234f1` (2026-10-29, pushed) Replace the spa wing's block furniture with Blender models (blocks to Blender, batch 6).
 - `3118407` (2026-10-29, pushed) Replace the Cafe, Supplement Bar and Shop block furniture with Blender models (blocks to Blender, batch 5).

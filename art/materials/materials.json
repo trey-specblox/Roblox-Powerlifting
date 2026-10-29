@@ -758,6 +758,14 @@
       "ids": {
         "model": "rbxassetid://82188043511002"
       }
+    },
+    "Steel_01": {
+      "about": "The gym's structural steel: an I-beam (SteelBeam; the hall roof's rafters, tie beams and ridge beam, the balcony columns, the stair stringers, the Strongman Shed's trusses and ridge beam) and a round handrail (Handrail; the balcony and stair handrails), stretched to every piece. Made by art/scripts/build_steel_01.py (art/blender/Steel_01.blend).",
+      "file": "art/exports/Steel_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://139793685980962"
+      }
     }
   },
   "images": {

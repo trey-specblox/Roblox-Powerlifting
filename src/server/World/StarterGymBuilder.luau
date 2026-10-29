@@ -74,6 +74,44 @@ local placed, box = BuildParts.placed, BuildParts.box
 local surfaceLight, decor = BuildParts.surfaceLight, BuildParts.decor
 
 --[[
+	The Blender structural steel (Steel_01; user 2026-10-28: blocks to Blender): `item` ("SteelBeam", an
+	I-beam, or "Handrail", a round tube) stretched over `part`, which stays hidden under it (for collision and
+	the names the verify script looks for). The part's longest side is the steel's length; of its other two
+	sides the one nearest upright is an I-beam's depth. Returns the part (still a visible block if the model did
+	not load).
+]]
+local function steelOver(part: BasePart, item: string, look: StarterGymConfig.Look): BasePart
+	local cf, size = part.CFrame, part.Size
+	local axes = { { dir = cf.RightVector, length = size.X }, { dir = cf.UpVector, length = size.Y },
+		{ dir = cf.LookVector, length = size.Z } }
+	table.sort(axes, function(a, b)
+		return a.length > b.length
+	end)
+	local along, up, across = axes[1], axes[2], axes[3]
+	if math.abs(across.dir.Y) > math.abs(up.dir.Y) + 1e-6 then
+		up, across = across, up
+	end
+	local upDir = if up.dir.Y < 0 then -up.dir else up.dir
+	local copy = RoomProps.propCopy(item, 1, Vector3.new(across.length, up.length, along.length))
+	if copy == nil then
+		return part
+	end
+	copy.Name = part.Name .. "_Steel"
+	copy:PivotTo(CFrame.fromMatrix(cf.Position, along.dir:Cross(upDir), upDir) * CFrame.new(0, -up.length / 2, 0))
+	for _, piece in ipairs(copy:GetDescendants()) do
+		if piece:IsA("BasePart") then
+			piece.Material = look.material
+			piece.MaterialVariant = look.variant or ""
+			piece.Color = look.color
+		end
+	end
+	copy.Parent = part.Parent
+	part.Transparency = 1
+	part.CastShadow = false
+	return part
+end
+
+--[[
 	One straight wall from y0 to y1. `alongX` walls run from `from` to `to` in
 	X on the Z line `line`; the others run in Z on the X line `line`. Openings
 	are gaps from their `bottom` up to bottom + height, closed above (a lintel
@@ -282,14 +320,14 @@ local function buildRoof(roofs: Folder, plan: StarterGymConfig.Footprint): numbe
 		for _, slope in ipairs(slopes) do
 			local hallEdgeZ = if slope.name == "Front" then plan.hallFrontZ else plan.hallBackZ
 			local s0 = slopeDistance(slope, hallEdgeZ)
-			placed(beams, string.format("Rafter_%s_%d", slope.name, index), Vector3.new(beamWidth, beamDepth, length - s0),
-				slopeFrame(slope, x, (s0 + length) / 2, -beamDepth / 2), looks.SteelBeam)
+			steelOver(placed(beams, string.format("Rafter_%s_%d", slope.name, index), Vector3.new(beamWidth, beamDepth, length - s0),
+				slopeFrame(slope, x, (s0 + length) / 2, -beamDepth / 2), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 		end
-		box(beams, string.format("TieBeam_%d", index), Vector3.new(x - beamWidth / 2, eaveY - beamDepth, plan.hallFrontZ),
-			Vector3.new(x + beamWidth / 2, eaveY, plan.hallBackZ), looks.SteelBeam)
+		steelOver(box(beams, string.format("TieBeam_%d", index), Vector3.new(x - beamWidth / 2, eaveY - beamDepth, plan.hallFrontZ),
+			Vector3.new(x + beamWidth / 2, eaveY, plan.hallBackZ), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 	end
-	box(beams, "RidgeBeam", Vector3.new(hallMinX, ridgeY - 2 * beamDepth, ridgeZ - beamWidth / 2),
-		Vector3.new(hallMaxX, ridgeY - beamDepth / 2, ridgeZ + beamWidth / 2), looks.SteelBeam)
+	steelOver(box(beams, "RidgeBeam", Vector3.new(hallMinX, ridgeY - 2 * beamDepth, ridgeZ - beamWidth / 2),
+		Vector3.new(hallMaxX, ridgeY - beamDepth / 2, ridgeZ + beamWidth / 2), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 
 	return skylights
 end
@@ -371,7 +409,7 @@ local function buildBalconyAndStairs(model: Model, plan: StarterGymConfig.Footpr
 		local glassLow, glassHigh = corners(upperY, glassTop, half)
 		box(balcony, name, glassLow, glassHigh, looks.Glass)
 		local railLow, railHigh = corners(glassTop, upperY + railHeight, hand / 2)
-		box(balcony, name .. "_Handrail", railLow, railHigh, looks.SteelBeam)
+		steelOver(box(balcony, name .. "_Handrail", railLow, railHigh, looks.SteelBeam), "Handrail", looks.SteelBeam)
 	end
 	railing("Railing_Front", true, frontEdgeZ - railThickness / 2, cx - innerHalf, cx + innerHalf)
 	for _, sign in ipairs({ 1, -1 }) do
@@ -389,12 +427,12 @@ local function buildBalconyAndStairs(model: Model, plan: StarterGymConfig.Footpr
 		local x = cx + sign * (innerHalf + column / 2)
 		for k = 1, 3 do
 			local z = plan.hallFrontZ + k * sideDepth
-			box(balcony, string.format("Column_%s_%d", label, k), Vector3.new(x - column / 2, floorY, z - column / 2),
-				Vector3.new(x + column / 2, slabBottom, z + column / 2), looks.SteelBeam)
+			steelOver(box(balcony, string.format("Column_%s_%d", label, k), Vector3.new(x - column / 2, floorY, z - column / 2),
+				Vector3.new(x + column / 2, slabBottom, z + column / 2), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 		end
 		local frontX = cx + sign * hallHalf / 3
-		box(balcony, "Column_Front_" .. label, Vector3.new(frontX - column / 2, floorY, frontEdgeZ - column),
-			Vector3.new(frontX + column / 2, slabBottom, frontEdgeZ), looks.SteelBeam)
+		steelOver(box(balcony, "Column_Front_" .. label, Vector3.new(frontX - column / 2, floorY, frontEdgeZ - column),
+			Vector3.new(frontX + column / 2, slabBottom, frontEdgeZ), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 	end
 
 	-- The two glass staircases.
@@ -434,11 +472,12 @@ local function buildBalconyAndStairs(model: Model, plan: StarterGymConfig.Footpr
 			local b = Vector3.new(lastX, upperY, edge.z)
 			local prefix = string.format("Stairs_%s_%s", label, edge.name)
 			between(stairs, prefix .. "_Railing", a, b, railHeight - hand, railThickness, 0, looks.Glass)
-			between(stairs, prefix .. "_Handrail", a, b, hand, hand, railHeight - hand, looks.SteelBeam)
-			-- A steel stringer under the steps' ends.
-			between(stairs, prefix .. "_Stringer", Vector3.new(firstX, floorY, edge.z),
-				Vector3.new(cx + sign * topOffset, upperY - cfg.TreadThicknessStuds, edge.z), 0.8, 0.4, -0.8,
+			steelOver(between(stairs, prefix .. "_Handrail", a, b, hand, hand, railHeight - hand, looks.SteelBeam), "Handrail",
 				looks.SteelBeam)
+			-- A steel stringer under the steps' ends.
+			steelOver(between(stairs, prefix .. "_Stringer", Vector3.new(firstX, floorY, edge.z),
+				Vector3.new(cx + sign * topOffset, upperY - cfg.TreadThicknessStuds, edge.z), 0.8, 0.4, -0.8,
+				looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 		end
 	end
 
@@ -1900,10 +1939,10 @@ local function buildGym(model: Model): string
 	local trusses = math.floor((shedCfg.depthStuds - 2) / shedCfg.trussSpacingStuds)
 	for k = 1, trusses do
 		local z = shedZ0 + (k - 0.5) * (shedCfg.depthStuds / trusses)
-		box(shed, "Truss_" .. k .. "_Tie", Vector3.new(shedX0 + t, wallTop - 0.6, z - 0.3), Vector3.new(shedX1 - t, wallTop, z + 0.3),
-			looks.SteelBeam)
-		box(shed, "Truss_" .. k .. "_Post", Vector3.new(shedX - 0.3, wallTop, z - 0.3), Vector3.new(shedX + 0.3, wallTop + rise - 0.3,
-			z + 0.3), looks.SteelBeam)
+		steelOver(box(shed, "Truss_" .. k .. "_Tie", Vector3.new(shedX0 + t, wallTop - 0.6, z - 0.3),
+			Vector3.new(shedX1 - t, wallTop, z + 0.3), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
+		steelOver(box(shed, "Truss_" .. k .. "_Post", Vector3.new(shedX - 0.3, wallTop, z - 0.3),
+			Vector3.new(shedX + 0.3, wallTop + rise - 0.3, z + 0.3), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 		for index, offset in ipairs({ -half / 2, half / 2 }) do
 			local x = shedX + offset
 			local id = string.format("Lamp_%d_%d", k, index)
@@ -1921,8 +1960,8 @@ local function buildGym(model: Model): string
 			surfaceLight(glow, StyledScreen.faceToward(glow, -Vector3.yAxis), 28, 1.3, 120)
 		end
 	end
-	box(shed, "Ridge_Beam", Vector3.new(shedX - 0.3, wallTop + rise - 0.9, shedZ0 + t), Vector3.new(shedX + 0.3, wallTop + rise - 0.3,
-		shedZ1 - t), looks.SteelBeam)
+	steelOver(box(shed, "Ridge_Beam", Vector3.new(shedX - 0.3, wallTop + rise - 0.9, shedZ0 + t),
+		Vector3.new(shedX + 0.3, wallTop + rise - 0.3, shedZ1 - t), looks.SteelBeam), "SteelBeam", looks.SteelBeam)
 	-- The roller door: a steel frame outside, guide rails and the rolled-up shutter's drum inside,
 	-- its bottom edge just showing at the top of the opening.
 	for index, sign in ipairs({ -1, 1 }) do

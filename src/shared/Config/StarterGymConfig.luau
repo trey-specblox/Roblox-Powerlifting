@@ -594,6 +594,7 @@ StarterGymConfig.PropAssets = {
 	-- clock, whiteboard frame, laptop, flat plate, bar stand, flat bench, chalk stand, strongman rig
 	{ id = 82188043511002 }, -- Fronts_01: barbell (lying, standing), wall bar rack, gun rack, judges' lights, stick,
 	-- duster, foam tile, blinds
+	{ id = 139793685980962 }, -- Steel_01: steel I-beam and round handrail (StarterGymBuilder stretches them)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -906,6 +907,9 @@ StarterGymConfig.PropColourways = {
 	Duster = { { Body = "Oak" } },
 	FoamTile = { { Foam = "Blue" } },
 	Blinds = { { Slats = "White" } },
+	-- The structural steel (Steel_01, art/scripts/build_steel_01.py); StarterGymBuilder paints it SteelBeam.
+	SteelBeam = { { Steel = "Charcoal" } },
+	Handrail = { { Steel = "Charcoal" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },
