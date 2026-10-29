@@ -5,7 +5,8 @@ against `git status` / `git log` before acting. Last updated: 2026-10-27
 (Starter Gym step 6: the treadmill rhythm game part 2, the saved leaderboards,
 tested in Studio, approved by the user, COMMITTED, published, and saving
 checked in the live game; then the Mock Meet part 1 (private meet rooms),
-built, tested in Studio and COMMITTED; newest entries at the end of the
+built, tested in Studio and COMMITTED; then Mock Meet part 2 (the meet
+itself) COMMITTED; next the game-wide UI restyle; newest entries at the end of the
 CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
@@ -1439,9 +1440,89 @@ and polish.
     player respawned in the gym; screenshots of both rooms; no new warnings.
   - NOT tested: two or more players at once (each in their own room), a phone,
     a live server. The look of the rooms needs the user's own check in Studio.
-  NEXT ACTION: Part 2, the meet itself (weigh-in, attempts one at a
-  time, 9 lifts through LiftAttemptService, judges' lights, attempt board,
-  results, the 30-minute cooldown; nothing saved).
+  MOCK MEET PART 2: THE MEET ITSELF (2026-10-28; user: "start Part 2"; NOT
+  committed yet; nothing is saved by it):
+  - LiftAttemptService: attempt creation moved into createAttempt; new
+    startServerAttempt(player, lift, exactKg, onFinished) (weight must lie in
+    the usual 40-125% of CN), setFreeAttemptsBlocked (the test keys are ignored
+    in a meet), isAttemptActive, abandon (tells the client "STOPPED" so the
+    minigame closes). The free-attempt path is unchanged.
+  - MockMeetConfig: cooldown 30 min (Studio 15 s), weigh-in 4 s, choose 60 s,
+    ready 60 s, result 4 s, opener 90% of CN, 2.5 kg steps.
+  - MockMeetRemotes: + Choose, Ready (client -> server), State, Notice
+    (server -> client); the MeetState and AttemptView types.
+  - MockMeetArena: liftSpot (on the platform, facing the head judge),
+    setLights (off / all white / all red), setBoard.
+  - MockMeetService: the server-run meet (weigh-in class locked; per lift 3
+    x Choose / Ready / Lifting / Result; passes; Done with MeetTotal); the
+    cooldown by UserId from check-in (this server only); reads CN and
+    bodyweight, writes nothing.
+  - New src/client/Meet/MockMeetUI.luau (scorecard, picker, LIFT, verdict,
+    results, notices); MockMeetController rewritten to draw the state and
+    send the requests (client-side AttemptRules check for greying only).
+  - Checks: luau-lsp 0 new errors (LiftAttemptService keeps its one old
+    error about PhaseSpec.transitionSeconds), `rojo build` OK. Studio (Play,
+    one player, through the real prompt and remotes): weigh-in 53.0 kg -> 59 kg
+    class; squat opener range 10-30 kg, suggestion 22.5 (CN 25); server
+    refused 31 ("2.5 kg steps") and 32.5 ("between 10.0 and 30.0"), took 25;
+    lifter anchored on the platform; LIFT ran the real squat minigame (no
+    input) -> NO LIFT (failed SquatDepth), logged at 25.0 kg; attempt 2
+    offered 25 again; a test-key request during the meet started nothing; all
+    9 attempts ran (no input) -> Done, BOMBED OUT, scorecard all red, board
+    "MEET OVER"; Leave from the end returned to the desk; a quick re-check-in
+    was refused with "Your next Mock Meet is ready in 0:01", later allowed;
+    Leave during a lift stopped it, cleared the room, and (after the fix) the
+    minigame closed on screen; screenshots of the picker, LIFT and end screens.
+  - NOT tested: a GOOD LIFT and the white lights (needs a person playing the
+    minigames), the 60 s choose and ready time-outs, a passed attempt, dying
+    mid-lift, two players at once, a phone.
+  MOCK MEET PART 2b: NEW LOOK, TYPED WEIGHTS, COACH INSTEAD OF JUDGES
+  (2026-10-28; user, from screenshots: the screens were ugly, clicking +2.5
+  over and over was too slow, "the coach will be watching", "for a mock meet we
+  do not need refs"; NOT committed yet):
+  - MockMeetUI rewritten: tilted black cards on white, red tags, heavy italic
+    Montserrat; scorecard chips white = good, red = no lift; the action card
+    has a typable weight box (Enter or CONFIRM), -5/-2.5/+2.5/+5 nudges, a live
+    hint saying what the server would refuse, a timer badge (red under 10 s);
+    LIFT ignores clicks for 0.8 s after it appears, so a double click on
+    CONFIRM cannot start the lift; the card shrinks when it only shows text.
+  - MockMeetController: typed/step handlers; the client checks range, 2.5 kg
+    steps and AttemptRules before sending (the server still checks).
+  - MockMeetArena: judges, chairs and light stands removed; a coach figure
+    (HumanoidDescription R15, navy top, clipboard, COACH tag, speech bubble)
+    at the platform's front corner; setLights replaced by coachSays.
+  - MockMeetService: the coach speaks on Ready, after each verdict and at the
+    end; the attempt board shows GOOD LIFT / NO LIFT.
+  - Skills checked (user asked): the "model skill" is make-model in the
+    Picture-to-Model kit (scanned clean); no UI skill exists, only the UI Icon
+    Pack (pictures); OmniRoute's skills on D:\ scanned clean (not installed).
+  - Checks: luau-lsp 0 errors in the meet files, `rojo build` OK. Studio
+    (one player): the new screens drawn (screenshots); typing 28 + Enter showed
+    "Weights go in 2.5 kg steps." and sent nothing; typing 27.5 / 22.5 / 30 +
+    Enter declared them (server -> Ready); no judges in the room, coach present;
+    coach lines seen ("Breathe. Brace. Go.", "You had that. Again."); NO LIFT
+    card red; Leave cleared the room; no new warnings. Found while testing: the
+    Studio screenshot tool clicks the screen centre (it pressed CONFIRM and
+    LIFT once), which led to the LIFT delay above.
+  - NOT tested: a GOOD LIFT (needs a person), the 0.8 s LIFT delay by a real
+    double click, a phone (the cards are fixed pixel sizes), two players.
+  Parts 2 and 2b COMMITTED with the user's approval on 2026-10-28 (see
+  section 1) before the game-wide restyle below. The user played it: the
+  meet works; the look is NOT approved ("UIs overlap ... a BIG no": the
+  lift's own minigame bars and verdict draw over the meet card).
+  GAME-WIDE UI RESTYLE (user, 2026-10-28, with screenshots of another
+  game's menus as direction only, never copied): EVERY screen in one style.
+  Picked from options: yellow, white and dark navy with a faint grid; the
+  lockout timing check of each lift becomes a shrinking ring (squat yellow,
+  bench red, deadlift blue); the bench mash becomes a coloured ring; the
+  squat control game restyled; the rack stat picker as a "select your
+  goal" panel; the deadlift typing game as a row of pattern boxes; a new
+  STATS screen (a key plus a button; Competition Numbers, technique stats,
+  class); the "E" prompts in the same style. Rollout order: style kit +
+  Mock Meet (overlap fix) first for the user's approval, then the lift
+  minigames, the rack menu and prompts, the stats screen, the rhythm game. After
+  that: the rewards step needs the weight-class build decision (§33.11 item
+  11) before any meet raises Competition Scale.
   Other open threads: the records
   system (needs a decision; no meet system exists yet, §33), more machines,
   the mirror on a phone, the remaining room interiors (Classroom, Media Room,
@@ -1500,7 +1581,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-28, pushed: Add the Mock Meet Room and a private meet room per player (Mock Meet part 1); `git log -1` for the hash.
+- 2026-10-28, pushed: Run the Mock Meet itself: attempts, lifts, coach and results (Mock Meet part 2); `git log -1` for the hash.
+- `023f46c` (2026-10-28, pushed) Add the Mock Meet Room and a private meet room per player (Mock Meet part 1).
 - `3eb5be1` (2026-10-27, pushed) Design: player-set World Records, Sheffield vs configured records, gym record rules.
 - `2d137c1` (2026-10-27, pushed) Add the rhythm game's saved leaderboards (part 2: all-time and weekly boards).
 - `7f1521b` (2026-10-27, pushed) Fix see-through bar stools and Shop gear, and check every model for it.

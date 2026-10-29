@@ -115,9 +115,13 @@ type Attempt = {
 	startedAtClock: number,
 	-- Set while a result is being held on screen, so input is ignored.
 	finished: boolean,
+	-- Told the verdict when the attempt ends, for an attempt another server system started (the Mock Meet).
+	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?,
 }
 
 local attempts: { [Player]: Attempt } = {}
+-- Players whose own attempt requests are ignored (a Mock Meet starts their lifts instead).
+local freeAttemptsBlocked: { [Player]: boolean? } = {}
 local nextAttemptId = 0
 local remotes: LiftingRemotes.RemoteSet? = nil
 local started = false
@@ -221,6 +225,9 @@ local function finishAttempt(attempt: Attempt, verdict: LiftAttempt.AttemptVerdi
 	}
 
 	set.announceAttemptResult:FireClient(player, payload)
+	if attempt.onFinished then
+		task.spawn(attempt.onFinished, verdict)
+	end
 
 	--[[
 		NOTHING IS WRITTEN HERE ON PURPOSE. When a good lift eventually sets a PR or
@@ -426,6 +433,9 @@ function beginPhaseAtIndex(attempt: Attempt)
 	end
 end
 
+local createAttempt: (player: Player, liftName: string, requestedPercent: number?, weightKg: number?,
+	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?) -> (boolean, string?)
+
 local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requestedPercent: unknown)
 	local set = remotes
 	if set == nil then
@@ -458,21 +468,56 @@ local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requ
 		LiftAttemptConfig.MaximumAttemptPercent
 	)
 
+	-- A player in a Mock Meet lifts only when the meet says so.
+	if freeAttemptsBlocked[player] then
+		return
+	end
+
+	createAttempt(player, liftName, percent, nil, nil)
+end
+
+--[[
+	Creates and starts one attempt. Exactly one of `percent` (of the player's
+	Competition Number) and `weightKg` (an exact bar weight, which must lie
+	within the same percentage bounds) is given. Returns false and the reason
+	when no attempt was started.
+]]
+function createAttempt(player: Player, liftName: string, requestedPercent: number?, weightKg: number?,
+	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?): (boolean, string?)
+	local sequence = LiftAttemptConfig.Sequences[liftName]
+	if sequence == nil or not ENABLED_LIFTS[liftName] then
+		return false, "unknown lift " .. tostring(liftName)
+	end
+
 	-- Exactly one attempt per player. A second request while one is live is ignored.
 	if attempts[player] ~= nil then
-		return
+		return false, "an attempt is already running"
 	end
 
 	local data = PlayerDataService.getData(player)
 	if data == nil then
-		return
+		return false, "no player data"
 	end
 
 	-- Renamed field in schema v3; the in-memory name stays forecastedMax for now.
 	local forecastedMax = data.competitionNumber[sequence.lift]
 	if typeof(forecastedMax) ~= "number" or forecastedMax <= 0 then
 		warn(string.format("[LiftAttemptService] %s has no usable forecasted %s", player.Name, sequence.lift))
-		return
+		return false, "no usable Competition Number"
+	end
+
+	local percent: number
+	local attemptWeightKg: number
+	if weightKg ~= nil then
+		percent = weightKg / forecastedMax
+		local e = 1e-6
+		if percent < LiftAttemptConfig.MinimumAttemptPercent - e or percent > LiftAttemptConfig.MaximumAttemptPercent + e then
+			return false, string.format("%.1f kg is outside the allowed range of the Competition Number", weightKg)
+		end
+		attemptWeightKg = weightKg
+	else
+		percent = requestedPercent :: number
+		attemptWeightKg = forecastedMax * percent
 	end
 
 	--[[
@@ -506,7 +551,7 @@ local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requ
 
 		forecastedMaxKg = forecastedMax,
 		attemptPercent = percent,
-		attemptWeightKg = forecastedMax * percent,
+		attemptWeightKg = attemptWeightKg,
 		techniqueSnapshot = techniqueSnapshot,
 		modifierSnapshot = modifierSnapshot,
 
@@ -520,6 +565,7 @@ local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requ
 
 		startedAtClock = os.clock(),
 		finished = false,
+		onFinished = onFinished,
 	}
 
 	attempts[player] = attempt
@@ -545,10 +591,66 @@ local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requ
 		if current ~= nil and current.attemptId == attemptId and not current.finished then
 			warn(string.format("[LiftAttemptService] %s's attempt exceeded its safety bound; abandoning", player.Name))
 			clearAttempt(player)
+			-- An abandoned attempt is not a good lift.
+			if current.onFinished then
+				task.spawn(current.onFinished, LiftAttempt.Verdict.NoLift)
+			end
 		end
 	end)
 
 	beginPhaseAtIndex(attempt)
+	return true, nil
+end
+
+--[[
+	Starts an attempt that another SERVER system chose (the Mock Meet), at an exact
+	bar weight, and tells `onFinished` the verdict when it ends. The weight must lie
+	within the usual percentage bounds of the player's Competition Number. Returns
+	false and the reason when no attempt was started. Nothing is written here
+	either: what a verdict means is the caller's business.
+]]
+function LiftAttemptService.startServerAttempt(player: Player, liftName: string, weightKg: number,
+	onFinished: (LiftAttempt.AttemptVerdict) -> ()): (boolean, string?)
+	if typeof(weightKg) ~= "number" or weightKg ~= weightKg or weightKg <= 0 or weightKg == math.huge then
+		return false, "invalid weight"
+	end
+	return createAttempt(player, liftName, nil, weightKg, onFinished)
+end
+
+-- Whether the player's own attempt requests (the test keys) are ignored. The Mock Meet blocks them during a meet.
+function LiftAttemptService.setFreeAttemptsBlocked(player: Player, blocked: boolean)
+	freeAttemptsBlocked[player] = if blocked then true else nil
+end
+
+--[[
+	Stops the player's attempt without a verdict (the Mock Meet calls this when the
+	lifter walks out mid-lift). The client is told the lift STOPPED, so its
+	minigame closes instead of staying on screen.
+]]
+function LiftAttemptService.abandon(player: Player)
+	local attempt = attempts[player]
+	local set = remotes
+	if attempt and not attempt.finished and set and player.Parent then
+		local payload: LiftAttempt.AttemptResultPayload = {
+			attemptId = attempt.attemptId,
+			liftName = attempt.liftName,
+			verdict = LiftAttempt.Verdict.NoLift,
+			verdictText = "STOPPED",
+			attemptWeightKg = attempt.attemptWeightKg,
+			forecastedMaxKg = attempt.forecastedMaxKg,
+			attemptPercent = attempt.attemptPercent,
+			failedPhase = nil,
+			resultHoldSeconds = 0.5,
+		}
+		set.announceAttemptResult:FireClient(player, payload)
+		log("%s's %s attempt was stopped", player.Name, attempt.displayName)
+	end
+	clearAttempt(player)
+end
+
+-- Whether an attempt (or its result hold) is live for the player.
+function LiftAttemptService.isAttemptActive(player: Player): boolean
+	return attempts[player] ~= nil
 end
 
 --[[
@@ -608,7 +710,10 @@ function LiftAttemptService.start()
 	set.requestLiftAttempt.OnServerEvent:Connect(onRequestLiftAttempt)
 	set.reportPhaseInput.OnServerEvent:Connect(onReportPhaseInput)
 
-	Players.PlayerRemoving:Connect(clearAttempt)
+	Players.PlayerRemoving:Connect(function(player)
+		clearAttempt(player)
+		freeAttemptsBlocked[player] = nil
+	end)
 
 	for liftName in pairs(ENABLED_LIFTS) do
 		local sequence = LiftAttemptConfig.Sequences[liftName]

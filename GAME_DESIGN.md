@@ -2033,6 +2033,49 @@ multiplayer-only, not because progression requires it.
   they leave (Leave button, dying, or leaving the game), which puts them back at the
   check-in. Chosen over sending them to a separate Roblox server, which loads slowly
   and takes them out of their friends' server and chat.
+- **How a Mock Meet runs** (built 2026-10-28 from the approved plan; the numbers are
+  **[PROVISIONAL]**): the weigh-in shows the class; for each lift (squat, bench,
+  deadlift) three attempts. **Choose:** the opener suggestion is 90% of Competition
+  Number (rounded down to 2.5 kg); weights move in 2.5 kg steps, inside the usual
+  attempt range of 40% to 125% of Competition Number; 60 s to choose, and when time
+  runs out the opener is the suggestion, after a miss the same weight, after a good
+  lift the smallest legal increase. If no legal heavier weight is left inside the
+  range, the attempt is **passed**. **Ready:** the lifter stands on the platform and
+  presses **LIFT**; like a real meet's one-minute clock, not starting within 60 s is
+  a **no lift**. **Lift:** the existing minigames decide good lift or no lift.
+  ~~the three judges' lights always agree~~ **[CHANGED, user 2026-10-28: "for a mock
+  meet we do not need refs"]** A Mock Meet has **no judges**; the verdict shows on the
+  screen (GOOD LIFT white, NO LIFT red, like meet lights) and on the attempt board.
+  The attempt board and the scorecard update after every lift; at the end the best
+  lifts and the **total** show, or **bombed out** (a lift with no good attempt; the
+  meet still runs to the end). The test keys are off during a meet; walking out
+  mid-lift stops the lift. Nothing is saved.
+- **The coach watches** (user, 2026-10-28: "the coach will be watching as well for
+  these mock meets and meets"): the lifter's coach stands by the platform in every
+  Mock Meet and will in every meet. For now they only watch and react with a short
+  line (encouragement before a lift, a reaction after it); what a coach actually does
+  is still §22's open question. Official meets keep their referees; only the Mock
+  Meet has none.
+- **Choosing a weight is typed** (user, 2026-10-28: clicking +2.5 over and over was
+  too slow): the player types the kilograms (Enter or CONFIRM declares it), with
+  −5, −2.5, +2.5 and +5 buttons to nudge it. The box starts at the suggestion and
+  says straight away what the server would refuse (outside the range, not a 2.5 kg
+  step, below an earlier attempt).
+- **The meet screens' look** (user, 2026-10-28: "ugly ... clean UIs", with two example
+  screenshots of bold comic-style menus): bold, slightly tilted black cards with a
+  white card behind, a red tag across the top, heavy italic type; an original design,
+  not a copy of the examples. **[SUPERSEDED the same day by the game-wide style
+  below.]**
+- **One UI style for the whole game** (user, 2026-10-28: "MAKE SURE everything that
+  requires a ui has the same style", with screenshots of another game's menus as
+  direction only; picked from options): **yellow, white and dark navy** with a faint
+  grid, angled frames and slanted black tags. Every screen uses it: the Mock Meet,
+  the lift minigames, the rack's stat picker, the "E" prompts, a new **stats screen**
+  and the rhythm game. In the lifts, each lift's **lockout timing check becomes a
+  shrinking ring** onto a target, **squat yellow, bench red, deadlift blue**; the bench
+  mash becomes a coloured ring; the deadlift typing game shows a row of pattern
+  boxes. The **stats screen** (Competition Numbers, the technique stats, weight class)
+  opens with a key or an on-screen STATS button (phones).
 - **Meet first, rewards next.** The first build is the whole meet: weigh-in (class
   locked, §32.7), attempt choice, the 9 lifts with the existing minigames, judges'
   lights, the attempt board and the total. It **saves nothing permanent**: no

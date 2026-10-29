@@ -41,4 +41,34 @@ MockMeetConfig.RoomSize = Vector3.new(64, 26, 72)
 -- How long a player must wait between two Leave presses (stops button spam).
 MockMeetConfig.LeaveCooldownSeconds = 1
 
+--[[
+	Part 2: the meet itself (§29.10). 3 attempts per lift, squat -> bench ->
+	deadlift (MeetConfig); attempts chosen one at a time; the server checks
+	every choice (AttemptRules, the percentage bounds of LiftAttemptConfig).
+	Nothing is saved.
+]]
+
+-- [PROVISIONAL] Time between two Mock Meets, counted from check-in, so quitting after a bad
+-- opener still uses it (user, 2026-10-27: "one every 30 minutes"). Kept by the server only for
+-- now (a new server does not know it); saving it is part of the rewards step.
+MockMeetConfig.CooldownSeconds = 30 * 60
+-- In Studio, so a test does not wait half an hour.
+MockMeetConfig.StudioCooldownSeconds = 15
+
+-- How long the weigh-in shows before the first attempt is chosen.
+MockMeetConfig.WeighInSeconds = 4
+-- Time to choose the next attempt. When it runs out: the opener is the suggestion, after a
+-- miss the same weight again, after a good lift the smallest legal increase.
+MockMeetConfig.ChooseSeconds = 60
+-- Once the bar is loaded the lifter has this long to press LIFT, like a real meet's one-minute
+-- clock; when it runs out the attempt is a no lift.
+MockMeetConfig.ReadySeconds = 60
+-- How long the verdict (and the coach's reaction) shows before the next choice.
+MockMeetConfig.ResultSeconds = 4
+
+-- The opener suggestion: this share of the Competition Number, rounded down to WeightStepKg.
+MockMeetConfig.OpenerSuggestionPercent = 0.90
+-- The size of the + and - buttons; also what every declared weight must be a multiple of.
+MockMeetConfig.WeightStepKg = 2.5
+
 return MockMeetConfig
