@@ -3359,9 +3359,10 @@ checkpoint 6; the values are **[PROVISIONAL]** balance, the shape is decided):
 | The curve | **Linear**: 0 points at ratio 1.00, rising evenly to the cap at ratio **1.50** |
 | The cap | **+10 points** (a 100% attempt is difficulty 65 and a 110% one 95, so +10 feels like about 3% more on the bar) |
 | Behaviour at ratio <= 1.00, a weight at or below proven Scale | **Neutral**: no easing bonus |
-| Behaviour when Scale is unproven (0) | **The full +10.** The first meet in a lift carries the most pressure; one good lift sets the Scale and removes most of it |
+| Behaviour when Scale is unproven (0) | **The full +10.** The first meet in a lift carries the most pressure; a finished meet sets the Scale and removes most of it from the next meet |
 | Where it applies | **Meet attempts only** (the Mock Meet now, other meets later). Practice and training lifts never carry it |
 | Shown to the player | **As its own line** on the attempt screen (for example "unproven weight +5"), and included in the displayed difficulty |
+| Which Scale it reads during a meet | **The Scale proven BEFORE the meet, fixed for the whole meet** (user, 2026-10-29). Good lifts earlier in the same meet do not ease later attempts, because nothing is proven until the meet ends with a total (§33.3b). So a first meet carries the full +10 on every attempt |
 
 Worked example, a proven Squat of 180 kg: 180 kg +0, 200 kg (1.11) about +2,
 225 kg (1.25) +5, 270 kg or more (1.50+) +10.

@@ -2334,6 +2334,15 @@ and polish.
   - Rojo half-synced the first edit once (new function in, old runMeet
     kept); fixed by a nudge edit, then Studio's Source lengths were checked
     against the disk files.
+  - USER'S OWN MOCK MEET (Studio Play, 2026-10-29, read from the server
+    log by Claude): real minigames, 7 of 9 good (squat 22.5/25/27.5x,
+    bench 22.5/25/27.5, deadlift 22.5x/22.5/25), total 77.5 kg; all three
+    Scales and the best Total "Raised" only after the last attempt; no
+    errors. Every attempt carried +10 (Scale 0 before the meet).
+  - Decision (user, 2026-10-29, GAME_DESIGN 33.4 table): the Scale
+    challenge reads the Scale proven BEFORE the meet, fixed for the whole
+    meet. Matches the built code; no code change. COMMITTED and pushed
+    2026-10-29 (section 1).
   NEXT ACTION: ask the user what is next. The rest of 33.3b waits for
   vs-player meets. The user also has a Mock Meet and a deadlift to
   try in Studio.
@@ -2406,7 +2415,8 @@ with `print(game.PlaceId)` before working or saving.
 
 ## 1. Latest Verified Commit
 
-- 2026-10-29, pushed: Save a Mock Meet's proven lifts only when it ends with a total; `git log -1` for the hash.
+- 2026-10-29, pushed: Keep the Scale challenge fixed for the whole meet, and record the user's Mock Meet test; `git log -1` for the hash.
+- `dda82af` (2026-10-29, pushed) Save a Mock Meet's proven lifts only when it ends with a total.
 - `ca82437` (2026-10-29, pushed) Decide meet risk: a daily meet CN allowance, misses use it, a bomb-out saves nothing.
 - `84c48a4` (2026-10-29, pushed) Retire Training Energy and record meet CN raises (checkpoint 8, save version 8).
 - `d6a8c4b` (2026-10-29, pushed) Add the Competition Scale challenge to meet attempts (checkpoint 6).
