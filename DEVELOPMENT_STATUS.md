@@ -2671,8 +2671,34 @@ and polish.
     checked): 423 passed, 0 failed; the real Studio profile loaded at version
     11. NOT tested: a real Local meet saving a best (look for "official Squat
     best" in the Output after a good lift).
+  Step 2 BUILT (2026-10-30, user: "Start step 2"). COMMITTED AND PUSHED with
+  the user's approval ("Commit and push", before a real-meet test); `git log`
+  for the hash.
+  - New src/shared/Config/GymRecordsConfig.luau (records, store "GymRecords",
+    key "AllClasses", Studio_ prefix, refresh 60 s, 3 retries).
+  - New src/server/Meet/GymRecords.luau: submit(userId, class, claims, done)
+    queues a claim and saves it with UpdateAsync, heavier only (a tie keeps
+    the first lifter); done(broken) lists the records broken and who held
+    them before. get(class) (a copy), onChanged(listener), mode(). Reads
+    are cleaned (unknown classes / bad entries dropped). Re-read every 60 s;
+    a read that overlaps a save is dropped. Waits for saves on shutdown.
+  - init.server.luau starts GymRecords before LocalMeetService.
+  - LocalMeetService.saveOfficialBest: when the best was Raised, claims the
+    lift and the lifter's official-meet Total (once all three exist); logs
+    "NEW GYM RECORD: ..." for each record broken.
+  - Checks: luau-lsp, no errors in the changed files. Studio Play (by
+    Claude), a separate copy of GymRecords in memory mode: first record from
+    empty; a tie broke nothing; a heavier lift by someone else took it (old
+    holder reported); beating your own record and a first Total both saved;
+    a lighter Total broke nothing; other classes separate; bad weights and an
+    unknown class refused; get() returns a copy; 4 change signals. The live
+    server's GymRecords started ("records: memory"). Found while testing:
+    Rojo missed one edit (re-saved; Studio checked against disk). NOT
+    tested: a real Local meet sending a claim (look for "NEW GYM RECORD" in
+    the Output after a good lift).
   NEXT ACTION: the user tests a Local meet in Studio (Output shows the
-  official best); then step 2 (the shared gym records save).
+  official best and NEW GYM RECORD); then step 3 (the chalk wall shows the
+  records).
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.

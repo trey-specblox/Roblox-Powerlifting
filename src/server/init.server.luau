@@ -46,6 +46,10 @@ MockMeetService.start()
 
 -- The Local meet against other players: the venue, the sign-up timetable and the meet itself.
 -- Step 1: nothing saved yet.
+-- The gym record wall's saved records (GAME_DESIGN §31.6), before the meet that sets them.
+local GymRecords = require(MeetFolder:WaitForChild("GymRecords"))
+GymRecords.start()
+
 local LocalMeetService = require(MeetFolder:WaitForChild("LocalMeetService"))
 LocalMeetService.start()
 

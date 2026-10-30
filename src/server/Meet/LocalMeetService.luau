@@ -83,6 +83,7 @@ local MeetPlacing = require(MeetFolder:WaitForChild("MeetPlacing"))
 local ServerFolder = script.Parent.Parent
 local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
 local LocalMeetWarmUp = require(script.Parent:WaitForChild("LocalMeetWarmUp"))
+local GymRecords = require(script.Parent:WaitForChild("GymRecords"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
@@ -504,8 +505,10 @@ local function saveOfficialBest(current: Meet, lifter: Lifter, lift: string, kg:
 		return
 	end
 	local outcome: ProfileOperations.ScaleRaiseOutcome? = nil
+	local totalKg: number? = nil
 	local saved = PlayerDataService.update(lifter.player, function(data)
 		outcome = ProfileOperations.raiseOfficialMeetBest(data, lifter.classLabel, lift, kg)
+		totalKg = ProfileOperations.getOfficialMeetBestTotal(data, lifter.classLabel)
 	end)
 	if not saved or outcome == "Rejected" then
 		warn(string.format("[LocalMeetService] %s's official %s best (%s kg, %s) was not saved: %s", lifter.player.Name,
@@ -513,6 +516,18 @@ local function saveOfficialBest(current: Meet, lifter: Lifter, lift: string, kg:
 		return
 	end
 	log("%s official %s best (%s): %s kg %s", lifter.player.Name, lift, lifter.classLabel, kgText(kg), tostring(outcome))
+	if outcome ~= "Raised" then
+		return -- not a new best for them, so it cannot be a new gym record either
+	end
+	-- The gym record wall (GymRecords): this lift, and their Total once all three lifts have a best.
+	local name = lifter.player.Name
+	GymRecords.submit(lifter.player.UserId, lifter.classLabel, { [lift] = kg, Total = totalKg }, function(broken)
+		for _, record in ipairs(broken) do
+			local previous = record.previous
+			log("NEW GYM RECORD: %s %s %s kg (%s), before: %s", name, record.record, kgText(record.kg), lifter.classLabel,
+				if previous then string.format("%d with %s kg", previous.userId, kgText(previous.kg)) else "empty")
+		end
+	end)
 end
 
 local function lightsText(lights: { string }?): string

@@ -2907,6 +2907,16 @@ sum-of-bests Total.
 > `officialMeetBest` (squat, bench, deadlift; 0 = none yet), starting empty for
 > everyone (nothing before recorded which lifts were at official meets). The
 > Local meet saves it right after each good lift when the meet rewards.
+>
+> **(2) built (2026-10-30): the shared gym records.** One saved set for the
+> whole game (`GymRecords`, store `GymRecords`, one key for every class): per
+> class the Squat, Bench, Deadlift and Total record with the holder and kg.
+> When a good lift raises a lifter's official-meet best, the meet claims that
+> lift and (once all three lifts have a best) their Total; a claim is saved
+> only when it is **heavier** than the record, so a tie keeps the first
+> lifter, and two servers can never lower a record. Every server reads the
+> records again every 60 s. Studio uses a `Studio_` store or memory, never
+> the live wall.
 
 
 ---
