@@ -2618,6 +2618,28 @@ and polish.
     the screens during a real meet, two players on warm-up racks.
   NEXT ACTION: the user plays a Local meet (watch the platform screen during
   the lifts) and tries a warm-up rack; fix anything found.
+
+  MEET WEIGHT MENU, easier to read (2026-10-29). COMMITTED AND PUSHED with
+  the user's approval ("Commit and push"); `git log` for the hash. User,
+  with a screenshot of the old menu: "make this menu easier to read ... for
+  new players", bigger, bigger fonts for the allowed range and % of CN,
+  preset % buttons instead of -5/-2.5, and their stats visible so they can
+  judge the jump. Display only (no rule changed); the Mock Meet and the Local
+  meet share it.
+  - src/client/Meet/MockMeetUI.luau: while choosing, the action panel is 660
+    x 380 with YOUR CNs (S/B/D chips, this lift in its colour), THIS LIFT SO
+    FAR (each attempt, GOOD / NO LIFT), the weight box, big lines for % of
+    CN, the jump from the last attempt and ALLOWED min-max, and QUICK PICK
+    buttons at 90/95/100/105/110/115/120/125% of CN with their kg (on the
+    2.5 kg step; dimmed and inactive outside the allowed range). The -5/+5/
+    -2.5/+2.5 nudges are gone (typing still works).
+  - src/client/Meet/MockMeetController.luau: the nudge handler `step` is
+    replaced by `set` (a QUICK PICK weight).
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): showed the
+    menu with sample states sent by hand (TEMP, nothing in the game): a 25 kg
+    CN squat attempt 2 and a bench attempt 3 after a good 125 and a missed
+    135; screenshots read well. Not yet used in a real meet. With very small
+    CNs two picks can land on the same kg (e.g. 110% and 115% of 25 kg).
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.

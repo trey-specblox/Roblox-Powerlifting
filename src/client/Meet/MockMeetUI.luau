@@ -12,9 +12,15 @@
 		top left       the MOCK MEET tag; notices under it
 		top right      LEAVE
 		right          the SCORECARD panel: 3 lifts x 3 attempts, the class, the total
-		bottom middle  the action panel: the weigh-in, the weight box (type a
-		               weight, Enter or CONFIRM; -5 -2.5 +2.5 +5 nudge it),
-		               LIFT, the verdict, the result
+		bottom middle  the action panel: the weigh-in, the weight choice, LIFT,
+		               the verdict, the result
+
+	CHOOSING A WEIGHT (user 2026-10-29: "make this menu easier to read ... for
+	new players"): the panel grows and shows YOUR CNs (all three, this lift's
+	lit), this lift's attempts so far, the weight box (type a weight, Enter or
+	CONFIRM), big lines for its % of CN, the jump from the last attempt and the
+	allowed range, and QUICK PICK buttons at 90-125% of CN with their kg
+	(dimmed when not allowed).
 
 	NO OVERLAP WITH THE LIFT (user 2026-10-28: "UIs overlap ... a BIG no"). The
 	lift's minigames and their own verdict use the middle of the screen. The
@@ -30,6 +36,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
 local MockMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("MockMeetRemotes"))
+local MockMeetConfig = require(ConfigFolder:WaitForChild("MockMeetConfig"))
 
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 local C = UIStyle.Colours
@@ -38,8 +45,8 @@ local MockMeetUI = {}
 
 export type Handlers = {
 	leave: () -> (),
-	-- A nudge button: change the weight by `deltaKg`.
-	step: (deltaKg: number) -> (),
+	-- A QUICK PICK button: choose exactly `kg`.
+	set: (kg: number) -> (),
 	-- The weight box's text changed; `submit` when the player pressed Enter.
 	typed: (text: string, submit: boolean) -> (),
 	confirm: () -> (),
@@ -63,6 +70,11 @@ export type Ui = {
 }
 
 local ACTION_WIDTH, ACTION_TALL, ACTION_SHORT = 520, 230, 170
+-- While choosing a weight the panel is bigger, so everything in it can be read at a glance.
+local CHOOSE_WIDTH, CHOOSE_TALL = 660, 380
+-- The QUICK PICK buttons: these shares of the lift's CN (inside the meet's 40-125%).
+local QUICK_PICKS = { 0.90, 0.95, 1.00, 1.05, 1.10, 1.15, 1.20, 1.25 }
+local WEIGHT_STEP_KG = MockMeetConfig.WeightStepKg
 -- LIFT sits where CONFIRM was: it ignores clicks this long after it appears, so a double click cannot start the lift.
 local LIFT_ARM_SECONDS = 0.8
 
@@ -144,7 +156,7 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	-- ------------------------------------------------ the action panel
 	-- Placed by its bottom middle, so it grows upward and stays centred when it changes height or shrinks.
 	local actionHolder, action = UIStyle.panel(gui, "Action", UDim2.new(0.5, 0, 1, -30),
-		UDim2.fromOffset(ACTION_WIDTH, ACTION_TALL))
+		UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL))
 	actionHolder.AnchorPoint = Vector2.new(0.5, 1)
 	local stepTag = UIStyle.titleTag(actionHolder, "Tag", "", UDim2.fromOffset(-14, -24), UDim2.fromOffset(300, 40))
 	local timer = UIStyle.frame(actionHolder, "Timer", UDim2.new(1, -92, 0, -20), UDim2.fromOffset(90, 38), C.yellow, 4)
@@ -153,19 +165,35 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		UIStyle.heading(), Enum.TextXAlignment.Center)
 	timerText.ZIndex = 5
 
-	-- Choose: the weight box, the nudges, the hint and CONFIRM.
+	-- Choose: your CNs, this lift so far, the weight box with its lines, QUICK PICK and CONFIRM.
 	local choose = Instance.new("Frame")
 	choose.Name = "Choose"
 	choose.BackgroundTransparency = 1
 	choose.Size = UDim2.fromScale(1, 1)
 	choose.Parent = action
-	UIStyle.sectionHead(choose, "Prompt", "TYPE YOUR WEIGHT", UDim2.fromOffset(22, 26), 168, nil, "dots")
-	local percentText = UIStyle.label(choose, "Percent", UDim2.new(1, -236, 0, 28), UDim2.fromOffset(214, 16), C.muted,
-		nil, Enum.TextXAlignment.Right)
+
+	-- YOUR CNs: one chip per lift, the lift being chosen in its colour.
+	UIStyle.sectionHead(choose, "NumbersHead", "YOUR CNs", UDim2.fromOffset(22, 28), 104, nil, "bar")
+	local cnChips: { [string]: { chip: Frame, text: TextLabel } } = {}
+	for index, lift in ipairs(MeetConfig.LiftOrder) do
+		local chip = UIStyle.frame(choose, "CN_" .. lift, UDim2.fromOffset(170 + (index - 1) * 160, 22),
+			UDim2.fromOffset(150, 32), C.navyDeep)
+		UIStyle.stroke(chip, C.white, 1, 0.4)
+		local text = UIStyle.label(chip, "Text", UDim2.new(0, 8, 0.16, 0), UDim2.new(1, -16, 0.68, 0), C.white,
+			UIStyle.heading(), Enum.TextXAlignment.Center)
+		cnChips[lift] = { chip = chip, text = text }
+	end
+	-- This lift's attempts so far, e.g. "THIS LIFT SO FAR   1ST 25 KG GOOD".
+	local historyText = UIStyle.label(choose, "History", UDim2.fromOffset(22, 66), UDim2.new(1, -44, 0, 22), C.white,
+		UIStyle.heading())
+	historyText.RichText = true
+
+	-- The weight box, left.
+	UIStyle.sectionHead(choose, "Prompt", "YOUR WEIGHT", UDim2.fromOffset(22, 100), 120, nil, "dots")
 	local box = Instance.new("TextBox")
 	box.Name = "Weight"
-	box.Position = UDim2.fromOffset(22, 54)
-	box.Size = UDim2.fromOffset(200, 66)
+	box.Position = UDim2.fromOffset(22, 126)
+	box.Size = UDim2.fromOffset(220, 72)
 	box.BackgroundColor3 = C.navyDeep
 	box.BorderSizePixel = 0
 	box.ClearTextOnFocus = false
@@ -183,18 +211,35 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	boxPadding.PaddingBottom = UDim.new(0, 8)
 	boxPadding.PaddingRight = UDim.new(0, 10)
 	boxPadding.Parent = box
-	UIStyle.frame(choose, "Underline", UDim2.fromOffset(22, 120), UDim2.fromOffset(200, 3), C.yellow)
-	UIStyle.label(choose, "Unit", UDim2.fromOffset(230, 78), UDim2.fromOffset(56, 38), C.yellow, UIStyle.heading()).Text = "KG"
-	for index, delta in ipairs({ -5, 5, -2.5, 2.5 }) do
+	UIStyle.frame(choose, "Underline", UDim2.fromOffset(22, 198), UDim2.fromOffset(220, 3), C.yellow)
+	UIStyle.label(choose, "Unit", UDim2.fromOffset(250, 150), UDim2.fromOffset(60, 40), C.yellow, UIStyle.heading()).Text = "KG"
+	-- Its lines, big enough to read at a glance: the % of CN, the jump, the allowed range.
+	local percentText = UIStyle.label(choose, "Percent", UDim2.fromOffset(22, 210), UDim2.fromOffset(300, 26), C.yellow,
+		UIStyle.heading())
+	local jumpText = UIStyle.label(choose, "Jump", UDim2.fromOffset(22, 240), UDim2.fromOffset(300, 22), C.white,
+		UIStyle.heading())
+	local rangeText = UIStyle.label(choose, "Range", UDim2.fromOffset(22, 266), UDim2.fromOffset(300, 22), C.muted,
+		UIStyle.heading())
+
+	-- QUICK PICK, right: a % of CN and its kg on each button.
+	UIStyle.sectionHead(choose, "QuickHead", "QUICK PICK", UDim2.fromOffset(340, 100), 110, nil, "chevron")
+	type Pick = { share: number, button: TextButton?, kg: number? }
+	local picks: { Pick } = {}
+	for index, share in ipairs(QUICK_PICKS) do
 		local column = (index - 1) % 2
 		local row = (index - 1) // 2
-		UIStyle.button(choose, "Nudge_" .. index, (if delta > 0 then "+" else "−") .. kgText(math.abs(delta)),
-			UDim2.new(1, -206 + column * 96, 0, 56 + row * 36), UDim2.fromOffset(88, 30), "outline", function()
-				handlers.step(delta)
+		local pick: Pick = { share = share, button = nil, kg = nil }
+		pick.button = UIStyle.button(choose, "Pick_" .. index, "", UDim2.fromOffset(340 + column * 152, 128 + row * 40),
+			UDim2.fromOffset(144, 34), "outline", function()
+				if pick.kg then
+					handlers.set(pick.kg)
+				end
 			end)
+		table.insert(picks, pick)
 	end
-	local hint = UIStyle.label(choose, "Hint", UDim2.fromOffset(22, 132), UDim2.new(1, -44, 0, 18), C.muted)
-	local confirm = UIStyle.button(choose, "Confirm", "CONFIRM", UDim2.new(0, 22, 1, -60), UDim2.new(1, -44, 0, 42),
+
+	local hint = UIStyle.label(choose, "Hint", UDim2.fromOffset(22, 296), UDim2.new(1, -44, 0, 18), C.muted)
+	local confirm = UIStyle.button(choose, "Confirm", "CONFIRM", UDim2.new(0, 22, 1, -60), UDim2.new(1, -44, 0, 44),
 		"primary", handlers.confirm)
 	box:GetPropertyChangedSignal("Text"):Connect(function()
 		if box:IsFocused() then
@@ -312,7 +357,8 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		drawScorecard(state, chosenKg)
 
 		local tall = state.phase == "Choose" or state.phase == "Ready"
-		actionHolder.Size = UDim2.fromOffset(ACTION_WIDTH, if tall then ACTION_TALL else ACTION_SHORT)
+		actionHolder.Size = if state.phase == "Choose" then UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL)
+			else UDim2.fromOffset(ACTION_WIDTH, if tall then ACTION_TALL else ACTION_SHORT)
 		choose.Visible = state.phase == "Choose"
 		show.Visible = state.phase ~= "Choose"
 		if state.phase == "Ready" and lastPhase ~= "Ready" then
@@ -344,16 +390,65 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		sub.RichText = false
 		if state.phase == "Choose" then
 			stepTag.Text = attemptText
-			local cn = state.competitionNumber[state.lift or ""] or 0
+			local lift = state.lift or ""
+			local cn = state.competitionNumber[lift] or 0
 			local kg = chosenKg
 			if not box:IsFocused() then
 				box.Text = if kg then kgText(kg) else ""
 			end
+			-- YOUR CNs.
+			for chipLift, chip in pairs(cnChips) do
+				local on = chipLift == lift
+				local value = state.competitionNumber[chipLift]
+				chip.text.Text = string.format("%s  %s", string.upper(chipLift), if value then kgText(value) .. " KG" else "—")
+				chip.chip.BackgroundColor3 = if on then UIStyle.LiftColours[chipLift] or C.yellow else C.navyDeep
+				chip.text.TextColor3 = if on then C.ink else C.white
+			end
+			-- This lift so far.
+			local last: number? = nil
+			local parts = {}
+			for index, attempt in ipairs(state.attempts[lift] or {}) do
+				local ordinal = ({ "1ST", "2ND", "3RD" })[index] or (tostring(index) .. "TH")
+				local weightKg = attempt.weightKg
+				if attempt.result == "Passed" or weightKg == nil then
+					table.insert(parts, ordinal .. " PASSED")
+				else
+					local good = attempt.result == "GoodLift"
+					local kgDone = weightKg :: number
+					last = kgDone
+					table.insert(parts, string.format('%s %s KG <font color="#%s">%s</font>', ordinal, kgText(kgDone),
+						(if good then C.white else C.red):ToHex(), if good then "GOOD" else "NO LIFT"))
+				end
+			end
+			historyText.Text = if #parts > 0 then "THIS LIFT SO FAR     " .. table.concat(parts, "     ")
+				else "YOUR OPENER  ·  MOST LIFTERS OPEN AROUND 90% OF THEIR CN"
+			-- The weight's lines.
 			percentText.Text = if kg and cn > 0
-				then string.format("%d%% OF YOUR CN (%s KG)", math.floor(kg / cn * 100 + 0.5), kgText(cn))
+				then string.format("%d%% OF YOUR %s CN", math.floor(kg / cn * 100 + 0.5), string.upper(lift))
 				else ""
-			hint.Text = problem or string.format("Allowed %s – %s kg  ·  Enter or CONFIRM to declare",
-				kgText(state.minKg or 0), kgText(state.maxKg or 0))
+			if kg and last then
+				local jump = kg - last
+				jumpText.Text = if jump > 0 then string.format("+%s KG FROM LAST (%s KG)", kgText(jump), kgText(last))
+					elseif jump == 0 then string.format("SAME AS LAST (%s KG)", kgText(last))
+					else string.format("%s KG BELOW LAST (%s KG)", kgText(-jump), kgText(last))
+			else
+				jumpText.Text = ""
+			end
+			rangeText.Text = string.format("ALLOWED  %s – %s KG", kgText(state.minKg or 0), kgText(state.maxKg or 0))
+			-- QUICK PICK: each share of CN on the meet's step; dimmed outside the allowed range.
+			for _, pick in ipairs(picks) do
+				local button = pick.button :: TextButton
+				local pickKg = math.floor(cn * pick.share / WEIGHT_STEP_KG + 1e-6) * WEIGHT_STEP_KG
+				local allowed = cn > 0 and pickKg >= (state.minKg or 0) - 1e-6 and pickKg <= (state.maxKg or math.huge) + 1e-6
+				pick.kg = if allowed then pickKg else nil
+				button.AutoButtonColor = allowed
+				button.Text = string.format("%d%%  ·  %s KG", math.floor(pick.share * 100 + 0.5), kgText(pickKg))
+				local selected = allowed and kg ~= nil and math.abs(pickKg - (kg :: number)) < 1e-6
+				button.BackgroundColor3 = if selected then C.yellow else C.navyDeep
+				button.TextColor3 = if selected then C.ink elseif allowed then C.white else C.muted
+				button.TextTransparency = if allowed then 0 else 0.5
+			end
+			hint.Text = problem or "Type a weight or pick one, then press Enter or CONFIRM"
 			hint.TextColor3 = if problem then C.red else C.muted
 			confirm.BackgroundTransparency = if problem or kg == nil then 0.5 else 0
 		elseif state.phase == "WeighIn" then

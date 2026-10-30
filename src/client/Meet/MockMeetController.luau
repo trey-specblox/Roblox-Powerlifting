@@ -105,21 +105,12 @@ function MockMeetController.attach(remotes: ScreenRemotes, attribute: string, op
 		leave = function()
 			remotes.leave:FireServer()
 		end,
-		step = function(deltaKg: number)
+		set = function(kg: number)
 			local current = state
 			if current == nil or current.phase ~= "Choose" then
 				return
 			end
-			-- Nudge from the typed weight (or the suggestion), onto the step grid, inside the allowed range.
-			local step = MockMeetConfig.WeightStepKg
-			local from = chosenKg or current.suggestedKg or current.minKg or 0
-			local kg = math.floor((from + deltaKg) / step + 0.5) * step
-			if current.minKg then
-				kg = math.max(kg, current.minKg)
-			end
-			if current.maxKg then
-				kg = math.min(kg, current.maxKg)
-			end
+			-- A QUICK PICK weight (already on the step grid and inside the allowed range); the server checks it again.
 			chosenKg = kg
 			redraw()
 		end,
