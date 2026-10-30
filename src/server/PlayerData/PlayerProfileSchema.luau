@@ -48,9 +48,10 @@ local PlayerProfileSchema = {}
 --[[
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below (version 9: the meet CN allowance and career;
-	version 10: the Competition Budget removed).
+	version 10: the Competition Budget removed; version 11: the official-meet
+	bests for the gym records wall).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 10
+PlayerProfileSchema.CURRENT_VERSION = 11
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -129,6 +130,29 @@ export type CompetitionScale = {
 PlayerProfileSchema.NO_TOTAL = 0
 
 --[[
+	NO OFFICIAL-MEET BEST YET. Same reasoning as UNPROVEN_SCALE: 0 kg is not a
+	liftable weight, so it can never collide with a real one.
+]]
+PlayerProfileSchema.NO_OFFICIAL_BEST = 0
+
+--[[
+	The heaviest GOOD LIFT at an OFFICIAL meet (a meet against other players
+	that rewards; never a Solo / Mock Meet), per lift, in kilograms or
+	NO_OFFICIAL_BEST. Added in version 11 for the GYM RECORDS wall
+	(GAME_DESIGN.md 31.6, user 2026-10-30): the wall's Total is one lifter's
+	three bests added up, so each lifter's bests are kept here.
+
+	NOT Competition Scale: Scale also counts Solo meets, which never reach the
+	wall. Saved right after the good lift, with or without a total at the end
+	(user, 2026-10-30). Never decreases once above 0.
+]]
+export type OfficialMeetBest = {
+	Squat: number,
+	Bench: number,
+	Deadlift: number,
+}
+
+--[[
 	A WEIGHT-CLASS BUILD, added in version 6. GAME_DESIGN.md section 29.11,
 	"Weight-class builds" (user, 2026-10-28).
 
@@ -143,12 +167,15 @@ PlayerProfileSchema.NO_TOTAL = 0
 		meetAllowance       (version 9) how far meets against other players may
 		                    still raise each lift's CN, in DAYS saved up
 		                    (MeetCnAllowance, section 33.3b)
+		officialMeetBest    (version 11) the heaviest good lift per lift at an
+		                    official meet in this class, for the gym records wall
 ]]
 export type Build = {
 	competitionNumber: CompetitionNumber,
 	competitionScale: CompetitionScale,
 	bestTotalKg: number,
 	meetAllowance: MeetAllowance,
+	officialMeetBest: OfficialMeetBest,
 }
 
 --[[
@@ -801,10 +828,10 @@ end
 	A new build. Its Competition Number and meet allowance are copied from
 	`from` (the closest lighter build; copied, never shared) or are the
 	starting values and a full allowance; its Scale is UNPROVEN and it has no
-	best Total.
+	best Total and no official-meet bests.
 
-	SCALE AND BEST TOTAL ALWAYS START EMPTY. Section 29.11: proof never carries
-	between classes, so a new build has proven nothing.
+	SCALE, BEST TOTAL AND OFFICIAL-MEET BESTS ALWAYS START EMPTY. Section 29.11:
+	proof never carries between classes, so a new build has proven nothing.
 
 	THE ALLOWANCE IS COPIED (user, 2026-10-29, section 33.3b): a used-up
 	allowance stays used up in the new class, so moving up never hands out a
@@ -818,6 +845,7 @@ local function newBuild(from: any): Build
 	local competitionNumber: any = {}
 	local competitionScale: any = {}
 	local meetAllowance: any = {}
+	local officialMeetBest: any = {}
 
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
 		local copied = if fromCN then fromCN[lift] else nil
@@ -826,6 +854,7 @@ local function newBuild(from: any): Build
 			else StartingValuesConfig.Forecasted[lift]
 		competitionScale[lift] = PlayerProfileSchema.UNPROVEN_SCALE
 		meetAllowance[lift] = if fromAllowance then MeetCnAllowance.copy(fromAllowance[lift]) else MeetCnAllowance.newFull()
+		officialMeetBest[lift] = PlayerProfileSchema.NO_OFFICIAL_BEST
 	end
 
 	return {
@@ -833,6 +862,7 @@ local function newBuild(from: any): Build
 		competitionScale = competitionScale,
 		bestTotalKg = PlayerProfileSchema.NO_TOTAL,
 		meetAllowance = meetAllowance,
+		officialMeetBest = officialMeetBest,
 	}
 end
 
@@ -870,6 +900,15 @@ local function fillMissing(build: any)
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
 		if build.meetAllowance[lift] == nil then
 			build.meetAllowance[lift] = MeetCnAllowance.newFull()
+		end
+	end
+	-- Version 11: a build saved before the gym records wall has no official-meet bests.
+	if typeof(build.officialMeetBest) ~= "table" then
+		build.officialMeetBest = {}
+	end
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		if build.officialMeetBest[lift] == nil then
+			build.officialMeetBest[lift] = PlayerProfileSchema.NO_OFFICIAL_BEST
 		end
 	end
 end
@@ -1100,6 +1139,31 @@ end
 ]]
 migrations[9] = function(data: ProfileData)
 	(data :: any).competitionBudget = nil
+end
+
+--[[
+	Version 10 to 11: the official-meet bests for the gym records wall (user,
+	2026-10-30; GAME_DESIGN 31.6 "The gym record wall — first build").
+
+	EVERY BUILD GETS EMPTY BESTS (NO_OFFICIAL_BEST for each lift). Nothing
+	before this version recorded which good lifts were at official meets, and
+	Competition Scale cannot stand in for them (it also counts Solo meets), so
+	empty is the honest starting point: under-crediting is the safe failure.
+	fillMissing does it, so a build that already has them keeps them exactly.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED.
+
+	IDEMPOTENT: a second run finds every build's bests present and changes nothing.
+]]
+migrations[10] = function(data: ProfileData)
+	local builds = (data :: any).builds
+	if typeof(builds) == "table" then
+		for _, build in pairs(builds) do
+			if typeof(build) == "table" then
+				fillMissing(build)
+			end
+		end
+	end
 end
 
 --[[

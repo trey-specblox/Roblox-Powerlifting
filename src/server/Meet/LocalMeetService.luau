@@ -493,6 +493,28 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	return lines
 end
 
+--[[
+	Saves a good lift as the lifter's official-meet best for their weigh-in
+	class (GAME_DESIGN §31.6, the gym records wall; user 2026-10-30): right
+	after the lift, with or without a total at the end. Only a meet that
+	rewards is official, so a meet without enough real players saves nothing.
+]]
+local function saveOfficialBest(current: Meet, lifter: Lifter, lift: string, kg: number)
+	if not current.rewards then
+		return
+	end
+	local outcome: ProfileOperations.ScaleRaiseOutcome? = nil
+	local saved = PlayerDataService.update(lifter.player, function(data)
+		outcome = ProfileOperations.raiseOfficialMeetBest(data, lifter.classLabel, lift, kg)
+	end)
+	if not saved or outcome == "Rejected" then
+		warn(string.format("[LocalMeetService] %s's official %s best (%s kg, %s) was not saved: %s", lifter.player.Name,
+			lift, kgText(kg), lifter.classLabel, tostring(outcome)))
+		return
+	end
+	log("%s official %s best (%s): %s kg %s", lifter.player.Name, lift, lifter.classLabel, kgText(kg), tostring(outcome))
+end
+
 local function lightsText(lights: { string }?): string
 	if lights == nil then
 		return ""
@@ -662,6 +684,9 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	local result: AttemptRules.AttemptResult = if verdict == "GoodLift" then "GoodLift" else "NoLift"
 	local good = result == "GoodLift"
 	table.insert(lifter.lifts[lift].history, { weightKg = weightKg, result = result })
+	if good then
+		saveOfficialBest(current, lifter, lift, weightKg)
+	end
 	-- The minigames decide; the three referees show it.
 	lifter.lights = if good then { "White", "White", "White" } else { "Red", "Red", "Red" }
 	lifter.roundDone = true

@@ -2641,6 +2641,38 @@ and polish.
     135; screenshots read well. The user then used it in a real meet
     (2026-10-30): "Yup it works". With very small
     CNs two picks can land on the same kg (e.g. 110% and 115% of 25 kg).
+
+  GYM RECORD WALL, planned (2026-10-30). NOTHING BUILT YET. User: "Plan the
+  record wall", then picked: any good lift counts (no total needed), venue +
+  whole-server announcement, own records announced too. Recorded in
+  GAME_DESIGN §31.6 "The gym record wall — first build". Found: the chalk
+  wall's cells already exist (RoomProps FRONT.RecordsWall, frames
+  "Record_<class>_<LIFT>" with Avatar / Holder / Kg); CardioRhythmLeaderboard
+  is the pattern for a game-wide save (Studio_ stores or memory in Studio);
+  LocalMeetService knows the class and `current.rewards` (official meet).
+  Build order: (1) each lifter's official-meet bests per class in their save
+  (schema 10 -> 11); (2) the shared gym records save (UpdateAsync, heavier
+  only); (3) the wall shows avatar, username, kg, re-read about once a
+  minute; (4) platform screen, facts strip and server announcement.
+  Step 1 BUILT (2026-10-30, user: "Start step 1"). COMMITTED AND PUSHED with
+  the user's approval ("Commit and push", before a real-meet test); `git log`
+  for the hash.
+  - PlayerProfileSchema: CURRENT_VERSION 11; Build.officialMeetBest {S, B, D}
+    (NO_OFFICIAL_BEST = 0); newBuild and fillMissing add it; migrations[10]
+    gives every existing build empty bests, nothing else touched.
+  - ProfileOperations: raiseOfficialMeetBest (monotone, same rules as the
+    Scale raise, no total needed) and getOfficialMeetBestTotal (the three
+    bests added, nil until all three exist).
+  - LocalMeetService: saveOfficialBest after each GOOD lift when
+    `current.rewards` (official); logs "official <lift> best".
+  - PlayerDataProbe: version checks 10 -> 11, new test 49.
+  - Checks: luau-lsp, no errors in the changed files. Studio Play (by
+    Claude): PlayerDataProbe switched on for one run (then off again, Studio
+    checked): 423 passed, 0 failed; the real Studio profile loaded at version
+    11. NOT tested: a real Local meet saving a best (look for "official Squat
+    best" in the Output after a good lift).
+  NEXT ACTION: the user tests a Local meet in Studio (Output shows the
+  official best); then step 2 (the shared gym records save).
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.

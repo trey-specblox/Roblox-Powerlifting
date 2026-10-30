@@ -530,6 +530,78 @@ function ProfileOperations.raiseBestTotal(
 end
 
 --[[
+	THE MONOTONE OFFICIAL-MEET BEST RAISE (GAME_DESIGN.md 31.6, "The gym record
+	wall — first build", user 2026-10-30; schema version 11).
+
+		New best = max(Old best, liftedKg)
+
+	Same contract and the same security boundary as raiseCompetitionScale
+	above: pure, never creates a build. Its only caller is a server-run
+	OFFICIAL meet (today: LocalMeetService, when the meet rewards) that has
+	established the attempt was judged a GOOD LIFT at `liftedKg` and that
+	`classKey` is the weigh-in class. Unlike Scale it needs NO total: the user
+	chose that any good lift at an official meet counts for the wall. Solo /
+	Mock Meets never call it.
+]]
+function ProfileOperations.raiseOfficialMeetBest(
+	data: ProfileData,
+	classKey: string,
+	lift: string,
+	liftedKg: number
+): (ScaleRaiseOutcome, number?)
+	if not ProgressionConfig.isLift(lift) then
+		return "Rejected", nil
+	end
+
+	local build = ProfileOperations.getBuild(data, classKey)
+	local bests = build and (build :: any).officialMeetBest
+	if typeof(bests) ~= "table" then
+		return "Rejected", nil
+	end
+
+	if not isFiniteNumber(liftedKg) or liftedKg <= 0 then
+		return "Rejected", nil
+	end
+
+	-- A corrupt stored best is refused, not repaired (as for Scale).
+	local current = bests[lift]
+	if not isFiniteNumber(current) or current < 0 then
+		return "Rejected", nil
+	end
+
+	if liftedKg <= current then
+		return "Unchanged", current
+	end
+
+	bests[lift] = liftedKg
+
+	return "Raised", liftedKg
+end
+
+--[[
+	The lifter's gym-wall Total in a class: their official-meet best Squat +
+	Bench + Deadlift, even from different meets (GAME_DESIGN.md 31.6; this sum
+	is for the gym wall ONLY, never a World Record or best Total). Nil until
+	all three have a best, or when the data is unusable.
+]]
+function ProfileOperations.getOfficialMeetBestTotal(data: ProfileData, classKey: string): number?
+	local build = ProfileOperations.getBuild(data, classKey)
+	local bests = build and (build :: any).officialMeetBest
+	if typeof(bests) ~= "table" then
+		return nil
+	end
+	local total = 0
+	for _, lift in ipairs(ProgressionConfig.Lifts) do
+		local kg = bests[lift]
+		if not isFiniteNumber(kg) or kg <= 0 then
+			return nil
+		end
+		total += kg
+	end
+	return total
+end
+
+--[[
 	=========================================================================
 	MEET CN ALLOWANCE AND CAREER  (GAME_DESIGN.md 33.3b, schema version 9)
 	=========================================================================

@@ -2878,6 +2878,36 @@ A gym record is **not** a World Record and never counts towards one, and §31.2'
 (a World Record total must be one real meet total) is unchanged by the gym wall's
 sum-of-bests Total.
 
+#### The gym record wall — first build (user, 2026-10-30, picked from options)
+
+- **Which meets:** only **official** meets, the ones that reward (at least 2 real
+  players, `LocalMeetConfig` reward minimum); Local now, Nationals and Worlds when
+  they exist. Never the Solo / Mock Meet.
+- **Any good lift counts, total or not** (user's choice): a good lift goes on
+  the wall **right after the lift**, even if the lifter later bombs out or
+  leaves. This is an exception for the wall only; §33.3b's "a bomb-out or
+  leaving early saves nothing" still holds for CN, Scale and best Total.
+- **The lifter's class** is the class they weighed in at for that meet.
+- **Each lifter's official-meet bests** (per class: best squat, bench,
+  deadlift) are kept in their own save, because the wall's Total is one
+  lifter's three bests added up. These are separate from Competition Scale
+  (Scale also counts Solo meets).
+- **Announcements:** a new gym record shows on the lifter's platform screen
+  ("NEW GYM RECORD!") and **everyone in the server** gets a short message
+  (name, kg, lift, class). **Beating your own record is announced too** and
+  updates the wall (its money bonus stays undecided, §30.5).
+- **Build order:** (1) each lifter's bests in their save; (2) the shared gym
+  records save (heavier only, so ties keep the first lifter; Studio uses a
+  test board); (3) the chalk wall shows avatar, username and kg, every server
+  re-reading about once a minute; (4) the meet: platform screen, facts strip
+  ("GYM RECORD HOLDER"), the announcement. The §30.5 money bonus waits for the
+  money system.
+
+> **(1) built (2026-10-30), save version 11.** Every build keeps
+> `officialMeetBest` (squat, bench, deadlift; 0 = none yet), starting empty for
+> everyone (nothing before recorded which lifts were at official meets). The
+> Local meet saves it right after each good lift when the meet rewards.
+
 
 ---
 
