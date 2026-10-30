@@ -766,6 +766,22 @@
       "ids": {
         "model": "rbxassetid://139793685980962"
       }
+    },
+    "LocalMeet_01": {
+      "about": "The Local meet venue's new models: the referees' light box with three separate lamps (RefLights; the game lights RefLights_Lamp1..3 white or red), a section of tiered seating (Bleachers), the 1-2-3 awards podium (AwardPodium), a warm-up plate tree (PlateTree) and the venue's entrance building outside the gym with a pitched gable roof and an entrance porch (MeetHall; the game writes LOCAL MEET on MeetHall_SignScreen). Made by art/scripts/build_local_meet_01.py (art/blender/LocalMeet_01.blend).",
+      "file": "art/exports/LocalMeet_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://96498344946081"
+      }
+    },
+    "LocalMeet_02": {
+      "about": "The redesigned Local meet venue's new models: a metal crowd barricade with a CENTRAL banner (Barricade), a referee's chair (RefChair), a platform number sign on a post (PlatformSign; the game writes PLATFORM 1..8 on PlatformSign_Screen) and the awards stage backdrop on truss towers (AwardsBackdrop; the game writes LOCAL CENTRAL MEET on AwardsBackdrop_Title). Made by art/scripts/build_local_meet_02.py (art/blender/LocalMeet_02.blend).",
+      "file": "art/exports/LocalMeet_02.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://71979666360161"
+      }
     }
   },
   "images": {

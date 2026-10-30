@@ -595,6 +595,10 @@ StarterGymConfig.PropAssets = {
 	{ id = 82188043511002 }, -- Fronts_01: barbell (lying, standing), wall bar rack, gun rack, judges' lights, stick,
 	-- duster, foam tile, blinds
 	{ id = 139793685980962 }, -- Steel_01: steel I-beam and round handrail (StarterGymBuilder stretches them)
+	{ id = 96498344946081 }, -- LocalMeet_01: referee light box, tiered seating, awards podium, plate tree, the venue's
+	-- entrance building outside the gym (all placed by LocalMeetVenue)
+	{ id = 71979666360161 }, -- LocalMeet_02: crowd barricade, referee chair, platform number sign, awards backdrop (all
+	-- placed by LocalMeetVenue)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -910,6 +914,29 @@ StarterGymConfig.PropColourways = {
 	-- The structural steel (Steel_01, art/scripts/build_steel_01.py); StarterGymBuilder paints it SteelBeam.
 	SteelBeam = { { Steel = "Charcoal" } },
 	Handrail = { { Steel = "Charcoal" } },
+	-- The Local meet venue (LocalMeet_01, art/scripts/build_local_meet_01.py). LocalMeetVenue relights the referee
+	-- lamps (Lamp1..3) white or red after every lift; Charcoal is "off".
+	RefLights = { { Housing = "Black", Lamp1 = "Charcoal", Lamp2 = "Charcoal", Lamp3 = "Charcoal", Trim = "Yellow",
+		Logo = "White" } },
+	Bleachers = { { Body = "Navy", Seats = "Oak", Nosing = "Yellow", Rail = "Silver", Logo = "White" } },
+	AwardPodium = { { Blocks = "Navy", Gold = "Yellow", Silver = "Silver", Bronze = "Bronze", Numbers = "White",
+		Logo = "Yellow" } },
+	PlateTree = { { Frame = "Black", Hubs = "Silver", PlatesLarge = "Red", PlatesMid = "Blue", PlatesSmall = "Yellow" } },
+	MeetHall = { {
+		Walls = "Charcoal", Roof = "Black", RoofTrim = "Yellow", GableLogo = "White", Stripe = "Red", Pinstripe = "White",
+		Facade = "Navy", DoorFrame = "Black", Inside = "Black", Doors = "Glass", Handles = "Silver", DoorLight = "GlowWhite",
+		Landing = "LightGrey", Lamps = "WarmGlow", Windows = "Glass", SignFrame = "Black", SignScreen = "Black",
+		SignTrim = "Yellow", Slashes = "Yellow", CornerLights = "GlowWhite",
+	} },
+	-- The redesigned venue (LocalMeet_02, art/scripts/build_local_meet_02.py). The game writes on the dark screens.
+	Barricade = { { Frame = "Silver", Feet = "Black", Banner = "Navy", Stripe = "Yellow", Logo = "White" } },
+	RefChair = { { Frame = "Black", Cushion = "Red", Logo = "White" } },
+	PlatformSign = { { Base = "Black", Pole = "Silver", Board = "Navy", Screen = "Black", Trim = "Yellow",
+		Logo = "White" } },
+	AwardsBackdrop = { {
+		Truss = "Silver", Feet = "Black", Panel = "Navy", Pattern = "Blue", TitleFrame = "Black", Title = "Black",
+		Trim = "Yellow", Cans = "Black", Lenses = "GlowWhite",
+	} },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

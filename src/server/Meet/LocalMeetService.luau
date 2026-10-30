@@ -18,8 +18,10 @@
 	A lifter who withdraws, exits, dies or leaves has no total: only their
 	misses are settled, at once.
 
-	GETTING THERE. A tagged point in the gym (LocalMeetConfig.EntranceTag) gets a
-	"Go to the Local Meet" prompt; the server checks the player is alive, on
+	GETTING THERE. The point in front of the doors of the venue's entrance
+	building outside the gym (LocalMeetVenue.buildEntrance, tagged
+	LocalMeetConfig.EntranceTag) gets a "Go to the Local Meet" prompt; the
+	server checks the player is alive, on
 	their feet and near it, then moves them into the venue and sets the player
 	attribute LocalMeetConfig.VenueAttribute. The venue's exit point (or the
 	EXIT button) takes them back where they came from. Dying, respawning or
@@ -45,7 +47,9 @@
 			         red for a no lift: the minigames decide, the referees show
 			         it) on the lifter's screen and their platform's board
 		The round moves on once every lifter is done.
-		Done: everyone's total, the ranking by score (MeetPlacing), the place.
+		Done: everyone's total, the ranking by score (MeetPlacing), the place;
+		the racks make way for the awards stage (LocalMeetVenue.showAwards) and
+		the top three stand on its podium while the standings show.
 	A lifter who withdraws (LEAVE), exits, dies or leaves the game is out of the
 	meet; the others carry on. LocalMeetRemotes.STANDINGS keeps everyone in the
 	venue up to date, and the scoreboard shows the same.
@@ -541,6 +545,7 @@ local function withdraw(player: Player, why: string)
 	end
 	release(player)
 	LocalMeetVenue.clearStaff(lifter.platform)
+	LocalMeetVenue.setLights(lifter.platform, nil)
 	boardFor(lifter, { "WITHDRAWN" })
 	log("%s withdrew from the meet (%s)", player.Name, why)
 	if not current.final then
@@ -582,6 +587,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	-- The minigames decide; the three referees show it.
 	lifter.lights = if good then { "White", "White", "White" } else { "Red", "Red", "Red" }
 	lifter.roundDone = true
+	LocalMeetVenue.setLights(lifter.platform, lifter.lights)
 	LocalMeetVenue.coachSays(lifter.platform, pick(if good then COACH_GOOD else COACH_MISS))
 	boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 		string.format("%s KG  ·  %s", kgText(weightKg), if good then "GOOD LIFT" else "NO LIFT"), lightsText(lifter.lights) })
@@ -652,6 +658,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			local weightKg = lifter.chosenKg or lifter.defaultKg or 0
 			lifter.chosenKg = weightKg
 			lifter.readyPressed = false
+			LocalMeetVenue.setLights(lifter.platform, nil)
 			standAt(lifter.player, lifter.platform.liftSpot, true)
 			LocalMeetVenue.coachSays(lifter.platform, pick(COACH_READY))
 			boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
@@ -729,11 +736,28 @@ local function finishMeet(current: Meet)
 	end
 	log("Local meet over: %d lifters, %d placed (rewards: %s)", #current.lifters, placed, tostring(current.rewards))
 
-	task.wait(LocalMeetConfig.DoneSeconds)
+	-- The awards: the racks make way for the awards stage, and the top three stand on its podium while the final
+	-- standings show.
 	local v = venue
+	if v then
+		LocalMeetVenue.showAwards(v, true)
+		for _, lifter in ipairs(current.lifters) do
+			local placing = current.places[lifter.player.UserId]
+			local spot = placing and placing.place and v.podiumSpots[placing.place]
+			if spot and not lifter.withdrawn and visits[lifter.player] then
+				standAt(lifter.player, spot, true)
+			end
+		end
+	end
+
+	task.wait(LocalMeetConfig.DoneSeconds)
+	if v then
+		LocalMeetVenue.showAwards(v, false)
+	end
 	for index, lifter in ipairs(current.lifters) do
 		local player = lifter.player
 		LocalMeetVenue.clearStaff(lifter.platform)
+		LocalMeetVenue.setLights(lifter.platform, nil)
 		LocalMeetVenue.setPlatformBoard(lifter.platform, "PLATFORM " .. lifter.platform.index, { "Free" })
 		if not lifter.withdrawn then
 			lifter.withdrawn = true
@@ -1100,6 +1124,10 @@ function LocalMeetService.start()
 
 	-- The venue, then the timetable. Built in the background so the server's start is not held up.
 	task.spawn(function()
+		-- The entrance building outside the gym: its door point is tagged, so setUpEntrance gives it the prompt.
+		if LocalMeetVenue.buildEntrance() == nil then
+			warn("[LocalMeetService] the entrance building could not be built: there is no way into the Local meet")
+		end
 		local built, problem = LocalMeetVenue.build()
 		if built == nil then
 			warn("[LocalMeetService] the venue could not be built: " .. tostring(problem))

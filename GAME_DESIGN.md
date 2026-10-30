@@ -2169,6 +2169,51 @@ Worlds and Sheffield come later and are untouched here.
 > hold a meet, and the timetable runs every 90 seconds, so it can be tested
 > alone; a live server needs 2.
 >
+> **Step 3 built (2026-10-29): the venue** (user, picked from options): **a
+> separate building outside the gym**, beside the gym's right side with its front
+> level with the gym's front, whose doors take you in ("Go to the Local Meet";
+> the temporary Mock Meet Room prompt is gone); a **dark arena with lit
+> platforms** under a pitched ceiling on steel rafters; **referee light boxes**
+> whose three lamps light white or red after every lift; **tiered seating**; an
+> **awards podium** the top three stand on while the final standings show; and a
+> **warm-up area** with racks and plate trees. The entrance building has a
+> **pitched gable roof and a projecting entrance porch** (user, 2026-10-29: "I
+> dont want any places to just have a square shape, and flat roof" — a standing
+> rule for every building). Models: LocalMeet_01 (art/scripts/build_local_meet_01.py).
+>
+> **Venue redesign and awards ceremony (user, 2026-10-29, "my original idea of
+> how i want meets ran"; layout picks were Claude's recommendations, accepted with
+> "I approve build order").** Replaces the step-3 hall layout; the step-3 models
+> carry over.
+> - **Bigger venue, three parts.** An **entrance lobby** where you sign up for the
+>   meet (the sign-up desk sits at the doors); the **meet hall**; a **warm-up
+>   room** behind the platforms, like a real meet's backstage, which lifters walk
+>   out of to their platform and which also has its own door from the lobby.
+> - **Spectators.** Anyone can walk in and watch a running meet, signed up or not.
+> - **Meet hall.** The **8 platforms** in a row along the back, each with a
+>   **platform number sign on a post**, **three referees seated on chairs** (head
+>   referee in front), the light box, and **metal crowd barricades** in front;
+>   an open standing floor for spectators behind the barricades, and the **stands
+>   pushed back against the walls**, raised. Look: **the dark arena** with spotlit
+>   platforms stays.
+> - **Warm-up room.** **8 working racks for practice lifts**: squat, bench and
+>   deadlift with the real minigames at any weight, **earning no CN** (the gym
+>   stays the only place that trains CN), plate trees, and a **hangout corner**.
+> - **Awards ceremony.** When the meet ends the **8 racks disappear** and an
+>   **awards stage** appears in front of the platforms: the 1-2-3 podium in front
+>   of a big backdrop banner reading **LOCAL CENTRAL MEET**. The top three stand
+>   on it; **everyone in the venue gets a camera shot of the podium**, and the
+>   **winner gets a close-up**. The winner's **theme song** plays and they do a
+>   **celebration** (a default song and cheer at first); the user's custom theme
+>   songs and celebrations plug into these slots later.
+> - **Build order:** (1) the new venue layout with the new models (barricade,
+>   referee chair, platform number sign, awards backdrop); (2) the awards
+>   ceremony; (3) the working warm-up racks.
+> - **(1) built (2026-10-29):** the layout above (models LocalMeet_02). The
+>   warm-up racks are for looks until (3). The racks-away / awards-stage swap
+>   already happens at the end of a meet; the winner camera, theme song and
+>   celebration are (2).
+>
 > **Step 2 built (2026-10-29), save version 9.** The rewards of §33.3b: CN raises
 > within each build's meet allowance, misses above CN using it, Competition Scale
 > and best Total for a meet with a total, and Local wins (`career.localWins`). The

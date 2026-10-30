@@ -2453,8 +2453,98 @@ and polish.
     untouched). Studio Play (by Claude, DataStore API off): PlayerDataProbe
     409/0, TrainingProgressionProbe 298/0, CompetitionNumberRewardProbe
     128/0; profile loaded at version 10. All probes switched back off.
-  NEXT ACTION: ask the user what is next (step 3, the Local meet venue in
-  Blender, is the planned one). A rewarded two-player meet is worth a test. The user also has a Mock Meet and a deadlift to
+
+  LOCAL MEET STEP 3: THE VENUE (2026-10-29). NOT COMMITTED yet.
+  User decisions (picked from options): a building outside the gym; dark
+  arena, lit platforms; referee light boxes, tiered seating, awards podium,
+  warm-up area. Then: "Change the roof, I dont want any places to just have
+  a square shape, and flat roof" -> pitched gable roof + entrance porch; saved
+  as memory "no-flat-roofs".
+  - Blender: art/scripts/build_local_meet_01.py -> art/blender/LocalMeet_01
+    .blend (RefLights with Lamp1..3, Bleachers, AwardPodium, PlateTree with
+    plates by size, MeetHall), CHECK PASSED (42 meshes, 6,878 tris),
+    previews in art/previews/LocalMeet_01_*.png, exported
+    art/exports/LocalMeet_01.glb, uploaded as group 529442797:
+    rbxassetid://96498344946081 (materials.json "LocalMeet_01").
+  - StarterGymConfig: PropAssets + PropColourways (RefLights, Bleachers,
+    AwardPodium, PlateTree, MeetHall).
+  - RoomProps.paintProp: piece names may contain digits (`_(%w+)$`) so
+    Lamp1..3 are painted; no existing colourway key has digits. The
+    temporary Mock Meet Room entrance prompt and its board line removed.
+  - LocalMeetVenue rewritten: hall 208 x 92, walls 30 high, pitched ceiling
+    (ridge 42 along X) of two slabs + wedge gable ends, SteelBeam rafters
+    every 26 studs and a ridge beam; 8 platforms with boards, a RefLights per
+    platform (setLights), stage lights hung under the ceiling; 6 Bleachers
+    sections facing the platforms with hidden solid steps and a centre
+    aisle; AwardPodium in the aisle (podiumSpots read from its gold, silver,
+    bronze tops); warm-up area (2 racks, 2 plate trees); desk, exit,
+    scoreboard, banner, dimmer ceiling panels. buildEntrance(): MeetHall at
+    x 162, front wall at z -37, hidden solids, a big LOCAL MEET sign
+    (SurfaceGui), the tagged door point.
+  - LocalMeetService: builds the entrance at start; lamps lit after each
+    lift and off at the next Ready, on withdraw and after the meet; the top
+    three stand on the podium during DoneSeconds.
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): venue 589
+    parts / 26 lights, entrance 24 parts; walked in through the entrance
+    prompt; screenshots of the entrance (sign reads LOCAL MEET), the hall,
+    white lamps after a good lift, red after a miss, the winner on the
+    podium's 1st place; lamps off and 0 figures after; no errors. The meet
+    test used TEMPORARY short timers and "time-out = good lift" for attempts
+    1-2 (removed; Studio checked against disk).
+  - Performance: the hall is ~589 parts (8 platform racks + 2 warm-up racks
+    are the bulk), 26 lights; entrance 24 parts.
+
+  LOCAL MEET VENUE REDESIGN, part 1: the layout (2026-10-29). NOT COMMITTED
+  yet (together with step 3 above). User's own plan ("my original idea of
+  how i want meets ran", reference photos) + the awards ceremony; layout picks
+  were Claude's recommendations, accepted ("I approve build order"); recorded
+  in GAME_DESIGN §29.10 "Venue redesign and awards ceremony". Build order:
+  (1) layout + new models [this], (2) awards ceremony (winner camera, theme
+  song and celebration slots), (3) working warm-up racks (practice, no CN).
+  - Blender: art/scripts/build_local_meet_02.py -> art/blender/LocalMeet_02
+    .blend (Barricade, RefChair, PlatformSign, AwardsBackdrop), CHECK PASSED
+    (23 meshes, 10,676 tris), previews art/previews/LocalMeet_02_*.png
+    (approved by the user: "Approve, upload"), exported
+    art/exports/LocalMeet_02.glb, uploaded as group 529442797:
+    rbxassetid://71979666360161 (materials.json "LocalMeet_02").
+  - StarterGymConfig: PropAssets + PropColourways (Barricade, RefChair,
+    PlatformSign, AwardsBackdrop).
+  - LocalMeetVenue rewritten again: one building 220 x 176 under one pitched
+    ceiling (ridge front to back, 46 high, eaves 30), cross walls with gable
+    wedges. LOBBY (sign-up desk at the doors facing the arrival, exit doorway
+    + EXIT board, boards over the hall opening and the corridor); MEET HALL
+    (6 stands against the lobby wall + 2 on each side wall, open standing
+    floor, 29 barricades on one hidden solid wall at z 6, 8 platforms each
+    with a PLATFORM n sign on a post, 3 RefChairs, the light box, board on
+    the back wall, stage light; scoreboard and banner on the side walls);
+    WARM-UP ROOM behind the back wall (a doorway between each pair of
+    platforms; 8 racks for looks, 4 plate trees, hangout corner: 2 sofas,
+    water cooler, planters, WARM-UP banner); CORRIDOR along the right side.
+    Per platform a `gear` folder (rack, chairs, light box). AWARDS STAGE
+    (AwardsBackdrop with LOCAL CENTRAL MEET / AWARDS, AwardPodium + solids)
+    kept out of the world; showAwards(v, on) swaps it with every platform's
+    gear (and removes the seated referees). Shared writeSign() for the big
+    italic signs (entrance, platform signs, backdrop title).
+  - MeetFigures.build(..., seatTop?): seated figures. The figures' joints are
+    AnimationConstraints (not Motor6Ds), so the hips and knees are bent by
+    turning the joint's Attachment0 (Motor6D rigs handled too).
+  - LocalMeetService: showAwards(true) before the top three go on the
+    podium, showAwards(false) after DoneSeconds.
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): venue 1135
+    parts, 31 lights, one venue, no errors; screenshots of the hall, the
+    platforms with signs/chairs/light boxes/barricades, the lobby, the
+    warm-up room and hangout corner; the awards stage (title reads LOCAL
+    CENTRAL MEET / AWARDS, a player on the gold block) and the seated pose
+    were checked by running the same code from the command bar (a separate
+    copy of the venue), NOT through a real meet.
+  - Performance: the venue grew from ~589 to ~1135 parts (16 racks are the
+    bulk: 8 on platforms, 8 in the warm-up room) and 26 -> 31 lights.
+  NEXT ACTION: the user plays a full Local meet in Studio (referees sit on
+  the chairs, racks vanish and the awards stage appears at the end, comes
+  back after) and looks round the venue; then commit step 3 + this with
+  approval; then part 2, the awards ceremony.
+  OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
+  the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.
   Optional:
   turn Studio API access back off if it is not wanted on.

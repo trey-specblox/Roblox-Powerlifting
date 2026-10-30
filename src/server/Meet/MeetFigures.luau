@@ -57,11 +57,12 @@ local OUTFITS: { [Kind]: { skin: Color3, top: Color3, trousers: Color3, tag: str
 
 --[[
 	Builds a `kind` figure in `parent`, standing at `at` (on the floor) and
-	looking at `watching`. Returns the speech bubble's text label (MeetFigures.say
-	shows a line in it), or nil when no figure could be made (a meet works
-	without one).
+	looking at `watching`. With `seatTop` (the height of a chair's seat) the
+	figure SITS instead: thighs forward on the seat, lower legs down, its hips
+	over `at`. Returns the speech bubble's text label (MeetFigures.say shows a
+	line in it), or nil when no figure could be made (a meet works without one).
 ]]
-function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: Vector3): TextLabel?
+function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: Vector3, seatTop: number?): TextLabel?
 	local outfit = OUTFITS[kind]
 	local description = Instance.new("HumanoidDescription")
 	description.HeadColor = outfit.skin
@@ -97,6 +98,42 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	local standAt = at + Vector3.new(0, height, 0)
 	figure:PivotTo(CFrame.lookAt(standAt, Vector3.new(watching.X, standAt.Y, watching.Z)))
 	figure.Parent = parent
+
+	if seatTop then
+		-- Swing both thighs forward (a quarter turn at the hips) and the lower legs back down (at the knees), then
+		-- lower the figure until the thighs rest on the seat. The joints are AnimationConstraints (or Motor6Ds on an
+		-- older rig); either way the turn goes on the joint's attachment on the body side, which the limb follows.
+		local function bend(joint: Instance?, angle: number): Attachment?
+			local turn = CFrame.Angles(math.rad(angle), 0, 0)
+			local attachment: Attachment? = nil
+			if joint and joint:IsA("AnimationConstraint") then
+				attachment = joint.Attachment0
+			elseif joint and joint:IsA("Motor6D") then
+				local part0 = joint.Part0
+				local found = part0 and part0:FindFirstChild(joint.Name .. "RigAttachment")
+				attachment = if found and found:IsA("Attachment") then found else nil
+				joint.C0 = joint.C0 * turn
+			end
+			if attachment then
+				attachment.CFrame = attachment.CFrame * turn
+			end
+			return attachment
+		end
+		local hipY: number? = nil
+		local thickness = 0.5
+		for _, side in ipairs({ "Left", "Right" }) do
+			local hip = bend(figure:FindFirstChild(side .. "Hip", true), 90)
+			bend(figure:FindFirstChild(side .. "Knee", true), -90)
+			local thigh = figure:FindFirstChild(side .. "UpperLeg")
+			if hip and thigh and thigh:IsA("BasePart") then
+				hipY = hip.WorldPosition.Y
+				thickness = math.min(thigh.Size.X, thigh.Size.Z) / 2
+			end
+		end
+		if hipY then
+			figure:PivotTo(figure:GetPivot() - Vector3.new(0, hipY - thickness - seatTop, 0))
+		end
+	end
 
 	if kind == "Coach" then
 		-- A clipboard held in front of the chest: the Coach front's Blender clipboard scaled to 1.4 tall, or blocks.
