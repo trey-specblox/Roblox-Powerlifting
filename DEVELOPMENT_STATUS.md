@@ -2545,6 +2545,41 @@ and polish.
   NEXT ACTION: the user plays a full Local meet in Studio (referees sit on
   the chairs, racks vanish and the awards stage appears at the end, comes
   back after) and looks round the venue; then part 2, the awards ceremony.
+
+  LOCAL MEET VENUE REDESIGN, part 2: the awards ceremony (2026-10-29).
+  COMMITTED with the user's approval ("you can commit"); `git log` for the
+  hash. GAME_DESIGN §29.10 "(2) built".
+  - USER TEST (2026-10-29): played a full Local meet in Studio: "everything
+    works" (venue, seated referees, the awards stage swap, the camera, the
+    theme and cheer, the celebration). Asked whether the LOCAL MEET and
+    STANDINGS panels should hide during the close-up: "No it should stay".
+  - Sounds (own work): art/scripts/make_awards_sounds.py ->
+    art/sounds/Awards_Theme.wav (18 s fanfare, 120 BPM C-G-Am-F twice + held
+    chord) and Awards_Cheer.wav (5.5 s applause, roar, whistles); uploaded as
+    group audio: Theme rbxassetid://116724943474598, Cheer
+    rbxassetid://74322878777614 (materials.json "sounds"). The user has not
+    heard them yet.
+  - LocalMeetConfig.Awards: default theme / celebration (Roblox's R15 cheer
+    emote 507770677) / cheer ids, volumes, camera timings (wide 4 s,
+    close-up 10 s, distances 30 / 8, glide 1.2 s).
+  - LocalMeetRemotes: new LocalMeetAwards (AwardsMoment: winner, gold spot,
+    stage centre and facing, theme, celebration, seconds).
+  - LocalMeetService: announceAwards() after the top three are on the
+    podium, to everyone in the venue; themeFor / celebrationFor are the slots
+    for custom songs and celebrations (defaults for now).
+  - Client: new src/client/Meet/LocalMeetAwards.luau (Scriptable camera:
+    drift in to the wide shot, glide to the winner's head, back out; cheer +
+    theme Sounds in SoundService; the winner's own client loops the
+    celebration; everything undone at the end or on leaving the venue),
+    hooked up in LocalMeetController.
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): fired the
+    awards moment by hand at the player standing where the gold top is (a
+    TEMP command-bar test, nothing left in the game): wide shot, close-up of
+    the cheering winner, both sounds loaded and playing (Cheer 5.5 s, Theme
+    18 s), the cheer animation playing, and after 20 s the camera back to
+    Custom, the sounds gone and the animation stopped. NOT tested through a
+    real meet (the stage was not shown in that test).
+  NEXT ACTION: part 3, the working warm-up racks (practice lifts, no CN).
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.

@@ -2213,6 +2213,16 @@ Worlds and Sheffield come later and are untouched here.
 >   warm-up racks are for looks until (3). The racks-away / awards-stage swap
 >   already happens at the end of a meet; the winner camera, theme song and
 >   celebration are (2).
+> - **(2) built (2026-10-29): the ceremony.** For the 20 seconds the awards
+>   stage stands, everyone in the venue gets the same camera: a wide shot of
+>   the whole stage (4 s), a close-up of the winner's face (10 s), then the
+>   stage again. The crowd cheers, the **winner's theme song** plays, and the
+>   winner does their **celebration**. Defaults until custom ones exist: an
+>   original 16-second fanfare (our own, synthesized) and Roblox's R15 "cheer"
+>   emote. Custom theme songs and celebrations plug in on the server
+>   (`themeFor` / `celebrationFor` in LocalMeetService); how a player picks
+>   or earns them is not decided yet. With no winner (everyone bombed out)
+>   there is no close-up and no theme, only the stage and the cheer.
 >
 > **Step 2 built (2026-10-29), save version 9.** The rewards of §33.3b: CN raises
 > within each build's meet allowance, misses above CN using it, Competition Scale

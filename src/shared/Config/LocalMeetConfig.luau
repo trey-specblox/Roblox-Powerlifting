@@ -78,6 +78,35 @@ LocalMeetConfig.WeightStepKg = MockMeetConfig.WeightStepKg
 -- How long a player must wait between two presses of Exit or Sign up (stops button spam).
 LocalMeetConfig.ButtonCooldownSeconds = 1
 
+-- ------------------------------------------------ the awards (GAME_DESIGN §29.10 "Venue redesign and awards ceremony")
+
+--[[
+	When the meet ends the awards stage stands for DoneSeconds: everyone in the
+	venue gets the camera shots below, the crowd cheers, and the WINNER's theme
+	song plays while the winner does their celebration. The theme and the
+	celebration are DEFAULTS for now; the user's custom theme songs and
+	celebrations plug in on the server (LocalMeetService themeFor /
+	celebrationFor), so these are only what a winner without their own gets.
+	The sounds are our own (art/scripts/make_awards_sounds.py); the cheer
+	animation is Roblox's own R15 "cheer" emote.
+]]
+LocalMeetConfig.Awards = {
+	DefaultThemeSoundId = "rbxassetid://116724943474598",
+	DefaultCelebrationAnimationId = "rbxassetid://507770677",
+	CrowdCheerSoundId = "rbxassetid://74322878777614",
+	ThemeVolume = 0.7,
+	CheerVolume = 0.6,
+	-- The camera, in seconds from the start: the whole stage, then the winner up close, then the stage again
+	-- until DoneSeconds ends.
+	WideShotSeconds = 4,
+	CloseUpSeconds = 10,
+	-- How far the shots stand from what they look at (studs).
+	WideShotDistance = 30,
+	CloseUpDistance = 8,
+	-- How long the camera takes to glide from one shot to the next.
+	GlideSeconds = 1.2,
+}
+
 assert(LocalMeetConfig.MaxLifters >= 1, "[LocalMeetConfig] MaxLifters must be at least 1")
 assert(
 	LocalMeetConfig.SignUpClosesSeconds < LocalMeetConfig.CycleSeconds

@@ -49,7 +49,10 @@
 		The round moves on once every lifter is done.
 		Done: everyone's total, the ranking by score (MeetPlacing), the place;
 		the racks make way for the awards stage (LocalMeetVenue.showAwards) and
-		the top three stand on its podium while the standings show.
+		the top three stand on its podium while the standings show;
+		LocalMeetRemotes.AWARDS tells everyone in the venue (camera shots, the
+		crowd cheer, the winner's theme song and celebration: themeFor /
+		celebrationFor, the defaults until custom ones exist).
 	A lifter who withdraws (LEAVE), exits, dies or leaves the game is out of the
 	meet; the others carry on. LocalMeetRemotes.STANDINGS keeps everyone in the
 	venue up to date, and the scoreboard shows the same.
@@ -688,6 +691,48 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 	end
 end
 
+--[[
+	The winner's theme song and celebration at the awards. The defaults for
+	now (LocalMeetConfig.Awards); the user's custom theme songs and
+	celebrations (GAME_DESIGN §29.10) plug in HERE, e.g. read from the winner's
+	save, so the ceremony itself does not change.
+]]
+local function themeFor(_winner: Player): string
+	return LocalMeetConfig.Awards.DefaultThemeSoundId
+end
+
+local function celebrationFor(_winner: Player): string
+	return LocalMeetConfig.Awards.DefaultCelebrationAnimationId
+end
+
+-- Tells everyone in the venue the awards ceremony has started (the camera shots, the cheer, the theme song).
+local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
+	local gold: CFrame? = v.podiumSpots[1]
+	if remotes == nil or gold == nil then
+		return
+	end
+	local winner: Lifter? = nil
+	for _, lifter in ipairs(current.lifters) do
+		local placing = current.places[lifter.player.UserId]
+		if placing and placing.place == 1 and not lifter.withdrawn and visits[lifter.player] then
+			winner = lifter
+		end
+	end
+	local moment: LocalMeetRemotes.AwardsMoment = {
+		winnerUserId = winner and winner.player.UserId,
+		winnerName = winner and winner.name,
+		winnerSpot = winner and gold,
+		stageCentre = gold.Position,
+		stageFacing = gold.LookVector,
+		themeSoundId = winner and themeFor(winner.player),
+		celebrationAnimationId = winner and celebrationFor(winner.player),
+		seconds = LocalMeetConfig.DoneSeconds,
+	}
+	for player in pairs(visits) do
+		remotes.awards:FireClient(player, moment)
+	end
+end
+
 -- Ends the meet: the final ranking, everyone's result, then the platforms are cleared.
 local function finishMeet(current: Meet)
 	current.final = true
@@ -748,6 +793,7 @@ local function finishMeet(current: Meet)
 				standAt(lifter.player, spot, true)
 			end
 		end
+		announceAwards(current, v)
 	end
 
 	task.wait(LocalMeetConfig.DoneSeconds)

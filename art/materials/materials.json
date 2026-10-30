@@ -866,6 +866,22 @@
       "ids": {
         "audio": "rbxassetid://105244845446461"
       }
+    },
+    "Awards_Theme": {
+      "about": "The Local meet awards' default winner's theme song (16 s fanfare and a held chord), own work, made by art/scripts/make_awards_sounds.py",
+      "file": "art/sounds/Awards_Theme.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://116724943474598"
+      }
+    },
+    "Awards_Cheer": {
+      "about": "The Local meet awards' crowd cheer (applause, roar, whistles), own work, made by art/scripts/make_awards_sounds.py",
+      "file": "art/sounds/Awards_Cheer.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://74322878777614"
+      }
     }
   }
 }

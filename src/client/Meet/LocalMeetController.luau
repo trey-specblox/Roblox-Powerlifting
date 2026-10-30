@@ -11,6 +11,7 @@
 		- while lifting (LocalMeetConfig.PlatformAttribute): the Mock Meet's
 		  screen (MockMeetController.attach) with the Local meet's title,
 		  driven by the Local meet's remotes
+		- the awards ceremony when a meet ends (LocalMeetAwards)
 
 	It only ASKS (sign up, exit, the weight, LIFT, LEAVE); the server checks and
 	decides everything. The countdown runs on server time
@@ -28,6 +29,7 @@ local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("Local
 
 local MockMeetController = require(script.Parent:WaitForChild("MockMeetController"))
 local LocalMeetLobbyUI = require(script.Parent:WaitForChild("LocalMeetLobbyUI"))
+local LocalMeetAwards = require(script.Parent:WaitForChild("LocalMeetAwards"))
 
 local LocalMeetController = {}
 
@@ -81,6 +83,8 @@ function LocalMeetController.start()
 		standings = newStandings
 		ui.drawStandings(standings)
 	end)
+	-- The awards ceremony: the podium camera, the cheer, the winner's theme song and celebration.
+	remotes.awards.OnClientEvent:Connect(LocalMeetAwards.play)
 
 	-- The countdown, a few times a second.
 	local nextDraw = 0

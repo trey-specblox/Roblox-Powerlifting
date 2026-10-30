@@ -30,6 +30,10 @@
 			The timetable and the sign-ups, for everyone in the venue.
 		LocalMeetStandings  server -> client  (Standings)
 			The live and final ranking, for everyone in the venue.
+		LocalMeetAwards     server -> client  (AwardsMoment)
+			The awards ceremony has started, for everyone in the venue: the
+			camera shots, the crowd cheer and the winner's theme song; the
+			winner's own client also plays their celebration.
 
 	Going INTO the venue is not a remote: it is the gym entrance's
 	ProximityPrompt, which the server listens to. What a meet saves is the
@@ -48,6 +52,7 @@ LocalMeetRemotes.EXIT = "LocalMeetExit"
 LocalMeetRemotes.SIGN_UP = "LocalMeetSignUp"
 LocalMeetRemotes.LOBBY = "LocalMeetLobby"
 LocalMeetRemotes.STANDINGS = "LocalMeetStandings"
+LocalMeetRemotes.AWARDS = "LocalMeetAwards"
 
 export type RemoteSet = {
 	leave: RemoteEvent,
@@ -59,11 +64,12 @@ export type RemoteSet = {
 	signUp: RemoteEvent,
 	lobby: RemoteEvent,
 	standings: RemoteEvent,
+	awards: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
-	LocalMeetRemotes.STANDINGS }
+	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS }
 
 --[[
 	The timetable and sign-ups, server -> client, sent when they change.
@@ -111,6 +117,23 @@ export type Standings = {
 	rows: { StandingRow },
 }
 
+-- The awards ceremony, server -> client, once when it starts. Display only: nothing here is saved or trusted.
+export type AwardsMoment = {
+	-- The winner (1st place); nil when nobody placed (no close-up, no theme).
+	winnerUserId: number?,
+	winnerName: string?,
+	-- Where the winner stands (the podium's gold top), looking at the crowd.
+	winnerSpot: CFrame?,
+	-- The middle of the podium's top, for the wide shots, and the way the stage faces (toward the crowd).
+	stageCentre: Vector3,
+	stageFacing: Vector3,
+	-- The winner's theme song and celebration (rbxassetid://...), the defaults until custom ones exist.
+	themeSoundId: string?,
+	celebrationAnimationId: string?,
+	-- How long the ceremony lasts.
+	seconds: number,
+}
+
 function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 	local folder = replicatedStorage:FindFirstChild(LocalMeetRemotes.FOLDER_NAME)
 	if folder == nil then
@@ -145,6 +168,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		signUp = get(LocalMeetRemotes.SIGN_UP),
 		lobby = get(LocalMeetRemotes.LOBBY),
 		standings = get(LocalMeetRemotes.STANDINGS),
+		awards = get(LocalMeetRemotes.AWARDS),
 	}
 end
 
@@ -164,6 +188,7 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		signUp = get(LocalMeetRemotes.SIGN_UP),
 		lobby = get(LocalMeetRemotes.LOBBY),
 		standings = get(LocalMeetRemotes.STANDINGS),
+		awards = get(LocalMeetRemotes.AWARDS),
 	}
 end
 
