@@ -107,6 +107,26 @@ LocalMeetConfig.Awards = {
 	GlideSeconds = 1.2,
 }
 
+-- ------------------------------------------------ the warm-up room (GAME_DESIGN §29.10, build step 3)
+
+--[[
+	The warm-up racks behind the platforms work like a meet attempt (user
+	2026-10-29: "make them work like a normal meet"; at Nationals and Worlds
+	lifters wait longer and practise over and over): hold E at a rack, pick the
+	lift and the bar weight (WeightStepKg steps inside the meet's 40-125% of
+	CN), LIFT runs the real meet minigame at meet difficulty, GOOD LIFT or NO
+	LIFT, as often as you like. PRACTICE ONLY: nothing is saved (no CN, no
+	Scale, no records).
+]]
+LocalMeetConfig.WarmUp = {
+	PromptAction = "Warm up",
+	PromptObject = "Warm-up rack",
+	-- The first weight offered for a lift: this share of its CN, like a meet opener.
+	StartPercent = MockMeetConfig.OpenerSuggestionPercent,
+	-- Where the lifter stands: this far in front of the rack's middle, facing away from it (like a platform).
+	LiftSpotInFrontStuds = 4,
+}
+
 assert(LocalMeetConfig.MaxLifters >= 1, "[LocalMeetConfig] MaxLifters must be at least 1")
 assert(
 	LocalMeetConfig.SignUpClosesSeconds < LocalMeetConfig.CycleSeconds

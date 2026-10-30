@@ -2223,6 +2223,27 @@ Worlds and Sheffield come later and are untouched here.
 >   (`themeFor` / `celebrationFor` in LocalMeetService); how a player picks
 >   or earns them is not decided yet. With no winner (everyone bombed out)
 >   there is no close-up and no theme, only the stage and the cheer.
+> - **(3) built (2026-10-29): the working warm-up racks** (user: "make them
+>   work like a normal meet"; few will use them at Locals, where everyone has
+>   their own rack, but at Nationals and Worlds lifters wait longer and can
+>   practise their lifts over and over). Hold E at a free rack: you step up to
+>   it and get the WARM-UP card. Pick squat, bench or deadlift and the bar
+>   weight (the meet's 2.5 kg steps inside 40-125% of your CN, starting at
+>   90%); LIFT runs the real meet minigame at meet difficulty (the Scale
+>   challenge included); GOOD LIFT or NO LIFT; again as often as you like.
+>   **Practice only: nothing is saved** (no CN, no Scale, no records, no
+>   allowance). One player per rack; starting a meet lift, leaving the venue
+>   or dying takes you off it.
+> - **Platform screens (user, 2026-10-29):** the boards over the platforms
+>   are now big lifter screens. They show the lifter's **username**, weight
+>   class, bodyweight, **forecast total** (the sum of their three CNs), their
+>   best lift so far per lift, what they are doing now (the attempt, the
+>   weight, GOOD LIFT in green or NO LIFT in red) and a strip of **fun facts**,
+>   two at a time in turn: what they are breaking right now first ("BEAT
+>   THEIR BENCH CN!", "NEW BEST TOTAL!", "GOING FOR A NEW SQUAT CN"), then
+>   titles ("2x LOCAL CHAMPION") and their best Total. **Gym and world records
+>   join the facts once the record wall exists (§31).** An empty platform
+>   says OPEN.
 >
 > **Step 2 built (2026-10-29), save version 9.** The rewards of §33.3b: CN raises
 > within each build's meet allowance, misses above CN using it, Competition Scale

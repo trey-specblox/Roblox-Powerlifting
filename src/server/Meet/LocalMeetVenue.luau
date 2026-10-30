@@ -25,10 +25,11 @@
 		           metal barricades, then the 8 platforms in a row along the back
 		           wall: each with a number sign on a post, three referee chairs
 		           in front (head referee in the middle, furthest forward), the
-		           referees' light box at its front right corner, its board on
-		           the back wall and a stage light above
+		           referees' light box at its front right corner, its big
+		           screen on the back wall (LifterDisplay: who is lifting
+		           there) and a stage light above
 		WARM-UP    behind the hall's back wall, with a doorway beside every
-		           platform: 8 racks (for looks until the warm-up step), plate
+		           platform: 8 working racks (LocalMeetWarmUp: practice lifts), plate
 		           trees, and a hangout corner with sofas
 		CORRIDOR   along the hall's right side, lobby to warm-up room
 
@@ -51,6 +52,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
+local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
 
 local ServerFolder = script.Parent.Parent
@@ -60,6 +62,7 @@ local RoomProps = require(WorldFolder:WaitForChild("RoomProps"))
 local StyledScreen = require(WorldFolder:WaitForChild("StyledScreen"))
 local MockMeetArena = require(script.Parent:WaitForChild("MockMeetArena"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
+local LifterDisplay = require(script.Parent:WaitForChild("LifterDisplay"))
 
 local LocalMeetVenue = {}
 
@@ -84,7 +87,11 @@ local PLATFORM_HEIGHT = 0.6
 local PLATFORM_Z = 26 -- the platforms' middles
 local PLATFORM_FRONT = PLATFORM_Z - PLATFORM_SIZE / 2
 local LIFT_SPOT_IN_FRONT = 4
-local BOARD_SCALE = 0.5 -- the platform boards: MockMeet_01's attempt board at half size (14 x 6)
+local BOARD_SCALE = 0.5 -- small wall boards: MockMeet_01's attempt board at half size (14 x 6)
+-- The platforms' big screens (user 2026-10-29: "make the TVs bigger and more visible"): the board at 0.8 (about
+-- 22 x 9.6, nearly the platform spacing), its middle this high, clear of the doorways under it.
+local DISPLAY_SCALE = 0.8
+local DISPLAY_Y = 18.5
 -- The barricade row between the spectators and the platforms (LocalMeet_02's Barricade is 7 wide).
 local BARRIER_Z = 6
 local BARRICADE_W = 7
@@ -113,7 +120,8 @@ export type Platform = {
 	liftSpot: CFrame,
 	-- Where the lifter waits at the weigh-in: on the floor beside the platform, facing the spectators.
 	waitSpot: CFrame,
-	board: StyledScreen.Handle?,
+	-- The big screen over the platform: who is lifting there.
+	display: LifterDisplay.Handle,
 	-- The referee light box's three lamps (empty when the model did not load).
 	lamps: { BasePart },
 	-- The three referee chairs: a point on each seat under the referee's hips, facing the platform.
@@ -142,6 +150,15 @@ export type Venue = {
 	awards: Model,
 	-- Where 1st, 2nd and 3rd stand on the podium (empty when the model did not load).
 	podiumSpots: { CFrame },
+	-- The warm-up room's working racks.
+	warmUpRacks: { WarmUpRack },
+}
+
+-- A warm-up rack: where its lifter stands (in front of it, facing the hall) and the point carrying its prompt.
+export type WarmUpRack = {
+	index: number,
+	liftSpot: CFrame,
+	point: BasePart,
 }
 
 local venue: Venue? = nil
@@ -241,7 +258,7 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		end
 		return copy
 	end
-	-- An invisible, non-solid point that carries a prompt.
+	-- An invisible, non-solid point that carries a prompt, at a point of the building (local, like box()).
 	local function point(name: string, at: Vector3): BasePart
 		local part = box(model, name, at - Vector3.new(1, 0, 1), at + Vector3.new(1, 4, 1), looks.Glass)
 		part.Transparency = 1
@@ -257,9 +274,10 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	local function ceilingAt(x: number): number
 		return RIDGE - math.abs(x - cx) / (span - WALL) * rise
 	end
-	-- MockMeet_01's board (or banner) hung on a wall at `scale`, with writing; a dark panel if the model is missing.
-	local function wallBoard(name: string, item: string, piece: string, scale: number, wallPoint: Vector3, out: Vector3,
-		screenAt: Vector3, title: string, lines: { string }, mark: string, pixelsPerStud: number): StyledScreen.Handle?
+	-- MockMeet_01's board (or banner) hung on a wall at `scale`; returns its screen (a dark panel if the model is
+	-- missing).
+	local function hangBoard(name: string, item: string, piece: string, scale: number, wallPoint: Vector3, out: Vector3,
+		screenAt: Vector3): BasePart
 		local frame = prop(model, name, item)
 		local screen = frame and frame:FindFirstChild(piece, true) :: BasePart?
 		local part: BasePart
@@ -279,6 +297,12 @@ function LocalMeetVenue.build(): (Venue?, string?)
 			part = decor(name, Vector3.new(math.min(low.X, high.X), low.Y, math.min(low.Z, high.Z)) + out * 0.06,
 				Vector3.new(math.max(low.X, high.X), high.Y, math.max(low.Z, high.Z)) + out * 0.4, looks.Gadget)
 		end
+		return part
+	end
+	-- A hung board with writing in the game's style.
+	local function wallBoard(name: string, item: string, piece: string, scale: number, wallPoint: Vector3, out: Vector3,
+		screenAt: Vector3, title: string, lines: { string }, mark: string, pixelsPerStud: number): StyledScreen.Handle?
+		local part = hangBoard(name, item, piece, scale, wallPoint, out, screenAt)
 		return StyledScreen.build(part, StyledScreen.faceToward(part, out), title, lines, mark, pixelsPerStud)
 	end
 
@@ -376,10 +400,11 @@ function LocalMeetVenue.build(): (Venue?, string?)
 			return nil, problem
 		end
 
-		-- The platform's board on the back wall above it: MockMeet_01's attempt board at half size.
-		local board = wallBoard("PlatformBoard_" .. index, "MeetBoard", "MeetBoard_Screen", BOARD_SCALE,
-			Vector3.new(0, 0, Z_BACK - 0.06), -Vector3.zAxis, Vector3.new(x, 16, Z_BACK), "PLATFORM " .. index, { "Free" },
-			"bar", 30)
+		-- The platform's big screen on the back wall above it (MockMeet_01's attempt board, scaled up): the lifter
+		-- on the platform, their numbers and fun facts (LifterDisplay).
+		local screen = hangBoard("PlatformBoard_" .. index, "MeetBoard", "MeetBoard_Screen", DISPLAY_SCALE,
+			Vector3.new(0, 0, Z_BACK - 0.06), -Vector3.zAxis, Vector3.new(x, DISPLAY_Y, Z_BACK))
+		local display = LifterDisplay.build(screen, -Vector3.zAxis, index, MeetConfig.LiftOrder)
 
 		-- The number sign on its post at the platform's back left corner, facing the spectators.
 		local sign = prop(model, "PlatformSign_" .. index, "PlatformSign",
@@ -429,7 +454,7 @@ function LocalMeetVenue.build(): (Venue?, string?)
 			index = index,
 			liftSpot = CFrame.lookAt(liftAt, liftAt - Vector3.zAxis),
 			waitSpot = CFrame.lookAt(waitAt, waitAt - Vector3.zAxis),
-			board = board,
+			display = display,
 			lamps = lamps,
 			refSeats = refSeats,
 			coachSpot = centre + Vector3.new(x - half - 1.5, 0, PLATFORM_FRONT - 1),
@@ -491,7 +516,7 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	else
 		box(model, "SignUpDesk", Vector3.new(deskX - 5, 0, deskZ - 1), Vector3.new(deskX + 5, 3.2, deskZ + 1), looks.FrontCharcoal)
 	end
-	local signUpPoint = point("SignUpPoint", centre + Vector3.new(deskX, 0, deskZ - 4))
+	local signUpPoint = point("SignUpPoint", Vector3.new(deskX, 0, deskZ - 4))
 	wallBoard("SignUpBoard", "MeetBoard", "MeetBoard_Screen", BOARD_SCALE, Vector3.new(xLeft + 0.06, 0, 0), Vector3.xAxis,
 		Vector3.new(xLeft, 9, deskZ - 2), "SIGN UP HERE", { "The desk by the doors", "Then wait in the hall" }, "bar", 30)
 
@@ -499,7 +524,7 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	decor("ExitDoorway", Vector3.new(-5, 0, Z_FRONT), Vector3.new(5, 10, Z_FRONT + 0.08), looks.FrontCharcoal)
 	wallBoard("ExitBoard", "MeetBoard", "MeetBoard_Screen", 0.35, Vector3.new(0, 0, Z_FRONT + 0.06), Vector3.zAxis,
 		Vector3.new(0, 13, Z_FRONT), "EXIT", { "Back to the gym" }, "bar", 30)
-	local exitPoint = point("ExitPoint", centre + Vector3.new(0, 0, Z_FRONT + 2))
+	local exitPoint = point("ExitPoint", Vector3.new(0, 0, Z_FRONT + 2))
 	-- Boards over the openings: into the hall, and down the corridor to the warm-up room.
 	wallBoard("HallBoard", "MeetBoard", "MeetBoard_Screen", 0.35, Vector3.new(0, 0, Z_LOBBY - WALL - 0.06), -Vector3.zAxis,
 		Vector3.new(0, 16, Z_LOBBY - WALL), "MEET HALL", { "Come in and watch" }, "star", 30)
@@ -507,11 +532,21 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		Vector3.new(hx + CORRIDOR_W / 2, 16, Z_LOBBY - WALL), "WARM-UP ROOM", { "Down the corridor" }, "bar", 30)
 
 	-- ---------------------------------------------------------------- the warm-up room
-	-- A rack opposite every platform's doorway row, along the far wall, with a plate tree between each pair.
+	-- A rack opposite every platform's doorway row, along the far wall, with a plate tree between each pair. Each
+	-- working rack (LocalMeetWarmUp) has a spot in front of it facing the hall, like a platform's, and a point
+	-- there for its prompt.
+	local warmUpRacks: { WarmUpRack } = {}
 	for index = 1, LocalMeetConfig.MaxLifters do
 		local x = platformX(index)
 		local placed = MockMeetArena.placeRack(model, centre + Vector3.new(x, 0, WARMUP_RACK_Z))
-		if not placed then
+		if placed then
+			local spotAt = centre + Vector3.new(x, 0, WARMUP_RACK_Z - LocalMeetConfig.WarmUp.LiftSpotInFrontStuds)
+			table.insert(warmUpRacks, {
+				index = #warmUpRacks + 1,
+				liftSpot = CFrame.lookAt(spotAt, spotAt - Vector3.zAxis),
+				point = point("WarmUpPoint_" .. index, spotAt - centre),
+			})
+		else
 			warn("[LocalMeetVenue] warm-up rack " .. index .. " could not be built")
 		end
 		if index % 2 == 0 then
@@ -533,7 +568,7 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		prop(model, "Planter_" .. k, "Planter", CFrame.new(centre + spot), k)
 	end
 	wallBoard("WarmUpBanner", "MeetBanner", "MeetBanner_Cloth", 1, Vector3.new(0, 0, Z_END), -Vector3.zAxis,
-		Vector3.new(0, 16, Z_END), "WARM-UP ROOM", { "Lifters walk out to their platform", "Hang out between meets" }, "dots", 30)
+		Vector3.new(0, 16, Z_END), "WARM-UP ROOM", { "Practise your lifts: hold E at a rack", "Nothing is saved here" }, "dots", 30)
 
 	-- ---------------------------------------------------------------- the lights
 	-- Ceiling panels: dim over the spectators and the lobby (the platforms carry the bright light), brighter in
@@ -600,6 +635,7 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		scoreboard = scoreboard,
 		awards = awards,
 		podiumSpots = podiumSpots,
+		warmUpRacks = warmUpRacks,
 	}
 	return venue, nil
 end
@@ -668,13 +704,9 @@ function LocalMeetVenue.lobbySpotFor(v: Venue, index: number): CFrame
 	return v.lobbySpot * CFrame.new(((index - 1) % 4 - 1.5) * 4, 0, -((index - 1) // 4) * 3)
 end
 
--- Rewrites a platform's board.
-function LocalMeetVenue.setPlatformBoard(platform: Platform, title: string, lines: { string })
-	local board = platform.board
-	if board then
-		board.setTag(title)
-		board.setLines(lines)
-	end
+-- Shows who is lifting on a platform on its big screen, or nil for an open platform.
+function LocalMeetVenue.showLifter(platform: Platform, card: LifterDisplay.Card?)
+	platform.display.show(card)
 end
 
 -- Rewrites the scoreboard.

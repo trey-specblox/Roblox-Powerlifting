@@ -2579,7 +2579,45 @@ and polish.
     18 s), the cheer animation playing, and after 20 s the camera back to
     Custom, the sounds gone and the animation stopped. NOT tested through a
     real meet (the stage was not shown in that test).
-  NEXT ACTION: part 3, the working warm-up racks (practice lifts, no CN).
+  NEXT ACTION (done below): part 3, the working warm-up racks.
+
+  LOCAL MEET VENUE REDESIGN, part 3 + PLATFORM SCREENS (2026-10-29).
+  COMMITTED AND PUSHED with the user's approval ("Commit and push now",
+  before a full-meet test); `git log` for the hash. GAME_DESIGN §29.10 "(3)
+  built" and "Platform screens".
+  - Warm-up racks: new src/server/Meet/LocalMeetWarmUp.luau (prompt per
+    rack, one player per rack, LIFT checked with AttemptChoice and started
+    with LiftAttemptService.startServerAttempt = a meet attempt, nothing
+    saved; stop() on meet start, leaving the venue, death) and
+    src/client/Meet/LocalMeetWarmUpUI.luau (the WARM-UP card, bottom middle,
+    hidden while lifting). LocalMeetRemotes: WarmUpLift / WarmUpLeave /
+    WarmUpState. LocalMeetConfig.WarmUp. LocalMeetVenue: warmUpRacks (lift
+    spot 4 studs in front of each rack, a prompt point). LocalMeetService
+    wires it (canUse: in the venue, not lifting in the meet, no lift running).
+  - BUG FIXED: the venue's prompt points were placed with the building's
+    origin added twice (point() already adds it), so the SIGN-UP DESK and
+    EXIT prompts have been unreachable in mid-air since step 3 (players used
+    the on-screen SIGN UP / EXIT buttons). Now at the desk and the doors.
+  - Platform screens: new src/server/Meet/LifterDisplay.luau (a SurfaceGui
+    on each platform board, now MockMeet_01's board at 0.8 scale, middle
+    18.5 high). LocalMeetVenue.showLifter replaces setPlatformBoard;
+    LocalMeetService.boardFor builds the card (username, class, bodyweight,
+    forecast total = sum of CNs, bests, status lines, mood) and factsFor (beat
+    a CN, new best total, going above CN, Local wins, best Total). The
+    weigh-in now also reads the class's bestTotalKg and career.localWins.
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): walked in
+    through the entrance prompt (keyboard E), held E at warm-up rack 1, the
+    WARM-UP card showed (22.5 kg = 90% of a 25 kg squat CN), LIFT started the
+    real squat minigame at meet difficulty ("unproven weight +10"), it timed
+    out to NO LIFT and the card came back with "LAST SQUAT 22.5 KG · NO
+    LIFT"; LEAVE RACK freed the player and re-enabled the prompt. Screens:
+    all eight say OPEN; a sample lifter card built from the command bar on
+    platform 4 (TEMP, not in the game) drew correctly; the facts strip turns
+    every 4 s. Found and fixed while testing: a SurfaceGui MaxDistance hid the
+    screens; setting TextWrapped off made TextScaled text tiny. NOT tested:
+    the screens during a real meet, two players on warm-up racks.
+  NEXT ACTION: the user plays a Local meet (watch the platform screen during
+  the lifts) and tries a warm-up rack; fix anything found.
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.

@@ -53,6 +53,9 @@
 		LocalMeetRemotes.AWARDS tells everyone in the venue (camera shots, the
 		crowd cheer, the winner's theme song and celebration: themeFor /
 		celebrationFor, the defaults until custom ones exist).
+	Each platform's big screen (LifterDisplay, boardFor) shows its lifter: name,
+	class, bodyweight, forecast total, bests, the lift now and fun facts.
+	The warm-up room's racks are LocalMeetWarmUp's (practice, nothing saved).
 	A lifter who withdraws (LEAVE), exits, dies or leaves the game is out of the
 	meet; the others carry on. LocalMeetRemotes.STANDINGS keeps everyone in the
 	venue up to date, and the scoreboard shows the same.
@@ -79,6 +82,7 @@ local MeetPlacing = require(MeetFolder:WaitForChild("MeetPlacing"))
 
 local ServerFolder = script.Parent.Parent
 local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
+local LocalMeetWarmUp = require(script.Parent:WaitForChild("LocalMeetWarmUp"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
@@ -125,6 +129,11 @@ type Lifter = {
 	readyPressed: boolean,
 	roundDone: boolean,
 	lights: { string }?,
+	-- The lift of the round being lifted (for the big screen's "going for a new CN").
+	currentLift: string?,
+	-- For the big screen's fun facts, read at the weigh-in: the class's best Total and the Local wins.
+	bestTotalKg: number?,
+	localWins: number,
 }
 
 type Meet = {
@@ -139,6 +148,8 @@ type Meet = {
 }
 
 local venue: LocalMeetVenue.Venue? = nil
+-- The warm-up room's working racks (made once the venue is built).
+local warmUp: LocalMeetWarmUp.WarmUp? = nil
 local remotes: LocalMeetRemotes.RemoteSet? = nil
 local started = false
 
@@ -489,8 +500,72 @@ local function lightsText(lights: { string }?): string
 	return "LIGHTS  " .. table.concat(lights, " · "):upper()
 end
 
-local function boardFor(lifter: Lifter, lines: { string })
-	LocalMeetVenue.setPlatformBoard(lifter.platform, string.upper(lifter.name), lines)
+local function bestOf(lifter: Lifter, lift: string): number?
+	local best: number? = nil
+	for _, attempt in ipairs(lifter.lifts[lift].history) do
+		if attempt.result == "GoodLift" and (best == nil or attempt.weightKg > best) then
+			best = attempt.weightKg
+		end
+	end
+	return best
+end
+
+--[[
+	The big screen's fun facts: anything the lifter is breaking right now first,
+	then their titles and best marks. Records (gym and world) join here when the
+	record wall exists (GAME_DESIGN §31).
+]]
+local function factsFor(lifter: Lifter): { string }
+	local facts: { string } = {}
+	local total, allThree = 0, true
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		local best = bestOf(lifter, lift)
+		local cn = lifter.competitionNumber[lift]
+		if best then
+			total += best
+			if cn and best > cn then
+				table.insert(facts, string.format("BEAT THEIR %s CN!", string.upper(lift)))
+			end
+		else
+			allThree = false
+		end
+	end
+	if allThree and (lifter.bestTotalKg == nil or total > (lifter.bestTotalKg :: number)) then
+		table.insert(facts, string.format("NEW BEST TOTAL!  %s KG", kgText(total)))
+	end
+	local lift, kg = lifter.currentLift, lifter.chosenKg
+	if lift and kg and not lifter.roundDone and lifter.competitionNumber[lift] and kg > lifter.competitionNumber[lift] then
+		table.insert(facts, string.format("GOING FOR A NEW %s CN", string.upper(lift)))
+	end
+	if lifter.localWins > 0 then
+		table.insert(facts, string.format("%dx LOCAL CHAMPION", lifter.localWins))
+	end
+	table.insert(facts, if lifter.bestTotalKg then string.format("BEST TOTAL %s KG", kgText(lifter.bestTotalKg :: number))
+		else "CHASING A FIRST TOTAL")
+	return facts
+end
+
+-- Writes the lifter's big screen: who they are, their numbers, what they are doing (`lines`) and the fun facts.
+local function boardFor(lifter: Lifter, lines: { string }, mood: ("good" | "bad")?)
+	local forecast = 0
+	local best: { [string]: number } = {}
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		forecast += lifter.competitionNumber[lift] or 0
+		local kg = bestOf(lifter, lift)
+		if kg then
+			best[lift] = kg
+		end
+	end
+	LocalMeetVenue.showLifter(lifter.platform, {
+		name = lifter.player.Name,
+		classLabel = lifter.classLabel,
+		bodyweightKg = lifter.bodyweightKg,
+		forecastTotalKg = forecast,
+		best = best,
+		status = lines,
+		mood = mood,
+		facts = factsFor(lifter),
+	})
 end
 
 -- ---------------------------------------------------------------- the meet
@@ -593,7 +668,8 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	LocalMeetVenue.setLights(lifter.platform, lifter.lights)
 	LocalMeetVenue.coachSays(lifter.platform, pick(if good then COACH_GOOD else COACH_MISS))
 	boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
-		string.format("%s KG  ·  %s", kgText(weightKg), if good then "GOOD LIFT" else "NO LIFT"), lightsText(lifter.lights) })
+		string.format("%s KG  ·  %s", kgText(weightKg), if good then "GOOD LIFT" else "NO LIFT"), lightsText(lifter.lights) },
+		if good then "good" else "bad")
 	sendState(lifter, "Result", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg, verdict = result,
 		lights = lifter.lights })
 	log("%s %s attempt %d: %s kg %s", player.Name, lift, attemptNumber, kgText(weightKg), result)
@@ -609,6 +685,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 	local choosing: { Lifter } = {}
 	for _, lifter in ipairs(activeLifters(current)) do
 		lifter.choice, lifter.chosenKg, lifter.readyPressed, lifter.roundDone, lifter.lights = nil, nil, false, false, nil
+		lifter.currentLift = lift
 		local cn = lifter.competitionNumber[lift]
 		local history = lifter.lifts[lift].history
 		local minKg, default = AttemptChoice.nextWeights(cn, history, LocalMeetConfig.WeightStepKg,
@@ -804,7 +881,7 @@ local function finishMeet(current: Meet)
 		local player = lifter.player
 		LocalMeetVenue.clearStaff(lifter.platform)
 		LocalMeetVenue.setLights(lifter.platform, nil)
-		LocalMeetVenue.setPlatformBoard(lifter.platform, "PLATFORM " .. lifter.platform.index, { "Free" })
+		LocalMeetVenue.showLifter(lifter.platform, nil)
 		if not lifter.withdrawn then
 			lifter.withdrawn = true
 			LiftAttemptService.setFreeAttemptsBlocked(player, false)
@@ -830,6 +907,9 @@ local function runMeet(current: Meet)
 	for _, lifter in ipairs(current.lifters) do
 		local player = lifter.player
 		player:SetAttribute(LocalMeetConfig.PlatformAttribute, lifter.platform.index)
+		if warmUp then
+			warmUp.stop(player, false)
+		end
 		LiftAttemptService.setFreeAttemptsBlocked(player, true)
 		LocalMeetVenue.staffPlatform(lifter.platform)
 		standAt(player, lifter.platform.waitSpot, false)
@@ -854,7 +934,8 @@ local function runMeet(current: Meet)
 end
 
 -- Reads a signed-up player's weigh-in, or nil and why they cannot lift.
-local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: string, competitionNumber: { [string]: number } }?, string?)
+local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: string, competitionNumber: { [string]: number },
+	bestTotalKg: number?, localWins: number }?, string?)
 	local data = PlayerDataService.getData(player)
 	if data == nil then
 		return nil, "your data is still loading"
@@ -871,7 +952,12 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 		end
 		competitionNumber[lift] = cn
 	end
-	return { bodyweightKg = data.bodyweight.currentKg, classLabel = classKey, competitionNumber = competitionNumber }, nil
+	local build = ProfileOperations.getBuild(data, classKey)
+	local best = build and build.bestTotalKg
+	local career = data.career
+	local wins = if typeof(career) == "table" and typeof(career.localWins) == "number" then career.localWins else 0
+	return { bodyweightKg = data.bodyweight.currentKg, classLabel = classKey, competitionNumber = competitionNumber,
+		bestTotalKg = if typeof(best) == "number" and best > 0 then best else nil, localWins = wins }, nil
 end
 
 -- At a timetable start: holds the meet if enough signed-up lifters are ready.
@@ -937,6 +1023,9 @@ local function tryStartMeet()
 			readyPressed = false,
 			roundDone = false,
 			lights = nil,
+			currentLift = nil,
+			bestTotalKg = weigh.bestTotalKg,
+			localWins = weigh.localWins,
 		}
 		table.insert(current.lifters, lifter)
 		current.byPlayer[player] = lifter
@@ -959,6 +1048,9 @@ end
 
 -- Takes a player out of the venue (EXIT, death, leaving the game), back to the gym when `sendBack`.
 local function leaveVenue(player: Player, sendBack: boolean)
+	if warmUp then
+		warmUp.stop(player, false)
+	end
 	withdraw(player, "left the venue")
 	removeSignUp(player)
 	local visit = visits[player]
@@ -1089,7 +1181,7 @@ local function pressAllowed(player: Player): boolean
 	return true
 end
 
-local function prompt(parent: BasePart, action: string, object: string, onTriggered: (Player) -> ())
+local function prompt(parent: BasePart, action: string, object: string, onTriggered: (Player) -> ()): ProximityPrompt
 	local proximity = Instance.new("ProximityPrompt")
 	proximity.ActionText = action
 	proximity.ObjectText = object
@@ -1100,6 +1192,7 @@ local function prompt(parent: BasePart, action: string, object: string, onTrigge
 	proximity.RequiresLineOfSight = false
 	proximity.Parent = parent
 	proximity.Triggered:Connect(onTriggered)
+	return proximity
 end
 
 local function setUpEntrance(instance: Instance)
@@ -1180,6 +1273,28 @@ function LocalMeetService.start()
 			return
 		end
 		venue = built
+		warmUp = LocalMeetWarmUp.new(built.warmUpRacks, set, {
+			canUse = function(player: Player): (boolean, string?)
+				local body = bodyOf(player)
+				if visits[player] == nil or body == nil or body.humanoid.Health <= 0 then
+					return false, nil
+				end
+				local current = meet
+				local lifter = current and current.byPlayer[player]
+				if lifter and not lifter.withdrawn then
+					return false, "You are lifting in this meet."
+				end
+				if LiftAttemptService.isAttemptActive(player) then
+					return false, "Finish your lift first."
+				end
+				return true, nil
+			end,
+			standAt = standAt,
+			release = release,
+			notify = notify,
+			prompt = prompt,
+			pressAllowed = pressAllowed,
+		})
 		prompt(built.signUpPoint, "Sign up / take name off", "Local meet desk", function(player)
 			if pressAllowed(player) then
 				toggleSignUp(player)

@@ -34,6 +34,14 @@
 			The awards ceremony has started, for everyone in the venue: the
 			camera shots, the crowd cheer and the winner's theme song; the
 			winner's own client also plays their celebration.
+		LocalMeetWarmUpLift   client -> server  (liftName: string, weightKg: number)
+			"Lift this at my warm-up rack." A request: the server checks the lift,
+			the weight (AttemptChoice, as for a meet attempt) and the rack.
+		LocalMeetWarmUpLeave  client -> server  (no arguments)
+			"Step off my warm-up rack."
+		LocalMeetWarmUpState  server -> client  (WarmUpState)
+			The player's own warm-up: their rack (or none), their CNs, whether a
+			lift is running and the last result. Practice only: nothing is saved.
 
 	Going INTO the venue is not a remote: it is the gym entrance's
 	ProximityPrompt, which the server listens to. What a meet saves is the
@@ -53,6 +61,9 @@ LocalMeetRemotes.SIGN_UP = "LocalMeetSignUp"
 LocalMeetRemotes.LOBBY = "LocalMeetLobby"
 LocalMeetRemotes.STANDINGS = "LocalMeetStandings"
 LocalMeetRemotes.AWARDS = "LocalMeetAwards"
+LocalMeetRemotes.WARM_UP_LIFT = "LocalMeetWarmUpLift"
+LocalMeetRemotes.WARM_UP_LEAVE = "LocalMeetWarmUpLeave"
+LocalMeetRemotes.WARM_UP_STATE = "LocalMeetWarmUpState"
 
 export type RemoteSet = {
 	leave: RemoteEvent,
@@ -65,11 +76,15 @@ export type RemoteSet = {
 	lobby: RemoteEvent,
 	standings: RemoteEvent,
 	awards: RemoteEvent,
+	warmUpLift: RemoteEvent,
+	warmUpLeave: RemoteEvent,
+	warmUpState: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
-	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS }
+	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
+	LocalMeetRemotes.WARM_UP_STATE }
 
 --[[
 	The timetable and sign-ups, server -> client, sent when they change.
@@ -134,6 +149,21 @@ export type AwardsMoment = {
 	seconds: number,
 }
 
+-- The player's own warm-up, server -> client, whenever it changes. Display only.
+export type WarmUpState = {
+	-- The warm-up rack the player is at (1..), or nil when they are not at one.
+	rack: number?,
+	-- The player's Competition Number per lift (the current class's), for the weight range and the %.
+	competitionNumbers: { [string]: number },
+	-- The weight step and the first weight's share of CN (LocalMeetConfig).
+	stepKg: number,
+	startPercent: number,
+	-- A lift is running right now (the minigame is on screen).
+	lifting: boolean,
+	-- The last lift's result, if any.
+	last: { lift: string, weightKg: number, good: boolean }?,
+}
+
 function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 	local folder = replicatedStorage:FindFirstChild(LocalMeetRemotes.FOLDER_NAME)
 	if folder == nil then
@@ -169,6 +199,9 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		lobby = get(LocalMeetRemotes.LOBBY),
 		standings = get(LocalMeetRemotes.STANDINGS),
 		awards = get(LocalMeetRemotes.AWARDS),
+		warmUpLift = get(LocalMeetRemotes.WARM_UP_LIFT),
+		warmUpLeave = get(LocalMeetRemotes.WARM_UP_LEAVE),
+		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
 	}
 end
 
@@ -189,6 +222,9 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		lobby = get(LocalMeetRemotes.LOBBY),
 		standings = get(LocalMeetRemotes.STANDINGS),
 		awards = get(LocalMeetRemotes.AWARDS),
+		warmUpLift = get(LocalMeetRemotes.WARM_UP_LIFT),
+		warmUpLeave = get(LocalMeetRemotes.WARM_UP_LEAVE),
+		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
 	}
 end
 
