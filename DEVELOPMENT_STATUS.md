@@ -2638,7 +2638,8 @@ and polish.
   - Checks: luau-lsp, no new errors. Studio Play (by Claude): showed the
     menu with sample states sent by hand (TEMP, nothing in the game): a 25 kg
     CN squat attempt 2 and a bench attempt 3 after a good 125 and a missed
-    135; screenshots read well. Not yet used in a real meet. With very small
+    135; screenshots read well. The user then used it in a real meet
+    (2026-10-30): "Yup it works". With very small
     CNs two picks can land on the same kg (e.g. 110% and 115% of 25 kg).
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
