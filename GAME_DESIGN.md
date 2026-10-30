@@ -2917,6 +2917,12 @@ sum-of-bests Total.
 > lifter, and two servers can never lower a record. Every server reads the
 > records again every 60 s. Studio uses a `Studio_` store or memory, never
 > the live wall.
+>
+> **(3) built (2026-10-30): the chalk wall shows them.** Each cell of the
+> hall's GYM RECORDS table shows the holder's Roblox headshot, username and
+> kg, and changes as soon as a record falls (here, or within a minute from
+> another server). An empty record still shows "?" and "—". In Studio the
+> title reads "GYM RECORDS (STUDIO TEST)".
 
 
 ---

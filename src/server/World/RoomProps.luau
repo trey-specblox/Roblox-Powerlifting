@@ -30,6 +30,7 @@ local StarterGymConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("WeightClassConfig"))
 local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
 local MockMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("MockMeetConfig"))
+local GymRecordsConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("GymRecordsConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 local StyledScreen = require(script.Parent:WaitForChild("StyledScreen"))
 
@@ -3869,8 +3870,9 @@ end
 	Every record cell is a Frame "Record_<class>_<LIFT>" (attributes
 	WeightClass and Lift) in the SurfaceGui "RecordsTable", with an "Avatar"
 	ImageLabel (the holder's Roblox headshot), a "Holder" label (their
-	username) and a "Kg" label: the later records system fills them in. Until
-	then they show "?" and "—".
+	username) and a "Kg" label: GymRecordsWall fills them in from the saved
+	gym records (the SurfaceGui is tagged GymRecordsConfig.WallTag). An empty
+	record shows "?" and "—".
 ]]
 FRONT.RecordsWall = function(front)
 	local oak = looks.LockersSlats
@@ -3891,6 +3893,7 @@ FRONT.RecordsWall = function(front)
 	local classes = WeightClassConfig.Classes
 	local lifts = { "SQUAT", "BENCH", "DEADLIFT", "TOTAL" }
 	local records = chalkPanel(front, "RecordsTable", -58, 58, b0 + 0.4, b1 - 0.3, 0.12)
+	records:AddTag(GymRecordsConfig.WallTag)
 	chalkText(records, "Title", "GYM RECORDS", 0.2, 0.0, 0.6, 0.1, CHALK.white, CHALK_BOLD)
 	local top, rows = 0.12, #classes + 1
 	local rowH = (1 - top - 0.01) / rows

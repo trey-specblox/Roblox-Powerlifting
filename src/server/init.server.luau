@@ -50,6 +50,10 @@ MockMeetService.start()
 local GymRecords = require(MeetFolder:WaitForChild("GymRecords"))
 GymRecords.start()
 
+-- The hall's chalk GYM RECORDS table shows them (built above by StarterGymBuilder).
+local GymRecordsWall = require(WorldFolder:WaitForChild("GymRecordsWall"))
+GymRecordsWall.start()
+
 local LocalMeetService = require(MeetFolder:WaitForChild("LocalMeetService"))
 LocalMeetService.start()
 

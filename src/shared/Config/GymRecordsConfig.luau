@@ -24,4 +24,7 @@ GymRecordsConfig.StudioPrefix = "Studio_"
 GymRecordsConfig.RefreshSeconds = 60 -- read the records again (picks up records set on other servers)
 GymRecordsConfig.SaveRetries = 3
 
+-- The chalk wall's GYM RECORDS table (RoomProps FRONT.RecordsWall) carries this tag; GymRecordsWall fills it in.
+GymRecordsConfig.WallTag = "GymRecordsTable"
+
 return GymRecordsConfig

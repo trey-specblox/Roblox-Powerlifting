@@ -2696,9 +2696,31 @@ and polish.
     Rojo missed one edit (re-saved; Studio checked against disk). NOT
     tested: a real Local meet sending a claim (look for "NEW GYM RECORD" in
     the Output after a good lift).
-  NEXT ACTION: the user tests a Local meet in Studio (Output shows the
-  official best and NEW GYM RECORD); then step 3 (the chalk wall shows the
-  records).
+  Steps 1 + 2 TESTED IN A REAL MEET (2026-10-30): the user played a Local
+  meet in Studio (1 lifter, rewards: true); Claude read its Output: every
+  good lift logged "official <lift> best ... Raised" then "NEW GYM RECORD"
+  (first from empty, then over their own 22.5 kg); the misses saved
+  nothing; the Total record appeared once all three lifts had a best (72.5,
+  then 75 kg).
+
+  Step 3 BUILT (2026-10-30, user: "Start step 3"). COMMITTED AND PUSHED
+  with the user's approval ("Commit and push"); `git log` for the hash. Tested
+  by Claude in Studio Play (user: "Yes, test it"): the table is tagged and
+  the title reads "GYM RECORDS (STUDIO TEST)"; TEMP test records sent from
+  the command bar (memory only, gone when Play stopped) for the user (59 kg
+  S/B/D 25 + Total 75), builderman (83 kg) and Roblox (120+ kg): each cell
+  showed the headshot, the looked-up username and the kg; empty cells kept
+  "?" / "—" / "— KG"; screenshot of the wall reads well.
+  - New src/server/World/GymRecordsWall.luau: fills every cell of the chalk
+    GYM RECORDS table from GymRecords (headshot via rbxthumb, username from
+    the server or GetNameFromUserIdAsync, cached; "190 KG"); an empty record
+    shows "?", "—", "— KG"; redraws a class on GymRecords.onChanged; in
+    Studio the title says "GYM RECORDS (STUDIO TEST)".
+  - RoomProps FRONT.RecordsWall tags the table GymRecordsConfig.WallTag
+    ("GymRecordsTable"); GymRecordsConfig gains WallTag.
+  - init.server.luau starts GymRecordsWall after GymRecords.
+  - Checks: luau-lsp, no errors in the changed files.
+  NEXT ACTION: step 4 (platform screen, facts strip, server announcement).
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.
