@@ -2454,7 +2454,8 @@ and polish.
     409/0, TrainingProgressionProbe 298/0, CompetitionNumberRewardProbe
     128/0; profile loaded at version 10. All probes switched back off.
 
-  LOCAL MEET STEP 3: THE VENUE (2026-10-29). NOT COMMITTED yet.
+  LOCAL MEET STEP 3: THE VENUE (2026-10-29). COMMITTED AND PUSHED with the
+  redesign below (user: "Commit and push now"), 90ff3dc.
   User decisions (picked from options): a building outside the gym; dark
   arena, lit platforms; referee light boxes, tiered seating, awards podium,
   warm-up area. Then: "Change the roof, I dont want any places to just have
@@ -2494,8 +2495,10 @@ and polish.
   - Performance: the hall is ~589 parts (8 platform racks + 2 warm-up racks
     are the bulk), 26 lights; entrance 24 parts.
 
-  LOCAL MEET VENUE REDESIGN, part 1: the layout (2026-10-29). NOT COMMITTED
-  yet (together with step 3 above). User's own plan ("my original idea of
+  LOCAL MEET VENUE REDESIGN, part 1: the layout (2026-10-29). COMMITTED AND
+  PUSHED with step 3 above as 90ff3dc "Build the Local meet venue in Blender
+  and redesign it (step 3)" (user-approved before a full-meet test; previews
+  in art/previews/ are not tracked, like earlier previews). User's own plan ("my original idea of
   how i want meets ran", reference photos) + the awards ceremony; layout picks
   were Claude's recommendations, accepted ("I approve build order"); recorded
   in GAME_DESIGN §29.10 "Venue redesign and awards ceremony". Build order:
@@ -2541,8 +2544,7 @@ and polish.
     bulk: 8 on platforms, 8 in the warm-up room) and 26 -> 31 lights.
   NEXT ACTION: the user plays a full Local meet in Studio (referees sit on
   the chairs, racks vanish and the awards stage appears at the end, comes
-  back after) and looks round the venue; then commit step 3 + this with
-  approval; then part 2, the awards ceremony.
+  back after) and looks round the venue; then part 2, the awards ceremony.
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.
