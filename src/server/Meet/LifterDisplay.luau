@@ -17,9 +17,18 @@
 		BEST  S 200  ·  B —  ·  D —
 		[ yellow strip: fun facts, two at a time in turn, e.g. NEW BEST TOTAL! // 2x LOCAL CHAMPION ]
 
+	A GYM RECORD ATTEMPT (user 2026-10-30: "it needs to be more visible when
+	someone is going for a gym record ... maby with a bigger sign at the top
+	saying GYM RECORD ATTEMPT"): a big red sign floats above the board,
+	readable from anywhere in the venue (a BillboardGui, so it always faces
+	the viewer), with what is being tried under it; its edge flashes. The
+	facts strip turns red too.
+
 	With nobody on the platform it says the platform is open. It only draws
 	what LocalMeetService tells it (show).
 ]]
+
+local Workspace = game:GetService("Workspace")
 
 local StyledScreen = require(script.Parent.Parent:WaitForChild("World"):WaitForChild("StyledScreen"))
 
@@ -32,6 +41,10 @@ local GREEN = Color3.fromRGB(96, 220, 120)
 -- The fun-facts strip: this many facts at a time, the next ones after this many seconds.
 local FACTS_AT_ONCE = 2
 local FACT_SECONDS = 4
+-- The record attempt sign: its size and its gap above the board's top (studs), and how fast its edge flashes.
+local SIGN_WIDTH, SIGN_HEIGHT = 23, 6
+local SIGN_GAP = 2
+local SIGN_FLASH_SECONDS = 0.5
 
 -- What the screen shows for a lifter on the platform.
 export type Card = {
@@ -47,6 +60,9 @@ export type Card = {
 	mood: ("good" | "bad")?,
 	-- Titles, best marks and anything the lifter is breaking right now (shown first-come, a few at a time).
 	facts: { string },
+	-- Set while the lifter's declared weight would beat a record: the sign's title and the line under it
+	-- (e.g. "GYM RECORD ATTEMPT", "30 KG SQUAT  ·  RECORD 25 KG").
+	recordAttempt: { title: string, detail: string }?,
 }
 
 export type Handle = {
@@ -136,6 +152,42 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 	local strip = box(back, "Facts", UDim2.fromScale(0, 0.81), UDim2.fromScale(1, 0.19), S.yellow)
 	local facts = label(strip, "Text", UDim2.fromScale(0.03, 0.14), UDim2.fromScale(0.94, 0.72), S.ink, HEADING)
 
+	-- The record attempt sign above the board (hidden until a record attempt). Placed from the board's
+	-- world-space top, a little out in front of it.
+	local cf = part.CFrame
+	local halfHeight = 0.5 * (math.abs(cf.XVector.Y) * part.Size.X + math.abs(cf.YVector.Y) * part.Size.Y
+		+ math.abs(cf.ZVector.Y) * part.Size.Z)
+	local sign = Instance.new("BillboardGui")
+	sign.Name = "RecordAttemptSign"
+	sign.Size = UDim2.fromScale(SIGN_WIDTH, SIGN_HEIGHT)
+	sign.StudsOffsetWorldSpace = Vector3.new(0, halfHeight + SIGN_GAP + SIGN_HEIGHT / 2, 0) + out.Unit * 0.5
+	sign.LightInfluence = 0
+	sign.Brightness = 1.4
+	sign.MaxDistance = 400
+	sign.Enabled = false
+	sign.Parent = part
+	local slab = box(sign, "Slab", UDim2.fromScale(0.02, 0.04), UDim2.fromScale(0.96, 0.9), S.red, -2)
+	local signEdge = Instance.new("UIStroke")
+	signEdge.Color = S.white
+	signEdge.Thickness = 4
+	signEdge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	signEdge.Parent = slab
+	local signTitle = label(slab, "Title", UDim2.fromScale(0.04, 0.05), UDim2.fromScale(0.92, 0.55), S.white, HEADING,
+		Enum.TextXAlignment.Center)
+	local signDetail = label(slab, "Detail", UDim2.fromScale(0.06, 0.6), UDim2.fromScale(0.88, 0.33), S.yellow, HEADING,
+		Enum.TextXAlignment.Center)
+	-- The edge flashes white / yellow while the sign is up (one small change every SIGN_FLASH_SECONDS).
+	task.spawn(function()
+		local bright = false
+		while gui.Parent and part:IsDescendantOf(Workspace) do
+			task.wait(SIGN_FLASH_SECONDS)
+			if sign.Enabled then
+				bright = not bright
+				signEdge.Color = if bright then S.yellow else S.white
+			end
+		end
+	end)
+
 	-- The facts take turns on the strip, FACTS_AT_ONCE at a time, so each stays on one readable line.
 	local factList: { string } = {}
 	local factStart = 1
@@ -168,6 +220,8 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 			forecast.Text = ""
 			bests.Text = ""
 			statusBox.Visible = false
+			sign.Enabled = false
+			strip.BackgroundColor3, facts.TextColor3 = S.yellow, S.ink
 			factList = { "LOCAL MEET", "EVERYONE LIFTS TOGETHER", "BEST SCORE WINS" }
 			factStart = 1
 			drawFacts()
@@ -189,9 +243,21 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 				elseif line == 2 and card.mood == "bad" then S.red
 				else S.white
 		end
+		-- A record attempt: the sign above, and the strip turns red with the attempt first.
+		local attempt = card.recordAttempt
+		sign.Enabled = attempt ~= nil
+		local list = table.clone(card.facts)
+		if attempt then
+			signTitle.Text = attempt.title
+			signDetail.Text = attempt.detail
+			strip.BackgroundColor3, facts.TextColor3 = S.red, S.white
+			table.insert(list, 1, attempt.title .. "!")
+		else
+			strip.BackgroundColor3, facts.TextColor3 = S.yellow, S.ink
+		end
 		-- New facts start from the first (the newest "breaking" ones come first).
-		local changed = table.concat(card.facts, "|") ~= table.concat(factList, "|")
-		factList = table.clone(card.facts)
+		local changed = table.concat(list, "|") ~= table.concat(factList, "|")
+		factList = list
 		if changed then
 			factStart = 1
 		end

@@ -2795,9 +2795,37 @@ and polish.
     meet (inside). Menu is a 2 x 2 grid (560 x 290 panel). Studio Play (by
     Claude): all 4 teleport and land on the floor; a removed place (Cafe) is
     refused as unknown; menu screenshot reads well.
-  NEXT ACTION: still to see in a real Local meet: a record attempt line
-  (set a record, then declare a heavier weight) and the platform screen's
-  record facts. Then ask the user what is next.
+  Step 4c BUILT (2026-10-30, user, from a screenshot of the platform screen:
+  "more visible when someone is going for a gym record ... a bigger sign at
+  the top saying GYM RECORD ATTEMPT"). COMMITTED AND PUSHED with the
+  user's approval ("Commit and push"); `git log` for the hash. GAME_DESIGN §31.6 "The
+  platform during a record attempt".
+  - LifterDisplay: Card.recordAttempt {title, detail}?; a BillboardGui
+    "RecordAttemptSign" (23 x 6 studs, as wide as the screen, 2 studs above
+    the screen's top, above the CENTRAL header) on the screen part: red slab, white heavy
+    italic title, yellow detail line, edge flashing white/yellow every 0.5 s
+    while shown; the facts strip turns red with "GYM RECORD ATTEMPT!" first.
+  - LocalMeetService: Lifter.recordAttempt, set in announceAttempt (detail
+    "30 KG SQUAT · RECORD 25 KG", "+ TOTAL") with a board redraw; cleared at
+    the round's start, at the lift's result and on withdraw; boardFor passes
+    it in the card.
+  - Checks: luau-lsp, no errors. The user's own Studio meet log (before this
+    change loaded) showed a real meet announcing "treylicious1 is going for a
+    gym record: Squat 27.5 kg (59 kg)" after their 25 kg record, so the
+    record attempt alert works from a real meet. Studio Play (by Claude,
+    user: "Yes, test it"): a TEMP copy of the new LifterDisplay drawn on
+    platform 1's screen (real display hidden, then restored; Play only) with
+    a record attempt card: screenshot from the audience area shows the red
+    GYM RECORD ATTEMPT sign above the CENTRAL header, as wide as the screen,
+    readable; the strip red with "GYM RECORD ATTEMPT!"; the edge flashes;
+    after a result card the sign is off and the strip yellow ("NEW GYM SQUAT
+    RECORD!"); an empty platform has no sign; no errors. First size (18 x 4.4)
+    looked narrower than the screen -> enlarged to 23 x 6.
+    NOT tested: the sign switched on by a real meet (needs a record and a
+    heavier attempt in one meet).
+  NEXT ACTION: still to see in a real Local meet: the sign switched on by a
+  real record attempt and the platform screen's record facts. Then ask the
+  user what is next.
   OLDER NEXT ACTION (done: committed): the user tries the TELEPORT menu and the news lines in
   Studio (a Local meet: set a record, then declare a heavier weight) and
   approves the commit of steps 4 + 4b.

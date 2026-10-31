@@ -143,6 +143,8 @@ type Lifter = {
 	boardMood: ("good" | "bad")?,
 	-- The weight of this round already announced as a record attempt (said once).
 	announcedKg: number?,
+	-- While this round's weight would beat a record: the big screen's GYM RECORD ATTEMPT sign.
+	recordAttempt: { title: string, detail: string }?,
 }
 
 type Meet = {
@@ -596,6 +598,7 @@ local function boardFor(lifter: Lifter, lines: { string }, mood: ("good" | "bad"
 		status = lines,
 		mood = mood,
 		facts = factsFor(lifter),
+		recordAttempt = lifter.recordAttempt,
 	})
 end
 
@@ -707,6 +710,17 @@ local function announceAttempt(current: Meet, lifter: Lifter, lift: string, kg: 
 		return
 	end
 	log("%s is going for a gym record: %s %s kg (%s)", lifter.player.Name, lift, kgText(kg), lifter.classLabel)
+	-- The big screen's sign (user 2026-10-30: "a bigger sign at the top saying GYM RECORD ATTEMPT"), until the lift's result.
+	local first = chasing[1]
+	local detail = string.format("%s KG %s  ·  RECORD %s KG", kgText(first.kg), string.upper(first.record),
+		kgText(if first.previous then first.previous.kg else 0))
+	if #chasing > 1 then
+		detail ..= "  +  TOTAL"
+	end
+	lifter.recordAttempt = { title = "GYM RECORD ATTEMPT", detail = detail }
+	if meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
+		boardFor(lifter, lifter.boardLines :: { string }, lifter.boardMood)
+	end
 	GymRecords.announceAttempt(lifter.player.Name, lifter.player.UserId, lifter.classLabel, chasing, "LOCAL MEET",
 		TeleportConfig.LocalMeetId)
 end
@@ -742,6 +756,7 @@ local function withdraw(player: Player, why: string)
 	release(player)
 	LocalMeetVenue.clearStaff(lifter.platform)
 	LocalMeetVenue.setLights(lifter.platform, nil)
+	lifter.recordAttempt = nil
 	boardFor(lifter, { "WITHDRAWN" })
 	log("%s withdrew from the meet (%s)", player.Name, why)
 	if not current.final then
@@ -778,6 +793,8 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		notify(player, "Time ran out: no lift.")
 	end
 	local result: AttemptRules.AttemptResult = if verdict == "GoodLift" then "GoodLift" else "NoLift"
+	-- The attempt is over: the sign comes down (a record it set shows in the facts once saved).
+	lifter.recordAttempt = nil
 	local good = result == "GoodLift"
 	table.insert(lifter.lifts[lift].history, { weightKg = weightKg, result = result })
 	if good then
@@ -806,7 +823,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 	local choosing: { Lifter } = {}
 	for _, lifter in ipairs(activeLifters(current)) do
 		lifter.choice, lifter.chosenKg, lifter.readyPressed, lifter.roundDone, lifter.lights = nil, nil, false, false, nil
-		lifter.announcedKg = nil
+		lifter.announcedKg, lifter.recordAttempt = nil, nil
 		lifter.currentLift = lift
 		local cn = lifter.competitionNumber[lift]
 		local history = lifter.lifts[lift].history

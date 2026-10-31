@@ -2968,6 +2968,17 @@ sum-of-bests Total.
 > an existing record. National and world records use the same lines when they
 > exist (each record carries its level: GYM, NATIONAL, WORLD); only gym records
 > exist now.
+>
+> **The platform during a record attempt** (user, same day: "it needs to be more
+> visible when someone is going for a gym record, if someone were to tp to see who
+> is lifting the gym record ... maby with a bigger sign at the top saying GYM
+> RECORD ATTEMPT"): from the moment the weight is confirmed until the lift's
+> result, a **big red "GYM RECORD ATTEMPT" sign floats above that platform's
+> screen** (always facing the viewer, readable across the venue, its edge
+> flashing), with what is tried under it ("30 KG SQUAT · RECORD 25 KG", "+ TOTAL"
+> when the Total would fall too). The screen's fun-facts strip turns red with
+> "GYM RECORD ATTEMPT!" first. The sign comes down at the result; a record that
+> was set then shows as "NEW GYM ... RECORD!" in the facts.
 
 
 ---
