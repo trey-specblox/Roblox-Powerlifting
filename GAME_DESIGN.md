@@ -2817,6 +2817,73 @@ the gear (Blender models of each item on the avatar).
 > together. Walking away closes the menu. Owned gear is for looks only and is
 > **not worn yet**: wearing it is step 5.
 
+**Step (5), wearing the gear — plan (user, 2026-10-30, picked from options):**
+
+- **All four kinds are 3D Blender models on the avatar**, singlets too (user's
+  choice over a shirt-and-pants texture): a lever belt round the waist, a knee
+  sleeve on each knee, a wrist wrap on each wrist, and a one-piece singlet over
+  the torso and upper legs (in pieces that move with the body). Each item is
+  the worn model in that item's colours (the same part names as the Shop
+  previews, so `ShopConfig` colours apply), every logo CENTRAL.
+- **Always visible until taken off:** around the gym, at the racks and at meets.
+- **Put on and take off anywhere, from a GEAR tab** on the left edge (next to
+  STATS and TELEPORT) that opens **MY GEAR**: one slot each for belt, knee
+  sleeves, wrist wraps and singlet, showing the owned items to pick from.
+  **[CHANGED BY THE USER, 2026-10-30]:** this replaces the earlier idea of
+  changing at the Lockers (§27 room list: "Lockers (change outfit, wear cosmetic
+  gear, later)").
+- **R15 bodies only**, like the lift animations: an R6 player can own and pick
+  gear, but it is not drawn on them.
+- **Server-decided:** what is worn is saved; the server checks the player owns
+  an item before putting it on, and dresses the character on every spawn.
+- **Performance:** each worn item is a few small coloured pieces with no
+  collision and no shadow; a fully dressed player adds about 20 to 30 small
+  parts. Measured with `PerformanceAudit` once built.
+
+**Build order:** (5a) the four worn models in Blender, fitted to the R15 body,
+`check_models` passing, previewed and approved by the user before upload;
+(5b) what is worn saved (a new save version), the server dressing characters,
+and the GEAR tab with MY GEAR.
+
+> **(5a) built, waiting for the user's approval (2026-10-30):** the worn models
+> fit the default R15 body (measured in Studio). Each piece is a snug rounded
+> tube around one body part, and each moves with that part:
+> - the **belt** goes round the waist over the singlet, buckle on the front;
+> - each **knee sleeve** is two halves, one on the thigh and one on the shin,
+>   that overlap at the knee, so the sleeve bends with the knee in a squat;
+> - each **wrist wrap** has two wound layers over the wrist, with the loose end
+>   and CENTRAL on the front;
+> - the **singlet** is pieces on the chest, the hips and each thigh, with the
+>   high neck, armholes, straps, trim, side panels and the chest badge.
+>
+> The pieces use the same colour pieces as the Shop items, so every catalogue
+> colour applies. A fully dressed player wears 29 pieces (about 10,000
+> triangles). Approved by the user (2026-10-30: "Looks good, go on").
+>
+> **(5b) built (2026-10-31), uploaded and tested in Studio:**
+> - **MY GEAR:** a **GEAR** tab on the left edge (under TELEPORT), or the **Y**
+>   key, opens MY GEAR. It has one row per slot (singlet, belt, knee sleeves,
+>   wrist wraps): what you're wearing, a card for each item you own in that slot
+>   (3D preview, name, **WEAR** or **WORN**), and **TAKE OFF**. An empty slot
+>   says "Nothing yet. Buy one at the Shop."
+> - **Saved:** what you wear is saved (save version 14), one item per slot.
+> - **Checked by the server:** you can only wear items you own, and only in
+>   their own slot.
+> - **Always visible:** your R15 character is dressed on every spawn and after
+>   every change. Each piece is placed from your body's own joints (knee, wrist,
+>   waist, hip, neck) and grows or shrinks with its body part, so it fits any
+>   R15 body shape; if your avatar's size changes, the gear is re-fitted.
+> - **Reworked look (2026-10-31, user's reference photos):** a chunky belt that
+>   stands out from the singlet, with a big steel lever; knee sleeves that read
+>   as one tube from the singlet's leg to mid-shin, still whole when the knee
+>   bends; wrist wraps that cover the whole wrist.
+> - **R6 avatars:** they keep their choices, but nothing is drawn (MY GEAR says
+>   so).
+>
+> The worn models are drawn only once their upload is in the game
+> (`WornGearConfig.AssetId`). Until then, choices are saved and MY GEAR says the
+> gear will show once its models arrive.
+
 
 ---
 

@@ -15,9 +15,9 @@
 	Version 1 contains only fields whose values are actually decided: forecasted
 	maxes, technique stats and bodyweight, all drawn from StartingValuesConfig.
 
-	Fatigue, equipment, buffs, meet progression, titles,
+	Fatigue, buffs, meet progression, titles,
 	cosmetics, coaches and origins are all coming (coins arrived in version 12,
-	the Shop inventory in 13),
+	the Shop inventory in 13, worn gear in 14),
 	and GAME_DESIGN.md Q3 lists
 	them, but their SHAPES are undefined. Guessing a shape now would mean
 	migrating away from that guess later. The migration system below is what makes
@@ -52,9 +52,9 @@ local PlayerProfileSchema = {}
 	to the migrations table below (version 9: the meet CN allowance and career;
 	version 10: the Competition Budget removed; version 11: the official-meet
 	bests for the gym records wall; version 12: the coin wallet; version 13:
-	the Shop inventory).
+	the Shop inventory; version 14: the gear being worn).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 13
+PlayerProfileSchema.CURRENT_VERSION = 14
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -244,6 +244,10 @@ export type Wallet = {
 ]]
 export type Inventory = {
 	owned: { [string]: boolean },
+	-- What the player wears (version 14): gear slot (WornGearConfig.Slots: "Belt", "KneeSleeves", ...) ->
+	-- an owned item id. A slot that is missing is empty. Only ProfileOperations.setWorn writes it, and only
+	-- with an item the player owns.
+	wearing: { [string]: string },
 }
 
 -- (The three account-wide Competition Budgets, section 29.9, added in version 3, were removed in
@@ -487,9 +491,10 @@ local template: ProfileData = {
 		spentTotal = 0,
 	},
 
-	-- A new lifter owns nothing from the Shop.
+	-- A new lifter owns nothing from the Shop and wears nothing from it.
 	inventory = {
 		owned = {},
+		wearing = {},
 	},
 
 	bodyweight = {
@@ -1283,6 +1288,45 @@ migrations[12] = function(data: ProfileData)
 	end
 	for _, key in ipairs(bad) do
 		owned[key] = nil
+	end
+end
+
+--[[
+	Version 13 to 14: the gear being worn (user, 2026-10-30; GAME_DESIGN 30.6,
+	the money system's step 5).
+
+	NOBODY WEARS ANYTHING YET: wearing did not exist before. This step makes
+	sure `inventory.wearing` exists and REPAIRS, NEVER OVERWRITES: an entry is
+	kept when it is a non-empty string slot holding the id of an item the
+	player owns; anything else is dropped (nothing else could have written it).
+	An inventory that is missing altogether is created empty (as step 12 does).
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED.
+
+	IDEMPOTENT: a second run finds a clean list and changes nothing.
+]]
+migrations[13] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		(data :: any).inventory = { owned = {}, wearing = {} }
+		return
+	end
+	if typeof(inventory.owned) ~= "table" then
+		inventory.owned = {}
+	end
+	local wearing = inventory.wearing
+	if typeof(wearing) ~= "table" then
+		inventory.wearing = {}
+		return
+	end
+	local bad = {}
+	for slot, itemId in pairs(wearing) do
+		if typeof(slot) ~= "string" or slot == "" or typeof(itemId) ~= "string" or inventory.owned[itemId] ~= true then
+			table.insert(bad, slot)
+		end
+	end
+	for _, slot in ipairs(bad) do
+		wearing[slot] = nil
 	end
 end
 

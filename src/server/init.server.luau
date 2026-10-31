@@ -21,6 +21,9 @@ local WorldFolder = script:WaitForChild("World")
 local StarterGymBuilder = require(WorldFolder:WaitForChild("StarterGymBuilder"))
 local CardioMachineService = require(WorldFolder:WaitForChild("CardioMachineService"))
 
+-- The overall lighting (sun, ambient, glow, haze) from LightingConfig, so it lives in Git, not only in the place file.
+require(WorldFolder:WaitForChild("LightingSetup")).apply()
+
 --[[
 	The Starter Gym's floors and walls (Starter Gym step 3), around the rack rows.
 	Visual and physical only; if it fails, everything else still starts.
@@ -82,6 +85,10 @@ CoinDisplayService.start()
 -- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
 local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))
 ShopService.start()
+
+-- Wearing the gear: MY GEAR's choices are saved, and every R15 character is dressed in them.
+local GearService = require(script:WaitForChild("Economy"):WaitForChild("GearService"))
+GearService.start()
 
 --[[
 	The orchestrator owns every lift attempt and all the lifting remotes. The phase

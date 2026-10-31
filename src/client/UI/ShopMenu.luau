@@ -28,6 +28,7 @@ local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local ShopRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("ShopRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local GearPreview = require(script.Parent:WaitForChild("GearPreview"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
 
@@ -49,71 +50,6 @@ type Card = {
 	button: TextButton,
 	confirmUntil: number,
 }
-
--- A 3D preview of `item`'s gear model in its colours, or a colour swatch when the models are missing.
-local function preview(parent: Frame, item: ShopConfig.Item)
-	local viewport = Instance.new("ViewportFrame")
-	viewport.Name = "Preview"
-	viewport.Position = UDim2.fromOffset(6, 6)
-	viewport.Size = UDim2.new(1, -12, 0, PREVIEW_HEIGHT)
-	viewport.BackgroundColor3 = C.navyDeep
-	viewport.BorderSizePixel = 0
-	viewport.Ambient = Color3.fromRGB(170, 170, 180)
-	viewport.LightColor = Color3.fromRGB(255, 255, 255)
-	viewport.LightDirection = Vector3.new(-0.4, -1, -0.6)
-	viewport.Parent = parent
-	local models = ReplicatedStorage:FindFirstChild(ShopRemotes.PREVIEWS_NAME)
-	local template = models and models:FindFirstChild(item.model)
-	if template == nil or not template:IsA("Model") then
-		-- No models: the item's main colours as stripes.
-		local index = 0
-		for _, colour in pairs(item.colours) do
-			if index < 3 then
-				local stripe = UIStyle.frame(viewport, "Swatch", UDim2.fromScale(0.15 + index * 0.25, 0.2),
-					UDim2.fromScale(0.2, 0.6), colour)
-				stripe.BorderSizePixel = 0
-			end
-			index += 1
-		end
-		return
-	end
-	local model = template:Clone()
-	for _, part in ipairs(model:GetDescendants()) do
-		if part:IsA("BasePart") then
-			local suffix = string.match(part.Name, "^" .. item.model .. "_(.+)$")
-			local colour = suffix and item.colours[suffix]
-			if colour then
-				part.Color = colour
-			end
-		end
-	end
-	model:PivotTo(CFrame.new())
-	model.Parent = viewport
-	-- Framed on the item's own coloured parts (a singlet, not its mannequin's stand), else the whole model.
-	local low, high = Vector3.one * math.huge, -Vector3.one * math.huge
-	for _, part in ipairs(model:GetDescendants()) do
-		local suffix = if part:IsA("BasePart") then string.match(part.Name, "^" .. item.model .. "_(.+)$") else nil
-		if part:IsA("BasePart") and suffix and item.colours[suffix] then
-			low = low:Min(part.Position - part.Size / 2)
-			high = high:Max(part.Position + part.Size / 2)
-		end
-	end
-	local centre, size
-	if low.X <= high.X then
-		centre, size = (low + high) / 2, high - low
-	else
-		local cf, whole = model:GetBoundingBox()
-		centre, size = cf.Position, whole
-	end
-	local camera = Instance.new("Camera")
-	camera.FieldOfView = 40
-	local radius = size.Magnitude / 2
-	local distance = radius / math.tan(math.rad(camera.FieldOfView / 2)) * 1.05
-	local direction = Vector3.new(0.55, 0.3, -1).Unit
-	camera.CFrame = CFrame.lookAt(centre + direction * distance, centre)
-	camera.Parent = viewport
-	viewport.CurrentCamera = camera
-end
 
 function ShopMenu.start()
 	if started then
@@ -268,7 +204,7 @@ function ShopMenu.start()
 			local frame = UIStyle.frame(list, "Item_" .. item.id, UDim2.fromOffset(0, 0), UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT),
 				C.navyDeep)
 			UIStyle.stroke(frame, C.white, 1, 0.4)
-			preview(frame, item)
+			GearPreview.build(frame, item, UDim2.fromOffset(6, 6), UDim2.new(1, -12, 0, PREVIEW_HEIGHT))
 			local name = UIStyle.text(frame, "Name", UDim2.fromOffset(10, PREVIEW_HEIGHT + 10), UDim2.new(1, -20, 0, 44),
 				SIZES.body, C.white, UIStyle.heading())
 			name.Text = string.upper(item.name)

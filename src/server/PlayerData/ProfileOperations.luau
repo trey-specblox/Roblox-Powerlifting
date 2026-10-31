@@ -836,6 +836,64 @@ function ProfileOperations.purchaseItem(data: ProfileData, itemId: string, price
 	return "Bought", wallet.coins
 end
 
+--[[
+	=========================================================================
+	THE GEAR BEING WORN  (GAME_DESIGN.md 30.6, the money system's step 5;
+	schema 14)
+	=========================================================================
+
+	setWorn is the ONLY way something is put on or taken off. It refuses an
+	item the player does not own. SECURITY BOUNDARY: it trusts its caller
+	(GearService) that `slot` is a real slot and the item belongs in it (both
+	from WornGearConfig and ShopConfig on the server); it checks the rest.
+]]
+
+export type WearOutcome = "Worn" | "TakenOff" | "NotOwned" | "Rejected"
+
+local MAX_SLOT_LENGTH = 32
+
+-- The wearing map, or nil when it is missing.
+local function wearingOf(data: ProfileData): { [string]: string }?
+	local inventory = (data :: any).inventory
+	local wearing = if typeof(inventory) == "table" then inventory.wearing else nil
+	return if typeof(wearing) == "table" then wearing else nil
+end
+
+-- A copy of what is worn: slot -> item id (only owned items).
+function ProfileOperations.getWorn(data: ProfileData): { [string]: string }
+	local copy: { [string]: string } = {}
+	for slot, itemId in pairs(wearingOf(data) or {}) do
+		if typeof(slot) == "string" and typeof(itemId) == "string" and ProfileOperations.ownsItem(data, itemId) then
+			copy[slot] = itemId
+		end
+	end
+	return copy
+end
+
+--[[
+	Puts `itemId` on in `slot`, or takes the slot's item off when itemId is nil.
+	"Worn" / "TakenOff" change the save; "NotOwned" and "Rejected" (a bad slot
+	or id, a missing inventory) change nothing.
+]]
+function ProfileOperations.setWorn(data: ProfileData, slot: string, itemId: string?): WearOutcome
+	local wearing = wearingOf(data)
+	if wearing == nil or typeof(slot) ~= "string" or #slot == 0 or #slot > MAX_SLOT_LENGTH then
+		return "Rejected"
+	end
+	if itemId == nil then
+		wearing[slot] = nil
+		return "TakenOff"
+	end
+	if not isItemId(itemId) then
+		return "Rejected"
+	end
+	if not ProfileOperations.ownsItem(data, itemId) then
+		return "NotOwned"
+	end
+	wearing[slot] = itemId
+	return "Worn"
+end
+
 -- (TRAINING ENERGY was retired in schema version 8, GAME_DESIGN 29.8, and the COMPETITION BUDGET in version 10, 29.9.)
 
 --[[

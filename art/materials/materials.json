@@ -782,6 +782,15 @@
       "ids": {
         "model": "rbxassetid://71979666360161"
       }
+    },
+    "WornGear_01": {
+      "about": "The Shop's gear as worn on an R15 body (money system step 5): a lever belt round the waist (WornLeverBelt), knee sleeves in two halves on the thigh and shin (WornKneeSleeve), wrist wraps (WornWristWrap) and a one-piece singlet in pieces on the chest, hips and thighs (WornSinglet). Names are Worn<Item>_<ShopConfig colour key>[_<Segment>]; limb pieces are built on the right limb and used on both. Made by art/scripts/build_worn_gear_01.py (art/blender/WornGear_01.blend). Reworked 2026-10-31 (user's reference photos): chunky belt, seamless knee sleeves, wraps covering the wrist.",
+      "file": "art/exports/WornGear_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://115016229826377"
+      },
+      "supersedes": "rbxassetid://124628901641945 (rework without the knee fix: the sleeve halves opened a gap whenever the knee bent, even in idle poses; replaced 2026-10-31); rbxassetid://75664723615342 (first version: belt too flat, knee sleeve halves showed a gap, wraps too small)"
     }
   },
   "images": {

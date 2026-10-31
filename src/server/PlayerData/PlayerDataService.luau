@@ -476,6 +476,30 @@ function PlayerDataService.purchaseItem(player: Player, itemId: string, price: n
 	return outcome, balance
 end
 
+--[[
+	Puts on (or, with itemId nil, takes off) the gear in `slot`
+	(ProfileOperations.setWorn). SERVER-ONLY: the caller (GearService) checks
+	the slot and that the item belongs in it. Returns the outcome; nil with no
+	active session.
+]]
+function PlayerDataService.setWorn(player: Player, slot: string, itemId: string?): ProfileOperations.WearOutcome?
+	local data = activeData(player, "setWorn")
+	if data == nil then
+		return nil
+	end
+	local outcome: ProfileOperations.WearOutcome = ProfileOperations.setWorn(data, slot, itemId)
+	if outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: wearing %s in %s refused", player.Name, tostring(itemId), tostring(slot)))
+	end
+	return outcome
+end
+
+-- What the player wears (slot -> item id), or nil when the data is not loaded.
+function PlayerDataService.getWorn(player: Player): { [string]: string }?
+	local data = activeData(player, "getWorn")
+	return if data then ProfileOperations.getWorn(data) else nil
+end
+
 -- Every Shop item the player owns (sorted ids), or nil when the data is not loaded.
 function PlayerDataService.getOwnedItems(player: Player): { string }?
 	local data = activeData(player, "getOwnedItems")

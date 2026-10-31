@@ -2929,9 +2929,164 @@ and polish.
     away closed the menu. Fixes after screenshots: card price hidden under
     BUY (preview 150 -> 128 px); singlets framed small (framing on coloured
     parts). Probes back to ENABLED = false. Studio saved nothing.
-  NEXT ACTION: money step 5 (wearing the gear: Blender models on the
-  avatar) when the user says so; the user can try the Shop in Studio
-  (earn coins in a Local meet, then buy). Still to see in a real Local meet:
+  MONEY STEP 5 PLANNED (2026-10-30, user: "Start step 5", picked from
+  options): GAME_DESIGN §30.6 "Step (5), wearing the gear — plan". All four
+  kinds are 3D Blender models (singlet too); always visible; put on / take
+  off anywhere from a GEAR tab -> MY GEAR (CHANGED: replaces "change at the
+  Lockers"); R15 only. Build order: (5a) the four worn models in Blender
+  (check_models, preview, user approval before upload); (5b) worn items
+  saved, server dresses characters, GEAR tab.
+  5a BUILT (2026-10-30, user: "Start 5a"). NOT COMMITTED, NOT UPLOADED.
+  - Default R15 body measured in Studio (CreateHumanoidModelFromDescription):
+    part sizes/centres and rig attachments (hip -1.0, knee -1.921, ankle
+    -2.93, wrist -0.734, waist -0.6, relative to the HumanoidRootPart).
+  - New art/scripts/build_worn_gear_01.py -> new art/blender/WornGear_01.blend
+    (collection WornGear_01; "Preview" collection = reference body + 4
+    dressed figures, skipped by check_models). 20 meshes, named
+    Worn<Item>_<ShopConfig colour key>[_<Segment>], each with a
+    "body_part" custom property; the script prints each piece's offset
+    from its part's centre (Roblox axes) for 5b. Limb pieces built on the
+    right limb only, one mesh shared by both sides. Wraps' Tail colour is
+    merged into Body (ShopConfig Tail always equals Body).
+  - check_models: CHECK PASSED, 20 meshes, 6,992 triangles; fully dressed
+    player = 29 parts, about 10,000 triangles (flat sides one cell; the
+    CENTRAL texts are the heaviest pieces, about 600 each).
+  - Previews (backface culling on): art/previews/WornGear_01_Lineup.png,
+    _Back.png, _Squat.png (Classic, Navy, Black & Gold, Lagoon squatting).
+    Fixes after looking: shorter knee sleeves and singlet legs, slimmer
+    wraps, sleeve top half longer past the knee.
+  APPROVED by the user (2026-10-30: "Looks good, go on").
+  Money step 5b BUILT (2026-10-31). COMMITTED AND PUSHED with the user's
+  approval ("Commit and push", 2026-10-31) together with the gear rework,
+  the lighting and dev coins; `git log` for the hash.
+  UPLOAD DONE (2026-10-31): the user replaced the key file's contents (the
+  old file held a key that had been regenerated on the Creator Hub, so its
+  secret no longer matched; the new key is user-owned with Assets read +
+  write, and the uploader still makes the GROUP the owner). Uploaded as
+  rbxassetid://75664723615342 (materials.json WornGear_01);
+  WornGearConfig.AssetId set. Loaded in Studio: 20 MeshParts exactly at
+  the printed centres, front -Z, no rotation.
+  Studio Play (by Claude) with the real asset: "worn gear loaded: 20
+  pieces"; bought Blaze Wraps and wore them through SetWorn -> 6 pieces
+  on both wrists; a full set (Meet Day Red singlet, Classic Black belt,
+  Central Navy sleeves, Blaze wraps) on the user's own R15 avatar: 29
+  pieces, screenshots show a snug fit with the CENTRAL badges readable;
+  a held squat pose (joint transforms): sleeves, belt and wraps follow
+  their body parts. MY GEAR opened with Y; after a layout fix (no line
+  under the headings, TAKE OFF only when worn, empty rows shrink) all four
+  rows fit; WEAR -> card WORN with a yellow outline, "Wearing: Classic
+  Wraps", TAKE OFF shown, status message. Coin probe back to ENABLED =
+  false; all probes off.
+  (Earlier, before the upload:)
+  - Exported art/exports/WornGear_01.glb (collection only, export_yup,
+    export_apply, no materials, 20 objects); materials.json "models"
+    entry WornGear_01 added with empty ids. Upload FAILED: Roblox answered
+    401 "Invalid API Key": the Open Cloud key in
+    %USERPROFILE%\.fwjelaa\roblox-open-cloud.key no longer works. The user
+    must make a new key (group 529442797, Assets read + write) and put it
+    in that file; then run upload_group_images.py, put the id in
+    WornGearConfig.AssetId, and test the gear on a character in Studio.
+  - Save version 14: `inventory.wearing { [slot] = itemId }`;
+    migrations[13] adds/repairs it (keeps string slot -> owned id; makes a
+    missing inventory). ProfileOperations.getWorn / setWorn (Worn /
+    TakenOff / NotOwned / Rejected); PlayerDataService.setWorn / getWorn.
+    PlayerDataProbe: version checks 13 -> 14; new test 52.
+  - New src/shared/Config/WornGearConfig.luau (AssetId = 0, Slots with
+    their ShopConfig category and body parts per piece segment,
+    DefaultBody sizes/centres, Anchors, Materials, OpenKey Y).
+  - New src/shared/Economy/GearRemotes.luau (GetGear, SetWorn; view has
+    owned, wearing, drawn).
+  - New src/server/Economy/WornGearFit.luau: fromModel (finds the model's
+    turn from 3 anchor pieces, so the import's own axes don't matter;
+    each piece's CFrame relative to its default body part) and dress
+    (clone, ShopConfig colours, materials, Weld to the part, scaled by
+    part size, mirrored for left limbs, massless / no collide / touch /
+    query / shadow; R15 only).
+  - New src/server/Economy/GearService.luau (started in init.server after
+    ShopService): loads the asset once via InsertService, GetGear,
+    SetWorn (slot + category checks, 0.3 s rate limit), dresses each
+    character after its data + appearance load and after every change,
+    re-fits when a body part's Size changes.
+  - New src/client/UI/GearPreview.luau (the Shop's 3D preview, shared;
+    ShopMenu now uses it). New src/client/UI/GearMenu.luau (started in
+    init.client): GEAR tab under TELEPORT + key Y, MY GEAR rows per slot
+    with cards (WEAR / WORN), TAKE OFF, status hints (R6, not drawn yet).
+  - New src/server/Dev/WornGearProbe.server.luau (ENABLED false): tests
+    WornGearFit with a stand-in model (plain parts at the printed piece
+    centres, the model turned 180 degrees and moved).
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): save checker
+    473 passed 0 failed; profile loaded at version 14; WornGearProbe 13
+    passed 0 failed (after fixing the probe to compare per body part, and
+    a 1-degree turn from the off-centre buckle anchor in fromModel);
+    remotes from the client: bought Classic Wraps, wear / swap / take off
+    worked and the view matched; wrong slot, not owned, unknown slot,
+    junk ids and spam refused.
+  - NOT TESTED: the MY GEAR menu and GEAR tab on screen (Studio
+    screenshots and simulated keys/clicks timed out in this session), and
+    real meshes on a character (waiting for the upload).
+  DEV COINS (2026-10-31, user: "How do i give myself inf coins"): new
+  src/server/Dev/DevCoins.server.luau, Studio only, tops coins up to
+  1,000,000 whenever they drop below 100,000 through
+  PlayerDataService.addCoins; refuses to run when Studio's API access is
+  on (the save store is shared with the live game). Committed with
+  ENABLED = false; set it to true in Studio to test the Shop / MY GEAR.
+  Tested: 1,000,000 on Play; bought 4 items.
+  LIGHTING (2026-10-31, user: "its so bright and glary"): new
+  src/shared/Config/LightingConfig.luau + src/server/World/LightingSetup.luau
+  (applied at server start in init.server, before the gym is built):
+  sun Brightness 2.5 -> 1.6, ExposureCompensation 0 -> -0.25, Ambient
+  0.43 -> 0.33, OutdoorAmbient 0.5 -> 0.42, EnvironmentSpecularScale
+  0.5 -> 0.25, Bloom 1 / 24 / 2 -> 0.3 / 14 / 2.6, Atmosphere Density
+  0.3 -> 0.18. Before/after screenshots by Claude in Studio: the bloom
+  halos on the plates, uprights and light bars are gone; a fresh Play
+  shows every value applied, no errors. APPROVED by the user (2026-10-31:
+  "Yes lightning is good"). Committed.
+  WORN GEAR REWORK (2026-10-31, user's reference photos; memory
+  "worn-gear-style"): build_worn_gear_01.py rebuilt: new swept() helper
+  (a profile swept round a rounded box) and side_slab(). Belt: 0.62 tall,
+  out to 0.17 at its middle with rounded bulging edges, stitch rows on the
+  bulge, a big lever (base 0.62 x 0.46, lever 0.5 x 0.34, hinge). Knee
+  sleeves: both halves the same size and meeting exactly at the knee (one
+  smooth tube from KNEE+0.30 to KNEE-0.46, a strip of thigh above), a
+  hidden collar on the lower half fills the gap when the knee bends, a
+  diagonal stripe on each side (WornKneeSleeve_Stripes_Upper, was
+  Stripes_Lower), bold logo low on the front. Wraps: one wide band from
+  -0.86 to -0.30 (over the top of the hand, up the forearm), rounded edges,
+  an edge stripe at top and bottom, bigger loose end and text.
+  check_models CHECK PASSED (20 meshes, 6,896 tris). Previews
+  art/previews/WornGear_02_*.png; APPROVED by the user ("Looks good,
+  upload"). Uploaded rbxassetid://124628901641945, then in Studio on the
+  user's avatar a light band showed across each knee sleeve: the avatar's
+  idle pose bends the knees ~30 degrees, so the thigh and shin halves
+  opened at the front. FIXES (2026-10-31):
+  - WornGearFit now places every piece from the wearer's own joint mark
+    (rig attachment: Neck, Waist, Hip, Knee, Wrist; WornGearConfig.Joints
+    and Slot.parts = { part, joint }) instead of the part's centre, so the
+    sleeve halves always meet at the real knee on any body shape (falls
+    back to the part centre if a mark is missing).
+  - Knee sleeves: each half has a collar (offset 0.054, reaching 0.22 past
+    the knee) hidden inside the other half when straight, filling the
+    opening when the knee bends; the sleeve top now tucks under the
+    singlet's leg (KNEE+0.42) instead of leaving a strip of thigh.
+  - check_models CHECK PASSED (20 meshes, 7,056 tris); re-exported and
+    uploaded rbxassetid://115016229826377 (materials.json "supersedes"
+    lists both earlier ids); WornGearConfig.AssetId and Anchors.front
+    (0.015, -0.800, -0.722) set; WornGearProbe CENTRES updated, test bodies
+    now hold only the root (joints keep the parts together), new check
+    that the thigh's and shin's knee marks are one point.
+  - Studio Play (by Claude): "worn gear loaded: 20 pieces"; WornGearProbe
+    14 passed 0 failed; on the user's avatar the knee marks coincide
+    (0.000 studs); full set bought with dev coins and worn through
+    SetWorn (29 pieces); screenshot with knees bent 26/32 degrees: each
+    sleeve one solid tube, belt and wraps right. Probe back to ENABLED =
+    false.
+  MONEY SYSTEM STEPS 1-5 DONE.
+  NEXT ACTION: the user's call. Open question from the user (2026-10-31):
+  force R15 for everyone, maybe one realistic body made in Blender, and
+  later visible muscle gain/loss; Claude recommended forcing R15 now and
+  planning the body + muscle tiers as their own design step (not decided
+  yet). Not yet seen: gear during a real lift at a rack or on the meet
+  platform, and on other players in a 2-player test. Still to see in a real Local meet:
   the payout at the end and a real gym record bonus.
   OLDER NEXT ACTION (done): the user approves the plan / amounts, then step 1 (coins in
   the save: new schema version, migration, server add/spend, probe test).

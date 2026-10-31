@@ -28,6 +28,10 @@ task.spawn(CoinCounter.start)
 local ShopMenu = require(UIFolder:WaitForChild("ShopMenu"))
 task.spawn(ShopMenu.start)
 
+-- MY GEAR (the GEAR tab): put on and take off owned gear. It only asks; the server checks and dresses.
+local GearMenu = require(UIFolder:WaitForChild("GearMenu"))
+task.spawn(GearMenu.start)
+
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))
 
