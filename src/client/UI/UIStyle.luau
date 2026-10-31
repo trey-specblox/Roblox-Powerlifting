@@ -322,6 +322,19 @@ local function round(target: GuiObject)
 	corner.Parent = target
 end
 
+-- A round gold coin with an inner ring (the money system's coins, GAME_DESIGN 30.6), `size` pixels across.
+local COIN_EDGE = Color3.fromRGB(176, 128, 10)
+function UIStyle.coin(parent: Instance, position: UDim2, size: number): Frame
+	local disc = frame(parent, "Coin", position, UDim2.fromOffset(size, size), C.yellow)
+	round(disc)
+	stroke(disc, COIN_EDGE, 2)
+	local inner = frame(disc, "Ring", UDim2.fromScale(0.22, 0.22), UDim2.fromScale(0.56, 0.56), C.yellow)
+	inner.BackgroundTransparency = 1
+	round(inner)
+	stroke(inner, COIN_EDGE, 2)
+	return disc
+end
+
 export type Ring = {
 	holder: Frame,
 	-- How far the outer ring has closed in: 0 = wide open, 1 = on the target.

@@ -453,6 +453,36 @@ function PlayerDataService.addCoins(player: Player, amount: number, reason: stri
 end
 
 --[[
+	Buys a Shop item: takes `price` coins and adds `itemId` to the inventory in
+	one step (ProfileOperations.purchaseItem). SERVER-ONLY: the price comes from
+	ShopConfig, never from a client; the caller (ShopService) checks the item
+	is for sale. `reason` labels the log and the coin pop-up. Returns the
+	outcome and the balance; nil with no active session.
+]]
+function PlayerDataService.purchaseItem(player: Player, itemId: string, price: number, reason: string)
+	: (ProfileOperations.PurchaseOutcome?, number?)
+	local data = activeData(player, "purchaseItem")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome: ProfileOperations.PurchaseOutcome, balance = ProfileOperations.purchaseItem(data, itemId, price)
+	if outcome == "Bought" then
+		print(string.format("[PlayerDataService] %s bought %s for %d coins: %d left", player.Name, itemId, price,
+			balance :: number))
+		coinsChanged(player, -price, balance :: number, reason)
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: buying %s for %s refused", player.Name, tostring(itemId), tostring(price)))
+	end
+	return outcome, balance
+end
+
+-- Every Shop item the player owns (sorted ids), or nil when the data is not loaded.
+function PlayerDataService.getOwnedItems(player: Player): { string }?
+	local data = activeData(player, "getOwnedItems")
+	return if data then ProfileOperations.getOwnedItems(data) else nil
+end
+
+--[[
 	Spends `amount` coins for `reason` (e.g. "Shop: Red Belt"). SERVER-ONLY:
 	the price comes from config, never from a client. Returns the outcome
 	("Spent", "NotEnough", "Rejected") and the balance; nil with no session.

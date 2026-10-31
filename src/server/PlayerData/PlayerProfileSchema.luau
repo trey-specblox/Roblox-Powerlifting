@@ -15,8 +15,9 @@
 	Version 1 contains only fields whose values are actually decided: forecasted
 	maxes, technique stats and bodyweight, all drawn from StartingValuesConfig.
 
-	Fatigue, inventory, equipment, buffs, meet progression, titles,
-	cosmetics, coaches and origins are all coming (coins arrived in version 12),
+	Fatigue, equipment, buffs, meet progression, titles,
+	cosmetics, coaches and origins are all coming (coins arrived in version 12,
+	the Shop inventory in 13),
 	and GAME_DESIGN.md Q3 lists
 	them, but their SHAPES are undefined. Guessing a shape now would mean
 	migrating away from that guess later. The migration system below is what makes
@@ -50,9 +51,10 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below (version 9: the meet CN allowance and career;
 	version 10: the Competition Budget removed; version 11: the official-meet
-	bests for the gym records wall; version 12: the coin wallet).
+	bests for the gym records wall; version 12: the coin wallet; version 13:
+	the Shop inventory).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 12
+PlayerProfileSchema.CURRENT_VERSION = 13
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -229,6 +231,21 @@ export type Wallet = {
 	spentTotal: number,
 }
 
+--[[
+	What the player owns from the Shop, account-wide, added in version 13
+	(GAME_DESIGN.md 30.6, the money system's step 4).
+
+		owned   item id (ShopConfig.Items) -> true
+
+	A MAP, NOT A LIST, so "do they own it" is one lookup and a duplicate is
+	impossible. Only ProfileOperations.purchaseItem adds to it, together with
+	the coins it costs. Ids are never renamed or reused (ShopConfig), so an id
+	a later catalogue no longer sells stays owned.
+]]
+export type Inventory = {
+	owned: { [string]: boolean },
+}
+
 -- (The three account-wide Competition Budgets, section 29.9, added in version 3, were removed in
 -- version 10: the per-build meet allowance above replaced them.)
 
@@ -384,6 +401,9 @@ export type ProfileData = {
 	-- Account-wide coins (version 12).
 	wallet: Wallet,
 
+	-- Account-wide Shop items (version 13).
+	inventory: Inventory,
+
 	meta: Meta,
 }
 
@@ -465,6 +485,11 @@ local template: ProfileData = {
 		coins = 0,
 		earnedTotal = 0,
 		spentTotal = 0,
+	},
+
+	-- A new lifter owns nothing from the Shop.
+	inventory = {
+		owned = {},
 	},
 
 	bodyweight = {
@@ -1223,6 +1248,41 @@ migrations[11] = function(data: ProfileData)
 		if not isUsableCoinCount(wallet[field]) then
 			wallet[field] = 0
 		end
+	end
+end
+
+--[[
+	Version 12 to 13: the Shop inventory (user, 2026-10-30; GAME_DESIGN 30.6,
+	the money system's step 4).
+
+	EVERY PROFILE STARTS OWNING NOTHING: nothing could be bought before. This
+	step makes sure `inventory.owned` exists and REPAIRS, NEVER OVERWRITES:
+	every entry that is a non-empty string id mapped to true is kept; only
+	malformed entries (a non-string key, a value other than true) are dropped.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED.
+
+	IDEMPOTENT: a second run finds a clean inventory and changes nothing.
+]]
+migrations[12] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		(data :: any).inventory = { owned = {} }
+		return
+	end
+	local owned = inventory.owned
+	if typeof(owned) ~= "table" then
+		inventory.owned = {}
+		return
+	end
+	local bad = {}
+	for key, value in pairs(owned) do
+		if typeof(key) ~= "string" or key == "" or value ~= true then
+			table.insert(bad, key)
+		end
+	end
+	for _, key in ipairs(bad) do
+		owned[key] = nil
 	end
 end
 

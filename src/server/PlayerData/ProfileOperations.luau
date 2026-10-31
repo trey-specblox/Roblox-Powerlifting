@@ -767,6 +767,75 @@ function ProfileOperations.spendCoins(data: ProfileData, amount: number): (CoinO
 	return "Spent", wallet.coins
 end
 
+--[[
+	=========================================================================
+	THE SHOP INVENTORY  (GAME_DESIGN.md 30.6, the money system's step 4;
+	schema 13)
+	=========================================================================
+
+	purchaseItem is the ONLY way an item becomes owned, and it takes the coins
+	in the same step, so a purchase can never give the item without the coins
+	going or the coins going without the item. SECURITY BOUNDARY: it trusts
+	its caller (ShopService) for the price, which comes from ShopConfig on the
+	server, never from a client; it checks everything else itself.
+]]
+
+export type PurchaseOutcome = "Bought" | "AlreadyOwned" | "NotEnough" | "Rejected"
+
+local MAX_ITEM_ID_LENGTH = 64
+
+local function isItemId(value: any): boolean
+	return typeof(value) == "string" and #value > 0 and #value <= MAX_ITEM_ID_LENGTH
+end
+
+-- The owned map, or nil when it is missing.
+local function ownedOf(data: ProfileData): { [string]: boolean }?
+	local inventory = (data :: any).inventory
+	local owned = if typeof(inventory) == "table" then inventory.owned else nil
+	return if typeof(owned) == "table" then owned else nil
+end
+
+function ProfileOperations.ownsItem(data: ProfileData, itemId: string): boolean
+	local owned = ownedOf(data)
+	return owned ~= nil and isItemId(itemId) and owned[itemId] == true
+end
+
+-- Every owned item id, sorted (for screens).
+function ProfileOperations.getOwnedItems(data: ProfileData): { string }
+	local list: { string } = {}
+	for itemId, value in pairs(ownedOf(data) or {}) do
+		if value == true and isItemId(itemId) then
+			table.insert(list, itemId)
+		end
+	end
+	table.sort(list)
+	return list
+end
+
+--[[
+	Buys `itemId` for `price` coins. Returns "Bought" and the new balance;
+	"AlreadyOwned" or "NotEnough" and the unchanged balance; or "Rejected" and
+	nil (a bad id or price, an unusable wallet or inventory). Only "Bought"
+	changes anything, and it changes both the coins and the inventory.
+]]
+function ProfileOperations.purchaseItem(data: ProfileData, itemId: string, price: number): (PurchaseOutcome, number?)
+	local wallet = walletOf(data)
+	local owned = ownedOf(data)
+	if wallet == nil or owned == nil or not isItemId(itemId) or not isWholeCoins(price) then
+		return "Rejected", nil
+	end
+	if owned[itemId] == true then
+		return "AlreadyOwned", wallet.coins
+	end
+	if wallet.coins < price then
+		return "NotEnough", wallet.coins
+	end
+	wallet.coins -= price
+	wallet.spentTotal += price
+	owned[itemId] = true
+	return "Bought", wallet.coins
+end
+
 -- (TRAINING ENERGY was retired in schema version 8, GAME_DESIGN 29.8, and the COMPETITION BUDGET in version 10, 29.9.)
 
 --[[

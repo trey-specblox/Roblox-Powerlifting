@@ -2896,8 +2896,43 @@ and polish.
     1ST PLACE"), a 1,000,000 spend NotEnough (nothing changed). Probe back
     to ENABLED = false. NOT tested: a whole real Local meet paying out
     (needs lifts passed by hand) and the record bonus from a real record.
-  NEXT ACTION: money step 4 (the Shop) when the user says so. Still to see
-  in a real Local meet: the payout at the end and a real gym record bonus.
+  Money step 4 BUILT (2026-10-30, user: "Start step 4"). COMMITTED AND PUSHED
+  with the user's approval ("Commit and push"); `git log` for the hash.
+  - New src/shared/Config/ShopConfig.luau: CounterTag "ShopCounter",
+    prompt/buy distances, Categories, 17 Items {id, name, category, model
+    (ShopGear_01 part), colours per "<Model>_<Part>", price} [PROVISIONAL].
+  - Save version 13: `inventory.owned {[id]=true}` (export type Inventory);
+    migrations[12] adds/repairs it (keeps string id = true, drops the rest).
+    ProfileOperations: ownsItem, getOwnedItems, purchaseItem (Bought /
+    AlreadyOwned / NotEnough / Rejected; coins and item together).
+    PlayerDataService: purchaseItem (log + coin pop-up), getOwnedItems.
+  - PlayerDataProbe: version checks 12 -> 13; new test 51.
+  - New src/shared/Economy/ShopRemotes.luau (OpenShop, GetShop, BuyItem,
+    ShopPreviews name). New src/server/Economy/ShopService.luau (started in
+    init.server after CoinDisplayService): counter prompt, GetShop, BuyItem
+    (rate 0.4 s, known item, at the counter within 24 studs, ShopConfig
+    price), copies ShopGear_01 to ReplicatedStorage.ShopPreviews.
+  - RoomProps FURNISH.Shop: invisible "ShopPoint" in front of the counter,
+    tagged ShopConfig.CounterTag.
+  - UIStyle.coin (shared coin drawing; CoinCounter uses it). New
+    src/client/UI/ShopMenu.luau (started in init.client): tabs, coins,
+    cards with ViewportFrame previews recoloured per item (framed on the
+    coloured parts), BUY -> CONFIRM (3 s), OWNED, greyed when unaffordable;
+    closes when the player walks 20 studs away.
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude, both probes
+    on): save checker 457 passed 0 failed; payout probe 21 passed; profile
+    loaded at version 13; counter point + prompt; holding E opened the
+    menu; belt, wrap and singlet previews read well; bought Ice Wraps with
+    the probe's 225 coins -> 25 left, OWNED, "-200 COINS · SHOP: ICE WRAPS"
+    pop-up, status message; direct remote cheats refused (owned, too
+    expensive, made-up id, number, table, spam, from the lobby); teleporting
+    away closed the menu. Fixes after screenshots: card price hidden under
+    BUY (preview 150 -> 128 px); singlets framed small (framing on coloured
+    parts). Probes back to ENABLED = false. Studio saved nothing.
+  NEXT ACTION: money step 5 (wearing the gear: Blender models on the
+  avatar) when the user says so; the user can try the Shop in Studio
+  (earn coins in a Local meet, then buy). Still to see in a real Local meet:
+  the payout at the end and a real gym record bonus.
   OLDER NEXT ACTION (done): the user approves the plan / amounts, then step 1 (coins in
   the save: new schema version, migration, server add/spend, probe test).
   Still to see in a real Local meet: the record sign switched on by a real

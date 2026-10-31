@@ -31,6 +31,7 @@ local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
 local MockMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("MockMeetConfig"))
 local GymRecordsConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("GymRecordsConfig"))
+local ShopConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("ShopConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 local StyledScreen = require(script.Parent:WaitForChild("StyledScreen"))
 
@@ -2956,6 +2957,11 @@ FURNISH.Shop = function(kit)
 		kit.item("Till_Screen", 9.6, 10.9, 8.55, 8.6, 4.4, 5.2, looks.Gadget)
 		kit.item("CardReader", 6, 6.6, 8.2, 8.8, 3.8, 3.95, looks.Gadget)
 	end
+	-- Where the "Browse the shop" prompt sits (ShopService): in front of the counter, on the customers' side.
+	local shopPoint = kit.item("ShopPoint", 6.5, 10, 5.6, 7.6, 0.1, 4, looks.Glass)
+	shopPoint.Transparency = 1
+	shopPoint.CanCollide = false
+	shopPoint:AddTag(ShopConfig.CounterTag)
 
 	-- A table of folded tees.
 	if furniture then

@@ -79,6 +79,10 @@ PlayerStatsService.start()
 local CoinDisplayService = require(PlayerDataFolder:WaitForChild("CoinDisplayService"))
 CoinDisplayService.start()
 
+-- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
+local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))
+ShopService.start()
+
 --[[
 	The orchestrator owns every lift attempt and all the lifting remotes. The phase
 	services are driven by it rather than started on their own, so phase order is a

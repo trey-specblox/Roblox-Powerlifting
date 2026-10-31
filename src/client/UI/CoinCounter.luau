@@ -38,22 +38,6 @@ local GREEN = Color3.fromRGB(96, 220, 120)
 
 local started = false
 
--- A round gold coin with an inner ring.
-local function coin(parent: Instance, position: UDim2, size: number): Frame
-	local disc = UIStyle.frame(parent, "Coin", position, UDim2.fromOffset(size, size), C.yellow)
-	local round = Instance.new("UICorner")
-	round.CornerRadius = UDim.new(0.5, 0)
-	round.Parent = disc
-	UIStyle.stroke(disc, Color3.fromRGB(176, 128, 10), 2)
-	local inner = UIStyle.frame(disc, "Ring", UDim2.fromScale(0.22, 0.22), UDim2.fromScale(0.56, 0.56), C.yellow)
-	inner.BackgroundTransparency = 1
-	local innerRound = Instance.new("UICorner")
-	innerRound.CornerRadius = UDim.new(0.5, 0)
-	innerRound.Parent = inner
-	UIStyle.stroke(inner, Color3.fromRGB(176, 128, 10), 2)
-	return disc
-end
-
 function CoinCounter.start()
 	if started then
 		return
@@ -72,7 +56,7 @@ function CoinCounter.start()
 	local badge = UIStyle.frame(gui, "Badge", UDim2.new(0, 0, 0.5, BADGE_OFFSET_Y), UDim2.fromOffset(BADGE_WIDTH, BADGE_HEIGHT), C.ink)
 	badge.AnchorPoint = Vector2.new(0, 0.5)
 	UIStyle.stroke(badge, C.yellow, 2)
-	coin(badge, UDim2.fromOffset(10, 9), 26)
+	UIStyle.coin(badge, UDim2.fromOffset(10, 9), 26)
 	local amount = UIStyle.text(badge, "Amount", UDim2.fromOffset(44, 0), UDim2.new(1, -52, 1, 0), SIZES.body, C.white,
 		UIStyle.heading())
 	amount.TextWrapped = false

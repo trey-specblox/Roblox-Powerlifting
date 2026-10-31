@@ -2802,6 +2802,20 @@ the gear (Blender models of each item on the avatar).
 > (150 for taking someone else's record, 40 for your own, nothing for an empty
 > spot, one per lift). A bomb-out or withdrawal earns nothing. Solo / Mock Meets
 > pay nothing.
+>
+> **(4) built (2026-10-30): the Shop, save version 13.** Hold **E at the Shop's
+> counter** ("Browse the shop") to open the menu: tabs for **BELTS, KNEE SLEEVES,
+> WRIST WRAPS, SINGLETS**, your coins at the top, and a card per item with a 3D
+> preview of the gear model in its colours, its name and price. **BUY, then
+> CONFIRM** (two presses, so nothing is bought by accident); owned items say
+> OWNED, and BUY is greyed out when you cannot afford it. The first catalogue
+> (`ShopConfig`, prices [PROVISIONAL]): 5 belts (500 to 900), 4 knee sleeves (300
+> to 400), 4 wrist wraps (150 to 250) and 4 singlets (800 to 1,500), in many
+> colours, every logo CENTRAL. What a player owns is saved (account-wide). The
+> server checks every purchase: a real item, its own price, enough coins, not
+> owned yet, and the player at the counter; the coins and the item change
+> together. Walking away closes the menu. Owned gear is for looks only and is
+> **not worn yet**: wearing it is step 5.
 
 
 ---
