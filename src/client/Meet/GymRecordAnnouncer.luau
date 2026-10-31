@@ -15,6 +15,11 @@
 	GymRecordRemotes.ATTEMPT: a lifter declared a record weight at a meet; the
 	small WATCH button asks the server to teleport the player there
 	(TeleportRemotes), skipped for the lifter and for players already there.
+	LocalMeetRemotes.LEVEL_NEWS: the next meet is a Regional or State meet
+	(GAME_DESIGN §35.8), with a GO button to the venue (skipped for players
+	already there):
+
+		The next meet is a STATE MEET: prize pot x3, titles for the top 3. Sign up within 8:30  [GO]
 
 	At most MAX_LINES at once (the oldest goes). While the lift banner is up
 	(LiftAttemptController), the lines move below it so a lifter still sees it.
@@ -30,6 +35,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GymRecordRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("GymRecordRemotes"))
 local TeleportRemotes = require(Shared:WaitForChild("World"):WaitForChild("TeleportRemotes"))
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
+local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("LocalMeetRemotes"))
 
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 local C = UIStyle.Colours
@@ -43,6 +49,7 @@ local TOP_DURING_LIFT = 122
 local MAX_LINES = 3
 local RECORD_SECONDS = 7
 local ATTEMPT_SECONDS = 12
+local LEVEL_SECONDS = 14
 local NOTE_SECONDS = 4
 local FADE_SECONDS = 0.4
 
@@ -163,7 +170,7 @@ function GymRecordAnnouncer.start()
 	end
 
 	-- One line of news (rich text), with a small WATCH button when `watch` names a place. Fades out after `seconds`.
-	local function show(text: string, seconds: number, watch: string?)
+	local function show(text: string, seconds: number, watch: string?, buttonText: string?)
 		while #lines >= MAX_LINES do
 			remove(lines[1])
 		end
@@ -214,7 +221,7 @@ function GymRecordAnnouncer.start()
 			button.TextSize = UIStyle.TextSizes.small
 			button.TextColor3 = C.ink
 			button.TextTransparency = 1
-			button.Text = "WATCH ▶"
+			button.Text = buttonText or "WATCH ▶"
 			button.Parent = line
 			local corner = Instance.new("UICorner")
 			corner.CornerRadius = UDim.new(0, 4)
@@ -232,7 +239,7 @@ function GymRecordAnnouncer.start()
 				if ok and went then
 					button.Visible = false
 				else
-					button.Text = "WATCH ▶"
+					button.Text = buttonText or "WATCH ▶"
 					asking = false
 					if ok and typeof(message) == "string" then
 						show(message, NOTE_SECONDS, nil)
@@ -270,6 +277,21 @@ function GymRecordAnnouncer.start()
 		end
 		sayInChat(string.format("NEW %s RECORD: %s, %s (%s class)", first.level or "GYM", news.name,
 			table.concat(plain, " + "), news.classLabel))
+	end)
+
+	task.spawn(function()
+		local folder = ReplicatedStorage:WaitForChild(LocalMeetRemotes.FOLDER_NAME, math.huge) :: Instance
+		local levelRemote = folder:WaitForChild(LocalMeetRemotes.LEVEL_NEWS, math.huge) :: RemoteEvent
+		levelRemote.OnClientEvent:Connect(function(news: LocalMeetRemotes.LevelNews)
+			if typeof(news) ~= "table" or typeof(news.levelLabel) ~= "string" or typeof(news.signUpClosesAt) ~= "number" then
+				return
+			end
+			local left = math.max(0, math.floor(news.signUpClosesAt - workspace:GetServerTimeNow()))
+			local there = player:GetAttribute(LocalMeetConfig.VenueAttribute) ~= nil
+			show(string.format("The next meet is a %s: prize pot x%d, titles for the top 3. Sign up within %d:%02d",
+				coloured(news.levelLabel, "#FACE24"), news.potMultiplier or 1, left // 60, left % 60), LEVEL_SECONDS,
+				if there then nil else "LocalMeet", "GO ▶")
+		end)
 	end)
 
 	attemptRemote.OnClientEvent:Connect(function(news: GymRecordRemotes.AttemptNews)

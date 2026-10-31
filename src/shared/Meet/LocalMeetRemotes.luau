@@ -42,6 +42,10 @@
 		LocalMeetWarmUpState  server -> client  (WarmUpState)
 			The player's own warm-up: their rack (or none), their CNs, whether a
 			lift is running and the last result. Practice only: nothing is saved.
+		LocalMeetLevelNews    server -> EVERY client  (LevelNews)
+			The next meet is a Regional or a State meet (GAME_DESIGN §35.8),
+			for everyone in the server, as soon as its sign-ups open. Display
+			only.
 
 	Going INTO the venue is not a remote: it is the gym entrance's
 	ProximityPrompt, which the server listens to. What a meet saves is the
@@ -64,6 +68,7 @@ LocalMeetRemotes.AWARDS = "LocalMeetAwards"
 LocalMeetRemotes.WARM_UP_LIFT = "LocalMeetWarmUpLift"
 LocalMeetRemotes.WARM_UP_LEAVE = "LocalMeetWarmUpLeave"
 LocalMeetRemotes.WARM_UP_STATE = "LocalMeetWarmUpState"
+LocalMeetRemotes.LEVEL_NEWS = "LocalMeetLevelNews"
 
 export type RemoteSet = {
 	leave: RemoteEvent,
@@ -79,12 +84,13 @@ export type RemoteSet = {
 	warmUpLift: RemoteEvent,
 	warmUpLeave: RemoteEvent,
 	warmUpState: RemoteEvent,
+	levelNews: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
-	LocalMeetRemotes.WARM_UP_STATE }
+	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS }
 
 --[[
 	The timetable and sign-ups, server -> client, sent when they change.
@@ -103,6 +109,19 @@ export type LobbyState = {
 	-- How far a meet could raise each lift's CN right now (8.5 = +8.5%), for THIS player's current
 	-- class; absent for a class with no allowance.
 	allowancePercent: { [string]: number },
+	-- The next meet's level (MeetLevelConfig, GAME_DESIGN §35.8): "LOCAL MEET", "REGIONAL MEET", "STATE MEET",
+	-- its prize pot multiplier, and whether its top 3 earn titles.
+	levelLabel: string,
+	potMultiplier: number,
+	titles: boolean,
+}
+
+-- The next meet is a Regional or State meet: its level, pot multiplier and when it starts / sign-ups close (server time).
+export type LevelNews = {
+	levelLabel: string,
+	potMultiplier: number,
+	startsAt: number,
+	signUpClosesAt: number,
 }
 
 -- One lifter's line on the standings.
@@ -202,6 +221,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		warmUpLift = get(LocalMeetRemotes.WARM_UP_LIFT),
 		warmUpLeave = get(LocalMeetRemotes.WARM_UP_LEAVE),
 		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
+		levelNews = get(LocalMeetRemotes.LEVEL_NEWS),
 	}
 end
 
@@ -225,6 +245,7 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		warmUpLift = get(LocalMeetRemotes.WARM_UP_LIFT),
 		warmUpLeave = get(LocalMeetRemotes.WARM_UP_LEAVE),
 		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
+		levelNews = get(LocalMeetRemotes.LEVEL_NEWS),
 	}
 end
 

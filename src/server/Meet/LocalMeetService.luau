@@ -72,6 +72,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local TeleportConfig = require(ConfigFolder:WaitForChild("TeleportConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
+local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
@@ -87,6 +88,7 @@ local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
 local LocalMeetWarmUp = require(script.Parent:WaitForChild("LocalMeetWarmUp"))
 local GymRecords = require(script.Parent:WaitForChild("GymRecords"))
 local MeetPayout = require(script.Parent:WaitForChild("MeetPayout"))
+local Trophies = require(script.Parent:WaitForChild("Trophies"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
@@ -138,6 +140,8 @@ type Lifter = {
 	-- For the big screen's fun facts, read at the weigh-in: the class's best Total and the Local wins.
 	bestTotalKg: number?,
 	localWins: number,
+	-- Their meet titles (career.titles, GAME_DESIGN §35.8): id -> count.
+	titles: { [string]: number },
 	-- Gym records set at this meet ("Squat", "Total", ...), first on the big screen's facts.
 	gymRecords: { string },
 	-- What the big screen last showed (redrawn when a gym record comes back from the save).
@@ -160,6 +164,8 @@ type Meet = {
 	final: boolean,
 	-- Whether it started with enough lifters to raise CN and count a win (RewardMinimumLifters).
 	rewards: boolean,
+	-- Its level (MeetLevelConfig, GAME_DESIGN §35.8): "Local", "Regional" or "State".
+	level: string,
 	-- The final placing, by UserId (set when the meet ends).
 	places: { [number]: MeetPlacing.Placing },
 }
@@ -175,6 +181,9 @@ local entering: { [Player]: boolean } = {}
 local signUps: { Player } = {}
 local meet: Meet? = nil
 local nextStartAt = 0
+-- The next meet's level, rolled when its sign-ups open (GAME_DESIGN §35.8).
+local nextLevel = "Local"
+local levelRandom = Random.new()
 local lastPress: { [Player]: number } = {}
 
 local function log(message: string, ...: any)
@@ -312,6 +321,9 @@ local function sendLobby(player: Player)
 		meetRunning = meet ~= nil,
 		minimumLifters = minimumLifters(),
 		maxLifters = LocalMeetConfig.MaxLifters,
+		levelLabel = MeetLevelConfig.Levels[nextLevel].label,
+		potMultiplier = MeetLevelConfig.Levels[nextLevel].potMultiplier,
+		titles = MeetLevelConfig.Levels[nextLevel].titles,
 	}
 	remotes.lobby:FireClient(player, state)
 end
@@ -319,6 +331,44 @@ end
 local function broadcastLobby()
 	for player in pairs(visits) do
 		sendLobby(player)
+	end
+end
+
+-- What a level pays, for its boards ("Prize pot x3", "Top 3 earn titles").
+local function perksOf(level: string): { string }
+	local info = MeetLevelConfig.Levels[level]
+	if info.potMultiplier <= 1 then
+		return { "Everyone lifts together", "Best score wins" }
+	end
+	return { string.format("Prize pot x%d", info.potMultiplier), if info.titles then "Top 3 earn titles" else "" }
+end
+
+--[[
+	Rolls the next meet's level as its sign-ups open (GAME_DESIGN §35.8) and
+	shows it on the venue's boards. A Regional or State meet is announced to
+	everyone in the server. In Studio, the workspace attribute
+	"ForceMeetLevel" ("Local", "Regional" or "State") picks the level, for
+	testing.
+]]
+local function rollLevel()
+	local forced = if RunService:IsStudio() then Workspace:GetAttribute("ForceMeetLevel") else nil
+	nextLevel = if typeof(forced) == "string" and MeetLevelConfig.Levels[forced] then forced
+		else MeetLevelConfig.roll(levelRandom:NextNumber())
+	local info = MeetLevelConfig.Levels[nextLevel]
+	if venue then
+		LocalMeetVenue.setLevel(venue, info.label, perksOf(nextLevel))
+	end
+	if nextLevel ~= "Local" then
+		log("the next meet is a %s (prize pot x%d)", info.label, info.potMultiplier)
+		if remotes then
+			local news: LocalMeetRemotes.LevelNews = {
+				levelLabel = info.label,
+				potMultiplier = info.potMultiplier,
+				startsAt = nextStartAt,
+				signUpClosesAt = nextStartAt - closesSeconds(),
+			}
+			remotes.levelNews:FireAllClients(news)
+		end
 	end
 end
 
@@ -461,6 +511,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	local cnAfter: { [string]: number } = {}
 	local totalOutcome: ProfileOperations.ScaleRaiseOutcome? = nil
 	local wins: number? = nil
+	-- A Regional or State meet's top 3 earn a title (GAME_DESIGN §35.8).
+	local titleId = if current.rewards and totalKg then MeetLevelConfig.titleFor(current.level, place) else nil
+	local titleCount: number? = nil
 	local saved = PlayerDataService.update(player, function(data)
 		if totalKg then
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -483,6 +536,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 			if totalKg and place == 1 then
 				wins = ProfileOperations.addLocalWin(data)
 			end
+			if titleId then
+				titleCount = ProfileOperations.addTitle(data, titleId)
+			end
 		end
 	end)
 	if not saved then
@@ -500,6 +556,10 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	end
 	if totalOutcome == "Raised" and totalKg then
 		table.insert(lines, string.format("New best Total %s kg", kgText(totalKg)))
+	end
+	if titleId and titleCount then
+		local title = MeetLevelConfig.Titles[titleId]
+		table.insert(lines, if titleCount > 1 then string.format("%s x%d", title, titleCount) else "New title: " .. title)
 	end
 	if wins then
 		table.insert(lines, string.format("Local wins: %d of %d for Nationals", wins, MeetConfig.LocalVictoriesForNationals))
@@ -574,6 +634,15 @@ local function factsFor(lifter: Lifter): { string }
 		table.insert(facts, string.format("GYM %s RECORD HOLDER", recordName(held[1])))
 	elseif #held > 1 then
 		table.insert(facts, string.format("HOLDS %d GYM RECORDS", #held))
+	end
+	-- The best titles first: State over Regional, champion over runner-up.
+	for _, id in ipairs({ "StateChampion", "StateRunnerUp", "StateThird", "RegionalChampion", "RegionalRunnerUp",
+		"RegionalThird" }) do
+		local count = lifter.titles[id]
+		if count and count > 0 then
+			local name = string.upper(MeetLevelConfig.Titles[id])
+			table.insert(facts, if count > 1 then string.format("%dx %s", count, name) else name)
+		end
 	end
 	if lifter.localWins > 0 then
 		table.insert(facts, string.format("%dx LOCAL CHAMPION", lifter.localWins))
@@ -735,7 +804,8 @@ local function announceAttempt(current: Meet, lifter: Lifter, lift: string, kg: 
 	if meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
 		boardFor(lifter, lifter.boardLines :: { string }, lifter.boardMood)
 	end
-	GymRecords.announceAttempt(lifter.player.Name, lifter.player.UserId, lifter.classLabel, chasing, "LOCAL MEET",
+	GymRecords.announceAttempt(lifter.player.Name, lifter.player.UserId, lifter.classLabel, chasing,
+		MeetLevelConfig.Levels[current.level].label,
 		TeleportConfig.LocalMeetId)
 end
 
@@ -1006,8 +1076,9 @@ local function finishMeet(current: Meet)
 				hasTotal = not lifter.withdrawn and placing ~= nil and placing.place ~= nil, qualified = lifter.liftsStarted > 0,
 				perfect = good == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift })
 		end
-		payouts = MeetPayout.forMeet(results, CoinConfig.LocalMeet)
-		log("prize pot %d coins", MeetPayout.pot(results, CoinConfig.LocalMeet))
+		local multiplier = MeetLevelConfig.Levels[current.level].potMultiplier
+		payouts = MeetPayout.forMeet(results, CoinConfig.LocalMeet, multiplier)
+		log("prize pot %d coins (%s, x%d)", MeetPayout.pot(results, CoinConfig.LocalMeet, multiplier), current.level, multiplier)
 	end
 	for _, lifter in ipairs(current.lifters) do
 		local result = MeetTotal.resolve(meetAttempts(lifter))
@@ -1056,12 +1127,18 @@ local function finishMeet(current: Meet)
 			local spot = placing and placing.place and v.podiumSpots[placing.place]
 			if spot and not lifter.withdrawn and visits[lifter.player] then
 				standAt(lifter.player, spot, true)
+				-- A Regional or State meet's top 3 hold a trophy (GAME_DESIGN §35.8).
+				local character = lifter.player.Character
+				if MeetLevelConfig.Levels[current.level].titles and character and placing and placing.place then
+					Trophies.give(character, placing.place)
+				end
 			end
 		end
 		announceAwards(current, v)
 	end
 
 	task.wait(LocalMeetConfig.DoneSeconds)
+	Trophies.clear()
 	if v then
 		LocalMeetVenue.showAwards(v, false)
 	end
@@ -1123,7 +1200,7 @@ end
 
 -- Reads a signed-up player's weigh-in, or nil and why they cannot lift.
 local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: string, competitionNumber: { [string]: number },
-	bestTotalKg: number?, localWins: number }?, string?)
+	bestTotalKg: number?, localWins: number, titles: { [string]: number } }?, string?)
 	local data = PlayerDataService.getData(player)
 	if data == nil then
 		return nil, "your data is still loading"
@@ -1145,7 +1222,8 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 	local career = data.career
 	local wins = if typeof(career) == "table" and typeof(career.localWins) == "number" then career.localWins else 0
 	return { bodyweightKg = data.bodyweight.currentKg, classLabel = classKey, competitionNumber = competitionNumber,
-		bestTotalKg = if typeof(best) == "number" and best > 0 then best else nil, localWins = wins }, nil
+		bestTotalKg = if typeof(best) == "number" and best > 0 then best else nil, localWins = wins,
+		titles = ProfileOperations.getTitles(data) }, nil
 end
 
 -- At a timetable start: holds the meet if enough signed-up lifters are ready.
@@ -1177,7 +1255,7 @@ local function tryStartMeet()
 	end
 
 	local current: Meet = { lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, rewards = false,
-		places = {} }
+		places = {}, level = nextLevel }
 	for _, player in ipairs(ready) do
 		if #current.lifters >= LocalMeetConfig.MaxLifters then
 			notify(player, "This meet is full. You stay on the list for the next one.")
@@ -1214,6 +1292,7 @@ local function tryStartMeet()
 			currentLift = nil,
 			bestTotalKg = weigh.bestTotalKg,
 			localWins = weigh.localWins,
+			titles = weigh.titles,
 			gymRecords = {},
 			boardLines = nil,
 			boardMood = nil,
@@ -1233,7 +1312,8 @@ local function tryStartMeet()
 	end
 	current.rewards = #current.lifters >= rewardMinimumLifters()
 	meet = current
-	log("Local meet starts: %d lifters (rewards: %s)", #current.lifters, tostring(current.rewards))
+	log("%s starts: %d lifters (rewards: %s)", MeetLevelConfig.Levels[current.level].label, #current.lifters,
+		tostring(current.rewards))
 	task.spawn(runMeet, current)
 end
 
@@ -1443,6 +1523,7 @@ function LocalMeetService.start()
 		return
 	end
 	started = true
+	Trophies.preload()
 
 	local set = LocalMeetRemotes.createOnServer(ReplicatedStorage)
 	remotes = set
@@ -1542,10 +1623,13 @@ function LocalMeetService.start()
 			tostring(RunService:IsStudio()))
 
 		nextStartAt = startAfter(now())
+		rollLevel()
 		while true do
 			if now() >= nextStartAt then
 				tryStartMeet()
+				-- The next meet's sign-ups open now, with its level (a meet that did not start does not keep its level).
 				nextStartAt = startAfter(now())
+				rollLevel()
 				broadcastLobby()
 			end
 			task.wait(0.5)

@@ -19,6 +19,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 local TrainingStationConfig = require(ConfigFolder:WaitForChild("TrainingStationConfig"))
+local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 local TechniqueCurve = require(Shared:WaitForChild("Difficulty"):WaitForChild("TechniqueCurve"))
 local WeightClass = require(Shared:WaitForChild("Progression"):WaitForChild("WeightClass"))
 local StatsRemotes = require(Shared:WaitForChild("Stats"):WaitForChild("StatsRemotes"))
@@ -73,6 +74,18 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		end
 	end
 
+	-- The meet titles, best first (GAME_DESIGN §35.8).
+	local titles: { string } = {}
+	local owned = ProfileOperations.getTitles(data)
+	for _, id in ipairs({ "StateChampion", "StateRunnerUp", "StateThird", "RegionalChampion", "RegionalRunnerUp",
+		"RegionalThird" }) do
+		local count = owned[id]
+		if count then
+			table.insert(titles, if count > 1 then string.format("%s x%d", MeetLevelConfig.Titles[id], count)
+				else MeetLevelConfig.Titles[id])
+		end
+	end
+
 	return {
 		classLabel = WeightClass.resolve(bodyweight.currentKg).label,
 		bodyweightKg = bodyweight.currentKg,
@@ -82,6 +95,7 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		bestTotalKg = if build and isNumber(build.bestTotalKg) and build.bestTotalKg > 0 then build.bestTotalKg else 0,
 		technique = technique,
 		coins = ProfileOperations.getCoins(data),
+		titles = titles,
 	}
 end
 

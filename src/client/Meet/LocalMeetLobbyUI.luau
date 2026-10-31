@@ -83,13 +83,17 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 
 	-- ------------------------------------------------ the LOCAL MEET card
 	local cardHolder, card = UIStyle.panel(gui, "Card", UDim2.fromOffset(LEFT, CARD_TOP), UDim2.fromOffset(330, 200))
-	UIStyle.titleTag(cardHolder, "Tag", "LOCAL MEET", UDim2.fromOffset(-14, -24), UDim2.fromOffset(210, 40), nil, "star")
+	local cardTag = UIStyle.titleTag(cardHolder, "Tag", "LOCAL MEET", UDim2.fromOffset(-14, -24), UDim2.fromOffset(210, 40),
+		nil, "star")
 	local countdown = UIStyle.label(card, "Countdown", UDim2.fromOffset(18, 26), UDim2.new(1, -36, 0, 34), C.white,
 		UIStyle.heading())
 	local signUps = UIStyle.label(card, "SignUps", UDim2.fromOffset(18, 66), UDim2.new(1, -36, 0, 18), C.muted)
 	local you = UIStyle.label(card, "You", UDim2.fromOffset(18, 88), UDim2.new(1, -36, 0, 18), C.yellow, UIStyle.heading())
 	-- How far a meet could still raise each lift's CN (the meet allowance, GAME_DESIGN 33.3b).
 	local allowance = UIStyle.label(card, "Allowance", UDim2.fromOffset(18, 112), UDim2.new(1, -36, 0, 16), C.white)
+	-- What a Regional or State meet pays (GAME_DESIGN §35.8); empty for a Local meet.
+	local perks = UIStyle.label(card, "Perks", UDim2.fromOffset(18, 129), UDim2.new(1, -36, 0, 16), C.yellow,
+		UIStyle.heading())
 	local signUpButton = UIStyle.button(card, "SignUp", "SIGN UP", UDim2.new(0, 18, 1, -54), UDim2.new(1, -36, 0, 40),
 		"primary", handlers.signUp)
 
@@ -140,8 +144,13 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 			signUps.Text = ""
 			you.Text = ""
 			allowance.Text = ""
+			perks.Text = ""
 			return
 		end
+		cardTag.Text = lobby.levelLabel or "LOCAL MEET"
+		perks.Text = if (lobby.potMultiplier or 1) > 1
+			then string.format("PRIZE POT x%d%s", lobby.potMultiplier, if lobby.titles then "  ·  TOP 3 EARN TITLES" else "")
+			else ""
 		local raises = {}
 		for _, lift in ipairs(MeetConfig.LiftOrder) do
 			local percent = lobby.allowancePercent and lobby.allowancePercent[lift]

@@ -3081,6 +3081,75 @@ and polish.
     sleeve one solid tube, belt and wraps right. Probe back to ENABLED =
     false.
   MONEY SYSTEM STEPS 1-5 DONE.
+  ROADMAP (2026-10-31, user's ideas): new GAME_DESIGN §35 "Roadmap and big
+  ideas": cosmetics as a main goal incl. plate + barbell designs
+  [APPROVED direction]; Gym-Express pass with a novelty plate design as
+  its final reward [IDEA, cosmetic only]; meet ladder Local -> Regionals ->
+  State -> Nationals -> Worlds -> Sheffield, Regionals/State held in the
+  Local venue paying the top 3 more [APPROVED, CHANGES the old 4-step
+  ladder, details open]; DripStone (look of one item + stats of another)
+  [IDEA, needs the equipment-stats decision first]; not designed yet:
+  Origins, Coaches, map, avatar body, equipment stats. Recommended order
+  in §35.7. Committed with ladder step 1.
+  MEET LADDER DESIGNED (2026-10-31, user: "Design the meet ladder", picked
+  from options): GAME_DESIGN §35.8. Local meets randomly become Regional
+  (~1 in 4) or State (~1 in 10), announced when sign-ups open; anyone may
+  enter; top 3 get a bigger pot (x2 / x3), titles and trophies, and later
+  a rare drop chance; ladder points (1st 3 / 2nd 2 / 3rd 1, +1 for a total,
+  x level) qualify for Nationals at 25 per monthly season (~15 meets);
+  old Local wins become 3 points each; qualified players keep coins and
+  titles but stop earning points. Numbers [PROVISIONAL]. Step 1 built below.
+  LADDER STEP 1 BUILT (2026-10-31, user: "Build step 1"). COMMITTED AND
+  PUSHED with the user's approval ("Commit and push"); `git log` for the
+  hash. The roadmap (§35) and the ladder design (§35.8) are in the same
+  commit.
+  - New src/shared/Config/MeetLevelConfig.luau: Levels (Local / Regional
+    0.25 / State 0.10 chance, pot x1 / x2 / x3, ladder multipliers, titles),
+    RollOrder, Titles (6 ids, saved: never rename), titleFor, roll,
+    TrophyAssetId = 0, TrophyColours [PROVISIONAL].
+  - MeetPayout.pot / forMeet take an optional multiplier.
+  - Save version 15: career.titles { id -> count }; migrations[14] adds /
+    repairs it; ProfileOperations.addTitle / getTitles. PlayerDataProbe:
+    final-version checks 14 -> 15, new test 53.
+  - LocalMeetService: nextLevel rolled when sign-ups open (rollLevel; in
+    Studio the workspace attribute "ForceMeetLevel" picks it, for tests);
+    the venue's boards updated; Regional / State announced to everyone
+    (new remote LocalMeetLevelNews); Meet.level; lobby state has
+    levelLabel / potMultiplier / titles; payouts x level; saveLifter adds
+    the title for places 1-3 at a titled level and says it in the result;
+    titles on the lifter's platform card; record-attempt news names the
+    level; the top 3 get a trophy on the podium (new Trophies.luau), taken
+    away after the ceremony.
+  - LocalMeetVenue: Venue.banner / deskScreen / backdropTitle and
+    setLevel(v, label, perks).
+  - Client: LocalMeetLobbyUI card tag = level label + a yellow perks line;
+    GymRecordAnnouncer shows the level news with a GO button (teleport to
+    the venue, hidden for players already there); STATS lists titles under
+    the coins (StatsRemotes.titles, PlayerStatsService).
+  - New art/scripts/build_trophy_01.py -> art/blender/Trophy_01.blend
+    (Trophy_Metal, Trophy_Base; 2,090 tris), CHECK PASSED, preview
+    art/previews/Trophy_01.png (gold / silver / bronze). APPROVED by the
+    user ("Looks good, upload"); exported art/exports/Trophy_01.glb,
+    uploaded rbxassetid://96903806374655 (materials.json "Trophy_01"),
+    MeetLevelConfig.TrophyAssetId set. Studio: Trophies.give put a gold
+    trophy (1.39 studs) in the user's avatar's right hand; first placement
+    poked through the forearm, fixed to stand out in front of the hand
+    (screenshot after the fix: cup clear of the arm, CENTRAL readable).
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): save checker
+    485 passed 0 failed; roll of 20,000: Local 64.8% / Regional 25.2% /
+    State 10.0%; titleFor right (State 1 -> StateChampion, Local 1 -> none,
+    State 4 -> none); State pot 600 vs Local 200 for 2 lifters. Forced a
+    State meet: log "the next meet is a STATE MEET (prize pot x3)", the news
+    line with GO shown in the gym (screenshot), the lobby card "STATE
+    MEET" + "PRIZE POT x3 · TOP 3 EARN TITLES", the banner and the desk
+    monitor say STATE MEET / Prize pot x3 / Top 3 earn titles (screenshot).
+    NOT TESTED: a whole State meet (title saved, result line, trophies in
+    hand, the awards backdrop title), and clicking GO (same teleport as the
+    record-news WATCH button).
+  NEXT ACTION: ladder step 2 (ladder points and seasons) when the user
+  says so. Still to see: a whole forced State meet in Studio (workspace
+  attribute ForceMeetLevel = "State" during Play): the title saved, the
+  result line, trophies on the podium, the awards backdrop title.
   NEXT ACTION: the user's call. Open question from the user (2026-10-31):
   force R15 for everyone, maybe one realistic body made in Blender, and
   later visible muscle gain/loss; Claude recommended forcing R15 now and

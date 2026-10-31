@@ -791,6 +791,14 @@
         "model": "rbxassetid://115016229826377"
       },
       "supersedes": "rbxassetid://124628901641945 (rework without the knee fix: the sleeve halves opened a gap whenever the knee bent, even in idle poses; replaced 2026-10-31); rbxassetid://75664723615342 (first version: belt too flat, knee sleeve halves showed a gap, wraps too small)"
+    },
+    "Trophy_01": {
+      "about": "The trophy the top 3 hold on the awards podium at a Regional or State meet (GAME_DESIGN \u00a735.8): a two-handled cup on a stem (Trophy_Metal, coloured gold, silver or bronze by the game, with CENTRAL on the base's front) on a black base (Trophy_Base). Made by art/scripts/build_trophy_01.py (art/blender/Trophy_01.blend).",
+      "file": "art/exports/Trophy_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://96903806374655"
+      }
     }
   },
   "images": {

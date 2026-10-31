@@ -17,7 +17,7 @@
 
 	Fatigue, buffs, meet progression, titles,
 	cosmetics, coaches and origins are all coming (coins arrived in version 12,
-	the Shop inventory in 13, worn gear in 14),
+	the Shop inventory in 13, worn gear in 14, meet titles in 15),
 	and GAME_DESIGN.md Q3 lists
 	them, but their SHAPES are undefined. Guessing a shape now would mean
 	migrating away from that guess later. The migration system below is what makes
@@ -52,9 +52,10 @@ local PlayerProfileSchema = {}
 	to the migrations table below (version 9: the meet CN allowance and career;
 	version 10: the Competition Budget removed; version 11: the official-meet
 	bests for the gym records wall; version 12: the coin wallet; version 13:
-	the Shop inventory; version 14: the gear being worn).
+	the Shop inventory; version 14: the gear being worn; version 15: meet
+	titles in the career).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 14
+PlayerProfileSchema.CURRENT_VERSION = 15
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -208,9 +209,14 @@ export type MeetAllowance = {
 		            MeetConfig.OfficialLocalMeetMinimumRealPlayers lifters);
 		            MeetConfig.LocalVictoriesForNationals of them unlock
 		            Nationals (section 15)
+		titles      (version 15) the meet titles earned, by id
+		            (MeetLevelConfig.Titles, e.g. "StateChampion") -> how many
+		            times: the top 3 at a Regional or State meet (§35.8). Only
+		            ProfileOperations.addTitle adds to it.
 ]]
 export type Career = {
 	localWins: number,
+	titles: { [string]: number },
 }
 
 --[[
@@ -482,6 +488,7 @@ local template: ProfileData = {
 	-- A new lifter has won nothing.
 	career = {
 		localWins = 0,
+		titles = {},
 	},
 
 	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
@@ -1327,6 +1334,43 @@ migrations[13] = function(data: ProfileData)
 	end
 	for _, slot in ipairs(bad) do
 		wearing[slot] = nil
+	end
+end
+
+--[[
+	Version 14 to 15: meet titles (user, 2026-10-31; GAME_DESIGN §35.8, the
+	meet ladder's Regional and State meets).
+
+	NOBODY HAS A TITLE YET: titles did not exist before. This step makes sure
+	`career.titles` exists and REPAIRS, NEVER OVERWRITES: an entry is kept when
+	it is a non-empty string id with a whole count of at least 1; anything
+	else is dropped. A missing career is created (localWins 0), as step 8
+	does.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED.
+
+	IDEMPOTENT: a second run finds a clean list and changes nothing.
+]]
+migrations[14] = function(data: ProfileData)
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0, titles = {} }
+		return
+	end
+	local titles = career.titles
+	if typeof(titles) ~= "table" then
+		career.titles = {}
+		return
+	end
+	local bad = {}
+	for id, count in pairs(titles) do
+		if typeof(id) ~= "string" or id == "" or typeof(count) ~= "number" or count ~= count or count < 1
+			or count ~= math.floor(count) or count == math.huge then
+			table.insert(bad, id)
+		end
+	end
+	for _, id in ipairs(bad) do
+		titles[id] = nil
 	end
 end
 

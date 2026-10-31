@@ -146,6 +146,11 @@ export type Venue = {
 	signUpPoint: BasePart,
 	exitPoint: BasePart,
 	scoreboard: StyledScreen.Handle?,
+	-- The boards that show the next meet's level (GAME_DESIGN §35.8): the banner, the sign-up desk's monitor, and
+	-- the awards backdrop's title.
+	banner: StyledScreen.Handle?,
+	deskScreen: StyledScreen.Handle?,
+	backdropTitle: BasePart?,
 	-- The awards stage (podium and backdrop); in the venue only while showAwards is on.
 	awards: Model,
 	-- Where 1st, 2nd and 3rd stand on the podium (empty when the model did not load).
@@ -499,18 +504,19 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	-- The scoreboard on the left wall over the stands, facing the hall, and the venue's banner on the right wall.
 	local scoreboard = wallBoard("Scoreboard", "MeetBoard", "MeetBoard_Screen", 1, Vector3.new(-hx + 0.06, 0, 0),
 		Vector3.xAxis, Vector3.new(-hx, 18, -27), "LOCAL MEET", { "Sign up at the desk", "A meet every 10 minutes" }, "star", 30)
-	wallBoard("Banner", "MeetBanner", "MeetBanner_Cloth", 1, Vector3.new(hx, 0, 0), -Vector3.xAxis, Vector3.new(hx, 16, -27),
-		"LOCAL MEET", { "Everyone lifts together", "Best score wins" }, "dots", 30)
+	local banner = wallBoard("Banner", "MeetBanner", "MeetBanner_Cloth", 1, Vector3.new(hx, 0, 0), -Vector3.xAxis,
+		Vector3.new(hx, 16, -27), "LOCAL MEET", { "Everyone lifts together", "Best score wins" }, "dots", 30)
 
 	-- ---------------------------------------------------------------- the lobby
 	-- The sign-up desk right by the doors, facing whoever walks in: MockMeet_01's desk with its monitor.
 	local deskX, deskZ = -16, Z_FRONT + 12
 	local desk = prop(model, "SignUpDesk", "MeetDesk", facing(Vector3.new(deskX, 0, deskZ), -Vector3.zAxis))
+	local deskScreen: StyledScreen.Handle? = nil
 	if desk then
 		solid("SignUpDesk_Solid", Vector3.new(deskX - 5.25, 0, deskZ - 1.15), Vector3.new(deskX + 5.25, 3.3, deskZ + 1.15))
 		local monitor = desk:FindFirstChild("MeetDesk_MonitorScreen", true) :: BasePart?
 		if monitor then
-			StyledScreen.build(monitor, StyledScreen.faceToward(monitor, Vector3.zAxis), "SIGN-UP",
+			deskScreen = StyledScreen.build(monitor, StyledScreen.faceToward(monitor, Vector3.zAxis), "SIGN-UP",
 				{ "Local meet desk", "Every 10 minutes" }, "bar", 120)
 		end
 	else
@@ -596,8 +602,10 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	awards.Name = "AwardsStage"
 	local backdrop = prop(awards, "AwardsBackdrop", "AwardsBackdrop",
 		facing(Vector3.new(0, PLATFORM_HEIGHT, PLATFORM_FRONT + 2), -Vector3.zAxis))
+	local backdropTitle: BasePart? = nil
 	if backdrop then
 		local title = backdrop:FindFirstChild("AwardsBackdrop_Title", true) :: BasePart?
+		backdropTitle = title
 		if title then
 			writeSign(title, -Vector3.zAxis, "LOCAL CENTRAL MEET", "AWARDS", 30)
 		end
@@ -633,6 +641,9 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		signUpPoint = signUpPoint,
 		exitPoint = exitPoint,
 		scoreboard = scoreboard,
+		banner = banner,
+		deskScreen = deskScreen,
+		backdropTitle = backdropTitle,
 		awards = awards,
 		podiumSpots = podiumSpots,
 		warmUpRacks = warmUpRacks,
@@ -715,6 +726,30 @@ function LocalMeetVenue.setScoreboard(v: Venue, title: string, lines: { string }
 	if board then
 		board.setTag(title)
 		board.setLines(lines)
+	end
+end
+
+--[[
+	Shows the next meet's level (GAME_DESIGN §35.8) on the banner, the sign-up
+	desk's monitor and the awards backdrop: `label` is "LOCAL MEET",
+	"REGIONAL MEET" or "STATE MEET", `perks` a line or two about what it pays.
+]]
+function LocalMeetVenue.setLevel(v: Venue, label: string, perks: { string })
+	if v.banner then
+		v.banner.setTag(label)
+		v.banner.setLines(perks)
+	end
+	if v.deskScreen then
+		v.deskScreen.setTag(if label == "LOCAL MEET" then "SIGN-UP" else label)
+		v.deskScreen.setLines(perks)
+	end
+	local title = v.backdropTitle
+	if title then
+		local old = title:FindFirstChild("Writing")
+		if old then
+			old:Destroy()
+		end
+		writeSign(title, -Vector3.zAxis, string.gsub(label, " MEET$", "") .. " CENTRAL MEET", "AWARDS", 30)
 	end
 end
 

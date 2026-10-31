@@ -132,6 +132,10 @@ function StatsScreen.start()
 	-- The coins (GAME_DESIGN 30.6), under the bodyweight.
 	local coinsText = UIStyle.text(body, "Coins", UDim2.fromOffset(24, 410), UDim2.fromOffset(230, 30), SIZES.heading,
 		C.yellow, UIStyle.heading(), Enum.TextXAlignment.Center)
+	-- The meet titles (GAME_DESIGN §35.8), under the coins.
+	local titlesText = UIStyle.text(body, "Titles", UDim2.fromOffset(24, 444), UDim2.fromOffset(230, 40), SIZES.small,
+		C.white, UIStyle.heading(), Enum.TextXAlignment.Center)
+	titlesText.TextWrapped = true
 
 	-- Middle: Competition Number and Scale.
 	local middleX = 290
@@ -215,6 +219,8 @@ function StatsScreen.start()
 		classText.Text = string.upper(snapshot.classLabel) .. " CLASS"
 		weightText.Text = string.format("Bodyweight %.1f kg\nTarget %.1f kg", snapshot.bodyweightKg, snapshot.targetKg)
 		coinsText.Text = string.format("%s %s", CoinConfig.format(snapshot.coins or 0), CoinConfig.Name)
+		local titles = snapshot.titles or {}
+		titlesText.Text = if #titles > 0 then string.upper(table.concat(titles, "  ·  ")) else ""
 		local total = 0
 		for _, lift in ipairs(ProgressionConfig.Lifts) do
 			local cn = snapshot.competitionNumber[lift] or 0

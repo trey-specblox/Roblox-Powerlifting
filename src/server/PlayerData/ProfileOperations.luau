@@ -691,6 +691,37 @@ function ProfileOperations.addLocalWin(data: ProfileData): number?
 end
 
 --[[
+	Adds one of a meet title (schema 15; GAME_DESIGN §35.8) and returns how
+	many the lifter now has, or nil when the career is unusable or the id is
+	not a short non-empty string. SECURITY BOUNDARY: the caller
+	(LocalMeetService) decides the title from the meet's result and
+	MeetLevelConfig on the server.
+]]
+function ProfileOperations.addTitle(data: ProfileData, titleId: string): number?
+	local career = (data :: any).career
+	local titles = if typeof(career) == "table" then career.titles else nil
+	if typeof(titles) ~= "table" or typeof(titleId) ~= "string" or #titleId == 0 or #titleId > 40 then
+		return nil
+	end
+	local count = titles[titleId]
+	titles[titleId] = (if typeof(count) == "number" and count >= 1 then count else 0) + 1
+	return titles[titleId]
+end
+
+-- A copy of the lifter's titles (id -> count; only usable entries).
+function ProfileOperations.getTitles(data: ProfileData): { [string]: number }
+	local career = (data :: any).career
+	local titles = if typeof(career) == "table" then career.titles else nil
+	local copy: { [string]: number } = {}
+	for id, count in pairs(if typeof(titles) == "table" then titles else {}) do
+		if typeof(id) == "string" and typeof(count) == "number" and count >= 1 then
+			copy[id] = count
+		end
+	end
+	return copy
+end
+
+--[[
 	=========================================================================
 	COINS  (GAME_DESIGN.md 30.6, the money system's first build; schema 12)
 	=========================================================================

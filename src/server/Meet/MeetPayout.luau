@@ -46,23 +46,23 @@ local function placeText(place: number): string
 	return string.format("%d%s place", place, suffix)
 end
 
--- The pot: BasePot plus PerQualifiedLifter for each qualified lifter.
-function MeetPayout.pot(lifters: { Lifter }, settings: Settings): number
+-- The pot: BasePot plus PerQualifiedLifter for each qualified lifter, times the meet level's multiplier (§35.8).
+function MeetPayout.pot(lifters: { Lifter }, settings: Settings, multiplier: number?): number
 	local qualified = 0
 	for _, lifter in ipairs(lifters) do
 		if lifter.qualified then
 			qualified += 1
 		end
 	end
-	return settings.BasePot + settings.PerQualifiedLifter * qualified
+	return (settings.BasePot + settings.PerQualifiedLifter * qualified) * (multiplier or 1)
 end
 
 --[[
 	Every lifter's payments, by key (a lifter who earns nothing has an empty
 	list). Shares are rounded down to whole coins.
 ]]
-function MeetPayout.forMeet(lifters: { Lifter }, settings: Settings): { [number]: { Item } }
-	local pot = MeetPayout.pot(lifters, settings)
+function MeetPayout.forMeet(lifters: { Lifter }, settings: Settings, multiplier: number?): { [number]: { Item } }
+	local pot = MeetPayout.pot(lifters, settings, multiplier)
 	local placed = 0
 	for _, lifter in ipairs(lifters) do
 		if lifter.place and lifter.hasTotal then

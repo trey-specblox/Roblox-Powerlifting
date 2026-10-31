@@ -588,6 +588,8 @@ Cosmetics
 After:
 10 local victories
 the player unlocks Nationals under your current design.
+> **[CHANGED BY THE USER, 2026-10-31]:** ladder points from Local, Regional and
+> State meets now qualify a player for Nationals, per monthly season (§35.8).
 I would test whether wins or qualifying performance feels better later. Requiring wins can become frustrating if experienced players repeatedly dominate new players.
 
 16. Nationals
@@ -5257,3 +5259,248 @@ existing saves. The historical-body audit is what makes the code compile. The
 rebase is what stops the removal from silently changing gameplay. A checkpoint
 that ships any two of the three leaves the game running and wrong, which is the
 one outcome the §34.6 note exists to prevent.
+
+
+---
+
+## 35. Roadmap and big ideas (user, 2026-10-31)
+
+The game's stepping stones: what is built, what the user has decided, the
+ideas that still need a design, and the recommended order. Each item says
+its status:
+
+- **[APPROVED]**: the user decided it; the details may still be open.
+- **[IDEA]**: wanted, but not designed yet.
+- **[NOT DESIGNED]**: an area still waiting for its design.
+
+Nothing here changes an earlier decision until its own design is approved,
+except where it says so.
+
+### 35.1 Built so far (committed)
+
+- **Lifting:** squat, bench and deadlift, each with its minigames.
+- **Training:** the gym's AFK training stations and technique (§34), and the
+  Competition Number / Competition Scale progression (§33).
+- **Meets:** the Mock Meet (solo) and the **Local meet**, with the awards
+  ceremony, working warm-up racks and gym records (§29.10, §30.5).
+- **The Starter Gym:** its rooms, props and lighting (§27).
+- **The money system** (§30.6):
+  - coins, earned at official meets (prize pot, finishing, 9/9, gym records);
+  - the Shop with 17 cosmetic items;
+  - wearing gear on R15 avatars from MY GEAR.
+
+### 35.2 Cosmetics as a main goal: [APPROVED direction]
+
+The user wants **lots of cosmetics** that players chase for their own sake
+(this extends §18's list of cosmetic ideas):
+
+- **Singlets, belts, wrist wraps, knee sleeves:** built (Shop + worn).
+- **Plate designs and barbell designs:** new. They show on the player's own
+  bar when they lift, at the training racks and on the meet platform.
+
+Open questions:
+
+- How each kind is earned: the Shop, meet rewards, the Gym-Express pass
+  (§35.3), or all three.
+- What other players see.
+- Performance: each design is one Blender mesh, reused on every bar that
+  uses it.
+
+### 35.3 Gym-Express pass (monetization): [IDEA]
+
+- **What it is:** a paid season pass (a battle pass, bought with Robux).
+- **Its final, exclusive reward:** a **novelty plate design**, a normal
+  barbell loaded with something fun instead of plates (examples from the
+  user: a giant cookie, a bowling ball, a meteor, a meatball).
+- **Guardrail, already a rule:** purchases never give lifting power. CN never
+  comes from purchases (§34.2), and paid items stay cosmetic (§18). Every pass
+  reward is cosmetic.
+
+Open questions:
+
+- A free track as well as the paid one?
+- How players move up the pass (for example points from training and meets).
+- Season length and price.
+- Whether exclusive items ever come back.
+
+### 35.4 The meet ladder: [APPROVED by the user, 2026-10-31; designed in §35.8]
+
+**Local → Regionals → State → Nationals → Worlds → Sheffield.**
+
+- **[CHANGED BY THE USER, 2026-10-31]:** this replaces the earlier four-step
+  ladder (Local → Nationals → Worlds → Sheffield; §15–17, §29.10).
+- **Why:** more steps give an average player more goals to reach.
+- **Regionals and State are held in the Local meet venue:** a Local meet can
+  turn into a Regional or a State meet, which pays the top 3 more.
+
+Open questions, for the ladder's own design (**answered in §35.8**, except Nationals itself):
+
+- **How a meet becomes Regional or State:** by chance? On a schedule (for
+  example every few meets)? Announced in advance so players can plan for it?
+- **Who may enter:** anyone, or players who qualified on the step below?
+- **How the steps lead to Nationals.** Today N Local wins qualify for
+  Nationals (`MeetConfig.LocalVictoriesForNationals`); that rule changes.
+- **Rewards per step:** prize pot, top-3 bonuses, and later item drops (§30.4).
+- **Per step:** the CN raise rules (§33.3b) and records.
+
+### 35.5 DripStone: [IDEA; needs a decision first]
+
+**A rare item that combines two pieces of gear:** the **look** of one (for
+example a singlet with a design the player loves) with the **stat buff** of
+another. The player keeps the look they like and the stats they want.
+
+- **It depends on an undecided rule.** Today Shop cosmetics are appearance
+  only (§30.6), and gear with real stats is undecided (§30.4, §19). DripStone
+  only means something once some gear has stats. So **equipment stats must be
+  designed first**:
+  - which items can carry stats;
+  - where stat gear comes from (meet rewards, per §30.4);
+  - how big a buff can be without breaking the CN / Scale balance (§33).
+- **Guardrails:**
+  - Stats must never be bought with Robux (§34.2). A DripStone only moves
+    stats a player earned.
+  - If DripStones were ever sold for Robux as a random reward, Roblox
+    requires the odds to be shown.
+
+Open questions:
+
+- How DripStones are found (a rare reward from higher meets?).
+- What happens to the item whose look or stats are taken.
+
+### 35.6 Not designed yet
+
+- **Origins** (§21) and **Coaches** (§22).
+- **The map:** beyond the Starter Gym, the world, other gyms and the meet
+  venues for the higher steps.
+- **The avatar body:** forcing R15, perhaps one realistic body made for the
+  game, and later visible muscle gain and loss (open question, 2026-10-31).
+- **Equipment with stats** (§19, §30.4); see §35.5.
+- **Meet presentation** (§18): walkout songs, aura, entrance animations,
+  titles.
+
+### 35.7 Recommended order (Claude, 2026-10-31; the user decides)
+
+1. **A short playtest check of what is built:** gear during real lifts, two
+   players, phone performance with several geared players.
+2. **Design the meet ladder (§35.4): DONE, see §35.8.** It is the most connected decision. It
+   sets what every step pays, where rare drops such as stat gear and
+   DripStones come from, and what a player works toward. Regionals and State
+   reuse the Local venue that is already built, so they are the cheapest new
+   content once designed.
+3. **Decide on equipment stats** (§30.4, §19), yes or no and how big. That
+   unlocks the DripStone design (§35.5).
+4. **Plate and barbell designs** (§35.2): first a few in the Shop, made in
+   Blender. This builds the cosmetic pipeline the pass needs.
+5. **The Gym-Express pass** (§35.3). It needs a source of pass points,
+   enough cosmetics and the Robux product.
+6. **Design sessions** for Origins, Coaches, the map and the avatar body,
+   whenever the user is ready. Each one can change what the steps above pay
+   or unlock, so none of them is built before its design is approved.
+
+
+### 35.8 The meet ladder — design (user, 2026-10-31, picked from options)
+
+The steps below Nationals (§35.4). Every choice was the user's pick from
+options. Numbers marked **[PROVISIONAL]** are starting values, tuned after
+playtesting.
+
+**[CHANGED BY THE USER, 2026-10-31]:** ladder points replace "10 Local wins
+unlock Nationals" (§15, §29.10, `MeetConfig.LocalVictoriesForNationals`).
+This takes up the old note's worry that needing wins frustrates players who
+keep meeting stronger lifters.
+
+#### Regional and State meets in the Local venue
+
+| Question | Decision |
+|---|---|
+| **How a meet is upgraded** | **At random, announced early.** Each scheduled Local meet has a chance to be a **Regional** (about **1 in 4**) or a **State** meet (about **1 in 10**) **[PROVISIONAL]**. The roll happens when the meet's sign-ups open, about 10 minutes ahead. The sign-up desk, the lobby board and a server message show it straight away ("The next meet is a STATE MEET!"), so players can rush to join a big one. |
+| **The venue** | The same Local venue. Its signs, screens and awards backdrop show the meet's level (LOCAL / REGIONAL / STATE). |
+| **Who may enter** | **Anyone** who signs up, at every level. Roblox servers are small, and this keeps upgraded meets from failing for lack of lifters. |
+| **Start rules** | Unchanged from the Local meet (§29.10): at least 2 real players, or no meet. If an upgraded meet does not start, the next meet rolls again: the level is not kept **[PROVISIONAL]**. |
+| **Lifting, judging, CN** | Unchanged at every level for now; the CN raise rules (§33.3b) are the same **[PROVISIONAL]**. |
+
+#### What the top 3 get at Regional and State meets
+
+- **A bigger prize pot,** shared by place exactly like a Local meet (§30.6):
+  **Regional ×2, State ×3** **[PROVISIONAL]**. The finishing, 9/9 and gym
+  record bonuses stay the same.
+- **Titles and trophies:**
+  - 1st, 2nd and 3rd earn "Regional Champion / Runner-up / 3rd Place" (and the
+    same for State).
+  - Titles show on the lifter's card and STATS screen, and the top 3 hold a
+    trophy on the awards podium.
+  - This needs a place in the save for titles (a new save version).
+- **A rare drop chance, later:** once rare items exist (stat gear §30.4,
+  DripStones §35.5), the top 3 at upgraded meets get a chance at one. The
+  higher the level, the better the chance. Not built until those items are
+  designed.
+
+#### Ladder points: how a player reaches Nationals
+
+- **Points per official meet:**
+
+  | Result | Points |
+  |---|---|
+  | 1st place | 3 |
+  | 2nd place | 2 |
+  | 3rd place | 1 |
+  | Finishing with a total (on top of any place) | +1 |
+
+  - The whole amount is multiplied by the meet's level: **Local ×1,
+    Regional ×2, State ×3**.
+  - A bomb-out, leaving early, or a Solo / Mock Meet earns nothing.
+  - **[PROVISIONAL]** numbers.
+- **Qualifying for Nationals:** reach **25 points** in a season
+  **[PROVISIONAL]**. That is about **15 meets** for an average player. A
+  player who always finishes but rarely places needs about 20 or more; a
+  player who often wins needs fewer. Steady progress either way.
+- **Seasons: monthly,** in step with the monthly Sheffield cycle (§32.1).
+  Points reset when a season starts, and qualifying counts for that
+  season's Nationals. The ladder stays alive for everyone every month.
+- **Once qualified:**
+  - the player can still enter every Local, Regional and State meet and earn
+    coins, titles and drops;
+  - extra ladder points stop for that season;
+  - nobody is ever locked out.
+- **Local wins players already have:** each saved win (`career.localWins`)
+  becomes **3 points**, a Local 1st place, in the first season, once, when
+  the save is updated. `career.localWins` stays as a lifetime statistic.
+
+#### Not decided here
+
+- **Nationals itself:** where it is held, how often, the format, rewards, and
+  how it leads to Worlds. That is the next design session. Worlds and
+  Sheffield stay as designed (§31, §32).
+- **The exact season boundary:** use the Sheffield cycle's (§32.1).
+- **How titles look:** the lifter card, the STATS screen, the podium trophy.
+
+#### Build order
+
+1. **Meet levels in the Local venue:**
+   - the random roll and its announcement (desk, board, server message);
+   - the signs showing LOCAL / REGIONAL / STATE;
+   - the prize pot multiplier;
+   - titles and trophies, with a new save version for titles.
+2. **Ladder points and seasons:**
+   - points saved per season, and the qualified flag;
+   - turning old Local wins into points;
+   - points on the result screen and STATS ("Ladder: 14 / 25 for
+     Nationals").
+3. **Nationals:** design session, then build.
+4. **Rare drops:** once stat gear and DripStones are designed.
+
+> **Step 1 built (2026-10-31), trophy uploaded:**
+> - **The level roll:** each meet's level is rolled when its sign-ups open
+>   (`MeetLevelConfig`).
+> - **Announcements:** a Regional or State meet is announced to everyone in
+>   the server with one news line and a **GO** button to the venue. The lobby
+>   card, the sign-up desk's monitor, the hall banner and the awards backdrop
+>   show the level and its perks.
+> - **Pay:** the prize pot is multiplied by the level.
+> - **Titles:** the top 3 earn a title, saved in their career (save version
+>   15). Titles show on the lifter's platform card and on STATS.
+> - **Trophies:** the top 3 hold a gold, silver or bronze trophy (a Blender
+>   model with CENTRAL on its base) on the awards podium, once the model is
+>   uploaded.
+> - **Local wins** still count toward Nationals until ladder points (step 2)
+>   replace them.

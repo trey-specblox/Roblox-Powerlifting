@@ -43,6 +43,8 @@ export type StatsSnapshot = {
 	technique: { TechniqueView },
 	-- The player's coins (GAME_DESIGN 30.6).
 	coins: number,
+	-- The meet titles earned, best first ("State Champion x2"; GAME_DESIGN §35.8).
+	titles: { string }?,
 }
 
 export type RemoteSet = {
