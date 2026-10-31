@@ -20,6 +20,10 @@ task.spawn(StatsScreen.start)
 local TeleportMenu = require(UIFolder:WaitForChild("TeleportMenu"))
 task.spawn(TeleportMenu.start)
 
+-- The player's coins: the counter above STATS and the "+150 COINS" pop-ups. Display only.
+local CoinCounter = require(UIFolder:WaitForChild("CoinCounter"))
+task.spawn(CoinCounter.start)
+
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))
 

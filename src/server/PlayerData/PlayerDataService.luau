@@ -114,6 +114,8 @@ local store: Store = ProfileStoreModule.New(STORE_NAME, PlayerProfileSchema.temp
 
 local profiles: { [Player]: Profile } = {}
 local started = false
+-- Told about every coin change (onCoinsChanged): player, change (+/-), new balance, reason.
+local coinListeners: { (Player, number, number, string) -> () } = {}
 
 local function log(message: string, ...: any)
 	if VERBOSE then
@@ -406,6 +408,21 @@ end
 	COINS (GAME_DESIGN.md 30.6). The player's coins, or nil when the data is not
 	loaded.
 ]]
+local function coinsChanged(player: Player, change: number, balance: number, reason: string)
+	for _, listener in ipairs(coinListeners) do
+		task.spawn(listener, player, change, balance, reason)
+	end
+end
+
+--[[
+	Calls `listener(player, change, balance, reason)` after every add or spend
+	(change is +amount or -amount). For screens only (CoinDisplayService); a
+	listener must never write data back.
+]]
+function PlayerDataService.onCoinsChanged(listener: (Player, number, number, string) -> ())
+	table.insert(coinListeners, listener)
+end
+
 function PlayerDataService.getCoins(player: Player): number?
 	local data = activeData(player, "getCoins")
 	if data == nil then
@@ -428,6 +445,7 @@ function PlayerDataService.addCoins(player: Player, amount: number, reason: stri
 	local outcome: ProfileOperations.CoinOutcome, balance = ProfileOperations.addCoins(data, amount)
 	if outcome == "Added" then
 		print(string.format("[PlayerDataService] %s +%d coins (%s): %d", player.Name, amount, reason, balance :: number))
+		coinsChanged(player, amount, balance :: number, reason)
 	else
 		warn(string.format("[PlayerDataService] %s: %s coins refused (%s, %s)", player.Name, tostring(amount), reason, outcome))
 	end
@@ -447,6 +465,7 @@ function PlayerDataService.spendCoins(player: Player, amount: number, reason: st
 	local outcome: ProfileOperations.CoinOutcome, balance = ProfileOperations.spendCoins(data, amount)
 	if outcome == "Spent" then
 		print(string.format("[PlayerDataService] %s -%d coins (%s): %d", player.Name, amount, reason, balance :: number))
+		coinsChanged(player, -amount, balance :: number, reason)
 	elseif outcome == "Rejected" then
 		warn(string.format("[PlayerDataService] %s: spending %s coins refused (%s)", player.Name, tostring(amount), reason))
 	end

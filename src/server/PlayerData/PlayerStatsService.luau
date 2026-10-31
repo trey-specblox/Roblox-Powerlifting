@@ -81,6 +81,7 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		competitionScale = competitionScale,
 		bestTotalKg = if build and isNumber(build.bestTotalKg) and build.bestTotalKg > 0 then build.bestTotalKg else 0,
 		technique = technique,
+		coins = ProfileOperations.getCoins(data),
 	}
 end
 

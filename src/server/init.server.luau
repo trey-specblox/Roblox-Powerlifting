@@ -75,6 +75,10 @@ PlayerDataService.start()
 local PlayerStatsService = require(PlayerDataFolder:WaitForChild("PlayerStatsService"))
 PlayerStatsService.start()
 
+-- Each player's coins on their screen (the counter and the "+150 COINS" pop-ups). Display only.
+local CoinDisplayService = require(PlayerDataFolder:WaitForChild("CoinDisplayService"))
+CoinDisplayService.start()
+
 --[[
 	The orchestrator owns every lift attempt and all the lifting remotes. The phase
 	services are driven by it rather than started on their own, so phase order is a

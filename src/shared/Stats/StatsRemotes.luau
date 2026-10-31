@@ -41,6 +41,8 @@ export type StatsSnapshot = {
 	bestTotalKg: number,
 	-- Every trainable technique stat, in lift order.
 	technique: { TechniqueView },
+	-- The player's coins (GAME_DESIGN 30.6).
+	coins: number,
 }
 
 export type RemoteSet = {

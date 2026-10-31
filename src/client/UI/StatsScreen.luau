@@ -11,7 +11,7 @@
 	Opening: press OPEN_KEY (not while typing), or the STATS tab on the left edge
 	of the screen (phones). OPEN_KEY again, BACK, or the tab closes it.
 
-		left    the player's avatar, name, weight class and bodyweight
+		left    the player's avatar, name, weight class, bodyweight and coins
 		middle  COMPETITION NUMBER per lift and the total; PROVEN (Competition
 		        Scale) per lift, or UNPROVEN, and the BEST TOTAL; all for the
 		        build of the current weight class
@@ -26,6 +26,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ProgressionConfig = require(Shared:WaitForChild("Config"):WaitForChild("ProgressionConfig"))
+local CoinConfig = require(Shared:WaitForChild("Config"):WaitForChild("CoinConfig"))
 local StatsRemotes = require(Shared:WaitForChild("Stats"):WaitForChild("StatsRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
@@ -128,6 +129,9 @@ function StatsScreen.start()
 		C.yellow, UIStyle.heading(), Enum.TextXAlignment.Center)
 	local weightText = UIStyle.text(body, "Bodyweight", UDim2.fromOffset(24, 348), UDim2.fromOffset(230, 48), SIZES.body,
 		C.white, nil, Enum.TextXAlignment.Center)
+	-- The coins (GAME_DESIGN 30.6), under the bodyweight.
+	local coinsText = UIStyle.text(body, "Coins", UDim2.fromOffset(24, 410), UDim2.fromOffset(230, 30), SIZES.heading,
+		C.yellow, UIStyle.heading(), Enum.TextXAlignment.Center)
 
 	-- Middle: Competition Number and Scale.
 	local middleX = 290
@@ -210,6 +214,7 @@ function StatsScreen.start()
 	local function draw(snapshot: StatsRemotes.StatsSnapshot)
 		classText.Text = string.upper(snapshot.classLabel) .. " CLASS"
 		weightText.Text = string.format("Bodyweight %.1f kg\nTarget %.1f kg", snapshot.bodyweightKg, snapshot.targetKg)
+		coinsText.Text = string.format("%s %s", CoinConfig.format(snapshot.coins or 0), CoinConfig.Name)
 		local total = 0
 		for _, lift in ipairs(ProgressionConfig.Lifts) do
 			local cn = snapshot.competitionNumber[lift] or 0

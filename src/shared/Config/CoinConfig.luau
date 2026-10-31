@@ -23,4 +23,21 @@ CoinConfig.Name = "COINS"
 CoinConfig.MaxSingleChange = 1000000
 CoinConfig.MaxBalance = 1000000000
 
+-- The player attribute the server keeps at the player's balance, for screens (CoinDisplayService).
+CoinConfig.BalanceAttribute = "Coins"
+
+-- "1250" -> "1,250".
+function CoinConfig.format(coins: number): string
+	local text = tostring(math.floor(coins))
+	local sign, digits = string.match(text, "^(%-?)(%d+)$")
+	if digits == nil then
+		return text
+	end
+	local grouped = string.reverse((string.gsub(string.reverse(digits), "(%d%d%d)", "%1,")))
+	if string.sub(grouped, 1, 1) == "," then
+		grouped = string.sub(grouped, 2)
+	end
+	return (sign or "") .. grouped
+end
+
 return CoinConfig

@@ -2784,6 +2784,14 @@ the gear (Blender models of each item on the avatar).
 > the player cannot afford it, never below 0). A fraction, a negative or a
 > ridiculous amount is refused, never saved. Nothing pays coins yet: meets start
 > paying in step 3.
+>
+> **(2) built (2026-10-30): coins on screen.** A **COINS badge** on the left edge
+> above the STATS tab shows a gold coin and the balance ("1,250"), counting up or
+> down when it changes. Every change gets a **pop-up** beside it that rises and
+> fades: "+150 COINS" in green (or "-200 COINS" in red) with what it was for
+> under it ("1ST PLACE", "SHOP: RED BELT"); several in a row come one after
+> another. The **STATS** screen shows the coins under the bodyweight. Display
+> only: the server keeps the balance and the client can never change it.
 
 
 ---

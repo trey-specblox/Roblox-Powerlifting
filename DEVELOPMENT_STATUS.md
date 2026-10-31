@@ -2851,8 +2851,32 @@ and polish.
     warning is old). Studio Play (by Claude) with the probe ENABLED: 441
     passed, 0 failed; the real Studio profile loaded at version 12. Probe
     switched back to ENABLED = false.
-  NEXT ACTION: money step 2 (coins on screen: a coin counter, "+N COINS"
-  pop-ups, the STATS screen) when the user says so.
+  Money step 2 BUILT (2026-10-30, user: "Start step 2"). COMMITTED AND PUSHED
+  with the user's approval ("Commit and push"); `git log` for the hash.
+  - PlayerDataService: onCoinsChanged(listener) (player, change, balance,
+    reason), called after every add/spend; it still creates no remotes.
+  - New src/server/PlayerData/CoinDisplayService.luau (started in
+    init.server after PlayerStatsService): player attribute "Coins"
+    (CoinConfig.BalanceAttribute) set on load and after each change;
+    fires CoinRemotes.CHANGED to that player. Display only.
+  - New src/shared/Economy/CoinRemotes.luau (CoinsChanged, CoinChange
+    {change, balance, reason}). CoinConfig: BalanceAttribute, format()
+    ("1,250").
+  - New src/client/UI/CoinCounter.luau (started in init.client): COINS
+    badge above the STATS tab (gold coin, counting balance), pop-ups
+    (+green / -red, reason under, rise 60 px over 2 s, one per second).
+  - StatsRemotes snapshot + PlayerStatsService: `coins`; StatsScreen shows
+    "N COINS" under the bodyweight.
+  - Checks: luau-lsp, no new errors. Studio Play (by Claude): the real code
+    set the attribute to 0 when the save loaded; TEMP display test from the
+    command bar (attribute + remote only, nothing saved): badge and coin
+    read well; 3 payouts in a row overlapped at first -> spacing raised to
+    1 s / 60 px, re-tested: stacked cleanly; a -200 "Shop: Red Belt" pop-up
+    shows red and the counter counts down; STATS shows "0 COINS" from the
+    real save. NOT tested: PlayerDataService.addCoins -> listener -> screen
+    end to end (nothing calls addCoins yet; step 3 will).
+  NEXT ACTION: money step 3 (meets pay: prize pot, finishing, 9/9, gym
+  record bonus; the results list earnings) when the user says so.
   OLDER NEXT ACTION (done): the user approves the plan / amounts, then step 1 (coins in
   the save: new schema version, migration, server add/spend, probe test).
   Still to see in a real Local meet: the record sign switched on by a real
