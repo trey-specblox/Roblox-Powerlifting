@@ -2720,7 +2720,89 @@ and polish.
     ("GymRecordsTable"); GymRecordsConfig gains WallTag.
   - init.server.luau starts GymRecordsWall after GymRecords.
   - Checks: luau-lsp, no errors in the changed files.
-  NEXT ACTION: step 4 (platform screen, facts strip, server announcement).
+  Step 4 BUILT (2026-10-30, user: "Start step 4"). COMMITTED AND PUSHED
+  together with step 4b, with the user's approval ("Commit and push");
+  `git log` for the hash.
+  - New src/shared/Meet/GymRecordRemotes.luau: GymRecordBroken (server ->
+    every client, Announcement {name, userId, classLabel, records}).
+  - GymRecords: creates the remote; nameOf(userId) (moved here from
+    GymRecordsWall, which now uses it); announce(name, userId, class,
+    broken) looks up the old holders' names and fires everyone.
+  - LocalMeetService: Lifter.gymRecords / boardLines / boardMood; when a
+    claim comes back with broken records, the platform screen is redrawn
+    (only while that meet is still running) and GymRecords.announce fires;
+    factsFor puts "NEW GYM <LIFT> RECORD!" first and adds "GYM <LIFT> RECORD
+    HOLDER" / "HOLDS n GYM RECORDS" for records already held.
+    saveOfficialBest moved below stillLifting/boardFor (it uses them).
+  - New src/client/Meet/GymRecordAnnouncer.luau (started in
+    init.client.luau): the NEW GYM RECORD card (UIStyle panel, top middle
+    under the lift banner, slides in for 7 s, queued) and a yellow system
+    chat line.
+  - Checks: luau-lsp, no errors in the changed files. Rojo missed a
+    GymRecords edit again (re-saved; every file checked against disk).
+    Studio Play (by Claude), TEMP announcements fired from the command bar
+    (display only): the card showed "treylicious1 / 190 KG SQUAT / 83 KG
+    CLASS · OLD RECORD: builderman 180 KG / + NEW TOTAL RECORD 540 KG"
+    (screenshot reads well); "BEAT THEIR OWN 100 KG" and "FIRST RECORD IN
+    THIS CLASS" variants queued one after another and the card slid away;
+    no errors; the chat channel exists (the chat line itself not looked at).
+    NOT tested: the platform screen's record facts in a real meet.
+  Step 4b BUILT (2026-10-30, user, from a screenshot of another game's
+  top-line news: "on top and less visible ... I dont want players getting
+  annoyed"; "a teleport button on the left, where you can tp to any place";
+  a confirmed record weight "gets announced + a tiny option to tp to
+  watch"). COMMITTED AND PUSHED with step 4 (see above). GAME_DESIGN: §31.6 "(4)"
+  CHANGED note, and "The TELEPORT menu" under "One UI style".
+  - GymRecordAnnouncer rewritten: no card; one outlined line at the very top
+    (coloured name / record / kg), 7 s (attempts 12 s), at most 3 lines,
+    below the lift banner while it shows; chat line kept for records set.
+    RecordAttempt lines get a small WATCH button (not for the lifter or
+    players already in the venue) that asks TeleportRemotes for the venue.
+  - GymRecordRemotes: every record carries `level` (GYM now; NATIONAL /
+    WORLD later); new RecordAttempt remote (AttemptNews {name, userId,
+    classLabel, records, where, watch}); createOnServer / waitForClient
+    return both remotes.
+  - GymRecords: wouldBreak(class, claims) (only existing records, heavier
+    only) and announceAttempt(...).
+  - LocalMeetService: announceAttempt when a weight is confirmed and at the
+    lift for a timed-out default (official meets only, once per attempt;
+    Total = official-meet bests with this lift raised). enter() split into
+    enterVenue(player, point?) + teleportIn / teleportOut (a lifter in the
+    running meet must LEAVE first; teleporting out = off the sign-up list).
+  - New TELEPORT menu: src/shared/Config/TeleportConfig.luau (22 places:
+    rooms by their Room_ region, fixed points, a tag, the venue),
+    src/shared/World/TeleportRemotes.luau (RequestTeleport RemoteFunction),
+    src/server/World/TeleportService.luau (all checks, floor raycast,
+    2 s cooldown; started in init.server after LocalMeetService),
+    src/client/UI/TeleportMenu.luau (T or the TELEPORT tab under STATS;
+    started in init.client).
+  - Checks: luau-lsp, no errors in the changed files; every file checked
+    against disk in Studio. Studio Play (by Claude): all 22 places teleport
+    through the real remote and land on the floor (ground 3, upstairs 17,
+    venue entered with its attribute set); venue -> Sauna left the venue;
+    refused: unknown place, a number, the 2 s cooldown, "already at the
+    Local meet", CardioMachine, MockMeetSlot, anchored. TEMP news lines fired
+    from the command bar (display only): screenshot reads like the user's
+    example; clicking WATCH teleported into the venue and hid the button;
+    in the venue the attempt line shows no WATCH. wouldBreak on a memory-
+    only copy of GymRecords: empty spot / tie / lighter / other class / bad
+    input -> nothing; heavier squat + Total -> both. Menu screenshot OK
+    (left column clipped -> 4 px inset added after, not re-screenshotted).
+    NOT tested: a record attempt announced from a real meet (needs a record
+    set first and passing the minigames); a lifter refused mid-meet.
+  - CHANGED (user, same day: "Too much areas to tp"): TeleportConfig now has
+    only 4 places, one section MAIN AREAS: Lobby, Shop, Mock Meet desk, Local
+    meet (inside). Menu is a 2 x 2 grid (560 x 290 panel). Studio Play (by
+    Claude): all 4 teleport and land on the floor; a removed place (Cafe) is
+    refused as unknown; menu screenshot reads well.
+  NEXT ACTION: still to see in a real Local meet: a record attempt line
+  (set a record, then declare a heavier weight) and the platform screen's
+  record facts. Then ask the user what is next.
+  OLDER NEXT ACTION (done: committed): the user tries the TELEPORT menu and the news lines in
+  Studio (a Local meet: set a record, then declare a heavier weight) and
+  approves the commit of steps 4 + 4b.
+  OLDER NEXT ACTION: the user plays a Local meet in Studio (watch the card and the
+  platform screen's facts strip after a good lift) and approves the commit.
   OLDER NEXT ACTION: the user looks at it in Studio (visual check) and approves
   the commit. The user also has a Mock Meet and a deadlift to
   try in Studio.

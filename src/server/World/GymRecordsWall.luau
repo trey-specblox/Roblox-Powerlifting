@@ -17,7 +17,6 @@
 ]]
 
 local CollectionService = game:GetService("CollectionService")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -33,29 +32,10 @@ local GymRecordsWall = {}
 local RECORD_FOR_COLUMN = { SQUAT = "Squat", BENCH = "Bench", DEADLIFT = "Deadlift", TOTAL = "Total" }
 
 local tables: { SurfaceGui } = {}
-local names: { [number]: string } = {}
 local started = false
 
 local function kgText(kg: number): string
 	return string.format("%g KG", math.floor(kg * 100 + 0.5) / 100)
-end
-
--- The holder's username: a player in this server, else Roblox's name lookup (cached), else a stand-in.
-local function nameOf(userId: number): string
-	local player = Players:GetPlayerByUserId(userId)
-	if player then
-		names[userId] = player.Name
-		return player.Name
-	end
-	if names[userId] == nil and userId > 0 then
-		local ok, name = pcall(function()
-			return Players:GetNameFromUserIdAsync(userId)
-		end)
-		if ok and typeof(name) == "string" then
-			names[userId] = name
-		end
-	end
-	return names[userId] or ("Player " .. userId)
 end
 
 local function drawCell(cell: Frame, holder: GymRecords.Holder?)
@@ -74,7 +54,7 @@ local function drawCell(cell: Frame, holder: GymRecords.Holder?)
 			unknown.Visible = holder.userId <= 0
 		end
 		if holderLabel and holderLabel:IsA("TextLabel") then
-			holderLabel.Text = nameOf(holder.userId)
+			holderLabel.Text = GymRecords.nameOf(holder.userId)
 		end
 		if kgLabel and kgLabel:IsA("TextLabel") then
 			kgLabel.Text = kgText(holder.kg)
@@ -149,9 +129,6 @@ function GymRecordsWall.start()
 		attach(gui)
 	end
 	CollectionService:GetInstanceAddedSignal(GymRecordsConfig.WallTag):Connect(attach)
-	Players.PlayerAdded:Connect(function(player)
-		names[player.UserId] = player.Name
-	end)
 	task.spawn(drawAll)
 end
 

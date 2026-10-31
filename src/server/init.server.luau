@@ -57,6 +57,10 @@ GymRecordsWall.start()
 local LocalMeetService = require(MeetFolder:WaitForChild("LocalMeetService"))
 LocalMeetService.start()
 
+-- The TELEPORT menu: the client asks for a place, the server checks and moves the player.
+local TeleportService = require(WorldFolder:WaitForChild("TeleportService"))
+TeleportService.start()
+
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the
 	Git-tracked templates and tagged before TrainingStationService looks for racks.

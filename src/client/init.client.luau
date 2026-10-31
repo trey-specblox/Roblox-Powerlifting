@@ -16,6 +16,10 @@ PromptController.start()
 local StatsScreen = require(UIFolder:WaitForChild("StatsScreen"))
 task.spawn(StatsScreen.start)
 
+-- The TELEPORT menu: press T or the TELEPORT tab. It only asks; the server checks and moves the player.
+local TeleportMenu = require(UIFolder:WaitForChild("TeleportMenu"))
+task.spawn(TeleportMenu.start)
+
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))
 
@@ -58,6 +62,10 @@ MockMeetController.start()
 -- The Local meet: the venue screen (countdown, sign-up, standings) and the lifter's meet screen.
 local LocalMeetController = require(MeetFolder:WaitForChild("LocalMeetController"))
 task.spawn(LocalMeetController.start)
+
+-- A gym record set at an official meet, for everyone in the server (GAME_DESIGN §31.6).
+local GymRecordAnnouncer = require(MeetFolder:WaitForChild("GymRecordAnnouncer"))
+task.spawn(GymRecordAnnouncer.start)
 
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete

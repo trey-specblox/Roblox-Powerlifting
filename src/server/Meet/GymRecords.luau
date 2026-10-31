@@ -28,12 +28,14 @@
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local ConfigFolder = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config")
 local Settings = require(ConfigFolder:WaitForChild("GymRecordsConfig"))
 local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig"))
+local GymRecordRemotes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Meet"):WaitForChild("GymRecordRemotes"))
 
 local GymRecords = {}
 
@@ -57,7 +59,10 @@ local listeners: { (classKey: string) -> () } = {}
 local queue: { Job } = {}
 local busy = false
 local started = false
-local saves = 0 -- finished saves; a refresh read that overlaps one is dropped
+local brokenRemote: RemoteEvent? = nil
+local attemptRemote: RemoteEvent? = nil
+local names: { [number]: string } = {}
+local saves = 0 -- finished saves (a refresh read that overlaps one is dropped)
 
 local isClass: { [string]: boolean } = {}
 for _, class in ipairs(WeightClassConfig.Classes) do
@@ -290,6 +295,93 @@ function GymRecords.onChanged(listener: (classKey: string) -> ())
 	table.insert(listeners, listener)
 end
 
+-- A record holder's username: a player in this server, else Roblox's name lookup (cached), else a stand-in.
+function GymRecords.nameOf(userId: number): string
+	local player = Players:GetPlayerByUserId(userId)
+	if player then
+		names[userId] = player.Name
+		return player.Name
+	end
+	if names[userId] == nil and userId > 0 then
+		local ok, name = pcall(function()
+			return Players:GetNameFromUserIdAsync(userId)
+		end)
+		if ok and typeof(name) == "string" then
+			names[userId] = name
+		end
+	end
+	return names[userId] or ("Player " .. userId)
+end
+
+--[[
+	Tells everyone in the server that `name` (UserId `userId`) set the records
+	in `broken` (from submit's `done`) in `classKey` (GAME_DESIGN §31.6: the
+	whole server hears it, beating your own record too). One message for
+	everything one lift broke. Yields while it looks up the old holders' names.
+]]
+function GymRecords.announce(name: string, userId: number, classKey: string, broken: { Broken })
+	local remote = brokenRemote
+	if remote == nil or #broken == 0 then
+		return
+	end
+	local records: { GymRecordRemotes.BrokenRecord } = {}
+	for _, record in ipairs(broken) do
+		local previous = record.previous
+		table.insert(records, {
+			level = "GYM",
+			record = record.record,
+			kg = record.kg,
+			previousName = if previous then GymRecords.nameOf(previous.userId) else nil,
+			previousKg = if previous then previous.kg else nil,
+			own = previous ~= nil and previous.userId == userId,
+		})
+	end
+	local announcement: GymRecordRemotes.Announcement = { name = name, userId = userId, classLabel = classKey, records = records }
+	remote:FireAllClients(announcement)
+end
+
+--[[
+	The records in `classKey` that `claims` ({ [record] = kg }) would beat if
+	they were lifted now, as read last (submit still decides). An empty spot is
+	not counted: the first record in a class is no chase worth announcing.
+]]
+function GymRecords.wouldBreak(classKey: string, claims: { [string]: number }): { Broken }
+	local list: { Broken } = {}
+	local class = records[classKey]
+	if not isClass[classKey] or class == nil or typeof(claims) ~= "table" then
+		return list
+	end
+	for _, record in ipairs(Settings.Records) do
+		local kg = claims[record]
+		local holder = class[record]
+		if holder and isFinite(kg) and kg > holder.kg + HEAVIER_BY then
+			table.insert(list, { record = record, kg = kg, previous = table.clone(holder) })
+		end
+	end
+	return list
+end
+
+--[[
+	Tells everyone in the server that `name` (UserId `userId`) is about to try
+	the records in `chasing` (from wouldBreak) at `where` (user 2026-10-30: "if
+	a player confirms a number and its a gym record ... then it gets announced
+	+ a tiny option to tp to watch"). `watch` is the TELEPORT place to go there.
+]]
+function GymRecords.announceAttempt(name: string, userId: number, classKey: string, chasing: { Broken }, where: string,
+	watch: string?)
+	local remote = attemptRemote
+	if remote == nil or #chasing == 0 then
+		return
+	end
+	local list: { GymRecordRemotes.AttemptRecord } = {}
+	for _, record in ipairs(chasing) do
+		table.insert(list, { level = "GYM", record = record.record, kg = record.kg })
+	end
+	local news: GymRecordRemotes.AttemptNews = { name = name, userId = userId, classLabel = classKey, records = list,
+		where = where, watch = watch }
+	remote:FireAllClients(news)
+end
+
 -- "live", "studio" or "memory" once known (for the wall's test label), else nil.
 function GymRecords.mode(): string?
 	return mode
@@ -300,6 +392,10 @@ function GymRecords.start()
 		return
 	end
 	started = true
+	brokenRemote, attemptRemote = GymRecordRemotes.createOnServer(ReplicatedStorage)
+	Players.PlayerAdded:Connect(function(player)
+		names[player.UserId] = player.Name
+	end)
 	-- Before a live server shuts down, give the waiting saves time to finish.
 	game:BindToClose(function()
 		local deadline = os.clock() + 25

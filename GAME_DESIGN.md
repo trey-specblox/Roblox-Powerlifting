@@ -2108,6 +2108,17 @@ multiplayer-only, not because progression requires it.
     technique stats as a **five-cornered radar** (effective values, the edge = 100).
     It only shows numbers; the server answers with a read-only copy and nothing can
     be changed from it.
+  - **The TELEPORT menu** (user, 2026-10-30: "a teleport button on the left, where
+    you can tp to any place"; built the same day): **T** or the **TELEPORT** tab
+    under the STATS tab opens a short list of the **main areas only** (user, same
+    day: "Too much areas to tp ... only lobby, Shop, Mock meet desk, and Local meet
+    area"): **LOBBY, SHOP, MOCK MEET DESK, LOCAL MEET** (inside the venue). Free,
+    for everyone.
+    The server checks every teleport: not during a lift, on a machine or posed at a
+    rack, in the private Mock Meet room, or while lifting in a running Local meet
+    (LEAVE first); a 2-second wait between teleports. Teleporting out of the Local
+    meet venue takes the player off its sign-up list, like its EXIT. New places are
+    one line in `TeleportConfig`.
 - **Meet first, rewards next.** The first build is the whole meet: weigh-in (class
   locked, §32.7), attempt choice, the 9 lifts with the existing minigames, judges'
   lights, the attempt board and the total. It **saves nothing permanent**: no
@@ -2923,6 +2934,40 @@ sum-of-bests Total.
 > kg, and changes as soon as a record falls (here, or within a minute from
 > another server). An empty record still shows "?" and "—". In Studio the
 > title reads "GYM RECORDS (STUDIO TEST)".
+>
+> **(4) built (2026-10-30): the announcements.** When a lift sets a gym record,
+> **everyone in the server** gets a card at the top of the screen for 7 seconds
+> ("NEW GYM RECORD": the name, the kg and lift, the class, and who held it
+> before, "BEAT THEIR OWN ..." or "FIRST RECORD IN THIS CLASS"; a Total broken
+> by the same lift on the line below) and a line in the chat. The lifter's
+> platform screen puts "NEW GYM SQUAT RECORD!" first in its facts strip, and
+> a lifter who already holds gym records in their class shows "GYM SQUAT
+> RECORD HOLDER" (or "HOLDS 3 GYM RECORDS"). The first build of the gym record
+> wall is complete; the §30.5 money bonus waits for the money system.
+>
+> **[CHANGED BY THE USER, 2026-10-30]: quieter news, and record attempts.** "Make
+> sure the serverside announcements is on top and less visible ... I dont want
+> players getting annoyed": the card is gone. Record news is **one short line of
+> outlined text at the very top of the screen** (no box), coloured words for the
+> name, the record and the kg, gone after a few seconds; at most 3 lines at once.
+> While a player's own lift banner is up, the lines sit just below it. Example:
+> "treylicious1 broke builderman's GYM RECORD: 190 KG SQUAT + 540 KG TOTAL
+> (83 kg)". The chat line stays.
+>
+> **Record attempts** (user, same day: "if a player confirms a number and its a
+> gym record/national record/world record. then it gets announced + a tiny
+> option to tp to watch"): when a lifter at an official meet confirms a weight
+> (or the timer picks it for them) that would beat a gym record in their class,
+> everyone in the server gets a line "builderman is going for a GYM RECORD:
+> 280 KG DEADLIFT (93 kg) at the local meet" with a small **WATCH** button that
+> teleports the player into the venue (the same check as the TELEPORT menu). The
+> Total counts when making the lift would push the lifter's official-meet bests
+> in the class past the Total record. Once per attempt. No WATCH for the lifter
+> or for players already at the meet. **An empty record spot is not announced**
+> as an attempt (otherwise every opener in a new class would be), only beating
+> an existing record. National and world records use the same lines when they
+> exist (each record carries its level: GYM, NATIONAL, WORLD); only gym records
+> exist now.
 
 
 ---
