@@ -2823,9 +2823,40 @@ and polish.
     looked narrower than the screen -> enlarged to 23 x 6.
     NOT tested: the sign switched on by a real meet (needs a record and a
     heavier attempt in one meet).
-  NEXT ACTION: still to see in a real Local meet: the sign switched on by a
-  real record attempt and the platform screen's record facts. Then ask the
-  user what is next.
+  The user approved the record sign ("Its good").
+
+  MONEY SYSTEM PLANNED (2026-10-30, user: "Plan the money system", picked
+  from options): GAME_DESIGN §30.6. One currency, COINS, from official meets
+  only (prize pot by place, finishing bonus, 9/9 bonus, gym record bonus:
+  full for taking someone else's, small for your own, none for an empty
+  spot); first thing to buy: cosmetic gear in the Shop. The deadlift-typing
+  cosmetic currency is a later step. Amounts [PROVISIONAL] in §30.6. Build
+  order: (1) coins in the save, (2) on screen, (3) meets pay, (4) the Shop,
+  (5) wearing the gear. Nothing built yet.
+  Money step 1 BUILT (2026-10-30, user: "Start step 1"). COMMITTED AND PUSHED
+  with the user's approval ("Commit and push"), together with the money
+  plan (GAME_DESIGN 30.6); `git log` for the hash.
+  - PlayerProfileSchema: CURRENT_VERSION 12; `wallet {coins, earnedTotal,
+    spentTotal}` (export type Wallet), template all 0; migrations[11] adds
+    it or repairs (a usable whole count >= 0 kept, else 0).
+  - New src/shared/Config/CoinConfig.luau: Name "COINS", MaxSingleChange
+    1,000,000, MaxBalance 1,000,000,000 (safety limits, not balance).
+  - ProfileOperations: getCoins / addCoins / spendCoins (CoinOutcome Added,
+    Spent, NotEnough, Rejected); whole amounts > 0 only; unusable wallet
+    refused. PlayerDataService: getCoins / addCoins / spendCoins(player,
+    amount, reason) with a log line per change. Nothing calls them yet.
+  - PlayerDataProbe: version checks 11 -> 12; new test 50 (new profile 0,
+    11 -> 12 migration, repair, add/spend rules, limits, reload).
+  - Checks: luau-lsp, no new errors (PlayerDataService line 325's pcall
+    warning is old). Studio Play (by Claude) with the probe ENABLED: 441
+    passed, 0 failed; the real Studio profile loaded at version 12. Probe
+    switched back to ENABLED = false.
+  NEXT ACTION: money step 2 (coins on screen: a coin counter, "+N COINS"
+  pop-ups, the STATS screen) when the user says so.
+  OLDER NEXT ACTION (done): the user approves the plan / amounts, then step 1 (coins in
+  the save: new schema version, migration, server add/spend, probe test).
+  Still to see in a real Local meet: the record sign switched on by a real
+  record attempt and the platform screen's record facts.
   OLDER NEXT ACTION (done: committed): the user tries the TELEPORT menu and the news lines in
   Studio (a Local meet: set a record, then declare a heavier weight) and
   approves the commit of steps 4 + 4b.

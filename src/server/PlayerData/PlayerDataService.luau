@@ -403,6 +403,57 @@ function PlayerDataService.getCompetitionScale(player: Player, lift: string): nu
 end
 
 --[[
+	COINS (GAME_DESIGN.md 30.6). The player's coins, or nil when the data is not
+	loaded.
+]]
+function PlayerDataService.getCoins(player: Player): number?
+	local data = activeData(player, "getCoins")
+	if data == nil then
+		return nil
+	end
+	return ProfileOperations.getCoins(data)
+end
+
+--[[
+	Adds `amount` coins for `reason` (a short log label, e.g. "Local meet 1st").
+	SERVER-ONLY: the caller decided the amount itself (a meet payout from
+	config); no client number may reach here. Returns the outcome and the new
+	balance; nil when the player has no active session.
+]]
+function PlayerDataService.addCoins(player: Player, amount: number, reason: string): (ProfileOperations.CoinOutcome?, number?)
+	local data = activeData(player, "addCoins")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome: ProfileOperations.CoinOutcome, balance = ProfileOperations.addCoins(data, amount)
+	if outcome == "Added" then
+		print(string.format("[PlayerDataService] %s +%d coins (%s): %d", player.Name, amount, reason, balance :: number))
+	else
+		warn(string.format("[PlayerDataService] %s: %s coins refused (%s, %s)", player.Name, tostring(amount), reason, outcome))
+	end
+	return outcome, balance
+end
+
+--[[
+	Spends `amount` coins for `reason` (e.g. "Shop: Red Belt"). SERVER-ONLY:
+	the price comes from config, never from a client. Returns the outcome
+	("Spent", "NotEnough", "Rejected") and the balance; nil with no session.
+]]
+function PlayerDataService.spendCoins(player: Player, amount: number, reason: string): (ProfileOperations.CoinOutcome?, number?)
+	local data = activeData(player, "spendCoins")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome: ProfileOperations.CoinOutcome, balance = ProfileOperations.spendCoins(data, amount)
+	if outcome == "Spent" then
+		print(string.format("[PlayerDataService] %s -%d coins (%s): %d", player.Name, amount, reason, balance :: number))
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: spending %s coins refused (%s)", player.Name, tostring(amount), reason))
+	end
+	return outcome, balance
+end
+
+--[[
 	THERE IS DELIBERATELY NO METHOD HERE THAT WRITES AN ARBITRARY COMPETITION
 	NUMBER.
 

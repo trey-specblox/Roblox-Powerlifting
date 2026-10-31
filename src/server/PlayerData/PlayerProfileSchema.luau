@@ -15,8 +15,9 @@
 	Version 1 contains only fields whose values are actually decided: forecasted
 	maxes, technique stats and bodyweight, all drawn from StartingValuesConfig.
 
-	Fatigue, currency, inventory, equipment, buffs, meet progression, titles,
-	cosmetics, coaches and origins are all coming, and GAME_DESIGN.md Q3 lists
+	Fatigue, inventory, equipment, buffs, meet progression, titles,
+	cosmetics, coaches and origins are all coming (coins arrived in version 12),
+	and GAME_DESIGN.md Q3 lists
 	them, but their SHAPES are undefined. Guessing a shape now would mean
 	migrating away from that guess later. The migration system below is what makes
 	adding them safe, so each is added when its system is built.
@@ -49,9 +50,9 @@ local PlayerProfileSchema = {}
 	Bump this whenever the shape of ProfileData changes, and add a matching entry
 	to the migrations table below (version 9: the meet CN allowance and career;
 	version 10: the Competition Budget removed; version 11: the official-meet
-	bests for the gym records wall).
+	bests for the gym records wall; version 12: the coin wallet).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 11
+PlayerProfileSchema.CURRENT_VERSION = 12
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -210,6 +211,24 @@ export type Career = {
 	localWins: number,
 }
 
+--[[
+	The player's coins, account-wide, added in version 12 (GAME_DESIGN.md
+	30.6, the money system's first build).
+
+		coins         whole coins the player has now; never negative
+		earnedTotal   every coin ever added (never goes down)
+		spentTotal    every coin ever spent (never goes down)
+
+	WHOLE NUMBERS ONLY. Coins are counted, not measured, so ProfileOperations
+	refuses a fraction rather than rounding it away. Only ProfileOperations.
+	addCoins / spendCoins change them; nothing sets a balance outright.
+]]
+export type Wallet = {
+	coins: number,
+	earnedTotal: number,
+	spentTotal: number,
+}
+
 -- (The three account-wide Competition Budgets, section 29.9, added in version 3, were removed in
 -- version 10: the per-build meet allowance above replaced them.)
 
@@ -362,6 +381,9 @@ export type ProfileData = {
 	-- Account-wide meet results that are not a build's (version 9).
 	career: Career,
 
+	-- Account-wide coins (version 12).
+	wallet: Wallet,
+
 	meta: Meta,
 }
 
@@ -436,6 +458,13 @@ local template: ProfileData = {
 	-- A new lifter has won nothing.
 	career = {
 		localWins = 0,
+	},
+
+	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
+	wallet = {
+		coins = 0,
+		earnedTotal = 0,
+		spentTotal = 0,
 	},
 
 	bodyweight = {
@@ -1162,6 +1191,37 @@ migrations[10] = function(data: ProfileData)
 			if typeof(build) == "table" then
 				fillMissing(build)
 			end
+		end
+	end
+end
+
+--[[
+	Version 11 to 12: the coin wallet (user, 2026-10-30; GAME_DESIGN 30.6, the
+	money system's first build).
+
+	EVERY PROFILE STARTS WITH 0 COINS. Nothing before this version earned any.
+	Reconcile usually adds the template's wallet before this runs; this step
+	makes sure one exists and REPAIRS, NEVER OVERWRITES: a usable count (a
+	whole number of at least 0) is kept exactly, and only a missing, negative,
+	fractional or non-number count becomes 0.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED.
+
+	IDEMPOTENT: a second run finds a usable wallet and changes nothing.
+]]
+local function isUsableCoinCount(value: any): boolean
+	return isUsableCounter(value) and value == math.floor(value)
+end
+
+migrations[11] = function(data: ProfileData)
+	local wallet = (data :: any).wallet
+	if typeof(wallet) ~= "table" then
+		(data :: any).wallet = { coins = 0, earnedTotal = 0, spentTotal = 0 }
+		return
+	end
+	for _, field in ipairs({ "coins", "earnedTotal", "spentTotal" }) do
+		if not isUsableCoinCount(wallet[field]) then
+			wallet[field] = 0
 		end
 	end
 end

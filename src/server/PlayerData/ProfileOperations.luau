@@ -46,6 +46,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
+local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -687,6 +688,83 @@ function ProfileOperations.addLocalWin(data: ProfileData): number?
 	end
 	career.localWins += 1
 	return career.localWins
+end
+
+--[[
+	=========================================================================
+	COINS  (GAME_DESIGN.md 30.6, the money system's first build; schema 12)
+	=========================================================================
+
+	The only ways coins change: addCoins (a server-decided payout, e.g. a
+	meet's prize) and spendCoins (a server-checked purchase). Both refuse
+	anything that is not a whole number above 0 and within
+	CoinConfig.MaxSingleChange, and a wallet whose stored values are unusable
+	(the migration repairs those on load, so this is a bug guard). There is no
+	setCoins: nothing replaces a balance outright.
+
+	SECURITY BOUNDARY: these cannot know WHY coins move. Their callers are
+	server systems that decided it themselves (a meet result, a Shop price
+	from config); no client amount may ever reach them.
+]]
+
+export type CoinOutcome = "Added" | "Spent" | "NotEnough" | "Rejected"
+
+local function isWholeCoins(value: any): boolean
+	return isFiniteNumber(value) and value > 0 and value == math.floor(value) and value <= CoinConfig.MaxSingleChange
+end
+
+-- The wallet, or nil when it is missing or holds an unusable value.
+local function walletOf(data: ProfileData): PlayerProfileSchema.Wallet?
+	local wallet = (data :: any).wallet
+	if typeof(wallet) ~= "table" then
+		return nil
+	end
+	for _, field in ipairs({ "coins", "earnedTotal", "spentTotal" }) do
+		local value = wallet[field]
+		if not isFiniteNumber(value) or value < 0 or value ~= math.floor(value) then
+			return nil
+		end
+	end
+	return wallet
+end
+
+-- The player's coins now (0 when the wallet is unusable).
+function ProfileOperations.getCoins(data: ProfileData): number
+	local wallet = walletOf(data)
+	return if wallet then wallet.coins else 0
+end
+
+--[[
+	Adds `amount` coins. Returns "Added" and the new balance, or "Rejected"
+	(a bad amount, an unusable wallet, or a balance that would pass
+	CoinConfig.MaxBalance) and nil, changing nothing.
+]]
+function ProfileOperations.addCoins(data: ProfileData, amount: number): (CoinOutcome, number?)
+	local wallet = walletOf(data)
+	if wallet == nil or not isWholeCoins(amount) or wallet.coins + amount > CoinConfig.MaxBalance then
+		return "Rejected", nil
+	end
+	wallet.coins += amount
+	wallet.earnedTotal += amount
+	return "Added", wallet.coins
+end
+
+--[[
+	Spends `amount` coins. Returns "Spent" and the new balance; "NotEnough"
+	and the unchanged balance when the player cannot afford it; or "Rejected"
+	and nil for a bad amount or an unusable wallet. Never goes below 0.
+]]
+function ProfileOperations.spendCoins(data: ProfileData, amount: number): (CoinOutcome, number?)
+	local wallet = walletOf(data)
+	if wallet == nil or not isWholeCoins(amount) then
+		return "Rejected", nil
+	end
+	if wallet.coins < amount then
+		return "NotEnough", wallet.coins
+	end
+	wallet.coins -= amount
+	wallet.spentTotal += amount
+	return "Spent", wallet.coins
 end
 
 -- (TRAINING ENERGY was retired in schema version 8, GAME_DESIGN 29.8, and the COMPETITION BUDGET in version 10, 29.9.)

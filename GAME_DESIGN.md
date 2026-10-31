@@ -2729,6 +2729,62 @@ and players a reason to enter meets.
 - **Server-decided.** The server decides whether a lift beat a record, from its own
   meet result; the client never reports it.
 
+### 30.6 The money system — first build (user, 2026-10-30, picked from options)
+
+- **One currency first: COINS.** Earned at official meets. The deadlift-typing
+  **cosmetic currency** (§34.9) stays a separate, later step, so a player-skill
+  reward can never buy anything that adds strength.
+- **Where coins come from (first build):** official meets only (the ones that
+  reward: at least 2 real players, §29.10). Solo / Mock Meets pay **nothing**.
+  - **Prize pot** (§30.3): a base pot plus an amount per **qualified** lifter, a
+    lifter who took at least one attempt (withdrawing before the first lift does
+    not count, so empty sign-ups cannot grow the pot). It is split by **place**
+    among lifters with a total: 1st the most.
+  - **Finishing bonus:** every lifter who ends the meet **with a total** gets a
+    small amount, so a newcomer in a strong meet still earns something.
+  - **9/9 bonus:** all nine attempts good.
+  - **Gym record bonus** (§30.5): taking a record **someone else holds** pays the
+    full bonus; beating **your own** record pays a **small bonus** (user's choice,
+    about a quarter); an empty spot pays none; one bonus per lift (a Total record
+    broken by the same lift is not paid again).
+- **What coins buy first:** **cosmetic gear in the Shop** (belts, knee sleeves,
+  wrist wraps, singlets in colours and designs; **appearance only**, no lifting
+  stats). Equipment with real stats (§30.4, §19) stays undecided. No entry fees yet.
+- **Server-decided.** Coins live in the player's save; only the server adds or
+  spends them, after checking (a purchase checks the price, the coins and that the
+  item is not owned yet). The client only asks and shows.
+
+**[PROVISIONAL] starting amounts** (one config table, changed freely):
+
+| What | Coins |
+|---|---|
+| Local prize pot | 100 + 50 per qualified lifter |
+| Pot split by place (lifters with a total) | 1st 50%, 2nd 30%, 3rd 20% (with only 2: 60% / 40%) |
+| Finishing with a total | 25 |
+| 9/9 | 50 |
+| Taking someone else's gym record | 150 per lift |
+| Beating your own gym record | 40 per lift |
+| Shop gear prices | about 150 to 1,500 |
+
+Example, a 4-lifter Local meet: pot 300 -> 150 / 90 / 60, plus 25 each for a
+total; a winner who also went 9/9 and took a squat record earns 150 + 25 + 50 +
+150 = 375.
+
+**Build order:** (1) coins in the save (a new save version) with the server's
+add and spend rules; (2) coins on screen (a coin counter, "+150 COINS" pop-ups,
+the STATS screen); (3) meets pay (prize pot, finishing, 9/9, record bonus) and the
+results screen lists what each lifter earned; (4) the Shop: a catalogue of
+cosmetic gear and prices, buying at the counter, owned items saved; (5) wearing
+the gear (Blender models of each item on the avatar).
+
+> **(1) built (2026-10-30), save version 12.** Every player has a coin wallet:
+> their coins, plus every coin ever earned and spent. Everyone starts at **0**
+> (nothing earned coins before). Coins are **whole numbers**; only two server
+> rules change them: **add** (a payout) and **spend** (a purchase, refused when
+> the player cannot afford it, never below 0). A fraction, a negative or a
+> ridiculous amount is refused, never saved. Nothing pays coins yet: meets start
+> paying in step 3.
+
 
 ---
 
