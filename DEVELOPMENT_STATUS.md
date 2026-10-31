@@ -2875,8 +2875,29 @@ and polish.
     shows red and the counter counts down; STATS shows "0 COINS" from the
     real save. NOT tested: PlayerDataService.addCoins -> listener -> screen
     end to end (nothing calls addCoins yet; step 3 will).
-  NEXT ACTION: money step 3 (meets pay: prize pot, finishing, 9/9, gym
-  record bonus; the results list earnings) when the user says so.
+  Money step 3 BUILT (2026-10-30, user: "Start step 3"). COMMITTED AND PUSHED
+  with the user's approval ("Commit and push"); `git log` for the hash.
+  - CoinConfig.LocalMeet [PROVISIONAL]: BasePot 100, PerQualifiedLifter 50,
+    PlaceShares {1} / {0.6, 0.4} / {0.5, 0.3, 0.2}, FinishBonus 25,
+    PerfectBonus 50, GymRecordBonus 150, OwnGymRecordBonus 40.
+  - New src/server/Meet/MeetPayout.luau (pure): pot, forMeet (place
+    shares rounded down, finishing, 9/9), forGymRecord (best eligible
+    bonus once; empty spot 0).
+  - LocalMeetService: Lifter.liftsStarted (counted when a lift really
+    starts) and coinsEarned; finishMeet pays each lifter still in the game
+    through PlayerDataService.addCoins when current.rewards and puts
+    "+N COINS" first in the result note; the gym record callback pays the
+    record bonus. Logs "prize pot N coins".
+  - New src/server/Dev/CoinPayoutProbe.server.luau (ENABLED false; Studio
+    only): MeetPayout checks + a real addCoins payout on the first player.
+  - Checks: luau-lsp, no errors. Studio Play (by Claude) with the probe on:
+    21 passed, 0 failed; real path 0 -> 225 coins through
+    PlayerDataService.addCoins, attribute 225, pop-ups shown ("+150 COINS ·
+    1ST PLACE"), a 1,000,000 spend NotEnough (nothing changed). Probe back
+    to ENABLED = false. NOT tested: a whole real Local meet paying out
+    (needs lifts passed by hand) and the record bonus from a real record.
+  NEXT ACTION: money step 4 (the Shop) when the user says so. Still to see
+  in a real Local meet: the payout at the end and a real gym record bonus.
   OLDER NEXT ACTION (done): the user approves the plan / amounts, then step 1 (coins in
   the save: new schema version, migration, server add/spend, probe test).
   Still to see in a real Local meet: the record sign switched on by a real

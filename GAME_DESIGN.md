@@ -2792,6 +2792,16 @@ the gear (Blender models of each item on the avatar).
 > under it ("1ST PLACE", "SHOP: RED BELT"); several in a row come one after
 > another. The **STATS** screen shows the coins under the bodyweight. Display
 > only: the server keeps the balance and the client can never change it.
+>
+> **(3) built (2026-10-30): official Local meets pay.** At the end of a meet that
+> rewards, each lifter gets their share of the prize pot by place, the finishing
+> bonus and the 9/9 bonus, with the amounts in the table above; each shows as its
+> own pop-up, and the meet's result screen lists the coins earned. A lifter counts
+> toward the pot once they have **started a lift** (pressed LIFT), so AFK sign-ups
+> add nothing. The **gym record bonus** is paid right after the record is saved
+> (150 for taking someone else's record, 40 for your own, nothing for an empty
+> spot, one per lift). A bomb-out or withdrawal earns nothing. Solo / Mock Meets
+> pay nothing.
 
 
 ---

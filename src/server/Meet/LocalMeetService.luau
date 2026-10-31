@@ -71,6 +71,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local TeleportConfig = require(ConfigFolder:WaitForChild("TeleportConfig"))
+local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
@@ -85,6 +86,7 @@ local ServerFolder = script.Parent.Parent
 local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
 local LocalMeetWarmUp = require(script.Parent:WaitForChild("LocalMeetWarmUp"))
 local GymRecords = require(script.Parent:WaitForChild("GymRecords"))
+local MeetPayout = require(script.Parent:WaitForChild("MeetPayout"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
@@ -145,6 +147,10 @@ type Lifter = {
 	announcedKg: number?,
 	-- While this round's weight would beat a record: the big screen's GYM RECORD ATTEMPT sign.
 	recordAttempt: { title: string, detail: string }?,
+	-- Lifts actually started (LIFT pressed and the minigames ran): one makes the lifter count toward the prize pot.
+	liftsStarted: number,
+	-- Coins paid to this lifter at this meet (gym record bonuses during it, the rest at the end).
+	coinsEarned: number,
 }
 
 type Meet = {
@@ -670,6 +676,14 @@ local function saveOfficialBest(current: Meet, lifter: Lifter, lift: string, kg:
 		if meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
 			boardFor(lifter, lifter.boardLines :: { string }, lifter.boardMood)
 		end
+		-- The gym record bonus (GAME_DESIGN 30.5, 30.6): someone else's record or your own; never an empty spot.
+		local bonus = MeetPayout.forGymRecord(userId, broken :: any, CoinConfig.LocalMeet)
+		if bonus and lifter.player.Parent then
+			local outcome = PlayerDataService.addCoins(lifter.player, bonus.amount, bonus.reason)
+			if outcome == "Added" then
+				lifter.coinsEarned += bonus.amount
+			end
+		end
 		GymRecords.announce(name, userId, lifter.classLabel, broken)
 	end)
 end
@@ -779,6 +793,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 			verdict = result
 		end)
 		if ok then
+			lifter.liftsStarted += 1
 			sendState(lifter, "Lifting", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg })
 			waitUntil(LIFT_TIMEOUT_SECONDS, function()
 				return not stillLifting(lifter) or verdict ~= nil
@@ -973,12 +988,43 @@ local function finishMeet(current: Meet)
 			placed += 1
 		end
 	end
+	-- The coins (GAME_DESIGN 30.6): only an official meet pays, never a Solo / Mock Meet.
+	local payouts: { [number]: { MeetPayout.Item } } = {}
+	if current.rewards then
+		local results: { MeetPayout.Lifter } = {}
+		for _, lifter in ipairs(current.lifters) do
+			local placing = current.places[lifter.player.UserId]
+			local good = 0
+			for _, lift in ipairs(MeetConfig.LiftOrder) do
+				for _, attempt in ipairs(lifter.lifts[lift].history) do
+					if attempt.result == "GoodLift" then
+						good += 1
+					end
+				end
+			end
+			table.insert(results, { key = lifter.player.UserId, place = placing and placing.place,
+				hasTotal = not lifter.withdrawn and placing ~= nil and placing.place ~= nil, qualified = lifter.liftsStarted > 0,
+				perfect = good == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift })
+		end
+		payouts = MeetPayout.forMeet(results, CoinConfig.LocalMeet)
+		log("prize pot %d coins", MeetPayout.pot(results, CoinConfig.LocalMeet))
+	end
 	for _, lifter in ipairs(current.lifters) do
 		local result = MeetTotal.resolve(meetAttempts(lifter))
 		local placing = current.places[lifter.player.UserId]
 		local saved: { string } = {}
 		if not lifter.withdrawn then
 			saved = saveLifter(current, lifter, result.total, result.best, placing and placing.place)
+			if lifter.player.Parent then
+				for _, item in ipairs(payouts[lifter.player.UserId] or {}) do
+					if PlayerDataService.addCoins(lifter.player, item.amount, item.reason) == "Added" then
+						lifter.coinsEarned += item.amount
+					end
+				end
+			end
+		end
+		if lifter.coinsEarned > 0 then
+			table.insert(saved, 1, string.format("+%s %s", CoinConfig.format(lifter.coinsEarned), CoinConfig.Name))
 		end
 		local note: string
 		if placing and placing.place and placing.score then
@@ -1171,6 +1217,8 @@ local function tryStartMeet()
 			gymRecords = {},
 			boardLines = nil,
 			boardMood = nil,
+			liftsStarted = 0,
+			coinsEarned = 0,
 		}
 		table.insert(current.lifters, lifter)
 		current.byPlayer[player] = lifter
