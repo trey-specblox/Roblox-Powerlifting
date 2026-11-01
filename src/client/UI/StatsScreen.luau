@@ -191,6 +191,19 @@ function StatsScreen.start()
 	local loading = UIStyle.text(body, "Loading", UDim2.fromOffset(620, 440), UDim2.fromOffset(300, 30), SIZES.body, C.muted,
 		nil, Enum.TextXAlignment.Center)
 
+	-- Under the radar: this season's ladder toward Nationals (GAME_DESIGN §35.8), points and a bar.
+	local ladderY = 384
+	UIStyle.text(body, "LadderName", UDim2.fromOffset(640, ladderY), UDim2.fromOffset(170, 28), SIZES.body, C.white,
+		UIStyle.heading()).Text = "NATIONALS LADDER"
+	local ladderText = UIStyle.text(body, "Ladder", UDim2.fromOffset(800, ladderY), UDim2.fromOffset(110, 28),
+		SIZES.heading, C.yellow, UIStyle.heading(), Enum.TextXAlignment.Right)
+	local ladderBar = UIStyle.frame(body, "LadderBar", UDim2.fromOffset(640, ladderY + 34), UDim2.fromOffset(270, 12),
+		C.navyDeep)
+	UIStyle.stroke(ladderBar, C.white, 1)
+	local ladderFill = UIStyle.frame(ladderBar, "Fill", UDim2.fromOffset(0, 0), UDim2.fromScale(0, 1), C.yellow)
+	local ladderHint = UIStyle.text(body, "LadderHint", UDim2.fromOffset(640, ladderY + 52), UDim2.fromOffset(270, 20),
+		SIZES.small, C.muted)
+
 	UIStyle.exitButton(holder, "Back", "BACK", UDim2.new(1, -150, 1, 20), function()
 		holder.Visible = false
 	end)
@@ -221,6 +234,13 @@ function StatsScreen.start()
 		coinsText.Text = string.format("%s %s", CoinConfig.format(snapshot.coins or 0), CoinConfig.Name)
 		local titles = snapshot.titles or {}
 		titlesText.Text = if #titles > 0 then string.upper(table.concat(titles, "  ·  ")) else ""
+		local ladder = snapshot.ladder
+		if ladder then
+			local daysLeft = math.max(1, math.ceil((ladder.seasonEndsAt - os.time()) / 86400))
+			ladderText.Text = if ladder.qualified then "QUALIFIED" else string.format("%d / %d", ladder.points, ladder.target)
+			ladderFill.Size = UDim2.fromScale(if ladder.qualified then 1 else math.clamp(ladder.points / ladder.target, 0, 1), 1)
+			ladderHint.Text = string.format("Season ends in %d day%s", daysLeft, if daysLeft == 1 then "" else "s")
+		end
 		local total = 0
 		for _, lift in ipairs(ProgressionConfig.Lifts) do
 			local cn = snapshot.competitionNumber[lift] or 0

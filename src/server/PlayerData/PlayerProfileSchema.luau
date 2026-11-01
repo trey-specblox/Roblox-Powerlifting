@@ -17,7 +17,8 @@
 
 	Fatigue, buffs, meet progression, titles,
 	cosmetics, coaches and origins are all coming (coins arrived in version 12,
-	the Shop inventory in 13, worn gear in 14, meet titles in 15),
+	the Shop inventory in 13, worn gear in 14, meet titles in 15, ladder
+	points in 16),
 	and GAME_DESIGN.md Q3 lists
 	them, but their SHAPES are undefined. Guessing a shape now would mean
 	migrating away from that guess later. The migration system below is what makes
@@ -38,6 +39,7 @@ local StartingValuesConfig = require(ConfigFolder:WaitForChild("StartingValuesCo
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 
 local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig"))
+local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local ResourceRegeneration = require(ProgressionFolder:WaitForChild("ResourceRegeneration"))
@@ -53,9 +55,9 @@ local PlayerProfileSchema = {}
 	version 10: the Competition Budget removed; version 11: the official-meet
 	bests for the gym records wall; version 12: the coin wallet; version 13:
 	the Shop inventory; version 14: the gear being worn; version 15: meet
-	titles in the career).
+	titles in the career; version 16: ladder points in the career).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 15
+PlayerProfileSchema.CURRENT_VERSION = 16
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -207,16 +209,41 @@ export type MeetAllowance = {
 
 		localWins   Local meets won (1st place in a meet against at least
 		            MeetConfig.OfficialLocalMeetMinimumRealPlayers lifters);
-		            MeetConfig.LocalVictoriesForNationals of them unlock
-		            Nationals (section 15)
+		            they once unlocked Nationals (section 15)
 		titles      (version 15) the meet titles earned, by id
 		            (MeetLevelConfig.Titles, e.g. "StateChampion") -> how many
 		            times: the top 3 at a Regional or State meet (§35.8). Only
 		            ProfileOperations.addTitle adds to it.
+		ladder      (version 16) the ladder points toward Nationals in one
+		            season (GAME_DESIGN §35.8, MeetLevelConfig.Ladder). Only
+		            ProfileOperations.addLadderPoints writes it.
+
+	localWins is a lifetime statistic now: ladder points decide Nationals.
 ]]
 export type Career = {
 	localWins: number,
 	titles: { [string]: number },
+	ladder: Ladder,
+}
+
+--[[
+	One season's ladder points (version 16).
+
+		season     the season the points belong to (MeetLevelConfig.seasonFor,
+		           "2026-11"), or "" = NOT STAMPED YET: the points belong to
+		           whatever season the player next earns in (old Local wins
+		           turned into points wait here for the player's first season)
+		points     whole points earned in that season (never negative)
+		qualified  reached MeetLevelConfig.Ladder.NationalsTarget in that
+		           season: qualified for its Nationals, and extra points stop
+
+	A season that is over counts as 0 points and not qualified; the next
+	addLadderPoints starts the new season.
+]]
+export type Ladder = {
+	season: string,
+	points: number,
+	qualified: boolean,
 }
 
 --[[
@@ -485,10 +512,15 @@ local template: ProfileData = {
 		Lockout = StartingValuesConfig.Technique.Lockout,
 	},
 
-	-- A new lifter has won nothing.
+	-- A new lifter has won nothing. Their ladder is unstamped: their first season is the one they first earn in.
 	career = {
 		localWins = 0,
 		titles = {},
+		ladder = {
+			season = "",
+			points = 0,
+			qualified = false,
+		},
 	},
 
 	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
@@ -1371,6 +1403,55 @@ migrations[14] = function(data: ProfileData)
 	end
 	for _, id in ipairs(bad) do
 		titles[id] = nil
+	end
+end
+
+--[[
+	Version 15 to 16: ladder points (user, 2026-10-31; GAME_DESIGN §35.8, the
+	meet ladder's step 2). Ladder points replace "10 Local wins unlock
+	Nationals".
+
+	THE ONE-TIME CONVERSION: each saved Local win (career.localWins) becomes
+	MeetLevelConfig.Ladder.PointsPerOldLocalWin points, a Local 1st place, in
+	an UNSTAMPED ladder (season ""), so they count in the first season the
+	player earns in. Enough of them qualify at once. career.localWins itself
+	is kept untouched as a lifetime statistic.
+
+	REPAIRS, NEVER OVERWRITES: a ladder field that is usable is kept; a
+	missing or broken field gets its starting value. The conversion only
+	fills a ladder that is still untouched (season "", 0 points, not
+	qualified), which is all Reconcile can have put there: nothing wrote
+	ladder points before version 16. A missing career is created.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED.
+
+	IDEMPOTENT: a second run finds a usable ladder that is no longer
+	untouched (or has no wins to add) and changes nothing.
+]]
+migrations[15] = function(data: ProfileData)
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0, titles = {}, ladder = { season = "", points = 0, qualified = false } }
+		return
+	end
+	local ladder = career.ladder
+	if typeof(ladder) ~= "table" then
+		ladder = { season = "", points = 0, qualified = false }
+		career.ladder = ladder
+	end
+	if typeof(ladder.season) ~= "string" or #ladder.season > 16 then
+		ladder.season = ""
+	end
+	if not isUsableCounter(ladder.points) or ladder.points ~= math.floor(ladder.points) then
+		ladder.points = 0
+	end
+	if typeof(ladder.qualified) ~= "boolean" then
+		ladder.qualified = false
+	end
+	local wins = career.localWins
+	if ladder.season == "" and ladder.points == 0 and not ladder.qualified and isUsableCounter(wins) and wins >= 1 then
+		ladder.points = math.floor(wins) * MeetLevelConfig.Ladder.PointsPerOldLocalWin
+		ladder.qualified = ladder.points >= MeetLevelConfig.Ladder.NationalsTarget
 	end
 end
 

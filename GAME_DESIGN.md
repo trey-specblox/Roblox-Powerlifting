@@ -5354,7 +5354,9 @@ another. The player keeps the look they like and the stats they want.
   only means something once some gear has stats. So **equipment stats must be
   designed first**:
   - which items can carry stats;
-  - where stat gear comes from (meet rewards, per §30.4);
+  - where stat gear comes from (meet rewards, per §30.4; **the user's later
+    ideas: Shop crates with stat rolls, §35.9, and super-rare equipment,
+    §35.10**);
   - how big a buff can be without breaking the CN / Scale balance (§33).
 - **Guardrails:**
   - Stats must never be bought with Robux (§34.2). A DripStone only moves
@@ -5374,7 +5376,9 @@ Open questions:
   venues for the higher steps.
 - **The avatar body:** forcing R15, perhaps one realistic body made for the
   game, and later visible muscle gain and loss (open question, 2026-10-31).
-- **Equipment with stats** (§19, §30.4); see §35.5.
+- **Equipment with stats** (§19, §30.4): the user's direction is crates
+  with stat rolls (§35.9) and super-rare suits and shirts (§35.10); the stats
+  themselves still need a design (§35.11).
 - **Meet presentation** (§18): walkout songs, aura, entrance animations,
   titles.
 
@@ -5504,3 +5508,110 @@ keep meeting stronger lifters.
 >   uploaded.
 > - **Local wins** still count toward Nationals until ladder points (step 2)
 >   replace them.
+
+> **Step 2 built (2026-11-01): ladder points and seasons.**
+> - **Points** are paid exactly as the table above says, for every official
+>   meet finished with a total (`MeetLevelConfig.Ladder`). The result screen
+>   shows "+4 ladder points: 16 / 25 for Nationals", then "QUALIFIED FOR
+>   NATIONALS!", then "Already qualified for Nationals this season".
+> - **Seasons are calendar months in UTC for now** (November 2026, December
+>   2026, ...). The Sheffield cycle has no dates yet (§32.1), so the month is a
+>   stand-in until it does **[PROVISIONAL]**. A new season starts at 0 points.
+> - **Saved in the career** (save version 16): the season, its points, and
+>   whether the player qualified.
+> - **Old Local wins became 3 points each**, once, counted in the first
+>   season the player earns points in. `career.localWins` is kept as a
+>   lifetime statistic (the big screen still shows "3x LOCAL CHAMPION").
+> - **STATS** shows "NATIONALS 14 / 25" with a bar, or "QUALIFIED", and how
+>   many days the season has left. A qualified lifter's big screen at a meet
+>   shows "QUALIFIED FOR NATIONALS".
+> - **Qualifying unlocks nothing yet:** Nationals itself is step 3.
+
+### 35.9 Shop crates with stat rolls: [IDEA from the user, 2026-10-31; needs a design]
+
+**Crates at the Shop.** Opening one is two rolls:
+
+1. **What item:** a singlet, wrist wraps, knee sleeves or a belt.
+2. **Its stats, by rarity:** from **Common** (small stats, a small technique
+   bonus that makes lifts a little easier) up to **Legendary** (a lot of
+   stats and a big technique bonus).
+
+**This changes approved rules,** so it needs its own design and the user's
+sign-off before anything is built:
+
+- **[WOULD CHANGE §30.6]:** today Shop items are appearance only. Crate items
+  would carry stats, so this decides the old open question "equipment with
+  stats" (§30.4, §19): yes, from crates (and from rare equipment, §35.10).
+- **Balance:** technique bonuses make lifts easier. That touches the minigame
+  difficulty (§33.4) and technique training (§34.6–34.8). Bonuses need caps so
+  a Legendary helps without making training or meets pointless.
+
+**Guardrails (existing rules):**
+
+- **Stats are never bought with Robux** (§34.2, §18). Crates that roll stats
+  are opened with **coins earned by playing**.
+- If any crate were ever sold for Robux, Roblox requires the odds of every
+  result to be shown, and it would be pay-to-win. Not recommended.
+
+**How it connects:**
+
+- **DripStone (§35.5)** becomes meaningful: crates are a source of stats to
+  move onto a look the player prefers.
+- **The look and the stats are separate rolls.** So the Shop's plain
+  cosmetics (§30.6) and the Gym-Express pass's cosmetics (§35.3) can stay
+  looks-only.
+
+Open questions:
+
+- The rarity tiers and their odds (Common, Uncommon, Rare, Epic, Legendary?).
+- Which stats exist: technique bonuses only, or also something like a small
+  CN or Scale help? (CN has exactly one source, training, §34.2, so a CN
+  bonus is ruled out unless that rule changes.)
+- How big each tier's bonus is, and whether bonuses stack across slots.
+- The crate price in coins.
+- Duplicates (what a roll of something already owned gives).
+- Whether a stat item can be sold or rerolled.
+- How stats show in MY GEAR and on the Shop card.
+
+### 35.10 Super-rare equipment: squat suit, bench shirt, deadlift suit: [IDEA from the user, 2026-10-31]
+
+**The rarest items in the game:** the supportive gear of equipped
+powerlifting:
+
+- a **squat suit**;
+- a **bench shirt**;
+- a **deadlift suit**.
+
+They can drop at **every official meet**, more often the higher the meet:
+
+| Meet | Drop chance [PROVISIONAL] |
+|---|---|
+| Local | 0.01% |
+| Regional | 0.1% |
+| State | 0.5% |
+| Nationals | 1% |
+| Worlds | 10% |
+| Sheffield | 25% |
+
+Open questions:
+
+- **Who rolls:** every lifter who finishes with a total, or only the top 3?
+  Once per meet or once per lift?
+- **What they do:** a big help on one lift (as in real equipped lifting)?
+  How big, without breaking CN, Scale and records (§33)?
+- **Records:** real powerlifting keeps raw and equipped records apart. Do
+  equipped lifts count toward gym and world records (§31)?
+- **Wearing them:** a suit or shirt replaces the singlet while worn (a new
+  worn model each, made in Blender like the other gear).
+- **Trading:** can they be traded? (No trading system exists.)
+- **Showing them off:** a server-wide announcement when one drops?
+
+### 35.11 Order, updated for §35.9–35.10 (Claude, 2026-10-31; the user decides)
+
+The ladder build continues first: step 2 (ladder points and seasons), then
+Nationals. Crates (§35.9) and the super-rare equipment (§35.10) both need **one
+shared design session for gear stats**: the stat list, the size of each bonus,
+the caps, and how stats change the lifting difficulty. That session also
+settles DripStone (§35.5). Building crates comes after it. The equipment's drop
+chances by meet level are ready to plug in once Nationals, Worlds and
+Sheffield meets exist.

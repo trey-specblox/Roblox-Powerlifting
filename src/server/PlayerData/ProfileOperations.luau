@@ -47,6 +47,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
+local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -719,6 +720,81 @@ function ProfileOperations.getTitles(data: ProfileData): { [string]: number }
 		end
 	end
 	return copy
+end
+
+--[[
+	LADDER POINTS (schema 16; GAME_DESIGN §35.8, MeetLevelConfig.Ladder).
+	Seasons turn over here, when they are read: a ladder stamped with a season
+	that is over counts as 0 points and not qualified, and addLadderPoints
+	starts the new season. An unstamped ladder (season "") belongs to the
+	current season, with its points (old Local wins turned into points).
+]]
+export type LadderView = {
+	season: string,
+	points: number,
+	target: number,
+	qualified: boolean,
+}
+
+export type LadderOutcome = "Added" | "Qualified" | "AlreadyQualified" | "Rejected"
+
+-- The ladder table, or nil when it is missing or holds an unusable value.
+local function ladderOf(data: ProfileData): PlayerProfileSchema.Ladder?
+	local career = (data :: any).career
+	local ladder = if typeof(career) == "table" then career.ladder else nil
+	if typeof(ladder) ~= "table" or typeof(ladder.season) ~= "string" or typeof(ladder.qualified) ~= "boolean"
+		or not isFiniteNumber(ladder.points) or ladder.points < 0 or ladder.points ~= math.floor(ladder.points) then
+		return nil
+	end
+	return ladder
+end
+
+-- The player's ladder in the season holding `nowUnix` (0 points when the ladder is unusable). Read only.
+function ProfileOperations.getLadder(data: ProfileData, nowUnix: number): LadderView
+	local season = MeetLevelConfig.seasonFor(nowUnix)
+	local target = MeetLevelConfig.Ladder.NationalsTarget
+	local ladder = ladderOf(data)
+	if ladder == nil or (ladder.season ~= "" and ladder.season ~= season) then
+		return { season = season, points = 0, target = target, qualified = false }
+	end
+	return { season = season, points = ladder.points, target = target, qualified = ladder.qualified }
+end
+
+--[[
+	Adds ladder points earned at `nowUnix`, starting a new season first when
+	the stored one is over (and stamping an unstamped ladder with this
+	season, keeping its points). Returns:
+		"Added"             the points count; not qualified yet
+		"Qualified"         these points reached the target: qualified now
+		"AlreadyQualified"  qualified earlier this season: nothing added
+		"Rejected"          unusable ladder, or not a whole number of points
+		                    from 1 to 100; nothing changed
+	and the ladder afterwards. SECURITY BOUNDARY: the caller (LocalMeetService)
+	works the points out from the meet's result and MeetLevelConfig.
+]]
+function ProfileOperations.addLadderPoints(data: ProfileData, points: number, nowUnix: number): (LadderOutcome, LadderView)
+	local ladder = ladderOf(data)
+	if ladder == nil or not isFiniteNumber(points) or points < 1 or points > 100 or points ~= math.floor(points)
+		or not isFiniteNumber(nowUnix) then
+		return "Rejected", ProfileOperations.getLadder(data, if isFiniteNumber(nowUnix) then nowUnix else 0)
+	end
+	local season = MeetLevelConfig.seasonFor(nowUnix)
+	if ladder.season ~= season then
+		if ladder.season ~= "" then
+			ladder.points = 0
+			ladder.qualified = false
+		end
+		ladder.season = season
+	end
+	local outcome: LadderOutcome
+	if ladder.qualified then
+		outcome = "AlreadyQualified"
+	else
+		ladder.points += points
+		ladder.qualified = ladder.points >= MeetLevelConfig.Ladder.NationalsTarget
+		outcome = if ladder.qualified then "Qualified" else "Added"
+	end
+	return outcome, ProfileOperations.getLadder(data, nowUnix)
 end
 
 --[[

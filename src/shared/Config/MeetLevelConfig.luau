@@ -27,7 +27,7 @@ export type Level = {
 	chance: number,
 	-- The prize pot is multiplied by this (§30.6's pot; the finishing, 9/9 and record bonuses are not).
 	potMultiplier: number,
-	-- Ladder points are multiplied by this (§35.8; ladder points are a later build step).
+	-- Ladder points are multiplied by this (§35.8, MeetLevelConfig.Ladder).
 	ladderMultiplier: number,
 	-- Whether the top 3 earn a title and a trophy.
 	titles: boolean,
@@ -74,6 +74,54 @@ function MeetLevelConfig.titleFor(level: LevelId, place: number?): string?
 	local suffix = if place == 1 then "Champion" elseif place == 2 then "RunnerUp" elseif place == 3 then "Third" else nil
 	local id = suffix and (level .. suffix)
 	return if id and MeetLevelConfig.Titles[id] then id else nil
+end
+
+--[[
+	LADDER POINTS (§35.8 "Ladder points", ladder step 2): how a player
+	qualifies for Nationals. Every official meet finished with a total pays
+	PlacePoints for a top 3 place plus FinishPoints, all multiplied by the
+	meet level's ladderMultiplier. A bomb-out, leaving early, or a Solo / Mock
+	Meet pays nothing. NationalsTarget points in one SEASON qualify; then
+	extra points stop until the next season. Seasons are calendar months in
+	UTC for now ("2026-11"); the Sheffield cycle (§32.1) will set the real
+	boundary once its dates exist. Points reset when a season starts.
+]]
+MeetLevelConfig.Ladder = {
+	PlacePoints = { 3, 2, 1 } :: { number },
+	FinishPoints = 1,
+	NationalsTarget = 25,
+	-- Each Local win saved before ladder points existed (career.localWins) becomes this many points, once.
+	PointsPerOldLocalWin = 3,
+}
+
+-- The ladder points for finishing an official meet at `level` in `place` (nil = no top 3 place).
+function MeetLevelConfig.ladderPointsFor(level: LevelId, place: number?): number
+	local info = MeetLevelConfig.Levels[level] or MeetLevelConfig.Levels.Local
+	local placePoints = if place then MeetLevelConfig.Ladder.PlacePoints[place] or 0 else 0
+	return (placePoints + MeetLevelConfig.Ladder.FinishPoints) * info.ladderMultiplier
+end
+
+-- The ladder season a moment (Unix seconds) belongs to: its UTC calendar month, "2026-11".
+function MeetLevelConfig.seasonFor(unix: number): string
+	local date = os.date("!*t", math.floor(unix))
+	return string.format("%04d-%02d", date.year, date.month)
+end
+
+-- When the season holding `unix` ends (the next UTC month starts), in Unix seconds.
+function MeetLevelConfig.seasonEndsAt(unix: number): number
+	local date = os.date("!*t", math.floor(unix))
+	local year, month = date.year, date.month + 1
+	if month > 12 then
+		year, month = year + 1, 1
+	end
+	-- Days from 1970-01-01 to the 1st of that month (the civil calendar counted from March, so the leap day
+	-- comes last), worked out by hand so no computer's time zone can move it.
+	local y = if month <= 2 then year - 1 else year
+	local era = y // 400
+	local yearOfEra = y - era * 400
+	local dayOfYear = (153 * (if month > 2 then month - 3 else month + 9) + 2) // 5
+	local dayOfEra = yearOfEra * 365 + yearOfEra // 4 - yearOfEra // 100 + dayOfYear
+	return (era * 146097 + dayOfEra - 719468) * 86400
 end
 
 -- The level for a random number in [0, 1): each rarer level takes its slice first.

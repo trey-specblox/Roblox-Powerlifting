@@ -14,7 +14,11 @@
 		  (ProfileOperations.settleMeetCompetitionNumber): good lifts above CN
 		  raise it as far as the allowance pays, misses above CN still use it;
 		  without a total nothing is raised and only the misses cost
-		- 1st place in such a meet: one Local win (career.localWins)
+		- 1st place in such a meet: one Local win (career.localWins, a lifetime
+		  statistic)
+		- finishing such a meet with a total: ladder points toward Nationals
+		  (GAME_DESIGN §35.8, MeetLevelConfig.Ladder), more for a top 3 place
+		  and a higher meet level
 	A lifter who withdraws, exits, dies or leaves has no total: only their
 	misses are settled, at once.
 
@@ -137,9 +141,11 @@ type Lifter = {
 	lights: { string }?,
 	-- The lift of the round being lifted (for the big screen's "going for a new CN").
 	currentLift: string?,
-	-- For the big screen's fun facts, read at the weigh-in: the class's best Total and the Local wins.
+	-- For the big screen's fun facts, read at the weigh-in: the class's best Total, the Local wins and whether
+	-- they have qualified for Nationals this season.
 	bestTotalKg: number?,
 	localWins: number,
+	nationalsQualified: boolean,
 	-- Their meet titles (career.titles, GAME_DESIGN §35.8): id -> count.
 	titles: { [string]: number },
 	-- Gym records set at this meet ("Squat", "Total", ...), first on the big screen's facts.
@@ -514,6 +520,10 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	-- A Regional or State meet's top 3 earn a title (GAME_DESIGN §35.8).
 	local titleId = if current.rewards and totalKg then MeetLevelConfig.titleFor(current.level, place) else nil
 	local titleCount: number? = nil
+	-- Ladder points toward Nationals for finishing an official meet (GAME_DESIGN §35.8).
+	local ladderPoints = if current.rewards and totalKg then MeetLevelConfig.ladderPointsFor(current.level, place) else 0
+	local ladderOutcome: ProfileOperations.LadderOutcome? = nil
+	local ladder: ProfileOperations.LadderView? = nil
 	local saved = PlayerDataService.update(player, function(data)
 		if totalKg then
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -539,6 +549,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 			if titleId then
 				titleCount = ProfileOperations.addTitle(data, titleId)
 			end
+			if ladderPoints > 0 then
+				ladderOutcome, ladder = ProfileOperations.addLadderPoints(data, ladderPoints, nowUnix)
+			end
 		end
 	end)
 	if not saved then
@@ -561,12 +574,20 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		local title = MeetLevelConfig.Titles[titleId]
 		table.insert(lines, if titleCount > 1 then string.format("%s x%d", title, titleCount) else "New title: " .. title)
 	end
-	if wins then
-		table.insert(lines, string.format("Local wins: %d of %d for Nationals", wins, MeetConfig.LocalVictoriesForNationals))
+	if ladder and ladderOutcome == "Qualified" then
+		table.insert(lines, string.format("+%d ladder points: QUALIFIED FOR NATIONALS!", ladderPoints))
+	elseif ladder and ladderOutcome == "Added" then
+		table.insert(lines, string.format("+%d ladder points: %d / %d for Nationals", ladderPoints, ladder.points,
+			ladder.target))
+	elseif ladderOutcome == "AlreadyQualified" then
+		table.insert(lines, "Already qualified for Nationals this season")
+	elseif ladderOutcome == "Rejected" then
+		warn(string.format("[LocalMeetService] %s's ladder points were not saved", player.Name))
 	end
-	log("%s saved (%s, total %s, rewards %s): CN S %s B %s D %s, best Total %s, wins %s", player.Name, lifter.classLabel,
-		if totalKg then kgText(totalKg) else "none", tostring(current.rewards), tostring(cnOutcomes.Squat),
-		tostring(cnOutcomes.Bench), tostring(cnOutcomes.Deadlift), tostring(totalOutcome), tostring(wins))
+	log("%s saved (%s, total %s, rewards %s): CN S %s B %s D %s, best Total %s, wins %s, ladder +%d %s", player.Name,
+		lifter.classLabel, if totalKg then kgText(totalKg) else "none", tostring(current.rewards),
+		tostring(cnOutcomes.Squat), tostring(cnOutcomes.Bench), tostring(cnOutcomes.Deadlift), tostring(totalOutcome),
+		tostring(wins), ladderPoints, tostring(ladderOutcome))
 	return lines
 end
 
@@ -643,6 +664,9 @@ local function factsFor(lifter: Lifter): { string }
 			local name = string.upper(MeetLevelConfig.Titles[id])
 			table.insert(facts, if count > 1 then string.format("%dx %s", count, name) else name)
 		end
+	end
+	if lifter.nationalsQualified then
+		table.insert(facts, "QUALIFIED FOR NATIONALS")
 	end
 	if lifter.localWins > 0 then
 		table.insert(facts, string.format("%dx LOCAL CHAMPION", lifter.localWins))
@@ -1200,7 +1224,7 @@ end
 
 -- Reads a signed-up player's weigh-in, or nil and why they cannot lift.
 local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: string, competitionNumber: { [string]: number },
-	bestTotalKg: number?, localWins: number, titles: { [string]: number } }?, string?)
+	bestTotalKg: number?, localWins: number, titles: { [string]: number }, nationalsQualified: boolean }?, string?)
 	local data = PlayerDataService.getData(player)
 	if data == nil then
 		return nil, "your data is still loading"
@@ -1223,7 +1247,8 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 	local wins = if typeof(career) == "table" and typeof(career.localWins) == "number" then career.localWins else 0
 	return { bodyweightKg = data.bodyweight.currentKg, classLabel = classKey, competitionNumber = competitionNumber,
 		bestTotalKg = if typeof(best) == "number" and best > 0 then best else nil, localWins = wins,
-		titles = ProfileOperations.getTitles(data) }, nil
+		titles = ProfileOperations.getTitles(data),
+		nationalsQualified = ProfileOperations.getLadder(data, os.time()).qualified }, nil
 end
 
 -- At a timetable start: holds the meet if enough signed-up lifters are ready.
@@ -1292,6 +1317,7 @@ local function tryStartMeet()
 			currentLift = nil,
 			bestTotalKg = weigh.bestTotalKg,
 			localWins = weigh.localWins,
+			nationalsQualified = weigh.nationalsQualified,
 			titles = weigh.titles,
 			gymRecords = {},
 			boardLines = nil,

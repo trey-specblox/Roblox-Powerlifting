@@ -54,11 +54,10 @@ MeetConfig.OfficialLocalMeetMinimumRealPlayers = 2
 MeetConfig.OfficialNationalsMinimumRealPlayers = 3
 
 --[[
-	Section 15: official Local Meet wins needed to unlock Nationals.
-
-	Q12 is explicit that only official multiplayer wins count. Solo and practice
-	meets must never increment this, or "National Champion" stops meaning anything.
+	(Section 15's "10 official Local wins unlock Nationals" was replaced by
+	ladder points per monthly season, user 2026-10-31: GAME_DESIGN §35.8,
+	MeetLevelConfig.Ladder. Q12 still holds: only official multiplayer meets
+	pay ladder points, never Solo or practice meets.)
 ]]
-MeetConfig.LocalVictoriesForNationals = 10
 
 return MeetConfig

@@ -86,6 +86,9 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		end
 	end
 
+	local nowUnix = os.time()
+	local ladder = ProfileOperations.getLadder(data, nowUnix)
+
 	return {
 		classLabel = WeightClass.resolve(bodyweight.currentKg).label,
 		bodyweightKg = bodyweight.currentKg,
@@ -96,6 +99,8 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		technique = technique,
 		coins = ProfileOperations.getCoins(data),
 		titles = titles,
+		ladder = { points = ladder.points, target = ladder.target, qualified = ladder.qualified,
+			seasonEndsAt = MeetLevelConfig.seasonEndsAt(nowUnix) },
 	}
 end
 

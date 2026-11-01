@@ -3146,7 +3146,48 @@ and polish.
     NOT TESTED: a whole State meet (title saved, result line, trophies in
     hand, the awards backdrop title), and clicking GO (same teleport as the
     record-news WATCH button).
-  NEXT ACTION: ladder step 2 (ladder points and seasons) when the user
+  ROADMAP ADDITIONS (2026-10-31, user): GAME_DESIGN §35.9 Shop crates
+  (roll the item: singlet / wraps / sleeves / belt, then roll its stats
+  by rarity Common..Legendary with technique bonuses; WOULD CHANGE §30.6's
+  "appearance only", needs a gear-stats design; guardrail: stats only from
+  coins, never Robux) and §35.10 super-rare equipment (squat suit, bench
+  shirt, deadlift suit; drop chance Local 0.01% / Regional 0.1% / State
+  0.5% / Nationals 1% / Worlds 10% / Sheffield 25%). §35.11: one shared
+  gear-stats design session settles crates, equipment and DripStone.
+  COMMITTED with ladder step 2 (user "Commit and push", 2026-11-01).
+  LADDER STEP 2 (2026-11-01, user "Build step 2"): ladder points and
+  seasons, GAME_DESIGN §35.8 "Step 2 built". COMMITTED and pushed (user
+  "Commit and push", 2026-11-01) as "Add ladder points and monthly seasons
+  toward Nationals (meet ladder step 2)"; `git log` for the hash.
+  - MeetLevelConfig: Ladder {PlacePoints 3/2/1, FinishPoints 1,
+    NationalsTarget 25, PointsPerOldLocalWin 3}, ladderPointsFor(level,
+    place), seasonFor(unix) = UTC month "2026-11", seasonEndsAt(unix)
+    (hand-written date maths, no time zone).
+  - Save version 16 (PlayerProfileSchema): career.ladder {season, points,
+    qualified}; season "" = unstamped (belongs to the first season the
+    player earns in). migrations[15] repairs, never overwrites, and turns
+    career.localWins into 3 points each, once (localWins kept).
+  - ProfileOperations.getLadder(data, now) (an ended season reads 0) and
+    addLadderPoints(data, points, now) -> Added / Qualified /
+    AlreadyQualified / Rejected (starts a new season when the stored one
+    is over).
+  - LocalMeetService.saveLifter: points for an official meet with a total,
+    in the same write; result lines "+N ladder points: X / 25 for
+    Nationals" / "QUALIFIED FOR NATIONALS!" / "Already qualified ...";
+    the "Local wins: X of 10" line is gone; big screen fact "QUALIFIED FOR
+    NATIONALS". MeetConfig.LocalVictoriesForNationals removed (unused).
+  - STATS (StatsRemotes.ladder, PlayerStatsService, StatsScreen): under the
+    radar "NATIONALS 0 / 25", a bar, "Season ends in N days".
+  - Checks: luau-lsp, no errors in the changed files. Studio Play (by
+    Claude): save checker 505 passed 0 failed (new test 54: 20 checks);
+    STATS screenshot shows "NATIONALS 0 / 25" and "Season ends in 30 days"
+    (Nov 1 UTC). PlayerDataProbe back to ENABLED = false.
+    NOT TESTED: a real meet paying points (the result line, the big screen
+    fact); a real save with old Local wins converting.
+  NEXT ACTION: the user tests ladder step 2 in a real meet (points on the
+  result screen, STATS after it); then Nationals design (ladder step 3) or
+  the gear-stats design session.
+  OLDER NEXT ACTION (done): ladder step 2 (ladder points and seasons) when the user
   says so. Still to see: a whole forced State meet in Studio (workspace
   attribute ForceMeetLevel = "State" during Play): the title saved, the
   result line, trophies on the podium, the awards backdrop title.
