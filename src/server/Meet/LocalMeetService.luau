@@ -16,9 +16,9 @@
 		  without a total nothing is raised and only the misses cost
 		- 1st place in such a meet: one Local win (career.localWins, a lifetime
 		  statistic)
-		- finishing such a meet with a total: ladder points toward Nationals
-		  (GAME_DESIGN §35.8, MeetLevelConfig.Ladder), more for a top 3 place
-		  and a higher meet level
+		- finishing such a meet with a total: ladder points toward the State
+		  Championship in the weigh-in class (GAME_DESIGN §35.8, §36.3,
+		  MeetLevelConfig.Ladder), more for a top 3 place and a Regional meet
 	A lifter who withdraws, exits, dies or leaves has no total: only their
 	misses are settled, at once.
 
@@ -142,10 +142,10 @@ type Lifter = {
 	-- The lift of the round being lifted (for the big screen's "going for a new CN").
 	currentLift: string?,
 	-- For the big screen's fun facts, read at the weigh-in: the class's best Total, the Local wins and whether
-	-- they have qualified for Nationals this season.
+	-- they have qualified for State in this class this season.
 	bestTotalKg: number?,
 	localWins: number,
-	nationalsQualified: boolean,
+	stateQualified: boolean,
 	-- Their meet titles (career.titles, GAME_DESIGN §35.8): id -> count.
 	titles: { [string]: number },
 	-- Gym records set at this meet ("Squat", "Total", ...), first on the big screen's facts.
@@ -520,7 +520,7 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	-- A Regional or State meet's top 3 earn a title (GAME_DESIGN §35.8).
 	local titleId = if current.rewards and totalKg then MeetLevelConfig.titleFor(current.level, place) else nil
 	local titleCount: number? = nil
-	-- Ladder points toward Nationals for finishing an official meet (GAME_DESIGN §35.8).
+	-- Ladder points toward State, in the weigh-in class, for finishing an official meet (GAME_DESIGN §35.8, §36.3).
 	local ladderPoints = if current.rewards and totalKg then MeetLevelConfig.ladderPointsFor(current.level, place) else 0
 	local ladderOutcome: ProfileOperations.LadderOutcome? = nil
 	local ladder: ProfileOperations.LadderView? = nil
@@ -550,7 +550,7 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 				titleCount = ProfileOperations.addTitle(data, titleId)
 			end
 			if ladderPoints > 0 then
-				ladderOutcome, ladder = ProfileOperations.addLadderPoints(data, ladderPoints, nowUnix)
+				ladderOutcome, ladder = ProfileOperations.addLadderPoints(data, lifter.classLabel, ladderPoints, nowUnix)
 			end
 		end
 	end)
@@ -575,12 +575,12 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		table.insert(lines, if titleCount > 1 then string.format("%s x%d", title, titleCount) else "New title: " .. title)
 	end
 	if ladder and ladderOutcome == "Qualified" then
-		table.insert(lines, string.format("+%d ladder points: QUALIFIED FOR NATIONALS!", ladderPoints))
+		table.insert(lines, string.format("+%d ladder points: QUALIFIED FOR STATE (%s)!", ladderPoints, lifter.classLabel))
 	elseif ladder and ladderOutcome == "Added" then
-		table.insert(lines, string.format("+%d ladder points: %d / %d for Nationals", ladderPoints, ladder.points,
-			ladder.target))
+		table.insert(lines, string.format("+%d ladder points: %d / %d for State (%s)", ladderPoints, ladder.points,
+			ladder.target, lifter.classLabel))
 	elseif ladderOutcome == "AlreadyQualified" then
-		table.insert(lines, "Already qualified for Nationals this season")
+		table.insert(lines, string.format("Already qualified for State (%s) this season", lifter.classLabel))
 	elseif ladderOutcome == "Rejected" then
 		warn(string.format("[LocalMeetService] %s's ladder points were not saved", player.Name))
 	end
@@ -665,8 +665,8 @@ local function factsFor(lifter: Lifter): { string }
 			table.insert(facts, if count > 1 then string.format("%dx %s", count, name) else name)
 		end
 	end
-	if lifter.nationalsQualified then
-		table.insert(facts, "QUALIFIED FOR NATIONALS")
+	if lifter.stateQualified then
+		table.insert(facts, "QUALIFIED FOR STATE")
 	end
 	if lifter.localWins > 0 then
 		table.insert(facts, string.format("%dx LOCAL CHAMPION", lifter.localWins))
@@ -1224,7 +1224,7 @@ end
 
 -- Reads a signed-up player's weigh-in, or nil and why they cannot lift.
 local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: string, competitionNumber: { [string]: number },
-	bestTotalKg: number?, localWins: number, titles: { [string]: number }, nationalsQualified: boolean }?, string?)
+	bestTotalKg: number?, localWins: number, titles: { [string]: number }, stateQualified: boolean }?, string?)
 	local data = PlayerDataService.getData(player)
 	if data == nil then
 		return nil, "your data is still loading"
@@ -1248,7 +1248,7 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 	return { bodyweightKg = data.bodyweight.currentKg, classLabel = classKey, competitionNumber = competitionNumber,
 		bestTotalKg = if typeof(best) == "number" and best > 0 then best else nil, localWins = wins,
 		titles = ProfileOperations.getTitles(data),
-		nationalsQualified = ProfileOperations.getLadder(data, os.time()).qualified }, nil
+		stateQualified = ProfileOperations.getLadder(data, classKey, os.time()).qualified }, nil
 end
 
 -- At a timetable start: holds the meet if enough signed-up lifters are ready.
@@ -1317,7 +1317,7 @@ local function tryStartMeet()
 			currentLift = nil,
 			bestTotalKg = weigh.bestTotalKg,
 			localWins = weigh.localWins,
-			nationalsQualified = weigh.nationalsQualified,
+			stateQualified = weigh.stateQualified,
 			titles = weigh.titles,
 			gymRecords = {},
 			boardLines = nil,

@@ -5,7 +5,8 @@
 
 	The meet ladder's levels held in the Local meet venue (GAME_DESIGN.md
 	§35.8, "The meet ladder — design", user 2026-10-31): a scheduled Local
-	meet can turn out to be a REGIONAL or a STATE meet. The level is rolled
+	meet can turn out to be a REGIONAL meet (STATE was rolled too until
+	2026-11-01; it is moving to its own arena, §36). The level is rolled
 	when the meet's sign-ups open and announced straight away; anyone may
 	enter. A Regional or State meet pays a bigger prize pot and gives its top
 	3 a title and a trophy. Lifting, judging and CN are the same at every
@@ -37,7 +38,10 @@ MeetLevelConfig.Levels = {
 	Local = { id = "Local", label = "LOCAL MEET", chance = 0, potMultiplier = 1, ladderMultiplier = 1, titles = false },
 	Regional = { id = "Regional", label = "REGIONAL MEET", chance = 0.25, potMultiplier = 2, ladderMultiplier = 2,
 		titles = true },
-	State = { id = "State", label = "STATE MEET", chance = 0.10, potMultiplier = 3, ladderMultiplier = 3, titles = true },
+	-- chance 0: State is never rolled in the Local venue any more (user, 2026-11-01, GAME_DESIGN §36): a new
+	-- player's first meet must not be a State meet. State gets its own arena; until then it only happens when
+	-- forced in Studio (workspace attribute ForceMeetLevel). Its titles stay for the arena.
+	State = { id = "State", label = "STATE MEET", chance = 0, potMultiplier = 3, ladderMultiplier = 3, titles = true },
 } :: { [LevelId]: Level }
 
 -- Rolled in this order (the rarest first); Local when none comes up.
@@ -77,19 +81,21 @@ function MeetLevelConfig.titleFor(level: LevelId, place: number?): string?
 end
 
 --[[
-	LADDER POINTS (§35.8 "Ladder points", ladder step 2): how a player
-	qualifies for Nationals. Every official meet finished with a total pays
-	PlacePoints for a top 3 place plus FinishPoints, all multiplied by the
-	meet level's ladderMultiplier. A bomb-out, leaving early, or a Solo / Mock
-	Meet pays nothing. NationalsTarget points in one SEASON qualify; then
-	extra points stop until the next season. Seasons are calendar months in
+	LADDER POINTS (§35.8 "Ladder points", ladder step 2; per class §36.3): how
+	a player qualifies for the State Championship. Every official meet
+	finished with a total pays PlacePoints for a top 3 place plus
+	FinishPoints, all multiplied by the meet level's ladderMultiplier, to the
+	weight class the lifter weighed in at. A bomb-out, leaving early, or a
+	Solo / Mock Meet pays nothing. StateTarget points in one SEASON, in one
+	class, qualify for State in that class; then that class's extra points
+	stop until the next season. Seasons are calendar months in
 	UTC for now ("2026-11"); the Sheffield cycle (§32.1) will set the real
 	boundary once its dates exist. Points reset when a season starts.
 ]]
 MeetLevelConfig.Ladder = {
 	PlacePoints = { 3, 2, 1 } :: { number },
 	FinishPoints = 1,
-	NationalsTarget = 25,
+	StateTarget = 25,
 	-- Each Local win saved before ladder points existed (career.localWins) becomes this many points, once.
 	PointsPerOldLocalWin = 3,
 }

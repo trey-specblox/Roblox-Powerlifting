@@ -45,8 +45,8 @@ export type StatsSnapshot = {
 	coins: number,
 	-- The meet titles earned, best first ("State Champion x2"; GAME_DESIGN §35.8).
 	titles: { string }?,
-	-- This season's ladder toward Nationals (GAME_DESIGN §35.8): points of target, qualified, and when the
-	-- season ends (Unix seconds).
+	-- This season's ladder toward State in the player's current class (GAME_DESIGN §35.8, §36.3): points of
+	-- target, qualified, and when the season ends (Unix seconds).
 	ladder: { points: number, target: number, qualified: boolean, seasonEndsAt: number }?,
 }
 

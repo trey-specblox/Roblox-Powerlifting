@@ -87,7 +87,8 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 	end
 
 	local nowUnix = os.time()
-	local ladder = ProfileOperations.getLadder(data, nowUnix)
+	-- The ladder of the class the player is in now (points are per class, GAME_DESIGN §36.3).
+	local ladder = ProfileOperations.getLadder(data, WeightClass.resolve(bodyweight.currentKg).label, nowUnix)
 
 	return {
 		classLabel = WeightClass.resolve(bodyweight.currentKg).label,

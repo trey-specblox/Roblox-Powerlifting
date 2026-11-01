@@ -18,7 +18,7 @@
 	Fatigue, buffs, meet progression, titles,
 	cosmetics, coaches and origins are all coming (coins arrived in version 12,
 	the Shop inventory in 13, worn gear in 14, meet titles in 15, ladder
-	points in 16),
+	points in 16, per weight class in 17),
 	and GAME_DESIGN.md Q3 lists
 	them, but their SHAPES are undefined. Guessing a shape now would mean
 	migrating away from that guess later. The migration system below is what makes
@@ -55,9 +55,10 @@ local PlayerProfileSchema = {}
 	version 10: the Competition Budget removed; version 11: the official-meet
 	bests for the gym records wall; version 12: the coin wallet; version 13:
 	the Shop inventory; version 14: the gear being worn; version 15: meet
-	titles in the career; version 16: ladder points in the career).
+	titles in the career; version 16: ladder points in the career; version
+	17: ladder points per weight class).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 16
+PlayerProfileSchema.CURRENT_VERSION = 17
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -214,28 +215,34 @@ export type MeetAllowance = {
 		            (MeetLevelConfig.Titles, e.g. "StateChampion") -> how many
 		            times: the top 3 at a Regional or State meet (§35.8). Only
 		            ProfileOperations.addTitle adds to it.
-		ladder      (version 16) the ladder points toward Nationals in one
-		            season (GAME_DESIGN §35.8, MeetLevelConfig.Ladder). Only
+		ladders     (version 17) the ladder points toward the State
+		            Championship, PER WEIGHT CLASS (GAME_DESIGN §36.3,
+		            MeetLevelConfig.Ladder): class key ("74 kg") -> Ladder.
+		            Points count only for the class they were earned in. A
+		            class with no entry has 0 points. Only
 		            ProfileOperations.addLadderPoints writes it.
+		            (Version 16 had one account-wide `ladder`; version 17
+		            moved it into `ladders`.)
 
-	localWins is a lifetime statistic now: ladder points decide Nationals.
+	localWins is a lifetime statistic now: ladder points decide State.
 ]]
 export type Career = {
 	localWins: number,
 	titles: { [string]: number },
-	ladder: Ladder,
+	ladders: { [string]: Ladder },
 }
 
 --[[
-	One season's ladder points (version 16).
+	One class's ladder points in one season (version 16; per class since 17).
 
 		season     the season the points belong to (MeetLevelConfig.seasonFor,
 		           "2026-11"), or "" = NOT STAMPED YET: the points belong to
 		           whatever season the player next earns in (old Local wins
 		           turned into points wait here for the player's first season)
 		points     whole points earned in that season (never negative)
-		qualified  reached MeetLevelConfig.Ladder.NationalsTarget in that
-		           season: qualified for its Nationals, and extra points stop
+		qualified  reached MeetLevelConfig.Ladder.StateTarget in that
+		           season: qualified for that class's State Championship, and
+		           extra points stop
 
 	A season that is over counts as 0 points and not qualified; the next
 	addLadderPoints starts the new season.
@@ -512,15 +519,11 @@ local template: ProfileData = {
 		Lockout = StartingValuesConfig.Technique.Lockout,
 	},
 
-	-- A new lifter has won nothing. Their ladder is unstamped: their first season is the one they first earn in.
+	-- A new lifter has won nothing and has no ladder points in any class.
 	career = {
 		localWins = 0,
 		titles = {},
-		ladder = {
-			season = "",
-			points = 0,
-			qualified = false,
-		},
+		ladders = {},
 	},
 
 	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
@@ -1451,7 +1454,75 @@ migrations[15] = function(data: ProfileData)
 	local wins = career.localWins
 	if ladder.season == "" and ladder.points == 0 and not ladder.qualified and isUsableCounter(wins) and wins >= 1 then
 		ladder.points = math.floor(wins) * MeetLevelConfig.Ladder.PointsPerOldLocalWin
-		ladder.qualified = ladder.points >= MeetLevelConfig.Ladder.NationalsTarget
+		ladder.qualified = ladder.points >= MeetLevelConfig.Ladder.StateTarget
+	end
+end
+
+-- Whether a stored ladder's fields are all usable (version 16's shape).
+local function isUsableLadder(ladder: any): boolean
+	return typeof(ladder) == "table" and typeof(ladder.season) == "string" and #ladder.season <= 16
+		and isUsableCounter(ladder.points) and ladder.points == math.floor(ladder.points)
+		and typeof(ladder.qualified) == "boolean"
+end
+
+--[[
+	Version 16 to 17: ladder points per weight class (user, 2026-11-01;
+	GAME_DESIGN §36.3). Points now qualify for the State Championship, and
+	only in the class they were earned in.
+
+	THE ACCOUNT-WIDE `career.ladder` MOVES INTO `career.ladders`, under the
+	class of the player's bodyweight now (the class they lift in), with its
+	season, points and qualified flag exactly. An unusable bodyweight files it
+	under the starting class, as version 6 did with the builds. An empty
+	ladder (unstamped, 0 points, not qualified) is simply dropped: nothing to
+	move. Unusable fields of the old ladder count as their starting values.
+
+	REPAIRS, NEVER OVERWRITES: an entry already in `ladders` is kept (the old
+	ladder never replaces it); entries that are not a known class or not a
+	usable ladder are dropped. A missing career is created.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED (except `career.ladder`, moved).
+
+	IDEMPOTENT: once moved, `career.ladder` is gone and a second run changes
+	nothing.
+]]
+migrations[16] = function(data: ProfileData)
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0, titles = {}, ladders = {} }
+		return
+	end
+	local ladders = career.ladders
+	if typeof(ladders) ~= "table" then
+		ladders = {}
+		career.ladders = ladders
+	end
+	local bad = {}
+	for classKey, ladder in pairs(ladders) do
+		if typeof(classKey) ~= "string" or classIndex(classKey) == nil or not isUsableLadder(ladder) then
+			table.insert(bad, classKey)
+		end
+	end
+	for _, classKey in ipairs(bad) do
+		ladders[classKey] = nil
+	end
+
+	local old = career.ladder
+	career.ladder = nil
+	if typeof(old) ~= "table" then
+		return
+	end
+	local season = if typeof(old.season) == "string" and #old.season <= 16 then old.season else ""
+	local points = if isUsableCounter(old.points) then math.floor(old.points) else 0
+	local qualified = old.qualified == true
+	if season == "" and points == 0 and not qualified then
+		return
+	end
+	local bodyweight = (data :: any).bodyweight
+	local classKey = PlayerProfileSchema.classKeyFor(if typeof(bodyweight) == "table" then bodyweight.currentKg else nil)
+		or WeightClass.resolve(StartingValuesConfig.BodyweightKg).label
+	if ladders[classKey] == nil then
+		ladders[classKey] = { season = season, points = points, qualified = qualified }
 	end
 end
 

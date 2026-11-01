@@ -590,6 +590,8 @@ After:
 the player unlocks Nationals under your current design.
 > **[CHANGED BY THE USER, 2026-10-31]:** ladder points from Local, Regional and
 > State meets now qualify a player for Nationals, per monthly season (§35.8).
+> **[CHANGED AGAIN, 2026-11-01]:** ladder points, kept per weight class, now
+> qualify for the State Championship in its own arena (§36).
 I would test whether wins or qualifying performance feels better later. Requiring wins can become frustrating if experienced players repeatedly dominate new players.
 
 16. Nationals
@@ -5415,6 +5417,10 @@ keep meeting stronger lifters.
 
 #### Regional and State meets in the Local venue
 
+> **[CHANGED BY THE USER, 2026-11-01]:** State is no longer rolled in the
+> Local venue; it moves to its own arena (§36). Ladder points qualify for
+> State, per weight class (§36.3). Regional stays as below.
+
 | Question | Decision |
 |---|---|
 | **How a meet is upgraded** | **At random, announced early.** Each scheduled Local meet has a chance to be a **Regional** (about **1 in 4**) or a **State** meet (about **1 in 10**) **[PROVISIONAL]**. The roll happens when the meet's sign-ups open, about 10 minutes ahead. The sign-up desk, the lobby board and a server message show it straight away ("The next meet is a STATE MEET!"), so players can rush to join a big one. |
@@ -5615,3 +5621,124 @@ the caps, and how stats change the lifting difficulty. That session also
 settles DripStone (§35.5). Building crates comes after it. The equipment's drop
 chances by meet level are ready to plug in once Nationals, Worlds and
 Sheffield meets exist.
+
+## 36. The State Championship: its own venue (user, 2026-11-01)
+
+**[CHANGED BY THE USER, 2026-11-01]:** State is no longer a random upgrade of
+the Local meet (§35.8). The user's reason: a new player's first meet could
+turn out to be State, and they would only lose and get nothing. State gets
+**its own venue** and **its own way of running**. Regional stays as built
+(an upgrade of the Local meet). **The Local venue's State roll was turned
+off on 2026-11-01** (user's pick; `MeetLevelConfig` State chance 0). Until
+the arena exists there are no State meets, except when forced in Studio for
+testing.
+
+### 36.1 The user's vision (recorded as given; details still to design)
+
+**The venue: a big indoor arena** (user's reference photos, 2026-11-01: a
+domed college arena with a brick base and arched entrances outside; inside,
+tiered seats all round, a big screen cube hanging over the middle, the lifting
+floor in the centre with platforms side by side, screens behind each
+platform, judges' tables, a warm-up area on the floor, barriers between
+areas, camera stands).
+
+- **4 racks (platforms)**, so the venue can be big and each platform easy to
+  watch.
+- **A screen above each rack** showing the lifter's minigame **live**: when a
+  lifter walks up to a weight, spectators watch them play their minigame on
+  the screen above.
+- **Slower than Local and Regional meets,** made to be **fun to watch**.
+
+**Showing off (each one unlocked from crates, §35.9):**
+
+- **Minigame customization:** different UI designs for the minigames.
+- **Struggle effects:** for example, a squatter who stays in the control game
+  a long time starts crushing and cracking the floor under them.
+- **Failure animations:** for example, a failed squat makes the lifter
+  explode.
+- **Walk-outs:** the lifter walks out to the platform in their own style,
+  with their own theme music. The user's idea: a gamepass that lets a
+  player paste a music id.
+- **Celebrations after a lift:** for example, a backflip with a voice line
+  (pre-made).
+- **Dances, emotes and every other show-off item come from crates.**
+
+**Spectators help their lifter:**
+
+- Once State opens, players **jump between spectate zones**, one per rack
+  area.
+- **Screaming in voice chat fills a bar** that makes the lifter's minigame
+  easier. It scales with how many players are spectating.
+- **Spectators who scream earn bonus coins.**
+
+**A fair, competitive top of the ladder:** State, Nationals, Worlds and
+Sheffield must feel competitive and fair, and give players a reason to grind
+in their weight class and stay in it. This reopens the ladder points
+(§35.8) for discussion.
+
+### 36.2 Problems to solve before building (Claude, 2026-11-01)
+
+- **Voice screaming:** Roblox's newer audio system can measure how loud a
+  player's voice is, but only on that player's own device. So the game has
+  to trust what the device reports, and a cheater could fake it. Voice chat
+  is also only for verified players aged 13 and up, so many players could
+  never help. It needs a server-side cap on the help and the coins, and
+  probably a second way to cheer that works without voice (for example, a
+  HYPE button to tap). It must be tested in a prototype first.
+- **Pasted music ids:** since Roblox made most uploaded audio private (2022),
+  most pasted ids will not play in this game, and pasted songs can be
+  copyrighted. A curated list of licensed tracks (Roblox's free licensed
+  music) works reliably. To decide.
+- **Crates:** show-off crates bought with Robux must show the odds of every
+  item (Roblox rule for paid random items). Looks-only items (animations,
+  emotes, UI designs) are not pay-to-win; the spectator help bar and lift
+  difficulty must never be bought.
+- **The live minigame screens:** possible. The server already runs each
+  lift; it would send the lifter's minigame state (bar position, cue, timer)
+  to everyone watching, about 10 to 20 times a second for up to 4 lifters,
+  and each screen redraws it. Cheap enough.
+- **Performance:** a big arena is costly. Seats are built from a few reused
+  meshes, the crowd is cheap, and effects like the cracking floor are
+  limited in size and time.
+- **Few players per server:** a State meet needs enough qualified lifters
+  at the same time. Who may enter, and whether State gathers lifters from
+  many servers, decides whether meets can fill (§36.3).
+
+### 36.3 Decisions (user, 2026-11-01, picked from options)
+
+| Question | Decision |
+|---|---|
+| **Who may enter State** | Players who reached the season's **ladder points** target (§35.8's points from Local and Regional meets). Claude recommended a qualifying Total; the user chose points. |
+| **Per weight class** | **Yes.** Ladder points belong to the weight class they were earned in. Qualifying in 74 kg lets a player enter State in 74 kg only; switching class starts that class's season at 0. This gives players a reason to stay in a class. |
+| **Where State runs** | **A State arena in every game server**, next to the gym. Qualified players in that server lift; everyone in the server can watch. |
+| **State in the Local venue** | **Turned off now** (2026-11-01). |
+
+**[WOULD CHANGE §35.8, follows from the above]:**
+
+- Ladder points now qualify for **State**, not Nationals.
+- Points are kept **per weight class**. Built step 2 keeps one account-wide
+  ladder (save version 16), so a save change moves them per class. Old
+  points (from Local wins) go to the class the player is in at that moment.
+- **How Nationals is reached** (from State results?) is decided in the
+  Nationals design.
+- The target (25 points) and the multipliers stay **[PROVISIONAL]**.
+
+> **Built (2026-11-01): per-class ladder points.** Save version 17 keeps
+> one ladder per weight class (`career.ladders`). A meet pays points to the
+> class the lifter weighed in at. The old account-wide points moved to the
+> player's current class. The result screen says "+4 ladder points: 16 / 25
+> for State (74 kg)" or "QUALIFIED FOR STATE (74 kg)!". STATS shows "STATE
+> LADDER 16 / 25" for the class the player is in now, with "74 kg class ·
+> season ends in N days". A qualified lifter's big screen shows "QUALIFIED
+> FOR STATE". Qualifying unlocks nothing yet: the State arena is not built.
+
+### 36.4 Still open
+
+- **When State runs:** a fixed timetable, or when enough qualifiers wait.
+- **How a State meet is placed:** within each weight class, or by the score
+  across classes (§29.10's `MeetPlacing`), and how many places get titles.
+- **What State pays:** coins, titles, trophies, Nationals qualification.
+- **How "slower" works:** longer turns, one lifter at a time, the camera on
+  each lift.
+- **The build order:** the venue and the meet first; the show-off items,
+  crates and spectator help come after.

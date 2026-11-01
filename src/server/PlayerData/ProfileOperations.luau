@@ -723,13 +723,16 @@ function ProfileOperations.getTitles(data: ProfileData): { [string]: number }
 end
 
 --[[
-	LADDER POINTS (schema 16; GAME_DESIGN §35.8, MeetLevelConfig.Ladder).
-	Seasons turn over here, when they are read: a ladder stamped with a season
-	that is over counts as 0 points and not qualified, and addLadderPoints
-	starts the new season. An unstamped ladder (season "") belongs to the
-	current season, with its points (old Local wins turned into points).
+	LADDER POINTS (schema 16, per weight class since 17; GAME_DESIGN §35.8,
+	§36.3, MeetLevelConfig.Ladder). Each class has its own ladder: points
+	earned in a class count only toward State in that class. Seasons turn
+	over here, when they are read: a ladder stamped with a season that is
+	over counts as 0 points and not qualified, and addLadderPoints starts the
+	new season. An unstamped ladder (season "") belongs to the current
+	season, with its points (old Local wins turned into points).
 ]]
 export type LadderView = {
+	classKey: string,
 	season: string,
 	points: number,
 	target: number,
@@ -738,45 +741,61 @@ export type LadderView = {
 
 export type LadderOutcome = "Added" | "Qualified" | "AlreadyQualified" | "Rejected"
 
--- The ladder table, or nil when it is missing or holds an unusable value.
-local function ladderOf(data: ProfileData): PlayerProfileSchema.Ladder?
+-- The per-class ladders map, or nil when it is missing.
+local function laddersOf(data: ProfileData): { [string]: PlayerProfileSchema.Ladder }?
 	local career = (data :: any).career
-	local ladder = if typeof(career) == "table" then career.ladder else nil
-	if typeof(ladder) ~= "table" or typeof(ladder.season) ~= "string" or typeof(ladder.qualified) ~= "boolean"
-		or not isFiniteNumber(ladder.points) or ladder.points < 0 or ladder.points ~= math.floor(ladder.points) then
-		return nil
-	end
-	return ladder
+	local ladders = if typeof(career) == "table" then career.ladders else nil
+	return if typeof(ladders) == "table" then ladders else nil
 end
 
--- The player's ladder in the season holding `nowUnix` (0 points when the ladder is unusable). Read only.
-function ProfileOperations.getLadder(data: ProfileData, nowUnix: number): LadderView
+local function isUsableLadder(ladder: any): boolean
+	return typeof(ladder) == "table" and typeof(ladder.season) == "string" and typeof(ladder.qualified) == "boolean"
+		and isFiniteNumber(ladder.points) and ladder.points >= 0 and ladder.points == math.floor(ladder.points)
+end
+
+-- The player's ladder in `classKey` in the season holding `nowUnix` (0 points when there is none or it is
+-- unusable). Read only.
+function ProfileOperations.getLadder(data: ProfileData, classKey: string, nowUnix: number): LadderView
 	local season = MeetLevelConfig.seasonFor(nowUnix)
-	local target = MeetLevelConfig.Ladder.NationalsTarget
-	local ladder = ladderOf(data)
-	if ladder == nil or (ladder.season ~= "" and ladder.season ~= season) then
-		return { season = season, points = 0, target = target, qualified = false }
+	local target = MeetLevelConfig.Ladder.StateTarget
+	local ladders = laddersOf(data)
+	local ladder: any = if ladders and typeof(classKey) == "string" then ladders[classKey] else nil
+	if not isUsableLadder(ladder) or (ladder.season ~= "" and ladder.season ~= season) then
+		return { classKey = classKey, season = season, points = 0, target = target, qualified = false }
 	end
-	return { season = season, points = ladder.points, target = target, qualified = ladder.qualified }
+	return { classKey = classKey, season = season, points = ladder.points, target = target, qualified = ladder.qualified }
 end
 
 --[[
-	Adds ladder points earned at `nowUnix`, starting a new season first when
-	the stored one is over (and stamping an unstamped ladder with this
-	season, keeping its points). Returns:
+	Adds ladder points earned in `classKey` at `nowUnix`, starting that
+	class's ladder when it has none, and a new season first when the stored
+	one is over (stamping an unstamped ladder with this season, keeping its
+	points). Returns:
 		"Added"             the points count; not qualified yet
 		"Qualified"         these points reached the target: qualified now
 		"AlreadyQualified"  qualified earlier this season: nothing added
-		"Rejected"          unusable ladder, or not a whole number of points
-		                    from 1 to 100; nothing changed
-	and the ladder afterwards. SECURITY BOUNDARY: the caller (LocalMeetService)
-	works the points out from the meet's result and MeetLevelConfig.
+		"Rejected"          no ladders map, no build for the class, an
+		                    unusable stored ladder, or not a whole number of
+		                    points from 1 to 100; nothing changed
+	and that class's ladder afterwards. SECURITY BOUNDARY: the caller
+	(LocalMeetService) works the points out from the meet's result and
+	MeetLevelConfig, and the class from the lifter's weigh-in.
 ]]
-function ProfileOperations.addLadderPoints(data: ProfileData, points: number, nowUnix: number): (LadderOutcome, LadderView)
-	local ladder = ladderOf(data)
-	if ladder == nil or not isFiniteNumber(points) or points < 1 or points > 100 or points ~= math.floor(points)
+function ProfileOperations.addLadderPoints(data: ProfileData, classKey: string, points: number,
+	nowUnix: number): (LadderOutcome, LadderView)
+	local ladders = laddersOf(data)
+	local safeNow = if isFiniteNumber(nowUnix) then nowUnix else 0
+	if ladders == nil or typeof(classKey) ~= "string" or ProfileOperations.getBuild(data, classKey) == nil
+		or not isFiniteNumber(points) or points < 1 or points > 100 or points ~= math.floor(points)
 		or not isFiniteNumber(nowUnix) then
-		return "Rejected", ProfileOperations.getLadder(data, if isFiniteNumber(nowUnix) then nowUnix else 0)
+		return "Rejected", ProfileOperations.getLadder(data, classKey, safeNow)
+	end
+	local ladder: any = ladders[classKey]
+	if ladder == nil then
+		ladder = { season = "", points = 0, qualified = false }
+		ladders[classKey] = ladder
+	elseif not isUsableLadder(ladder) then
+		return "Rejected", ProfileOperations.getLadder(data, classKey, nowUnix)
 	end
 	local season = MeetLevelConfig.seasonFor(nowUnix)
 	if ladder.season ~= season then
@@ -791,10 +810,10 @@ function ProfileOperations.addLadderPoints(data: ProfileData, points: number, no
 		outcome = "AlreadyQualified"
 	else
 		ladder.points += points
-		ladder.qualified = ladder.points >= MeetLevelConfig.Ladder.NationalsTarget
+		ladder.qualified = ladder.points >= MeetLevelConfig.Ladder.StateTarget
 		outcome = if ladder.qualified then "Qualified" else "Added"
 	end
-	return outcome, ProfileOperations.getLadder(data, nowUnix)
+	return outcome, ProfileOperations.getLadder(data, classKey, nowUnix)
 end
 
 --[[

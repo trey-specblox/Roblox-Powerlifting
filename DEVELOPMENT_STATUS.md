@@ -3184,7 +3184,37 @@ and polish.
     (Nov 1 UTC). PlayerDataProbe back to ENABLED = false.
     NOT TESTED: a real meet paying points (the result line, the big screen
     fact); a real save with old Local wins converting.
-  NEXT ACTION: the user tests ladder step 2 in a real meet (points on the
+  STATE CHAMPIONSHIP (2026-11-01, user): State moves to its own arena;
+  vision and decisions in GAME_DESIGN §36 (4 racks with a live minigame
+  screen above each, slower and made to watch, walk-outs / struggle and
+  fail effects / celebrations from crates, spectate zones, voice-scream
+  help bar + coins). Decided: enter with ladder points; points PER WEIGHT
+  CLASS; an arena in every server; State turned off in the Local venue
+  (MeetLevelConfig State chance 0; ForceMeetLevel still forces it in
+  Studio). Flagged: voice loudness is measured only on the screamer's own
+  device (cheatable, 13+ verified only: add a HYPE button, cap on the
+  server); pasted music ids mostly won't play (private audio) -> curated
+  licensed tracks; Robux crates must show odds. Committed with the
+  per-class ladder below.
+  PER-CLASS LADDER POINTS (2026-11-01, user "Build per-class points"):
+  save version 17, career.ladders {classKey -> {season, points,
+  qualified}}; migrations[16] moves the v16 career.ladder into the current
+  class (unusable bodyweight -> starting class; existing entries kept;
+  unknown classes / broken ladders dropped). MeetLevelConfig.Ladder
+  NationalsTarget renamed StateTarget (25). ProfileOperations.getLadder /
+  addLadderPoints take the class (refused with no build for it).
+  LocalMeetService pays the weigh-in class; lines "for State (74 kg)",
+  big screen "QUALIFIED FOR STATE". STATS "STATE LADDER x / 25" + "<class>
+  class · season ends in N days". Checks: luau-lsp clean in changed files;
+  Studio Play (by Claude): save checker 514 passed 0 failed (test 54
+  rewritten: 30 checks), player loaded at version 17, STATS screenshot
+  OK; probe back to ENABLED = false. NOT TESTED: a real meet paying points.
+  COMMITTED and pushed with the State notes above (user "Commit and push",
+  2026-11-01) as "Move State to its own arena plan and keep ladder points
+  per weight class"; `git log` for the hash.
+  NEXT ACTION: the State meet design still open in §36.4 (timetable,
+  placing, rewards), then the arena in Blender.
+  OLDER NEXT ACTION: the user tests ladder step 2 in a real meet (points on the
   result screen, STATS after it); then Nationals design (ladder step 3) or
   the gear-stats design session.
   OLDER NEXT ACTION (done): ladder step 2 (ladder points and seasons) when the user

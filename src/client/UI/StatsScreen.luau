@@ -191,10 +191,10 @@ function StatsScreen.start()
 	local loading = UIStyle.text(body, "Loading", UDim2.fromOffset(620, 440), UDim2.fromOffset(300, 30), SIZES.body, C.muted,
 		nil, Enum.TextXAlignment.Center)
 
-	-- Under the radar: this season's ladder toward Nationals (GAME_DESIGN §35.8), points and a bar.
+	-- Under the radar: this season's ladder toward State in the current class (GAME_DESIGN §35.8, §36.3).
 	local ladderY = 384
 	UIStyle.text(body, "LadderName", UDim2.fromOffset(640, ladderY), UDim2.fromOffset(170, 28), SIZES.body, C.white,
-		UIStyle.heading()).Text = "NATIONALS LADDER"
+		UIStyle.heading()).Text = "STATE LADDER"
 	local ladderText = UIStyle.text(body, "Ladder", UDim2.fromOffset(800, ladderY), UDim2.fromOffset(110, 28),
 		SIZES.heading, C.yellow, UIStyle.heading(), Enum.TextXAlignment.Right)
 	local ladderBar = UIStyle.frame(body, "LadderBar", UDim2.fromOffset(640, ladderY + 34), UDim2.fromOffset(270, 12),
@@ -239,7 +239,8 @@ function StatsScreen.start()
 			local daysLeft = math.max(1, math.ceil((ladder.seasonEndsAt - os.time()) / 86400))
 			ladderText.Text = if ladder.qualified then "QUALIFIED" else string.format("%d / %d", ladder.points, ladder.target)
 			ladderFill.Size = UDim2.fromScale(if ladder.qualified then 1 else math.clamp(ladder.points / ladder.target, 0, 1), 1)
-			ladderHint.Text = string.format("Season ends in %d day%s", daysLeft, if daysLeft == 1 then "" else "s")
+			ladderHint.Text = string.format("%s class · season ends in %d day%s", snapshot.classLabel, daysLeft,
+				if daysLeft == 1 then "" else "s")
 		end
 		local total = 0
 		for _, lift in ipairs(ProgressionConfig.Lifts) do
