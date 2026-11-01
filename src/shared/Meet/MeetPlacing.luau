@@ -7,11 +7,12 @@
 	"The Local meet — first build", user 2026-10-29): ONE ranking for everyone,
 	by score.
 
-		Score = Total / the weight class's reference Total (ReferenceRecordConfig)
+		Score = Total / the weight class's score Total (MeetLevelConfig.ScoreTotals)
 
 	so a light lifter can beat a heavy one and a lifter alone in their class
-	does not win automatically. Ties [PROVISIONAL]: the lighter bodyweight
-	first, as in real meets, then the earlier entry. A lifter with no total
+	does not win automatically. Ties: more good lifts first (user,
+	2026-11-01: 9/9 beats 8/9 on an equal score), then [PROVISIONAL] the
+	lighter bodyweight, as in real meets, then the earlier entry. A lifter with no total
 	(a bomb-out, or withdrawn) has no score and no place, and is listed after
 	everyone who placed.
 
@@ -20,7 +21,7 @@
 ]]
 
 local ConfigFolder = script.Parent.Parent:WaitForChild("Config")
-local ReferenceRecordConfig = require(ConfigFolder:WaitForChild("ReferenceRecordConfig"))
+local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 
 local MeetPlacing = {}
 
@@ -31,21 +32,23 @@ export type Entry = {
 	bodyweightKg: number,
 	-- The meet total, or nil for no total (bombed out or withdrawn).
 	totalKg: number?,
+	-- Good lifts made (0-9), the first tie-break.
+	goodLifts: number,
 	-- Entry order (lower = earlier), the last tie-break.
 	order: number,
 }
 
 export type Placing = {
 	key: number,
-	-- Total / class reference Total (0.25 = 25%), or nil for no total.
+	-- Total / class score Total (0.25 = 25%), or nil for no total.
 	score: number?,
 	-- 1 = first, or nil for no total.
 	place: number?,
 }
 
--- The score for a total in a class, or nil when there is no total or no reference for the class.
+-- The score for a total in a class, or nil when there is no total or no score Total for the class.
 function MeetPlacing.score(classLabel: string, totalKg: number?): number?
-	local reference = ReferenceRecordConfig.Records.Total[classLabel]
+	local reference = MeetLevelConfig.ScoreTotals[classLabel]
 	if totalKg == nil or reference == nil or reference <= 0 then
 		return nil
 	end
@@ -64,6 +67,9 @@ function MeetPlacing.rank(entries: { Entry }): { Placing }
 		end
 		if a.score and b.score and math.abs(a.score - b.score) > 1e-9 then
 			return a.score > b.score
+		end
+		if a.score and b.score and a.entry.goodLifts ~= b.entry.goodLifts then
+			return a.entry.goodLifts > b.entry.goodLifts
 		end
 		if a.score and b.score and math.abs(a.entry.bodyweightKg - b.entry.bodyweightKg) > 1e-9 then
 			return a.entry.bodyweightKg < b.entry.bodyweightKg

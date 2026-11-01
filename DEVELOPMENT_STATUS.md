@@ -3212,6 +3212,25 @@ and polish.
   COMMITTED and pushed with the State notes above (user "Commit and push",
   2026-11-01) as "Move State to its own arena plan and keep ladder points
   per weight class"; `git log` for the hash.
+- EVEN SCORE TOTALS (user, 2026-11-01): Local and Regional meets now score
+  Total ÷ MeetLevelConfig.ScoreTotals (made up, ~8% per class, 670 → 1150)
+  instead of ReferenceRecordConfig's uneven real records (which still drive
+  difficulty / prestige / Sheffield). MeetLevelConfig checks at startup that
+  every class has one. Changed: MeetLevelConfig.luau, MeetPlacing.luau,
+  GAME_DESIGN §29.10 placing row. CHECKED in Studio (Edit, cloned modules):
+  all 8 classes load, 59 kg 200 kg = 29.9% beats 120+ kg 330 kg = 28.7%, a
+  bomb-out gets no place. NOT TESTED in a real meet. Committed with the
+  tie-break below.
+- GOOD LIFTS TIE-BREAK (user picked "Good lifts as tie-break" over ranking
+  by good lifts first, 2026-11-01): MeetPlacing ties go score → more good
+  lifts → lighter bodyweight → entry order. LocalMeetService passes
+  goodLiftCount(lifter) to both rankings (live standings and final) and the
+  payout's 9/9 count uses the same helper. CHECKED in Studio (Edit, cloned
+  modules): 310 kg on 6/9 beats 300 kg on 9/9; on 300 kg, 9/9 beats 8/9,
+  then the lighter 8/9. LocalMeetService not run (no play test).
+  COMMITTED and pushed together with the score Totals above (user "Commit
+  and push", 2026-11-01) as "Score meets against even class Totals and
+  break ties by good lifts"; `git log` for the hash.
   NEXT ACTION: the State meet design still open in §36.4 (timetable,
   placing, rewards), then the arena in Blender.
   OLDER NEXT ACTION: the user tests ladder step 2 in a real meet (points on the

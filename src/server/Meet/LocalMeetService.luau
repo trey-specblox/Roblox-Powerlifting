@@ -403,6 +403,19 @@ local function meetAttempts(lifter: Lifter): MeetTotal.MeetAttempts
 	return all
 end
 
+-- How many good lifts the lifter has made so far (9 = 9/9): the first tie-break in the ranking.
+local function goodLiftCount(lifter: Lifter): number
+	local good = 0
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		for _, attempt in ipairs(lifter.lifts[lift].history) do
+			if attempt.result == "GoodLift" then
+				good += 1
+			end
+		end
+	end
+	return good
+end
+
 -- True when a lift has no attempts left and no good one: the lifter has no total any more.
 local function bombed(lifter: Lifter): boolean
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -449,7 +462,7 @@ local function buildStandings(current: Meet): LocalMeetRemotes.Standings
 		-- Live: rank by the subtotal so far; final: by the total (nil for a bomb-out).
 		local rankKg: number? = if out then nil elseif current.final then result.total elseif subtotal > 0 then subtotal else nil
 		table.insert(entries, { key = lifter.player.UserId, classLabel = lifter.classLabel, bodyweightKg = lifter.bodyweightKg,
-			totalKg = rankKg, order = lifter.order })
+			totalKg = rankKg, goodLifts = goodLiftCount(lifter), order = lifter.order })
 		rowsByKey[lifter.player.UserId] = {
 			name = lifter.name,
 			platform = lifter.platform.index,
@@ -1069,7 +1082,7 @@ local function finishMeet(current: Meet)
 	for _, lifter in ipairs(current.lifters) do
 		local result = MeetTotal.resolve(meetAttempts(lifter))
 		table.insert(entries, { key = lifter.player.UserId, classLabel = lifter.classLabel, bodyweightKg = lifter.bodyweightKg,
-			totalKg = if lifter.withdrawn then nil else result.total, order = lifter.order })
+			totalKg = if lifter.withdrawn then nil else result.total, goodLifts = goodLiftCount(lifter), order = lifter.order })
 	end
 	for _, placing in ipairs(MeetPlacing.rank(entries)) do
 		current.places[placing.key] = placing
@@ -1088,14 +1101,7 @@ local function finishMeet(current: Meet)
 		local results: { MeetPayout.Lifter } = {}
 		for _, lifter in ipairs(current.lifters) do
 			local placing = current.places[lifter.player.UserId]
-			local good = 0
-			for _, lift in ipairs(MeetConfig.LiftOrder) do
-				for _, attempt in ipairs(lifter.lifts[lift].history) do
-					if attempt.result == "GoodLift" then
-						good += 1
-					end
-				end
-			end
+			local good = goodLiftCount(lifter)
 			table.insert(results, { key = lifter.player.UserId, place = placing and placing.place,
 				hasTotal = not lifter.withdrawn and placing ~= nil and placing.place ~= nil, qualified = lifter.liftsStarted > 0,
 				perfect = good == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift })

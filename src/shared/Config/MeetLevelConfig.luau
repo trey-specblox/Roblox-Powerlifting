@@ -100,6 +100,45 @@ MeetLevelConfig.Ladder = {
 	PointsPerOldLocalWin = 3,
 }
 
+--[[
+	SCORE TOTALS (user, 2026-11-01): the made-up reference Total for each
+	weight class that a Local or Regional meet scores against
+	(Score = Total / ScoreTotals[class], MeetPlacing). Evenly spaced: each
+	class is about 8% above the one below, from 670 kg (59 kg) to 1150 kg
+	(120+ kg), so no class scores more easily than its neighbours. Even
+	percentage steps, not even kg steps, because strength grows by about the
+	same percentage per class (bodyweight^(2/3)); even kg steps would favour
+	the heavy classes. Separate from ReferenceRecordConfig's real records,
+	which keep driving difficulty and prestige. State and Nationals may get
+	their own table later. Labels must match WeightClassConfig exactly.
+]]
+MeetLevelConfig.ScoreTotals = {
+	["59 kg"] = 670,
+	["66 kg"] = 725,
+	["74 kg"] = 780,
+	["83 kg"] = 845,
+	["93 kg"] = 915,
+	["105 kg"] = 985,
+	["120 kg"] = 1065,
+	["120+ kg"] = 1150,
+} :: { [string]: number }
+
+-- Startup check: one positive score Total per weight class, nothing else (a missing class would leave its
+-- lifters with no score and no place).
+do
+	local WeightClassConfig = require(script.Parent:WaitForChild("WeightClassConfig"))
+	local validLabels: { [string]: boolean } = {}
+	for _, class in ipairs(WeightClassConfig.Classes) do
+		validLabels[class.label] = true
+		local value = MeetLevelConfig.ScoreTotals[class.label]
+		assert(typeof(value) == "number" and value > 0,
+			string.format("[MeetLevelConfig] ScoreTotals is missing a positive Total for the %s class", class.label))
+	end
+	for label in pairs(MeetLevelConfig.ScoreTotals) do
+		assert(validLabels[label], string.format("[MeetLevelConfig] ScoreTotals has unknown weight class %q", label))
+	end
+end
+
 -- The ladder points for finishing an official meet at `level` in `place` (nil = no top 3 place).
 function MeetLevelConfig.ladderPointsFor(level: LevelId, place: number?): number
 	local info = MeetLevelConfig.Levels[level] or MeetLevelConfig.Levels.Local
