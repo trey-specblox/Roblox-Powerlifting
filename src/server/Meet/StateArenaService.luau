@@ -7,7 +7,8 @@
 	the entrance building beside the gym and the arena (StateArenaVenue). A
 	player holds E at the entrance's doors to go in, arriving on the main
 	stand's walkway, and at the EXIT to go back to where they came from. Anyone
-	may visit and look round; the State meet itself (§36.4) comes later.
+	may visit and look round; the State meet itself (§36.4) comes later. Only
+	lifters competing in it may enter the meet area (setCompetitor).
 
 	The server decides every move: the prompt only asks, and a player must be
 	standing at the doors, alive, not lifting, not on a machine, and not in the
@@ -38,6 +39,8 @@ local CHECK_SECONDS = 2
 type Body = { character: Model, root: BasePart, humanoid: Humanoid }
 type Visit = { character: Model, returnTo: CFrame, connections: { RBXScriptConnection } }
 
+-- Competing lifters: the connection that keeps parts added to their character (tools, accessories) in the group.
+local competitors: { [Player]: RBXScriptConnection } = {}
 local started = false
 local venue: StateArenaVenue.Venue? = nil
 local visits: { [Player]: Visit } = {}
@@ -77,6 +80,9 @@ local function leave(player: Player, sendBack: boolean)
 	visits[player] = nil
 	for _, connection in ipairs(visit.connections) do
 		connection:Disconnect()
+	end
+	if competitors[player] then
+		StateArenaService.setCompetitor(player, false)
 	end
 	if player.Parent then
 		player:SetAttribute(StateArenaConfig.VenueAttribute, nil)
@@ -166,6 +172,43 @@ local function setUpEntrance(instance: Instance)
 	end)
 end
 
+local function setGroup(character: Model, group: string)
+	for _, part in ipairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CollisionGroup = group
+		end
+	end
+end
+
+--[[
+	Lets `player` through the meet area's walls (on) or not (off): only lifters
+	competing in the State meet may go all round the meet (user 2026-11-01).
+	The State meet calls this when it brings its lifters in and when they are
+	done; a player who leaves the arena or dies is put back automatically.
+]]
+function StateArenaService.setCompetitor(player: Player, on: boolean)
+	local old = competitors[player]
+	if old then
+		old:Disconnect()
+		competitors[player] = nil
+	end
+	local character = player.Character
+	if character == nil then
+		return
+	end
+	if on then
+		local group = StateArenaConfig.CompetitorGroup
+		setGroup(character, group)
+		competitors[player] = character.DescendantAdded:Connect(function(part)
+			if part:IsA("BasePart") then
+				part.CollisionGroup = group
+			end
+		end)
+	else
+		setGroup(character, "Default")
+	end
+end
+
 function StateArenaService.start()
 	if started then
 		return
@@ -175,6 +218,11 @@ function StateArenaService.start()
 	Players.PlayerRemoving:Connect(function(player)
 		leave(player, false)
 		entering[player] = nil
+		local competing = competitors[player]
+		if competing then
+			competing:Disconnect()
+			competitors[player] = nil
+		end
 	end)
 	for _, point in ipairs(CollectionService:GetTagged(StateArenaConfig.EntranceTag)) do
 		setUpEntrance(point)

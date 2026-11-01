@@ -3307,6 +3307,59 @@ and polish.
     step 1)"; `git log` for the hash. Previews in art/previews/ are not
     tracked, like earlier ones. NEXT: the State meet itself (§36.4) on the
     4 racks.
+- ARENA FLOOR ADDITIONS (user, 2026-11-01, with a screenshot: "fill in a
+  banner" between the rack screen and the rack, "make sure the meet area is
+  properly barricaded", "behind the racks a warm up area, with tons of
+  racks"):
+  - New GantryBanner in build_state_arena_01.py (navy, yellow trims,
+    CENTRAL + STATE CHAMPIONSHIP; inside each gantry from under the screen
+    to the floor, in front of the number panel). CHECK PASSED (59 meshes,
+    22,914 tris). StateArena_01 re-uploaded: rbxassetid://107253247735603
+    (PropAssets updated; 108120033847582 recorded under "supersedes").
+    Note: the preview hides source objects, so the export must unhide them
+    first (a first export had only 16 of 59 pieces).
+  - StateArenaVenue: a banner per gantry; 40 LocalMeet_02 Barricades round
+    the meet area (in front of the judges at z -25, down both sides at
+    x +-63 to the floor wall) on hidden solid lines; WARM-UP area behind
+    the gantries: 29 competition racks in 3 rows (z 30/44/58, 12 apart,
+    facing the platforms, no shadows; looks only, not working yet) and 4
+    plate trees; the floor's hidden wall raised 12 -> 16 (spectators could
+    hop it from the front row). GantryBanner colourway added.
+  - TESTED in Studio (Play, MCP): all built, banners navy with CENTRAL,
+    screens RACK 1-4, barricades enclose the meet area, warm-up rows fill
+    the back of the floor. Audit: parts 8,373 (OK), shadow casters 2,770
+    (OK), lights 189/200, unique meshes 705 (over 600, as before).
+    Screenshots: art/previews/StateArena_ingame_{banners,meetarea,warmup}.jpg.
+    Seen from the warm-up side, the backs of the screen frames were bright
+    yellow -> FIXED (user "Yes, make them black"): RackGantry_Frame now has
+    a black backing behind the screen, RackGantry_Trim is only the yellow
+    border round the front, and the number panel is gone (the banner
+    covers that space). CHECK PASSED (22,950 tris), re-uploaded:
+    rbxassetid://120696869428785 (PropAssets updated; 107253247735603 and
+    108120033847582 under "supersedes"). TESTED in Studio: backs black
+    from the warm-up area, front border yellow with RACK 1-4. NOT committed.
+- MEET AREA CLOSED TO SPECTATORS (user, 2026-11-01, 3 screenshots: "remove
+  the invisible blocks... they can just jump over it. Instead make them not
+  able to jump through the actual rack/meet area... only people who were
+  actually competing in the meet should be able to go all around the meet"):
+  - The hidden wall round the floor is now only the modelled low wall's
+    height (4): spectators may hop down onto the floor.
+  - The barricade lines' hidden walls and the floor wall behind the
+    warm-up area (slices 9-15, between the side lines) are 60 high, in
+    collision group StateMeetBarrier (StateArenaConfig). Group
+    StateMeetCompetitor does not collide with it.
+  - StateArenaService.setCompetitor(player, on) puts a character (and
+    parts added later) in the competitor group or back in Default; leaving
+    the arena or the game resets it. Not called by anything yet: the State
+    meet will call it for its lifters.
+  - TESTED in Studio (Play, MCP, MoveTo + jumping for 6 s each): spectator
+    stopped at the front line (z -27) and side line (x 65.5) and at the
+    back wall (r 83.5); from the front row they reached the floor; as a
+    competitor they walked through to z -5.6; switched off, the character
+    was back in Default. COMMITTED and pushed (user "Commit and push",
+    2026-11-01) together with the floor additions and black screen backs
+    above, as "Add gantry banners, barricades, a warm-up area and a closed
+    meet area to the State arena"; `git log` for the hash.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;

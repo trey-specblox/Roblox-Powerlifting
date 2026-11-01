@@ -801,12 +801,13 @@
       }
     },
     "StateArena_01": {
-      "about": "The State Championship arena (GAME_DESIGN 36): a 15-degree slice of the seating bowl (StandWedge) and of the lattice dome (DomeWedge), each placed 24 times round the floor; the round floor and mat (ArenaFloor); the centre-hung video cube (CentreCube); the screen gantry over each rack (RackGantry; the game draws the live minigame on RackGantry_Screen); judges' tables, TV camera tripods, STATE CHAMPS banners, the CENTRAL flag, the end name signs (NameSign; the game writes on NameSign_Screen); and the domed entrance building outside the gym (ArenaEntrance; the game writes on ArenaEntrance_SignScreen). Made by art/scripts/build_state_arena_01.py (art/blender/StateArena_01.blend).",
+      "about": "The State Championship arena (GAME_DESIGN 36): a 15-degree slice of the seating bowl (StandWedge) and of the lattice dome (DomeWedge), each placed 24 times round the floor; the round floor and mat (ArenaFloor); the centre-hung video cube (CentreCube); the screen gantry over each rack (RackGantry; the game draws the live minigame on RackGantry_Screen); judges' tables, TV camera tripods, STATE CHAMPS banners, the CENTRAL flag, the end name signs (NameSign; the game writes on NameSign_Screen); the CENTRAL backdrop inside each gantry (GantryBanner); and the domed entrance building outside the gym (ArenaEntrance; the game writes on ArenaEntrance_SignScreen). Made by art/scripts/build_state_arena_01.py (art/blender/StateArena_01.blend).",
       "file": "art/exports/StateArena_01.glb",
       "license": "own work",
       "ids": {
-        "model": "rbxassetid://108120033847582"
-      }
+        "model": "rbxassetid://120696869428785"
+      },
+      "supersedes": "rbxassetid://107253247735603 (yellow screen-frame backs and the number panel, 2026-11-01; unused); rbxassetid://108120033847582 (before the gantry banners were added, 2026-11-01; unused)"
     }
   },
   "images": {

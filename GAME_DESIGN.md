@@ -5783,8 +5783,11 @@ in their weight class and stay in it. This reopens the ladder points
 > no ground beside the gym: the plaza ends at x and z ±256). Hold E at its
 > middle doors to go in (you arrive on the main stand's walkway); the EXIT
 > beside the arrival takes you back where you came from. Anyone may visit
-> and look round; the stands are walkable (hidden slopes) and a hidden wall
-> keeps spectators off the floor. The 4 racks read RACK 1–4 left to right
+> and look round; the stands are walkable (hidden slopes), and spectators
+> may hop the low wall onto the floor. **The meet area** (inside the
+> barricades round the racks, the warm-up area included) **is closed to
+> everyone but the lifters competing in the meet** (user, 2026-11-01): its
+> walls cannot be jumped over. The 4 racks read RACK 1–4 left to right
 > from the main stand; their gantry screens say "RACK n · STATE
 > CHAMPIONSHIP" until the State meet draws the live minigame there. No
 > State meet runs yet.

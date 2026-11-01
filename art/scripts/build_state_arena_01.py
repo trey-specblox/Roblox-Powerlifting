@@ -21,6 +21,7 @@
 #   ArenaBanner     a red championship banner (STATE CHAMPS), hung round the top of the stands.
 #   ArenaFlag       a big navy CENTRAL flag hung from the roof near the centre cube (logo on both sides).
 #   NameSign        the big sign on the suites at each end; the game writes STATE CHAMPIONSHIP on its screen.
+#   GantryBanner    a navy CENTRAL / STATE CHAMPIONSHIP backdrop inside each gantry, under the screen, to the floor.
 #
 # The detail pass (user "Looks good, detail it", 2026-11-01) added real seats (StandWedge_SeatsLower/Upper:
 # 24 triangles a seat, split in two to stay under the 5,000 budget), sponsor boards round the floor wall, logos
@@ -361,6 +362,8 @@ def gantry_frame(bm):
             H.box(bm, (x, -0.6, z), (1.2, 0.2, 0.2))
             H.box(bm, (x, 0.6, z), (1.2, 0.2, 0.2))
     H.box(bm, (0, 0, GANTRY_H + 0.6), (GANTRY_W + 1.5, 1.5, 1.2))  # the top beam
+    # The screen's black backing (user 2026-11-01: the backs, seen from the warm-up area, black, not yellow).
+    H.box(bm, (0, -0.55, GANTRY_H - SCREEN_H / 2 - 1.2), (SCREEN_W + 1.0, 0.5, SCREEN_H + 1.0))
 
 
 def gantry_screen(bm):
@@ -368,9 +371,13 @@ def gantry_screen(bm):
 
 
 def gantry_trim(bm):
+    # The yellow border round the front of the screen only. (The number panel under it went when the GantryBanner
+    # came: the banner covers that space.)
     z = GANTRY_H - SCREEN_H / 2 - 1.2
-    H.box(bm, (0, -0.6, z), (SCREEN_W + 1.0, 0.5, SCREEN_H + 1.0))  # the screen's frame
-    H.box(bm, (0, -0.6, z - SCREEN_H / 2 - 2.2), (6.0, 0.5, 3.0))  # the number panel under it
+    for dz in (-1, 1):
+        H.box(bm, (0, -0.9, z + dz * (SCREEN_H / 2 + 0.25)), (SCREEN_W + 1.0, 0.3, 0.5))
+    for dx in (-1, 1):
+        H.box(bm, (dx * (SCREEN_W / 2 + 0.25), -0.9, z), (0.5, 0.3, SCREEN_H))
 
 
 B.piece("RackGantry_Frame", BLACK, gantry_frame, smooth=False)
@@ -506,6 +513,32 @@ B.piece("ArenaEntrance_Cornice", CONCRETE, entrance_cornice, smooth=False)
 B.piece("ArenaEntrance_Drum", CREAM, entrance_drum, smooth=False)
 B.piece("ArenaEntrance_Roof", ROOF, entrance_roof)
 B.piece("ArenaEntrance_Ring", WHITE, entrance_ring, smooth=False)
+
+
+# GantryBanner (user 2026-11-01: "the space between rack # and the rack itself, fill in a banner"): a navy CENTRAL
+# backdrop hung inside each rack's gantry, from just under the screen to the floor, in front of the number panel.
+# Built in the gantry's frame (place it like the gantry).
+BANNER_W, BANNER_Z0, BANNER_Z1, BANNER_Y = GANTRY_W - 1.6, 0.6, 14.2, -1.0
+
+
+def gantry_banner_cloth(bm):
+    H.box(bm, (0, BANNER_Y, (BANNER_Z0 + BANNER_Z1) / 2), (BANNER_W, 0.15, BANNER_Z1 - BANNER_Z0))
+
+
+def gantry_banner_trim(bm):
+    for z in (BANNER_Z0 + 0.7, BANNER_Z1 - 0.7):
+        H.box(bm, (0, BANNER_Y - 0.1, z), (BANNER_W, 0.05, 0.45))
+
+
+def gantry_banner_logo(bm):
+    front = BANNER_Y - 0.1
+    B.add_text(bm, "CENTRAL", 3.2, 0.03, H.on_front((0, 0, 0), front, 10.6))
+    B.add_text(bm, "STATE CHAMPIONSHIP", 1.05, 0.03, H.on_front((0, 0, 0), front, 8.1))
+
+
+B.piece("GantryBanner_Cloth", NAVY, gantry_banner_cloth, smooth=False)
+B.piece("GantryBanner_Trim", YELLOW, gantry_banner_trim, smooth=False)
+B.piece("GantryBanner_Logo", WHITE, gantry_banner_logo, smooth=False)
 
 
 # ---------------------------------------------------------------- Floor and stand props
@@ -668,6 +701,7 @@ def preview():
         "ArenaEntrance": [Matrix.Translation((500, 0, 0))],
         # A gantry behind each rack, a judges' table in front of each platform (the judges face the rack).
         "RackGantry": [Matrix.Translation((x, 12, 0)) for x in racks],
+        "GantryBanner": [Matrix.Translation((x, 12, 0)) for x in racks],
         "JudgesTable": [Matrix.Translation((x, -17, 0)) @ Matrix.Rotation(math.pi, 4, "Z") for x in racks],
         # TV cameras on the walkway between the tiers and on the floor's front corners.
         "CameraTripod": [facing_middle_at(114, a, 20) for a in (-0.3, 0.0, 0.3)]

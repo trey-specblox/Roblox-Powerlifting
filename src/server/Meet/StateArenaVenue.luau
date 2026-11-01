@@ -16,8 +16,11 @@
 	stand toward -Z):
 		FLOOR      round, radius 80, with the grey mat; the 4 racks in a row
 		           across the middle (x -45, -15, 15, 45) facing the main stand,
-		           each on a platform with its screen gantry behind it and the
-		           judges' table in front
+		           each on a platform with its screen gantry (and the CENTRAL
+		           backdrop inside it) behind it and the judges' table in
+		           front; a barricade line round the meet area (in front of
+		           the judges, down both sides); behind the gantries the
+		           WARM-UP area, rows of racks (looks only for now)
 		BOWL       24 slices of seats all round: the lower tier, a walkway (where
 		           a visitor arrives, on the main side, and the EXIT), the upper
 		           tier, the suites, the outer wall
@@ -26,9 +29,11 @@
 		           both ends
 
 	Hidden solids make the stands walkable: a slope per tier per slice (through
-	the middles of the rows), the walkway, the suites and the outer wall, and a
-	wall round the floor that keeps spectators in the stands (the State meet will
-	bring its lifters down). It only builds; StateArenaService runs the visits.
+	the middles of the rows), the walkway, the suites and the outer wall, and the
+	low wall round the floor (spectators may hop it). The MEET AREA (inside the
+	barricades, warm-up included) is closed by walls too high to jump over that
+	only competing lifters pass (StateArenaConfig.MeetBarrierGroup). It only
+	builds; StateArenaService runs the visits.
 
 	PERFORMANCE: the bowl is one seat mesh pair repeated 24 times (about
 	150,000 triangles in all); 4 rack spotlights and 8 bowl lights; only the
@@ -36,6 +41,7 @@
 	meet (live screens, turns) comes later.
 ]]
 
+local PhysicsService = game:GetService("PhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -60,7 +66,10 @@ local WEDGE = math.rad(15)
 -- The bowl, as modelled (build_state_arena_01.py): radii from the middle, heights above the floor.
 local FLOOR_R = 80
 local FLOOR_WALL_R = 82
-local BARRIER_TOP = 12 -- the hidden wall round the floor: high enough that spectators cannot jump down
+local FLOOR_WALL_TOP = 4 -- the low wall round the floor, as modelled: spectators may hop it (user 2026-11-01)
+-- The slices of the floor's wall behind the warm-up area (between the meet area's side lines, toward +Z): there the
+-- wall is part of the meet area's barrier, too high to jump over (StateArenaConfig.MeetBarrierHeightStuds).
+local BACK_WALL_SLICES = { [9] = true, [10] = true, [11] = true, [12] = true, [13] = true, [14] = true, [15] = true }
 -- The walking slopes run through the middles of the rows' treads: (radius, height) at each end.
 local LOWER_SLOPE = { Vector2.new(82, 4.8), Vector2.new(112, 20.8) }
 local UPPER_SLOPE = { Vector2.new(116, 27), Vector2.new(146, 47) }
@@ -71,6 +80,17 @@ local WALL_R0, WALL_R1, WALL_TOP = 154, 156, 80
 -- The props, as in the Blender preview.
 local CUBE_Y = 62
 local GANTRY_BEHIND = 12
+-- The meet area's barricade line (user 2026-11-01: "make sure the meet area is properly barricaded"): LocalMeet_02's
+-- Barricade (7 wide, 3.3 high) in front of the judges' tables and down both sides to the floor's wall.
+local BARRICADE_W = 7
+local MEET_FRONT_Z = -25
+local MEET_SIDE_X = 63
+local MEET_SIDE_END_Z = 49 -- where the side lines meet the floor's wall
+-- The warm-up area behind the gantries (user 2026-11-01: "a warm up area, with tons of racks"): rows of the gym's
+-- competition rack facing the platforms, as many as fit inside the floor's round wall, and plate trees at the back.
+local WARMUP_ROWS = { { z = 30, halfWidth = 60 }, { z = 44, halfWidth = 54 }, { z = 58, halfWidth = 42 } }
+local WARMUP_RACK_SPACING = 12
+local PLATE_TREES = { Vector3.new(-24, 0, 69), Vector3.new(-8, 0, 69), Vector3.new(8, 0, 69), Vector3.new(24, 0, 69) }
 local JUDGES_IN_FRONT = 17
 local PLATFORM_SIZE = 16
 local PLATFORM_HEIGHT = 0.6
@@ -146,6 +166,17 @@ local function towardMiddle(frame: CFrame, part: BasePart): Vector3
 	return Vector3.new(d.X, 0, d.Z).Unit
 end
 
+-- The meet area's barrier group and the competitors' group, which do not collide with each other (once).
+function StateArenaVenue.registerCollisionGroups()
+	local barrier, competitor = StateArenaConfig.MeetBarrierGroup, StateArenaConfig.CompetitorGroup
+	for _, group in ipairs({ barrier, competitor }) do
+		if not PhysicsService:IsCollisionGroupRegistered(group) then
+			PhysicsService:RegisterCollisionGroup(group)
+		end
+	end
+	PhysicsService:CollisionGroupSetCollidable(barrier, competitor, false)
+end
+
 -- Builds the arena once and returns it (later calls return the same one), or nil and the reason.
 function StateArenaVenue.build(): (Venue?, string?)
 	if venue then
@@ -156,6 +187,7 @@ function StateArenaVenue.build(): (Venue?, string?)
 		return nil, "the StateArena_01 models did not load"
 	end
 	probe:Destroy()
+	StateArenaVenue.registerCollisionGroups()
 	local frame = CFrame.new(StateArenaConfig.Origin)
 	local model = Instance.new("Model")
 	model.Name = MODEL_NAME
@@ -165,6 +197,11 @@ function StateArenaVenue.build(): (Venue?, string?)
 	end
 	local function place(parent: Instance, item: string, at: CFrame, name: string?): Model?
 		return placeIn(frame, parent, item, at, name)
+	end
+	-- A hidden wall of the meet area: in the barrier collision group, which competing lifters pass through.
+	local function meetBarrier(part: BasePart): BasePart
+		part.CollisionGroup = StateArenaConfig.MeetBarrierGroup
+		return part
 	end
 
 	-- ---------------------------------------------------------------- the floor
@@ -186,7 +223,12 @@ function StateArenaVenue.build(): (Venue?, string?)
 		local turn = CFrame.Angles(0, k * WEDGE, 0)
 		place(model, "StandWedge", turn, "Stand_" .. k)
 		place(model, "DomeWedge", turn, "Dome_" .. k)
-		ring("FloorWall_" .. k, turn, FLOOR_R, FLOOR_WALL_R, 0, BARRIER_TOP)
+		if BACK_WALL_SLICES[k] then
+			meetBarrier(solid("FloorWall_" .. k, Vector3.new(chord(FLOOR_WALL_R), StateArenaConfig.MeetBarrierHeightStuds,
+				FLOOR_WALL_R - FLOOR_R), turn * CFrame.new(0, StateArenaConfig.MeetBarrierHeightStuds / 2, -(FLOOR_R + FLOOR_WALL_R) / 2)))
+		else
+			ring("FloorWall_" .. k, turn, FLOOR_R, FLOOR_WALL_R, 0, FLOOR_WALL_TOP)
+		end
 		slope("LowerTier_" .. k, turn, LOWER_SLOPE[1], LOWER_SLOPE[2])
 		ring("Walkway_" .. k, turn, WALK_R0, WALK_R1, 0, WALK_Y)
 		ring("WalkStep_" .. k, turn, WALK_R1 - 1.5, WALK_R1, WALK_Y, WALK_STEP_Y)
@@ -242,6 +284,8 @@ function StateArenaVenue.build(): (Venue?, string?)
 			return nil, problem
 		end
 		local gantry = place(model, "RackGantry", CFrame.new(x, 0, GANTRY_BEHIND), "Gantry_" .. index)
+		-- The CENTRAL backdrop inside the gantry, from under the screen to the floor.
+		place(model, "GantryBanner", CFrame.new(x, 0, GANTRY_BEHIND), "GantryBanner_" .. index)
 		local screen = gantry and gantry:FindFirstChild("RackGantry_Screen", true) :: BasePart?
 		if screen then
 			-- The State meet will draw the lifter's live minigame here; until then, the rack's number.
@@ -252,6 +296,64 @@ function StateArenaVenue.build(): (Venue?, string?)
 		-- The frame's LookVector (-Z) points at the main stand.
 		local spot = frame * Vector3.new(x, PLATFORM_HEIGHT, -4)
 		table.insert(liftSpots, CFrame.lookAt(spot, spot + frame.LookVector))
+	end
+
+	-- ---------------------------------------------------------------- the meet area's barricades
+	-- Props from other files (not made in the arena's frame): their pivot, the bottom centre, goes on the spot,
+	-- facing `toward` (in the arena's frame).
+	local function prop(name: string, item: string, at: Vector3, toward: Vector3): Model?
+		local copy = RoomProps.propCopy(item, 1)
+		if copy then
+			copy.Name = name
+			local world = frame * at
+			copy:PivotTo(CFrame.lookAt(world, world + frame:VectorToWorldSpace(toward)))
+			copy.Parent = model
+		end
+		return copy
+	end
+	local barricades = 0
+	local function barricadeLine(from: Vector3, to: Vector3, out: Vector3)
+		local length = (to - from).Magnitude
+		local count = math.ceil(length / BARRICADE_W)
+		for k = 0, count - 1 do
+			barricades += 1
+			prop("Barricade_" .. barricades, "Barricade", from + (to - from).Unit * (k + 0.5) * BARRICADE_W, out)
+		end
+		-- One hidden wall along the line, too high to jump over: only competing lifters pass (meetBarrier).
+		local mid = (from + to) / 2
+		local height = StateArenaConfig.MeetBarrierHeightStuds
+		meetBarrier(solid("BarricadeLine_" .. barricades,
+			Vector3.new(math.abs(to.X - from.X) + 1, height, math.abs(to.Z - from.Z) + 1), CFrame.new(mid.X, height / 2, mid.Z)))
+	end
+	barricadeLine(Vector3.new(-MEET_SIDE_X, 0, MEET_FRONT_Z), Vector3.new(MEET_SIDE_X, 0, MEET_FRONT_Z), -Vector3.zAxis)
+	barricadeLine(Vector3.new(MEET_SIDE_X, 0, MEET_FRONT_Z), Vector3.new(MEET_SIDE_X, 0, MEET_SIDE_END_Z), Vector3.xAxis)
+	barricadeLine(Vector3.new(-MEET_SIDE_X, 0, MEET_FRONT_Z), Vector3.new(-MEET_SIDE_X, 0, MEET_SIDE_END_Z), -Vector3.xAxis)
+
+	-- ---------------------------------------------------------------- the warm-up area behind the gantries
+	local warmUp = Instance.new("Folder")
+	warmUp.Name = "WarmUp"
+	warmUp.Parent = model
+	local warmUpRacks = 0
+	for _, row in ipairs(WARMUP_ROWS) do
+		local x = -row.halfWidth
+		while x <= row.halfWidth + 0.01 do
+			local placed, problem = MockMeetArena.placeRack(warmUp, frame * Vector3.new(x, 0, row.z))
+			if not placed then
+				warn("[StateArenaVenue] a warm-up rack was not placed: " .. tostring(problem))
+				break
+			end
+			warmUpRacks += 1
+			x += WARMUP_RACK_SPACING
+		end
+	end
+	for i, at in ipairs(PLATE_TREES) do
+		prop("PlateTree_" .. i, "PlateTree", at, -Vector3.zAxis)
+	end
+	-- PERFORMANCE: the warm-up racks are many copies of one rack; none of them casts a shadow under the arena's lights.
+	for _, part in ipairs(warmUp:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CastShadow = false
+		end
 	end
 
 	-- TV cameras on the walkway between the tiers and on the floor's front corners.
@@ -307,6 +409,7 @@ function StateArenaVenue.build(): (Venue?, string?)
 	exitPoint.CanQuery = false
 
 	model.Parent = Workspace
+	model:SetAttribute("WarmUpRacks", warmUpRacks)
 	venue = {
 		model = model,
 		frame = frame,

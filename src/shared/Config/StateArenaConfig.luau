@@ -34,6 +34,19 @@ StateArenaConfig.LeftAfterStuds = 400
 
 -- ------------------------------------------------ the arena
 
+--[[
+	The meet area (user 2026-11-01: spectators "cannot go any further" than its
+	barricades; "only people who were actually competing in the meet should be
+	able to go all around the meet"): hidden walls along the barricade lines and
+	along the floor's wall behind the warm-up area, too high to jump over, in the
+	collision group MeetBarrierGroup. A competing lifter's character is put in
+	CompetitorGroup, which passes through them (StateArenaService.setCompetitor).
+	The rest of the floor is open: spectators may hop the low wall from the stands.
+]]
+StateArenaConfig.MeetBarrierGroup = "StateMeetBarrier"
+StateArenaConfig.CompetitorGroup = "StateMeetCompetitor"
+StateArenaConfig.MeetBarrierHeightStuds = 60
+
 -- The 4 racks in a row across the floor (x), facing the main stand (-Z), and how far apart they are.
 StateArenaConfig.Racks = 4
 StateArenaConfig.RackSpacingStuds = 30

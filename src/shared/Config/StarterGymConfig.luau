@@ -599,8 +599,9 @@ StarterGymConfig.PropAssets = {
 	-- entrance building outside the gym (all placed by LocalMeetVenue)
 	{ id = 71979666360161 }, -- LocalMeet_02: crowd barricade, referee chair, platform number sign, awards backdrop (all
 	-- placed by LocalMeetVenue)
-	{ id = 108120033847582 }, -- StateArena_01: the State arena's bowl and dome slices, floor, centre cube, rack gantries,
-	-- judges' tables, camera tripods, banners, flag, name signs and its entrance building (all placed by StateArenaVenue)
+	{ id = 120696869428785 }, -- StateArena_01: the State arena's bowl and dome slices, floor, centre cube, rack gantries,
+	-- judges' tables, camera tripods, banners, flag, name signs, gantry banners and its entrance building (all placed by
+	-- StateArenaVenue)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -959,6 +960,7 @@ StarterGymConfig.PropColourways = {
 	ArenaFloor = { { Base = "Oak", Mat = "MatGrey", Aisle = "Charcoal" } },
 	CentreCube = { { Frame = "Black", Screens = "Black", Ring = "RedGlow", Speakers = "Black", Logo = "White" } },
 	RackGantry = { { Frame = "Black", Screen = "Black", Trim = "Yellow", Logo = "White" } },
+	GantryBanner = { { Cloth = "Navy", Trim = "Yellow", Logo = "White" } },
 	ArenaEntrance = { {
 		Brick = "Brick", Stone = "Cream", Doors = "SuiteDark", Glass = "TintedGlass", SignFrame = "Black",
 		SignScreen = "Black", Windows = "SuiteDark", Cornice = "Concrete", Drum = "Cream", Roof = "RoofBeige", Ring = "White",
