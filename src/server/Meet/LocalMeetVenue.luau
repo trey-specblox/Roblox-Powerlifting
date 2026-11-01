@@ -213,6 +213,8 @@ local function writeSign(part: BasePart, out: Vector3, title: string, sub: strin
 		label("Title", title, 0.12, 0.76, StyledScreen.Colours.white)
 	end
 end
+-- Shared with StateArenaVenue, whose signs use the same style.
+LocalMeetVenue.writeSign = writeSign
 
 -- Builds the venue once and returns it (later calls return the same one), or nil and the reason.
 function LocalMeetVenue.build(): (Venue?, string?)

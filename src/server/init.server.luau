@@ -60,6 +60,10 @@ GymRecordsWall.start()
 local LocalMeetService = require(MeetFolder:WaitForChild("LocalMeetService"))
 LocalMeetService.start()
 
+-- The State Championship arena and its entrance building beside the gym (GAME_DESIGN §36): visits for now.
+local StateArenaService = require(MeetFolder:WaitForChild("StateArenaService"))
+StateArenaService.start()
+
 -- The TELEPORT menu: the client asks for a place, the server checks and moves the player.
 local TeleportService = require(WorldFolder:WaitForChild("TeleportService"))
 TeleportService.start()

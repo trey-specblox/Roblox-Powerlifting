@@ -599,6 +599,8 @@ StarterGymConfig.PropAssets = {
 	-- entrance building outside the gym (all placed by LocalMeetVenue)
 	{ id = 71979666360161 }, -- LocalMeet_02: crowd barricade, referee chair, platform number sign, awards backdrop (all
 	-- placed by LocalMeetVenue)
+	{ id = 108120033847582 }, -- StateArena_01: the State arena's bowl and dome slices, floor, centre cube, rack gantries,
+	-- judges' tables, camera tripods, banners, flag, name signs and its entrance building (all placed by StateArenaVenue)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -652,6 +654,15 @@ StarterGymConfig.PropPaints = {
 	-- Lights_01 (the light fittings' glowing parts; the same as Looks.GlowWhite) and the Cardio TV's power light.
 	GlowWhite = { color = Color3.fromRGB(255, 250, 240), material = Enum.Material.Neon },
 	GlowGreen = { color = Color3.fromRGB(60, 220, 110), material = Enum.Material.Neon },
+	-- The State arena (StateArena_01, GAME_DESIGN §36: the user's photos of a domed college arena).
+	Concrete = { color = Color3.fromRGB(120, 122, 128), material = Enum.Material.Concrete },
+	ArenaSeat = { color = Color3.fromRGB(36, 52, 104) },
+	DomeNavy = { color = Color3.fromRGB(34, 40, 92) },
+	Brick = { color = Color3.fromRGB(150, 64, 52), material = Enum.Material.Brick },
+	RoofBeige = { color = Color3.fromRGB(214, 180, 168) },
+	MatGrey = { color = Color3.fromRGB(128, 130, 136), material = Enum.Material.Fabric },
+	SuiteDark = { color = Color3.fromRGB(20, 22, 30) },
+	TintedGlass = { color = Color3.fromRGB(60, 80, 110), transparency = 0.3, reflectance = 0.1 },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -662,6 +673,8 @@ StarterGymConfig.PropFabricPieces = {
 	Curtain_Cloth = true,
 	GymBag_Body = true,
 	StaffTee_Body = true,
+	ArenaBanner_Cloth = true,
+	ArenaFlag_Cloth = true,
 	TeeStack_TeeA = true,
 	TeeStack_TeeB = true,
 	TeeStack_TeeC = true,
@@ -937,6 +950,24 @@ StarterGymConfig.PropColourways = {
 		Truss = "Silver", Feet = "Black", Panel = "Navy", Pattern = "Blue", TitleFrame = "Black", Title = "Black",
 		Trim = "Yellow", Cans = "Black", Lenses = "GlowWhite",
 	} },
+	-- The State arena (StateArena_01, art/scripts/build_state_arena_01.py). The game writes on the dark screens.
+	StandWedge = { {
+		Concrete = "Concrete", SeatsLower = "ArenaSeat", SeatsUpper = "ArenaSeat", Board = "Navy", BoardTrim = "Yellow",
+		BoardLogo = "White", Ribbon = "RedGlow", Suites = "SuiteDark", Glass = "TintedGlass", Rails = "Silver",
+	} },
+	DomeWedge = { { Shell = "DomeNavy", Lattice = "Silver", Lights = "GlowWhite" } },
+	ArenaFloor = { { Base = "Oak", Mat = "MatGrey", Aisle = "Charcoal" } },
+	CentreCube = { { Frame = "Black", Screens = "Black", Ring = "RedGlow", Speakers = "Black", Logo = "White" } },
+	RackGantry = { { Frame = "Black", Screen = "Black", Trim = "Yellow", Logo = "White" } },
+	ArenaEntrance = { {
+		Brick = "Brick", Stone = "Cream", Doors = "SuiteDark", Glass = "TintedGlass", SignFrame = "Black",
+		SignScreen = "Black", Windows = "SuiteDark", Cornice = "Concrete", Drum = "Cream", Roof = "RoofBeige", Ring = "White",
+	} },
+	JudgesTable = { { Top = "Black", Skirt = "Navy", Trim = "Yellow", Logo = "White", Legs = "Silver" } },
+	CameraTripod = { { Legs = "Black", Body = "Charcoal", Lens = "TintedGlass", Screen = "Black" } },
+	ArenaBanner = { { Cloth = "Red", Trim = "Yellow", Text = "White", Rod = "Silver" } },
+	ArenaFlag = { { Cloth = "Navy", Stripes = "Yellow", Logo = "White", Rod = "Silver" } },
+	NameSign = { { Frame = "Black", Screen = "Black", Trim = "Yellow" } },
 	Fridge = {
 		{ Body = "Mint", Dark = "Charcoal", Metal = "Silver" },
 		{ Body = "Cream", Dark = "Charcoal", Metal = "Silver" },

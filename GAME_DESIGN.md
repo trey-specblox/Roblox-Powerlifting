@@ -5642,6 +5642,42 @@ floor in the centre with platforms side by side, screens behind each
 platform, judges' tables, a warm-up area on the floor, barriers between
 areas, camera stands).
 
+**What the 7 reference photos show** (re-sent 2026-11-01; written down here
+because pasted photos do not stay available between sessions):
+
+- **Outside:** a round building. A two-storey **red-brick base** with a row
+  of **three big round arches** at the entrance (dark doors inside them) and
+  a flat grey cornice; above it a **pale cream drum with vertical ribs**
+  (pilasters) all the way round and a few small square windows; on top a
+  **shallow dome** in pale pinkish beige with a thin white edge ring. Grass,
+  two round trees and a picnic bench in front.
+- **The bowl:** **seats all the way round** a rectangular floor, in a lower
+  and an upper tier, steep, with aisles (stairs) between sections and metal
+  handrails at the front of each tier. One arena has **dark navy seats**,
+  another **bands of red, orange and yellow** by tier. A **lit ad ribbon**
+  (an LED band) runs round between the tiers; **press boxes / suites** sit
+  on the top ring; seat sections on the floor's short ends.
+- **The roof:** a **dome of steel lattice** (a criss-cross truss pattern)
+  seen from inside, washed in **blue/purple light**, with a **ring of
+  spotlights** round its edge and lights on the catwalks.
+- **Hung over the middle:** a **centre-hung video cube** (big screens on
+  each face, a smaller lit ring under it), **vertical speaker stacks**
+  hanging beside it, a big **flag** hanging from the roof, and a row of
+  **championship banners** round the top rim. Big name signs on the end
+  walls ("LOUISIANA" in the photos: ours say our own names).
+- **The floor:** a **grey mat** over the arena floor with a darker centre
+  aisle. Platforms each have a **tall numbered board / screen behind**
+  (6, 7, 8 in one photo), **judges' tables** with chairs in rows facing the
+  platforms, **white divider boards** between areas, **sponsor boards**
+  round the floor's edge, **warm-up racks round the outside** of the floor
+  (red racks with plates on the floor beside them), long tables along the
+  sides, and a **lifting stage** at one end with a scoreboard banner over it.
+- **Cameras:** **video cameras on tripods** in the front row of the stands,
+  aimed at the platforms.
+- Real logos and brands in the photos (sports drinks, sportswear, the state
+  name) are replaced by CENTRAL and the game's own names, in the game's
+  colours.
+
 - **4 racks (platforms)**, so the venue can be big and each platform easy to
   watch.
 - **A screen above each rack** showing the lifter's minigame **live**: when a
@@ -5732,13 +5768,31 @@ in their weight class and stay in it. This reopens the ladder points
 > season ends in N days". A qualified lifter's big screen shows "QUALIFIED
 > FOR STATE". Qualifying unlocks nothing yet: the State arena is not built.
 
-### 36.4 Still open
+### 36.4 Decisions: how a State meet runs (user, 2026-11-01, picked from options)
 
-- **When State runs:** a fixed timetable, or when enough qualifiers wait.
-- **How a State meet is placed:** within each weight class, or by the score
-  across classes (§29.10's `MeetPlacing`), and how many places get titles.
-- **What State pays:** coins, titles, trophies, Nationals qualification.
-- **How "slower" works:** longer turns, one lifter at a time, the camera on
-  each lift.
-- **The build order:** the venue and the meet first; the show-off items,
-  crates and spectator help come after.
+| Question | Decision |
+|---|---|
+| **When State runs** | **On a timer:** a State meet starts every **20 minutes** if at least **2 qualified players** signed up at the State arena's sign-up desk, like the Local meet (§29.10). Fewer than 2: no meet, and sign-ups carry to the next start. **[PROVISIONAL]** times |
+| **Placing** | **One ranking by score** for everyone, as at Local and Regional (§29.10's `MeetPlacing`): Total ÷ the class's score Total, ties by more good lifts, then lighter bodyweight. The **top 3 overall** get the State titles. Class winners are shown too. Lifters still enter only in the class they qualified in (§36.3) |
+| **What State pays** | All four: the **bigger coin pot** (×3 the Local pot, `MeetLevelConfig`); **titles and trophies** for the top 3 (already built); a **Nationals spot** for the top 3 (the details come with the Nationals design); and a **State finisher badge** for everyone who finishes with a total, for that season |
+| **The format ("slower, big stage")** | **4 racks, one lifter at a time** (user, 2026-11-01, settling "one main platform" vs §36.1's 4 racks): each of the 4 lifters has **their own rack**, with its live screen above and its spectate zone, and they lift **in turn**, lightest bar first in each round as in real meets, with the camera and the big screens on each lift. **At most 4 lifters** per meet, about 20 minutes. **[PROVISIONAL]**: with more than 4 sign-ups, the first 4 lift and the rest carry to the next meet |
+
+> **Built (2026-11-01): the arena, step 1 (visits).** The State arena
+> stands in every server, far from the gym, with its **entrance building
+> across the plaza in front of the gym, facing the gym's doors** (there is
+> no ground beside the gym: the plaza ends at x and z ±256). Hold E at its
+> middle doors to go in (you arrive on the main stand's walkway); the EXIT
+> beside the arrival takes you back where you came from. Anyone may visit
+> and look round; the stands are walkable (hidden slopes) and a hidden wall
+> keeps spectators off the floor. The 4 racks read RACK 1–4 left to right
+> from the main stand; their gantry screens say "RACK n · STATE
+> CHAMPIONSHIP" until the State meet draws the live minigame there. No
+> State meet runs yet.
+
+### 36.5 Still open
+
+- **The build order** (Claude recommends): the arena and the meet itself
+  first, then the rewards (badge, Nationals spot), then the show-off items,
+  crates and spectator help.
+- The badge's look and where it shows (nameplate, STATS, both).
+- The open questions in §36.2 (voice cheering, music, crates).

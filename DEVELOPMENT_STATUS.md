@@ -3227,12 +3227,94 @@ and polish.
   goodLiftCount(lifter) to both rankings (live standings and final) and the
   payout's 9/9 count uses the same helper. CHECKED in Studio (Edit, cloned
   modules): 310 kg on 6/9 beats 300 kg on 9/9; on 300 kg, 9/9 beats 8/9,
-  then the lighter 8/9. LocalMeetService not run (no play test).
+  then the lighter 8/9. TESTED by the user in a real Local meet
+  (2026-11-01): the meet still works normally.
+- FILES OFF DRIVE C: (user, 2026-11-01; C: had 1.6 GB free): project
+  extras now live in `D:\Powerlifting Roblox Extras\` — `RobloxKits\` (all
+  kits, 6,099 files; `C:\Users\treyn\Downloads\RobloxKits` is a junction to
+  it, so the 40 kit paths in art scripts / materials.json still resolve),
+  `Downloads\` (kit zips/rbxm, Blender zip) and `Art originals\` (the SBD
+  Central / RPC / RBF / RPF logos, emblems, arenas and Crimson silhouette
+  PNGs that older notes below place in `C:\Users\treyn\Downloads`). Left
+  on C: on purpose: the Open Cloud key (`.fwjelaa`, kits read it there),
+  `.claude`, uv cache (Blender MCP needs it on C:), Python, Roblox Studio.
   COMMITTED and pushed together with the score Totals above (user "Commit
   and push", 2026-11-01) as "Score meets against even class Totals and
   break ties by good lifts"; `git log` for the hash.
-  NEXT ACTION: the State meet design still open in §36.4 (timetable,
-  placing, rewards), then the arena in Blender.
+- STATE MEET DESIGN DECIDED (user, 2026-11-01, GAME_DESIGN §36.4): every
+  20 min with 2+ qualified sign-ups; one ranking by score, top 3 titles;
+  ×3 pot + titles/trophies + Nationals spot (top 3) + season finisher
+  badge; 4 racks (one per lifter, screen above each), lifting one at a
+  time, max 4. NOT built. NOT committed (doc only).
+  ARENA BLOCKOUT BUILT (2026-11-01), AWAITING THE USER'S OK: photos re-sent
+  and described in GAME_DESIGN §36.1. `art/scripts/build_state_arena_01.py`
+  → `art/blender/StateArena_01.blend` (CHECK PASSED, 25 meshes, ~6,850
+  tris): StandWedge + DomeWedge (15° slices, each reused 24×), ArenaFloor,
+  CentreCube, RackGantry (screen over each rack), ArenaEntrance (outside,
+  110 studs across). Sizes: floor r 80, mat 130×80, lower tier r 82-112,
+  upper r 116-146, suites to r 154, dome top z 98 (~312 studs across).
+  Previews: `art/previews/StateArena_01_blockout_{stands,floor,outside}.png`.
+  DETAIL PASS DONE (user "Looks good, detail it", 2026-11-01): real seats
+  (StandWedge_SeatsLower/Upper, 24 tris a seat: ~6,200 tris a wedge,
+  ~150k for the bowl, one reused mesh pair), sponsor boards + CENTRAL round
+  the floor wall, CENTRAL on the cube and gantries, entrance with round
+  arches, stone rings, glass doors, a sign screen and drum windows, plus
+  JudgesTable, CameraTripod, ArenaBanner (STATE CHAMPS), ArenaFlag,
+  NameSign. 57 meshes, 21,578 unique tris, CHECK PASSED, backface-culling
+  preview clean. Previews: `art/previews/StateArena_01_detail_{stands,
+  floor,entrance,outside}.png`. Warm-up area reuses existing racks / plate
+  trees (placed in code).
+- ARENA UPLOADED AND PLACED (user "Upload and place it", 2026-11-01):
+  - Exported art/exports/StateArena_01.glb (56 meshes; a stale blockout
+    object StandWedge_Seats was removed first; the build script now empties
+    its collection before building), uploaded as group 529442797:
+    rbxassetid://108120033847582 (materials.json "StateArena_01").
+    In Roblox the pieces keep their Blender positions mirrored in X
+    (Blender (x, y, z) → Roblox (-x, z, y)), front -Y → -Z.
+  - StarterGymConfig: PropAssets entry, 8 new PropPaints (Concrete,
+    ArenaSeat, DomeNavy, Brick, RoofBeige, MatGrey, SuiteDark,
+    TintedGlass), PropColourways for the 11 items, cloth pieces.
+  - New src/shared/Config/StateArenaConfig.luau (Origin 0,1000,4000,
+    EntranceTag, VenueAttribute, 4 racks 30 apart).
+  - New src/server/Meet/StateArenaVenue.luau: places every piece at
+    arena * turn * template pivot (24 stand + 24 dome slices, floor, cube,
+    flag, 8 banners, 2 name signs, 4 platforms + competition racks +
+    gantries + judges' tables, 5 cameras), hidden solids (floor, floor
+    wall to 12 high, a slope per tier per slice, walkway + step, suites,
+    outer wall to 80), 4 rack spotlights + 8 bowl lights, EXIT sign; signs
+    written with LocalMeetVenue.writeSign (now exported). Only the dome
+    shell and stand concrete/suites cast shadows. Entrance across the plaza
+    (x 150, front 53 studs in front of the gym, facing it) on hidden walls.
+  - New src/server/Meet/StateArenaService.luau (+ init.server.luau):
+    builds both at start, "Go to the State arena" prompt at the doors,
+    "Back to the gym" at the EXIT, visit checks like the Local meet's, lets
+    go of visitors who end up 400+ studs away.
+  - TESTED IN STUDIO by Claude (Play, MCP): both build, no errors in the
+    output; holding E at the doors moved the player onto the walkway; EXIT
+    returned them to the doors; the player stands on both tiers and on the
+    floor; screens show RACK 1-4 left to right; entrance sign readable.
+    Bugs found and fixed while testing: pieces placed without the arena's
+    frame (they sat on the gym), the Mock Meet platform's pivot, rack order
+    reversed, entrance off the edge of the 512-stud baseplate (moved).
+    Audit after: world parts 7,355 (OK), shadow casters 2,726 (OK, was
+    2,953), lights 189/200, screens 119/120 (near budget), unique meshes
+    702 — OVER the 600 budget (the arena adds ~87; the world was ~615
+    before). Screenshots: art/previews/StateArena_ingame_*.jpg.
+  - NOT TESTED: phones, several players, the TELEPORT menu from inside.
+    COMMITTED and pushed (user "Commit and push", 2026-11-01) with the
+    State design (§36.4), the photo notes, the even score Totals note and
+    the files-off-C: note, as "Build the State arena and its entrance (State
+    step 1)"; `git log` for the hash. Previews in art/previews/ are not
+    tracked, like earlier ones. NEXT: the State meet itself (§36.4) on the
+    4 racks.
+  Plan, following LocalMeetVenue: an outside
+  entrance building next to the gym (domed arena, brick base, arched
+  entrances) whose doors teleport to the interior at its own far Origin;
+  inside, tiered seats all round, a hanging screen cube, 4 racks side by
+  side with a screen above each, judges' tables, a floor warm-up area,
+  barriers, camera stands, a spectate zone per rack.
+  NEXT ACTION: build the State arena in Blender from the user's photos
+  (§36.1), then the State meet on it; rewards after (§36.5 build order).
   OLDER NEXT ACTION: the user tests ladder step 2 in a real meet (points on the
   result screen, STATS after it); then Nationals design (ladder step 3) or
   the gear-stats design session.
