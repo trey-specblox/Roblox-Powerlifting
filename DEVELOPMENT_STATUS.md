@@ -3360,6 +3360,28 @@ and polish.
     2026-11-01) together with the floor additions and black screen backs
     above, as "Add gantry banners, barricades, a warm-up area and a closed
     meet area to the State arena"; `git log` for the hash.
+- KINDER STATE QUALIFYING (user 2026-11-01, "Yes, all three"; GAME_DESIGN
+  §35.8 "Kinder to new and impatient players", §36.3 built note):
+  - MeetLevelConfig.Ladder: FirstStateTarget 10 (until a player has
+    qualified once, any class/season), PerfectMeetPoints 1 (a 9/9 meet,
+    times the level), SeasonCarryShare 0.5 (from the season just before
+    only, rounded down, capped at target - 1). New
+    MeetLevelConfig.previousSeason.
+  - Save version 18: career.stateQualifications (migrations[17] counts the
+    qualified class ladders once; keeps a higher usable count; idempotent).
+  - ProfileOperations getLadder/addLadderPoints: targetFor + pointsIn;
+    points at or over the target read as qualified; crossing the target adds
+    1 to stateQualifications.
+  - LocalMeetService: passes the 9/9 flag; result line adds "(9/9 bonus)".
+  - TESTED in Studio: PlayerDataProbe (turned on for the run, back off)
+    533 passed, 0 failed, including the new checks; the live test player
+    loaded at version 18 and STATS returned "0 / 10". NOT tested: a real
+    Local meet showing the 9/9 bonus line or a qualification at 10.
+  - COMMITTED and pushed (user "Commit and push", 2026-11-01) as "Make
+    State qualifying kinder: 10-point first State, 9/9 bonus, half points
+    carried"; `git log` for the hash. Files: MeetLevelConfig,
+    PlayerProfileSchema, ProfileOperations, LocalMeetService,
+    PlayerDataProbe, GAME_DESIGN.md, DEVELOPMENT_STATUS.md.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;

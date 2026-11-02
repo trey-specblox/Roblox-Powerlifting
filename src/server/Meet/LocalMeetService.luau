@@ -533,8 +533,13 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	-- A Regional or State meet's top 3 earn a title (GAME_DESIGN §35.8).
 	local titleId = if current.rewards and totalKg then MeetLevelConfig.titleFor(current.level, place) else nil
 	local titleCount: number? = nil
-	-- Ladder points toward State, in the weigh-in class, for finishing an official meet (GAME_DESIGN §35.8, §36.3).
-	local ladderPoints = if current.rewards and totalKg then MeetLevelConfig.ladderPointsFor(current.level, place) else 0
+	-- Ladder points toward State, in the weigh-in class, for finishing an official meet (GAME_DESIGN §35.8, §36.3),
+	-- with a bonus for a perfect meet (every attempt a good lift).
+	local perfect = goodLiftCount(lifter) == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift
+	local ladderPoints = if current.rewards and totalKg
+		then MeetLevelConfig.ladderPointsFor(current.level, place, perfect)
+		else 0
+	local perfectNote = if perfect then " (9/9 bonus)" else ""
 	local ladderOutcome: ProfileOperations.LadderOutcome? = nil
 	local ladder: ProfileOperations.LadderView? = nil
 	local saved = PlayerDataService.update(player, function(data)
@@ -588,10 +593,11 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		table.insert(lines, if titleCount > 1 then string.format("%s x%d", title, titleCount) else "New title: " .. title)
 	end
 	if ladder and ladderOutcome == "Qualified" then
-		table.insert(lines, string.format("+%d ladder points: QUALIFIED FOR STATE (%s)!", ladderPoints, lifter.classLabel))
+		table.insert(lines, string.format("+%d ladder points%s: QUALIFIED FOR STATE (%s)!", ladderPoints, perfectNote,
+			lifter.classLabel))
 	elseif ladder and ladderOutcome == "Added" then
-		table.insert(lines, string.format("+%d ladder points: %d / %d for State (%s)", ladderPoints, ladder.points,
-			ladder.target, lifter.classLabel))
+		table.insert(lines, string.format("+%d ladder points%s: %d / %d for State (%s)", ladderPoints, perfectNote,
+			ladder.points, ladder.target, lifter.classLabel))
 	elseif ladderOutcome == "AlreadyQualified" then
 		table.insert(lines, string.format("Already qualified for State (%s) this season", lifter.classLabel))
 	elseif ladderOutcome == "Rejected" then

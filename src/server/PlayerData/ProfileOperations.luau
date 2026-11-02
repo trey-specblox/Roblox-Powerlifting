@@ -726,10 +726,13 @@ end
 	LADDER POINTS (schema 16, per weight class since 17; GAME_DESIGN §35.8,
 	§36.3, MeetLevelConfig.Ladder). Each class has its own ladder: points
 	earned in a class count only toward State in that class. Seasons turn
-	over here, when they are read: a ladder stamped with a season that is
-	over counts as 0 points and not qualified, and addLadderPoints starts the
-	new season. An unstamped ladder (season "") belongs to the current
-	season, with its points (old Local wins turned into points).
+	over here, when they are read: a ladder stamped with the season just
+	before counts SeasonCarryShare of its points (rounded down, under the
+	target) and not qualified, an older one counts 0, and addLadderPoints
+	starts the new season. An unstamped ladder (season "") belongs to the
+	current season, with its points (old Local wins turned into points).
+	The target is FirstStateTarget until the player has qualified once
+	(career.stateQualifications, version 18), then StateTarget.
 ]]
 export type LadderView = {
 	classKey: string,
@@ -753,26 +756,59 @@ local function isUsableLadder(ladder: any): boolean
 		and isFiniteNumber(ladder.points) and ladder.points >= 0 and ladder.points == math.floor(ladder.points)
 end
 
+-- The points the player needs to qualify for State: fewer for their first State (never qualified yet).
+local function targetFor(data: ProfileData): number
+	local career = (data :: any).career
+	local count = if typeof(career) == "table" then career.stateQualifications else nil
+	if count == 0 then
+		return MeetLevelConfig.Ladder.FirstStateTarget
+	end
+	return MeetLevelConfig.Ladder.StateTarget
+end
+
+-- Whether a usable ladder's points belong to `season` itself (stamped with it, or not stamped yet).
+local function isInSeason(ladder: any, season: string): boolean
+	return ladder.season == "" or ladder.season == season
+end
+
+-- The points a usable ladder counts in `season`: its own in that season, SeasonCarryShare of them (rounded
+-- down, kept under `target`) when it is stamped with the season just before, otherwise 0.
+local function pointsIn(ladder: any, season: string, target: number): number
+	if isInSeason(ladder, season) then
+		return ladder.points
+	end
+	if ladder.season == MeetLevelConfig.previousSeason(season) then
+		local carried = math.floor(ladder.points * MeetLevelConfig.Ladder.SeasonCarryShare)
+		return math.clamp(carried, 0, math.max(target - 1, 0))
+	end
+	return 0
+end
+
 -- The player's ladder in `classKey` in the season holding `nowUnix` (0 points when there is none or it is
 -- unusable). Read only.
 function ProfileOperations.getLadder(data: ProfileData, classKey: string, nowUnix: number): LadderView
 	local season = MeetLevelConfig.seasonFor(nowUnix)
-	local target = MeetLevelConfig.Ladder.StateTarget
+	local target = targetFor(data)
 	local ladders = laddersOf(data)
 	local ladder: any = if ladders and typeof(classKey) == "string" then ladders[classKey] else nil
-	if not isUsableLadder(ladder) or (ladder.season ~= "" and ladder.season ~= season) then
+	if not isUsableLadder(ladder) then
 		return { classKey = classKey, season = season, points = 0, target = target, qualified = false }
 	end
-	return { classKey = classKey, season = season, points = ladder.points, target = target, qualified = ladder.qualified }
+	local points = pointsIn(ladder, season, target)
+	-- Points at or over the target qualify even before the next add flags it (a lower first target, an old save).
+	local qualified = (isInSeason(ladder, season) and ladder.qualified) or points >= target
+	return { classKey = classKey, season = season, points = points, target = target, qualified = qualified }
 end
 
 --[[
 	Adds ladder points earned in `classKey` at `nowUnix`, starting that
 	class's ladder when it has none, and a new season first when the stored
-	one is over (stamping an unstamped ladder with this season, keeping its
-	points). Returns:
+	one is over (keeping the carried share of the season just before;
+	stamping an unstamped ladder with this season, keeping its points). The
+	first time a ladder reaches the target, career.stateQualifications goes
+	up by 1. Returns:
 		"Added"             the points count; not qualified yet
-		"Qualified"         these points reached the target: qualified now
+		"Qualified"         the ladder reached the target: qualified now
 		"AlreadyQualified"  qualified earlier this season: nothing added
 		"Rejected"          no ladders map, no build for the class, an
 		                    unusable stored ladder, or not a whole number of
@@ -798,9 +834,10 @@ function ProfileOperations.addLadderPoints(data: ProfileData, classKey: string, 
 		return "Rejected", ProfileOperations.getLadder(data, classKey, nowUnix)
 	end
 	local season = MeetLevelConfig.seasonFor(nowUnix)
+	local target = targetFor(data)
 	if ladder.season ~= season then
 		if ladder.season ~= "" then
-			ladder.points = 0
+			ladder.points = pointsIn(ladder, season, target)
 			ladder.qualified = false
 		end
 		ladder.season = season
@@ -810,8 +847,16 @@ function ProfileOperations.addLadderPoints(data: ProfileData, classKey: string, 
 		outcome = "AlreadyQualified"
 	else
 		ladder.points += points
-		ladder.qualified = ladder.points >= MeetLevelConfig.Ladder.StateTarget
+		ladder.qualified = ladder.points >= target
 		outcome = if ladder.qualified then "Qualified" else "Added"
+		local career = (data :: any).career
+		if ladder.qualified then
+			if isFiniteNumber(career.stateQualifications) and career.stateQualifications >= 0 then
+				career.stateQualifications += 1
+			else
+				career.stateQualifications = 1
+			end
+		end
 	end
 	return outcome, ProfileOperations.getLadder(data, classKey, nowUnix)
 end

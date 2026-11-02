@@ -5467,6 +5467,27 @@ keep meeting stronger lifters.
 - **Seasons: monthly,** in step with the monthly Sheffield cycle (§32.1).
   Points reset when a season starts, and qualifying counts for that
   season's Nationals. The ladder stays alive for everyone every month.
+  *(Changed 2026-11-01: a new season now keeps half the points, see "Kinder
+  to new and impatient players" below.)*
+- **Kinder to new and impatient players** (user, 2026-11-01, "Yes, all
+  three"; the target now qualifies for State, §36.3). All numbers
+  **[PROVISIONAL]**:
+  - **First State: 10 points.** A player who has never qualified for State,
+    in any class or season, needs only **10** points. After the first
+    qualification the normal **25** applies. The save counts qualifications
+    (`career.stateQualifications`).
+  - **Perfect meet: +1 point.** Finishing with every attempt a good lift
+    (9/9) adds 1 point before the level multiplier, so it is +2 at a
+    Regional. This rewards clean lifting, not just strength. The result
+    screen says "(9/9 bonus)".
+  - **Half the points carry over.** When a season starts, each class keeps
+    **half** its points from the season just before (rounded down, and
+    always under the target, so nobody starts a season already qualified).
+    Points from older seasons are gone.
+  - Why: with meets every 10 minutes, a player who always finishes but
+    rarely places needed about 20 meets (over 3 hours) for a first State.
+    The newest players, the most likely to quit, had the longest grind, and
+    late-month joiners had no chance before the reset.
 - **Once qualified:**
   - the player can still enter every Local, Regional and State meet and earn
     coins, titles and drops;
@@ -5767,6 +5788,13 @@ in their weight class and stay in it. This reopens the ladder points
 > LADDER 16 / 25" for the class the player is in now, with "74 kg class ·
 > season ends in N days". A qualified lifter's big screen shows "QUALIFIED
 > FOR STATE". Qualifying unlocks nothing yet: the State arena is not built.
+
+> **Built (2026-11-01): kinder qualifying** (§35.8 "Kinder to new and
+> impatient players"). Save version 18 adds `career.stateQualifications`.
+> Old saves count each qualified class ladder once. The first State needs
+> 10 points and later ones 25. A 9/9 meet pays +1 (times the level), and a
+> new season keeps half of the season just before, under the target.
+> STATS shows the player's own target ("STATE LADDER 4 / 10").
 
 ### 36.4 Decisions: how a State meet runs (user, 2026-11-01, picked from options)
 

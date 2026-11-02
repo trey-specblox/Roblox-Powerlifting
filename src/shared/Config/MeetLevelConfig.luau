@@ -90,12 +90,24 @@ end
 	class, qualify for State in that class; then that class's extra points
 	stop until the next season. Seasons are calendar months in
 	UTC for now ("2026-11"); the Sheffield cycle (§32.1) will set the real
-	boundary once its dates exist. Points reset when a season starts.
+	boundary once its dates exist.
+
+	Kinder to new and impatient players (user 2026-11-01, "Yes, all three"):
+	- a player who has never qualified for State (any class, any season)
+	  needs only FirstStateTarget points;
+	- a perfect meet (every attempt a good lift, 9/9) pays PerfectMeetPoints
+	  more, multiplied by the level like the rest;
+	- when a season starts, a class keeps SeasonCarryShare of the points it
+	  had in the season just before (rounded down, always under the target);
+	  points from older seasons are gone.
 ]]
 MeetLevelConfig.Ladder = {
 	PlacePoints = { 3, 2, 1 } :: { number },
 	FinishPoints = 1,
+	PerfectMeetPoints = 1,
 	StateTarget = 25,
+	FirstStateTarget = 10,
+	SeasonCarryShare = 0.5,
 	-- Each Local win saved before ladder points existed (career.localWins) becomes this many points, once.
 	PointsPerOldLocalWin = 3,
 }
@@ -139,17 +151,32 @@ do
 	end
 end
 
--- The ladder points for finishing an official meet at `level` in `place` (nil = no top 3 place).
-function MeetLevelConfig.ladderPointsFor(level: LevelId, place: number?): number
+-- The ladder points for finishing an official meet at `level` in `place` (nil = no top 3 place), with
+-- `perfect` = every attempt a good lift.
+function MeetLevelConfig.ladderPointsFor(level: LevelId, place: number?, perfect: boolean?): number
 	local info = MeetLevelConfig.Levels[level] or MeetLevelConfig.Levels.Local
 	local placePoints = if place then MeetLevelConfig.Ladder.PlacePoints[place] or 0 else 0
-	return (placePoints + MeetLevelConfig.Ladder.FinishPoints) * info.ladderMultiplier
+	local perfectPoints = if perfect then MeetLevelConfig.Ladder.PerfectMeetPoints else 0
+	return (placePoints + MeetLevelConfig.Ladder.FinishPoints + perfectPoints) * info.ladderMultiplier
 end
 
 -- The ladder season a moment (Unix seconds) belongs to: its UTC calendar month, "2026-11".
 function MeetLevelConfig.seasonFor(unix: number): string
 	local date = os.date("!*t", math.floor(unix))
 	return string.format("%04d-%02d", date.year, date.month)
+end
+
+-- The season just before `season` ("2026-01" -> "2025-12"), or nil when `season` is not "YYYY-MM".
+function MeetLevelConfig.previousSeason(season: string): string?
+	local yearText, monthText = string.match(season, "^(%d%d%d%d)-(%d%d)$")
+	if yearText == nil or monthText == nil then
+		return nil
+	end
+	local year, month = tonumber(yearText) :: number, (tonumber(monthText) :: number) - 1
+	if month < 1 then
+		year, month = year - 1, 12
+	end
+	return string.format("%04d-%02d", year, month)
 end
 
 -- When the season holding `unix` ends (the next UTC month starts), in Unix seconds.

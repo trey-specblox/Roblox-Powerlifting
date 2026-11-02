@@ -18,7 +18,7 @@
 	Fatigue, buffs, meet progression, titles,
 	cosmetics, coaches and origins are all coming (coins arrived in version 12,
 	the Shop inventory in 13, worn gear in 14, meet titles in 15, ladder
-	points in 16, per weight class in 17),
+	points in 16, per weight class in 17, State qualifications in 18),
 	and GAME_DESIGN.md Q3 lists
 	them, but their SHAPES are undefined. Guessing a shape now would mean
 	migrating away from that guess later. The migration system below is what makes
@@ -56,9 +56,10 @@ local PlayerProfileSchema = {}
 	bests for the gym records wall; version 12: the coin wallet; version 13:
 	the Shop inventory; version 14: the gear being worn; version 15: meet
 	titles in the career; version 16: ladder points in the career; version
-	17: ladder points per weight class).
+	17: ladder points per weight class; version 18: how many times the
+	player has qualified for State).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 17
+PlayerProfileSchema.CURRENT_VERSION = 18
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -223,6 +224,12 @@ export type MeetAllowance = {
 		            ProfileOperations.addLadderPoints writes it.
 		            (Version 16 had one account-wide `ladder`; version 17
 		            moved it into `ladders`.)
+		stateQualifications
+		            (version 18) how many times the player has qualified for
+		            State, in any class and season. While it is 0 the first
+		            State needs only MeetLevelConfig.Ladder.FirstStateTarget
+		            points (user 2026-11-01). Only
+		            ProfileOperations.addLadderPoints adds to it.
 
 	localWins is a lifetime statistic now: ladder points decide State.
 ]]
@@ -230,6 +237,7 @@ export type Career = {
 	localWins: number,
 	titles: { [string]: number },
 	ladders: { [string]: Ladder },
+	stateQualifications: number,
 }
 
 --[[
@@ -244,8 +252,9 @@ export type Career = {
 		           season: qualified for that class's State Championship, and
 		           extra points stop
 
-	A season that is over counts as 0 points and not qualified; the next
-	addLadderPoints starts the new season.
+	When a season is over, the season just after it counts
+	MeetLevelConfig.Ladder.SeasonCarryShare of its points (not qualified);
+	any later season counts 0. The next addLadderPoints starts the new season.
 ]]
 export type Ladder = {
 	season: string,
@@ -519,11 +528,12 @@ local template: ProfileData = {
 		Lockout = StartingValuesConfig.Technique.Lockout,
 	},
 
-	-- A new lifter has won nothing and has no ladder points in any class.
+	-- A new lifter has won nothing, has no ladder points in any class and has never qualified for State.
 	career = {
 		localWins = 0,
 		titles = {},
 		ladders = {},
+		stateQualifications = 0,
 	},
 
 	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
@@ -1524,6 +1534,45 @@ migrations[16] = function(data: ProfileData)
 	if ladders[classKey] == nil then
 		ladders[classKey] = { season = season, points = points, qualified = qualified }
 	end
+end
+
+--[[
+	Version 17 to 18: State qualifications (user, 2026-11-01; GAME_DESIGN
+	§35.8). A player's first State needs fewer ladder points
+	(MeetLevelConfig.Ladder.FirstStateTarget), so the career now counts how
+	many times the player has qualified for State.
+
+	THE ONE-TIME COUNT: every stored class ladder that is qualified counts
+	once, whatever its season (each was one qualification).
+
+	REPAIRS, NEVER OVERWRITES: a usable whole count is kept when it is higher
+	than that; a missing or broken one is replaced. Reconcile has already put
+	a 0 there (nothing wrote the field before version 18), which the count
+	replaces. A missing career is created.
+
+	NOTHING ELSE IS READ, WRITTEN OR REMOVED.
+
+	IDEMPOTENT: a second run counts the same ladders and changes nothing.
+]]
+migrations[17] = function(data: ProfileData)
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0 }
+		return
+	end
+	local counted = 0
+	if typeof(career.ladders) == "table" then
+		for _, ladder in pairs(career.ladders) do
+			if typeof(ladder) == "table" and ladder.qualified == true then
+				counted += 1
+			end
+		end
+	end
+	local stored = career.stateQualifications
+	if isUsableCounter(stored) and stored == math.floor(stored) and stored > counted then
+		return
+	end
+	career.stateQualifications = counted
 end
 
 --[[
