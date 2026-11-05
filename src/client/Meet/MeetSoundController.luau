@@ -43,7 +43,8 @@ local cues: { [string]: CueState } = {}
 local boxes: { [Model]: Box } = setmetatable({}, { __mode = "k" }) :: any
 local lastOtherRepAt = -math.huge
 local started = false
-local SHOUT_PREFIX = "LiftShout"
+-- In the name of every single-voice cue (LiftShout, WalkShout).
+local SHOUT_WORD = "Shout"
 local lastOtherShoutAt = -math.huge
 local roarUntil = 0
 
@@ -138,7 +139,7 @@ local function play(name: string, at: Vector3)
 		return
 	end
 	-- Shouts from other platforms are spaced out as a whole: eight platforms lift at once.
-	if not isOwn and string.sub(name, 1, #SHOUT_PREFIX) == SHOUT_PREFIX then
+	if not isOwn and string.find(name, SHOUT_WORD, 1, true) then
 		local now = os.clock()
 		if now - lastOtherShoutAt < MeetSoundConfig.LiftCrowd.OthersShoutGapSeconds then
 			return

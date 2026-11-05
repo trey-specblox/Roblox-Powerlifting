@@ -196,6 +196,8 @@ type Lifter = {
 	progressAt: number?,
 	-- From the walk out until they are back in the warm-up room: the next round waits for it.
 	outOnPlatform: boolean?,
+	-- Stops the crowd yelling them on (crowdBehind), while it does.
+	stopCrowd: (() -> ())?,
 }
 
 type Meet = {
@@ -1165,17 +1167,27 @@ end
 	starts by itself once the lifter is ready at the bar. Records the verdict.
 ]]
 --[[
-	People yell the lifter through the lift (§37.5, user 2026-11-05), players and computer
-	lifters alike: the crowd every so often and a single voice between. Sound only. Returns
-	what stops it; it also stops if the lifter leaves. PERFORMANCE: about one small message
-	a second per lifter, and only while they are lifting; each client spaces out the shouts
-	it plays from other platforms.
+	People yell the lifter on from the walk out to the verdict (§37.5, user 2026-11-05),
+	players and computer lifters alike: the crowd every so often and a single voice from
+	`shouts` between. Sound only. Replaces whatever was running for this lifter; nil just
+	stops it. It also stops if the lifter leaves. PERFORMANCE: about one small message a
+	second per lifter, only during their turn; each client spaces out the shouts it plays
+	from other platforms.
 ]]
-local function crowdBehind(lifter: Lifter): () -> ()
+local function crowdBehind(lifter: Lifter, shouts: { string }?)
+	if lifter.stopCrowd then
+		lifter.stopCrowd()
+		lifter.stopCrowd = nil
+	end
+	if shouts == nil then
+		return
+	end
 	local settings = MeetSoundConfig.LiftCrowd
-	local shouts = MeetSoundConfig.liftShouts()
 	local active = true
-	local stopAt = os.clock() + LIFT_TIMEOUT_SECONDS
+	local stopAt = os.clock() + WALK_OUT_TIMEOUT_SECONDS + UNRACK_ALLOWANCE_SECONDS + LIFT_TIMEOUT_SECONDS
+	lifter.stopCrowd = function()
+		active = false
+	end
 	task.spawn(function()
 		local nextCrowdAt = 0
 		local lastShout: string? = nil
@@ -1195,9 +1207,6 @@ local function crowdBehind(lifter: Lifter): () -> ()
 			task.wait(cpuRandom:NextNumber(settings.ShoutGapSeconds[1], settings.ShoutGapSeconds[2]))
 		end
 	end)
-	return function()
-		active = false
-	end
 end
 
 local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number)
@@ -1241,7 +1250,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		end
 	end
 
-	local stopCrowd = crowdBehind(lifter)
+	crowdBehind(lifter, MeetSoundConfig.liftShouts())
 	if player == nil then
 		-- A computer lifter (§37.2): the same stages as a player's minigames, over its lift time; the server decides.
 		lifter.liftsStarted += 1
@@ -1310,7 +1319,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 			warn(string.format("[LocalMeetService] %s's %s attempt could not start: %s", player.Name, lift, tostring(problem)))
 		end
 	end
-	stopCrowd()
+	crowdBehind(lifter, nil)
 	local result: AttemptRules.AttemptResult = if verdict == "GoodLift" then "GoodLift" else "NoLift"
 	-- The attempt is over: the sign comes down (a record it set shows in the facts once saved).
 	lifter.recordAttempt = nil
@@ -1585,6 +1594,8 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			-- The walk out from the warm-up room straight in to the bar (§37.5: the rack faces the entrance), then set
 			-- up for the lift.
 			lifter.outOnPlatform = true
+			-- The crowd starts as they step out (user 2026-11-05), with its own lines until the lift starts.
+			crowdBehind(lifter, MeetSoundConfig.walkOutShouts())
 			local approach = lifter.platform.rack and MeetLiftAnimation.approachFor(lifter.platform.rack, lift)
 			walkLifter(lifter, lifter.platform.walkOut, approach or lifter.platform.liftSpot, true, function()
 				setUpLift(lifter, lift)

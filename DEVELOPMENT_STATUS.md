@@ -3767,11 +3767,28 @@ and polish.
   this session and later came back by itself.
   APPROVED 2026-11-05: the user played it and said "Feels good, commit". COMMITTED on `main` as
   "Make a meet lift an event: head referee camera, name card, people yelling the lifter on" (run
-  `git log -1` for the hash). NOT pushed and NOT published. Left out on purpose, still uncommitted:
+  `git log` for the hash), then pushed to `origin/main` with the user's approval; this note was
+  corrected after the push. NOT published. Left out on purpose, still uncommitted:
   `.claude/`, `art/previews/`, `art/exports/ScaleTest_2StudCube.fbx`,
   `art/blender/PowerRack_01.blend` (origin unclear, ask the user), `References/DBD.md`.
-  NEXT: push when the user asks. Before publishing, the user confirms their ElevenLabs plan covers
-  the shouts. Then ideas 2-4 from the meet quality talk if they want them.
+  WALK-OUT CHEERING 2026-11-05, approved by the user ("Good, commit and push"), COMMITTED and pushed
+  to `origin/main` as "Start the crowd on the walk out, with its own shouts" (run `git log` for the
+  hash), NOT PUBLISHED (the user asked for it before phone testing): `crowdBehind(lifter, shouts)` now starts as the lifter steps out, with
+  `MeetSoundConfig.walkOutShouts` (You got this!, Let's go!, and new cues WalkShout1-2, Easy
+  weight! and Easy!), swaps to `liftShouts` when the lift starts and stops at the lights. Two new
+  ElevenLabs shouts, about 50 more credits with their word checks (read back as "Easy, wait!",
+  which sounds the same, and "Easy").
+  TESTED IN STUDIO, three squat attempts, changed scripts checked against disk by checksum: the
+  crowd and first shout start the moment Ready arrives; walk lines only during the walk, lift
+  lines only during the lift, none after the lights; all ten shouts load; no errors from this
+  code. The console shows a good lift and a gym record set during the test, so the user seems to
+  have been playing; Claude did not observe the camera hold or stakes card on it. Bench, deadlift
+  and the rest of a meet were not re-run with this change. While walking past a neighbouring
+  platform, its shouts count as "own" (within 22 studs) and aren't spaced out, so a line can
+  occasionally double up. Left as is.
+  NEXT: the user publishes again before phone testing (the published game lacks this), after
+  confirming their ElevenLabs plan covers the shouts. Then ideas 2-4 from the meet quality talk
+  if they want them.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;

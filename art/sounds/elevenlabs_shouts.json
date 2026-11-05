@@ -64,6 +64,22 @@
       "ids": {
         "audio": "rbxassetid://93544230817104"
       }
+    },
+    "WalkShout_1": {
+      "about": "Single man yelling \"Easy weight!\" with raw confident intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_1.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://82391465593479"
+      }
+    },
+    "WalkShout_2": {
+      "about": "Single gruff man yelling \"Easy!\" with raw confident intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_2.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://108091981985004"
+      }
     }
   }
 }

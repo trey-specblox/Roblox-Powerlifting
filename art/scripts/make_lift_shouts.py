@@ -16,6 +16,8 @@ import soundfile as sf
 
 SHOUTS = pathlib.Path(r"D:\Powerlifting Roblox Extras\Sounds\Shouts")
 COUNT = 8
+# The walk-out's own lines (cues WalkShout1-2): Easy weight! and Easy!
+WALK_COUNT = 2
 # A sound counts as started or finished at this level, relative to the file's own peak.
 EDGE_DB = -35
 KEEP_BEFORE_SECONDS = 0.01
@@ -69,6 +71,8 @@ def prepare(path, out):
 def main():
     for number in range(1, COUNT + 1):
         prepare(SHOUTS / "Raw" / f"shout{number}.mp3", SHOUTS / f"LiftShout_{number}.wav")
+    for number in range(1, WALK_COUNT + 1):
+        prepare(SHOUTS / "Raw" / f"walk{number}.mp3", SHOUTS / f"WalkShout_{number}.wav")
 
 
 if __name__ == "__main__":

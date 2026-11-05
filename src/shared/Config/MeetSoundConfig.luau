@@ -21,7 +21,7 @@
 	  BarShake    a gym squat or bench rep, at the bottom (StationRepSounds)
 	  LightsGood / LightsBad   the three referees' lights coming on
 	  CrowdCheer / CrowdGroan  the hall's answer, just after the lights
-	  LiftCrowd / LiftShout1-8  people yelling the lifter on during the lift
+	  LiftCrowd / LiftShout1-8 / WalkShout1-2  people yelling the lifter on, from the walk out
 ]]
 
 local MeetSoundConfig = {}
@@ -71,6 +71,9 @@ MeetSoundConfig.Cues = {
 	LiftShout6 = cue("rbxassetid://134812369331510", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Drive!"),
 	LiftShout7 = cue("rbxassetid://96519684386231", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Keep pushing!"),
 	LiftShout8 = cue("rbxassetid://93544230817104", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Big lift, come on!"),
+	-- On the walk out to the bar only (walkOutShouts).
+	WalkShout1 = cue("rbxassetid://82391465593479", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Easy weight!"),
+	WalkShout2 = cue("rbxassetid://108091981985004", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Easy!"),
 } :: { [string]: Cue }
 
 --[[
@@ -170,16 +173,27 @@ MeetSoundConfig.LiftCrowd = {
 	RoarWindowSeconds = 6,
 }
 
--- The LiftShout cues that have a sound.
-function MeetSoundConfig.liftShouts(): { string }
+-- Those of these cues that have a sound.
+local function withSounds(cues: { string }): { string }
 	local names = {}
-	for name, config in pairs(MeetSoundConfig.Cues) do
-		if string.sub(name, 1, 9) == "LiftShout" and config.id ~= "" then
+	for _, name in ipairs(cues) do
+		local config = MeetSoundConfig.Cues[name]
+		if config and config.id ~= "" then
 			table.insert(names, name)
 		end
 	end
-	table.sort(names)
 	return names
+end
+
+-- The shouts during a lift.
+function MeetSoundConfig.liftShouts(): { string }
+	return withSounds({ "LiftShout1", "LiftShout2", "LiftShout3", "LiftShout4", "LiftShout5", "LiftShout6", "LiftShout7",
+		"LiftShout8" })
+end
+
+-- The shouts on the walk out to the bar (user 2026-11-05: "You got this", "easy weight", "Lets go", "Easy").
+function MeetSoundConfig.walkOutShouts(): { string }
+	return withSounds({ "LiftShout3", "LiftShout5", "WalkShout1", "WalkShout2" })
 end
 
 return MeetSoundConfig

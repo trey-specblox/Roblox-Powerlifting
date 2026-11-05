@@ -6327,6 +6327,9 @@ until the user has judged how it looks and sounds.
   lifter is lifting"). ~~The hall goes quiet for the lift~~ was built first and replaced. Every
   lifter gets it, players and computer lifters: the crowd, and single voices shouting between,
   heard loudest on the lifter's own platform. Other platforms' shouts are spaced out.
+  **It starts on the walk out** (user, same day: "while im walking out towards the rack, the
+  cheering, and yelling starts"), with its own lines until the lift starts: You got this!, Easy
+  weight!, Let's go!, Easy! The lift's shouts then take over until the lights.
 - **Nothing covers the view** from the walk out until the verdict: no scorecard, standings or
   bottom panel. The lift's own minigame screens still show.
 - **The lights:** the crowd's answer to this lift is louder than usual.
@@ -6340,7 +6343,8 @@ a real crowd in the stands, rituals before the lift.
 > and `crowdBehind` in `LocalMeetService`, settings in `LocalMeetConfig.LiftMoment` and
 > `MeetSoundConfig.LiftCrowd`. The single voices are cues `LiftShout1-8`, eight lines in
 > different voices (men and women): UP! UP! UP!, UPPPPP!, You got this!, Come on!, Let's go!,
-> Drive!, Keep pushing!, Big lift, come on! The downloaded bundles had no such shouts, so they
+> Drive!, Keep pushing!, Big lift, come on! The walk out adds `WalkShout1-2`, Easy weight! and
+> Easy! (`MeetSoundConfig.walkOutShouts`). The downloaded bundles had no such shouts, so they
 > were made with ElevenLabs Sound Effects, the style the user picked by ear over Text to Speech
 > (2026-11-05). Prompts and ids: `art/sounds/elevenlabs_shouts.json`.
 
