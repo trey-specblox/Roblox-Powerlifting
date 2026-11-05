@@ -12,13 +12,19 @@
 	ProgressionConfig.MeetCnAllowance.MaxDays. What a day is worth is worked out
 	when the allowance is used:
 
-		one day = PercentPerDay x Hill(PP) of the lift's CN
+		one day = TrainingDaysPerDay x what a full day of gym training gives the lift
+		        = TrainingDaysPerDay x Reference x BaseProgressRate x (DailyCapEV / 3) x Hill(PP)
 
+	(GAME_DESIGN §37.1, user 2026-11-01: meets give about 2/3 of strength),
 	where Hill is the training's own slow-down near the class's Progression
 	Reference (CompetitionNumberReward.hill, section 29.3) and PP = CN /
-	Progression Reference. Far from the record a day is +4%; at three-quarters
-	of the reference +2%; it never reaches zero. Storing days rather than kg or
-	percent keeps the shrink honest: it always uses the CN of the moment.
+	Progression Reference. As a share of CN that is the same with Reference =
+	CN / PP. It never reaches zero. Storing days rather than kg or percent
+	keeps the shrink honest: it always uses the CN of the moment.
+
+	In a meet with only one real player (computer lifters fill the rest,
+	§37.2) the caller passes SoloCostMultiplier: every raise and every miss
+	costs that many times the days, so strength counts half there.
 
 	A MEET IS SETTLED ONE LIFT AT A TIME, attempts in the order they were taken
 	(settle): a GOOD lift above what is raised so far uses the allowance its
@@ -90,10 +96,15 @@ function MeetCnAllowance.dailyShare(lift: string, classLabel: string, cnKg: numb
 		return nil
 	end
 	local proximity = CompetitionNumberReward.progressionProximity(lift, classLabel, cnKg)
-	if proximity == nil then
+	if proximity == nil or not isFinite(proximity) or proximity <= 0 then
 		return nil
 	end
-	return CONFIG.PercentPerDay * CompetitionNumberReward.hill(proximity)
+	-- One full day of training for this lift, in kg, divided by the CN: Reference x rate x EV x Hill / CN,
+	-- with Reference / CN = 1 / PP.
+	local trainingEv = ProgressionConfig.DailyTraining.DailyCapEV / #ProgressionConfig.Lifts
+	local trainingShare = ProgressionConfig.BaseProgressRate * trainingEv * CompetitionNumberReward.hill(proximity)
+		/ proximity
+	return CONFIG.TrainingDaysPerDay * trainingShare
 end
 
 -- The share of CN a meet could raise this lift by right now (days x one day's worth), or nil like dailyShare.
@@ -114,9 +125,11 @@ end
 	`cnKg` is the Competition Number at the weigh-in; `history` the lift's
 	attempts in order; `raises` false for a meet without a total (a bomb-out or
 	leaving early), where good lifts raise nothing but misses still cost.
+	`costMultiplier` (default 1) makes every raise and miss cost that many
+	times the days: SoloCostMultiplier in a meet with one real player.
 ]]
 function MeetCnAllowance.settle(resource: Resource, nowUnix: number, lift: string, classLabel: string, cnKg: number,
-	history: AttemptRules.AttemptHistory, raises: boolean): (Outcome?, string?)
+	history: AttemptRules.AttemptHistory, raises: boolean, costMultiplier: number?): (Outcome?, string?)
 	if typeof(resource) ~= "table" then
 		return nil, "no allowance"
 	end
@@ -124,6 +137,9 @@ function MeetCnAllowance.settle(resource: Resource, nowUnix: number, lift: strin
 	if daily == nil or daily <= 0 then
 		return nil, "no allowance in this class"
 	end
+	local cost = if isFinite(costMultiplier) and (costMultiplier :: number) >= 1 then costMultiplier :: number else 1
+	-- What one day buys here: a costlier meet buys less per day.
+	daily /= cost
 	local days = ResourceRegeneration.settle(resource, nowUnix, CONFIG.MaxDays, MeetCnAllowance.DaysPerHour)
 	local startDays = days
 	local raisedTo = cnKg

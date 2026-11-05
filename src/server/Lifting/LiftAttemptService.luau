@@ -120,7 +120,23 @@ type Attempt = {
 	finished: boolean,
 	-- Told the verdict when the attempt ends, for an attempt another server system started (the Mock Meet).
 	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?,
+	-- Told when each phase starts (its index and how long it can run) and ends (passed or not), for the meet's lift
+	-- animation (startServerAttempt's onPhase). Look only: it never changes the attempt.
+	onPhase: PhaseObserver?,
 }
+
+-- `event` is "start" (with `seconds`) or "end" (with `passed`).
+export type PhaseObserver = (event: string, phaseIndex: number, phaseCount: number, seconds: number?,
+	passed: boolean?) -> ()
+
+-- How long a phase can run, from its challenge (each phase kind names its own field).
+local function phaseSeconds(challenge: any): number?
+	if typeof(challenge) ~= "table" then
+		return nil
+	end
+	local seconds = challenge.holdDurationSeconds or challenge.durationSeconds or challenge.timeoutSeconds
+	return if typeof(seconds) == "number" and seconds > 0 then seconds else nil
+end
 
 local attempts: { [Player]: Attempt } = {}
 -- Players whose own attempt requests are ignored (a Mock Meet starts their lifts instead).
@@ -316,6 +332,10 @@ local function onPhaseComplete(attempt: Attempt, spec: PhaseSpec, result: LiftAt
 		nextPhaseDisplayName = nextPhaseDisplayName,
 	}
 	set.announcePhaseResult:FireClient(player, phasePayload)
+	local observer = attempt.onPhase
+	if observer then
+		task.spawn(observer, "end", attempt.phaseIndex, #attempt.phases, nil, result.passed)
+	end
 
 	-- A failed phase ends the lift immediately. The next phase never begins.
 	if not result.passed then
@@ -410,6 +430,10 @@ function beginPhaseAtIndex(attempt: Attempt)
 				scaleChallengeBonus = if attempt.scaleChallengeBonus > 0 then attempt.scaleChallengeBonus else nil,
 			}
 			set.presentPhase:FireClient(player, payload)
+			local observer = attempt.onPhase
+			if observer then
+				task.spawn(observer, "start", phaseIndex, #attempt.phases, phaseSeconds(challenge), nil)
+			end
 		end,
 		complete = function(result: LiftAttempt.PhaseResult)
 			onPhaseComplete(attempt, spec, result)
@@ -439,7 +463,7 @@ function beginPhaseAtIndex(attempt: Attempt)
 end
 
 local createAttempt: (player: Player, liftName: string, requestedPercent: number?, weightKg: number?,
-	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?, isCompetition: boolean) -> (boolean, string?)
+	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?, isCompetition: boolean, onPhase: PhaseObserver?) -> (boolean, string?)
 
 local function onRequestLiftAttempt(player: Player, requestedLift: unknown, requestedPercent: unknown)
 	local set = remotes
@@ -489,7 +513,7 @@ end
 	(GAME_DESIGN 33.4). Returns false and the reason when no attempt was started.
 ]]
 function createAttempt(player: Player, liftName: string, requestedPercent: number?, weightKg: number?,
-	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?, isCompetition: boolean): (boolean, string?)
+	onFinished: ((LiftAttempt.AttemptVerdict) -> ())?, isCompetition: boolean, onPhase: PhaseObserver?): (boolean, string?)
 	local sequence = LiftAttemptConfig.Sequences[liftName]
 	if sequence == nil or not ENABLED_LIFTS[liftName] then
 		return false, "unknown lift " .. tostring(liftName)
@@ -579,6 +603,7 @@ function createAttempt(player: Player, liftName: string, requestedPercent: numbe
 		startedAtClock = os.clock(),
 		finished = false,
 		onFinished = onFinished,
+		onPhase = onPhase,
 	}
 
 	attempts[player] = attempt
@@ -623,15 +648,18 @@ end
 	bar weight, and tells `onFinished` the verdict when it ends. The weight must lie
 	within the usual percentage bounds of the player's Competition Number. Returns
 	false and the reason when no attempt was started. Nothing is written here
-	either: what a verdict means is the caller's business.
+	either: what a verdict means is the caller's business. `onPhase` (optional)
+	hears each phase start, with how long it can run, and end, with whether it
+	passed (GAME_DESIGN §37.5: the meet's lift animation follows the minigame);
+	it only watches.
 ]]
 function LiftAttemptService.startServerAttempt(player: Player, liftName: string, weightKg: number,
-	onFinished: (LiftAttempt.AttemptVerdict) -> ()): (boolean, string?)
+	onFinished: (LiftAttempt.AttemptVerdict) -> (), onPhase: PhaseObserver?): (boolean, string?)
 	if typeof(weightKg) ~= "number" or weightKg ~= weightKg or weightKg <= 0 or weightKg == math.huge then
 		return false, "invalid weight"
 	end
 	-- Every server-started attempt is a meet attempt (the Mock Meet is the only caller).
-	return createAttempt(player, liftName, nil, weightKg, onFinished, true)
+	return createAttempt(player, liftName, nil, weightKg, onFinished, true, onPhase)
 end
 
 -- Whether the player's own attempt requests (the test keys) are ignored. The Mock Meet blocks them during a meet.

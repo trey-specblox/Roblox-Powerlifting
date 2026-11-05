@@ -103,9 +103,10 @@ end
 	The gym's competition rack standing on a platform at `platformTop` (the point
 	on the platform's top under the rack's middle), set up like a gym rack but
 	without the station tag (nobody trains here). Returns false, and the reason,
-	if it could not be built. Also used by LocalMeetVenue.
+	if it could not be built. Also used by LocalMeetVenue. `turn` (radians about
+	the vertical, default 0) turns it: 0 = its open front toward -Z.
 ]]
-function MockMeetArena.placeRack(model: Instance, platformTop: Vector3): (boolean, string?)
+function MockMeetArena.placeRack(model: Instance, platformTop: Vector3, turn: number?): (boolean, string?)
 	local templates = ServerStorage:FindFirstChild("RackTemplates")
 	local template = templates and templates:FindFirstChild(RACK_TEMPLATE)
 	if template == nil or not template:IsA("Model") then
@@ -124,7 +125,7 @@ function MockMeetArena.placeRack(model: Instance, platformTop: Vector3): (boolea
 	rack.Name = "CompetitionRack"
 	rack:SetAttribute("RackTemplate", RACK_TEMPLATE)
 	local standHeight = RackConfigurator.StandPointSize.Y / 2
-	rack:PivotTo(CFrame.new(platformTop + Vector3.new(0, standHeight, 0)))
+	rack:PivotTo(CFrame.new(platformTop + Vector3.new(0, standHeight, 0)) * CFrame.Angles(0, turn or 0, 0))
 	rack.Parent = model
 	return true, nil
 end

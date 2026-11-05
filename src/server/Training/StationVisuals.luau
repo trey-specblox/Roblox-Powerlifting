@@ -11,6 +11,7 @@
 	  Bench                bench shown, J-cups at the bench hole, bar in the J-cups
 	  Squat                bench hidden, J-cups and bar at the squat hole (as modelled)
 	  Deadlift             bench hidden, bar on the floor in front of the rack
+	                       (a meet's platform: the whole rack gone, only the bar; see show)
 
 	Every rack with a layout gets its own barbell (a "Barbell" Model inside the
 	rack), built from ServerStorage.BarbellTemplates.Barbell_01 and loaded with
@@ -31,6 +32,7 @@ local StationLayout = require(script.Parent.StationLayout)
 local StationVisuals = {}
 
 local BARBELL_FOLDER, BARBELL_TEMPLATE = "BarbellTemplates", "Barbell_01"
+local BARBELL_MODEL_NAME = "Barbell"
 -- Where the plates start on each sleeve: art/scripts/build_barbell_01.py COLLAR_X1.
 local SLEEVE_START = 3.31
 
@@ -53,6 +55,8 @@ local baseCFrames: { [BasePart]: CFrame } = {}
 -- The look each rack last got, so repeated sign refreshes change nothing.
 local lastLook: { [Instance]: string } = {}
 local barbells: { [Instance]: Barbell } = {}
+-- The parts of a rack hidden for a meet's deadlift, and how each looked before.
+local hiddenParts: { [BasePart]: { transparency: number, castShadow: boolean, canCollide: boolean } } = {}
 local watchedRacks: { [Instance]: boolean } = {}
 local warnedMissingTemplate = false
 
@@ -68,6 +72,11 @@ local function forgetWhenDestroyed(rack: Model)
 		for part in pairs(baseCFrames) do
 			if part:IsDescendantOf(rack) then
 				baseCFrames[part] = nil
+			end
+		end
+		for part in pairs(hiddenParts) do
+			if part:IsDescendantOf(rack) then
+				hiddenParts[part] = nil
 			end
 		end
 	end)
@@ -108,7 +117,7 @@ local function buildBarbell(rack: Model): Barbell?
 	end
 
 	local model = Instance.new("Model")
-	model.Name = "Barbell"
+	model.Name = BARBELL_MODEL_NAME
 	local barbell: Barbell = { parts = {}, plateRadius = 0 }
 
 	local function add(source: BasePart, offset: CFrame)
@@ -160,11 +169,41 @@ local function placeBarbell(barbell: Barbell, rack: Model, centre: Vector3)
 end
 
 --[[
+	Hides every part of the rack but its barbell (invisible and not solid, so
+	nobody walks into it), or puts them back as they were.
+]]
+local function setRackHidden(rack: Model, hidden: boolean)
+	for _, part in ipairs(rack:GetDescendants()) do
+		if part:IsA("BasePart") and part.Parent and part.Parent.Name ~= BARBELL_MODEL_NAME then
+			local before = hiddenParts[part]
+			if hidden and before == nil then
+				hiddenParts[part] = {
+					transparency = part.Transparency,
+					castShadow = part.CastShadow,
+					canCollide = part.CanCollide,
+				}
+				part.Transparency = 1
+				part.CastShadow = false
+				part.CanCollide = false
+			elseif not hidden and before ~= nil then
+				hiddenParts[part] = nil
+				part.Transparency = before.transparency
+				part.CastShadow = before.castShadow
+				part.CanCollide = before.canCollide
+			end
+		end
+	end
+end
+
+--[[
 	Shows `rack` for `lift` ("Squat", "Bench", "Deadlift", or nil for a free rack
 	or one whose occupant has not picked a lift yet). Safe to call as often as
 	the sign refreshes; it only changes parts when the look changes.
+
+	`noRackForDeadlift`: a meet's platform (GAME_DESIGN §37.5, user 2026-11-03):
+	for deadlift the whole rack goes, only the bar stays. A gym rack stays standing.
 ]]
-function StationVisuals.show(rack: Instance, lift: string?)
+function StationVisuals.show(rack: Instance, lift: string?, noRackForDeadlift: boolean?)
 	local layout = StationLayout.of(rack)
 	if layout == nil or not rack:IsA("Model") then
 		return
@@ -176,6 +215,9 @@ function StationVisuals.show(rack: Instance, lift: string?)
 	end
 	lastLook[rack] = look
 	forgetWhenDestroyed(rack)
+
+	-- First, so that coming back from it the bench below still gets the look of the new lift.
+	setRackHidden(rack, noRackForDeadlift == true and lift == "Deadlift")
 
 	local benchVisible = lift ~= "Squat" and lift ~= "Deadlift"
 	for _, name in ipairs(layout.benchParts) do

@@ -54,8 +54,10 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local MockMeetConfig = require(ConfigFolder:WaitForChild("MockMeetConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
+local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
+local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local AttemptRules = require(MeetFolder:WaitForChild("AttemptRules"))
 local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
 local MeetTotal = require(MeetFolder:WaitForChild("MeetTotal"))
@@ -415,6 +417,13 @@ local function runAttempt(player: Player, visit: Visit, lift: string, attemptNum
 		notify(player, "Time ran out: no lift.")
 	end
 	local result: AttemptRules.AttemptResult = if verdict == "GoodLift" then "GoodLift" else "NoLift"
+
+	-- The bar's sound (a lift that ran only: not when time ran out). Sound only.
+	local character = player.Character
+	if verdict ~= nil and character then
+		LocalMeetRemotes.createOnServer(ReplicatedStorage).sound:FireAllClients(
+			MeetSoundConfig.endOfLiftCue(lift, result == "GoodLift", 1, weightKg), character:GetPivot().Position)
+	end
 
 	-- Result.
 	table.insert(record.history, { weightKg = weightKg, result = result })

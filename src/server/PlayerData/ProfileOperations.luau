@@ -651,6 +651,7 @@ export type MeetCnOutcome = "Raised" | "Unchanged" | "Rejected"
 	Settles one lift of a meet against other players (MeetCnAllowance.settle)
 	and writes the raise. `cnAtWeighInKg` is the CN the meet used; `raises`
 	false for a meet without a total, where only the misses cost.
+	`costMultiplier`: see MeetCnAllowance.settle (a meet with one real player).
 
 	Returns the outcome, the lift's CN afterwards, and the days used.
 	"Raised": the CN went up. "Unchanged": settled, no raise (misses may still
@@ -663,14 +664,15 @@ export type MeetCnOutcome = "Raised" | "Unchanged" | "Rejected"
 ]]
 function ProfileOperations.settleMeetCompetitionNumber(data: ProfileData, classKey: string, lift: string,
 	cnAtWeighInKg: number, history: AttemptRules.AttemptHistory, raises: boolean,
-	nowUnix: number): (MeetCnOutcome, number?, number)
+	nowUnix: number, costMultiplier: number?): (MeetCnOutcome, number?, number)
 	local resource = meetAllowanceOf(data, classKey, lift)
 	local build = ProfileOperations.getBuild(data, classKey)
 	local current = build and buildCompetitionNumber(build, lift)
 	if resource == nil or build == nil or current == nil or not isFiniteNumber(cnAtWeighInKg) or cnAtWeighInKg <= 0 then
 		return "Rejected", nil, 0
 	end
-	local outcome = MeetCnAllowance.settle(resource, nowUnix, lift, classKey, cnAtWeighInKg, history, raises)
+	local outcome = MeetCnAllowance.settle(resource, nowUnix, lift, classKey, cnAtWeighInKg, history, raises,
+		costMultiplier)
 	if outcome == nil then
 		return "Rejected", current, 0
 	end

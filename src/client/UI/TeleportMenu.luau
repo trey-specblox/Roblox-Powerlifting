@@ -20,6 +20,7 @@ local TeleportConfig = require(Shared:WaitForChild("Config"):WaitForChild("Telep
 local TeleportRemotes = require(Shared:WaitForChild("World"):WaitForChild("TeleportRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local MenuKeys = require(script.Parent:WaitForChild("MenuKeys"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
 
@@ -152,7 +153,7 @@ function TeleportMenu.start()
 	tab.Activated:Connect(toggle)
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		-- Not while typing in a box (chat, the meet's weight box, the deadlift typing).
-		if gameProcessed or UserInputService:GetFocusedTextBox() ~= nil then
+		if not MenuKeys.allowed(gameProcessed) then
 			return
 		end
 		if input.KeyCode == OPEN_KEY then

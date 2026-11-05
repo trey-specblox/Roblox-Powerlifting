@@ -65,6 +65,25 @@ function LocalMeetController.start()
 	})
 	ui.gui.Parent = player:WaitForChild("PlayerGui")
 
+	--[[
+		While lifting in a meet the character never trips or ragdolls (GAME_DESIGN
+		§37.5: the walk out and the lift on the platform). The client owns its
+		humanoid's states, so this is set here; it is put back after the meet.
+	]]
+	local function holdFooting(lifting: boolean)
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, not lifting)
+			humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, not lifting)
+			if lifting then
+				local state = humanoid:GetState()
+				if state == Enum.HumanoidStateType.FallingDown or state == Enum.HumanoidStateType.Ragdoll then
+					humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+				end
+			end
+		end
+	end
+
 	local function refresh()
 		local inVenue = player:GetAttribute(LocalMeetConfig.VenueAttribute) ~= nil
 		local lifting = player:GetAttribute(LocalMeetConfig.PlatformAttribute) ~= nil
@@ -73,6 +92,7 @@ function LocalMeetController.start()
 		end
 		ui.setMode(inVenue, lifting)
 		ui.drawStandings(standings)
+		holdFooting(lifting)
 	end
 	player:GetAttributeChangedSignal(LocalMeetConfig.VenueAttribute):Connect(refresh)
 	player:GetAttributeChangedSignal(LocalMeetConfig.PlatformAttribute):Connect(refresh)

@@ -24,6 +24,7 @@ local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
 local GearRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("GearRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local MenuKeys = require(script.Parent:WaitForChild("MenuKeys"))
 local GearPreview = require(script.Parent:WaitForChild("GearPreview"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
@@ -259,7 +260,7 @@ function GearMenu.start()
 	tab.Activated:Connect(toggle)
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		-- Not while typing in a box (chat, the meet's weight box, the deadlift typing).
-		if gameProcessed or UserInputService:GetFocusedTextBox() ~= nil then
+		if not MenuKeys.allowed(gameProcessed) then
 			return
 		end
 		if input.KeyCode == WornGearConfig.OpenKey then

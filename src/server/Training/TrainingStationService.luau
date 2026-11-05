@@ -244,6 +244,11 @@ local function refreshSign(station: Station)
 	local lift = if selection ~= nil then selection.lift else nil
 	StationVisuals.show(station.instance, lift)
 	StationPoses.update(station.instance, if session ~= nil then occupant else nil, lift)
+	-- Which thud their deadlift reps make (StationRepSounds). Sound only.
+	local character = if session ~= nil and occupant ~= nil and lift ~= nil then occupant.Character else nil
+	if character and lift then
+		character:SetAttribute("StationBarKg", PlayerDataService.getCompetitionNumber(occupant :: Player, lift))
+	end
 
 	station.prompt.ObjectText = stationTitle(station)
 	station.prompt.ActionText = if occupant == nil or session == nil then PROMPT_FREE_TEXT else PROMPT_IN_USE_TEXT

@@ -46,6 +46,7 @@
 	panels, as many as the old hall.
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -63,6 +64,8 @@ local StyledScreen = require(WorldFolder:WaitForChild("StyledScreen"))
 local MockMeetArena = require(script.Parent:WaitForChild("MockMeetArena"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 local LifterDisplay = require(script.Parent:WaitForChild("LifterDisplay"))
+local StationVisuals = require(ServerFolder:WaitForChild("Training"):WaitForChild("StationVisuals"))
+local StationLayout = require(ServerFolder:WaitForChild("Training"):WaitForChild("StationLayout"))
 
 local LocalMeetVenue = {}
 
@@ -86,7 +89,8 @@ local PLATFORM_SIZE = 16
 local PLATFORM_HEIGHT = 0.6
 local PLATFORM_Z = 26 -- the platforms' middles
 local PLATFORM_FRONT = PLATFORM_Z - PLATFORM_SIZE / 2
-local LIFT_SPOT_IN_FRONT = 4
+-- The lift spot is this far behind the platform's middle (the rack's open side): StationLayout's exitZ.
+local LIFT_SPOT_BEHIND = 6.2
 local BOARD_SCALE = 0.5 -- small wall boards: MockMeet_01's attempt board at half size (14 x 6)
 -- The platforms' big screens (user 2026-10-29: "make the TVs bigger and more visible"): the board at 0.8 (about
 -- 22 x 9.6, nearly the platform spacing), its middle this high, clear of the doorways under it.
@@ -97,7 +101,49 @@ local BARRIER_Z = 6
 local BARRICADE_W = 7
 local BARRICADE_H = 3.3
 -- The referee chairs: side referees either side of the platform's front, the head referee in the middle in front.
-local REF_SEATS = { Vector2.new(-6, PLATFORM_FRONT - 2.5), Vector2.new(0, PLATFORM_FRONT - 5), Vector2.new(6, PLATFORM_FRONT - 2.5) }
+--[[
+	The three referee chairs (user 2026-11-01, GAME_DESIGN §37.5: "One left,
+	one middle, one right" round the lifter): the side referees beside the
+	platform level with the lift spot, facing in; the head referee in front,
+	facing the platform. x, z of the chair and the way it faces.
+]]
+-- The rack faces the entrance (+Z), so the lifter works on its +Z side: the lift spot (where they stand up
+-- straight before and after) behind the rack's floor bar, and the side referees level with the lift.
+local LIFT_Z = PLATFORM_Z + LIFT_SPOT_BEHIND
+local SIDE_REF_Z = PLATFORM_Z + 3.5
+local REF_SEATS = {
+	{ at = Vector2.new(-(PLATFORM_SIZE / 2 + 2), SIDE_REF_Z), toward = Vector3.xAxis },
+	{ at = Vector2.new(0, PLATFORM_FRONT - 5), toward = Vector3.zAxis },
+	{ at = Vector2.new(PLATFORM_SIZE / 2 + 2, SIDE_REF_Z), toward = -Vector3.xAxis },
+}
+--[[
+	THE SPOTTERS (GAME_DESIGN §37.5, user 2026-11-02): three on the platform for
+	squat and bench, none for deadlift. Each player's screen moves them
+	(client MeetSpotterAnimator): they follow the bar and the lifter. Here only
+	where each rests when nobody is lifting, rack-local (x, z on the floor; the
+	lifter works on the rack's -z side, facing +z), and the point it faces. The
+	side spotters' rest is by the racked bar's ends (the client hovers them
+	there anyway); the back spotter waits beside the walk-in line for squat,
+	clear of the rack, and on the rack's spotter deck behind the bench.
+]]
+local SPOTTER_ROLES = { "Left", "Right", "Back" }
+local SPOTTER_REST: { [string]: { [string]: { at: Vector2, look: Vector2 } } } = {
+	Squat = {
+		Left = { at = Vector2.new(-6.6, -0.3), look = Vector2.new(0, -0.3) },
+		Right = { at = Vector2.new(6.6, -0.3), look = Vector2.new(0, -0.3) },
+		Back = { at = Vector2.new(-4.8, -4.8), look = Vector2.new(-4.8, 0) },
+	},
+	Bench = {
+		Left = { at = Vector2.new(-6.6, -0.3), look = Vector2.new(0, -0.3) },
+		Right = { at = Vector2.new(6.6, -0.3), look = Vector2.new(0, -0.3) },
+		Back = { at = Vector2.new(0, 1.15), look = Vector2.new(0, -0.3) },
+	},
+}
+-- The tag the client finds spotters by, and the attributes it reads.
+local SPOTTER_TAG = "MeetSpotter"
+
+-- Where a lifter waits between attempts: just inside the warm-up room, behind the doorway next to their platform.
+local WAIT_BEHIND_WALL = 5
 local CHAIR_SEAT_TOP = 1.84
 -- The stands (LocalMeet_01's Bleachers: 24 wide, 12 deep, four steps of 1.5).
 local SEAT_W, SEAT_D, SEAT_STEP_H, SEAT_STEPS = 24, 12, 1.5, 4
@@ -116,23 +162,37 @@ local SIGN_FONT = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.Fon
 
 export type Platform = {
 	index: number,
-	-- Where the lifter stands for a lift: on the platform in front of the rack, facing the spectators.
+	-- Where the lifter stands up straight before and after a lift: on the platform at the rack's open side (it
+	-- faces the entrance), facing the rack. The lift itself starts at MeetLiftAnimation.approachFor.
 	liftSpot: CFrame,
-	-- Where the lifter waits at the weigh-in: on the floor beside the platform, facing the spectators.
+	-- Where the lifter waits between attempts (GAME_DESIGN §37.5): in the warm-up room just behind the doorway
+	-- next to their platform, facing it.
 	waitSpot: CFrame,
+	-- The walk out from waitSpot (through the doorway, behind the platform to its middle), without either end.
+	walkOut: { Vector3 },
+	-- The competition rack (StationVisuals shows it for the lift: no bench for squat and deadlift).
+	rack: Model?,
+	-- The staff's name tags and the coach's bubble, moved into the lifter's own screen (staffFor).
+	privateTags: { BillboardGui },
 	-- The big screen over the platform: who is lifting there.
 	display: LifterDisplay.Handle,
 	-- The referee light box's three lamps (empty when the model did not load).
 	lamps: { BasePart },
 	-- The three referee chairs: a point on each seat under the referee's hips, facing the platform.
 	refSeats: { CFrame },
-	-- Where the coach stands (on the floor at the platform's front left corner).
+	-- Where the coach stands: at the doorway the lifter walks out from (GAME_DESIGN §37.5).
 	coachSpot: Vector3,
 	-- The rack, chairs and light box: taken away while the awards stage stands.
 	gear: Folder,
 	-- The referees and coach while a meet runs (cleared after it).
 	staff: Folder,
 	coachLine: TextLabel?,
+	-- The head referee's speech bubble: the commands.
+	headRefLine: TextLabel?,
+	-- The three spotters while a meet runs (left, right, back; GAME_DESIGN §37.5), and which lift they stand for.
+	-- Off the platform (no parent) for deadlift.
+	spotters: { Model },
+	spotterLift: string?,
 }
 
 export type Venue = {
@@ -401,7 +461,9 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		local gear = Instance.new("Folder")
 		gear.Name = "Gear_" .. index
 		gear.Parent = model
-		local placed, problem = MockMeetArena.placeRack(gear, centre + Vector3.new(x, PLATFORM_HEIGHT, PLATFORM_Z))
+		-- Turned round: its open front faces the entrance at the back (user 2026-11-01: "with the rack facing the
+		-- entrance"), so the lifter walks straight in to the bar, facing the head referee through the rack.
+		local placed, problem = MockMeetArena.placeRack(gear, centre + Vector3.new(x, PLATFORM_HEIGHT, PLATFORM_Z), math.pi)
 		if not placed then
 			model:Destroy()
 			return nil, problem
@@ -434,13 +496,14 @@ function LocalMeetVenue.build(): (Venue?, string?)
 			end
 		end
 
-		-- The three referee chairs, facing the platform; a seated referee's hips sit a little behind the seat's middle.
+		-- The three referee chairs round the lifter (left, middle, right); a seated referee's hips sit a little behind
+		-- the seat's middle.
 		local refSeats: { CFrame } = {}
 		for seat, spot in ipairs(REF_SEATS) do
 			prop(gear, string.format("RefChair_%d_%d", index, seat), "RefChair",
-				facing(Vector3.new(x + spot.X, 0, spot.Y), Vector3.zAxis))
-			local hips = centre + Vector3.new(x + spot.X, CHAIR_SEAT_TOP, spot.Y - 0.45)
-			table.insert(refSeats, CFrame.lookAt(hips, hips + Vector3.zAxis))
+				facing(Vector3.new(x + spot.at.X, 0, spot.at.Y), spot.toward))
+			local hips = centre + Vector3.new(x + spot.at.X, CHAIR_SEAT_TOP, spot.at.Y) - spot.toward * 0.45
+			table.insert(refSeats, CFrame.lookAt(hips, hips + spot.toward))
 		end
 
 		-- One stage light over each platform, hung from the ceiling.
@@ -455,19 +518,40 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		local staff = Instance.new("Folder")
 		staff.Name = "Staff_" .. index
 		staff.Parent = model
-		local liftAt = centre + Vector3.new(x, PLATFORM_HEIGHT, PLATFORM_Z - LIFT_SPOT_IN_FRONT)
-		local waitAt = centre + Vector3.new(x - half - 2, 0, PLATFORM_Z)
+		-- The walk out (GAME_DESIGN §37.5): the lifter waits in the warm-up room behind the doorway on the platform's
+		-- right (the last platform: its left), comes through it past the coach, steps onto the platform's back
+		-- corner, round the rack, to the lift spot. Two platforms share a doorway: their waiting spots stand apart.
+		local side = if index < LocalMeetConfig.MaxLifters then 1 else -1
+		local doorX = x + side * LocalMeetConfig.PlatformSpacingStuds / 2
+		local liftAt = centre + Vector3.new(x, PLATFORM_HEIGHT, LIFT_Z)
+		local waitAt = centre + Vector3.new(doorX - side * 1.5, 0, Z_BACK + WAIT_BEHIND_WALL)
+		-- Through the doorway, along behind the platform to its middle, then straight in to the bar (the rack faces
+		-- the entrance, user 2026-11-01): onto the platform square across its back edge. The last stretch, to the
+		-- lift's own spot at the rack, is MeetLiftAnimation.approachFor.
+		local walkOut = {
+			centre + Vector3.new(doorX, 0, Z_BACK + 1),
+			centre + Vector3.new(doorX, 0, Z_BACK - 3),
+			centre + Vector3.new(x, 0, Z_BACK - 3),
+		}
 		table.insert(platforms, {
 			index = index,
+			-- Facing the rack (and through it the head referee).
 			liftSpot = CFrame.lookAt(liftAt, liftAt - Vector3.zAxis),
 			waitSpot = CFrame.lookAt(waitAt, waitAt - Vector3.zAxis),
+			walkOut = walkOut,
+			rack = gear:FindFirstChild("CompetitionRack") :: Model?,
+			privateTags = {},
 			display = display,
 			lamps = lamps,
 			refSeats = refSeats,
-			coachSpot = centre + Vector3.new(x - half - 1.5, 0, PLATFORM_FRONT - 1),
+			-- Beside the doorway on the platform's side, against the back wall, clear of the walk.
+			coachSpot = centre + Vector3.new(doorX - side * 2.5, 0, Z_BACK - 0.8),
 			gear = gear,
 			staff = staff,
 			coachLine = nil,
+			headRefLine = nil,
+			spotters = {},
+			spotterLift = nil,
 		})
 	end
 
@@ -779,6 +863,10 @@ function LocalMeetVenue.showAwards(v: Venue, on: boolean)
 					figure:Destroy()
 				end
 			end
+			for _, spotter in ipairs(platform.spotters) do
+				spotter:Destroy()
+			end
+			table.clear(platform.spotters)
 		end
 	end
 	v.awards.Parent = if on then v.model else nil
@@ -788,17 +876,126 @@ end
 function LocalMeetVenue.staffPlatform(platform: Platform)
 	LocalMeetVenue.clearStaff(platform)
 	local liftAt = platform.liftSpot.Position
-	for _, seat in ipairs(platform.refSeats) do
+	for index, seat in ipairs(platform.refSeats) do
 		local hips = seat.Position
-		MeetFigures.build(platform.staff, "Referee", Vector3.new(hips.X, hips.Y - CHAIR_SEAT_TOP, hips.Z), liftAt, hips.Y)
+		local line = MeetFigures.build(platform.staff, "Referee", Vector3.new(hips.X, hips.Y - CHAIR_SEAT_TOP, hips.Z),
+			liftAt, hips.Y)
+		-- The head referee (the middle chair) gives the commands (refereeSays).
+		if index == 2 then
+			platform.headRefLine = line
+		end
 	end
 	platform.coachLine = MeetFigures.build(platform.staff, "Coach", platform.coachSpot, liftAt)
+	-- The three spotters, each a different skin tone; rackFor stands them for the lift.
+	local skins = LocalMeetConfig.ComputerLifters.SkinColours
+	for index = 1, #SPOTTER_ROLES do
+		local skin = skins[(platform.index + index * 2) % #skins + 1]
+		local spotter = MeetFigures.buildSpotter(platform.staff, skin, liftAt, liftAt)
+		if spotter then
+			spotter:SetAttribute("Role", SPOTTER_ROLES[index])
+			local rack = platform.rack
+			if rack and StationLayout.of(rack) then
+				local link = Instance.new("ObjectValue")
+				link.Name = "SpotterRack"
+				link.Value = rack
+				link.Parent = spotter
+				spotter:SetAttribute("SpotterFloor", StationLayout.floorFrame(rack))
+			end
+			CollectionService:AddTag(spotter, SPOTTER_TAG)
+			table.insert(platform.spotters, spotter)
+		end
+	end
+	platform.spotterLift = nil
 end
 
--- Removes a platform's referees and coach.
+--[[
+	Makes the platform's staff UI PRIVATE (user 2026-11-01: "I as the lifter
+	should be the only one to see the UI of the referree and coach, and what
+	the coach is saying"): the referees' and coach's name tags and the coach's
+	speech bubble move into `player`'s own PlayerGui (still floating over their
+	heads), so only that lifter sees them. With no player (a computer lifter)
+	they are removed: nobody sees them, and that coach says nothing.
+]]
+function LocalMeetVenue.staffFor(platform: Platform, player: Player?)
+	local gui = player and player:FindFirstChildOfClass("PlayerGui")
+	for _, billboard in ipairs(platform.staff:GetDescendants()) do
+		if billboard:IsA("BillboardGui") then
+			if gui then
+				billboard.ResetOnSpawn = false
+				billboard.Parent = gui
+				table.insert(platform.privateTags, billboard)
+			else
+				billboard:Destroy()
+			end
+		end
+	end
+	if gui == nil then
+		platform.coachLine = nil
+		platform.headRefLine = nil
+	end
+end
+
+-- Removes a platform's referees and coach (and their tags moved into a lifter's screen).
 function LocalMeetVenue.clearStaff(platform: Platform)
+	for _, billboard in ipairs(platform.privateTags) do
+		billboard:Destroy()
+	end
+	table.clear(platform.privateTags)
 	platform.staff:ClearAllChildren()
+	for _, spotter in ipairs(platform.spotters) do
+		spotter:Destroy()
+	end
+	table.clear(platform.spotters)
 	platform.coachLine = nil
+	platform.headRefLine = nil
+end
+
+-- What the head referee says ("SQUAT!", "RACK!", GAME_DESIGN §37.5); nil hides it. Only the lifter sees it.
+function LocalMeetVenue.refereeSays(platform: Platform, line: string?)
+	MeetFigures.say(platform.headRefLine, line)
+end
+
+--[[
+	Shows the platform's rack for `lift` like a gym training rack (GAME_DESIGN
+	§37.5, StationVisuals): no bench for squat, the J-cups at the lift's height,
+	the bar where the lift starts. Deadlift: no rack at all, only the bar on the
+	floor. Nil: the free look.
+]]
+function LocalMeetVenue.rackFor(platform: Platform, lift: string?)
+	local rack = platform.rack
+	if rack and rack.Parent then
+		StationVisuals.show(rack, lift, true)
+	end
+	LocalMeetVenue.standSpotters(platform, lift)
+end
+
+--[[
+	The platform's spotters for `lift` (GAME_DESIGN §37.5): on the platform for
+	squat and bench, at their rest spots (the rack carries the lift as
+	SpotterLift for the client); off it for deadlift or no lift ("No spotters
+	on deadlift").
+]]
+function LocalMeetVenue.standSpotters(platform: Platform, lift: string?)
+	platform.spotterLift = lift
+	local rack = platform.rack
+	local rest = if lift then SPOTTER_REST[lift] else nil
+	if rack then
+		rack:SetAttribute("SpotterLift", if rest then lift else nil)
+	end
+	for _, spotter in ipairs(platform.spotters) do
+		local role = spotter:GetAttribute("Role")
+		local spot = if rest and typeof(role) == "string" then rest[role] else nil
+		if spot and rack and rack.Parent and StationLayout.of(rack) then
+			local floor = StationLayout.floorFrame(rack)
+			spotter.Parent = platform.staff
+			MeetFigures.moveSpotter(spotter, floor:PointToWorldSpace(Vector3.new(spot.at.X, 0, spot.at.Y)),
+				floor:PointToWorldSpace(Vector3.new(spot.look.X, 0, spot.look.Y)))
+			spotter:SetAttribute("RestAt", Vector3.new(spot.at.X, 0, spot.at.Y))
+			spotter:SetAttribute("RestLook", Vector3.new(spot.look.X, 0, spot.look.Y))
+		else
+			spotter.Parent = nil
+		end
+	end
 end
 
 -- What the platform's coach says; nil hides it.

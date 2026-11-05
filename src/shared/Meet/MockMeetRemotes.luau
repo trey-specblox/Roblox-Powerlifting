@@ -86,6 +86,29 @@ export type MeetState = {
 	lights: { string }?,
 	-- A line to show instead of the default one (Done: the place; Waiting: why).
 	note: string?,
+	-- (Local meet, Choose) where the lifter stands and what this attempt can do: RaceView.
+	race: RaceView?,
+	-- (Local meet, Ready) the lift starts by itself once the lifter is set up at the bar: no LIFT button.
+	autoLift: boolean?,
+}
+
+--[[
+	THE RACE (Local meet, user 2026-11-01: "It needs to be clear what you need
+	to do before clicking that confirm weight button"). Sent with Choose, so
+	the panel can say in plain kilograms what a weight does, without anyone
+	working out scores. Measured against everyone's best lifts SO FAR (the
+	others lift this round too).
+		place     the lifter's place right now (nil: no score yet)
+		rivals    everyone else with a score: their name, and the lightest
+		          weight THIS attempt that puts the lifter ahead of them if
+		          made (0 = already ahead whatever happens)
+		mustMake  true when missing this attempt means a bomb-out
+]]
+export type RaceRival = { name: string, needKg: number }
+export type RaceView = {
+	place: number?,
+	rivals: { RaceRival },
+	mustMake: boolean,
 }
 
 --[[

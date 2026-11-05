@@ -97,6 +97,7 @@ local Simulation = require(LiftingFolder:WaitForChild("TypingSimulation"))
 local TypingPhaseConfig = require(Shared:WaitForChild("Config"):WaitForChild("TypingPhaseConfig"))
 
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local MeetLiftProgress = require(script.Parent.Parent:WaitForChild("Meet"):WaitForChild("MeetLiftProgress"))
 local C = UIStyle.Colours
 
 local TypingUI = {}
@@ -247,6 +248,8 @@ local function build(instructionText: string): Visuals
 		short screens.
 	]]
 	local holder, body = UIStyle.panel(gui, "Panel", PANEL_POSITION, UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
+	-- See-through, so the lift behind it still shows (user 2026-11-01).
+	UIStyle.seeThrough(holder, UIStyle.MinigameTransparency)
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Position = PANEL_POSITION
 	local title = UIStyle.titleTag(holder, "Tag", "", UDim2.fromOffset(-14, -26), UDim2.fromOffset(400, 48),
@@ -502,6 +505,8 @@ local function redraw(delta: number)
 
 	local fraction = completionFraction(challenge, state.progress)
 	current.barFill.Size = UDim2.new(1, -6, fraction, 0)
+	-- At a meet the deadlift comes up as the bar rises (GAME_DESIGN §37.5).
+	MeetLiftProgress.report(fraction)
 
 	-- A completed pull turns white, like a meet's white light.
 	local done = state.outcome == "Passed"

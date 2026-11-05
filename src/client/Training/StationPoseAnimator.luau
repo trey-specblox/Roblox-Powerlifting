@@ -16,7 +16,11 @@
 	     along the rack, whenever the bar is held (StationAnimationConfig
 	     BarHeldWindows); otherwise it sits at the rest spot the server published
 	     (the Barbell's RestCFrame attribute). These moves are local to each
-	     player's screen; the server's barbell never moves.
+	     player's screen; the server's barbell never moves. Meet lifters too
+	     (GAME_DESIGN §37.5): players and computer lifters marked MeetLift with a
+	     MeetRack, whose lift the server animates (MeetLiftAnimation). On a
+	     meet miss the attribute MeetBarHeld says when the bar leaves the
+	     hands; a let-go bar glides back to its rest (the spotters lift it).
 
 	A lift without a published animation ID plays nothing and leaves the bar
 	where the server put it. R6 characters are skipped (the reps are R15).
@@ -34,6 +38,11 @@ local StationPoseAnimator = {}
 local POSE_ATTRIBUTE = "StationPose"
 local RACK_ATTRIBUTE = "StationRack"
 local RACKS_FOLDER = "GymRacks"
+-- Meet lifters (MeetLiftAnimation): the lift attribute, the rack's ObjectValue, and the computer lifters' folder.
+local MEET_LIFT_ATTRIBUTE = "MeetLift"
+local MEET_RACK_VALUE = "MeetRack"
+local MEET_BAR_HELD_ATTRIBUTE = "MeetBarHeld"
+local COMPUTER_LIFTERS_FOLDER = "LocalMeetComputerLifters"
 local FADE_SECONDS = 0.2
 
 local localPlayer = Players.LocalPlayer
@@ -115,7 +124,12 @@ type BarState = {
 	-- Each barbell part with its place relative to Bar_Shaft (the bar's centre).
 	parts: { { part: BasePart, offset: CFrame } },
 	moved: boolean,
+	-- Where the bar is drawn now. A bar let go of glides back to its rest instead of jumping (a meet's spotters
+	-- lifting it back to the J-cups, GAME_DESIGN §37.5).
+	shown: CFrame?,
 }
+-- How fast a let-go bar glides to its rest (per second; about 0.5 s to get there).
+local GLIDE_RATE = 7
 
 -- An ordinary (strong) table, not a weak one: Roblox may drop an Instance key
 -- from a weak table while the barbell still exists (same fix as the server's
@@ -146,9 +160,20 @@ local function barStateOf(barbell: Instance): BarState?
 end
 
 local function placeBar(state: BarState, centre: CFrame)
+	state.shown = centre
 	for _, entry in ipairs(state.parts) do
 		entry.part.CFrame = centre * entry.offset
 	end
+end
+
+-- Moves a let-go bar a step of `dt` seconds toward `rest` (straight there when it is close or was never drawn).
+local function glideBar(state: BarState, rest: CFrame, dt: number)
+	local shown = state.shown
+	if shown == nil or (shown.Position - rest.Position).Magnitude < 0.02 then
+		placeBar(state, rest)
+		return
+	end
+	placeBar(state, shown:Lerp(rest, 1 - math.exp(-GLIDE_RATE * dt)))
 end
 
 local function restOf(barbell: Instance): CFrame?
@@ -156,8 +181,17 @@ local function restOf(barbell: Instance): CFrame?
 	return if typeof(rest) == "CFrame" then rest else nil
 end
 
--- The lifter's playing rep track, if their animation is published and playing.
-local function playingRep(character: Model, lift: string): AnimationTrack?
+--[[
+	Whether the lifter holds the bar now, or nil when nothing says. A meet's
+	missed lift says it outright (the attribute MeetBarHeld, MeetLiftAnimation:
+	held until the spotters take it or it is set down, GAME_DESIGN §37.5);
+	otherwise the playing rep animation does (BarHeldWindows).
+]]
+local function holdingBar(character: Model, lift: string): boolean?
+	local told = character:GetAttribute(MEET_BAR_HELD_ATTRIBUTE)
+	if typeof(told) == "boolean" then
+		return told
+	end
 	local id = StationAnimationConfig.AnimationIds[lift]
 	local animator = r15Animator(character)
 	if id == nil or id == "" or animator == nil then
@@ -165,62 +199,87 @@ local function playingRep(character: Model, lift: string): AnimationTrack?
 	end
 	for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
 		if track.Animation and track.Animation.AnimationId == id then
-			return track
+			return StationAnimationConfig.isBarHeld(lift, track.TimePosition)
 		end
 	end
 	return nil
 end
 
-local function updateBars()
+-- Moves `rack`'s barbell with `character`'s hands while `lift`'s animation holds the bar; otherwise rests it.
+local function followHands(character: Model, rack: Instance?, lift: string, active: { [Instance]: boolean }, dt: number)
+	local barbell = rack and rack:FindFirstChild("Barbell")
+	local held = holdingBar(character, lift)
+	if rack == nil or not rack:IsA("Model") or barbell == nil or held == nil then
+		return
+	end
+	local state = barStateOf(barbell)
+	if state == nil then
+		return
+	end
+
+	local leftHand = character:FindFirstChild("LeftHand")
+	local rightHand = character:FindFirstChild("RightHand")
+	if held and leftHand and leftHand:IsA("BasePart") and rightHand and rightHand:IsA("BasePart") then
+		local mid = (leftHand.Position + rightHand.Position) / 2
+		placeBar(state, CFrame.new(mid) * rack:GetPivot().Rotation)
+	else
+		local rest = restOf(barbell)
+		if rest then
+			glideBar(state, rest, dt)
+		end
+	end
+	state.moved = true
+	active[barbell] = true
+end
+
+--[[
+	A meet lifter (GAME_DESIGN §37.5, MeetLiftAnimation on the server): marked
+	with the attribute MeetLift = the lift and an ObjectValue MeetRack = their
+	platform's rack. Players and the Local meet's computer lifters alike.
+]]
+local function followMeetLifter(character: Model, active: { [Instance]: boolean }, dt: number)
+	local lift = character:GetAttribute(MEET_LIFT_ATTRIBUTE)
+	local rackValue = character:FindFirstChild(MEET_RACK_VALUE)
+	if typeof(lift) == "string" and rackValue and rackValue:IsA("ObjectValue") then
+		followHands(character, rackValue.Value, lift, active, dt)
+	end
+end
+
+local function updateBars(dt: number)
 	local racks = Workspace:FindFirstChild(RACKS_FOLDER)
 	local active: { [Instance]: boolean } = {}
 
-	if racks then
-		for _, player in ipairs(Players:GetPlayers()) do
-			local character = player.Character
-			if character == nil then
-				continue
+	for _, player in ipairs(Players:GetPlayers()) do
+		local character = player.Character
+		if character == nil then
+			continue
+		end
+		local lift = character:GetAttribute(POSE_ATTRIBUTE)
+		local rackName = character:GetAttribute(RACK_ATTRIBUTE)
+		if racks and typeof(lift) == "string" and typeof(rackName) == "string" then
+			followHands(character, racks:FindFirstChild(rackName), lift, active, dt)
+		else
+			followMeetLifter(character, active, dt)
+		end
+	end
+	local computerLifters = Workspace:FindFirstChild(COMPUTER_LIFTERS_FOLDER)
+	if computerLifters then
+		for _, body in ipairs(computerLifters:GetChildren()) do
+			if body:IsA("Model") then
+				followMeetLifter(body, active, dt)
 			end
-			local lift = character:GetAttribute(POSE_ATTRIBUTE)
-			local rackName = character:GetAttribute(RACK_ATTRIBUTE)
-			if typeof(lift) ~= "string" or typeof(rackName) ~= "string" then
-				continue
-			end
-			local rack = racks:FindFirstChild(rackName)
-			local barbell = rack and rack:FindFirstChild("Barbell")
-			local track = playingRep(character, lift)
-			if rack == nil or not rack:IsA("Model") or barbell == nil or track == nil then
-				continue
-			end
-			local state = barStateOf(barbell)
-			if state == nil then
-				continue
-			end
-
-			local leftHand = character:FindFirstChild("LeftHand")
-			local rightHand = character:FindFirstChild("RightHand")
-			if StationAnimationConfig.isBarHeld(lift, track.TimePosition)
-				and leftHand and leftHand:IsA("BasePart") and rightHand and rightHand:IsA("BasePart") then
-				local mid = (leftHand.Position + rightHand.Position) / 2
-				placeBar(state, CFrame.new(mid) * rack:GetPivot().Rotation)
-			else
-				local rest = restOf(barbell)
-				if rest then
-					placeBar(state, rest)
-				end
-			end
-			state.moved = true
-			active[barbell] = true
 		end
 	end
 
-	-- Bars whose lifter stopped: back to where the server rests them.
+	-- Bars whose lifter stopped: back to where the server rests them, gliding (a meet's spotters follow it).
 	for barbell, state in pairs(bars) do
 		if state.moved and not active[barbell] then
-			state.moved = false
 			local rest = restOf(barbell)
 			if rest then
-				placeBar(state, rest)
+				glideBar(state, rest, dt)
+				state.moved = (state.shown :: CFrame).Position ~= rest.Position
+			else
+				state.moved = false
 			end
 		end
 	end

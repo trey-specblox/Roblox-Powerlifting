@@ -57,6 +57,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local Simulation = require(LiftingFolder:WaitForChild("ControlSimulation"))
 local ControlPhaseConfig = require(ConfigFolder:WaitForChild("ControlPhaseConfig"))
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local MeetLiftProgress = require(script.Parent.Parent:WaitForChild("Meet"):WaitForChild("MeetLiftProgress"))
 local C = UIStyle.Colours
 
 -- Must match what the server enforces when it replays the reported clicks.
@@ -188,6 +189,8 @@ local function build(instructionText: string): Visuals
 
 	local holder, body = UIStyle.panel(root, "Panel", UDim2.fromOffset(0, TAG_OVERHANG),
 		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
+	-- See-through, so the lift behind it still shows (user 2026-11-01).
+	UIStyle.seeThrough(holder, UIStyle.MinigameTransparency)
 	-- Its text is set per challenge ("SQUAT  CONTROL").
 	local headline = UIStyle.titleTag(holder, "Tag", "", UDim2.fromOffset(-16, -TAG_OVERHANG),
 		UDim2.fromOffset(TAG_WIDTH, TAG_HEIGHT), nil, "bar")
@@ -323,6 +326,8 @@ local function redraw()
 
 	local fraction = math.clamp(state.progress / challenge.maxProgress, 0, 1)
 	current.meterFill.Size = UDim2.new(1, 0, fraction, 0)
+	-- At a meet the squat goes down as the meter fills (GAME_DESIGN §37.5).
+	MeetLiftProgress.report(fraction)
 
 	-- The plain reading of the meter, and the marker's state in its own colour.
 	current.progress.Text = string.format("CONTROL  %d%%", math.floor(fraction * 100))

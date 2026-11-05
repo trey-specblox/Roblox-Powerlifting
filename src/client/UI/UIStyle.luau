@@ -220,6 +220,25 @@ function UIStyle.panel(parent: Instance, name: string, position: UDim2, size: UD
 	return holder, body
 end
 
+--[[
+	Makes a panel (UIStyle.panel's holder) see-through, so the world behind it
+	still shows (user 2026-11-01: the lift minigames hid the lift itself).
+	`amount` is the background's transparency, 0 (solid) to 1 (clear).
+]]
+function UIStyle.seeThrough(holder: Frame, amount: number)
+	local body = holder:FindFirstChild("Body")
+	local back = holder:FindFirstChild("Back")
+	if body and body:IsA("Frame") then
+		body.BackgroundTransparency = amount
+	end
+	if back and back:IsA("Frame") then
+		back.BackgroundTransparency = math.min(1, amount + 0.15)
+	end
+end
+
+-- How see-through the lift minigames' panels are (0 solid, 1 clear).
+UIStyle.MinigameTransparency = 0.45
+
 -- A slanted black tag with a white edge: a panel's heading. `accent` colours its mark; `mark` picks it (Cue).
 function UIStyle.titleTag(parent: Instance, name: string, text: string, position: UDim2, size: UDim2,
 	accent: Color3?, mark: Cue?): TextLabel

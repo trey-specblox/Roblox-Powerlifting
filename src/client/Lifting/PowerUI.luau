@@ -92,6 +92,7 @@ local Simulation = require(LiftingFolder:WaitForChild("PowerSimulation"))
 local PowerPhaseConfig = require(Shared:WaitForChild("Config"):WaitForChild("PowerPhaseConfig"))
 
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local MeetLiftProgress = require(script.Parent.Parent:WaitForChild("Meet"):WaitForChild("MeetLiftProgress"))
 local C = UIStyle.Colours
 
 local PowerUI = {}
@@ -374,6 +375,8 @@ local function build(instructionText: string): Visuals
 	]]
 	local panelHolder, panel = UIStyle.panel(group, "Info", UDim2.new(0.5, -PANEL_WIDTH / 2, 0, FIELD_SIZE + PANEL_GAP),
 		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
+	-- See-through, so the lift behind it still shows (user 2026-11-01).
+	UIStyle.seeThrough(panelHolder, UIStyle.MinigameTransparency)
 	local titleText = UIStyle.titleTag(panelHolder, "Tag", "",
 		UDim2.new(0.5, -TITLE_WIDTH / 2, 0, -TITLE_HEIGHT / 2 - 4), UDim2.fromOffset(TITLE_WIDTH, TITLE_HEIGHT), nil, "chevron")
 
@@ -490,6 +493,8 @@ local function redraw()
 	end
 
 	current.target.setClosing(completionFraction(challenge, state.progress))
+	-- At a meet the bench bar comes down as the ring closes (GAME_DESIGN §37.5).
+	MeetLiftProgress.report(completionFraction(challenge, state.progress))
 
 	--[[
 		Every state cue moves together: tag text, tag colours and ring colour.

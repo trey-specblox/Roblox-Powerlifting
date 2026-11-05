@@ -75,6 +75,18 @@ MockMeetController.start()
 local LocalMeetController = require(MeetFolder:WaitForChild("LocalMeetController"))
 task.spawn(LocalMeetController.start)
 
+-- The meet's spotters follow the bar and the lifter (GAME_DESIGN §37.5). Visual only.
+local MeetSpotterAnimator = require(MeetFolder:WaitForChild("MeetSpotterAnimator"))
+MeetSpotterAnimator.start()
+
+-- The meet's sounds: referee claps, the bar, the lights and the crowd (GAME_DESIGN §37.5).
+local MeetSoundController = require(MeetFolder:WaitForChild("MeetSoundController"))
+task.spawn(MeetSoundController.start)
+
+-- The bar's sound in each gym training rep, on the animation. Audio only.
+local StationRepSounds = require(TrainingFolder:WaitForChild("StationRepSounds"))
+StationRepSounds.start()
+
 -- A gym record set at an official meet, for everyone in the server (GAME_DESIGN §31.6).
 local GymRecordAnnouncer = require(MeetFolder:WaitForChild("GymRecordAnnouncer"))
 task.spawn(GymRecordAnnouncer.start)

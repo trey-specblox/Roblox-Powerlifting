@@ -1,0 +1,125 @@
+{
+  "about": "Game sounds built from the Sonniss GDC bundles by art/scripts/make_meet_sounds.py. The WAVs stay outside this public repo on purpose (licence: never supply them as sounds). Uploaded privately under group 529442797 with art/scripts/upload_group_images.py.",
+  "sounds": {
+    "BarThud_1": {
+      "about": "Deadlift landing, light bar. Sonniss layers plus a short made low note and thump.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BarThud_1.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://99006547979222"
+      }
+    },
+    "BarThud_2": {
+      "about": "Deadlift landing, medium bar.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BarThud_2.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://74202992096015"
+      }
+    },
+    "BarThud_3": {
+      "about": "Deadlift landing, heavy bar.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BarThud_3.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://91626447337542"
+      }
+    },
+    "BarThud_4": {
+      "about": "Deadlift landing, massive bar.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BarThud_4.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://115911115288617"
+      }
+    },
+    "BarRack": {
+      "about": "Bar into the J-cups. Borg Sound, Gym weights (GDC 2017).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BarRack.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://75804757791644"
+      }
+    },
+    "BarCaught": {
+      "about": "Spotters catching a missed bar. Sonniss layers plus made thump.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BarCaught.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://90626293042410"
+      }
+    },
+    "BarShake": {
+      "about": "A gym squat or bench rep's rattle. Christophe Davaille, The Gym - Sounds Of Bodybuilding (GDC 2018).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BarShake.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://133585865400084"
+      }
+    },
+    "RefereeClap": {
+      "about": "Head referee's clap, own work (made with code).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/RefereeClap.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://117883845964473"
+      }
+    },
+    "LightsGood": {
+      "about": "Three white lights, own work (made with code).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/LightsGood.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://133004907730711"
+      }
+    },
+    "LightsBad": {
+      "about": "Three red lights, own work (made with code).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/LightsBad.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://126005722823250"
+      }
+    },
+    "CrowdCheer": {
+      "about": "Small club crowd cheering (GDC 2026).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/CrowdCheer.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://117986972792203"
+      }
+    },
+    "CrowdGroan": {
+      "about": "Pub crowd boo and aww (GDC 2018).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/CrowdGroan.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://106001648154233"
+      }
+    },
+    "GymBed": {
+      "about": "Main gym background loop.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/GymBed.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://99057894405433"
+      }
+    },
+    "MeetBed": {
+      "about": "Local meet hall background loop.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/MeetBed.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://93797393745230"
+      }
+    },
+    "ArenaBed": {
+      "about": "State arena background loop.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/ArenaBed.wav",
+      "license": "Sonniss GDC bundle licence",
+      "ids": {
+        "audio": "rbxassetid://105086233520753"
+      }
+    }
+  }
+}

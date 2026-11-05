@@ -118,12 +118,13 @@ ProgressionConfig.Hill = {
 	How far meets against other players may raise Competition Number. Each
 	weight-class BUILD has one allowance per lift, stored in DAYS saved up:
 	it refills smoothly, one day every 24 hours (also offline), and holds at
-	most MaxDays. Using it is worth
+	most MaxDays. Using it is worth, per day saved up,
 
-		PercentPerDay x Hill(PP) of the lift's CN, per day saved up
+		TrainingDaysPerDay x (what one full day of training gives the lift)
+		= TrainingDaysPerDay x Reference x BaseProgressRate x (DailyCapEV / 3) x Hill(PP)
 
 	with Hill the training's own slow-down near the class's Progression
-	Reference (section 29.3), at the CN when it is used. A good lift above CN
+	Reference (section 29.3), at the CN when it is used (GAME_DESIGN §37.1). A good lift above CN
 	uses what its raise costs; a miss above CN uses what it would have cost.
 	A new build copies the allowance of the build it copies its kilograms
 	from (MeetCnAllowance, PlayerProfileSchema.ensureBuild).
@@ -131,9 +132,22 @@ ProgressionConfig.Hill = {
 	It replaced the account-wide Competition Budget (removed in schema version 10).
 ]]
 ProgressionConfig.MeetCnAllowance = {
-	-- [PROVISIONAL] The share of CN one day's allowance is worth far from the record (4%).
-	PercentPerDay = 0.04,
-	-- [PROVISIONAL] Days that can be saved up (3 days: +12% far from the record).
+	--[[
+		[PROVISIONAL] One day's allowance is worth this many full days of gym
+		training for the lift (user 2026-11-01, GAME_DESIGN §37.1: meets give
+		about 2/3 of strength). A day of training for one lift is its share of
+		DailyTraining.DailyCapEV (a third), through the training formula
+		(section 29.3), so this follows any retune of BaseProgressRate. It
+		replaced the flat PercentPerDay (4% of CN).
+	]]
+	TrainingDaysPerDay = 2,
+	--[[
+		[PROVISIONAL] In a meet with only ONE real player (computer lifters fill
+		the rest, §37.2) a raise uses this many times the allowance: strength
+		counts half there.
+	]]
+	SoloCostMultiplier = 2,
+	-- [PROVISIONAL] Days that can be saved up (3 days).
 	MaxDays = 3,
 }
 
@@ -342,6 +356,9 @@ end
 
 requirePositiveFinite("BaseProgressRate", ProgressionConfig.BaseProgressRate)
 requirePositiveFinite("ProposedBaseProgressRate", ProgressionConfig.ProposedBaseProgressRate)
+requirePositiveFinite("MeetCnAllowance.TrainingDaysPerDay", ProgressionConfig.MeetCnAllowance.TrainingDaysPerDay)
+requirePositiveFinite("MeetCnAllowance.SoloCostMultiplier", ProgressionConfig.MeetCnAllowance.SoloCostMultiplier)
+requirePositiveFinite("MeetCnAllowance.MaxDays", ProgressionConfig.MeetCnAllowance.MaxDays)
 
 local dailyTraining = ProgressionConfig.DailyTraining
 

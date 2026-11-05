@@ -14,11 +14,16 @@
 	and not solid, so it never gets in a lifter's way. The coach holds the
 	Coach front's Blender clipboard.
 
+	And the three SPOTTERS (buildSpotter, GAME_DESIGN §37.5): no tag; on squat
+	and bench they follow the bar and take it on a miss (moved on each player's
+	screen by the client's MeetSpotterAnimator).
+
 	PERFORMANCE: each figure is one R15 body (about 16 parts, no collision, no
-	queries). The Local meet adds four per lifter while a meet runs and removes
-	them after it.
+	queries; a spotter adds 8 small covers, no shadows). The Local meet adds
+	seven per lifter while a meet runs and removes them after it.
 ]]
 
+local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -32,6 +37,34 @@ local RoomProps = require(WorldFolder:WaitForChild("RoomProps"))
 local StyledScreen = require(WorldFolder:WaitForChild("StyledScreen"))
 
 local MeetFigures = {}
+
+--[[
+	A collision group that collides with NOTHING, for figures that must never be
+	in anyone's way: the staff here and the Local meet's computer lifters
+	(ComputerLifters). CanCollide alone is not enough: a Humanoid switches
+	collision back on for its torso and limbs (the coach blocked the walk back
+	to the warm-up room, 2026-11-01).
+]]
+MeetFigures.GhostGroup = "MeetFigures"
+local ghostReady = false
+
+-- Puts every part of `model` in the ghost group (registering it the first time).
+function MeetFigures.makeGhost(model: Instance)
+	if not ghostReady then
+		ghostReady = true
+		if not PhysicsService:IsCollisionGroupRegistered(MeetFigures.GhostGroup) then
+			PhysicsService:RegisterCollisionGroup(MeetFigures.GhostGroup)
+		end
+		for _, group in ipairs(PhysicsService:GetRegisteredCollisionGroups()) do
+			PhysicsService:CollisionGroupSetCollidable(MeetFigures.GhostGroup, group.name, false)
+		end
+	end
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CollisionGroup = MeetFigures.GhostGroup
+		end
+	end
+end
 
 export type Kind = "Coach" | "Referee"
 
@@ -157,6 +190,9 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 		end
 	end
 
+	-- Never in anyone's way, whatever its Humanoid does to collision.
+	MeetFigures.makeGhost(figure)
+
 	-- The name tag and the speech bubble over the head.
 	local head = figure:FindFirstChild("Head") :: BasePart?
 	local billboard = Instance.new("BillboardGui")
@@ -228,6 +264,141 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	line.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
 	line.Parent = bubble
 	return line
+end
+
+--[[
+	A SPOTTER (GAME_DESIGN §37.5, user 2026-11-02: "3 spotters bald, Central
+	shirt, black shorts, black shoes"): a simple figure for now (an average
+	build once the game has its own bodies). A red CENTRAL tee, black shorts,
+	black shoes, bald, skin `skin`. No name tag or bubble: nothing on anyone's
+	screen. Standing at `at` (on the floor), looking at `watching`; anchored and
+	a ghost like the staff. Returns the figure, or nil. Each player's screen
+	then moves and poses it with the bar (client MeetSpotterAnimator).
+]]
+local SPOTTER_TEE = Color3.fromRGB(196, 32, 38)
+local SPOTTER_BLACK = Color3.fromRGB(20, 20, 22)
+-- Each body part's colour: the tee's short sleeves, the shorts, the shoes; skin elsewhere.
+local SPOTTER_PARTS: { [string]: Color3 } = {
+	UpperTorso = SPOTTER_TEE, LowerTorso = SPOTTER_BLACK,
+	LeftUpperArm = SPOTTER_TEE, RightUpperArm = SPOTTER_TEE,
+	LeftUpperLeg = SPOTTER_BLACK, RightUpperLeg = SPOTTER_BLACK,
+	LeftFoot = SPOTTER_BLACK, RightFoot = SPOTTER_BLACK,
+}
+
+--[[
+	The default blocky body draws each whole limb from its upper part (an arm is
+	one red block even with a skin-coloured forearm, Studio 2026-11-02), so the
+	shins, forearms and shoes are thin covers over those parts, welded on.
+]]
+local SPOTTER_COVERS = { "LeftLowerArm", "RightLowerArm", "LeftHand", "RightHand", "LeftLowerLeg", "RightLowerLeg",
+	"LeftFoot", "RightFoot" }
+local COVER_GROWTH = 1.04
+
+local function coverPart(figure: Model, part: BasePart, colour: Color3)
+	local cover = Instance.new("Part")
+	cover.Name = "Cover_" .. part.Name
+	cover.Size = part.Size * COVER_GROWTH
+	cover.CFrame = part.CFrame
+	cover.Color = colour
+	cover.Material = Enum.Material.SmoothPlastic
+	cover.TopSurface = Enum.SurfaceType.Smooth
+	cover.BottomSurface = Enum.SurfaceType.Smooth
+	cover.CanCollide = false
+	cover.CanQuery = false
+	cover.CanTouch = false
+	cover.CastShadow = false
+	cover.Massless = true
+	cover.Parent = figure
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = part
+	weld.Part1 = cover
+	weld.Parent = cover
+end
+
+-- "CENTRAL" printed across one face of the tee.
+local function printTee(torso: BasePart, face: Enum.NormalId)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Tee_" .. face.Name
+	gui.Face = face
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 60
+	gui.LightInfluence = 1
+	gui.Parent = torso
+	local label = Instance.new("TextLabel")
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.42)
+	label.Size = UDim2.fromScale(0.86, 0.26)
+	label.BackgroundTransparency = 1
+	label.Text = "CENTRAL"
+	label.TextColor3 = WHITE
+	label.TextScaled = true
+	label.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
+	label.Parent = gui
+end
+
+function MeetFigures.buildSpotter(parent: Instance, skin: Color3, at: Vector3, watching: Vector3): Model?
+	local description = Instance.new("HumanoidDescription")
+	description.HeadColor = skin
+	description.LeftArmColor = skin
+	description.RightArmColor = skin
+	description.TorsoColor = SPOTTER_TEE
+	description.LeftLegColor = skin
+	description.RightLegColor = skin
+	local ok, result = pcall(function()
+		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+	end)
+	if not ok or result == nil then
+		warn("[MeetFigures] no spotter figure: " .. tostring(result))
+		return nil
+	end
+	local figure = result :: Model
+	figure.Name = "Spotter"
+	local humanoid = figure:FindFirstChildOfClass("Humanoid")
+	local root = figure:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if humanoid == nil or root == nil then
+		figure:Destroy()
+		return nil
+	end
+	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	-- Part colours set directly (a BodyColors would paint the limbs one colour each again).
+	local bodyColours = figure:FindFirstChildOfClass("BodyColors")
+	if bodyColours then
+		bodyColours:Destroy()
+	end
+	for _, part in ipairs(figure:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CastShadow = false
+			if part ~= root then
+				part.Color = SPOTTER_PARTS[part.Name] or skin
+			end
+		end
+	end
+	local torso = figure:FindFirstChild("UpperTorso")
+	if torso and torso:IsA("BasePart") then
+		printTee(torso, Enum.NormalId.Front)
+		printTee(torso, Enum.NormalId.Back)
+	end
+	for _, name in ipairs(SPOTTER_COVERS) do
+		local part = figure:FindFirstChild(name)
+		if part and part:IsA("BasePart") then
+			coverPart(figure, part, SPOTTER_PARTS[name] or skin)
+		end
+	end
+	root.Anchored = true
+	figure:SetAttribute("StandHeight", humanoid.HipHeight + root.Size.Y / 2)
+	figure.Parent = parent
+	MeetFigures.moveSpotter(figure, at, watching)
+	MeetFigures.makeGhost(figure)
+	return figure
+end
+
+-- Stands a spotter at `at` (on the floor), looking at `watching`.
+function MeetFigures.moveSpotter(figure: Model, at: Vector3, watching: Vector3)
+	local height = figure:GetAttribute("StandHeight")
+	local standAt = at + Vector3.new(0, if typeof(height) == "number" then height else 3, 0)
+	figure:PivotTo(CFrame.lookAt(standAt, Vector3.new(watching.X, standAt.Y, watching.Z)))
 end
 
 -- Shows `line` in a figure's speech bubble (the label MeetFigures.build returned); nil hides it.

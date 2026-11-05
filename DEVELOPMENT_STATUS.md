@@ -3382,6 +3382,320 @@ and polish.
     carried"; `git log` for the hash. Files: MeetLevelConfig,
     PlayerProfileSchema, ProfileOperations, LocalMeetService,
     PlayerDataProbe, GAME_DESIGN.md, DEVELOPMENT_STATUS.md.
+- MEETS AS THE MAIN STRENGTH SOURCE + ALWAYS-RUNNING MEETS (design only, user
+  2026-11-01, picked from options; GAME_DESIGN §37, with change notes in
+  §29.10, §30.6, §33.3b, §34.2, §34.8):
+  - §37.1: a day's meet CN allowance = 2x one lift's full day of training
+    (about 2/3 of strength from meets); a raise in a meet with only 1 real
+    player uses twice the allowance. Applies to every meet against others.
+  - §37.2: timed Local (and rolled Regional) meets run with 1 real player;
+    computer lifters fill to 4, near the real lifters' level, and never take a
+    real player's reward. 1 real player pays finishing + 9/9 coins, finishing
+    ladder points, Scale and half strength; no pot, records, titles or win.
+  - State, Nationals, Worlds and Sheffield: real players only (user, final).
+  - BUILT (user "Yes, build it", 2026-11-01), NOT COMMITTED:
+    - ProgressionConfig.MeetCnAllowance: TrainingDaysPerDay 2 (replaced
+      PercentPerDay), SoloCostMultiplier 2. MeetCnAllowance.dailyShare =
+      2 x one lift's full training day as a share of CN; settle and
+      ProfileOperations.settleMeetCompetitionNumber take a costMultiplier.
+    - New src/server/Meet/ComputerLifters.luau: plan (copies a real
+      lifter's class, CN x0.92-1.08), nextWeight, makes, spawnBody (plain R15
+      avatar in workspace.LocalMeetComputerLifters).
+    - LocalMeetConfig: MinimumLifters 1, FillToLifters 4, ComputerLifters
+      table. Studio: workspace attribute ForceSoloMeet = true tests the
+      reduced rewards alone.
+    - LocalMeetService: Lifter.player optional + key/cpu/body; Meet.solo and
+      rewardPlaces (real lifters' order only); solo pays finish + 9/9 coins,
+      finishing ladder points, CN at half speed; no pot, records, titles,
+      win, trophies; the meet ends early when every real lifter has left.
+    - PlayerDataProbe: allowance checks rewritten (2x training, solo cost).
+  - TESTED in Studio: PlayerDataProbe 535 passed, 0 failed (on for the run,
+    back off). Live Local meet, ForceSoloMeet: 4 lifters, 1 real, 3 CPU
+    (Felix/Theo/Tess) lifted all 9 rounds, standings showed "(CPU)" names,
+    the test player bombed out (no minigame input), "prize pot 0 coins (solo
+    true)", CPU bodies removed after. luau-lsp: 0 errors in changed files.
+  - NOT TESTED: a real player finishing with a total alone (half CN, finish
+    coins and ladder points live); 2 real players + CPU (full rewards by real
+    order); CPU on the podium visually. CPUs have no lift animation yet.
+  - USER TEST (Studio, 2026-11-01, full rewards alone): 2nd overall behind
+    Dana (CPU) with 77.5 kg, but reward place 1st among real lifters: win,
+    ladder +4, pot 150, Bench CN raised. Computer lifters took no reward.
+- MEET CLARITY (user 2026-11-01, GAME_DESIGN §37.4), BUILT, NOT COMMITTED:
+  private coach (LocalMeetVenue.coachFor moves the coach bubble into the
+  lifter's PlayerGui; CPU coaches quiet; clearStaff destroys it); THE RACE
+  (MockMeetRemotes.RaceView sent with Choose; LocalMeetService raceFor /
+  liveScores / coachLineFor; MockMeetUI "THE RACE" block: IF MADE, IF
+  MISSED, NEEDED FOR 1ST/2ND/3RD in kg); coach call-outs of rivals' misses;
+  "No total today" after a bomb-out. TESTED in Studio: race places correct
+  (22.5 tie = 4th, 25 = 1st), "Silas (CPU) missed 27.5 kg! 25 kg takes
+  3rd.", 0 coach bubbles left in workspace. luau-lsp 0 errors.
+- MEET PRESENTATION (user 2026-11-01, GAME_DESIGN §37.5; 4 steps). STEP 1
+  STAGING BUILT, NOT COMMITTED: LocalMeetVenue Platform gains waitSpot (warm-up
+  room behind the doorway), walkOut path, rack, privateTags; referee chairs
+  left/front/right; coach at the doorway; staffFor (all staff tags into the
+  lifter's PlayerGui, removed for CPUs) and rackFor (StationVisuals per
+  lift). LocalMeetService walkLifter/walkBack (players by MoveTo with
+  timeouts, CPUs by ComputerLifters.walkBody with the R15 walk), lifts wait
+  for the walk out, each lifter walks back after their own lights.
+  LocalMeetConfig.ComputerLifters WalkSpeed / WalkAnimationId. TESTED in
+  Studio: walk out/back sampled every round for 3 CPUs and the test player;
+  screenshot of referees, coach, benchless squat rack. luau-lsp 0 errors.
+  STEP 2 BUILT, NOT COMMITTED: new MeetLiftAnimation (server: set-up pose
+  facing the head referee for squat/deadlift, bench lying; plays the station
+  rep one stage at a time from StationAnimationConfig.MeetStages; marks
+  MeetLift + ObjectValue MeetRack); LiftAttemptService.startServerAttempt
+  takes an optional onPhase observer (phase start with seconds, end with
+  passed); LocalMeetConfig.RefereeCommands said by the head referee
+  (LocalMeetVenue.refereeSays, private bubble); StationPoseAnimator moves meet
+  racks' bars with the hands (players and CPU bodies); MeetFigures.makeGhost
+  collision group (staff + CPU bodies collide with nothing); walk squares off
+  the platform's back edge, arrival by distance; LocalMeetController disables
+  FallingDown/Ragdoll while on a platform. TESTED in Studio: squat descent
+  0.6->1.9 over phase 1, bench lying + "START!", deadlift stance, walk back to
+  the doorway. NOT TESTED: a good lift's finish + RACK/PRESS/DOWN timing,
+  2-player view, the user's visual check.
+  USER PLAY-TEST FIXES (2026-11-01, GAME_DESIGN §37.5 table), BUILT, NOT
+  COMMITTED: rack turned π (MockMeetArena.placeRack `turn`), lift spot behind
+  it (LIFT_SPOT_BEHIND 6.2), side refs at PLATFORM_Z+3.5; walk = doorway ->
+  behind the platform's middle -> MeetLiftAnimation.approachFor (straight in);
+  all lifts face the rack; MeetLiftAnimation.unrack (squat 3-step walk-out,
+  bench steady, deadlift set) then the start command, then the attempt starts
+  by itself (no LIFT: MockMeetRemotes autoLift); CPUs run the same stages
+  (step 3 done); fluid walk (players: next MoveTo 2.5 studs early,
+  LocalMeetConfig.WalkSpeed 9; CPUs: continuous route, smooth turning);
+  UIStyle.seeThrough on all four minigame panels; choose panel centred; new
+  client/UI/MenuKeys blocks C/T/Y during a lift attempt. TESTED in Studio as
+  in GAME_DESIGN's note. luau-lsp 0 errors.
+  CPU AVATARS BUILT, NOT COMMITTED: LocalMeetConfig.ComputerLifters Hair (29
+  free Roblox-made hair ids from AvatarEditorService:SearchCatalog,
+  creator Roblox, price 0), Glasses (2), NoHairChance, GlassesChance,
+  Width/HeightSpread, Idle/CheerAnimationId, GoodLiftCheerSeconds;
+  ComputerLifters.spawnBody dresses them and plays the idle; cheer after a
+  good lift (walkBack) and on the podium. TESTED: 6 sample avatars spawned in
+  Edit and photographed (then removed); live meet CPUs had hair + idle.
+  FAIL ANIMATIONS + SPOTTERS BUILT 2026-11-02, NOT COMMITTED (GAME_DESIGN
+  §37.5 "The fail animations", from the user's 22 YouTube moments; user
+  picked three spotters: bald, CENTRAL tee, black shorts/shoes):
+  - New `art/scripts/fail_animations.py` (loads station_animations.py; six
+    fails as key poses; preview_fails() / export_all(), run with
+    D:\blender-5.4.0-alpha...\blender.exe -b). Exported the six files
+    `art/animations/Fail_{Squat,Bench,Deadlift}_{1,2}.rbxmx` (Action, not
+    looped, 0.05 s keys).
+  - `StationAnimationConfig.Fails` + failFor: ids still "", with length,
+    release and catch.
+  - `MeetLiftAnimation.finish(handle, good, fail)`: cross-fades the fail
+    track and sets the MeetBarHeld attribute (true, then false at release).
+  - The client `StationPoseAnimator` honours MeetBarHeld, and a let-go bar
+    glides to its rest (glideBar).
+  - `LocalMeetService`: failedPart = the last started minigame phase;
+    failAnimationFor hook; CPUs miss in a random part (CPU_FAIL_SHARE 0.6).
+  - `MeetFigures.buildSpotter` / moveSpotter / reach (shoulder turns); skin
+    and shoe covers welded over the lower limbs, because the blocky body
+    draws each limb from its upper part.
+  - `LocalMeetVenue`: three spotters per platform in staffPlatform;
+    SPOTTER_SPOTS per lift; standSpotters from rackFor; spottersCatch.
+  - PUBLISHED by the user 2026-11-02. The IDs are in Fails (checked:
+    AssetType 24, creator group 529442797). The temporary
+    AnimationSources mapping is removed, and `default.project.json` is back
+    to its committed state.
+  - Studio meet with the published IDs:
+    - squat part-1 fail: track length 5.00; on the client the bar followed
+      the hands until 1.3 s, then glided to the J-cups in about 0.5 s; the
+      body knelt, stood at about 4 s, and held until the walk back;
+    - bench part-1 fail: the bar was released at about 2.2 s;
+    - a CPU missed (Omar squat 3) with no errors;
+    - a screenshot showed the spotters' covers working.
+  TESTED in Studio:
+  - luau-lsp: 0 errors in the changed files.
+  - Play test, automated player: attempt 1 failed SquatControl, played the
+    part-1 fail and let go at 1.3 s; attempt 2 failed SquatDepth and let go
+    at 2.6 s. The back spotter stepped in to rack-local (0, -2.7) and back.
+    No errors.
+  - Edit photo: CENTRAL tees, arms reaching.
+  SECOND PLAY TEST FIXES 2026-11-02, NOT COMMITTED (GAME_DESIGN §37.5
+  "Changes after the user's second play test"):
+  - New `src/client/Meet/MeetLiftProgress.luau`, called from ControlUI,
+    PowerUI and TypingUI redraw. New remote LocalMeetLiftProgress
+    (LocalMeetRemotes.liftProgress; the server validates 0..1 and rate-limits
+    to 0.05 s).
+  - `LocalMeetService`: Lifter.livePhase/progressAt. A player's phase 1 is
+    driven by progress (`MeetLiftAnimation.phase(..., driven)` and
+    `.progress`, never backwards); a passed phase jumps to the stretch end;
+    sayAtLockout(DOWN_AT_LOCKOUT_SECONDS 0.7).
+  - MeetStages Deadlift: phases {1.8,2.2},{2.2,2.2}, finish {2.2,4.2}.
+    FAIL_FADE_SECONDS 0.5.
+  - `fail_animations.py`: Deadlift_1 now starts with the bar on the floor;
+    Deadlift_2 now starts at mid-thigh, strains, hitches and drops the bar
+    (3.8 s, release 1.45). Both re-exported. Fails.Deadlift[2].id = "" and
+    Deadlift[1] keeps the old ID until the user republishes.
+  - Spotters moved to the new client `src/client/Meet/MeetSpotterAnimator.luau`
+    (started in init.client):
+    - CollectionService tag MeetSpotter; attributes Role, SpotterFloor,
+      RestAt/RestLook; ObjectValue SpotterRack; rack attribute SpotterLift.
+    - The server (`LocalMeetVenue.standSpotters`) only places them at rest
+      and unparents them for deadlift. spottersCatch, moveSpotters and
+      MeetFigures.reach were removed.
+  - `StationPoseAnimator`: stopped bars glide back to their rest.
+  - TEMPORARY again: `default.project.json` maps Fail_Deadlift_1/2 into
+    ServerStorage.AnimationSources for republishing.
+  - TESTED (Studio, overlap queries each 0.25 s):
+    - squat: 0 spotter touches in a whole attempt and fail;
+    - bench: 0 lifter touches, after the back spotter learned to clear the
+      user's big hat;
+    - deadlift: no spotters; the bar followed sent progress and held on a
+      slip.
+  NOT TESTED: the user's visual check; the rail step-up smoothing (changed
+  after the last bench run).
+  PUBLISHED 2026-11-03: Fail_Deadlift_1 = 136367570731516,
+  Fail_Deadlift_2 = 89595096759924, pasted into StationAnimationConfig. The
+  temporary AnimationSources mapping is out of `default.project.json`.
+  New `art/scripts/upload_animations.py` publishes animations under the group
+  with the Open Cloud key: no more manual "Save to Roblox". Roblox refuses
+  .rbxmx for animations, so it builds an .rbxm with Rojo first. Read back with
+  KeyframeSequenceProvider: both have the same keyframe and pose counts as the
+  source, and Deadlift_2's values were compared against it too.
+  NO RACK ON A MEET'S DEADLIFT 2026-11-03: `StationVisuals.show(rack, lift,
+  noRackForDeadlift)` hides every rack part but the Barbell (Transparency,
+  CastShadow, CanCollide remembered and restored). Only
+  `LocalMeetVenue.rackFor` passes true; gym and warm-up racks are unchanged.
+  The Mock Meet's rack is not shown per lift and is unchanged. A future State
+  meet must also pass true (the State arena has racks but runs no meet yet).
+  TESTED (Studio, a whole meet with an idle player):
+  - from the deadlift round all 4 platforms in use had 0 visible and 0 solid
+    rack parts, with the 8 bar pieces kept (0 visible on the client too);
+  - after the awards all were back: 26 visible, 4 solid, bench shown;
+  - Fail_Deadlift_1 played in the game to its end (4.8 s track, reached 4.75).
+  NOT TESTED: Fail_Deadlift_2 playing live (it needs a passed pull then a failed
+  lockout, which the idle test player cannot do); the user's visual check.
+  NEXT: the user watches a meet. Commit when the user asks.
+  NEW TOOLS 2026-11-04 (outside the repo, scanned clean, nothing in the game
+  changed): fwjelaa vault at `D:\Powerlifting Roblox Extras\RobloxKits\fwjelaa\`
+  (note search `fwjelaa vault\_tools\vault.py`; read-only Luau checker
+  `hooks\scripts\fwjelaa-check.sh --scan`; NOT installed as a plugin) and the
+  `voxel-pet-design-prompts` skill in `~/.claude/skills` (the game has no pets
+  yet). First checker run over `src`: 166 files, 1 error, 48 info. The error is
+  a dev-only fixture (`src\server\Dev\MigrationFixtureV6.server.luau:206`, a
+  disposable key). The info notes are FindFirstChild chains. None fixed.
+  MEET SOUNDS 2026-11-04, BUILT AND RUN, NOT COMMITTED, NOT YET HEARD (GAME_DESIGN
+  §37.5 "Meet sounds"): new `src/shared/Config/MeetSoundConfig.luau` and
+  `src/client/Meet/MeetSoundController.luau`; remote LocalMeetSound;
+  `LocalMeetService` soundCue() and refereeCommand().
+  DO NOT upload `RobloxKits/SFX`: no licence, ripped from other games.
+  SOUNDS: every id is from the licensed Pro Sound Effects library in the Creator
+  Store (creator "ProSoundEffects"; each `source` names it), except CrowdCheer (our
+  own applause). Other uploaders' free audio was rejected: same rights problem as
+  the kit. Chosen from written descriptions only: Claude cannot hear them.
+  TESTED (Studio, whole meet with an idle player, 4 lifters, no sound or script
+  errors in the log; this was BEFORE the two fixes below, which were then checked
+  with direct tests and one more squat round, not another whole meet):
+  - all 9 cues and the ambience load (about 10 s after the game opens), and the
+    ambience plays while in the venue;
+  - over squat and bench, a voice of each cue was playing just after it was sent,
+    except 1 Clap of 18 (most likely the far-cull: a platform at 72 studs, Clap's
+    limit is 60); BarSetDown fired on good and missed deadlifts;
+  - BarDrop has not fired in a real meet (the idle player cannot reach lockout, and
+    no computer lifter failed there); fired by hand from the server, it plays;
+  - FIXED after the first run: other platforms could cut off the player's own sound
+    (2 voices, 4 platforms at once). Tested: own sound survived two far ones;
+  - FIXED after the first run: the crowd groaned about 2.5 s before the bar went.
+    Tested: lights 135.21, bar caught 136.53, groan 136.78.
+  Checks: fwjelaa checker clean on the sound files; luau-lsp reports nothing in
+  them (8 errors in other files that were not changed for this: CompetitionNumber-
+  Reward, LiftAttemptConfig, PlayerDataService, LiftingRemotes, LiftAttemptService).
+  Unrelated, seen in the log: `rbxassetid://203785492` fails 3 times at startup
+  ("Asset type does not match"). Not looked into.
+  USER LISTENED 2026-11-04: the sounds trigger correctly, but their quality is
+  "terrible". Keep the system; replace the sounds.
+  USER'S SCREEN RECORDING of real deadlifts (Downloads, 72 s), checked 2026-11-04,
+  NOT used, nothing uploaded: it is an edited multi-lifter reel with a drum beat
+  mixed in (15 near-identical thuds 0.68 s apart between 43 and 54 s), its sound
+  is thin above 6 kHz, no bar landing was seen at the loudest moments checked, and
+  who owns it is not yet known. Audio can be pulled from any video with Blender's
+  sequencer (no new install), which also suits the user's own phone clips.
+  UPDATE: the user says they or their gym filmed it. 10 real landings were found
+  by checking the video frames (0:03, 0:11, 0:16, 0:22, 0:27, 0:31, 0:37, 0:42,
+  1:00, 1:04; 0:16 is the least clear), cut and levelled for listening, NOT
+  uploaded and not in the repo. Limits: 0.15-0.93 s long because the reel's cuts
+  end them, background and possibly music underneath, thin above 6 kHz. Who owns
+  the music is unknown.
+  NEXT: the user listens and picks. Better source if they sound poor: the original
+  clips, before the music and editing. A swap is one line in MeetSoundConfig.
+  SONNISS GDC BUNDLES 2026-11-04: licence v2.0 and the track lists read. Downloaded
+  by the user pressing Save in the app's browser: 5 zips in
+  `D:\Powerlifting Roblox Extras\RobloxKits\Sonniss` (2017 part 1, 2018 parts 1-2,
+  2026 parts 4-5; contents listed and clean of program files, nothing run). 2019
+  part 8 (indoor stadium cheer) did not arrive: fetch only if the 2026 cheer is not
+  good enough. Candidates and 3 layered bar-landing drafts cut into a listening file
+  in the session scratchpad. NOT heard by Claude, NOT uploaded, NOT in the repo or
+  MeetSoundConfig. If used: keep private to the game, never on the Creator Store,
+  not in a public repo, no AI tools.
+  SONNISS SOUNDS IN THE GAME 2026-11-04: the user liked all the takes except a lone
+  plate or handle drop ("too underwhelming"), and asked for a loud thud that fits
+  the weight, sound in everything from now on, and backgrounds for the gym and meets.
+  Built by `art/scripts/make_meet_sounds.py` (WAVs and `Heavy_Thuds_Listen.wav` in
+  `D:\Powerlifting Roblox Extras\Sounds`, outside the public repo). 14 sounds uploaded
+  under the group (ids in `art/sounds/sonniss_sounds.json`), all set in
+  `MeetSoundConfig`: 4 deadlift thuds by weight (100/180/260 kg; a drop lands a size
+  bigger), rack, catch, clap, chime, buzzer, cheer, groan, and backgrounds for gym,
+  Local meet, State arena (Mock Meet rooms share the gym's, quieter).
+  `MeetSoundController` now crossfades between places. Warm-up racks and Mock Meet
+  lifts make bar sounds too (type-checked, NOT run in Studio).
+  TESTED IN STUDIO: all sounds load; gym background plays and crossfades to the meet
+  hall's on teleport. A real Studio meet (bars 22.5-27.5 kg) sent 7 BarThud1 and 1
+  BarThud2 (a drop lands a size bigger) plus every other cue, with no errors or
+  warnings. Thuds 3 and 4 were fired by hand and played; no real lift was heavy enough.
+  NOT HEARD by Claude and not yet by the user in the game. Nothing committed.
+  NOT DONE: no outdoor background. The gym's
+  box reaches X -219, past the building, so its background carries a little outside.
+  THUDS REBUILT 2026-11-04: the user rejected the first thuds because heavier ones were
+  just the same recording slowed down, out of step with the animation; they liked the
+  depth and wanted the bar's clacking kept the same. Now nothing recorded is slowed; one
+  shared bar part (same level in game) plus a deep part that grows with weight. Measured:
+  all four reach full loudness within 25 ms. 4 new ids uploaded and set. A dropped
+  deadlift's thud and groan now wait 0.3 s for the bar to fall (`DropFallSeconds`).
+  COMPUTER LIFTERS FIXED: every part of their bodies was anchored, so animations ran but
+  the bodies never moved, and the bar sat at their hanging hands (1.36 studs up at the
+  thud). `ComputerLifters.spawnBody` now anchors only the root. Real Studio meet: their
+  limbs move, and at each thud the bar is 0.00-0.24 studs above the floor. Not yet seen
+  by the user; their squat and bench poses and walks were not checked visually.
+  THUDS REJECTED AGAIN 2026-11-04: the long made boom (up to 2.5 s) still sounded slowed.
+  The user wants a normal bar drop plus deep plates, "heavier and more compact". Real
+  landings in their gym video fall 12 dB within 0.04-0.11 s. Options A and B built to
+  that (all 1.45 s, same bar); kept in `D:\Powerlifting Roblox Extras\Sounds\Options`.
+  OPTION A IN THE GAME 2026-11-04: the user chose A. They said B has the more realistic
+  sound of metal hitting the ground, but its quality isn't there (B came from their
+  video). Recipe now in `make_meet_sounds.py`, 4 new ids set, all four cue volumes 1.
+  Files are byte-identical to the A the user heard. Fired by hand in Studio; timing code
+  unchanged since the meet test, so no new meet was run. Not yet heard in the game.
+  METAL VERSIONS BUILT 2026-11-04, the user said to try: A plus a stack of 2-6 real plate
+  and handle hits within 25 ms (more for heavier). Moderate (`Thud_M1-4`) and Strong
+  (`Thud_S1-4`), with `Thud_Metal_Listen.wav`, all in `Sounds\Options`. Metal range
+  (800-3000 Hz) share at impact: A 6-21%, Moderate 14-31%, Strong 19-39%, real landings
+  median 24%. Top end above 3 kHz stays about 1% against about 12% in the video.
+  STRONG METAL IN THE GAME 2026-11-04: the user chose it over Moderate by ear. Recipe now
+  in `make_meet_sounds.py`, 4 new ids set in `MeetSoundConfig`, files byte-identical to
+  what the user heard. Plays in Studio; no full meet since, as the thud timing code is
+  unchanged. Not yet heard by the user at in-game volume.
+  GYM REP SOUNDS 2026-11-04: new client `src/client/Training/StationRepSounds.luau`
+  watches each lifter's rep animation and plays through `MeetSoundController.playRep`.
+  Moments and volumes in `MeetSoundConfig.TrainingReps`; new sound `BarShake` (the
+  approved rattle take); `TrainingStationService` marks the lifter `StationBarKg` (their
+  CN for the lift). TESTED through the real rack prompt and menu in Studio, one player:
+  deadlift thud at animation 4.22 with the bar on the floor, squat rattle at 1.92, bench
+  at 2.02, all at volume 0.6; a CN of 25 gives Thud 1, 300 set by hand gives Thud 4; no
+  errors or warnings. NOT TESTED: another player's reps (needs two players), and how a
+  full gym sounds. BarShake and all rep volumes not yet heard by the user.
+  SOUNDS ACCEPTED FOR NOW 2026-11-04: after the gym rep sounds the user said "Its okay
+  Lets move on", so no more sound work unless they raise it. Levels in the game can still
+  change if they say so.
+  COMMITTED 2026-11-04 with the user's approval on `main`, as "Make meets feel real: lift
+  and fail animations, computer lifter bodies, weight-based bar sounds" (run `git log -1`
+  for the hash). NOT PUSHED. All this uncommitted work went into one commit because the
+  features share files. Left out on purpose, still uncommitted: `.claude/` (personal hook
+  and settings), `art/previews/` (renders, never tracked), the test file
+  `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend` (changed, origin
+  unclear, ask the user) and `References/DBD.md` (the user's vault note, no content change).
+  NEXT: discuss why meets feel bland (the user's next topic).
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;

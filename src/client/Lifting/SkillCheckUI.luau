@@ -380,6 +380,8 @@ local function build(instructionText: string): Visuals
 		UIStyle.MinigameCentre,
 		UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT)
 	)
+	-- See-through, so the lift behind it still shows (user 2026-11-01).
+	UIStyle.seeThrough(holder, UIStyle.MinigameTransparency)
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Position = UIStyle.MinigameCentre
 

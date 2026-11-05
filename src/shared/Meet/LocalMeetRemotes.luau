@@ -69,6 +69,11 @@ LocalMeetRemotes.WARM_UP_LIFT = "LocalMeetWarmUpLift"
 LocalMeetRemotes.WARM_UP_LEAVE = "LocalMeetWarmUpLeave"
 LocalMeetRemotes.WARM_UP_STATE = "LocalMeetWarmUpState"
 LocalMeetRemotes.LEVEL_NEWS = "LocalMeetLevelNews"
+-- Client -> server, visual only: the live progress of the lifter's running minigame (0..1), so their character's
+-- lift follows it (GAME_DESIGN §37.5). Never decides anything.
+LocalMeetRemotes.LIFT_PROGRESS = "LocalMeetLiftProgress"
+-- Server -> clients, sound only: a meet sound cue (MeetSoundConfig) and where it happened.
+LocalMeetRemotes.SOUND = "LocalMeetSound"
 
 export type RemoteSet = {
 	leave: RemoteEvent,
@@ -85,12 +90,14 @@ export type RemoteSet = {
 	warmUpLeave: RemoteEvent,
 	warmUpState: RemoteEvent,
 	levelNews: RemoteEvent,
+	liftProgress: RemoteEvent,
+	sound: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
-	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS }
+	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND }
 
 --[[
 	The timetable and sign-ups, server -> client, sent when they change.
@@ -222,6 +229,8 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		warmUpLeave = get(LocalMeetRemotes.WARM_UP_LEAVE),
 		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
 		levelNews = get(LocalMeetRemotes.LEVEL_NEWS),
+		liftProgress = get(LocalMeetRemotes.LIFT_PROGRESS),
+		sound = get(LocalMeetRemotes.SOUND),
 	}
 end
 
@@ -246,6 +255,8 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		warmUpLeave = get(LocalMeetRemotes.WARM_UP_LEAVE),
 		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
 		levelNews = get(LocalMeetRemotes.LEVEL_NEWS),
+		liftProgress = get(LocalMeetRemotes.LIFT_PROGRESS),
+		sound = get(LocalMeetRemotes.SOUND),
 	}
 end
 

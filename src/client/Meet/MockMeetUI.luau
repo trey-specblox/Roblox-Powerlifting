@@ -72,6 +72,8 @@ export type Ui = {
 local ACTION_WIDTH, ACTION_TALL, ACTION_SHORT = 520, 230, 170
 -- While choosing a weight the panel is bigger, so everything in it can be read at a glance.
 local CHOOSE_WIDTH, CHOOSE_TALL = 660, 380
+-- THE RACE block (Local meet): the choose panel grows by this much to fit it above CONFIRM.
+local RACE_TALL = 94
 -- The QUICK PICK buttons: these shares of the lift's CN (inside the meet's 40-125%).
 local QUICK_PICKS = { 0.90, 0.95, 1.00, 1.05, 1.10, 1.15, 1.20, 1.25 }
 local WEIGHT_STEP_KG = MockMeetConfig.WeightStepKg
@@ -238,6 +240,22 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		table.insert(picks, pick)
 	end
 
+	-- THE RACE (Local meet only, user 2026-11-01): what this weight does for your place, in plain kilograms.
+	local race = UIStyle.frame(choose, "Race", UDim2.new(0, 22, 1, -60 - RACE_TALL - 8), UDim2.new(1, -44, 0, RACE_TALL),
+		C.navyDeep)
+	UIStyle.stroke(race, C.yellow, 2, 0)
+	race.Visible = false
+	UIStyle.sectionHead(race, "RaceHead", "THE RACE", UDim2.fromOffset(10, -12), 96, nil, "bar")
+	local raceMade = UIStyle.label(race, "IfMade", UDim2.fromOffset(12, 16), UDim2.new(1, -24, 0, 26), C.white,
+		UIStyle.heading())
+	raceMade.RichText = true
+	local raceMissed = UIStyle.label(race, "IfMissed", UDim2.fromOffset(12, 44), UDim2.new(1, -24, 0, 20), C.muted,
+		UIStyle.heading())
+	raceMissed.RichText = true
+	local raceTargets = UIStyle.label(race, "Targets", UDim2.fromOffset(12, 68), UDim2.new(1, -24, 0, 20), C.yellow,
+		UIStyle.heading())
+	raceTargets.RichText = true
+
 	local hint = UIStyle.label(choose, "Hint", UDim2.fromOffset(22, 296), UDim2.new(1, -44, 0, 18), C.muted)
 	local confirm = UIStyle.button(choose, "Confirm", "CONFIRM", UDim2.new(0, 22, 1, -60), UDim2.new(1, -44, 0, 44),
 		"primary", handlers.confirm)
@@ -339,6 +357,84 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		end
 	end
 
+	--[[
+		THE RACE: where `kg` would put the lifter if made (and if missed), and
+		the weight each podium place needs, from the server's RaceView: each
+		rival's "lightest weight that passes them". Nothing to work out by hand.
+	]]
+	local function ordinal(place: number): string
+		local suffix = "TH"
+		if place % 100 < 11 or place % 100 > 13 then
+			suffix = if place % 10 == 1 then "ST" elseif place % 10 == 2 then "ND" elseif place % 10 == 3 then "RD" else "TH"
+		end
+		return tostring(place) .. suffix
+	end
+	local function coloured(text: string, colour: Color3): string
+		return string.format('<font color="#%s">%s</font>', colour:ToHex(), text)
+	end
+	local function drawRace(view: MockMeetRemotes.RaceView?, kg: number?, maxKg: number)
+		race.Visible = view ~= nil
+		if view == nil then
+			return
+		end
+		if #view.rivals == 0 then
+			raceMade.Text = "NOBODY HAS A SCORE YET"
+			raceMissed.Text = if view.mustMake then coloured("MISS IT AND YOU BOMB OUT", C.red)
+				else "A SAFE OPENER (ABOUT 90% OF YOUR CN) GETS YOU ON THE BOARD"
+			raceTargets.Text = ""
+			return
+		end
+		-- The rivals ahead of you, by the weight that passes them.
+		local ahead: { MockMeetRemotes.RaceRival } = {}
+		for _, rival in ipairs(view.rivals) do
+			if rival.needKg > 0 then
+				table.insert(ahead, rival)
+			end
+		end
+		table.sort(ahead, function(a, b)
+			return a.needKg < b.needKg
+		end)
+		local behind = #view.rivals - #ahead
+		-- If made: everyone still ahead of this weight stays ahead.
+		if kg then
+			local stillAhead, passed = 0, {}
+			for _, rival in ipairs(ahead) do
+				if rival.needKg > kg + 1e-6 then
+					stillAhead += 1
+				else
+					table.insert(passed, rival.name)
+				end
+			end
+			local place = 1 + stillAhead
+			local colour = if place == 1 then C.yellow elseif place <= 3 then C.white else C.muted
+			raceMade.Text = "IF MADE  " .. coloured(ordinal(place) .. " PLACE", colour)
+				.. (if #passed > 0 then "  ·  PASSES " .. string.upper(table.concat(passed, ", ")) else "")
+		else
+			raceMade.Text = "TYPE A WEIGHT TO SEE WHERE IT PUTS YOU"
+		end
+		-- If missed: where you are now (or a bomb-out).
+		if view.mustMake then
+			raceMissed.Text = "IF MISSED  " .. coloured("BOMB OUT: NO TOTAL, NO PLACE", C.red)
+		elseif view.place then
+			raceMissed.Text = "IF MISSED  STAY " .. ordinal(view.place)
+		else
+			raceMissed.Text = "IF MISSED  STILL NO SCORE"
+		end
+		-- What each podium place needs this attempt.
+		local parts = {}
+		for place = 1, math.min(3, #ahead + behind + 1) do
+			local index = #ahead - (place - 1)
+			if index < 1 then
+				-- Fewer rivals ahead than this place: it is already yours, or (no score yet) any good lift takes it.
+				table.insert(parts, ordinal(place) .. (if view.place then " ALREADY YOURS" else " ANY GOOD LIFT"))
+				break
+			end
+			local need = ahead[index].needKg
+			table.insert(parts, ordinal(place) .. " " .. (if need <= maxKg + 1e-6 then kgText(need) .. " KG" else "OUT OF REACH"))
+		end
+		raceTargets.Text = "NEEDED FOR  " .. table.concat(parts, "   ·   ")
+	end
+
 	local function setBanner(text: string, background: Color3, ink: Color3)
 		bannerText.Text = text
 		banner.BackgroundColor3 = background
@@ -357,10 +453,19 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		drawScorecard(state, chosenKg)
 
 		local tall = state.phase == "Choose" or state.phase == "Ready"
-		actionHolder.Size = if state.phase == "Choose" then UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL)
+		actionHolder.Size = if state.phase == "Choose"
+			then UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL + (if state.race then RACE_TALL + 26 else 0))
 			else UDim2.fromOffset(ACTION_WIDTH, if tall then ACTION_TALL else ACTION_SHORT)
 		choose.Visible = state.phase == "Choose"
 		show.Visible = state.phase ~= "Choose"
+		-- Choosing a weight: in the middle of the screen (user 2026-11-01); otherwise along the bottom.
+		if state.phase == "Choose" then
+			actionHolder.AnchorPoint = Vector2.new(0.5, 0.5)
+			actionHolder.Position = UDim2.fromScale(0.5, 0.5)
+		else
+			actionHolder.AnchorPoint = Vector2.new(0.5, 1)
+			actionHolder.Position = UDim2.new(0.5, 0, 1, -30)
+		end
 		if state.phase == "Ready" and lastPhase ~= "Ready" then
 			liftArmedAt = os.clock() + LIFT_ARM_SECONDS
 			liftButton.BackgroundTransparency = 0.55
@@ -368,7 +473,8 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 				liftButton.BackgroundTransparency = 0
 			end)
 		end
-		liftButton.Visible = state.phase == "Ready"
+		-- The Local meet starts the lift by itself once the lifter is set up (`autoLift`, user 2026-11-01): no LIFT.
+		liftButton.Visible = state.phase == "Ready" and not state.autoLift
 
 		-- Hidden while lifting, and while the lift's own verdict is still on screen.
 		if state.phase == "Lifting" then
@@ -448,6 +554,7 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 				button.TextColor3 = if selected then C.ink elseif allowed then C.white else C.muted
 				button.TextTransparency = if allowed then 0 else 0.5
 			end
+			drawRace(state.race, kg, state.maxKg or math.huge)
 			hint.Text = problem or "Type a weight or pick one, then press Enter or CONFIRM"
 			hint.TextColor3 = if problem then C.red else C.muted
 			confirm.BackgroundTransparency = if problem or kg == nil then 0.5 else 0
@@ -458,7 +565,8 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		elseif state.phase == "Ready" then
 			stepTag.Text = attemptText
 			setBanner("BAR LOADED  ·  " .. kgText(state.declaredKg or 0) .. " KG", C.white, C.ink)
-			sub.Text = "Your coach is watching. Press LIFT when you are ready."
+			sub.Text = if state.autoLift then "Walk out to the bar. Wait for the referee's command."
+				else "Your coach is watching. Press LIFT when you are ready."
 		elseif state.phase == "Result" then
 			stepTag.Text = attemptText
 			local good = state.verdict == "GoodLift"

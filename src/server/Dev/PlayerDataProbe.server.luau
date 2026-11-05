@@ -61,6 +61,7 @@ local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperatio
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
 local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
+local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
 local ProgressionReferenceConfig = require(ConfigFolder:WaitForChild("ProgressionReferenceConfig"))
 
 local passed = 0
@@ -289,9 +290,9 @@ local DAY = 86400
 
 print("=== Player data persistence probe ===")
 print(string.format(
-	"schema version %d  |  meet allowance %.0f%% a day, %d days",
+	"schema version %d  |  meet allowance %gx a day of training, %d days",
 	PlayerProfileSchema.CURRENT_VERSION,
-	ProgressionConfig.MeetCnAllowance.PercentPerDay * 100,
+	ProgressionConfig.MeetCnAllowance.TrainingDaysPerDay,
 	ProgressionConfig.MeetCnAllowance.MaxDays
 ))
 print("")
@@ -1772,19 +1773,25 @@ print("")
 print("47. settling a meet against the allowance (MeetCnAllowance, 33.3b)")
 do
 	local NOW = 1761800000
-	-- A 100 kg squat in the 83 kg class, far below the record: one day is worth about 4%.
+	-- A 100 kg squat in the 83 kg class, far below the record.
 	local function freshData(): any
 		local data = reconciledV5Save(100, 100, 100, 82.4)
 		PlayerProfileSchema.migrate(data, 5)
 		return data
 	end
-	local daily = MeetCnAllowance.dailyShare("Squat", "83 kg", 100) :: number
-	check("far from the record a day is worth almost 4%", daily ~= nil and daily > 0.035 and daily <= 0.04,
-		tostring(daily))
+	-- One day = 2x what a full day of training gives the lift (GAME_DESIGN §37.1), as a share of CN.
 	local reference = ProgressionReferenceConfig.get("Squat", "83 kg") :: number
-	check("at 0.75 of the reference a day is worth 2% (training's curve)",
-		near(MeetCnAllowance.dailyShare("Squat", "83 kg", reference * 0.75) :: number, 0.02))
+	local function trainingDayShare(cn: number): number
+		local pp = cn / reference
+		local ev = ProgressionConfig.DailyTraining.DailyCapEV / 3
+		return reference * ProgressionConfig.BaseProgressRate * ev * CompetitionNumberReward.hill(pp) / cn
+	end
+	local daily = MeetCnAllowance.dailyShare("Squat", "83 kg", 100) :: number
+	check("a day is worth 2x a day of training", daily ~= nil and near(daily, 2 * trainingDayShare(100)), tostring(daily))
+	check("and 2x near the record too (training's curve)",
+		near(MeetCnAllowance.dailyShare("Squat", "83 kg", reference * 0.75) :: number, 2 * trainingDayShare(reference * 0.75)))
 	check("the unlimited class has no allowance", MeetCnAllowance.dailyShare("Squat", "120+ kg", 100) == nil)
+	check("a 100 kg squat's day is a few percent", daily > 0.02 and daily < 0.08, tostring(daily))
 
 	local function settle(data: any, history: any, raises: boolean): (string, number?, number)
 		return ProfileOperations.settleMeetCompetitionNumber(data, "83 kg", "Squat", 100, history, raises, NOW)
@@ -1820,8 +1827,16 @@ do
 		and near(daysLeft(d5), 3 - 0.06 / daily))
 
 	local d6 = freshData()
-	settle(d6, { { weightKg = 105, result = "GoodLift" }, { weightKg = 112.5, result = "NoLift" } }, true)
-	check("in order: good 105 then a miss at 112.5 uses the rest", near(squat(d6), 105) and near(daysLeft(d6), 0))
+	settle(d6, { { weightKg = 105, result = "GoodLift" }, { weightKg = 125, result = "NoLift" } }, true)
+	check("in order: good 105 then a miss at 125 uses the rest", near(squat(d6), 105) and near(daysLeft(d6), 0))
+
+	-- A meet with one real player (§37.1): every raise costs twice the days.
+	local solo = ProgressionConfig.MeetCnAllowance.SoloCostMultiplier
+	local d8 = freshData()
+	outcome, cn, used = ProfileOperations.settleMeetCompetitionNumber(d8, "83 kg", "Squat", 100,
+		{ { weightKg = 102.5, result = "GoodLift" } }, true, NOW, solo)
+	check("alone with computer lifters: the same raise costs twice the days", outcome == "Raised"
+		and near(squat(d8), 102.5) and near(used, solo * 0.025 / daily), tostring(used))
 
 	local d7 = freshData()
 	d7.builds["83 kg"].meetAllowance.Squat = { amount = 0, lastUpdatedUnix = NOW }

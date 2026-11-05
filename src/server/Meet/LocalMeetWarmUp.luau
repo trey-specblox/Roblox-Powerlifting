@@ -30,6 +30,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
+local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
@@ -190,6 +191,12 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 			end
 			use.lifting = false
 			use.last = { lift = lift, weightKg = kg, good = verdict == "GoodLift" }
+			-- The bar's sound, for everyone in earshot. Sound only.
+			local character = player.Character
+			if character then
+				remotes.sound:FireAllClients(MeetSoundConfig.endOfLiftCue(lift, verdict == "GoodLift", 1, kg),
+					character:GetPivot().Position)
+			end
 			sendState(player)
 		end)
 		if not started then

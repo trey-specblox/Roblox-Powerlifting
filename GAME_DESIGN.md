@@ -2163,7 +2163,7 @@ Worlds and Sheffield come later and are untouched here.
 |---|---|
 | Turns | **Everyone lifts together.** Each lifter has their own platform, side by side; every lifter takes squat attempt 1 at the same time, then attempt 2, and so on (9 rounds). A whole meet takes about 15 minutes even with 8 players. Chosen over one platform with the lightest bar first (about 50 minutes for 8 players) |
 | Placing | **One ranking by score** for everyone in the meet: **Score = Total ÷ the weight class's score Total**, shown as a percentage. The score Totals are made-up, evenly spaced numbers for Local and Regional meets (user, 2026-11-01; `MeetLevelConfig.ScoreTotals`): about 8% more per class, 59 kg 670 · 66 kg 725 · 74 kg 780 · 83 kg 845 · 93 kg 915 · 105 kg 985 · 120 kg 1065 · 120+ kg 1150, so no class scores more easily than its neighbours. (Until 2026-11-01 this used `ReferenceRecordConfig`'s real records, which were uneven: 83 kg was below 74 kg. Those still drive difficulty, prestige and Sheffield, §32.4.) A light lifter can beat a heavy one, and a lifter alone in their class does not win automatically. Class winners are shown too. A bomb-out has no score and no place. **Ties: more good lifts first** (user, 2026-11-01: on an equal score 9/9 beats 8/9; good lifts do not outrank score, so heavy third attempts stay worth taking), then **[PROVISIONAL]** the lighter bodyweight, as in real meets |
-| Start | **On a timer.** A Local meet starts every **10 minutes** if at least **2 real players** (`MeetConfig.OfficialLocalMeetMinimumRealPlayers`) have signed up at the sign-up desk; sign-ups close **1 minute** before the start. Fewer than 2: no meet, and the sign-ups carry to the next start. **[PROVISIONAL]** times |
+| Start | **[CHANGED BY THE USER, 2026-11-01: a meet runs with 1 real player, and computer lifters fill it up to 4; 2 real players now only gate the full rewards. See §37.2.]** **On a timer.** A Local meet starts every **10 minutes** if at least **2 real players** (`MeetConfig.OfficialLocalMeetMinimumRealPlayers`) have signed up at the sign-up desk; sign-ups close **1 minute** before the start. Fewer than 2: no meet, and the sign-ups carry to the next start. **[PROVISIONAL]** times |
 | Venue | **A separate building on the same server**, reached through a door from the gym (like the Mock Meet rooms), so friends and chat stay together. Not a separate Roblox place. Modelled in Blender like the rest of the map (§15's list: platforms, judges, seating, scoreboard, attempt board, warm-up, awards area) |
 | Rules inside a meet | Everything the Mock Meet already has: weigh-in with the class locked, 3 attempts per lift in 2.5 kg steps inside 40-125% of CN, a choose timer and a ready timer, the existing minigames. **Plus three referees with lights** (official meets keep referees, §29.10) and the coach watching |
 | What it saves | §33.3b in full: CN raises within the daily allowance, misses above CN use it, Competition Scale and best Total, and **a bomb-out or leaving early saves nothing**. A **win** (1st place in a meet with at least 2 real players) counts toward the 10 Local wins that unlock Nationals (`MeetConfig.LocalVictoriesForNationals`) |
@@ -2740,6 +2740,8 @@ and players a reason to enter meets.
   reward can never buy anything that adds strength.
 - **Where coins come from (first build):** official meets only (the ones that
   reward: at least 2 real players, §29.10). Solo / Mock Meets pay **nothing**.
+  **[CHANGED BY THE USER, 2026-11-01]:** a meet with **1 real player** and
+  computer lifters pays the finishing and 9/9 coins only (§37.2).
   - **Prize pot** (§30.3): a base pot plus an amount per **qualified** lifter, a
     lifter who took at least one attempt (withdrawing before the first lift does
     not count, so empty sign-ups cannot grow the pot). It is split by **place**
@@ -3641,7 +3643,7 @@ repeated raises.
 | Which meets | **Only meets against other players** (Local, Nationals, Worlds, Sheffield and any later multi-player meet). The **solo Mock Meet never raises CN**; it only raises Competition Scale (§33.7) |
 | What a good lift does | A **good** lift above the lift's current CN raises CN **all the way to the weight lifted** (200 kg CN and a good 250 kg lift: CN 250 kg). A failed lift does nothing (§33.6). CN never goes down |
 | ~~The weekly limit~~ | ~~at most +25% per lift per week~~ **[CHANGED BY THE USER, 2026-10-29: daily instead of weekly, "so players can have a NEED to play the game"; a weekly limit lets a once-a-week player gain as much as a daily one]** |
-| The daily allowance | Each lift's allowance **refills +4% of its CN per day** and **stacks for up to 3 days** (at most +12% waiting). One maximum-risk lift can use all that is waiting; several small raises add up to the same. Missing a day is not wasted; more than 3 days off is. **[PROVISIONAL]** values (user picked from options, 2026-10-29) |
+| The daily allowance | **[CHANGED BY THE USER, 2026-11-01: a day is now worth 2× a full day of gym training for that lift, half in a meet with only one real player; see §37.1. The rest of this row still holds.]** Each lift's allowance **refills +4% of its CN per day** and **stacks for up to 3 days** (at most +12% waiting). One maximum-risk lift can use all that is waiting; several small raises add up to the same. Missing a day is not wasted; more than 3 days off is. **[PROVISIONAL]** values (user picked from options, 2026-10-29) |
 | Near the world record | The daily allowance **gets smaller the closer the lift's CN is to the weight class's world-record level** (the Progression Reference, §29.4), **on the same curve training uses** (user, 2026-10-29): one day is worth `4% x Hill(PP)` (§29.3), so about +4% far from the reference, +2% at 0.75 of it, under +1% at the reference, never zero. The unlimited class (120+ kg) has no reference, so meets never raise its CN, as training never does |
 | Refill | **Smoothly all day** (user, 2026-10-29): one day's worth every 24 hours, offline too, no reset time. Stored as days saved up (0 to 3); what a day is worth uses the lift's CN **at the time it is used** |
 | When it is used up | **Meet raises stop** for that lift until it refills (no tapering). A raise that would pass what is left is cut to what is left |
@@ -4300,6 +4302,9 @@ being tuned away.
 > **⚠ CHANGED BY THE USER, 2026-10-29:** meets **against other players** are now a
 > second, limited CN source (§33.3b). Gym training stays the only CN source
 > everywhere else, and every other prohibition below still holds.
+>
+> **⚠ CHANGED BY THE USER, 2026-11-01:** meets are now the **main** CN source,
+> about 2/3 of it for a player who does both (§37.1).
 
 **[FINAL]** Competition Number is awarded **only** by training at an eligible gym
 training station.
@@ -4604,6 +4609,9 @@ honest one.
 > successful attempt is 36.00 for a 9-for-9 meet, and the 60.00 daily cap binds
 > partway into a second one — but whether that is generous or stingy is unknowable
 > until a meet takes a measurable number of minutes. **[TBD]** — §34.13.
+
+> **⚠ Superseded:** meets against other players raise CN since §33.3b
+> (2026-10-29), and are the main CN source since §37.1 (2026-11-01).
 
 **[FINAL] Meets award no Competition Number.** §33.3, restated here because this
 is the section that gives meets a progression reward, and the two must not be
@@ -5827,3 +5835,461 @@ in their weight class and stay in it. This reopens the ladder points
   crates and spectator help.
 - The badge's look and where it shows (nameplate, STATS, both).
 - The open questions in §36.2 (voice cheering, music, crates).
+
+## 37. Meets as the main strength source, and meets that always run (user, 2026-11-01)
+
+**Why (user, 2026-11-01):** "i want meets to be the main source of gaining
+stats", and meets must keep players playing. The crate loop (§35.9) also
+depends on meets, since they are the coin source. Two problems stood in the
+way:
+
+- **Training was the bigger, steadier strength source.** §33.3b's meet
+  allowance was a flat +4% of CN per day, so early on training gave more.
+- **A meet needed 2 real players.** On a quiet server nothing ran, and no
+  strength, coins or ladder points came in.
+
+**Which meets this covers:**
+
+- **§37.1 (the strength split): every meet against other players, now and
+  later:** Local, Regional, State, and Nationals, Worlds and Sheffield when
+  they are built (the meets §33.3b already covered). Mock Meets still raise
+  no CN.
+- **§37.2 (computer lifters): the timed Local meets only**, which includes
+  the Regional meets rolled there (§35.8). Local and Regional are where
+  anyone can keep playing and grinding strength at any time (user,
+  2026-11-01: "giving them a way to have a choice to stay on the game
+  grinding stats"). **State, Nationals, Worlds and Sheffield are real players
+  only, never computer lifters** (user, 2026-11-01: "i want Nationals,
+  Worlds, SHeffield to be competetive with real players"; "I want State,
+  Nationals, Worlds, Sheffield. To be real players only"). [FINAL]
+
+### 37.1 Meets give most of the strength (user, picked from options)
+
+| Question | Decision |
+|---|---|
+| **The split** | **About 2/3 of a player's strength comes from meets, 1/3 from gym training**, for a player who does both fully. Training stays as the steady source for days without meets |
+| **The rule** | **A day's meet allowance for a lift is worth 2× what a full day of gym training gives that lift.** In kg: `2 × the lift's Progression Reference × BaseProgressRate × (DailyCapEV ÷ 3) × Hill(PP)`, the training formula of §29.3 / §34 for one lift's share of the daily EV cap. This replaces §33.3b's flat "+4% of CN per day". Because it follows the training formula, it follows any retune of `BaseProgressRate` automatically, and it shrinks near the world-record level on the same curve as before. **[PROVISIONAL]** factor 2 |
+| **Unchanged from §33.3b** | Strength comes only from a **good lift above the lift's CN**, up to the weight lifted. A miss above CN uses the allowance it would have used. A bomb-out saves nothing. The allowance stacks for up to **3 days**. Mock Meets (alone, §29.10) raise no CN. Training keeps its own 4.00 EV daily cap; the two do not share a limit |
+| **Meets with only one real player** (§37.2) | **Count half:** a raise there **uses twice the allowance**, so a player alone gets about a 50/50 split with training. Playing with real people is the faster way up. **[PROVISIONAL]** |
+
+### 37.2 Meets always run: computer lifters fill empty spots (user, picked from options)
+
+| Question | Decision |
+|---|---|
+| **When a meet runs** | Every timed Local meet (§29.10) **runs with at least 1 real player** signed up. Empty spots fill with **computer lifters** up to **4 lifters in total**. With 4 or more real players, no computer lifters join |
+| **What a computer lifter is** | A lifter the server runs. It weighs in, chooses its attempts and lifts on its own platform alongside everyone else (everyone lifts together, §29.10, so the meet takes no longer), with judges' lights and a place on the board. The server decides its results; no client is involved |
+| **How strong they are** | **Near the real lifters' level:** their scores land a bit below to a bit above the real lifters' expected scores, so placing is a real race every meet. **[PROVISIONAL]** spread |
+| **Computer lifters never take a reward from a real player** | Prize-pot shares, ladder place points, titles and Local wins go by the **real lifters' order among themselves**. The pot counts real lifters only. The board still shows the full placing, computer lifters included. **[PROVISIONAL]** (follows from the decisions above) |
+| **What a meet with only 1 real player pays** | **Reduced**, so nobody farms an empty server: **coins for finishing and for 9/9**, **ladder points for finishing** (times the level), Competition Scale, and strength at half (§37.1). **No prize pot, no gym record bonus or wall entry, no titles, no Local win:** those still need **2 or more real players** |
+| **Meets with 2 or more real players** | Pay in full as before (§29.10, §30.6, §35.8), whether or not computer lifters fill the rest |
+
+**[WOULD CHANGE, follows from the above]:**
+
+- §29.10's start rule ("at least 2 real players, or no meet") becomes "at
+  least 1 real player". The 2-real-player rule now only gates the full
+  rewards.
+- §30.6's "official meets only (at least 2 real players)" now also pays the
+  reduced amounts above in a meet with 1 real player.
+- §33.3b's daily allowance row is replaced by §37.1's rule.
+
+> **Built (2026-11-01): §37.1 and §37.2.**
+>
+> - **The allowance:** `ProgressionConfig.MeetCnAllowance.TrainingDaysPerDay`
+>   is 2, and `SoloCostMultiplier` is 2.
+> - **The computer lifters** live in `ComputerLifters` and are set up in
+>   `LocalMeetConfig.ComputerLifters`:
+>   - Each copies a real lifter's class and CN ×0.92–1.08.
+>   - Its attempts aim at 90 / 96 / 102% of its CN, made 95 / 85 / 60% of
+>     the time, and it repeats the weight after a miss.
+>   - It has a made-up first name marked "(CPU)" (Claude's recommendation,
+>     taken while building) and a plain avatar in a coloured singlet that
+>     stands on its platform. It has no lift animation yet.
+> - **The meet** runs with 1 real player and fills to 4.
+>
+> TESTED in Studio:
+> - The save checks passed: 535 passed, 0 failed.
+> - A live Local meet with 1 real player and 3 computer lifters ran to the
+>   end. The board showed the (CPU) names, there was no prize pot, and the
+>   bodies were cleared.
+>
+> NOT tested yet: a real player finishing with a total alone (the
+> half-speed CN, finishing coins and ladder points in a live meet), and a
+> meet with 2 real players plus computer lifters.
+
+### 37.4 Understanding the meet (user, 2026-11-01)
+
+The user found the Local meet hard to follow:
+
+- every platform's coach talking fills the screen;
+- nobody can work out the score %, so it is unclear what weight wins or
+  keeps a podium place;
+- the coach should say when a rival misses, so the lifter can go up and
+  take the lead.
+
+| Rule | Decision |
+|---|---|
+| **Private coach** | Each lifter's coach (its name tag and speech bubble) shows **only on that lifter's own screen**. A computer lifter's coach says nothing. |
+| **THE RACE** (on the weight-choosing panel) | It says in **plain kilograms**, with no % to work out: **IF MADE** (your place with this weight, and who you pass), **IF MISSED** (you stay where you are, or "BOMB OUT" on a last attempt with no good lift yet), and **NEEDED FOR 1ST / 2ND / 3RD** (the weight each place needs, or "OUT OF REACH"). It compares everyone's **best lifts so far** (the others lift this round too) and converts between weight classes automatically. |
+| **The coach as you choose** | In this order: a bomb-out warning; a rival ahead who just missed ("Silas (CPU) missed 27.5 kg! 25 kg takes 3rd."); the weight that passes the next lifter; "out of reach, lock in your spot"; or "You're in the lead". After a bomb-out the coach says the lifts are practice. |
+
+> **Built (2026-11-01).**
+>
+> - **Private coach:** `LocalMeetVenue.coachFor` moves the coach's bubble
+>   into the lifter's own screen.
+> - **The race:** `LocalMeetService.raceFor` works it out and
+>   `coachLineFor` picks the coach's line. They are sent as `race` (a
+>   `MockMeetRemotes.RaceView`) with the Choose state, and `MockMeetUI`
+>   draws it in the panel's "THE RACE" block.
+>
+> TESTED in Studio: the race panel showed the right places (a tie loses on
+> the tie-break), the coach's miss call-out appeared, and no coach bubbles
+> were left in the shared world.
+>
+> The meets still feel bland overall. The user wants a separate discussion
+> about meet quality.
+
+### 37.5 Meet presentation: real lifts on the platform (user, 2026-11-01)
+
+The user, from screenshots of a Local meet:
+
+- "we have no animation... im just watching my self do nothing";
+- the lifter shouldn't stand on the platform choosing a weight;
+- the referees and coach are in the wrong places;
+- "everything should be the same" as the gym training racks.
+
+Decisions:
+
+| Rule | Decision |
+|---|---|
+| **Where you wait** | While choosing a weight you stand **behind the platform, in the warm-up area near the entrance**, not on the platform. On the bar-loaded call you **walk out** onto the platform. |
+| **The coach** | Stands **at the entrance you walk out from**, with the supportive text (only you see it, §37.4). |
+| **The referees** | Around the platform: **one left, one in the middle (in front), one right**. |
+| **The rack** | The same as the gym's training racks (§34.12 decision 15): for squat and deadlift the **bench disappears**, the J-cups sit at the lift's height, and the bar follows the lifter's hands. |
+| **The lift is animated** | You **do the lift**. The animation follows the minigame: the **first part of each lift is the descent** (squat down, bar to chest; the pull for deadlift), and how far you have gone matches how long you take on that part. The second part is the drive back up or the lockout. **No up-and-down movement of the character itself** (no looping reps, no bobbing), for realism. |
+| **Referee commands** | As in real powerlifting: **Squat:** "SQUAT" (descend, hit depth, stand) then "RACK". **Bench:** "START" (lower the bar to the chest), a pause until the bar is motionless, "PRESS", then "RACK". **Deadlift:** no start command, the lifter pulls when ready, then "DOWN". Only the lifter sees the commands. |
+| **A failed lift** | Plays a **fail animation for that lift**. |
+| **Computer lifters** | The **same everything**: walk-out, rack setup, lift animations, commands and fail animations. |
+| **Screen space** | "I dont want UI filling up peoples screens blocking the view." The referee and coach tags, the coach's words and the commands show **only on the lifter's own screen**. |
+
+**Later (user):** unboxable **failure animations, celebrations and emotes**
+that players unlock. So the fail and celebration animations are chosen per
+player (a default now), never hard-wired.
+
+> **Built (2026-11-01): step 1, the staging.**
+>
+> - **Waiting and walking:** each lifter waits in the warm-up room, 5 studs
+>   behind the doorway beside their platform. On the bar-loaded call they
+>   walk out: through the doorway, onto the platform's back corner, round
+>   the rack, to the lift spot. Players walk with their own character;
+>   computer lifters use Roblox's R15 walk animation. Each lifter walks back
+>   once their own lights have shown.
+> - **The rack** uses `StationVisuals`, like the gym racks: no bench for
+>   squat or deadlift, the J-cups at the lift's height, and a loaded bar.
+> - **Staff:** the referees sit left, in front and right; the coach stands
+>   at the doorway. All their tags show only on the lifter's own screen
+>   (`LocalMeetVenue.staffFor`); a computer lifter's staff show none.
+>
+> TESTED in Studio:
+>
+> - Computer lifters and the test player walked out and back every round.
+> - Screenshots showed the left / middle / right referees, the coach by the
+>   doorway, and the squat rack without its bench.
+>
+> NOT YET: the lift animations, the referee commands, and the fail
+> animations (steps 2–4).
+
+> **Built (2026-11-01): step 2, the lift and the commands.**
+>
+> - **Setup:** on arriving the lifter is set up for the lift
+>   (`MeetLiftAnimation`). Squat: walked out in front of the rack. Deadlift:
+>   behind the floor bar. Both face the head referee (Claude's choice for
+>   realism; the gym racks face the rack). Bench: lying under the bar. The
+>   lifter is held still.
+> - **The lift:** the server plays the gym rep animation one stage at a time
+>   (`StationAnimationConfig.MeetStages`):
+>   - each minigame phase moves it through its stretch over that phase's
+>     time, then holds it;
+>   - a good lift then plays its finish;
+>   - a miss holds where it stopped (until step 4's fail animations).
+> - **The bar** follows the lifter's hands on every screen, as at the gym
+>   (`StationPoseAnimator`).
+> - **Commands:** the head referee says them in a bubble only the lifter
+>   sees (`LocalMeetConfig.RefereeCommands`).
+> - **Walking:** staff figures and computer lifters are in a collision group
+>   that touches nothing, and the walk squares off the platform's back edge,
+>   so lifters can't get stuck or trip. While on a platform, a lifter can't
+>   fall over.
+>
+> TESTED in Studio (automated player, so every minigame failed):
+>
+> - The squat was set up facing the head referee; its descent moved steadily
+>   through phase 1 (6 s) and held at the bottom.
+> - Bench: lying on the bench with "START!" in the head referee's bubble.
+> - Deadlift: behind the bar, bench hidden.
+> - The walk out and back no longer gets stuck.
+>
+> NOT TESTED yet:
+>
+> - a GOOD lift's finish and the "RACK!" / "PRESS!" / "DOWN!" timing (that
+>   needs someone playing the minigames);
+> - how the lift looks to a second player;
+> - the look of the animations (the user's visual check).
+
+**Changes after the user's play test (user, 2026-11-01, screenshots):**
+
+| Rule | Decision |
+|---|---|
+| **The rack faces the entrance** | "with the rack facing the entrance": the lifter walks **straight** from the doorway, along behind the platform to its middle, and in to the bar, never round to the front. Every lift faces the rack (as at the gym racks), and through it the head referee. |
+| **No LIFT button** | "its useless": the lift starts by itself once the lifter is ready at the bar. |
+| **Squat** | Walk in under the bar, unrack, **step slowly back from the rack** with the bar on the back, settle into the stance, **then "SQUAT!"**, then the lift. |
+| **Bench** | Lie down, **unrack and get steady, then "START!"**. |
+| **Deadlift** | Set up behind the bar; no start command. |
+| **Walking** | "one fluid walk, maybe slow it down": no stops at the corners, and a calmer pace (9 studs per second instead of 16) for players and computer lifters alike. |
+| **Minigame panels** | **See-through**, so the lift behind them shows. |
+| **The weight-choosing panel** | **In the middle of the screen.** |
+| **Menu hot keys** | C, T and Y no longer open STATS, TELEPORT or GEAR **during a lift** (they hid the deadlift lockout while typing). |
+| **Computer lifters** | Do the same lift: the same setup, unrack and stages over their lift time, the same finish. Still to do: real avatars, emotes and random gear. |
+| **Fail animations** | Still to make. The user will send a video of a real meet's fail as the reference: a squat stuck at the bottom, a bench sinking, a deadlift's soft knees. Like all animations, they are made in Blender and published in Studio under the game's group. The squat's step-back and the bench unrack are approximations until their own animations are made the same way. |
+
+> **Built (2026-11-01): the changes above** (except the fail animations,
+> the step and unrack animations, and the computer lifters' avatars).
+>
+> TESTED in Studio (automated player):
+>
+> - **Squat:** walked straight in under the bar, unracked, stepped back
+>   about 1.2 studs in three steps, then "SQUAT!" and the descent.
+> - **Bench:** lying on the bench, steady, then "START!". A computer lifter
+>   lowered, paused and pressed through the stages.
+> - **Deadlift:** behind the bar facing the rack, in the set position.
+> - **Walking back:** all the way to the warm-up room.
+> - **Panels:** the typing panel is see-through.
+
+> **Built (2026-11-01): the computer lifters' avatars** (user: "Make sure
+> the npc have avatars").
+>
+> - **Looks:** each gets a random hairstyle from 29 free hairstyles made by
+>   Roblox (sometimes none), now and then free Roblox glasses, a skin tone,
+>   a coloured singlet, and a broader or narrower, taller or shorter build.
+>   The list is in `LocalMeetConfig.ComputerLifters`; never a real player's
+>   avatar.
+> - **Animations:** they stand about with Roblox's R15 idle, cheer for a
+>   moment after a good lift before walking off, and cheer on the podium.
+>
+> TESTED: six sample avatars were made in Studio and photographed, and in a
+> live meet the computer lifters spawned with their hair and the idle
+> animation.
+>
+> Later: random CENTRAL gear (belts, sleeves, wraps, singlet designs) on
+> them, and an emote set.
+
+**The fail animations: which fail goes with which part (2026-11-02).** The
+user sent 22 YouTube moments of squat, bench and deadlift fails (meets and
+gyms). They asked Claude to sort them into first-part and second-part fails and
+to invent fails where that makes sense. Claude studied them frame by frame.
+
+A lift's two parts are its two minigames (§ MECHANIC ASSIGNMENT):
+
+| Lift | Part 1 | Part 2 |
+|---|---|---|
+| Squat | Control: the descent after "SQUAT!" | Depth timing check: the bottom and the drive up |
+| Bench | Power: the bar down to the chest after "START!" | Press timing check: the press after "PRESS!" |
+| Deadlift | Typing: the pull off the floor | Lockout timing check: finishing at the top |
+
+The fail animation plays from **wherever the lift stopped**. Decided by
+Claude (the user asked Claude to decide):
+
+| Fail | What happens | From the clips |
+|---|---|---|
+| **Squat, part 1: "Lost it on the way down"** | Balance goes during the descent: the hips shoot back, the chest tips forward and the bar rolls up the neck. The spotters grab the bar, and the lifter stumbles forward onto hands and knees, then gets up. | IPF Worlds fall onto the platform; a gym fall forward |
+| **Squat, part 2: "Stuck in the hole"** | Reaches the bottom, drives up a few centimetres and stalls. Grinds for about 2 seconds, then sinks back down. The spotters take the bar, the lifter sits down on the platform, then stands. | IPF Worlds 2016 (the clip the user said to copy); meet grinders with the spotters taking the bar; a gym lifter dropping the bar onto the safeties |
+| **Bench, part 1: "Crushed on the way down"** | The bar comes down too fast and lands hard on the chest, pinned. The lifter strains and the legs kick, and the spotters lift it off. | Three meet and gym clips with the bar pinned on the chest; legs kicking |
+| **Bench, part 2: "Stalls on the press"** | Presses a third of the way up, the bar stops and tilts (one arm lower), then sinks back to the chest. The spotters take it. | Two presses stalling partway and sinking; one bar tilting |
+| **Deadlift, part 1: "Won't break the floor"** | Pulls hard, the hips rise, the bar barely leaves the floor or stops at the shins. Sets it down, lets go, stands, hands on hips. | A Nationals third attempt; a meet stall at the shins; three gym clips |
+| **Deadlift, part 2: "Can't lock out"** | The bar passes the knees and stalls at mid-thigh. The knees stay soft and the shoulders can't get back (a "soft knees" no lift). One hitch, then it is lowered under control. | Two gym stalls above the knees; one near lockout losing balance |
+
+After every fail there is a short **reaction** (head drop, hands on hips),
+then the walk back as now.
+
+**Later, as unboxable fail animations (§37.5 "Later"):**
+
+- the bench "roll of shame" (the bar rolled down to the hips);
+- sitting back with the bar rolling off behind (gym clip);
+- a face-down fall (gym clip);
+- collapsing backwards after the lockout, from an IPF Worlds clip. That lift
+  was actually a good lift, so it could also be a celebration.
+
+**Spotters (user, 2026-11-02, picked from options): three spotters** catch the
+bar, as at a real meet: one at each end of the bar and one behind the lifter.
+
+- **For now:** simple avatars. "3 spotters bald, Central shirt, black shorts,
+  black shoes."
+- **Later:** once the game has its own realistic bodies (players with muscles),
+  the spotters get an **average build**.
+
+> **Built (2026-11-02): the fail animations and the spotters.**
+>
+> - **Animations:** `art/scripts/fail_animations.py` builds the six fails on the
+>   same R15 rig and tools as the lift animations. It exports them as
+>   `art/animations/Fail_<Lift>_<Part>.rbxmx`, and they are listed with their
+>   timings in `StationAnimationConfig.Fails`.
+> - **On a miss** (`MeetLiftAnimation.finish`):
+>   - the part that failed picks the fail (`LocalMeetService.failAnimationFor`,
+>     the hook for future unboxable fails);
+>   - its animation cross-fades in from where the lift stopped;
+>   - the bar stays in the hands until the fail's release, then glides back to
+>     the J-cups, or to the floor for a deadlift;
+>   - a computer lifter's miss fails in a random part and stops partway through
+>     it.
+> - **Spotters:** three per platform while a meet runs (`MeetFigures.buildSpotter`):
+>   - red CENTRAL tee, black shorts and shoes, bald;
+>   - no name tag;
+>   - they stand at the bar's ends and behind the lifter, and for deadlift
+>     they stand aside;
+>   - on a squat or bench miss they step in, reach for the bar, lift it as the
+>     lifter lets go, then step back (`LocalMeetVenue.spottersCatch`).
+>
+> TESTED in Studio (automated player):
+>
+> - The first squat failed part 1 and used the part-1 fail: the bar was
+>   let go at 1.3 s.
+> - The second failed part 2 and let go at 2.6 s.
+> - The back spotter stepped in behind the lifter and back out each time, with
+>   no errors.
+> - A photo showed the spotters' red CENTRAL tees, black legs and arms
+>   reaching forward at the bar.
+>
+> **Published (user, 2026-11-02)** under the group: all six are Animation
+> assets owned by group 529442797, with their IDs in
+> `StationAnimationConfig.Fails`.
+>
+> TESTED in a Studio meet afterwards:
+>
+> - **Squat, part 1 fail** on the player's own screen:
+>   - the 5-second animation played;
+>   - the bar stayed in the hands until 1.3 s, then glided into the J-cups
+>     in about 0.5 s;
+>   - the lifter went down onto hands and knees, stood up at about 4 s, and
+>     held there until the walk back.
+> - **Bench, part 1 fail:** the bar was held until about 2.2 s, then went
+>   back to the J-cups.
+> - **Spotters:** a screenshot showed the covers working (skin forearms and
+>   shins, black shorts and shoes).
+> - **A computer lifter's miss** ran with no errors.
+>
+> NOT YET: the user's visual check of how the fails look; the part-2 bench
+> and both deadlift fails seen live.
+
+**Changes after the user's second play test (user, 2026-11-02, screenshots):**
+
+| Rule | Decision |
+|---|---|
+| **The lift follows the minigame, not a clock** | "I'm completing the lift then out of no where I fail." Each lift's **first part moves only with that minigame's progress**: the squat goes down as the control meter fills, the bench bar comes down as the power ring closes, the deadlift comes up as the typing bar rises. "If my progress bar goes down just make my character stand still": it **never goes back**, it holds. |
+| **Deadlift: no lockout before the lockout game** | "why am i even locked out before i do the lock out game?" The pull ends **above the knees** (mid-thigh) and **waits there** through the lockout game. Passing it locks out (then "DOWN!" at the lockout). Failing it plays the **drop**: one strain and hitch, then the bar is dropped. |
+| **Deadlift: can't break the floor** | A pull that never got going fails **with the bar on the floor**: the hips shoot up, the bar barely moves, and it is set down. |
+| **Spotters follow** | **Squat:** the side spotters crouch as the bar goes down, hands hovering under the sleeves, and follow it back to the rack (or carry it on a miss). The **back spotter is right behind the lifter**, hands hovering behind their hips. **Bench:** the side spotters bend and crouch with the bar; the back spotter stands behind the head on the rack's deck, hands hovering over the bar. |
+| **No spotters on deadlift** | None on the platform. |
+| **Nothing touches** | No spotter passes through the rack, the bar or the lifter (hats and big heads included): hands hover a gap away. |
+
+> **Built (2026-11-02): the changes above.**
+>
+> - **Live progress:** the minigame panels report their progress
+>   (`MeetLiftProgress`, at most 10 a second, visual only), and the server moves
+>   the lift with it (`MeetLiftAnimation.progress`, never backwards).
+> - **Deadlift timing:** `StationAnimationConfig.MeetStages` holds the
+>   deadlift at 2.2 s, mid-thigh.
+> - **Remade deadlift fails:** both were remade and must be published again.
+> - **Spotters on each player's screen:** the client's `MeetSpotterAnimator`
+>   moves them. It bends their hips, knees, ankles, waist and shoulders.
+>   - The side spotters hover by the bar's ends.
+>   - The squat back spotter follows the lifter's hips and stays at least 2.7
+>     studs behind their root.
+>   - The bench back spotter stands upright on the deck and steps back onto the
+>     rail when a big hat reaches over it.
+>   - The server only builds them and takes them off for deadlift
+>     (`LocalMeetVenue.standSpotters`).
+>
+> TESTED in Studio (automated player, with Studio's overlap checks):
+>
+> - **Squat:** no spotter touched the lifter or the rack across a whole
+>   attempt, including the fail. The side spotters crouched to follow the bar
+>   and followed it back to the J-cups.
+> - **Bench:** the lifter was untouched; the deck spotter stood on the rail
+>   behind the user's large hat.
+> - **Deadlift:** no spotters. With no typing, the bar stayed on the floor.
+>   Sent progress moved it: 30% gave 1.09, 60% gave 1.29, a slip to 40% held
+>   at 1.29, and 100% gave 1.65 (mid-thigh, not locked out).
+>
+> **Published (2026-11-03):** the two remade deadlift fails, under the group
+> (`art/scripts/upload_animations.py`, no Studio step needed). What Roblox
+> stored was read back and matched the source.
+>
+> NOT YET: the user's visual check.
+
+**No rack on a meet's deadlift (user, 2026-11-03):** "for deadlift make sure the
+racks are removed, and its only the bar." From the start of the deadlift round,
+each meet platform shows only the bar on the floor: the whole rack is invisible
+and not solid. It comes back after the meet. This covers the Local meet's
+platforms. Gym racks stay standing when someone picks deadlift (§34.12 decision
+15 is unchanged), and so do the warm-up room's racks.
+
+**Meet sounds (user, 2026-11-04: "Yes, meet sounds"; part of making meets less
+bland):** the Local meet gets the sounds of a real meet, each from the platform
+where it happens: the head referee's clap with each command, the bar leaving and
+going back into the J-cups, a deadlift set down, a deadlift dropped at a failed
+lockout, the spotters taking a missed squat or bench, the three lights coming on,
+the crowd cheering or groaning just after, and a low hall murmur while you are in
+the venue. Sounds come from the Sonniss GDC bundles, Roblox's licensed Creator Store
+library or our own work, never the SFX kit in RobloxKits (no licence; ripped from
+other games).
+
+On a miss the crowd groans when the bar actually goes, not when the lights come on.
+A sound from another platform never cuts off one from the player's own.
+
+**A deadlift lands by its weight (user, 2026-11-04: "when players get to heavy heavy
+weights, I would want them to hear the satisfying loud thud for their weight"):**
+four thuds, light to massive, for bars up to 100 kg, up to 180 kg, up to 260 kg and
+heavier. Each is louder, deeper and carries further across the hall than the last. A
+bar dropped at a failed lockout lands one size bigger than one set down, and the sound
+comes when it reaches the floor, not when it leaves the hands.
+
+**Heavier means deeper, never slower (user, 2026-11-04: a slowed-down recording "is very
+lazy" and won't line up with the animation):** no recording in a thud is slowed down,
+and every thud hits at the same moment. The noise of the bar itself, the plates clacking
+on the sleeve after the landing, is the same at every weight. Only the deep low end grows.
+
+**Heavier means deeper and more compact, never longer (user, 2026-11-04: "Its the Plates
+that are getting heavier and more compact the bar stays the same"):** the bar sounds like
+a normal drop every time, and every thud is the same length. The plates' hit gets deeper
+and harder, and is over as quickly as a real landing. Each thud also has real metal hits
+packed into the moment of impact, more of them on a heavier bar (the user chose the
+"Strong metal" version by ear, 2026-11-04).
+
+**Every place has its background (user, 2026-11-04):** the main gym, the Local meet
+hall, the State arena and the Mock Meet rooms each have a looping background, and the
+old one fades into the new one as the player moves between them. Outside them there is
+none. Warm-up racks and Mock Meet lifts make the same bar sounds as a meet lift.
+
+**Gym training reps have bar sounds (user approved, 2026-11-04):** each deadlift rep lands
+with the same thud as a meet, picked by the lifter's own Competition Number for the lift
+(every gym rack's bar looks the same), and each squat or bench rep rattles at the bottom.
+They play on the animation, quieter than a meet lift because they repeat. Another
+lifter's reps are heard only within 45 studs and at most one every 1.5 s, so a full gym
+doesn't turn into constant banging.
+
+**Sound is part of every feature from now on (user, 2026-11-04: "for everything else
+in the future if need be").**
+
+> **Built 2026-11-04; the user approved the recorded takes by ear (bar in the rack,
+> rattles, crowds, backgrounds) and rejected a lone plate or handle drop as "too
+> underwhelming".** The thuds were then rebuilt until the user approved them by ear. The
+> catch, clap, chime and buzzer were in the same listening files without complaint, but
+> nothing has been judged at in-game volume yet, so sounds and levels may still change.
+> `art/scripts/make_meet_sounds.py` builds them (WAVs outside the public repo, ids in
+> `art/sounds/sonniss_sounds.json`), `MeetSoundConfig` lists them with each source,
+> `MeetSoundController` (client) plays them, remote `LocalMeetSound`.
+
+### 37.3 Still open
+
+- **Lift animations for computer lifters** (they only stand on the
+  platform while the lights decide; §37.5 builds them).
+- Whether the timer gets shorter when only one player is waiting.
