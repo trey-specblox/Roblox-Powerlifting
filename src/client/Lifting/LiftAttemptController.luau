@@ -33,8 +33,10 @@
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LiftingFolder = Shared:WaitForChild("Lifting")
@@ -42,6 +44,7 @@ local LiftAttempt = require(LiftingFolder:WaitForChild("LiftAttempt"))
 local LiftingRemotes = require(LiftingFolder:WaitForChild("LiftingRemotes"))
 
 local ControlInput = require(script.Parent.ControlInput)
+local LiftTap = require(script.Parent.LiftTap)
 local ControlUI = require(script.Parent.ControlUI)
 local PowerUI = require(script.Parent.PowerUI)
 local SequenceInput = require(script.Parent.SequenceInput)
@@ -56,13 +59,15 @@ local LiftAttemptController = {}
 	The timing check's press key.
 
 	Space is bound through ContextActionService only while a skill check is live, so
-	it does not fight jumping the rest of the time. The control phase uses the mouse
-	through ControlInput, so the two phases never contend for an input.
+	it does not fight jumping the rest of the time. A tap anywhere or the left mouse
+	button work too (LiftTap, user 2026-11-05); they are ignored for a moment at the
+	start, because a skill check follows a game of clicking and that must not spill in.
 ]]
 local PRESS_KEY = Enum.KeyCode.Space
 local PRESS_ACTION = "RpfLiftPhasePress"
+local SKILL_CHECK_TAP_IGNORE_SECONDS = 0.35
 
-local SKILL_CHECK_PROMPT = "PRESS SPACE IN THE ZONE"
+local SKILL_CHECK_PROMPT = if UIStyle.isTouchOnly() then "TAP IN THE ZONE" else "CLICK OR PRESS SPACE IN THE ZONE"
 -- The power phase wants volume, not timing, so its prompt says so plainly.
 local POWER_PROMPT = "MASH TO BUILD POWER - HOLD WHEN TOLD TO HOLD"
 
@@ -72,6 +77,7 @@ local remotes: LiftingRemotes.RemoteSet? = nil
 -- The attempt the server last told us about.
 local activeAttemptId: number? = nil
 local activePhaseKind: string? = nil
+local stopSkillCheckTap: (() -> ())? = nil
 
 --[[
 	Which phase UI is currently on screen, which is NOT the same as which phase is
@@ -258,12 +264,25 @@ local function bindPressKey()
 		Enum.ContextActionPriority.High.Value,
 		PRESS_KEY
 	)
+	stopSkillCheckTap = LiftTap.listen(SkillCheckUI.pressNow, nil, SKILL_CHECK_TAP_IGNORE_SECONDS)
 	setJumpEnabled(false)
 end
 
 local function unbindPressKey()
 	ContextActionService:UnbindAction(PRESS_ACTION)
+	local stop = stopSkillCheckTap
+	if stop then
+		stopSkillCheckTap = nil
+		stop()
+	end
 	setJumpEnabled(true)
+end
+
+-- The on-screen thumbstick and jump button: gone during a lift, so a tap anywhere reaches the minigame and nothing covers it.
+local function setTouchControls(enabled: boolean)
+	if UserInputService.TouchEnabled then
+		GuiService.TouchControlsEnabled = enabled
+	end
 end
 
 --[[
@@ -351,6 +370,7 @@ local function onPresentPhase(payload: any)
 	activeAttemptId = payload.attemptId
 	activePhaseKind = payload.kind
 	shownPhaseKind = payload.kind
+	setTouchControls(false)
 
 	local challenge = payload.challenge
 
@@ -367,6 +387,11 @@ local function onPresentPhase(payload: any)
 		challenge.baseDifficulty,
 		if scaleBonus and scaleBonus > 0 then string.format("  -  unproven weight +%.0f", scaleBonus) else ""
 	))
+	-- On a phone the typing panel takes the top of the screen, above the keyboard: nothing else fits there.
+	if payload.kind == LiftAttempt.PhaseKind.Typing and UIStyle.isTouchOnly() then
+		setBanner("")
+		setStatus("")
+	end
 
 	if payload.kind == LiftAttempt.PhaseKind.Control then
 		ControlInput.bind(ControlUI.registerImpulse)
@@ -469,6 +494,7 @@ end
 local function onAnnounceAttemptResult(payload: any)
 	releaseInput()
 	activeAttemptId = nil
+	setTouchControls(true)
 
 	local passed = payload.verdict == LiftAttempt.Verdict.GoodLift
 	local kind: BannerKind = if passed then "good" else "noLift"
@@ -521,6 +547,9 @@ function LiftAttemptController.start()
 	player.CharacterAdded:Connect(function()
 		if activePhaseKind == nil then
 			setJumpEnabled(true)
+		end
+		if activeAttemptId == nil then
+			setTouchControls(true)
 		end
 	end)
 

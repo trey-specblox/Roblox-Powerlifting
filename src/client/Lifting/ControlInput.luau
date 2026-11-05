@@ -4,48 +4,38 @@
 	Client / Lifting
 
 	The control phase's input, as one abstract gameplay action rather than a
-	hardcoded mouse button.
+	hardcoded mouse button: the squat steadying the bar and the bench's mashing.
 
 	WHY IT IS BUILT THIS WAY
 
-	The mechanic needs the same action on PC, mobile, tablet and console. Binding
-	MouseButton1 directly inside the minigame would mean rewriting the mechanic to
-	add a platform later.
+	The mechanic needs the same action on PC, mobile, tablet and console. The
+	simulation, the UI and the server never learn which device sent anything.
 
-	So there is a single action, ControlImpulse, and a list of bindings that
-	produce it. Adding a platform is adding to that list; the simulation, the UI
-	and the server never learn which device sent anything.
-
-	ContextActionService is used rather than UserInputService specifically because
-	`createTouchButton` gives mobile and tablet an on-screen button for free, and
-	because binding at a raised priority lets the action take precedence while a
-	phase is running.
-
-	Only PC is tested. The touch and gamepad bindings are present because they cost
-	nothing to declare here, not because they have been verified.
+	A finger anywhere on the screen or the left mouse button comes through LiftTap
+	(user 2026-11-05: no on-screen button to find). A gamepad comes through
+	ContextActionService, which also keeps it from reaching anything else while a
+	phase runs. Gamepad is declared, not tested.
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
+
+local LiftTap = require(script.Parent:WaitForChild("LiftTap"))
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 
 local ControlInput = {}
 
 local ACTION_NAME = "RpfControlImpulse"
 
 --[[
-	Every input that produces one impulse.
-
-	MouseButton1 is the PC control the design specifies. Space is deliberately NOT
-	bound: the timing check already uses it, and sharing it would create contention
-	if both phases were ever live at once.
+	Space is deliberately NOT bound: the timing check already uses it, and sharing it
+	would create contention if both phases were ever live at once.
 ]]
-local BINDINGS = {
-	Enum.UserInputType.MouseButton1,
-	-- Console. Declared, not tested.
+local GAMEPAD_BINDINGS = {
 	Enum.KeyCode.ButtonA,
 	Enum.KeyCode.ButtonR2,
 }
 
-local bound = false
+local stopTap: (() -> ())? = nil
 
 --[[
 	Starts routing impulses to `onImpulse`.
@@ -55,18 +45,12 @@ local bound = false
 	unchanged; the bench's power phase needs releases, because telling a continuous
 	hold from a burst of clicks is impossible without knowing when the input went
 	back up.
-
-	Passing true for createTouchButton means touch devices get an on-screen button
-	without any further work, which is what makes mobile and tablet support a
-	configuration detail rather than a rewrite. A held touch button reports Begin
-	and End just as a held mouse button does, so the hold mechanic carries across
-	devices for free.
 ]]
 function ControlInput.bind(onImpulse: () -> (), onRelease: (() -> ())?)
-	if bound then
+	if stopTap then
 		return
 	end
-	bound = true
+	stopTap = LiftTap.listen(onImpulse, onRelease)
 
 	ContextActionService:BindActionAtPriority(
 		ACTION_NAME,
@@ -76,32 +60,31 @@ function ControlInput.bind(onImpulse: () -> (), onRelease: (() -> ())?)
 			elseif state == Enum.UserInputState.End and onRelease ~= nil then
 				onRelease()
 			end
-			-- Sink, so nothing else reacts to a click meant for the lift.
 			return Enum.ContextActionResult.Sink
 		end,
-		true,
+		false,
 		Enum.ContextActionPriority.High.Value,
-		table.unpack(BINDINGS)
+		table.unpack(GAMEPAD_BINDINGS)
 	)
 end
 
---[[
-	Stops routing impulses and removes any touch button.
-]]
+-- Stops routing impulses.
 function ControlInput.unbind()
-	if not bound then
+	local stop = stopTap
+	if stop == nil then
 		return
 	end
-	bound = false
+	stopTap = nil
+	stop()
 	ContextActionService:UnbindAction(ACTION_NAME)
 end
 
 --[[
-	A short description of the PC control, for the on-screen prompt. Lives here so
-	the prompt cannot drift away from the bindings above.
+	A short description of the control, for the on-screen prompt. Lives here so the
+	prompt cannot drift away from the bindings above.
 ]]
 function ControlInput.promptText(): string
-	return "CLICK TO LIFT THE BAR - KEEP THE MARKER INSIDE IT"
+	return (if UIStyle.isTouchOnly() then "TAP" else "CLICK") .. " TO LIFT THE BAR - KEEP THE MARKER INSIDE IT"
 end
 
 return ControlInput

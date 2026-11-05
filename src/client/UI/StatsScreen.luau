@@ -92,7 +92,8 @@ function StatsScreen.start()
 	tab.Name = "Tab"
 	tab.AnchorPoint = Vector2.new(0, 0.5)
 	tab.Position = UDim2.new(0, 0, 0.5, 0)
-	tab.Size = UDim2.fromOffset(118, 44)
+	-- The same width as the coins, TELEPORT and GEAR, so the side column lines up.
+	tab.Size = UDim2.fromOffset(150, 44)
 	tab.BackgroundColor3 = C.ink
 	tab.BorderSizePixel = 0
 	tab.AutoButtonColor = true
@@ -105,6 +106,7 @@ function StatsScreen.start()
 	UIStyle.slashes(tab, UDim2.new(1, -28, 0, 9), 26)
 	local keyHint = UIStyle.text(tab, "Key", UDim2.new(0, 10, 1, 2), UDim2.fromOffset(100, 16), SIZES.small, C.muted)
 	keyHint.Text = "[" .. OPEN_KEY.Name .. "]"
+	keyHint.Visible = not UIStyle.isTouchOnly()
 
 	-- The panel.
 	local holder, body = UIStyle.panel(gui, "Panel", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))

@@ -34,6 +34,7 @@ local LocalMeetLobbyUI = require(script.Parent:WaitForChild("LocalMeetLobbyUI"))
 local LocalMeetAwards = require(script.Parent:WaitForChild("LocalMeetAwards"))
 local LocalMeetWarmUpUI = require(script.Parent:WaitForChild("LocalMeetWarmUpUI"))
 local MeetLiftMoment = require(script.Parent:WaitForChild("MeetLiftMoment"))
+local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 
 local LocalMeetController = {}
 
@@ -104,7 +105,9 @@ function LocalMeetController.start()
 		end
 	end
 	remotes.state.OnClientEvent:Connect(function(state: MockMeetRemotes.MeetState)
-		ui.setClearView(state.phase == "Ready" or state.phase == "Lifting")
+		-- On a phone the weight choice needs the room too: it says where the lifter stands anyway.
+		ui.setClearView(state.phase == "Ready" or state.phase == "Lifting"
+			or (state.phase == "Choose" and UIStyle.isTouchOnly()))
 	end)
 	player:GetAttributeChangedSignal(LocalMeetConfig.VenueAttribute):Connect(refresh)
 	player:GetAttributeChangedSignal(LocalMeetConfig.PlatformAttribute):Connect(refresh)

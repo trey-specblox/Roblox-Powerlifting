@@ -303,15 +303,17 @@ local function applyLiftColour(current: Visuals, colour: Color3)
 end
 
 --[[
-	Shows the key to press. When the controller's instruction names Space, the
-	cap shows just "SPACE", big; otherwise it shows the instruction as written.
+	Shows what to press. When the controller's instruction names Space or a tap, the
+	cap shows just that, big; otherwise it shows the instruction as written.
 ]]
 local function applyInstruction(current: Visuals, instructionText: string)
 	current.instructionText = instructionText
-	local mentionsSpace = string.find(string.upper(instructionText), "SPACE", 1, true) ~= nil
-	current.keyText.Text = if mentionsSpace then "SPACE" else instructionText
+	local upper = string.upper(instructionText)
+	local mentionsSpace = string.find(upper, "SPACE", 1, true) ~= nil
+	local mentionsTap = string.find(upper, "TAP", 1, true) ~= nil
+	current.keyText.Text = if mentionsSpace then "CLICK / SPACE" elseif mentionsTap then "TAP" else instructionText
 	current.keyCap.Size = UDim2.fromOffset(
-		if mentionsSpace then KEYCAP_KEY_WIDTH else KEYCAP_TEXT_WIDTH,
+		if mentionsTap then KEYCAP_KEY_WIDTH elseif mentionsSpace then KEYCAP_KEY_WIDTH + 70 else KEYCAP_TEXT_WIDTH,
 		KEYCAP_HEIGHT + KEYCAP_DEPTH
 	)
 	current.keyCap.Visible = instructionText ~= ""

@@ -27,6 +27,8 @@
 	a GOOD lift is WHITE and a NO LIFT is RED, like a meet's lights.
 ]]
 
+local UserInputService = game:GetService("UserInputService")
+
 local UIStyle = {}
 
 UIStyle.Colours = {
@@ -408,9 +410,15 @@ end
 	keeps it. Code that moves a top-level piece after building must give it its
 	own AnchorPoint (and place it by that). Pieces added later get the same,
 	and a resized window updates them all.
+
+	The scale also applies to a piece's pixel Position, not just its size, so the
+	whole screen shrinks together: otherwise pieces shrink where they stand and
+	keep their full-size distances. Code still writes full-size positions; they are
+	scaled as they are written. A phone in landscape is about 390 tall, so MIN_SCALE
+	allows that (user 2026-11-05: "Mobile UIs are overlapping").
 ]]
 local DESIGN_HEIGHT = 860
-local MIN_SCALE = 0.6
+local MIN_SCALE = 0.42
 
 --[[
 	Where every lift minigame sits: the middle of the screen, nudged down a
@@ -439,6 +447,23 @@ function UIStyle.screenScale(): number
 	return math.clamp(height / DESIGN_HEIGHT, MIN_SCALE, 1)
 end
 
+-- A phone or tablet with no keyboard attached: its prompts say TAP, and it has no key hints.
+function UIStyle.isTouchOnly(): boolean
+	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+end
+
+-- Each piece's position at full size, and the one last written for it (weak: a piece goes when it is destroyed).
+local fullSizePositions: { [GuiObject]: UDim2 } = setmetatable({}, { __mode = "k" }) :: any
+local writtenPositions: { [GuiObject]: UDim2 } = setmetatable({}, { __mode = "k" }) :: any
+
+local function placeScaled(piece: GuiObject)
+	local full = fullSizePositions[piece]
+	local scale = UIStyle.screenScale()
+	local placed = UDim2.new(full.X.Scale, full.X.Offset * scale, full.Y.Scale, full.Y.Offset * scale)
+	writtenPositions[piece] = placed
+	piece.Position = placed
+end
+
 function UIStyle.fitToScreen(gui: ScreenGui)
 	local function apply(child: Instance)
 		if not child:IsA("GuiObject") then
@@ -451,8 +476,17 @@ function UIStyle.fitToScreen(gui: ScreenGui)
 			made.Name = FIT_SCALE_NAME
 			made.Parent = child
 			scale = made
+			fullSizePositions[child] = child.Position
+			-- Code placing the piece later writes a full-size position.
+			child:GetPropertyChangedSignal("Position"):Connect(function()
+				if child.Position ~= writtenPositions[child] then
+					fullSizePositions[child] = child.Position
+					placeScaled(child)
+				end
+			end)
 		end
 		(scale :: UIScale).Scale = UIStyle.screenScale()
+		placeScaled(child)
 	end
 	local function applyAll()
 		for _, child in ipairs(gui:GetChildren()) do

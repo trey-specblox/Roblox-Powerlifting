@@ -3786,9 +3786,31 @@ and polish.
   and the rest of a meet were not re-run with this change. While walking past a neighbouring
   platform, its shouts count as "own" (within 22 studs) and aren't spaced out, so a line can
   occasionally double up. Left as is.
-  NEXT: the user publishes again before phone testing (the published game lacks this), after
-  confirming their ElevenLabs plan covers the shouts. Then ideas 2-4 from the meet quality talk
-  if they want them.
+  PHONE FEEDBACK 2026-11-05 (user's screenshots from the live game on a phone, "very crucial").
+  MOBILE GROUP approved by the user ("Yes, commit and push"), COMMITTED and pushed to `origin/main`
+  as "Play the lift games by tap or click, and fit the screens to phones" (run `git log` for the
+  hash), NOT PUBLISHED: new client `LiftTap` (a finger anywhere or the
+  left mouse button); squat control, bench power and every skill check use it, with no on-screen
+  button; a skill check ignores taps for its first 0.35 s so mashing can't spill in. The thumbstick
+  and jump button are off during a lift (`GuiService.TouchControlsEnabled`). `UIStyle.fitToScreen`
+  now goes down to 0.42 (a phone is about 0.45; it stopped at 0.6) and scales pixel positions too,
+  so a whole screen shrinks together. Side tabs all 150 wide in even 72 px steps, key hints hidden on
+  touch. On a phone: deadlift panel at the top above the keyboard, without the banner and status;
+  scorecard and title off during a lift, standings off during the weight choice. The dev panel and
+  G/H/J test keys were live for all players: now Studio only.
+  TESTED IN STUDIO: left clicks on open screen counted by the server (3 clicks accepted); a left
+  click ended a skill check as GOOD LIFT, and one 0.19 s in was ignored; side tabs measured equal
+  width and steps; all changed scripts match disk by checksum; type check clean; no script errors
+  on start and entering the venue. Layout computed for a 752 x 390 phone: no overlaps in the gym,
+  lobby or lift screens by that calculation.
+  NOT VERIFIED: anything on a real phone (touch can't be simulated here): tap anywhere, the bench
+  hold by finger, the keyboard fit, the look of the smaller text.
+  STILL TO BUILD, requested in the same message (user's decision, recorded in GAME_DESIGN §29.10):
+  five Local/Regional meets at once with separate placings and rewards, sign-up and spectate per
+  meet at the lobby desk, teleport to a meet, stands filled with fake characters. Not started: this
+  rewrites `LocalMeetService`'s single-meet state (about 160 places) and needs a Blender crowd model.
+  NEXT: the user publishes and phone tests the mobile group, then says go on the venue plan. Before
+  publishing, the user confirms their ElevenLabs plan covers the shouts.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;

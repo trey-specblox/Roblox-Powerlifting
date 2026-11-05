@@ -29,7 +29,8 @@
 	for bench power) and Space presses either timing check.
 ]]
 
-local ENABLED = true
+-- Studio only: players never see this panel or get these keys (found in the live game on a phone, 2026-11-05).
+local ENABLED = game:GetService("RunService"):IsStudio()
 
 if not ENABLED then
 	return {

@@ -29,8 +29,8 @@ local SIZES = UIStyle.TextSizes
 
 local CoinCounter = {}
 
--- Above the STATS tab (StatsScreen: centred on the left edge, 44 px tall).
-local BADGE_OFFSET_Y = -64
+-- Above the STATS tab, in the side column's even 72 px steps (StatsScreen: centred on the left edge, 44 px tall).
+local BADGE_OFFSET_Y = -72
 local BADGE_WIDTH, BADGE_HEIGHT = 150, 44
 local COUNT_SECONDS = 0.6
 local POP_RISE, POP_SECONDS, POP_GAP_SECONDS = 60, 2, 1

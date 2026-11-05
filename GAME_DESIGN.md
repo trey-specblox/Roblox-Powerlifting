@@ -2170,6 +2170,18 @@ Worlds and Sheffield come later and are untouched here.
 | What it saves | §33.3b in full: CN raises within the daily allowance, misses above CN use it, Competition Scale and best Total, and **a bomb-out or leaving early saves nothing**. A **win** (1st place in a meet with at least 2 real players) counts toward the 10 Local wins that unlock Nationals (`MeetConfig.LocalVictoriesForNationals`) |
 | Not in the first build | Money, equipment, the gym record wall bonus (§30.3-§30.5) wait for the economy design; Nationals and above |
 
+**Five meets at once (user, 2026-11-05; decided, NOT BUILT YET):** "I am not waiting 10
+minutes everytime to compete at a meet. Make it way larger. Everything the same just 5
+Different meets can happen at once. All with separate rewardings, and placings." The
+Local/Regional venue gets five numbered meets. Sign-ups are at the check-in lobby, and each
+meet offers SIGN UP or SPECTATE, which teleports the player to that meet. The stands are filled
+with fake characters. How it is laid out and timed is still to be approved.
+
+**How the lift games are played (user, 2026-11-05; built):** a tap anywhere on a phone or the
+left mouse button on a computer works every press game: the squat's bar, the bench's mashing and
+holds, and every skill check, which also still takes Space. There is no on-screen button to find.
+On a phone the deadlift's letters sit above the keyboard.
+
 **Build order** (one step at a time, each tested before the next):
 1. The meet itself: sign-up desk, timer, weigh-in, rounds, referees, placing and
    the results screen, on a simple temporary venue so it can be played at once.

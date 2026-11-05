@@ -115,6 +115,8 @@ local TEXT = UIStyle.TextSizes
 local SHOW_DEV = UIStyle.ShowDevReadouts
 
 local PANEL_POSITION = UIStyle.MinigameCentre
+-- The panel's top on a phone: only room for its title tag above it.
+local PHONE_PANEL_TOP = 34
 local PANEL_WIDTH = 940
 -- The dev readout line adds a row at the bottom, only when it is shown.
 local DEV_ROW_HEIGHT = 24
@@ -250,8 +252,10 @@ local function build(instructionText: string): Visuals
 	local holder, body = UIStyle.panel(gui, "Panel", PANEL_POSITION, UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	-- See-through, so the lift behind it still shows (user 2026-11-01).
 	UIStyle.seeThrough(holder, UIStyle.MinigameTransparency)
-	holder.AnchorPoint = Vector2.new(0.5, 0.5)
-	holder.Position = PANEL_POSITION
+	-- On a phone, at the top of the screen: its keyboard fills the bottom half (user 2026-11-05).
+	local onPhone = UIStyle.isTouchOnly()
+	holder.AnchorPoint = if onPhone then Vector2.new(0.5, 0) else Vector2.new(0.5, 0.5)
+	holder.Position = if onPhone then UDim2.new(0.5, 0, 0, PHONE_PANEL_TOP) else PANEL_POSITION
 	local title = UIStyle.titleTag(holder, "Tag", "", UDim2.fromOffset(-14, -26), UDim2.fromOffset(400, 48),
 		UIStyle.LiftColours.Deadlift, "corner")
 
@@ -358,7 +362,8 @@ local function build(instructionText: string): Visuals
 	local verdictBanner = UIStyle.frame(gui, "Verdict", UDim2.new(0.5, 0, PANEL_POSITION.Y.Scale, PANEL_HEIGHT / 2 + 30),
 		UDim2.fromOffset(640, 72), C.white, -2)
 	verdictBanner.AnchorPoint = Vector2.new(0.5, 0)
-	verdictBanner.Position = UDim2.new(0.5, 0, PANEL_POSITION.Y.Scale, PANEL_HEIGHT / 2 + 30)
+	verdictBanner.Position = if onPhone then UDim2.new(0.5, 0, 0, PHONE_PANEL_TOP + PANEL_HEIGHT + 20)
+		else UDim2.new(0.5, 0, PANEL_POSITION.Y.Scale, PANEL_HEIGHT / 2 + 30)
 	verdictBanner.Visible = false
 	UIStyle.stroke(verdictBanner, C.ink, 2)
 	local verdict = UIStyle.text(verdictBanner, "Text", UDim2.fromOffset(16, 0), UDim2.new(1, -32, 1, 0), TEXT.big, C.ink,

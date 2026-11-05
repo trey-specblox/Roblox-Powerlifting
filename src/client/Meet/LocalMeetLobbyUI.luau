@@ -47,9 +47,9 @@ export type Ui = {
 }
 
 -- Below the meet screen's notice (24..130 from the top), which also carries the venue's notices, and right
--- of the STATS tab on the left edge (118 wide).
+-- of the tabs on the left edge (150 wide).
 local CARD_TOP = 168
-local LEFT = 140
+local LEFT = 172
 -- The standings' top in the lobby: on the right, under EXIT.
 local STANDINGS_TOP_RIGHT = 110
 local ROWS = 8

@@ -71,6 +71,7 @@ function TeleportMenu.start()
 	UIStyle.cue(tab, "chevron", UDim2.new(1, -30, 0, 10), 24)
 	local keyHint = UIStyle.text(tab, "Key", UDim2.new(0, 10, 1, 2), UDim2.fromOffset(100, 16), SIZES.small, C.muted)
 	keyHint.Text = "[" .. OPEN_KEY.Name .. "]"
+	keyHint.Visible = not UIStyle.isTouchOnly()
 
 	-- The panel.
 	local holder, body = UIStyle.panel(gui, "Panel", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))

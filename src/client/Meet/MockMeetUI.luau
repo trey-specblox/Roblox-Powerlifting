@@ -498,6 +498,15 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 				actionHolder.Visible = false
 			end
 		end
+		-- On a phone a lift's minigame needs the whole screen, in either kind of meet.
+		if UIStyle.isTouchOnly() then
+			title.Visible = state.phase ~= "Lifting"
+			if state.phase == "Lifting" then
+				scoreHolder.Visible = false
+			elseif not look.liftMoment then
+				scoreHolder.Visible = true
+			end
+		end
 		lastPhase = state.phase
 
 		local liftName = string.upper(state.lift or "")
