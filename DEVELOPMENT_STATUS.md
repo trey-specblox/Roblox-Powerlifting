@@ -3885,8 +3885,29 @@ and polish.
   the top over the typing panel's word.
   Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
   `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
-  NEXT: the user publishes and tests the QWERTY keyboard on a real phone.
-  Then what they choose. Meet ideas left: stakes that build through the attempts, rituals before the lift.
+  User, 2026-11-05: "Keyboard is good and works" (their report on the phone keyboard).
+  PRACTICE AT GYM RACKS 2026-11-05, approved by the user ("Commit feels good"), COMMITTED on `main` as "Let players
+  practice any lift and weight at a gym rack" (run `git log` for the hash), NOT PUSHED, NOT PUBLISHED
+  (GAME_DESIGN §34.3): "Practice Lifts" is a
+  third choice in the rack menu (prompt now "Train / Practice"). New server `GymPractice` is a second
+  `LocalMeetWarmUp` with no prompts of its own, so lift, weight rules, minigames, animations, bar sounds and the
+  card (titled PRACTICE) are the warm-up room's code. `TrainingStationRules` has a new session state
+  "Practising" (earns nothing, keeps the rack) and `startPractice`; `TrainingStationService` hands over and takes
+  the rack back, and `refreshSign` leaves a practising rack alone and turns its prompt off.
+  TESTED IN STUDIO, computer, one player, real E hold and clicks, scripts checked against disk by checksum (Rojo
+  dropped edits to two files again; caught and re-sent): menu shows all three choices, text fits; CN training ran,
+  then switching to practice settled its last 6.1 s and stopped earning; card up, statuses off, prompt off;
+  deadlift at 22.5 kg ran on the gym rack through the ticks with no credit and no reset; NO LIFT, back at the
+  spot with the result on the card; LEAVE RACK freed the rack, prompt back, free to walk; dying mid-lift
+  stopped the attempt and freed the rack; no script errors. Warm-up room after the change: real prompt in the
+  venue, card up and titled WARM-UP, no script errors (no lift run there).
+  The user then tried it and said it "feels good" (their report; Claude did not see which lifts they ran).
+  NOT VERIFIED BY CLAUDE: a GOOD lift at a gym rack, squat and bench there (Claude can't play them in time; same
+  code as the warm-up room); a phone; two players side by side. `GymRackWatchProbe` expects the new prompt text
+  but was not re-run.
+  Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
+  `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
+  NEXT: what the user chooses. Practice needs a push and a publish to reach the live game. Meet ideas left: stakes that build through the attempts, rituals before the lift.
   Known: WATCH on a gym record attempt lands in hall 1; five halls may make solo-reward meets more common.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched

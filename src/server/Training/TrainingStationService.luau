@@ -13,8 +13,8 @@
 	HOW A PLAYER USES A RACK
 	=========================================================================
 
-	Every rack is identical: one ProximityPrompt (its name, and "Train" or
-	"In use"; racks have no floating sign since 2026-10-21), held E for
+	Every rack is identical: one ProximityPrompt (its name, and "Train / Practice"
+	or "In use"; racks have no floating sign since 2026-10-21), held E for
 	PromptHoldSeconds. The prompt fires on the SERVER with the Player who held
 	it. The server checks the player is really standing there and the rack is
 	free, RESERVES it for them, and tells their client to open the Training
@@ -24,6 +24,9 @@
 	lift and a primary stat) and presses Start Training. That is a REQUEST over
 	TrainingMenuRequest; this service re-validates everything (TrainingRemotes
 	lists what the client may and may not send).
+
+	Or they pick Practice Lifts: GymPractice takes over the rack and the lifter
+	until they leave it. Nothing is earned or saved meanwhile.
 
 	Racks are found through CollectionService (TrainingStationConfig.StationTag
 	plus a "StationId" attribute), so adding a rack means placing a tagged
@@ -92,6 +95,7 @@ local TrainingRemotes = require(TrainingFolder:WaitForChild("TrainingRemotes"))
 local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
 local StationVisuals = require(script.Parent.StationVisuals)
 local StationPoses = require(script.Parent.StationPoses)
+local GymPractice = require(script.Parent.GymPractice)
 
 local TrainingStationService = {}
 
@@ -110,7 +114,7 @@ type Station = {
 	shows within PromptMaxDistanceStuds, so a rack's name and whether it is
 	free appear only up close. The occupant's own status is in their menu.
 ]]
-local PROMPT_FREE_TEXT = "Train"
+local PROMPT_FREE_TEXT = "Train / Practice"
 local PROMPT_IN_USE_TEXT = "In use"
 
 local stations: { [string]: Station } = {}
@@ -240,6 +244,13 @@ local function refreshSign(station: Station)
 	local occupant = TrainingStationRules.occupantOf(registry, station.stationId)
 	local session = if occupant ~= nil then TrainingStationRules.sessionOf(registry, occupant) else nil
 
+	-- GymPractice has the rack and the lifter (a tick must not reset a lift), and no prompt is needed: LEAVE RACK ends it.
+	local practising = session ~= nil and session.state == "Practising"
+	station.prompt.Enabled = not practising
+	if practising then
+		return
+	end
+
 	local selection = if session ~= nil then session.selection else nil
 	local lift = if selection ~= nil then selection.lift else nil
 	StationVisuals.show(station.instance, lift)
@@ -357,6 +368,8 @@ end
 
 local function afterRelease(player: Player, stationId: string?, reason: string, notice: string?)
 	disconnectOccupant(player)
+	-- However the rack was lost, a practice on it ends too.
+	GymPractice.stop(player)
 
 	if stationId == nil then
 		return
@@ -577,6 +590,48 @@ local function onStart(player: Player, session: TrainingStationRules.Session, se
 	sendState(player, notice)
 end
 
+--[[
+	Practice Lifts: whatever was training is settled and stops, the lifter comes out
+	of their training pose, and GymPractice takes over. Refused with nothing changed
+	if they can't practice right now.
+]]
+local function onPractice(player: Player, station: Station)
+	local refusal = GymPractice.refusal(player, station.instance)
+	if refusal then
+		sendState(player, refusal)
+		return
+	end
+
+	local started, credit = TrainingStationRules.startPractice(
+		registry,
+		player,
+		os.clock(),
+		TrainingStationConfig.MaxCreditSecondsPerTick,
+		gatewayFor(player)
+	)
+	if not started then
+		sendState(player, SELECT_NOTICE.NotAuthorized)
+		return
+	end
+	if credit then
+		logCredit(player, credit)
+		if not handleCredit(player, credit) then
+			return
+		end
+	end
+
+	StationPoses.update(station.instance, nil, nil)
+	StationVisuals.show(station.instance, nil)
+	if not GymPractice.enter(player, station.instance :: Model) then
+		endTraining(player, "practice could not start", "You can't practice right now.")
+		return
+	end
+
+	log("%s started practice on %s", player.Name, station.stationId)
+	refreshSign(station)
+	sendState(player)
+end
+
 local function onMenuRequest(player: Player, ...: any)
 	if not allowRequest(player) then
 		return
@@ -636,6 +691,11 @@ local function onMenuRequest(player: Player, ...: any)
 			logCredit(player, credit)
 		end
 		afterRelease(player, stationId, "stopped")
+		return
+	end
+
+	if request.action == "Practice" then
+		onPractice(player, station)
 		return
 	end
 
@@ -808,6 +868,15 @@ function TrainingStationService.start()
 	remotes = set
 	set.menuRequest.OnServerEvent:Connect(onMenuRequest)
 
+	GymPractice.start({
+		notify = function(player: Player, message: string)
+			sendState(player, message)
+		end,
+		onLeft = function(player: Player)
+			endTraining(player, "left practice")
+		end,
+	})
+
 	local tag = TrainingStationConfig.StationTag
 	CollectionService:GetInstanceAddedSignal(tag):Connect(registerStation)
 	CollectionService:GetInstanceRemovedSignal(tag):Connect(unregisterStation)
@@ -818,6 +887,7 @@ function TrainingStationService.start()
 	Players.PlayerRemoving:Connect(function(player: Player)
 		endTraining(player, "left the game")
 		TrainingStationRules.forgetRequester(limiter, player)
+		GymPractice.forget(player)
 		rateLimitLogged[player] = nil
 	end)
 

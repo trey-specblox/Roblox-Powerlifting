@@ -229,6 +229,8 @@ export type WarmUpRack = {
 	rack: Model?,
 	liftSpot: CFrame,
 	point: BasePart,
+	-- Where they end up on stepping off; a couple of steps forward of liftSpot when nil.
+	stepOffSpot: CFrame?,
 }
 
 -- The halls built so far, and the folder they stand in (MeetSoundConfig's background finds them through it).

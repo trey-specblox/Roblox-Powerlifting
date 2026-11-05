@@ -298,8 +298,8 @@ local function onTraining(line: string)
 
 		task.delay(0.5, function()
 			local text = signText()
-			report(text == "Train",
-				string.format("%s prompt reads Train (free) after %s left (prompt: \"%s\")", WATCH_STATION, lName,
+			report(text == "Train / Practice",
+				string.format("%s prompt reads Train / Practice (free) after %s left (prompt: \"%s\")", WATCH_STATION, lName,
 					(string.gsub(text, "\n", " | "))))
 		end)
 		local releasedAt = now

@@ -13,8 +13,9 @@
 			"Start", { mode, lift, primary? }
 			"Stop"
 			"Close"
+			"Practice"    (the lift and weight are then asked for on the PRACTICE card)
 
-		TrainingMenuState    server -> client  (state)
+		TrainingMenuState   server -> client  (state)
 			Everything the menu and the status bar show. Sent when the menu is
 			authorized, after every request, on every tick while the player
 			holds a rack, and once with open = false when they lose it.

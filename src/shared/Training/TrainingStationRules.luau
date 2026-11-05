@@ -19,7 +19,7 @@
 	=========================================================================
 
 	A player who holds E at a free rack RESERVES it and gets the menu. From then
-	until they leave, the session is in one of three states:
+	until they leave, the session is in one of four states:
 
 		"Selecting"        menu open, nothing started yet. Earns nothing.
 		"Training"         a selection is running:
@@ -32,6 +32,9 @@
 		                   The rack stays occupied; nothing is earned; the mode
 		                   is NOT changed. The player must pick Technique (or,
 		                   after the UTC reset, CN again) and press Start.
+		"Practising"       practice lifts (GymPractice): the rack stays theirs,
+		                   there is no selection and nothing is earned. It lasts
+		                   until they leave the rack.
 
 	Every change of selection is MANUAL. Nothing in here ever picks a lift, a
 	mode or a primary stat on the player's behalf: not at the cap, not at
@@ -78,7 +81,7 @@ export type Selection = {
 	primary: string?,
 }
 
-export type SessionState = "Selecting" | "Training" | "StoppedAtCNCap"
+export type SessionState = "Selecting" | "Training" | "StoppedAtCNCap" | "Practising"
 
 --[[
 	Whether Competition Number can still be earned today, read from the saved
@@ -157,7 +160,7 @@ export type RequestRefusal =
 	| "InvalidPrimary"
 
 export type Request = {
-	action: "Start" | "Stop" | "Close",
+	action: "Start" | "Stop" | "Close" | "Practice",
 	selection: Selection?,
 }
 
@@ -245,6 +248,7 @@ TrainingStationRules.CAP_REACHED_HINT =
 TrainingStationRules.CN_INELIGIBLE_MESSAGE =
 	"Competition Number training isn't available for your weight class. Technique training is."
 TrainingStationRules.SELECTING_MESSAGE = "Choose what to train, then press Start Training."
+TrainingStationRules.PRACTISING_MESSAGE = "Practicing \u{2014} nothing is saved."
 
 --------------------------------------------------------------------------------
 -- PURE CALCULATIONS
@@ -402,9 +406,10 @@ end
 	Validates one menu request exactly as it arrived over the remote:
 	`argumentCount` is how many values the client sent after the Player.
 
-		Start  (payload)   payload is { mode, lift, primary? }
-		Stop   ()
-		Close  ()
+		Start     (payload)   payload is { mode, lift, primary? }
+		Stop      ()
+		Close     ()
+		Practice  ()
 
 	There is no station id: the server already knows which rack the player
 	occupies. There is no time, EV or CN: the server measures those itself.
@@ -423,7 +428,7 @@ function TrainingStationRules.parseRequest(action: any, payload: any, argumentCo
 		return { action = "Start", selection = selection }, nil
 	end
 
-	if action == "Stop" or action == "Close" then
+	if action == "Stop" or action == "Close" or action == "Practice" then
 		if argumentCount ~= 1 or payload ~= nil then
 			return nil, "UnexpectedField"
 		end
@@ -879,6 +884,31 @@ function TrainingStationRules.selectTraining(
 end
 
 --[[
+	Practice Lifts, picked in the menu (authorized as a selection is). Whatever
+	was running is settled FIRST, to what was selected, then stops: practice and
+	training never run together, and no time at practice is ever paid. The rack
+	stays theirs. Returns whether it started, and the settlement (or nil).
+]]
+function TrainingStationRules.startPractice(
+	registry: Registry,
+	playerKey: any,
+	nowClock: number,
+	maxCreditSeconds: number,
+	gateway: Gateway
+): (boolean, CreditReport?)
+	local session = registry.sessionByPlayer[playerKey]
+	if session == nil or not session.menuOpen then
+		return false, nil
+	end
+
+	local credit = TrainingStationRules.creditSession(registry, playerKey, nowClock, maxCreditSeconds, gateway)
+	session.state = "Practising"
+	session.selection = nil
+	session.menuOpen = false
+	return true, credit
+end
+
+--[[
 	Stop Training: settles the interval so far ONLY if the player is
 	genuinely still at the rack (`present`), then frees the rack. Leaving any
 	other way credits nothing.
@@ -937,6 +967,10 @@ function TrainingStationRules.statusLine(session: Session?): string
 
 	if session.state == "StoppedAtCNCap" then
 		return TrainingStationRules.CAP_REACHED_MESSAGE
+	end
+
+	if session.state == "Practising" then
+		return TrainingStationRules.PRACTISING_MESSAGE
 	end
 
 	local selection = session.selection

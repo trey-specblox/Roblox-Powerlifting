@@ -4396,6 +4396,7 @@ idle timer.
 | Changing selection | Permitted at any time, manually, by the player, through the rack menu. |
 | What a change never does | **Changing lifts, technique stats, stations or servers never resets the daily CN allowance, the per-lift hours or any technique stat.** §34.12. |
 | Accounting | **Server-authoritative** timestamps and allowance accounting. §34.12. |
+| Practice Lifts (user, 2026-11-05) | A third choice in the rack menu beside Competition Number and Technique, so a player can practise in the gym as well as the warm-up room. The rack works exactly like a warm-up rack: pick the lift and the weight (2.5 kg steps inside 40-125% of CN), LIFT runs the real minigames at meet difficulty, again as often as you like. **Nothing is saved** (no CN, no technique, no Scale, no records, no allowance). **Practice and training never run together:** picking it pays out the training time so far and stops the training. LEAVE RACK ends it; hold E again to train. |
 
 **[FINAL] "No automatic rotation" and "no hard hour limit" are a deliberate pair.**
 Removing the hour limit is what makes a long session worth standing through;

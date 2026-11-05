@@ -24,6 +24,10 @@
 	no records, no allowance). The client only asks; one player per rack.
 	A player who starts lifting in a meet, leaves the venue or dies is taken
 	off their rack (stop).
+
+	The gym's racks use this too (GymPractice): an instance with no racks of its
+	own, stepUp called when the player picks Practice Lifts. Both instances listen
+	to the same remotes, and each answers only the players it has on a rack.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -61,11 +65,18 @@ export type Hooks = {
 	standAt: (player: Player, spot: CFrame, anchored: boolean) -> (),
 	release: (player: Player) -> (),
 	notify: (player: Player, message: string) -> (),
-	prompt: (parent: BasePart, action: string, object: string, onTriggered: (Player) -> ()) -> ProximityPrompt,
+	-- Only for racks with a prompt of their own (the racks passed to new).
+	prompt: ((parent: BasePart, action: string, object: string, onTriggered: (Player) -> ()) -> ProximityPrompt)?,
 	pressAllowed: (player: Player) -> boolean,
+	-- Told when a player has come off a rack, whatever the reason.
+	onLeft: ((player: Player) -> ())?,
+	-- The card's title; the client's own (WARM-UP) when nil.
+	cardTitle: string?,
 }
 
 export type WarmUp = {
+	-- Puts the player on `rack`, if they may use it. The prompts call this.
+	stepUp: (player: Player, rack: LocalMeetVenue.WarmUpRack) -> (),
 	-- Takes the player off their rack (if they are at one) and stops their lift; steps them off the rack when
 	-- `stepOff` (otherwise the caller moves them).
 	stop: (player: Player, stepOff: boolean) -> (),
@@ -117,6 +128,7 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 			startPercent = LocalMeetConfig.WarmUp.StartPercent,
 			lifting = use ~= nil and use.lifting,
 			last = use and use.last,
+			title = hooks.cardTitle,
 		}
 		remotes.warmUpState:FireClient(player, state)
 	end
@@ -161,13 +173,16 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 		hooks.release(player)
 		if stepOff then
 			-- A couple of steps forward, off the rack, free to walk.
-			hooks.standAt(player, use.rack.liftSpot * CFrame.new(0, 0, -3), false)
+			hooks.standAt(player, use.rack.stepOffSpot or (use.rack.liftSpot * CFrame.new(0, 0, -3)), false)
 		end
 		sendState(player)
 		log("%s left warm-up rack %d", player.Name, use.rack.index)
+		if hooks.onLeft then
+			hooks.onLeft(player)
+		end
 	end
 
-	local function stepUp(player: Player, rack: LocalMeetVenue.WarmUpRack)
+	function warmUp.stepUp(player: Player, rack: LocalMeetVenue.WarmUpRack)
 		if uses[player] or not hooks.pressAllowed(player) then
 			return
 		end
@@ -191,11 +206,14 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 		log("%s stepped up to warm-up rack %d", player.Name, rack.index)
 	end
 
-	for _, rack in ipairs(racks) do
-		prompts[rack.index] = hooks.prompt(rack.point, LocalMeetConfig.WarmUp.PromptAction,
-			LocalMeetConfig.WarmUp.PromptObject, function(player)
-				stepUp(player, rack)
-			end)
+	local makePrompt = hooks.prompt
+	if makePrompt then
+		for _, rack in ipairs(racks) do
+			prompts[rack.index] = makePrompt(rack.point, LocalMeetConfig.WarmUp.PromptAction,
+				LocalMeetConfig.WarmUp.PromptObject, function(player)
+					warmUp.stepUp(player, rack)
+				end)
+		end
 	end
 
 	remotes.warmUpLift.OnServerEvent:Connect(function(player: Player, liftName: unknown, weightKg: unknown)

@@ -4,7 +4,8 @@
 	Client / Meet
 
 	The WARM-UP card while the player stands at a warm-up rack in the Local meet
-	venue (GAME_DESIGN.md §29.10, build step 3; LocalMeetWarmUp on the server).
+	venue (GAME_DESIGN.md §29.10, build step 3; LocalMeetWarmUp on the server), and
+	the same card titled PRACTICE at a gym training rack (GymPractice).
 	Bottom middle of the screen, hidden while a lift runs (the minigame has the
 	screen):
 
@@ -58,7 +59,7 @@ function LocalMeetWarmUpUI.build(handlers: Handlers): Ui
 
 	local holder, card = UIStyle.panel(gui, "Card", UDim2.new(0.5, -WIDTH / 2, 1, -HEIGHT - BOTTOM_GAP),
 		UDim2.fromOffset(WIDTH, HEIGHT))
-	UIStyle.titleTag(holder, "Tag", "WARM-UP", UDim2.fromOffset(-14, -24), UDim2.fromOffset(190, 40), nil, "bar")
+	local titleLabel = UIStyle.titleTag(holder, "Tag", "WARM-UP", UDim2.fromOffset(-14, -24), UDim2.fromOffset(190, 40), nil, "bar")
 	UIStyle.collapsible(holder)
 
 	local state: LocalMeetRemotes.WarmUpState? = nil
@@ -180,6 +181,7 @@ function LocalMeetWarmUpUI.build(handlers: Handlers): Ui
 			-- A new rack (or none): start each lift from its opener suggestion again.
 			weights = {}
 		end
+		titleLabel.Text = (newState and newState.title) or "WARM-UP"
 		gui.Enabled = onRack and not (newState :: LocalMeetRemotes.WarmUpState).lifting
 		redraw()
 	end

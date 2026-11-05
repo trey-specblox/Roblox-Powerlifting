@@ -21,6 +21,7 @@
 	rack it has validated), and every button press is only a request:
 
 		Start Training  -> "Start", { mode, lift, primary? }
+		Start Practice  -> "Practice" (the PRACTICE card then takes over: LocalMeetWarmUpUI)
 		Stop Training   -> "Stop"
 		Close           -> "Close"
 
@@ -55,8 +56,13 @@ local LIST_GAP = 8
 
 local NOTICE_SECONDS = 8
 
+local PRACTICE_INFO = "The real lift games at any lift and weight you choose. Nothing is saved."
+local PRACTICE_STOPS_TRAINING = "\nYour training stops while you practice."
+
+type MenuMode = TrainingStationRules.Mode | "Practice"
+
 -- The choice being built before Start. Local only; the server re-validates it.
-local chosenMode: TrainingStationRules.Mode = "CN"
+local chosenMode: MenuMode = "CN"
 local chosenLift: string = "Squat"
 local chosenPrimary: string? = nil
 
@@ -87,6 +93,10 @@ local function splitText(lift: string, primary: string): string
 end
 
 local function describeChoice(mode: string?, lift: string?, primary: string?): string
+	if mode == "Practice" then
+		return "Practice Lifts"
+	end
+
 	if mode == nil or lift == nil then
 		return "Nothing"
 	end
@@ -169,6 +179,8 @@ local panel: Frame
 local titleLabel: TextLabel
 local categoryButtons: { [string]: TextButton } = {}
 local liftButtons: { [string]: TextButton } = {}
+local liftHeading: Frame
+local liftRow: Frame
 local primaryHeading: TextLabel
 local primaryRow: Frame
 local primaryButtons: { TextButton } = {}
@@ -256,19 +268,22 @@ local function buildGui(player: Player)
 	titleLabel.TextSize = SIZES.heading
 
 	makeHeading(content, "WHAT TO TRAIN", 2)
-	local categoryRow = makeRow(content, 46, 3)
-	categoryButtons.CN = makeButton(categoryRow, "Competition Number", 0.5, 1)
-	categoryButtons.Technique = makeButton(categoryRow, "Technique Stats", 0.5, 2)
+	local categoryRow = makeRow(content, 56, 3)
+	categoryButtons.CN = makeButton(categoryRow, "Competition Number", 1 / 3, 1)
+	categoryButtons.Technique = makeButton(categoryRow, "Technique Stats", 1 / 3, 2)
+	categoryButtons.Practice = makeButton(categoryRow, "Practice Lifts", 1 / 3, 3)
 
 	for mode, button in pairs(categoryButtons) do
+		-- Three to a row: "Competition Number" needs the smaller size to stay on one line.
+		button.TextSize = SIZES.small
 		button.Activated:Connect(function()
-			chosenMode = mode :: TrainingStationRules.Mode
+			chosenMode = mode :: MenuMode
 			refreshMenu()
 		end)
 	end
 
-	makeHeading(content, "LIFT", 4)
-	local liftRow = makeRow(content, 42, 5)
+	liftHeading = makeHeading(content, "LIFT", 4)
+	liftRow = makeRow(content, 42, 5)
 	for index, lift in ipairs(ProgressionConfig.Lifts) do
 		local button = makeButton(liftRow, lift, 1 / #ProgressionConfig.Lifts, index)
 		button.Activated:Connect(function()
@@ -313,7 +328,9 @@ local function buildGui(player: Player)
 	closeButton.Visible = false
 
 	startButton.Activated:Connect(function()
-		if chosenMode == "CN" then
+		if chosenMode == "Practice" then
+			send("Practice")
+		elseif chosenMode == "CN" then
 			send("Start", { mode = "CN", lift = chosenLift })
 		elseif chosenPrimary ~= nil then
 			send("Start", { mode = "Technique", lift = chosenLift, primary = chosenPrimary })
@@ -433,12 +450,18 @@ refreshMenu = function()
 		setChosen(button, mode == chosenMode)
 	end
 	categoryButtons.CN.Text = if state and not state.cnAvailable
-		then "Competition Number\n(daily limit reached)"
+		then "CN\n(daily limit reached)"
 		else "Competition Number"
 
 	for lift, button in pairs(liftButtons) do
 		setChosen(button, lift == chosenLift)
 	end
+
+	local practice = chosenMode == "Practice"
+	-- The lift and weight are chosen on the PRACTICE card, and can change between lifts.
+	liftHeading.Visible = not practice
+	liftRow.Visible = not practice
+	startButton.Text = if practice then "START PRACTICE" else "START TRAINING"
 
 	local technique = chosenMode == "Technique"
 	primaryHeading.Visible = technique
@@ -458,9 +481,11 @@ refreshMenu = function()
 			.. (if state.sessionState == "Training"
 				then describeChoice(state.mode, state.lift, state.primary)
 				else state.statusLine)
-		todayLabel.Text = todayText(state)
+		todayLabel.Text = if practice
+			then PRACTICE_INFO .. (if state.sessionState == "Training" then PRACTICE_STOPS_TRAINING else "")
+			else todayText(state)
 		techniqueLabel.Text = techniqueText(state)
-		techniqueLabel.Visible = technique or isTrainingTechnique(state)
+		techniqueLabel.Visible = not practice and (technique or isTrainingTechnique(state))
 		stopButton.Visible = state.occupying
 	end
 
@@ -514,7 +539,9 @@ local function onState(state: TrainingRemotes.MenuState)
 
 	panel.Visible = state.open
 
-	statusBar.Visible = state.occupying and not state.open
+	-- While practising, the PRACTICE card is the player's screen.
+	local practising = state.sessionState == "Practising"
+	statusBar.Visible = state.occupying and not state.open and not practising
 	statusBar.Text = string.format(
 		"%s\n%sCN today: %s / %.2f EV  \u{2014}  hold [E] at your rack for the menu",
 		if state.sessionState == "Training"
@@ -534,7 +561,7 @@ local function onState(state: TrainingRemotes.MenuState)
 			local token = noticeToken
 			task.delay(NOTICE_SECONDS, function()
 				local latest = lastState
-				if noticeToken == token and latest and not latest.occupying then
+				if noticeToken == token and latest and (not latest.occupying or latest.sessionState == "Practising") then
 					statusBar.Visible = false
 				end
 			end)

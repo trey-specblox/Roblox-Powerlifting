@@ -204,6 +204,8 @@ export type WarmUpState = {
 	lifting: boolean,
 	-- The last lift's result, if any.
 	last: { lift: string, weightKg: number, good: boolean }?,
+	-- The card's title when it isn't the warm-up room's: PRACTICE at a gym rack (GymPractice).
+	title: string?,
 }
 
 function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
