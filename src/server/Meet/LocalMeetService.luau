@@ -1164,6 +1164,42 @@ end
 	or a computer lifter's stages over its lift time. No LIFT button: the lift
 	starts by itself once the lifter is ready at the bar. Records the verdict.
 ]]
+--[[
+	People yell the lifter through the lift (§37.5, user 2026-11-05), players and computer
+	lifters alike: the crowd every so often and a single voice between. Sound only. Returns
+	what stops it; it also stops if the lifter leaves. PERFORMANCE: about one small message
+	a second per lifter, and only while they are lifting; each client spaces out the shouts
+	it plays from other platforms.
+]]
+local function crowdBehind(lifter: Lifter): () -> ()
+	local settings = MeetSoundConfig.LiftCrowd
+	local shouts = MeetSoundConfig.liftShouts()
+	local active = true
+	local stopAt = os.clock() + LIFT_TIMEOUT_SECONDS
+	task.spawn(function()
+		local nextCrowdAt = 0
+		local lastShout: string? = nil
+		while active and stillLifting(lifter) and os.clock() < stopAt do
+			if os.clock() >= nextCrowdAt then
+				soundCue(lifter, "LiftCrowd")
+				nextCrowdAt = os.clock() + settings.CrowdEverySeconds
+			end
+			if #shouts > 0 then
+				local shout = shouts[cpuRandom:NextInteger(1, #shouts)]
+				if shout == lastShout then
+					shout = shouts[table.find(shouts, shout) :: number % #shouts + 1]
+				end
+				lastShout = shout
+				soundCue(lifter, shout)
+			end
+			task.wait(cpuRandom:NextNumber(settings.ShoutGapSeconds[1], settings.ShoutGapSeconds[2]))
+		end
+	end)
+	return function()
+		active = false
+	end
+end
+
 local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number)
 	local player = lifter.player
 	local verdict: string? = nil
@@ -1205,6 +1241,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		end
 	end
 
+	local stopCrowd = crowdBehind(lifter)
 	if player == nil then
 		-- A computer lifter (§37.2): the same stages as a player's minigames, over its lift time; the server decides.
 		lifter.liftsStarted += 1
@@ -1273,6 +1310,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 			warn(string.format("[LocalMeetService] %s's %s attempt could not start: %s", player.Name, lift, tostring(problem)))
 		end
 	end
+	stopCrowd()
 	local result: AttemptRules.AttemptResult = if verdict == "GoodLift" then "GoodLift" else "NoLift"
 	-- The attempt is over: the sign comes down (a record it set shows in the facts once saved).
 	lifter.recordAttempt = nil
@@ -1375,6 +1413,44 @@ local function raceFor(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		rivals = rivals,
 		mustMake = bestHere <= 0 and attemptNumber >= MeetConfig.AttemptsPerLift,
 	}
+end
+
+--[[
+	What this attempt is for, in a few words, for the lifter's card (client
+	MeetLiftMoment, §37.5), or nil when nothing special hangs on it. As things stand
+	when they walk out: the others are lifting at the same time.
+]]
+local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number): string?
+	if bombed(lifter) then
+		return nil
+	end
+	if lifter.recordAttempt then
+		return "FOR THE GYM RECORD"
+	end
+	local race = raceFor(current, lifter, lift, attemptNumber)
+	if race.mustMake then
+		return "MUST MAKE IT FOR A TOTAL"
+	end
+	if #race.rivals == 0 then
+		return nil
+	end
+	local ahead, passed = 0, 0
+	for _, rival in ipairs(race.rivals) do
+		if rival.needKg > 0 then
+			ahead += 1
+			if weightKg >= rival.needKg then
+				passed += 1
+			end
+		end
+	end
+	if ahead == 0 then
+		return "LEADING THE MEET"
+	elseif passed == ahead then
+		return "TO TAKE THE LEAD"
+	elseif passed > 0 then
+		return "TO MOVE UP TO " .. string.upper(placeText(ahead - passed + 1))
+	end
+	return nil
 end
 
 --[[
@@ -1517,7 +1593,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 				string.format("BAR LOADED  ·  %s KG", kgText(weightKg)) })
 			sendState(lifter, "Ready", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
-				autoLift = true })
+				autoLift = true, stakes = if lifter.player then stakesFor(current, lifter, lift, attemptNumber, weightKg) else nil })
 			table.insert(lifting, lifter)
 			task.spawn(liftOne, current, lifter, lift, attemptNumber, weightKg)
 		end

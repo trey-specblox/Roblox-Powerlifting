@@ -41,6 +41,7 @@ export type Ui = {
 	gui: ScreenGui,
 	-- Shows the venue screen, and whether the player is lifting (which hides the card and EXIT).
 	setMode: (inVenue: boolean, lifting: boolean) -> (),
+	setClearView: (clear: boolean) -> (),
 	drawLobby: (lobby: LocalMeetRemotes.LobbyState?, secondsToStart: number?) -> (),
 	drawStandings: (standings: LocalMeetRemotes.Standings?) -> (),
 }
@@ -136,6 +137,11 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 		standingsHolder.Position = if lifting
 			then UDim2.fromOffset(LEFT + offsetX, CARD_TOP + offsetY)
 			else UDim2.new(1, -24 - standingsSize.X + offsetX, 0, STANDINGS_TOP_RIGHT + offsetY)
+	end
+
+	-- The lifter's turn (MeetLiftMoment): nothing over the view until the verdict.
+	ui.setClearView = function(clear: boolean)
+		standingsHolder.Visible = not clear
 	end
 
 	ui.drawLobby = function(lobby: LocalMeetRemotes.LobbyState?, secondsToStart: number?)

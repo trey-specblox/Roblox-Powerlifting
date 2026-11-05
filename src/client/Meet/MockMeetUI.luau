@@ -58,6 +58,8 @@ export type Options = {
 	guiName: string,
 	tag: string,
 	sub: string,
+	-- The lifter's turn runs as MeetLiftMoment: no scorecard or bottom panel over the view until the verdict.
+	liftMoment: boolean?,
 }
 
 local MOCK_MEET_OPTIONS: Options = { guiName = "MockMeet", tag = "MOCK MEET", sub = "PRIVATE ROOM  ·  COACH WATCHING" }
@@ -488,6 +490,13 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 			end)
 		elseif state.phase ~= "Result" then
 			actionHolder.Visible = true
+		end
+		-- The lifter's turn (MeetLiftMoment): its card replaces the bottom panel, and the view stays clear.
+		if look.liftMoment then
+			scoreHolder.Visible = state.phase ~= "Ready" and state.phase ~= "Lifting"
+			if state.phase == "Ready" then
+				actionHolder.Visible = false
+			end
 		end
 		lastPhase = state.phase
 

@@ -43,6 +43,9 @@ local cues: { [string]: CueState } = {}
 local boxes: { [Model]: Box } = setmetatable({}, { __mode = "k" }) :: any
 local lastOtherRepAt = -math.huge
 local started = false
+local SHOUT_PREFIX = "LiftShout"
+local lastOtherShoutAt = -math.huge
+local roarUntil = 0
 
 local function makeGroup(): SoundGroup
 	local group = Instance.new("SoundGroup")
@@ -134,7 +137,25 @@ local function play(name: string, at: Vector3)
 	if not isOwn and os.clock() - state.lastPlayedAt < config.minGapSeconds then
 		return
 	end
-	startVoice(state, config, at, isOwn, 1)
+	-- Shouts from other platforms are spaced out as a whole: eight platforms lift at once.
+	if not isOwn and string.sub(name, 1, #SHOUT_PREFIX) == SHOUT_PREFIX then
+		local now = os.clock()
+		if now - lastOtherShoutAt < MeetSoundConfig.LiftCrowd.OthersShoutGapSeconds then
+			return
+		end
+		lastOtherShoutAt = now
+	end
+	local scale = 1
+	if isOwn and (name == "CrowdCheer" or name == "CrowdGroan") and os.clock() < roarUntil then
+		roarUntil = 0
+		scale = MeetSoundConfig.LiftCrowd.RoarVolume
+	end
+	startVoice(state, config, at, isOwn, scale)
+end
+
+-- The player's own lift was just judged (MeetLiftMoment): the crowd's answer, due in a moment, is louder than usual.
+function MeetSoundController.expectRoar()
+	roarUntil = os.clock() + MeetSoundConfig.LiftCrowd.RoarWindowSeconds
 end
 
 --[[

@@ -3721,7 +3721,57 @@ and polish.
   errors or warnings. LEAVE from the platform mid-lift: lands in the lobby, free to walk,
   stopped at the barricade going back; no errors. Good lifts and bench at warm-up racks, and
   two real players, still not run.
-  NEXT: discuss why meets feel bland (the user's next topic).
+  MEET QUALITY TALK 2026-11-05: Claude's read was that a meet never makes one lift feel like
+  an event. Four ideas, best first: (1) "your moment", (2) stakes that build, (3) a real
+  crowd in the stands (costs performance: one reused low-detail Blender crowd model, warned
+  up front), (4) rituals before the lift. The user chose to build (1) first.
+  "YOUR MOMENT" BUILT 2026-11-05, NOT COMMITTED (GAME_DESIGN §37.5): new client
+  `MeetLiftMoment` (camera and card), `stakesFor` in `LocalMeetService` (a `stakes` line in the
+  Ready state), `LocalMeetConfig.LiftMoment` (shots, timings), and the scorecard, bottom panel
+  and standings hidden from Ready until the verdict. Mock Meets unchanged (no crowd).
+  USER'S FIRST REVIEW, same day: a hush is "the opposite" of real powerlifting, people scream
+  during the lift. Hush removed; `crowdBehind` (server, every lifter including computer ones)
+  sends cue LiftCrowd (the existing Sonniss cheer, quieter) every 3.5 s and a LiftShout between;
+  `MeetSoundConfig.LiftCrowd` holds the settings. Squat shot moved near the head referee's view,
+  bench and deadlift higher and further back.
+  SHOUTS MADE 2026-11-05: the five downloaded Sonniss zips have no English shouts, so the user
+  connected ElevenLabs (official connector) and chose Sound Effects over Text to Speech by ear.
+  Eight made, cut and levelled by `art/scripts/make_lift_shouts.py`, uploaded under the group,
+  ids in `MeetSoundConfig` (LiftShout1-8) and `art/sounds/elevenlabs_shouts.json`. WAVs and raw
+  MP3s stay in `D:\Powerlifting Roblox Extras\Sounds\Shouts`. About 227 ElevenLabs credits in all
+  (the transcription estimate said 0.3 each, it cost 5.5-11). Transcribed to check the words:
+  six read correctly (shout 6 as one "Drive!"); both UP shouts came back blank, including the one
+  the user approved by ear, so the long UPPPPP! has not been checked by anyone. No Sonniss audio
+  may go into ElevenLabs (licence: no AI tools). The user's plan is not confirmed: the free plan
+  may not cover commercial use, so confirm before publishing.
+  STALE CODE CAUGHT: the first shout test crashed at each verdict (MeetLiftMoment:306) because
+  Studio still held an old copy from edits made during Play, although line counts matched. Fixed
+  by re-sending; all nine changed scripts then matched disk by length and checksum.
+  TESTED IN STUDIO on that verified code, one player, no minigames played so every lift missed:
+  a full meet to the awards. 90 shouts heard on the player's client, all eight load, own platform
+  at about 3 studs, others 24 to 72, spaced out. Timeline on a turn: card and camera at Ready, at
+  the bar about 3.4 s later, card off when the lift starts, the shot holds after the lights until
+  the lifter leaves (about 6 s after a miss), normal camera 0.7 s later. Awards take the camera
+  and give it back. LEAVE mid-lift: camera, card and panels back at once, free to walk, others'
+  shouts carry on. No errors from this code. Earlier the same day, on partly stale code: stakes
+  seen TO MOVE UP TO 3RD and MUST MAKE IT FOR A TOTAL; LiftCrowd plays during all three lifts;
+  line of sight clear on all three new shots; Claude looked at screenshots of all three (bench's
+  first new shot had a spotter's arm filling the screen, moved; the shots' config was current).
+  NOT VERIFIED: how it SOUNDS (Claude can't hear; crowd and shout levels are first guesses); the
+  user's view of the new shots; good lifts (the hold after a good lift, TO TAKE THE LEAD, LEADING
+  THE MEET, FOR THE GYM RECORD); the State arena; two real players; phones.
+  SEEN, NOT CHANGED: the deadlift minigame's panel sits over the lifter in Studio's short window.
+  TEST NOTE: an `execute_luau` call on the Client that starts with the camera Custom and ends
+  with it Scriptable has it reset to Custom (the console says so). To screenshot a shot, wait in
+  a call on the SERVER instead, then capture. `screen_capture` drew the 3D view white for a while
+  this session and later came back by itself.
+  APPROVED 2026-11-05: the user played it and said "Feels good, commit". COMMITTED on `main` as
+  "Make a meet lift an event: head referee camera, name card, people yelling the lifter on" (run
+  `git log -1` for the hash). NOT pushed and NOT published. Left out on purpose, still uncommitted:
+  `.claude/`, `art/previews/`, `art/exports/ScaleTest_2StudCube.fbx`,
+  `art/blender/PowerRack_01.blend` (origin unclear, ask the user), `References/DBD.md`.
+  NEXT: push when the user asks. Before publishing, the user confirms their ElevenLabs plan covers
+  the shouts. Then ideas 2-4 from the meet quality talk if they want them.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;

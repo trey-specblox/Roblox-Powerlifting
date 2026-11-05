@@ -27,11 +27,13 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("LocalMeetRemotes"))
+local MockMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("MockMeetRemotes"))
 
 local MockMeetController = require(script.Parent:WaitForChild("MockMeetController"))
 local LocalMeetLobbyUI = require(script.Parent:WaitForChild("LocalMeetLobbyUI"))
 local LocalMeetAwards = require(script.Parent:WaitForChild("LocalMeetAwards"))
 local LocalMeetWarmUpUI = require(script.Parent:WaitForChild("LocalMeetWarmUpUI"))
+local MeetLiftMoment = require(script.Parent:WaitForChild("MeetLiftMoment"))
 
 local LocalMeetController = {}
 
@@ -51,7 +53,10 @@ function LocalMeetController.start()
 		guiName = "LocalMeet",
 		tag = "LOCAL MEET",
 		sub = "REFEREES  ·  COACH WATCHING",
+		liftMoment = true,
 	})
+	-- The lifter's turn on their own screen: the camera and the card.
+	remotes.state.OnClientEvent:Connect(MeetLiftMoment.onState)
 
 	local lobby: LocalMeetRemotes.LobbyState? = nil
 	local standings: LocalMeetRemotes.Standings? = nil
@@ -93,7 +98,14 @@ function LocalMeetController.start()
 		ui.setMode(inVenue, lifting)
 		ui.drawStandings(standings)
 		holdFooting(lifting)
+		if not lifting then
+			MeetLiftMoment.stop(true)
+			ui.setClearView(false)
+		end
 	end
+	remotes.state.OnClientEvent:Connect(function(state: MockMeetRemotes.MeetState)
+		ui.setClearView(state.phase == "Ready" or state.phase == "Lifting")
+	end)
 	player:GetAttributeChangedSignal(LocalMeetConfig.VenueAttribute):Connect(refresh)
 	player:GetAttributeChangedSignal(LocalMeetConfig.PlatformAttribute):Connect(refresh)
 	refresh()
@@ -106,7 +118,10 @@ function LocalMeetController.start()
 		ui.drawStandings(standings)
 	end)
 	-- The awards ceremony: the podium camera, the cheer, the winner's theme song and celebration.
-	remotes.awards.OnClientEvent:Connect(LocalMeetAwards.play)
+	remotes.awards.OnClientEvent:Connect(function(moment: LocalMeetRemotes.AwardsMoment)
+		MeetLiftMoment.stop(false)
+		LocalMeetAwards.play(moment)
+	end)
 
 	-- The WARM-UP card at a warm-up rack: it only asks for a lift or to step off.
 	local warmUp = LocalMeetWarmUpUI.build({

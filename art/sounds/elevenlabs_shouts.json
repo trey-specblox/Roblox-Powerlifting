@@ -1,0 +1,69 @@
+{
+  "about": "Shouts people yell during a meet lift (GAME_DESIGN 37.5, cues LiftShout1-8). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py.",
+  "sounds": {
+    "LiftShout_1": {
+      "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_1.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://88650045295512"
+      }
+    },
+    "LiftShout_2": {
+      "about": "Single young man screaming one long drawn out \"UPPPPP!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_2.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://85759075386502"
+      }
+    },
+    "LiftShout_3": {
+      "about": "Single woman yelling \"You got this!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_3.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://102145250898707"
+      }
+    },
+    "LiftShout_4": {
+      "about": "Single deep voiced man yelling \"Come on!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_4.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://124723740426288"
+      }
+    },
+    "LiftShout_5": {
+      "about": "Single young man yelling \"Let's go!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_5.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://132787944284167"
+      }
+    },
+    "LiftShout_6": {
+      "about": "Single gruff older man yelling \"Drive! Drive!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_6.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://134812369331510"
+      }
+    },
+    "LiftShout_7": {
+      "about": "Single woman yelling \"Keep pushing!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_7.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://96519684386231"
+      }
+    },
+    "LiftShout_8": {
+      "about": "Single man yelling \"Big lift, come on!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_8.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://93544230817104"
+      }
+    }
+  }
+}

@@ -179,6 +179,41 @@ LocalMeetConfig.Awards = {
 	GlideSeconds = 1.2,
 }
 
+-- ------------------------------------------------ "your moment" (GAME_DESIGN §37.5, user 2026-11-05)
+
+--[[
+	The lifter's own screen during their turn (client MeetLiftMoment). Shots are
+	rack-local: from the rack's pivot, +Z toward the rack from the walk-in side,
+	feet near Y = 0. `eye` is where the camera stands, `look` what it looks at.
+]]
+LocalMeetConfig.LiftMoment = {
+	Shots = {
+		-- Near the head referee's own view (user 2026-11-05): they stand at Z 13.45, facing the lifter through the rack.
+		Squat = { eye = Vector3.new(0.8, 4.6, 10.5), look = Vector3.new(0, 3.2, -1.6) },
+		-- From toward the feet: any closer to the side, a spotter's arm (X 6.25, Z -0.28) fills the screen.
+		Bench = { eye = Vector3.new(3.4, 4.2, -9), look = Vector3.new(0, 1.8, -0.5) },
+		Deadlift = { eye = Vector3.new(6.8, 3, 6.6), look = Vector3.new(0, 2.5, -1) },
+	} :: { [string]: { eye: Vector3, look: Vector3 } },
+	-- The slow push in: this share of the way to what it looks at, over this long.
+	PushInShare = 0.18,
+	PushInSeconds = 14,
+	-- How quickly the camera catches up with where it should be (higher = tighter).
+	WalkRate = 4,
+	SetRate = 2,
+	ReleaseRate = 6,
+	-- The walk out: this far behind and above the lifter, looking this far ahead of them (studs).
+	WalkBack = 10,
+	WalkUp = 2.5,
+	WalkAhead = 6,
+	-- The longest the camera stays on the platform after the lights; it normally leaves when the lifter does.
+	HoldMaxSeconds = 9,
+	-- Gliding back to behind the lifter before the player has the camera again.
+	ReleaseSeconds = 0.7,
+	ReleaseBack = 13,
+	ReleaseUp = 5,
+	CardSlideSeconds = 0.35,
+}
+
 -- ------------------------------------------------ the warm-up room (GAME_DESIGN §29.10, build step 3)
 
 --[[

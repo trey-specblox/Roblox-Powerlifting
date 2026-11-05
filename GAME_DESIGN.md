@@ -2133,8 +2133,9 @@ multiplayer-only, not because progression requires it.
   build for its weigh-in class ~~with each good lift~~, and a finished meet's Total
   can become that build's best Total. Still no records and no money.
   **[CHANGED BY THE USER, 2026-10-29, §33.3b]:** Scale is saved only when the meet
-  ends **with a total**; a bomb-out or leaving early saves nothing. (Built code
-  still saves after each good lift until this is changed.)
+  ends **with a total**; a bomb-out or leaving early saves nothing. Built since
+  `dda82af`. Leaving during the last verdict still saves, because all nine attempts
+  are already taken.
 - **Attempts are chosen one at a time**, like a real meet: the opener at weigh-in,
   then each next attempt right after a lift, in kilograms with ±2.5 kg steps and the
   % of Competition Number shown, with a short timer. The server checks every choice
@@ -3846,11 +3847,13 @@ subsequently voided for rule violations, and any future tutorial meet. The
 principle to apply is that an eligible attempt is one taken under full competition
 conditions and judged.
 
-**DECIDED for the Mock Meet (user, 2026-10-28):** a **Mock Meet** is eligible, and
+**DECIDED for the Mock Meet (user, 2026-10-28):** a **Mock Meet** is eligible~~, and
 **a good lift counts even if the lifter leaves early** (Leave, dying, quitting):
 each good lift raises that lift's Scale as soon as it is judged, like a real meet
-where completed lifts stay on record. The **best Total** counts only for a
-finished meet. The rest of the list above stays **[TBD]**.
+where completed lifts stay on record~~. **[CHANGED BY THE USER, 2026-10-29, §33.3b]:**
+Scale and the **best Total** are saved only when the meet ends **with a total**; a
+bomb-out or leaving early (Leave, dying, quitting) saves nothing. The rest of the
+list above stays **[TBD]**.
 
 
 ### 33.8 Competition Scale data rules
@@ -4162,7 +4165,7 @@ none should begin without the decisions it depends on:
 | 5A | **Define** the training CN channel | **DONE** — approved and documented as **section 34**. The §33.9 rates and the §29.6 distribution that blocked this are both resolved |
 | 5B | **Implement** the training CN channel | **DONE** — 5B.1 to 5B.7 done and verified in Studio; 5B.7 (uncapped technique) committed as `5999fa1`. The Game Pass fallback is a later, separate item. Checkpoints in §34.14 |
 | 6 | Implement the Scale challenge modifier | §33.4 curve, cap and target |
-| 7 | Wire meets to raise Scale | **DONE for the Mock Meet (2026-10-28)** — schema v6 `builds[classKey]` (§29.11 "Weight-class builds"); `MockMeetService` raises the weigh-in class's Scale after each good lift (`MeetTotal.bestSuccessful`) and a finished meet's best Total (`raiseBestTotal`). Probes 462/298/205 passed, the v5→v6 fixture passed 30/0 on a disposable key in the real DataStore, and a Mock Meet in Studio saved Scale 25/0/22.5 to the 59 kg build. Official meets still to come |
+| 7 | Wire meets to raise Scale | **DONE for the Mock Meet (2026-10-28)** — schema v6 `builds[classKey]` (§29.11 "Weight-class builds"); `MockMeetService` raises the weigh-in class's Scale ~~after each good lift (`MeetTotal.bestSuccessful`)~~ **only when the meet ends with a total (§33.3b, since `dda82af`)** and a finished meet's best Total (`raiseBestTotal`). Probes 462/298/205 passed, the v5→v6 fixture passed 30/0 on a disposable key in the real DataStore, and a Mock Meet in Studio saved Scale 25/0/22.5 to the 59 kg build. Official meets still to come |
 | 8 | Resolve the Competition Budget | §29.9 |
 
 > Step 7 must be built on `MeetTotal.bestSuccessful`, which already computes
@@ -6305,6 +6308,41 @@ in the future if need be").**
 - **The deadlift bar lies in the middle of the platform.**
 - **Warm-up racks play the same lift and fail animations and bar sounds as a platform**,
   and carry a bar. Still practice only: nothing is saved.
+
+**Your moment (user, 2026-11-05: "Build your moment"; part of making meets less bland):**
+at a meet against other players, a lifter's turn feels like an event. On **their own
+screen only**, so nobody else gets extra labels (§37.5, no screen clutter). **[PROVISIONAL]**
+until the user has judged how it looks and sounds.
+
+- **Walking out:** a card shows their name, the lift, the attempt and the weight, plus what
+  is at stake when anything is: FOR THE GYM RECORD, MUST MAKE IT FOR A TOTAL, TO TAKE THE
+  LEAD, TO MOVE UP TO 2ND, LEADING THE MEET. Stakes go by the standings as the lifter walks
+  out, since the others are lifting at the same time. The camera follows low behind them.
+- **At the bar:** the camera glides to the lift's shot and slowly pushes in (user, same day).
+  **Squat:** near the head referee's own view, the referee who calls SQUAT!, facing the lifter
+  through the rack. **Bench** and **deadlift:** from higher up and further back than the first
+  low shots; bench looks from toward the feet, clear of the spotters' arms.
+- **People yell the lifter on during the lift** (user, same day: "Its actually the opposite in
+  powerlifting ... people screaming saying stuff like 'you got this' or 'UPPPP' while the
+  lifter is lifting"). ~~The hall goes quiet for the lift~~ was built first and replaced. Every
+  lifter gets it, players and computer lifters: the crowd, and single voices shouting between,
+  heard loudest on the lifter's own platform. Other platforms' shouts are spaced out.
+- **Nothing covers the view** from the walk out until the verdict: no scorecard, standings or
+  bottom panel. The lift's own minigame screens still show.
+- **The lights:** the crowd's answer to this lift is louder than usual.
+- **Walking back:** the player has their normal camera again.
+
+It decides nothing and changes no lift result. LEAVE ends it at once. **Mock Meets don't have
+it**: they have no crowd. Next ideas, not decided: stakes that build through the attempts,
+a real crowd in the stands, rituals before the lift.
+
+> **Built 2026-11-05:** client `MeetLiftMoment`, `MeetSoundController.expectRoar`, `stakesFor`
+> and `crowdBehind` in `LocalMeetService`, settings in `LocalMeetConfig.LiftMoment` and
+> `MeetSoundConfig.LiftCrowd`. The single voices are cues `LiftShout1-8`, eight lines in
+> different voices (men and women): UP! UP! UP!, UPPPPP!, You got this!, Come on!, Let's go!,
+> Drive!, Keep pushing!, Big lift, come on! The downloaded bundles had no such shouts, so they
+> were made with ElevenLabs Sound Effects, the style the user picked by ear over Text to Speech
+> (2026-11-05). Prompts and ids: `art/sounds/elevenlabs_shouts.json`.
 
 ### 37.3 Still open
 

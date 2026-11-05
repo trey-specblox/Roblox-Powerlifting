@@ -90,6 +90,8 @@ export type MeetState = {
 	race: RaceView?,
 	-- (Local meet, Ready) the lift starts by itself once the lifter is set up at the bar: no LIFT button.
 	autoLift: boolean?,
+	-- (Local meet, Ready) what this attempt is for, for the lifter's card ("TO TAKE THE LEAD"), when anything.
+	stakes: string?,
 }
 
 --[[

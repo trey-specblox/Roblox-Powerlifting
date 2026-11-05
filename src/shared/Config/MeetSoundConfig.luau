@@ -21,6 +21,7 @@
 	  BarShake    a gym squat or bench rep, at the bottom (StationRepSounds)
 	  LightsGood / LightsBad   the three referees' lights coming on
 	  CrowdCheer / CrowdGroan  the hall's answer, just after the lights
+	  LiftCrowd / LiftShout1-8  people yelling the lifter on during the lift
 ]]
 
 local MeetSoundConfig = {}
@@ -59,6 +60,17 @@ MeetSoundConfig.Cues = {
 	LightsBad = cue("rbxassetid://126005722823250", 0.22, 16, 90, 2, 0, "Own work, made by make_meet_sounds.py"),
 	CrowdCheer = cue("rbxassetid://117986972792203", 0.5, 30, 140, 2, 3, "Sonniss: Small Club, 50 People"),
 	CrowdGroan = cue("rbxassetid://106001648154233", 0.45, 30, 140, 2, 3, "Sonniss: Bar Pub, Boo, Aww"),
+	-- During a lift: the same recording as the cheer, quieter, under the shouts.
+	LiftCrowd = cue("rbxassetid://117986972792203", 0.3, 30, 140, 3, 5, "Sonniss: Small Club, 50 People"),
+	-- During a lift: single voices yelling the lifter on (prompts in art/sounds/elevenlabs_shouts.json).
+	LiftShout1 = cue("rbxassetid://88650045295512", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: UP! UP! UP!"),
+	LiftShout2 = cue("rbxassetid://85759075386502", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: UPPPPP!"),
+	LiftShout3 = cue("rbxassetid://102145250898707", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: You got this!"),
+	LiftShout4 = cue("rbxassetid://124723740426288", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Come on!"),
+	LiftShout5 = cue("rbxassetid://132787944284167", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Let's go!"),
+	LiftShout6 = cue("rbxassetid://134812369331510", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Drive!"),
+	LiftShout7 = cue("rbxassetid://96519684386231", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Keep pushing!"),
+	LiftShout8 = cue("rbxassetid://93544230817104", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Big lift, come on!"),
 } :: { [string]: Cue }
 
 --[[
@@ -140,5 +152,34 @@ MeetSoundConfig.Backgrounds = {
 } :: { Background }
 
 MeetSoundConfig.BackgroundFadeSeconds = 2
+
+--[[
+	People yell a lifter through the lift (§37.5, user 2026-11-05: "people screaming saying
+	stuff like 'you got this' or 'UPPPP' while the lifter is lifting"). While a lift runs the
+	server sends LiftCrowd every so often and one of the LiftShout cues that has a sound.
+]]
+MeetSoundConfig.LiftCrowd = {
+	CrowdEverySeconds = 3.5,
+	-- The time between two shouts for one lifter, in seconds: a random time between these.
+	ShoutGapSeconds = { 1.0, 2.2 },
+	-- Shouts from other platforms, all together, are at least this far apart on one player's screen.
+	OthersShoutGapSeconds = 1.5,
+	-- The crowd's answer to the player's own lift, after the lights.
+	RoarVolume = 1.8,
+	-- How long after the lights it may still come: a missed bar has to land first.
+	RoarWindowSeconds = 6,
+}
+
+-- The LiftShout cues that have a sound.
+function MeetSoundConfig.liftShouts(): { string }
+	local names = {}
+	for name, config in pairs(MeetSoundConfig.Cues) do
+		if string.sub(name, 1, 9) == "LiftShout" and config.id ~= "" then
+			table.insert(names, name)
+		end
+	end
+	table.sort(names)
+	return names
+end
 
 return MeetSoundConfig
