@@ -602,6 +602,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 120696869428785 }, -- StateArena_01: the State arena's bowl and dome slices, floor, centre cube, rack gantries,
 	-- judges' tables, camera tripods, banners, flag, name signs, gantry banners and its entrance building (all placed by
 	-- StateArenaVenue)
+	{ id = 73272782464755 }, -- Crowd_01: the fake spectators in the Local meet's stands (placed by LocalMeetVenue)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -664,6 +665,11 @@ StarterGymConfig.PropPaints = {
 	MatGrey = { color = Color3.fromRGB(128, 130, 136), material = Enum.Material.Fabric },
 	SuiteDark = { color = Color3.fromRGB(20, 22, 30) },
 	TintedGlass = { color = Color3.fromRGB(60, 80, 110), transparency = 0.3, reflectance = 0.1 },
+	-- Crowd_01 (the fake spectators).
+	SkinLight = { color = Color3.fromRGB(232, 190, 160) },
+	SkinTan = { color = Color3.fromRGB(190, 136, 96) },
+	SkinDark = { color = Color3.fromRGB(112, 72, 50) },
+	HairBrown = { color = Color3.fromRGB(110, 74, 40) },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -716,6 +722,18 @@ local function cardio(frame: string, shroud: string, pad: string, logo: string, 
 		HandleLeft = "Black", HandleRight = "Black", CordLeft = "Charcoal", CordRight = "Charcoal",
 	}
 end
+
+local function crowdColours(shirts: { string }, pants: { string }, hair: { string }): { [string]: string }
+	return { Skin1 = "SkinLight", Skin2 = "SkinTan", Skin3 = "SkinDark", Shirt1 = shirts[1], Shirt2 = shirts[2],
+		Shirt3 = shirts[3], Shirt4 = shirts[4], Shirt5 = shirts[5], Pants1 = pants[1], Pants2 = pants[2], Hair1 = hair[1],
+		Hair2 = hair[2], Eyes = "Black" }
+end
+local CROWD_COLOURWAYS = {
+	crowdColours({ "Red", "Blue", "Yellow", "White", "Teal" }, { "Navy", "Charcoal" }, { "Black", "HairBrown" }),
+	crowdColours({ "Orange", "Purple", "Green", "Charcoal", "Sky" }, { "Black", "LightGrey" }, { "HairBrown", "Black" }),
+	crowdColours({ "Pink", "Navy", "Lime", "White", "Coral" }, { "Charcoal", "Slate" }, { "Black", "Coffee" }),
+	crowdColours({ "Red", "Forest", "Mustard", "LightGrey", "Lavender" }, { "Navy", "Black" }, { "Coffee", "HairBrown" }),
+}
 
 StarterGymConfig.PropColourways = {
 	-- The supplement bar (product: body, lid, label, text; the shaker has no label).
@@ -933,6 +951,9 @@ StarterGymConfig.PropColourways = {
 	RefLights = { { Housing = "Black", Lamp1 = "Charcoal", Lamp2 = "Charcoal", Lamp3 = "Charcoal", Trim = "Yellow",
 		Logo = "White" } },
 	Bleachers = { { Body = "Navy", Seats = "Oak", Nosing = "Yellow", Rail = "Silver", Logo = "White" } },
+	-- The fake spectators (Crowd_01, art/scripts/build_crowd_01.py): each section of the stands takes the next colourway.
+	CrowdA = CROWD_COLOURWAYS,
+	CrowdB = CROWD_COLOURWAYS,
 	AwardPodium = { { Blocks = "Navy", Gold = "Yellow", Silver = "Silver", Bronze = "Bronze", Numbers = "White",
 		Logo = "Yellow" } },
 	PlateTree = { { Frame = "Black", Hubs = "Silver", PlatesLarge = "Red", PlatesMid = "Blue", PlatesSmall = "Yellow" } },

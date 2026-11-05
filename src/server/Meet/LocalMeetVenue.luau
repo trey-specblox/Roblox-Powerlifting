@@ -146,6 +146,10 @@ local WAIT_BEHIND_WALL = 5
 local CHAIR_SEAT_TOP = 1.84
 -- The stands (LocalMeet_01's Bleachers: 24 wide, 12 deep, four steps of 1.5).
 local SEAT_W, SEAT_D, SEAT_STEP_H, SEAT_STEPS = 24, 12, 1.5, 4
+-- The crowd on a section of stands (Crowd_01): a prop's pivot is the bottom centre of its bounds, and build_crowd_01.py
+-- prints where those are from the section's own centre: 0.08 up and 0.362 toward the front.
+local CROWD_OFFSET = CFrame.new(0, 0.08, -0.362)
+local CROWD_COLOURWAYS = 4
 -- The warm-up room's racks, in a row along its far wall, facing the hall.
 local WARMUP_RACK_Z = 66
 -- The entrance building outside the gym: its front wall level with the gym's front (z = -37), beside the gym's
@@ -227,7 +231,18 @@ export type WarmUpRack = {
 	point: BasePart,
 }
 
-local venue: Venue? = nil
+-- The halls built so far, and the folder they stand in (MeetSoundConfig's background finds them through it).
+local venues: { [number]: Venue } = {}
+local function hallsFolder(): Folder
+	local existing = Workspace:FindFirstChild(MODEL_NAME)
+	if existing and existing:IsA("Folder") then
+		return existing
+	end
+	local made = Instance.new("Folder")
+	made.Name = MODEL_NAME
+	made.Parent = Workspace
+	return made
+end
 
 local function platformX(index: number): number
 	return (index - (LocalMeetConfig.MaxLifters + 1) / 2) * LocalMeetConfig.PlatformSpacingStuds
@@ -277,12 +292,13 @@ end
 -- Shared with StateArenaVenue, whose signs use the same style.
 LocalMeetVenue.writeSign = writeSign
 
--- Builds the venue once and returns it (later calls return the same one), or nil and the reason.
-function LocalMeetVenue.build(): (Venue?, string?)
-	if venue then
-		return venue, nil
+-- Builds hall `hallIndex` once and returns it (later calls return the same one), or nil and the reason.
+function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
+	local known = venues[hallIndex]
+	if known then
+		return known, nil
 	end
-	local centre = LocalMeetConfig.Origin
+	local centre = LocalMeetConfig.hallOrigin(hallIndex)
 	local hx = halfWidth()
 	local xLeft, xRight = -hx, hx + CORRIDOR_W
 	local cx = (xLeft + xRight) / 2 -- under the ridge
@@ -290,7 +306,7 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	local rise = RIDGE - EAVE
 
 	local model = Instance.new("Model")
-	model.Name = MODEL_NAME
+	model.Name = "Hall_" .. hallIndex
 
 	local function box(parent: Instance, name: string, low: Vector3, high: Vector3, look: StarterGymConfig.Look): BasePart
 		return BuildParts.box(parent, name, centre + low, centre + high, look)
@@ -584,6 +600,16 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		stands += 1
 		local frame = facing(at, toward)
 		prop(model, "Stands_" .. stands, "Bleachers", frame)
+		-- The fake spectators (user 2026-11-05), a different seating and colourway from section to section.
+		local crowd = prop(model, "Crowd_" .. stands, if stands % 2 == 1 then "CrowdA" else "CrowdB",
+			frame * CROWD_OFFSET, (stands - 1) % CROWD_COLOURWAYS + 1)
+		if crowd then
+			for _, part in ipairs(crowd:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CastShadow = false
+				end
+			end
+		end
 		local depth = SEAT_D / SEAT_STEPS
 		for step = 0, SEAT_STEPS - 1 do
 			local height = (step + 1) * SEAT_STEP_H
@@ -655,7 +681,8 @@ function LocalMeetVenue.build(): (Venue?, string?)
 				StationVisuals.show(warmUpRack, nil)
 			end
 			table.insert(warmUpRacks, {
-				index = #warmUpRacks + 1,
+				-- Numbered across all the halls: one LocalMeetWarmUp serves every rack.
+				index = (hallIndex - 1) * LocalMeetConfig.MaxLifters + #warmUpRacks + 1,
 				rack = warmUpRack,
 				liftSpot = CFrame.lookAt(spotAt, spotAt - Vector3.zAxis),
 				point = point("WarmUpPoint_" .. index, spotAt - centre),
@@ -737,11 +764,11 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	end
 
 	model.PrimaryPart = model:FindFirstChild("Floor") :: BasePart
-	model.Parent = Workspace
+	model.Parent = hallsFolder()
 
 	local arrivalAt = centre + Vector3.new(6, 0, Z_FRONT + 6)
 	local lobbyAt = centre + Vector3.new(0, 0, -12)
-	venue = {
+	local built: Venue = {
 		model = model,
 		arrival = CFrame.lookAt(arrivalAt, arrivalAt + Vector3.zAxis),
 		lobbySpot = CFrame.lookAt(lobbyAt, lobbyAt + Vector3.zAxis),
@@ -756,7 +783,8 @@ function LocalMeetVenue.build(): (Venue?, string?)
 		podiumSpots = podiumSpots,
 		warmUpRacks = warmUpRacks,
 	}
-	return venue, nil
+	venues[hallIndex] = built
+	return built, nil
 end
 
 --[[
@@ -840,15 +868,16 @@ end
 --[[
 	Shows the next meet's level (GAME_DESIGN §35.8) on the banner, the sign-up
 	desk's monitor and the awards backdrop: `label` is "LOCAL MEET",
-	"REGIONAL MEET" or "STATE MEET", `perks` a line or two about what it pays.
+	"REGIONAL MEET" or "STATE MEET", `perks` a line or two about what it pays,
+	`hallIndex` which of the five meets this hall is.
 ]]
-function LocalMeetVenue.setLevel(v: Venue, label: string, perks: { string })
+function LocalMeetVenue.setLevel(v: Venue, label: string, perks: { string }, hallIndex: number)
 	if v.banner then
-		v.banner.setTag(label)
+		v.banner.setTag(string.format("MEET %d  ·  %s", hallIndex, label))
 		v.banner.setLines(perks)
 	end
 	if v.deskScreen then
-		v.deskScreen.setTag(if label == "LOCAL MEET" then "SIGN-UP" else label)
+		v.deskScreen.setTag(if label == "LOCAL MEET" then "MEET " .. hallIndex else label)
 		v.deskScreen.setLines(perks)
 	end
 	local title = v.backdropTitle

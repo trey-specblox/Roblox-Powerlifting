@@ -3805,10 +3805,6 @@ and polish.
   lobby or lift screens by that calculation.
   NOT VERIFIED: anything on a real phone (touch can't be simulated here): tap anywhere, the bench
   hold by finger, the keyboard fit, the look of the smaller text.
-  STILL TO BUILD, requested in the same message (user's decision, recorded in GAME_DESIGN §29.10):
-  five Local/Regional meets at once with separate placings and rewards, sign-up and spectate per
-  meet at the lobby desk, teleport to a meet, stands filled with fake characters. Not started: this
-  rewrites `LocalMeetService`'s single-meet state (about 160 places) and needs a Blender crowd model.
   NEWS LINES ON A PHONE 2026-11-05, COMMITTED and pushed to `origin/main` with the user's approval as
   "Keep news lines and their GO button on a phone's screen" (run `git log` for the hash), NOT PUBLISHED
   (user: the regional meet text ran off a phone's screen, hiding its time and GO button):
@@ -3818,7 +3814,32 @@ and polish.
   TESTED IN STUDIO with the real announcement, the news area squeezed to 728 and 480 px (Studio can't
   be made phone-sized; the touch-only settings need a real phone): one line at 728, two at 480, time
   and GO on screen both times, GO took the player into the venue, no script errors, disk checksum matched.
-  NEXT: the user publishes and phone tests the mobile group, then says go on the venue plan. Before
+  FIVE-MEET VENUE 2026-11-05, COMMITTED and pushed to `origin/main` with the user's approval as "Run
+  five meets at once in five halls, with a sign-up list and a full crowd" (run `git log` for the hash),
+  NOT PUBLISHED (user: "Yes, start the venue"; GAME_DESIGN §29.10): `LocalMeetVenue.build(hallIndex)` makes halls in Workspace folder
+  `LocalMeetVenue` (Hall_1..5), 1400 studs apart (`LocalMeetConfig.hallOrigin`). `LocalMeetService`
+  state moved into `type Hall`; `activeLifter`, `signedUpAt`; `Visit.hall`; staggered `startAfter`; one
+  `LocalMeetWarmUp` over all racks; standings, awards and sounds go only to that hall; new remote
+  `LocalMeetSpectate`; `LobbyState.meets`; `Trophies.clearFrom`. `LocalMeetLobbyUI` card is now the MEETS
+  list. Crowd: `art/scripts/build_crowd_01.py`, model Crowd_01 (rbxassetid://73272782464755, check_models
+  passed, `materials.json`), CrowdA and CrowdB, 13 colour pieces a section, 4,368-4,524 triangles a
+  section, 10 sections a hall, no collision or shadows.
+  TESTED IN STUDIO, one player, real clicks: all five halls built in 0.5 s; SPECTATE moved to hall 3;
+  signed up for meet 4 from hall 3 and the start moved them to hall 4 with its computer lifters and
+  camera shot; refused while lifting; bad client values ignored; LEAVE fine; Regional in one hall and
+  Local in others; no script errors. Crowd seen in screenshots seated correctly in hall 1, 10 sections in
+  every hall.
+  PERFORMANCE: client in hall 1 had 1,368 parts, 33 lights, 32 screens and other halls 0 parts. Server
+  whole world 13,966 parts (venue 6,740), 731 unique meshes, 5,530 shadow casters, 321 lights, 247 screens:
+  PerformanceAudit's world budgets (10,000 / 600 / 3,000 / 200 / 120) are over, which were written for
+  one world loaded at once; streaming keeps a player far under them. Not measured on a real phone.
+  NOT VERIFIED: two meets actually overlapping with real players (Studio test had one player, so a second
+  player is needed: separate rewards and trophies in two halls at once, shared warm-up racks); a full meet
+  with a good lifts through to awards in a hall other than 1 with the crowd; the State arena (untouched);
+  the phone sizes of the MEETS list. WATCH on a gym record attempt lands in hall 1.
+  ROJO NOTE: it applied many quick saves slowly and dropped the last ones; a checksum after a final
+  tiny edit caught it each time.
+  NEXT: the user publishes and phone tests, and runs a two-player test of overlapping meets. Before
   publishing, the user confirms their ElevenLabs plan covers the shouts.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched

@@ -23,16 +23,18 @@
 		LocalMeetExit       client -> server  (no arguments)
 			"Take me back to the gym" (the venue screen's EXIT). Withdraws a
 			lifter first.
-		LocalMeetSignUp     client -> server  (no arguments)
-			"Sign me up, or take my name off" for the next meet. The sign-up
-			desk's prompt does the same.
+		LocalMeetSignUp     client -> server  (hallIndex: number)
+			"Sign me up for this meet, or take my name off." A hall's sign-up
+			desk's prompt does the same for its own meet.
+		LocalMeetSpectate   client -> server  (hallIndex: number)
+			"Take me to this meet's hall to watch it." The server checks it.
 		LocalMeetLobby      server -> client  (LobbyState)
-			The timetable and the sign-ups, for everyone in the venue.
+			The five meets' timetable and sign-ups, for everyone in the venue.
 		LocalMeetStandings  server -> client  (Standings)
-			The live and final ranking, for everyone in the venue.
+			The live and final ranking, for everyone in that meet's hall.
 		LocalMeetAwards     server -> client  (AwardsMoment)
-			The awards ceremony has started, for everyone in the venue: the
-			camera shots, the crowd cheer and the winner's theme song; the
+			The awards ceremony has started, for everyone in that meet's hall:
+			the camera shots, the crowd cheer and the winner's theme song; the
 			winner's own client also plays their celebration.
 		LocalMeetWarmUpLift   client -> server  (liftName: string, weightKg: number)
 			"Lift this at my warm-up rack." A request: the server checks the lift,
@@ -62,6 +64,7 @@ LocalMeetRemotes.STATE = "LocalMeetState"
 LocalMeetRemotes.NOTICE = "LocalMeetNotice"
 LocalMeetRemotes.EXIT = "LocalMeetExit"
 LocalMeetRemotes.SIGN_UP = "LocalMeetSignUp"
+LocalMeetRemotes.SPECTATE = "LocalMeetSpectate"
 LocalMeetRemotes.LOBBY = "LocalMeetLobby"
 LocalMeetRemotes.STANDINGS = "LocalMeetStandings"
 LocalMeetRemotes.AWARDS = "LocalMeetAwards"
@@ -83,6 +86,7 @@ export type RemoteSet = {
 	notice: RemoteEvent,
 	exit: RemoteEvent,
 	signUp: RemoteEvent,
+	spectate: RemoteEvent,
 	lobby: RemoteEvent,
 	standings: RemoteEvent,
 	awards: RemoteEvent,
@@ -97,34 +101,44 @@ export type RemoteSet = {
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
-	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND }
+	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND,
+	LocalMeetRemotes.SPECTATE }
 
 --[[
-	The timetable and sign-ups, server -> client, sent when they change.
-	`nextStartAt` is in server time (workspace:GetServerTimeNow()), so every
-	client counts down to the same moment.
+	One of the five meets, as the sign-up list shows it. `nextStartAt` is in
+	server time (workspace:GetServerTimeNow()), so every client counts down to
+	the same moment.
 ]]
-export type LobbyState = {
+export type MeetRow = {
+	index: number,
 	nextStartAt: number,
 	signUpClosesAt: number,
 	signedUpCount: number,
-	-- Whether THIS player is signed up.
+	-- Whether THIS player is on this meet's list.
 	signedUp: boolean,
-	meetRunning: boolean,
-	minimumLifters: number,
-	maxLifters: number,
-	-- How far a meet could raise each lift's CN right now (8.5 = +8.5%), for THIS player's current
-	-- class; absent for a class with no allowance.
-	allowancePercent: { [string]: number },
-	-- The next meet's level (MeetLevelConfig, GAME_DESIGN §35.8): "LOCAL MEET", "REGIONAL MEET", "STATE MEET",
+	running: boolean,
+	-- This meet's next level (MeetLevelConfig, GAME_DESIGN §35.8): "LOCAL MEET", "REGIONAL MEET", "STATE MEET",
 	-- its prize pot multiplier, and whether its top 3 earn titles.
 	levelLabel: string,
 	potMultiplier: number,
 	titles: boolean,
 }
 
--- The next meet is a Regional or State meet: its level, pot multiplier and when it starts / sign-ups close (server time).
+-- The timetable and sign-ups, server -> client, sent when they change.
+export type LobbyState = {
+	meets: { MeetRow },
+	-- The hall this player is in.
+	hereIndex: number,
+	minimumLifters: number,
+	maxLifters: number,
+	-- How far a meet could raise each lift's CN right now (8.5 = +8.5%), for THIS player's current
+	-- class; absent for a class with no allowance.
+	allowancePercent: { [string]: number },
+}
+
+-- A meet's next level is Regional or State: which meet, its level, pot multiplier and when it starts / sign-ups close (server time).
 export type LevelNews = {
+	hallIndex: number,
 	levelLabel: string,
 	potMultiplier: number,
 	startsAt: number,
@@ -152,6 +166,8 @@ export type StandingRow = {
 }
 
 export type Standings = {
+	-- Which of the five meets; nil when the player's hall has no meet to show.
+	meetIndex: number?,
 	-- "SQUAT · ROUND 2", "FINAL", ...
 	heading: string,
 	final: boolean,
@@ -222,6 +238,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		notice = get(LocalMeetRemotes.NOTICE),
 		exit = get(LocalMeetRemotes.EXIT),
 		signUp = get(LocalMeetRemotes.SIGN_UP),
+		spectate = get(LocalMeetRemotes.SPECTATE),
 		lobby = get(LocalMeetRemotes.LOBBY),
 		standings = get(LocalMeetRemotes.STANDINGS),
 		awards = get(LocalMeetRemotes.AWARDS),
@@ -248,6 +265,7 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		notice = get(LocalMeetRemotes.NOTICE),
 		exit = get(LocalMeetRemotes.EXIT),
 		signUp = get(LocalMeetRemotes.SIGN_UP),
+		spectate = get(LocalMeetRemotes.SPECTATE),
 		lobby = get(LocalMeetRemotes.LOBBY),
 		standings = get(LocalMeetRemotes.STANDINGS),
 		awards = get(LocalMeetRemotes.AWARDS),

@@ -35,15 +35,29 @@ LocalMeetConfig.PlatformAttribute = "LocalMeetPlatform"
 -- the Mock Meet rooms (+X from 4000), high up, so nobody walks in by accident.
 LocalMeetConfig.Origin = Vector3.new(-4000, 1000, 0)
 
+--[[
+	FIVE MEETS AT ONCE (user 2026-11-05: "I am not waiting 10 minutes"): five full halls, each with its own
+	meet, placings and rewards. Further apart than a client loads the world around itself (workspace
+	StreamingTargetRadius 1024), so a player only ever has the hall they are in loaded.
+]]
+LocalMeetConfig.HallCount = 5
+LocalMeetConfig.HallSpacingStuds = 1400
+
+-- Where hall `index` is built (1 = Origin, the rest further out along -X, away from the gym).
+function LocalMeetConfig.hallOrigin(index: number): Vector3
+	return LocalMeetConfig.Origin - Vector3.new((index - 1) * LocalMeetConfig.HallSpacingStuds, 0, 0)
+end
+
 -- ------------------------------------------------ the meet
 
 -- One platform per lifter, side by side; more sign-ups than this wait for the next meet.
 LocalMeetConfig.MaxLifters = 8
 LocalMeetConfig.PlatformSpacingStuds = 24
 
--- A meet starts on every multiple of CycleSeconds of server time (a fixed timetable), if enough lifters
--- signed up; sign-ups close SignUpClosesSeconds before. A start that falls during a running meet is
--- skipped and its sign-ups carry to the next one.
+-- A hall's meet starts once every CycleSeconds of server time (a fixed timetable), if enough lifters signed
+-- up; sign-ups close SignUpClosesSeconds before. A start that falls during a running meet is skipped and its
+-- sign-ups carry to the next one. The halls are evenly staggered, so somewhere a meet starts every
+-- CycleSeconds / HallCount: 2 minutes.
 LocalMeetConfig.CycleSeconds = 10 * 60
 LocalMeetConfig.SignUpClosesSeconds = 60
 -- In Studio, so a test does not wait ten minutes.

@@ -9,10 +9,11 @@
 
 		top right    EXIT (back to the gym); hidden while lifting, where the meet
 		             screen's LEAVE takes its place
-		left, top    the LOCAL MEET card: the countdown to the next meet, the
-		             sign-ups, whether you are on the list, how far a meet could
-		             still raise each lift's CN, SIGN UP; hidden while
-		             lifting (the meet screen's title is there)
+		left, top    the MEETS list (user 2026-11-05): one row for each of the five
+		             meets with its number, level, countdown and sign-ups, a SIGN UP
+		             button and a SPECTATE button that teleports there, and how far a
+		             meet could still raise each lift's CN; hidden while lifting
+		             (the meet screen's title is there)
 		right        the STANDINGS: place, name, class, subtotal or total, score;
 		             on the left in the card's place while lifting (the meet
 		             screen's scorecard is on the right)
@@ -34,7 +35,9 @@ local LocalMeetLobbyUI = {}
 
 export type Handlers = {
 	exit: () -> (),
-	signUp: () -> (),
+	-- Each asks for one of the meets by its number.
+	signUp: (index: number) -> (),
+	spectate: (index: number) -> (),
 }
 
 export type Ui = {
@@ -42,7 +45,8 @@ export type Ui = {
 	-- Shows the venue screen, and whether the player is lifting (which hides the card and EXIT).
 	setMode: (inVenue: boolean, lifting: boolean) -> (),
 	setClearView: (clear: boolean) -> (),
-	drawLobby: (lobby: LocalMeetRemotes.LobbyState?, secondsToStart: number?) -> (),
+	-- `serverNow` is workspace:GetServerTimeNow().
+	drawLobby: (lobby: LocalMeetRemotes.LobbyState?, serverNow: number) -> (),
 	drawStandings: (standings: LocalMeetRemotes.Standings?) -> (),
 }
 
@@ -54,6 +58,15 @@ local LEFT = 172
 local STANDINGS_TOP_RIGHT = 110
 local ROWS = 8
 local ROW_HEIGHT = 30
+-- The MEETS list. A phone shrinks every screen to under half size, so its buttons are drawn larger to be tappable.
+local LIST_SCALE = if UIStyle.isTouchOnly() then 1.3 else 1
+local LIST_WIDTH = 560 * LIST_SCALE
+local LIST_TOP = 52 * LIST_SCALE
+local LIST_ROW_HEIGHT = 58 * LIST_SCALE
+local LIST_BUTTON_HEIGHT = 42 * LIST_SCALE
+local LIST_BUTTON_WIDTH = 122 * LIST_SCALE
+local LIST_GAP = 8 * LIST_SCALE
+local MEET_COUNT = 5
 
 local function kgText(kg: number): string
 	return if kg == math.floor(kg) then string.format("%d", kg) else string.format("%.1f", kg)
@@ -82,21 +95,37 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 
 	local exit = UIStyle.exitButton(gui, "Exit", "EXIT", UDim2.new(1, -194, 0, 22), handlers.exit)
 
-	-- ------------------------------------------------ the LOCAL MEET card
-	local cardHolder, card = UIStyle.panel(gui, "Card", UDim2.fromOffset(LEFT, CARD_TOP), UDim2.fromOffset(330, 200))
-	local cardTag = UIStyle.titleTag(cardHolder, "Tag", "LOCAL MEET", UDim2.fromOffset(-14, -24), UDim2.fromOffset(210, 40),
-		nil, "star")
-	local countdown = UIStyle.label(card, "Countdown", UDim2.fromOffset(18, 26), UDim2.new(1, -36, 0, 34), C.white,
-		UIStyle.heading())
-	local signUps = UIStyle.label(card, "SignUps", UDim2.fromOffset(18, 66), UDim2.new(1, -36, 0, 18), C.muted)
-	local you = UIStyle.label(card, "You", UDim2.fromOffset(18, 88), UDim2.new(1, -36, 0, 18), C.yellow, UIStyle.heading())
+	-- ------------------------------------------------ the MEETS list
+	local cardHolder, card = UIStyle.panel(gui, "Card", UDim2.fromOffset(LEFT, CARD_TOP),
+		UDim2.fromOffset(LIST_WIDTH, LIST_TOP + MEET_COUNT * LIST_ROW_HEIGHT + 10))
+	UIStyle.titleTag(cardHolder, "Tag", "MEETS", UDim2.fromOffset(-14, -24), UDim2.fromOffset(180, 40), nil, "star")
 	-- How far a meet could still raise each lift's CN (the meet allowance, GAME_DESIGN 33.3b).
-	local allowance = UIStyle.label(card, "Allowance", UDim2.fromOffset(18, 112), UDim2.new(1, -36, 0, 16), C.white)
-	-- What a Regional or State meet pays (GAME_DESIGN §35.8); empty for a Local meet.
-	local perks = UIStyle.label(card, "Perks", UDim2.fromOffset(18, 129), UDim2.new(1, -36, 0, 16), C.yellow,
-		UIStyle.heading())
-	local signUpButton = UIStyle.button(card, "SignUp", "SIGN UP", UDim2.new(0, 18, 1, -54), UDim2.new(1, -36, 0, 40),
-		"primary", handlers.signUp)
+	local allowance = UIStyle.label(card, "Allowance", UDim2.fromOffset(18, 26 * LIST_SCALE),
+		UDim2.new(1, -36, 0, 18 * LIST_SCALE), C.muted)
+	type ListRow = { title: TextLabel, status: TextLabel, signUp: TextButton, spectate: TextButton }
+	local listRows: { ListRow } = {}
+	for index = 1, MEET_COUNT do
+		local y = LIST_TOP + (index - 1) * LIST_ROW_HEIGHT
+		local right = LIST_WIDTH - 14
+		local textWidth = LIST_WIDTH - 2 * (LIST_BUTTON_WIDTH + LIST_GAP) - 30
+		local buttonY = y + (LIST_ROW_HEIGHT - LIST_BUTTON_HEIGHT) / 2
+		listRows[index] = {
+			title = UIStyle.label(card, "Title_" .. index, UDim2.fromOffset(18, y + 6 * LIST_SCALE),
+				UDim2.fromOffset(textWidth, 24 * LIST_SCALE), C.white, UIStyle.heading()),
+			status = UIStyle.label(card, "Status_" .. index, UDim2.fromOffset(18, y + 32 * LIST_SCALE),
+				UDim2.fromOffset(textWidth, 17 * LIST_SCALE), C.muted),
+			signUp = UIStyle.button(card, "SignUp_" .. index, "SIGN UP",
+				UDim2.fromOffset(right - 2 * LIST_BUTTON_WIDTH - LIST_GAP, buttonY),
+				UDim2.fromOffset(LIST_BUTTON_WIDTH, LIST_BUTTON_HEIGHT), "primary", function()
+					handlers.signUp(index)
+				end),
+			spectate = UIStyle.button(card, "Spectate_" .. index, "SPECTATE",
+				UDim2.fromOffset(right - LIST_BUTTON_WIDTH, buttonY),
+				UDim2.fromOffset(LIST_BUTTON_WIDTH, LIST_BUTTON_HEIGHT), "outline", function()
+					handlers.spectate(index)
+				end),
+		}
+	end
 
 	-- ------------------------------------------------ the STANDINGS
 	local standingsSize = Vector2.new(400, 46 + ROWS * ROW_HEIGHT)
@@ -105,7 +134,7 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 	local standingsTag = UIStyle.titleTag(standingsHolder, "Tag", "STANDINGS", UDim2.fromOffset(-14, -24),
 		UDim2.fromOffset(260, 40), nil, "corner")
 	local empty = UIStyle.label(standingsBody, "Empty", UDim2.fromOffset(18, 30), UDim2.new(1, -36, 0, 20), C.muted)
-	empty.Text = "No meet yet. Sign up at the desk."
+	empty.Text = "No meet in this hall right now."
 	local rows: { { place: TextLabel, name: TextLabel, detail: TextLabel, score: TextLabel } } = {}
 	for index = 1, ROWS do
 		local y = 26 + (index - 1) * ROW_HEIGHT
@@ -144,19 +173,15 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 		standingsHolder.Visible = not clear
 	end
 
-	ui.drawLobby = function(lobby: LocalMeetRemotes.LobbyState?, secondsToStart: number?)
-		if lobby == nil or secondsToStart == nil then
-			countdown.Text = "…"
-			signUps.Text = ""
-			you.Text = ""
-			allowance.Text = ""
-			perks.Text = ""
+	ui.drawLobby = function(lobby: LocalMeetRemotes.LobbyState?, serverNow: number)
+		if lobby == nil then
+			allowance.Text = "…"
+			for _, row in ipairs(listRows) do
+				row.title.Text, row.status.Text = "", ""
+				row.signUp.Visible, row.spectate.Visible = false, false
+			end
 			return
 		end
-		cardTag.Text = lobby.levelLabel or "LOCAL MEET"
-		perks.Text = if (lobby.potMultiplier or 1) > 1
-			then string.format("PRIZE POT x%d%s", lobby.potMultiplier, if lobby.titles then "  ·  TOP 3 EARN TITLES" else "")
-			else ""
 		local raises = {}
 		for _, lift in ipairs(MeetConfig.LiftOrder) do
 			local percent = lobby.allowancePercent and lobby.allowancePercent[lift]
@@ -164,28 +189,44 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 				if percent then string.format("+%.1f%%", percent) else "—"))
 		end
 		allowance.Text = "CN RAISE LEFT  " .. table.concat(raises, "  ·  ")
-		local closesIn = secondsToStart - (lobby.nextStartAt - lobby.signUpClosesAt)
-		if lobby.meetRunning then
-			countdown.Text = "MEET IN PROGRESS"
-		else
-			countdown.Text = "NEXT MEET  " .. clockText(secondsToStart)
+		for index, row in ipairs(listRows) do
+			local meet = lobby.meets[index]
+			row.signUp.Visible = meet ~= nil and not liftingNow
+			row.spectate.Visible = meet ~= nil and not liftingNow
+			if meet == nil then
+				row.title.Text, row.status.Text = "", ""
+				continue
+			end
+			-- "MEET 3  ·  REGIONAL x2": a Local meet just says its number.
+			row.title.Text = if meet.potMultiplier > 1
+				then string.format("MEET %d  ·  %s x%d", index, string.gsub(meet.levelLabel, " MEET$", ""), meet.potMultiplier)
+				else "MEET " .. index
+			row.title.TextColor3 = if meet.potMultiplier > 1 then C.yellow else C.white
+			local untilStart = meet.nextStartAt - serverNow
+			local closesIn = meet.signUpClosesAt - serverNow
+			local lifters = string.format("%d/%d", meet.signedUpCount, lobby.maxLifters)
+			if meet.signedUp then
+				row.status.Text = (if meet.running then "IN PROGRESS  ·  YOU ARE NEXT IN " else "YOU ARE SIGNED UP  ·  STARTS IN ")
+					.. clockText(untilStart)
+				row.status.TextColor3 = C.yellow
+				row.signUp.Text = "TAKE OFF"
+			elseif meet.running then
+				row.status.Text = "IN PROGRESS  ·  NEXT LIST " .. lifters
+				row.status.TextColor3 = C.muted
+				row.signUp.Text = "SIGN UP"
+			elseif closesIn <= 0 then
+				row.status.Text = "SIGN-UPS CLOSED  ·  STARTS IN " .. clockText(untilStart)
+				row.status.TextColor3 = C.muted
+				row.signUp.Text = "SIGN UP"
+			else
+				row.status.Text = string.format("STARTS IN %s  ·  %s", clockText(untilStart), lifters)
+				row.status.TextColor3 = C.muted
+				row.signUp.Text = "SIGN UP"
+			end
+			row.spectate.Text = if lobby.hereIndex == index then "YOU ARE HERE" else "SPECTATE"
+			row.spectate.AutoButtonColor = lobby.hereIndex ~= index
+			row.spectate.TextTransparency = if lobby.hereIndex == index then 0.5 else 0
 		end
-		signUps.Text = string.format("%d SIGNED UP  ·  NEEDS %d  ·  MAX %d", lobby.signedUpCount, lobby.minimumLifters,
-			lobby.maxLifters)
-		if lobby.signedUp then
-			you.Text = if lobby.meetRunning then "YOU ARE ON THE LIST FOR THE NEXT MEET" else "YOU ARE SIGNED UP"
-			you.TextColor3 = C.yellow
-			signUpButton.Text = "TAKE MY NAME OFF"
-		elseif closesIn <= 0 and not lobby.meetRunning then
-			you.Text = "SIGN-UPS CLOSED  ·  OPEN AGAIN IN " .. clockText(secondsToStart)
-			you.TextColor3 = C.muted
-			signUpButton.Text = "SIGN UP"
-		else
-			you.Text = "YOU ARE NOT SIGNED UP"
-			you.TextColor3 = C.muted
-			signUpButton.Text = "SIGN UP"
-		end
-		signUpButton.Visible = not liftingNow
 	end
 
 	ui.drawStandings = function(standings: LocalMeetRemotes.Standings?)
@@ -197,7 +238,8 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 			end
 			return
 		end
-		standingsTag.Text = if standings.final then "FINAL STANDINGS" else standings.heading
+		local heading = if standings.final then "FINAL STANDINGS" else standings.heading
+		standingsTag.Text = if standings.meetIndex then string.format("MEET %d  ·  %s", standings.meetIndex, heading) else heading
 		empty.Visible = #standings.rows == 0
 		for index, row in ipairs(rows) do
 			local data = standings.rows[index]

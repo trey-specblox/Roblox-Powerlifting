@@ -49,7 +49,7 @@ local function load(): Model?
 	return template
 end
 
--- Puts a trophy for `place` (1-3) in the character's right hand until Trophies.clear(). Returns whether it did.
+-- Puts a trophy for `place` (1-3) in the character's right hand until Trophies.clearFrom. Returns whether it did.
 function Trophies.give(character: Model, place: number): boolean
 	local colour: Color3? = MeetLevelConfig.TrophyColours[place]
 	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
@@ -91,12 +91,16 @@ function Trophies.give(character: Model, place: number): boolean
 	return true
 end
 
--- Takes every trophy away again (the ceremony is over).
-function Trophies.clear()
-	for _, trophy in ipairs(given) do
-		trophy:Destroy()
+-- Takes the trophies from these characters (their ceremony is over; another hall's may still be running).
+function Trophies.clearFrom(characters: { Model })
+	for index = #given, 1, -1 do
+		local trophy = given[index]
+		local holder = trophy.Parent
+		if holder == nil or (holder:IsA("Model") and table.find(characters, holder)) then
+			trophy:Destroy()
+			table.remove(given, index)
+		end
 	end
-	table.clear(given)
 end
 
 -- Loads the model ahead of the first ceremony (it yields).

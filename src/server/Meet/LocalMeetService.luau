@@ -41,12 +41,20 @@
 	EXIT button) takes them back where they came from. Dying, respawning or
 	leaving the game also takes them out of the venue.
 
-	THE TIMETABLE. A meet starts on every multiple of CycleSeconds of server time
-	if at least MinimumLifters signed up at the venue's desk (prompt or SIGN UP
-	button; the same press takes a name off). Sign-ups close SignUpClosesSeconds
-	before a start. The first MaxLifters on the list lift; the rest stay on it
-	for the next meet, as do all names when too few signed up. A start during a
-	running meet is skipped.
+	FIVE MEETS AT ONCE (user 2026-11-05). The venue is LocalMeetConfig.HallCount
+	identical halls (type Hall), each with its own meet, sign-up list, level, timetable,
+	placings and rewards. A player is on one list at a time and in one meet at a
+	time, and stands in one hall (Visit.hall): SPECTATE moves them to another, and a
+	meet starting moves its lifters to its hall. Only the people in a hall get its
+	standings, awards and sounds. They arrive in hall 1. The warm-up racks of every
+	hall share one LocalMeetWarmUp.
+
+	THE TIMETABLE. A hall's meet starts once every CycleSeconds of server time, the
+	halls evenly staggered, if at least MinimumLifters signed up (the SIGN UP
+	button or the hall's desk; the same press takes a name off). Sign-ups close
+	SignUpClosesSeconds before a start. The first MaxLifters on the list lift; the
+	rest stay on it for the next meet, as do all names when too few signed up. A
+	start during a running meet is skipped.
 
 	THE MEET (server-run; the clients only ask and draw):
 		weigh-in: each lifter's class (= build) and Competition Numbers, locked
@@ -134,9 +142,13 @@ type Visit = {
 	-- Where they stood in the gym; exiting puts them back there.
 	returnTo: CFrame,
 	connections: { RBXScriptConnection },
+	-- The hall they are in (its index).
+	hall: number,
 }
 
 type Lifter = {
+	-- The hall of their meet.
+	hall: Hall,
 	-- Nil for a computer lifter (§37.2), which has `cpu` instead.
 	player: Player?,
 	-- The standings' key: the player's UserId, or a negative number for a computer lifter.
@@ -201,6 +213,8 @@ type Lifter = {
 }
 
 type Meet = {
+	-- The hall it is held in.
+	hall: Hall,
 	lifters: { Lifter },
 	byPlayer: { [Player]: Lifter },
 	heading: string,
@@ -217,19 +231,26 @@ type Meet = {
 	places: { [number]: MeetPlacing.Placing },
 }
 
-local venue: LocalMeetVenue.Venue? = nil
--- The warm-up room's working racks (made once the venue is built).
+-- One of the five meets: its hall, sign-up list, running meet and timetable.
+type Hall = {
+	index: number,
+	venue: LocalMeetVenue.Venue,
+	signUps: { Player },
+	meet: Meet?,
+	nextStartAt: number,
+	-- Its next meet's level, rolled when its sign-ups open (GAME_DESIGN §35.8).
+	nextLevel: string,
+}
+
+-- Filled when the venue is built; empty until then.
+local halls: { Hall } = {}
+-- The warm-up rooms' working racks, every hall's (made once the venue is built).
 local warmUp: LocalMeetWarmUp.WarmUp? = nil
 local remotes: LocalMeetRemotes.RemoteSet? = nil
 local started = false
 
 local visits: { [Player]: Visit } = {}
 local entering: { [Player]: boolean } = {}
-local signUps: { Player } = {}
-local meet: Meet? = nil
-local nextStartAt = 0
--- The next meet's level, rolled when its sign-ups open (GAME_DESIGN §35.8).
-local nextLevel = "Local"
 local levelRandom = Random.new()
 -- Computer lifters' strength, attempts and makes (§37.2).
 local cpuRandom = Random.new()
@@ -266,10 +287,11 @@ local function now(): number
 	return Workspace:GetServerTimeNow()
 end
 
--- The next timetable start after `time`.
-local function startAfter(time: number): number
+-- Hall `hallIndex`'s next timetable start after `time`: the halls are evenly staggered through the cycle.
+local function startAfter(time: number, hallIndex: number): number
 	local cycle = cycleSeconds()
-	return (math.floor(time / cycle) + 1) * cycle
+	local offset = (hallIndex - 1) * cycle / LocalMeetConfig.HallCount
+	return (math.floor((time - offset) / cycle) + 1) * cycle + offset
 end
 
 local function kgText(kg: number): string
@@ -327,15 +349,33 @@ local function release(player: Player)
 	end
 end
 
-local function signedUp(player: Player): boolean
-	return table.find(signUps, player) ~= nil
+-- The hall whose list the player is on, if any (one at a time).
+local function signedUpAt(player: Player): Hall?
+	for _, hall in ipairs(halls) do
+		if table.find(hall.signUps, player) then
+			return hall
+		end
+	end
+	return nil
 end
 
 local function removeSignUp(player: Player)
-	local index = table.find(signUps, player)
-	if index then
-		table.remove(signUps, index)
+	local hall = signedUpAt(player)
+	if hall then
+		table.remove(hall.signUps, table.find(hall.signUps, player) :: number)
 	end
+end
+
+-- The meet the player is lifting in right now and their place in it, if any (one at a time).
+local function activeLifter(player: Player): (Meet?, Lifter?)
+	for _, hall in ipairs(halls) do
+		local current = hall.meet
+		local lifter = current and current.byPlayer[player]
+		if lifter and not lifter.withdrawn then
+			return current, lifter
+		end
+	end
+	return nil, nil
 end
 
 -- ---------------------------------------------------------------- what the venue sees
@@ -358,21 +398,32 @@ local function allowancePercent(player: Player): { [string]: number }
 end
 
 local function sendLobby(player: Player)
-	if remotes == nil or visits[player] == nil then
+	local visit = visits[player]
+	if remotes == nil or visit == nil then
 		return
 	end
+	local mine = signedUpAt(player)
+	local meets: { LocalMeetRemotes.MeetRow } = {}
+	for _, hall in ipairs(halls) do
+		local level = MeetLevelConfig.Levels[hall.nextLevel]
+		table.insert(meets, {
+			index = hall.index,
+			nextStartAt = hall.nextStartAt,
+			signUpClosesAt = hall.nextStartAt - closesSeconds(),
+			signedUpCount = #hall.signUps,
+			signedUp = mine == hall,
+			running = hall.meet ~= nil,
+			levelLabel = level.label,
+			potMultiplier = level.potMultiplier,
+			titles = level.titles,
+		})
+	end
 	local state: LocalMeetRemotes.LobbyState = {
+		meets = meets,
+		hereIndex = visit.hall,
 		allowancePercent = allowancePercent(player),
-		nextStartAt = nextStartAt,
-		signUpClosesAt = nextStartAt - closesSeconds(),
-		signedUpCount = #signUps,
-		signedUp = signedUp(player),
-		meetRunning = meet ~= nil,
 		minimumLifters = minimumLifters(),
 		maxLifters = LocalMeetConfig.MaxLifters,
-		levelLabel = MeetLevelConfig.Levels[nextLevel].label,
-		potMultiplier = MeetLevelConfig.Levels[nextLevel].potMultiplier,
-		titles = MeetLevelConfig.Levels[nextLevel].titles,
 	}
 	remotes.lobby:FireClient(player, state)
 end
@@ -393,28 +444,27 @@ local function perksOf(level: string): { string }
 end
 
 --[[
-	Rolls the next meet's level as its sign-ups open (GAME_DESIGN §35.8) and
-	shows it on the venue's boards. A Regional or State meet is announced to
+	Rolls a hall's next meet's level as its sign-ups open (GAME_DESIGN §35.8) and
+	shows it on the hall's boards. A Regional or State meet is announced to
 	everyone in the server. In Studio, the workspace attribute
 	"ForceMeetLevel" ("Local", "Regional" or "State") picks the level, for
 	testing.
 ]]
-local function rollLevel()
+local function rollLevel(hall: Hall)
 	local forced = if RunService:IsStudio() then Workspace:GetAttribute("ForceMeetLevel") else nil
-	nextLevel = if typeof(forced) == "string" and MeetLevelConfig.Levels[forced] then forced
+	hall.nextLevel = if typeof(forced) == "string" and MeetLevelConfig.Levels[forced] then forced
 		else MeetLevelConfig.roll(levelRandom:NextNumber())
-	local info = MeetLevelConfig.Levels[nextLevel]
-	if venue then
-		LocalMeetVenue.setLevel(venue, info.label, perksOf(nextLevel))
-	end
-	if nextLevel ~= "Local" then
-		log("the next meet is a %s (prize pot x%d)", info.label, info.potMultiplier)
+	local info = MeetLevelConfig.Levels[hall.nextLevel]
+	LocalMeetVenue.setLevel(hall.venue, info.label, perksOf(hall.nextLevel), hall.index)
+	if hall.nextLevel ~= "Local" then
+		log("meet %d's next is a %s (prize pot x%d)", hall.index, info.label, info.potMultiplier)
 		if remotes then
 			local news: LocalMeetRemotes.LevelNews = {
+				hallIndex = hall.index,
 				levelLabel = info.label,
 				potMultiplier = info.potMultiplier,
-				startsAt = nextStartAt,
-				signUpClosesAt = nextStartAt - closesSeconds(),
+				startsAt = hall.nextStartAt,
+				signUpClosesAt = hall.nextStartAt - closesSeconds(),
 			}
 			remotes.levelNews:FireAllClients(news)
 		end
@@ -527,29 +577,28 @@ local function buildStandings(current: Meet): LocalMeetRemotes.Standings
 		row.place = placing.place
 		table.insert(rows, row)
 	end
-	return { heading = current.heading, final = current.final, rows = rows }
+	return { meetIndex = current.hall.index, heading = current.heading, final = current.final, rows = rows }
 end
 
--- Sends the standings to everyone in the venue and writes them on the scoreboard.
+-- Sends the standings to everyone in the meet's hall and writes them on its scoreboard.
 local function updateStandings(current: Meet)
 	local standings = buildStandings(current)
 	if remotes then
-		for player in pairs(visits) do
-			remotes.standings:FireClient(player, standings)
+		for player, visit in pairs(visits) do
+			if visit.hall == current.hall.index then
+				remotes.standings:FireClient(player, standings)
+			end
 		end
 	end
-	local v = venue
-	if v then
-		local lines: { string } = {}
-		for _, row in ipairs(standings.rows) do
-			table.insert(lines, string.format("%s  %s  ·  %s  ·  %s kg%s",
-				if row.place then placeText(row.place) else "—", row.name, row.classLabel, kgText(row.subtotalKg),
-				if row.scorePercent then string.format("  ·  %.1f%%", row.scorePercent)
-					elseif row.status == "Bombed" then "  ·  BOMBED OUT"
-					elseif row.status == "Withdrawn" then "  ·  WITHDRAWN" else ""))
-		end
-		LocalMeetVenue.setScoreboard(v, if standings.final then "FINAL STANDINGS" else standings.heading, lines)
+	local lines: { string } = {}
+	for _, row in ipairs(standings.rows) do
+		table.insert(lines, string.format("%s  %s  ·  %s  ·  %s kg%s",
+			if row.place then placeText(row.place) else "—", row.name, row.classLabel, kgText(row.subtotalKg),
+			if row.scorePercent then string.format("  ·  %.1f%%", row.scorePercent)
+				elseif row.status == "Bombed" then "  ·  BOMBED OUT"
+				elseif row.status == "Withdrawn" then "  ·  WITHDRAWN" else ""))
 	end
+	LocalMeetVenue.setScoreboard(current.hall.venue, if standings.final then "FINAL STANDINGS" else standings.heading, lines)
 end
 
 -- ---------------------------------------------------------------- what the meet saves (step 2)
@@ -867,11 +916,16 @@ local function characterOf(lifter: Lifter): Model?
 	return if player then player.Character else lifter.body
 end
 
--- A sound on the lifter's platform, on every player's screen (MeetSoundController). Sound only.
+-- A sound on the lifter's platform, for the people in that hall (MeetSoundController). Sound only.
 local function soundCue(lifter: Lifter, cue: string)
 	local set, rack = remotes, lifter.platform.rack
 	if set and rack then
-		set.sound:FireAllClients(cue, rack:GetPivot().Position)
+		local at = rack:GetPivot().Position
+		for player, visit in pairs(visits) do
+			if visit.hall == lifter.hall.index then
+				set.sound:FireClient(player, cue, at)
+			end
+		end
 	end
 end
 
@@ -1049,7 +1103,7 @@ local function saveOfficialBest(current: Meet, lifter: Lifter, lift: string, kg:
 			end
 		end
 		-- The big screen puts it first (the save takes a moment, so the lift's result is already showing).
-		if meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
+		if current.hall.meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
 			boardFor(lifter, lifter.boardLines :: { string }, lifter.boardMood)
 		end
 		-- The gym record bonus (GAME_DESIGN 30.5, 30.6): someone else's record or your own; never an empty spot.
@@ -1109,7 +1163,7 @@ local function announceAttempt(current: Meet, lifter: Lifter, lift: string, kg: 
 		detail ..= "  +  TOTAL"
 	end
 	lifter.recordAttempt = { title = "GYM RECORD ATTEMPT", detail = detail }
-	if meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
+	if current.hall.meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
 		boardFor(lifter, lifter.boardLines :: { string }, lifter.boardMood)
 	end
 	GymRecords.announceAttempt(player.Name, player.UserId, lifter.classLabel, chasing,
@@ -1129,9 +1183,8 @@ end
 
 -- Takes a lifter out of the running meet (LEAVE, exit, death, leaving the game). The others carry on.
 local function withdraw(player: Player, why: string)
-	local current = meet
-	local lifter = current and current.byPlayer[player]
-	if current == nil or lifter == nil or lifter.withdrawn then
+	local current, lifter = activeLifter(player)
+	if current == nil or lifter == nil then
 		return
 	end
 	lifter.withdrawn = true
@@ -1351,7 +1404,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	local finish = StationAnimationConfig.MeetStages[lift].finish
 	local leaveIn = if good then finish[2] - finish[1] + LEAVE_AFTER_FINISH_SECONDS else LocalMeetConfig.ResultSeconds
 	task.delay(leaveIn, function()
-		if meet == current and not current.final and stillLifting(lifter) and lifter.walkToken == token then
+		if current.hall.meet == current and not current.final and stillLifting(lifter) and lifter.walkToken == token then
 			walkBack(lifter)
 		end
 	end)
@@ -1674,8 +1727,10 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 		celebrationAnimationId = winner and celebrationFor(winner),
 		seconds = LocalMeetConfig.DoneSeconds,
 	}
-	for player in pairs(visits) do
-		remotes.awards:FireClient(player, moment)
+	for player, visit in pairs(visits) do
+		if visit.hall == current.hall.index then
+			remotes.awards:FireClient(player, moment)
+		end
 	end
 end
 
@@ -1786,34 +1841,37 @@ local function finishMeet(current: Meet)
 
 	-- The awards: the racks make way for the awards stage, and the top three stand on its podium while the final
 	-- standings show.
-	local v = venue
-	if v then
-		LocalMeetVenue.showAwards(v, true)
-		for _, lifter in ipairs(current.lifters) do
-			local placing = current.places[lifter.key]
-			local spot = placing and placing.place and v.podiumSpots[placing.place]
-			local player = lifter.player
-			if spot and not lifter.withdrawn and player == nil then
-				-- A computer lifter in the top 3 stands on the podium too, without a trophy, cheering.
-				ComputerLifters.moveBody(lifter.body, spot)
-				ComputerLifters.cheer(lifter.body, LocalMeetConfig.DoneSeconds)
-			elseif spot and not lifter.withdrawn and player and visits[player] then
-				standAt(player, spot, true)
-				-- A Regional or State meet's top 3 hold a trophy (GAME_DESIGN §35.8), in a meet that pays in full.
-				local character = player.Character
-				if MeetLevelConfig.Levels[current.level].titles and current.rewards and character and placing and placing.place then
-					Trophies.give(character, placing.place)
-				end
+	local v = current.hall.venue
+	LocalMeetVenue.showAwards(v, true)
+	for _, lifter in ipairs(current.lifters) do
+		local placing = current.places[lifter.key]
+		local spot = placing and placing.place and v.podiumSpots[placing.place]
+		local player = lifter.player
+		if spot and not lifter.withdrawn and player == nil then
+			-- A computer lifter in the top 3 stands on the podium too, without a trophy, cheering.
+			ComputerLifters.moveBody(lifter.body, spot)
+			ComputerLifters.cheer(lifter.body, LocalMeetConfig.DoneSeconds)
+		elseif spot and not lifter.withdrawn and player and visits[player] then
+			standAt(player, spot, true)
+			-- A Regional or State meet's top 3 hold a trophy (GAME_DESIGN §35.8), in a meet that pays in full.
+			local character = player.Character
+			if MeetLevelConfig.Levels[current.level].titles and current.rewards and character and placing and placing.place then
+				Trophies.give(character, placing.place)
 			end
 		end
-		announceAwards(current, v)
 	end
+	announceAwards(current, v)
 
 	task.wait(LocalMeetConfig.DoneSeconds)
-	Trophies.clear()
-	if v then
-		LocalMeetVenue.showAwards(v, false)
+	local characters: { Model } = {}
+	for _, lifter in ipairs(current.lifters) do
+		local character = lifter.player and lifter.player.Character
+		if character then
+			table.insert(characters, character)
+		end
 	end
+	Trophies.clearFrom(characters)
+	LocalMeetVenue.showAwards(v, false)
 	for index, lifter in ipairs(current.lifters) do
 		local player = lifter.player
 		LocalMeetVenue.clearStaff(lifter.platform)
@@ -1831,21 +1889,17 @@ local function finishMeet(current: Meet)
 				player:SetAttribute(LocalMeetConfig.PlatformAttribute, nil)
 			end
 			release(player)
-			if v and visits[player] then
+			if visits[player] then
 				standAt(player, LocalMeetVenue.lobbySpotFor(v, index), false)
 			end
 		end
 	end
-	meet = nil
+	current.hall.meet = nil
 	broadcastLobby()
 end
 
 local function runMeet(current: Meet)
-	local v = venue
-	if v == nil then
-		meet = nil
-		return
-	end
+	local hall = current.hall
 	for _, lifter in ipairs(current.lifters) do
 		local player = lifter.player
 		local plan = lifter.cpu
@@ -1855,8 +1909,19 @@ local function runMeet(current: Meet)
 				warmUp.stop(player, false)
 			end
 			LiftAttemptService.setFreeAttemptsBlocked(player, true)
-			-- Held still from here until the meet ends or they withdraw (user 2026-11-04).
-			standAt(player, lifter.platform.waitSpot, true)
+			-- Now in this meet's hall. Held still from here until the meet ends or they withdraw (user 2026-11-04), so
+			-- they can't fall while the hall loads around them.
+			local visit = visits[player]
+			if visit then
+				visit.hall = hall.index
+			end
+			local spot = lifter.platform.waitSpot
+			task.spawn(function()
+				pcall(function()
+					player:RequestStreamAroundAsync(spot.Position, STREAM_TIMEOUT_SECONDS)
+				end)
+			end)
+			standAt(player, spot, true)
 		elseif plan then
 			lifter.body = ComputerLifters.spawnBody(plan, lifter.platform.waitSpot, cpuRandom)
 		end
@@ -1920,15 +1985,15 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 		stateQualified = ProfileOperations.getLadder(data, classKey, os.time()).qualified }, nil
 end
 
--- At a timetable start: holds the meet if enough signed-up lifters are ready.
-local function tryStartMeet()
-	local v = venue
-	if v == nil or meet ~= nil then
+-- At a hall's timetable start: holds its meet if enough signed-up lifters are ready.
+local function tryStartMeet(hall: Hall)
+	local v = hall.venue
+	if hall.meet ~= nil then
 		return
 	end
 	-- Only names still in the venue, alive and free can lift; the list keeps its order.
 	local ready: { Player } = {}
-	for _, player in ipairs(table.clone(signUps)) do
+	for _, player in ipairs(table.clone(hall.signUps)) do
 		local body = bodyOf(player)
 		local visit = visits[player]
 		if visit == nil or body == nil or body.character ~= visit.character or body.humanoid.Health <= 0 then
@@ -1948,8 +2013,8 @@ local function tryStartMeet()
 		return
 	end
 
-	local current: Meet = { lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, rewards = false,
-		solo = false, rewardPlaces = {}, places = {}, level = nextLevel }
+	local current: Meet = { hall = hall, lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, rewards = false,
+		solo = false, rewardPlaces = {}, places = {}, level = hall.nextLevel }
 	for _, player in ipairs(ready) do
 		if #current.lifters >= LocalMeetConfig.MaxLifters then
 			notify(player, "This meet is full. You stay on the list for the next one.")
@@ -1968,6 +2033,7 @@ local function tryStartMeet()
 		end
 		local index = #current.lifters + 1
 		local lifter: Lifter = {
+			hall = hall,
 			player = player,
 			key = player.UserId,
 			cpu = nil,
@@ -2003,7 +2069,7 @@ local function tryStartMeet()
 	if #current.lifters < minimumLifters() then
 		-- Someone could not lift after all: back on the list, in front.
 		for index = #current.lifters, 1, -1 do
-			table.insert(signUps, 1, current.lifters[index].player :: Player)
+			table.insert(hall.signUps, 1, current.lifters[index].player :: Player)
 		end
 		log("not enough lifters could weigh in: no meet")
 		return
@@ -2029,6 +2095,7 @@ local function tryStartMeet()
 			end
 			local index = #current.lifters + 1
 			table.insert(current.lifters, {
+				hall = hall,
 				player = nil,
 				key = -cpuIndex,
 				cpu = plan,
@@ -2060,9 +2127,10 @@ local function tryStartMeet()
 			})
 		end
 	end
-	meet = current
-	log("%s starts: %d lifters, %d real (rewards: %s, solo: %s)", MeetLevelConfig.Levels[current.level].label,
-		#current.lifters, realCount, tostring(current.rewards), tostring(current.solo))
+	hall.meet = current
+	log("meet %d, a %s, starts: %d lifters, %d real (rewards: %s, solo: %s)", hall.index,
+		MeetLevelConfig.Levels[current.level].label, #current.lifters, realCount, tostring(current.rewards),
+		tostring(current.solo))
 	task.spawn(runMeet, current)
 end
 
@@ -2107,10 +2175,12 @@ end
 	nil). Returns whether they went, and why not when it is worth saying.
 ]]
 local function enterVenue(player: Player, point: BasePart?): (boolean, string?)
-	local v = venue
-	if v == nil then
+	-- Everyone arrives in hall 1 (the sign-up list and SPECTATE reach the others).
+	local firstHall = halls[1]
+	if firstHall == nil then
 		return false, "The Local meet is closed right now."
 	end
+	local v = firstHall.venue
 	if visits[player] then
 		return false, "You are already at the Local meet."
 	end
@@ -2146,7 +2216,7 @@ local function enterVenue(player: Player, point: BasePart?): (boolean, string?)
 	if player.Parent == nil or nowBody == nil or nowBody.character ~= body.character or nowBody.humanoid.Health <= 0 then
 		return false, nil
 	end
-	local visit: Visit = { character = body.character, returnTo = returnTo, connections = {} }
+	local visit: Visit = { character = body.character, returnTo = returnTo, connections = {}, hall = firstHall.index }
 	visits[player] = visit
 	body.character:PivotTo(arrival)
 	player:SetAttribute(LocalMeetConfig.VenueAttribute, true)
@@ -2160,7 +2230,7 @@ local function enterVenue(player: Player, point: BasePart?): (boolean, string?)
 	end))
 	log("%s entered the venue", player.Name)
 	sendLobby(player)
-	local current = meet
+	local current = firstHall.meet
 	if current and remotes then
 		remotes.standings:FireClient(player, buildStandings(current))
 	end
@@ -2190,36 +2260,44 @@ function LocalMeetService.teleportOut(player: Player): (boolean, string?)
 	if visits[player] == nil then
 		return true, nil
 	end
-	local current = meet
-	local lifter = current and current.byPlayer[player]
-	if current and not current.final and lifter and not lifter.withdrawn then
+	local current, lifter = activeLifter(player)
+	if current and not current.final and lifter then
 		return false, "You are lifting in this meet. Press LEAVE first."
 	end
 	leaveVenue(player, false)
 	return true, nil
 end
 
--- The sign-up desk and the SIGN UP button: puts the player's name on the list, or takes it off.
-local function toggleSignUp(player: Player)
+-- The hall with this number, if a client sent a real one.
+local function hallFromClient(hallIndex: any): Hall?
+	if typeof(hallIndex) ~= "number" or hallIndex ~= math.floor(hallIndex) then
+		return nil
+	end
+	return halls[hallIndex]
+end
+
+-- A hall's sign-up desk and the SIGN UP buttons: puts the player's name on that meet's list (off any other), or takes it off.
+local function toggleSignUp(player: Player, hall: Hall)
 	if visits[player] == nil then
 		return
 	end
-	local current = meet
-	if current and current.byPlayer[player] and not current.byPlayer[player].withdrawn then
-		notify(player, "You are lifting in this meet.")
+	local _, lifting = activeLifter(player)
+	if lifting then
+		notify(player, "You are lifting in a meet.")
 		return
 	end
-	if signedUp(player) then
+	if signedUpAt(player) == hall then
 		removeSignUp(player)
 		notify(player, "You took your name off the list.")
 	else
-		local untilStart = nextStartAt - now()
+		local untilStart = hall.nextStartAt - now()
 		if untilStart <= closesSeconds() then
-			notify(player, string.format("Sign-ups for this meet are closed. They open again in %s.", clockText(untilStart)))
+			notify(player, string.format("Sign-ups for meet %d are closed. They open again in %s.", hall.index,
+				clockText(untilStart)))
 			return
 		end
-		if #signUps >= LocalMeetConfig.MaxLifters then
-			notify(player, "The list is full. Try again for the next meet.")
+		if #hall.signUps >= LocalMeetConfig.MaxLifters then
+			notify(player, "That list is full. Try another meet.")
 			return
 		end
 		local weigh, problem = weighIn(player)
@@ -2227,11 +2305,60 @@ local function toggleSignUp(player: Player)
 			notify(player, "You cannot sign up: " .. (problem or "unknown problem") .. ".")
 			return
 		end
-		table.insert(signUps, player)
-		notify(player, string.format("You are signed up (%s class). The meet starts in %s.", weigh.classLabel,
-			clockText(untilStart)))
+		removeSignUp(player)
+		table.insert(hall.signUps, player)
+		notify(player, string.format("You are signed up for meet %d (%s class). It starts in %s.", hall.index,
+			weigh.classLabel, clockText(untilStart)))
 	end
 	broadcastLobby()
+end
+
+-- SPECTATE: moves a player in the venue, not lifting, into another hall, at its doors. Their sign-up stays.
+local function spectate(player: Player, hall: Hall)
+	local visit = visits[player]
+	local body = bodyOf(player)
+	if visit == nil or body == nil or body.character ~= visit.character or body.humanoid.Health <= 0 then
+		return
+	end
+	if visit.hall == hall.index then
+		notify(player, string.format("You are already at meet %d.", hall.index))
+		return
+	end
+	local _, lifting = activeLifter(player)
+	if lifting then
+		notify(player, "You are lifting in a meet. Press LEAVE first.")
+		return
+	end
+	if warmUp then
+		warmUp.stop(player, false)
+	end
+	if LiftAttemptService.isAttemptActive(player) or entering[player] then
+		return
+	end
+	entering[player] = true
+	local arrival = hall.venue.arrival * CFrame.new(0, standingHeight(body), 0)
+	pcall(function()
+		player:RequestStreamAroundAsync(arrival.Position, STREAM_TIMEOUT_SECONDS)
+	end)
+	entering[player] = nil
+	if player.Parent == nil or visits[player] ~= visit or body.humanoid.Health <= 0 then
+		return
+	end
+	-- A meet this player signed up for may have started meanwhile.
+	local _, nowLifting = activeLifter(player)
+	if nowLifting then
+		return
+	end
+	visit.hall = hall.index
+	body.root.Anchored = false
+	body.character:PivotTo(arrival)
+	log("%s is watching meet %d", player.Name, hall.index)
+	sendLobby(player)
+	local current = hall.meet
+	if remotes then
+		remotes.standings:FireClient(player, if current then buildStandings(current)
+			else { heading = "STANDINGS", final = false, rows = {} })
+	end
 end
 
 local function pressAllowed(player: Player): boolean
@@ -2277,8 +2404,7 @@ function LocalMeetService.start()
 	local set = LocalMeetRemotes.createOnServer(ReplicatedStorage)
 	remotes = set
 	set.choose.OnServerEvent:Connect(function(player, weightKg)
-		local current = meet
-		local lifter = current and current.byPlayer[player]
+		local _, lifter = activeLifter(player)
 		if lifter and typeof(weightKg) == "number" then
 			lifter.choice = weightKg
 		end
@@ -2286,8 +2412,7 @@ function LocalMeetService.start()
 	-- The lifter's live minigame progress (MeetLiftProgress): VISUAL ONLY, it moves their character's lift and
 	-- never decides it. Checked for a number in 0..1 and rate-limited.
 	set.liftProgress.OnServerEvent:Connect(function(player, fraction)
-		local current = meet
-		local lifter = current and current.byPlayer[player]
+		local _, lifter = activeLifter(player)
 		if typeof(fraction) ~= "number" or fraction ~= fraction then
 			return
 		end
@@ -2306,8 +2431,7 @@ function LocalMeetService.start()
 		MeetLiftAnimation.progress(lifter.liftAnim, lifter.livePhase, math.clamp(fraction, 0, 1))
 	end)
 	set.ready.OnServerEvent:Connect(function(player)
-		local current = meet
-		local lifter = current and current.byPlayer[player]
+		local _, lifter = activeLifter(player)
 		if lifter then
 			lifter.readyPressed = true
 		end
@@ -2316,12 +2440,10 @@ function LocalMeetService.start()
 		if not pressAllowed(player) then
 			return
 		end
-		local current = meet
-		local lifter = current and current.byPlayer[player]
+		local _, lifter = activeLifter(player)
 		withdraw(player, "pressed LEAVE")
-		local v = venue
-		if lifter and v and visits[player] then
-			standAt(player, LocalMeetVenue.lobbySpotFor(v, lifter.order), false)
+		if lifter and visits[player] then
+			standAt(player, LocalMeetVenue.lobbySpotFor(lifter.hall.venue, lifter.order), false)
 		end
 	end)
 	set.exit.OnServerEvent:Connect(function(player)
@@ -2329,9 +2451,16 @@ function LocalMeetService.start()
 			leaveVenue(player, true)
 		end
 	end)
-	set.signUp.OnServerEvent:Connect(function(player)
-		if pressAllowed(player) then
-			toggleSignUp(player)
+	set.signUp.OnServerEvent:Connect(function(player, hallIndex)
+		local hall = hallFromClient(hallIndex)
+		if hall and pressAllowed(player) then
+			toggleSignUp(player, hall)
+		end
+	end)
+	set.spectate.OnServerEvent:Connect(function(player, hallIndex)
+		local hall = hallFromClient(hallIndex)
+		if hall and pressAllowed(player) then
+			spectate(player, hall)
 		end
 	end)
 
@@ -2352,21 +2481,35 @@ function LocalMeetService.start()
 		if LocalMeetVenue.buildEntrance() == nil then
 			warn("[LocalMeetService] the entrance building could not be built: there is no way into the Local meet")
 		end
-		local built, problem = LocalMeetVenue.build()
-		if built == nil then
-			warn("[LocalMeetService] the venue could not be built: " .. tostring(problem))
+		-- One hall after another, handing back to the server between them. The doors open when all are up.
+		local buildStart = os.clock()
+		local allRacks: { LocalMeetVenue.WarmUpRack } = {}
+		local builtHalls: { Hall } = {}
+		for hallIndex = 1, LocalMeetConfig.HallCount do
+			local built, problem = LocalMeetVenue.build(hallIndex)
+			if built == nil then
+				warn("[LocalMeetService] hall " .. hallIndex .. " could not be built: " .. tostring(problem))
+				continue
+			end
+			table.insert(builtHalls, { index = #builtHalls + 1, venue = built, signUps = {}, meet = nil, nextStartAt = 0,
+				nextLevel = "Local" })
+			for _, rack in ipairs(built.warmUpRacks) do
+				table.insert(allRacks, rack)
+			end
+			task.wait()
+		end
+		if #builtHalls == 0 then
 			return
 		end
-		venue = built
-		warmUp = LocalMeetWarmUp.new(built.warmUpRacks, set, {
+		halls = builtHalls
+		warmUp = LocalMeetWarmUp.new(allRacks, set, {
 			canUse = function(player: Player): (boolean, string?)
 				local body = bodyOf(player)
 				if visits[player] == nil or body == nil or body.humanoid.Health <= 0 then
 					return false, nil
 				end
-				local current = meet
-				local lifter = current and current.byPlayer[player]
-				if lifter and not lifter.withdrawn then
+				local _, lifter = activeLifter(player)
+				if lifter then
 					return false, "You are lifting in this meet."
 				end
 				if LiftAttemptService.isAttemptActive(player) then
@@ -2380,28 +2523,32 @@ function LocalMeetService.start()
 			prompt = prompt,
 			pressAllowed = pressAllowed,
 		})
-		prompt(built.signUpPoint, "Sign up / take name off", "Local meet desk", function(player)
-			if pressAllowed(player) then
-				toggleSignUp(player)
-			end
-		end)
-		prompt(built.exitPoint, "Back to the gym", "Exit", function(player)
-			if visits[player] and pressAllowed(player) then
-				leaveVenue(player, true)
-			end
-		end)
-		log("venue ready: %d platforms, a meet every %d s (Studio: %s)", #built.platforms, cycleSeconds(),
-			tostring(RunService:IsStudio()))
+		for _, hall in ipairs(halls) do
+			prompt(hall.venue.signUpPoint, "Sign up / take name off", "Meet " .. hall.index .. " desk", function(player)
+				if pressAllowed(player) then
+					toggleSignUp(player, hall)
+				end
+			end)
+			prompt(hall.venue.exitPoint, "Back to the gym", "Exit", function(player)
+				if visits[player] and pressAllowed(player) then
+					leaveVenue(player, true)
+				end
+			end)
+			hall.nextStartAt = startAfter(now(), hall.index)
+			rollLevel(hall)
+		end
+		log("venue ready in %.1f s: %d halls of %d platforms, each a meet every %d s (Studio: %s)", os.clock() - buildStart,
+			#halls, #halls[1].venue.platforms, cycleSeconds(), tostring(RunService:IsStudio()))
 
-		nextStartAt = startAfter(now())
-		rollLevel()
 		while true do
-			if now() >= nextStartAt then
-				tryStartMeet()
-				-- The next meet's sign-ups open now, with its level (a meet that did not start does not keep its level).
-				nextStartAt = startAfter(now())
-				rollLevel()
-				broadcastLobby()
+			for _, hall in ipairs(halls) do
+				if now() >= hall.nextStartAt then
+					tryStartMeet(hall)
+					-- Its next meet's sign-ups open now, with its level (a meet that did not start does not keep its level).
+					hall.nextStartAt = startAfter(now(), hall.index)
+					rollLevel(hall)
+					broadcastLobby()
+				end
 			end
 			task.wait(0.5)
 		end

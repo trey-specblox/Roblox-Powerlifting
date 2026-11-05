@@ -2170,12 +2170,30 @@ Worlds and Sheffield come later and are untouched here.
 | What it saves | §33.3b in full: CN raises within the daily allowance, misses above CN use it, Competition Scale and best Total, and **a bomb-out or leaving early saves nothing**. A **win** (1st place in a meet with at least 2 real players) counts toward the 10 Local wins that unlock Nationals (`MeetConfig.LocalVictoriesForNationals`) |
 | Not in the first build | Money, equipment, the gym record wall bonus (§30.3-§30.5) wait for the economy design; Nationals and above |
 
-**Five meets at once (user, 2026-11-05; decided, NOT BUILT YET):** "I am not waiting 10
-minutes everytime to compete at a meet. Make it way larger. Everything the same just 5
-Different meets can happen at once. All with separate rewardings, and placings." The
-Local/Regional venue gets five numbered meets. Sign-ups are at the check-in lobby, and each
-meet offers SIGN UP or SPECTATE, which teleports the player to that meet. The stands are filled
-with fake characters. How it is laid out and timed is still to be approved.
+**Five meets at once (user, 2026-11-05; plan approved the same day, "Yes, start the venue";
+built):** "I am not waiting 10 minutes everytime to compete at a meet. Make it way larger.
+Everything the same just 5 Different meets can happen at once. All with separate rewardings,
+and placings."
+
+- **Five identical halls**, numbered 1 to 5, each with its own meet, sign-up list, level, placings
+  and rewards, its own 8 platforms, warm-up room and awards stage.
+- **Staggered starts:** each hall has a meet every 10 minutes, evenly staggered, so a meet starts
+  somewhere every **2 minutes [PROVISIONAL]**. Each hall rolls its own level, so one can be Regional
+  while the others are Local.
+- **The MEETS list** on the venue screen, shown anywhere in the venue, has one row per meet: number,
+  level, countdown, sign-ups, SIGN UP (the same press takes a name off) and SPECTATE, which
+  teleports there. Each hall's desk signs up for its own meet.
+- **One list and one meet at a time:** signing up for another meet moves the name there. When a meet
+  starts, its lifters are moved to its hall, wherever they were watching.
+- **Everyone arrives in hall 1.** Standings, awards and meet sounds reach only the people in that
+  hall, so another hall's awards never take over a player's camera.
+- **The stands are full of fake characters:** blocky seated figures in varied colours, some cheering,
+  a different seating and colours section to section. Never real players' avatars.
+
+The rule that full rewards need 2 real players in a meet is unchanged, so five meets can make meets
+with only one real player more common. Watch this once real players are in.
+A WATCH button on a gym record attempt still lands in hall 1, not the right hall. Not decided: whether
+to fix it.
 
 **How the lift games are played (user, 2026-11-05; built):** a tap anywhere on a phone or the
 left mouse button on a computer works every press game: the squat's bar, the bench's mashing and

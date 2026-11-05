@@ -65,8 +65,11 @@ function LocalMeetController.start()
 		exit = function()
 			remotes.exit:FireServer()
 		end,
-		signUp = function()
-			remotes.signUp:FireServer()
+		signUp = function(index: number)
+			remotes.signUp:FireServer(index)
+		end,
+		spectate = function(index: number)
+			remotes.spectate:FireServer(index)
 		end,
 	})
 	ui.gui.Parent = player:WaitForChild("PlayerGui")
@@ -145,8 +148,7 @@ function LocalMeetController.start()
 			return
 		end
 		nextDraw = os.clock() + 0.25
-		local current = lobby
-		ui.drawLobby(current, if current then current.nextStartAt - Workspace:GetServerTimeNow() else nil)
+		ui.drawLobby(lobby, Workspace:GetServerTimeNow())
 	end)
 end
 

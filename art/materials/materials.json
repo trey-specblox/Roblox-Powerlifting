@@ -783,6 +783,14 @@
         "model": "rbxassetid://71979666360161"
       }
     },
+    "Crowd_01": {
+      "about": "Fake spectators for the Local meet's stands: two sections of blocky seated figures (CrowdA, CrowdB), one piece per colour so the game can colour each section differently. Made by art/scripts/build_crowd_01.py (art/blender/Crowd_01.blend).",
+      "file": "art/exports/Crowd_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://73272782464755"
+      }
+    },
     "WornGear_01": {
       "about": "The Shop's gear as worn on an R15 body (money system step 5): a lever belt round the waist (WornLeverBelt), knee sleeves in two halves on the thigh and shin (WornKneeSleeve), wrist wraps (WornWristWrap) and a one-piece singlet in pieces on the chest, hips and thighs (WornSinglet). Names are Worn<Item>_<ShopConfig colour key>[_<Segment>]; limb pieces are built on the right limb and used on both. Made by art/scripts/build_worn_gear_01.py (art/blender/WornGear_01.blend). Reworked 2026-10-31 (user's reference photos): chunky belt, seamless knee sleeves, wraps covering the wrist.",
       "file": "art/exports/WornGear_01.glb",

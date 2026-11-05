@@ -308,8 +308,8 @@ function GymRecordAnnouncer.start()
 			end
 			local left = math.max(0, math.floor(news.signUpClosesAt - workspace:GetServerTimeNow()))
 			local there = player:GetAttribute(LocalMeetConfig.VenueAttribute) ~= nil
-			show(string.format("The next meet is a %s: prize pot x%d, titles for the top 3. Sign up within %d:%02d",
-				coloured(news.levelLabel, "#FACE24"), news.potMultiplier or 1, left // 60, left % 60), LEVEL_SECONDS,
+			show(string.format("Meet %d's next is a %s: prize pot x%d, titles for the top 3. Sign up within %d:%02d",
+				news.hallIndex, coloured(news.levelLabel, "#FACE24"), news.potMultiplier or 1, left // 60, left % 60), LEVEL_SECONDS,
 				if there then nil else "LocalMeet", "GO ▶")
 		end)
 	end)
