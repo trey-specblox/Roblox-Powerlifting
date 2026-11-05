@@ -43,10 +43,18 @@ local C = UIStyle.Colours
 local GymRecordAnnouncer = {}
 
 local TEXT_SIZE = 22
-local TOP = 8
+-- Text never gets smaller than this on a small screen: it wraps onto more lines instead.
+local MIN_TEXT_SIZE = 15
+-- On a phone: under Roblox's own buttons at the top of the screen, across nearly its whole width, and fewer lines.
+local ON_PHONE = UIStyle.isTouchOnly()
+local TOP = if ON_PHONE then 62 else 8
+local SIDE_ROOM = if ON_PHONE then 24 else 240
 -- Under the lift banner and its status line (LiftAttemptController: they end about 110 px down).
-local TOP_DURING_LIFT = 122
-local MAX_LINES = 3
+local TOP_DURING_LIFT = if ON_PHONE then 62 else 122
+local MAX_LINES = if ON_PHONE then 2 else 3
+local BUTTON_WIDTH = if ON_PHONE then 92 else 84
+local BUTTON_HEIGHT = if ON_PHONE then 34 else 24
+local LINE_GAP = 10
 local RECORD_SECONDS = 7
 local ATTEMPT_SECONDS = 12
 local LEVEL_SECONDS = 14
@@ -116,7 +124,7 @@ function GymRecordAnnouncer.start()
 	stack.Name = "Lines"
 	stack.AnchorPoint = Vector2.new(0.5, 0)
 	stack.Position = UDim2.new(0.5, 0, 0, TOP)
-	stack.Size = UDim2.new(1, -240, 0, 0)
+	stack.Size = UDim2.new(1, -SIDE_ROOM, 0, 0)
 	stack.AutomaticSize = Enum.AutomaticSize.Y
 	stack.BackgroundTransparency = 1
 	stack.Parent = gui
@@ -169,7 +177,11 @@ function GymRecordAnnouncer.start()
 		line:Destroy()
 	end
 
-	-- One line of news (rich text), with a small WATCH button when `watch` names a place. Fades out after `seconds`.
+	--[[
+		One piece of news (rich text), with a small WATCH button when `watch` names a place. Fades out after
+		`seconds`. It wraps to stay on screen with the button beside it (user 2026-11-05: on a phone a line ran
+		off the edge, so its time and GO button couldn't be seen).
+	]]
 	local function show(text: string, seconds: number, watch: string?, buttonText: string?)
 		while #lines >= MAX_LINES do
 			remove(lines[1])
@@ -185,7 +197,7 @@ function GymRecordAnnouncer.start()
 		row.FillDirection = Enum.FillDirection.Horizontal
 		row.VerticalAlignment = Enum.VerticalAlignment.Center
 		row.SortOrder = Enum.SortOrder.LayoutOrder
-		row.Padding = UDim.new(0, 10)
+		row.Padding = UDim.new(0, LINE_GAP)
 		row.Parent = line
 
 		local label = Instance.new("TextLabel")
@@ -194,9 +206,13 @@ function GymRecordAnnouncer.start()
 		label.AutomaticSize = Enum.AutomaticSize.XY
 		label.Size = UDim2.fromOffset(0, 0)
 		label.RichText = true
+		label.TextWrapped = true
 		label.FontFace = UIStyle.heading()
-		label.TextSize = TEXT_SIZE
+		label.TextSize = math.clamp(TEXT_SIZE * UIStyle.screenScale(), MIN_TEXT_SIZE, TEXT_SIZE)
 		label.TextColor3 = C.white
+		local widest = Instance.new("UISizeConstraint")
+		widest.MaxSize = Vector2.new(math.max(120, stack.AbsoluteSize.X - (if watch then BUTTON_WIDTH + LINE_GAP else 0)), math.huge)
+		widest.Parent = label
 		label.Text = text
 		label.TextTransparency = 1
 		label.LayoutOrder = 1
@@ -212,7 +228,7 @@ function GymRecordAnnouncer.start()
 			local button = Instance.new("TextButton")
 			button.Name = "Watch"
 			button.LayoutOrder = 2
-			button.Size = UDim2.fromOffset(84, 24)
+			button.Size = UDim2.fromOffset(BUTTON_WIDTH, BUTTON_HEIGHT)
 			button.BackgroundColor3 = C.yellow
 			button.BackgroundTransparency = 1
 			button.BorderSizePixel = 0
@@ -284,6 +300,10 @@ function GymRecordAnnouncer.start()
 		local levelRemote = folder:WaitForChild(LocalMeetRemotes.LEVEL_NEWS, math.huge) :: RemoteEvent
 		levelRemote.OnClientEvent:Connect(function(news: LocalMeetRemotes.LevelNews)
 			if typeof(news) ~= "table" or typeof(news.levelLabel) ~= "string" or typeof(news.signUpClosesAt) ~= "number" then
+				return
+			end
+			-- Not while lifting on a phone: it would sit over the minigame, and the lifter can't sign up anyway.
+			if ON_PHONE and player:GetAttribute(LocalMeetConfig.PlatformAttribute) ~= nil then
 				return
 			end
 			local left = math.max(0, math.floor(news.signUpClosesAt - workspace:GetServerTimeNow()))

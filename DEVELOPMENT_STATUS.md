@@ -3809,6 +3809,15 @@ and polish.
   five Local/Regional meets at once with separate placings and rewards, sign-up and spectate per
   meet at the lobby desk, teleport to a meet, stands filled with fake characters. Not started: this
   rewrites `LocalMeetService`'s single-meet state (about 160 places) and needs a Blender crowd model.
+  NEWS LINES ON A PHONE 2026-11-05, COMMITTED and pushed to `origin/main` with the user's approval as
+  "Keep news lines and their GO button on a phone's screen" (run `git log` for the hash), NOT PUBLISHED
+  (user: the regional meet text ran off a phone's screen, hiding its time and GO button):
+  `GymRecordAnnouncer` lines now wrap
+  to stay on screen with the button beside them, never smaller than 15 px. On a phone: under Roblox's
+  top buttons, nearly full width, at most 2 lines, a larger button, and no level news while lifting.
+  TESTED IN STUDIO with the real announcement, the news area squeezed to 728 and 480 px (Studio can't
+  be made phone-sized; the touch-only settings need a real phone): one line at 728, two at 480, time
+  and GO on screen both times, GO took the player into the venue, no script errors, disk checksum matched.
   NEXT: the user publishes and phone tests the mobile group, then says go on the venue plan. Before
   publishing, the user confirms their ElevenLabs plan covers the shouts.
   Plan, following LocalMeetVenue: an outside
