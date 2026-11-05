@@ -164,6 +164,15 @@ local WRONG_FLASH_SECONDS = 0.18
 
 export type Reporter = (events: { Simulation.TokenEvent }) -> ()
 
+--[[
+	For an input that reacts to whether each press landed, as a phone's LetterPad does
+	(a flash and a sound). A real keyboard has no use for these.
+]]
+export type Hooks = {
+	onHit: () -> (),
+	onMiss: () -> (),
+}
+
 type Visuals = {
 	gui: ScreenGui,
 	title: TextLabel,
@@ -190,6 +199,7 @@ local activeState: Simulation.State? = nil
 local accumulator = 0
 local phaseClock = 0
 local reporter: Reporter? = nil
+local activeHooks: Hooks? = nil
 local finished = true
 
 --[[
@@ -234,6 +244,8 @@ local markCurrent = true
 -- Wrong-key count last seen, to detect a new mistake and flash.
 local lastWrongCount = 0
 local flashUntil = 0
+-- Correct-key count last seen, to tell the hooks about a new hit.
+local lastCorrectCount = 0
 
 local function build(instructionText: string): Visuals
 	local gui = Instance.new("ScreenGui")
@@ -252,7 +264,7 @@ local function build(instructionText: string): Visuals
 	local holder, body = UIStyle.panel(gui, "Panel", PANEL_POSITION, UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	-- See-through, so the lift behind it still shows (user 2026-11-01).
 	UIStyle.seeThrough(holder, UIStyle.MinigameTransparency)
-	-- On a phone, at the top of the screen: its keyboard fills the bottom half (user 2026-11-05).
+	-- On a phone, at the top of the screen: LetterPad fills the bottom (user 2026-11-05).
 	local onPhone = UIStyle.isTouchOnly()
 	holder.AnchorPoint = if onPhone then Vector2.new(0.5, 0) else Vector2.new(0.5, 0.5)
 	holder.Position = if onPhone then UDim2.new(0.5, 0, 0, PHONE_PANEL_TOP) else PANEL_POSITION
@@ -521,9 +533,19 @@ local function redraw(delta: number)
 	current.percent.TextColor3 = if done then C.white else liftColour
 
 	-- A new wrong key starts a brief red flash. Feedback only; nothing is withheld.
+	local hooks = activeHooks
 	if state.wrongTokens > lastWrongCount then
 		lastWrongCount = state.wrongTokens
 		flashUntil = os.clock() + WRONG_FLASH_SECONDS
+		if hooks ~= nil then
+			hooks.onMiss()
+		end
+	end
+	if state.correctTokens > lastCorrectCount then
+		lastCorrectCount = state.correctTokens
+		if hooks ~= nil then
+			hooks.onHit()
+		end
 	end
 	local flashing = os.clock() < flashUntil
 
@@ -652,8 +674,10 @@ end
 	`report` is called exactly once, with every recorded token, as soon as the local
 	simulation concludes. The server then replays them against its own expected
 	sequence and sends back the authoritative verdict for showVerdict.
+
+	`hooks` is for an input that reacts to each press (see Hooks). Leave it out otherwise.
 ]]
-function TypingUI.run(challenge: TypingChallengeType, report: Reporter)
+function TypingUI.run(challenge: TypingChallengeType, report: Reporter, hooks: Hooks?)
 	local current = visuals
 	if current == nil then
 		return
@@ -667,10 +691,12 @@ function TypingUI.run(challenge: TypingChallengeType, report: Reporter)
 	recordedEvents = {}
 	pendingEvents = {}
 	lastWrongCount = 0
+	lastCorrectCount = 0
 	flashUntil = 0
 	markCurrent = true
 	phaseClock = os.clock()
 	reporter = report
+	activeHooks = hooks
 	finished = false
 
 	local phase = TypingPhaseConfig.Phases[challenge.phase]
@@ -798,6 +824,7 @@ function TypingUI.hide()
 
 	finished = true
 	stopStepping()
+	activeHooks = nil
 
 	current.gui.Enabled = false
 	current.verdict.Text = ""

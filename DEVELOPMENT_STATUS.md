@@ -3853,8 +3853,41 @@ and polish.
   still counted with its panel closed; screenshots looked at; no script errors; disk checksums matched.
   NOT VERIFIED: the WARM-UP button (same code, not clicked); a real phone: the buttons' tap size (about
   28 pt) and the new sizes.
-  NEXT: the user publishes and phone tests, and runs a two-player test of overlapping meets. Before
-  publishing, the user confirms their ElevenLabs plan covers the shouts.
+  OVERLAPPING MEETS: the user tested them in Studio, 2026-11-05: "overlapping meets work" (their report;
+  Claude did not see that run).
+  ELEVENLABS: the user is on a paid plan (their word, 2026-11-05), so the shouts need no remaking.
+  PUBLISHED by the user 2026-11-05 (their word; cca1de2 was the code at the time), and they moved on to a
+  new session. This note and the two above it were uncommitted at the handoff.
+  PHONE TEST 2026-11-05 (user's report): everything fine except the deadlift typing game, where the phone's
+  own keyboard is so small it causes typos in the time allowed.
+  QWERTY KEYBOARD ON PHONES 2026-11-05, COMMITTED and pushed to `origin/main` with the user's approval as
+  "Give phones their own QWERTY keyboard for the deadlift" (run `git log` for the hash), NOT PUBLISHED: new client `LetterPad` takes
+  `SequenceInput`'s place when `UIStyle.isTouchOnly()`: the game's own QWERTY keyboard, so the phone's never
+  opens. Tokens go to the same `TypingUI.registerToken`, so the server and every number are unchanged. A press
+  acts on touch-down (InputBegan), flashes blue or red, and reuses the rhythm game's Hit and Miss sounds (not
+  heard by Claude). `TypingUI.run` takes optional `Hooks` (onHit, onMiss). New Studio-only workspace attribute
+  `ForcePhoneScreens` (set in Edit before Play, remove after) shows the phone screens. A first version, ten
+  big keys changing per word, was rejected by the user before they tried it ("Make the layout a normal
+  qwert keyboard").
+  TESTED IN STUDIO, phone screens forced, Studio's window, changed scripts checked against disk by checksum
+  (Rojo dropped one last edit again; caught and re-sent): all 26 keys in rows of 10, 9 and 7; screenshot looked
+  at; phone keyboard box never focused; 12 real mouse clicks through a full 80% pull gave BAR AT LOCKOUT from
+  the server (a test-only script slid the wanted key under the cursor, because Claude is too slow to read and
+  click within the time limit); keyboard hides after the pull and after a timeout; no script errors. Attribute
+  removed, computer path checked: capture box focused, typed letters arrive, keyboard stays off. A separate
+  test showed the server charging a wrong letter that the pull contains (from the earlier ten-key version;
+  same press code), and it ignores a wrong letter the pull doesn't contain, as for a real keyboard.
+  Key size computed, not seen: about 68 x 67 pt on a 752 x 390 phone.
+  NOT VERIFIED: anything on a real phone: real fingers (two thumbs, speed on heavy pulls, which need about 3
+  correct letters a second), notch fit, how much of the lifter stays visible, how the sounds feel. The red
+  flash was not caught on screen. LEAVE mid-pull on the keyboard not run (same `releaseInput` as every phase).
+  SEEN, NOT CHANGED: on a phone during a lift, a gym record line (not filtered as level news is) would sit at
+  the top over the typing panel's word.
+  Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
+  `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
+  NEXT: the user publishes and tests the QWERTY keyboard on a real phone.
+  Then what they choose. Meet ideas left: stakes that build through the attempts, rituals before the lift.
+  Known: WATCH on a gym record attempt lands in hall 1; five halls may make solo-reward meets more common.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;

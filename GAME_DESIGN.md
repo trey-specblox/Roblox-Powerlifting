@@ -2204,7 +2204,11 @@ to fix it.
 **How the lift games are played (user, 2026-11-05; built):** a tap anywhere on a phone or the
 left mouse button on a computer works every press game: the squat's bar, the bench's mashing and
 holds, and every skill check, which also still takes Space. There is no on-screen button to find.
-On a phone the deadlift's letters sit above the keyboard.
+On a phone the deadlift's letters sit above the keyboard. That keyboard is the game's own, not the
+phone's (user, 2026-11-05: the phone's keys are so small they cause typos): a normal QWERTY layout with
+much taller keys, all 26 letters always in their usual places, and the next letter not marked. Same
+words, time limit and penalties as typing on a computer. A computer, or a phone with a real keyboard
+attached, still types as before.
 
 **Build order** (one step at a time, each tested before the next):
 1. The meet itself: sign-up desk, timer, weigh-in, rounds, referees, placing and

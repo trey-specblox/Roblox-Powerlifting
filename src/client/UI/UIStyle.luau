@@ -27,6 +27,7 @@
 	a GOOD lift is WHITE and a NO LIFT is RED, like a meet's lights.
 ]]
 
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local UIStyle = {}
@@ -447,8 +448,15 @@ function UIStyle.screenScale(): number
 	return math.clamp(height / DESIGN_HEIGHT, MIN_SCALE, 1)
 end
 
--- A phone or tablet with no keyboard attached: its prompts say TAP, and it has no key hints.
+--[[
+	A phone or tablet with no keyboard attached: its prompts say TAP, and it has no key hints.
+	In Studio only, the workspace attribute ForcePhoneScreens (set before pressing Play) shows
+	the phone screens, because Studio can't pretend to be a touch device from a script.
+]]
 function UIStyle.isTouchOnly(): boolean
+	if RunService:IsStudio() and workspace:GetAttribute("ForcePhoneScreens") == true then
+		return true
+	end
 	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 end
 

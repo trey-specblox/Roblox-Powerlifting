@@ -48,6 +48,7 @@ local LiftTap = require(script.Parent.LiftTap)
 local ControlUI = require(script.Parent.ControlUI)
 local PowerUI = require(script.Parent.PowerUI)
 local SequenceInput = require(script.Parent.SequenceInput)
+local LetterPad = require(script.Parent.LetterPad)
 local TypingUI = require(script.Parent.TypingUI)
 local SkillCheckUI = require(script.Parent.SkillCheckUI)
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
@@ -293,6 +294,7 @@ local function releaseInput()
 	unbindPressKey()
 	ControlInput.unbind()
 	SequenceInput.unbind()
+	LetterPad.stop()
 	activePhaseKind = nil
 end
 
@@ -387,7 +389,7 @@ local function onPresentPhase(payload: any)
 		challenge.baseDifficulty,
 		if scaleBonus and scaleBonus > 0 then string.format("  -  unproven weight +%.0f", scaleBonus) else ""
 	))
-	-- On a phone the typing panel takes the top of the screen, above the keyboard: nothing else fits there.
+	-- On a phone the typing panel takes the top of the screen, above LetterPad: nothing else fits there.
 	if payload.kind == LiftAttempt.PhaseKind.Typing and UIStyle.isTouchOnly() then
 		setBanner("")
 		setStatus("")
@@ -432,14 +434,22 @@ local function onPresentPhase(payload: any)
 			Jump stays disabled as in every other phase: a letter key is not Space, but
 			the lockout press that follows is.
 		]]
-		SequenceInput.bind(TypingUI.registerToken)
+		local hooks: TypingUI.Hooks? = nil
+		if LetterPad.isWanted() then
+			-- A phone's own keyboard is too small to type on in time (user 2026-11-05).
+			LetterPad.start(TypingUI.registerToken)
+			hooks = { onHit = LetterPad.hit, onMiss = LetterPad.miss }
+		else
+			SequenceInput.bind(TypingUI.registerToken)
+		end
 		setJumpEnabled(false)
 
 		TypingUI.run(challenge, function(tokenEvents)
 			SequenceInput.unbind()
+			LetterPad.stop()
 			setJumpEnabled(true)
 			set.reportPhaseInput:FireServer(payload.attemptId, LiftAttempt.PhaseKind.Typing, tokenEvents)
-		end)
+		end, hooks)
 	else
 		SkillCheckUI.setInstruction(SKILL_CHECK_PROMPT)
 		bindPressKey()
@@ -533,13 +543,14 @@ function LiftAttemptController.start()
 
 	ControlUI.mount(playerGui, ControlInput.promptText())
 	PowerUI.mount(playerGui, POWER_PROMPT)
-	TypingUI.mount(playerGui, SequenceInput.promptText())
+	TypingUI.mount(playerGui, if LetterPad.isWanted() then LetterPad.promptText() else SequenceInput.promptText())
 	--[[
 		The typing pull's input is a hidden, focusable TextBox rather than a set of
 		keybinds, so it needs mounting like a UI even though the player never sees it.
 		See SequenceInput for why text entry replaced per-key capture.
 	]]
 	SequenceInput.mount(playerGui)
+	LetterPad.mount(playerGui)
 	SkillCheckUI.mount(playerGui, SKILL_CHECK_PROMPT)
 	bannerLabel, bannerParts, statusLabel = buildBanner(playerGui)
 
