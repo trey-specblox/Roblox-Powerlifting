@@ -99,7 +99,6 @@ local DISPLAY_Y = 18.5
 -- The barricade row between the spectators and the platforms (LocalMeet_02's Barricade is 7 wide).
 local BARRIER_Z = 6
 local BARRICADE_W = 7
-local BARRICADE_H = 3.3
 -- The referee chairs: side referees either side of the platform's front, the head referee in the middle in front.
 --[[
 	The three referee chairs (user 2026-11-01, GAME_DESIGN §37.5: "One left,
@@ -222,6 +221,8 @@ export type Venue = {
 -- A warm-up rack: where its lifter stands (in front of it, facing the hall) and the point carrying its prompt.
 export type WarmUpRack = {
 	index: number,
+	-- The rack itself: a lift here plays on it (LocalMeetWarmUp, MeetLiftAnimation).
+	rack: Model?,
 	liftSpot: CFrame,
 	point: BasePart,
 }
@@ -468,6 +469,11 @@ function LocalMeetVenue.build(): (Venue?, string?)
 			model:Destroy()
 			return nil, problem
 		end
+		-- No rack on a meet's deadlift (rackFor), so the bar lies in the platform's middle (StationLayout.deadliftZ).
+		local platformRack = gear:FindFirstChild("CompetitionRack")
+		if platformRack then
+			platformRack:SetAttribute("DeadliftAtCentre", true)
+		end
 
 		-- The platform's big screen on the back wall above it (MockMeet_01's attempt board, scaled up): the lifter
 		-- on the platform, their numbers and fun facts (LifterDisplay).
@@ -561,7 +567,15 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	for k = 0, count - 1 do
 		prop(model, "Barricade_" .. (k + 1), "Barricade", facing(Vector3.new(firstX + k * BARRICADE_W, 0, BARRIER_Z), -Vector3.zAxis))
 	end
-	solid("Barricades_Solid", Vector3.new(-hx, 0, BARRIER_Z - 0.4), Vector3.new(hx, BARRICADE_H, BARRIER_Z + 0.4))
+	-- As high as the walls: nobody jumps onto the barricades or over them.
+	solid("Barricades_Solid", Vector3.new(-hx, 0, BARRIER_Z - 0.4), Vector3.new(hx, EAVE, BARRIER_Z + 0.4))
+	-- The doorways from the warm-up room are for lifters only, whom the server walks through (LocalMeetService
+	-- walkLifter). Anyone walking there themselves stops at the wall line, off the platforms.
+	for index, doorway in ipairs(doorways) do
+		if index < #doorways then -- the last opening is the corridor from the lobby, open to everyone
+			solid("Doorway_" .. index .. "_Closed", Vector3.new(doorway[1], 0, Z_BACK - 0.5), Vector3.new(doorway[2], OPENING_H, Z_BACK + 0.5))
+		end
+	end
 
 	-- ---------------------------------------------------------------- the stands, against the walls
 	-- One section of stands, its low front step toward `toward`, on hidden solid steps.
@@ -630,11 +644,19 @@ function LocalMeetVenue.build(): (Venue?, string?)
 	local warmUpRacks: { WarmUpRack } = {}
 	for index = 1, LocalMeetConfig.MaxLifters do
 		local x = platformX(index)
-		local placed = MockMeetArena.placeRack(model, centre + Vector3.new(x, 0, WARMUP_RACK_Z))
+		local holder = Instance.new("Folder")
+		holder.Name = "WarmUpRack_" .. index
+		holder.Parent = model
+		local placed = MockMeetArena.placeRack(holder, centre + Vector3.new(x, 0, WARMUP_RACK_Z))
 		if placed then
 			local spotAt = centre + Vector3.new(x, 0, WARMUP_RACK_Z - LocalMeetConfig.WarmUp.LiftSpotInFrontStuds)
+			local warmUpRack = holder:FindFirstChild("CompetitionRack") :: Model?
+			if warmUpRack then
+				StationVisuals.show(warmUpRack, nil)
+			end
 			table.insert(warmUpRacks, {
 				index = #warmUpRacks + 1,
+				rack = warmUpRack,
 				liftSpot = CFrame.lookAt(spotAt, spotAt - Vector3.zAxis),
 				point = point("WarmUpPoint_" .. index, spotAt - centre),
 			})

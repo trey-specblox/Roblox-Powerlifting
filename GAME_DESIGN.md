@@ -6276,6 +6276,10 @@ They play on the animation, quieter than a meet lift because they repeat. Anothe
 lifter's reps are heard only within 45 studs and at most one every 1.5 s, so a full gym
 doesn't turn into constant banging.
 
+**The bar's rack sound comes when the bar goes back (user, 2026-11-04):** after a good
+squat or bench the referee calls RACK, and soon after the bar goes into the J-cups with
+a clear clank that can be heard over the crowd.
+
 **Sound is part of every feature from now on (user, 2026-11-04: "for everything else
 in the future if need be").**
 
@@ -6287,6 +6291,20 @@ in the future if need be").**
 > `art/scripts/make_meet_sounds.py` builds them (WAVs outside the public repo, ids in
 > `art/sounds/sonniss_sounds.json`), `MeetSoundConfig` lists them with each source,
 > `MeetSoundController` (client) plays them, remote `LocalMeetSound`.
+
+**The meet runs itself, and only lifters reach the platforms (user, 2026-11-04):**
+
+- **Spectators stay out:** nobody can jump onto or over the barricades or step onto a
+  platform. The warm-up room's doorways are closed to anyone walking there themselves.
+- **A lifter can't disrupt their turn:** the walk out to the bar and back is run by the
+  server, so a player's controls can't stop it, steer it or make their turn not happen.
+- **Back in the warm-up room first:** the next attempt is chosen only once everyone is
+  back there.
+- **A lifter stays put for the whole meet:** from the weigh-in until the meet ends or they
+  withdraw, a lifter's controls don't move them. They wait at their spot in the warm-up room.
+- **The deadlift bar lies in the middle of the platform.**
+- **Warm-up racks play the same lift and fail animations and bar sounds as a platform**,
+  and carry a bar. Still practice only: nothing is saved.
 
 ### 37.3 Still open
 

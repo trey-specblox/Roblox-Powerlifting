@@ -79,6 +79,18 @@ function StationLayout.of(rack: Instance): Layout?
 	return LAYOUTS[templateName]
 end
 
+--[[
+	Z of the floor bar, and of the lifter behind it, for a deadlift. A meet platform's
+	rack goes away for the deadlift (the attribute DeadliftAtCentre), so the bar lies
+	in the middle of the platform instead of in front of where the rack stands.
+]]
+function StationLayout.deadliftZ(rack: Model, layout: Layout): (number, number)
+	if rack:GetAttribute("DeadliftAtCentre") == true then
+		return 0, layout.deadliftStandZ - layout.deadliftBarZ
+	end
+	return layout.deadliftBarZ, layout.deadliftStandZ
+end
+
 -- The rack's floor centre, oriented like the rack. Rack-local positions are relative to this.
 function StationLayout.floorFrame(rack: Model): CFrame
 	return rack:GetPivot() * CFrame.new(0, -RackConfigurator.StandPointSize.Y / 2, 0)

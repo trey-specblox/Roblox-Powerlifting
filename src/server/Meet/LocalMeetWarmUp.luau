@@ -15,7 +15,9 @@
 		                        (AttemptChoice: the meet's step and its 40-125%
 		                        of CN) and that nothing else is running, then
 		                        starts a MEET attempt (the same minigames and
-		                        difficulty as a meet, Scale challenge included)
+		                        difficulty as a meet, Scale challenge included),
+		                        with the same lift and fail animations and bar
+		                        sounds as a meet (user 2026-11-04)
 		LEAVE                   the player steps off the rack
 
 	PRACTICE ONLY: a verdict is shown and nothing is written (no CN, no Scale,
@@ -31,6 +33,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
+local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
@@ -39,8 +42,17 @@ local ServerFolder = script.Parent.Parent
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local PlayerDataService = require(ServerFolder:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
 local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
+local MeetLiftAnimation = require(script.Parent:WaitForChild("MeetLiftAnimation"))
+local StationVisuals = require(ServerFolder:WaitForChild("Training"):WaitForChild("StationVisuals"))
 
 local LocalMeetWarmUp = {}
+
+-- After the setup, a beat before the minigame starts (a warm-up has no referee's command).
+local START_BEAT_SECONDS = 0.6
+-- After a good lift's finish, how long the lifter stays before the bar goes back, as on a platform.
+local LEAVE_AFTER_FINISH_SECONDS = 0.8
+-- At most one live minigame update this often per player is used.
+local PROGRESS_MIN_GAP_SECONDS = 0.05
 
 -- What LocalMeetService lends the warm-up (it owns the venue visits, the characters and the prompts' look).
 export type Hooks = {
@@ -58,12 +70,18 @@ export type WarmUp = {
 	-- `stepOff` (otherwise the caller moves them).
 	stop: (player: Player, stepOff: boolean) -> (),
 	isWarmingUp: (player: Player) -> boolean,
+	-- The player's running minigame is `fraction` of the way through (MeetLiftProgress): their lift follows it.
+	progress: (player: Player, fraction: number) -> (),
 }
 
 type Use = {
 	rack: LocalMeetVenue.WarmUpRack,
 	lifting: boolean,
 	last: { lift: string, weightKg: number, good: boolean }?,
+	anim: MeetLiftAnimation.Handle?,
+	-- The minigame phase running now, and when its last progress update came.
+	livePhase: number?,
+	progressAt: number?,
 }
 
 local function log(message: string, ...: any)
@@ -109,6 +127,18 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 		return uses[player] ~= nil
 	end
 
+	function warmUp.progress(player: Player, fraction: number)
+		local use = uses[player]
+		if use == nil or use.livePhase == nil then
+			return
+		end
+		local now = os.clock()
+		if now - (use.progressAt or 0) >= PROGRESS_MIN_GAP_SECONDS then
+			use.progressAt = now
+			MeetLiftAnimation.progress(use.anim, use.livePhase, fraction)
+		end
+	end
+
 	function warmUp.stop(player: Player, stepOff: boolean)
 		local use = uses[player]
 		if use == nil then
@@ -122,6 +152,11 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 		end
 		if use.lifting then
 			LiftAttemptService.abandon(player)
+		end
+		MeetLiftAnimation.stop(use.anim)
+		use.anim = nil
+		if use.rack.rack then
+			StationVisuals.show(use.rack.rack, nil)
 		end
 		hooks.release(player)
 		if stepOff then
@@ -184,26 +219,90 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 			return
 		end
 		use.lifting = true
-		local started, reason = LiftAttemptService.startServerAttempt(player, lift, kg, function(verdict)
-			-- Only if the player is still on this rack (stop() ends a use; a new use is a new table).
-			if uses[player] ~= use then
+		sendState(player)
+		local rack = use.rack.rack
+		local character = player.Character
+		if rack and character then
+			StationVisuals.show(rack, lift)
+			use.anim = MeetLiftAnimation.begin(character, rack, lift)
+		end
+		-- Only while the player is still on this rack (stop() ends a use; a new use is a new table).
+		local function stillHere(): boolean
+			return uses[player] == use
+		end
+		-- The bar's sound, for everyone in earshot. Sound only.
+		local function barSound(cue: string)
+			if stillHere() and rack then
+				remotes.sound:FireAllClients(cue, rack:GetPivot().Position)
+			end
+		end
+		-- Off the bar and back at the rack's spot, ready for the next lift.
+		local function backAtSpot()
+			if stillHere() then
+				MeetLiftAnimation.stop(use.anim)
+				use.anim = nil
+				hooks.standAt(player, use.rack.liftSpot, true)
+				use.lifting = false
+				sendState(player)
+			end
+		end
+		local function onVerdict(failedPart: number, verdict: string)
+			if not stillHere() then
 				return
 			end
-			use.lifting = false
-			use.last = { lift = lift, weightKg = kg, good = verdict == "GoodLift" }
-			-- The bar's sound, for everyone in earshot. Sound only.
-			local character = player.Character
-			if character then
-				remotes.sound:FireAllClients(MeetSoundConfig.endOfLiftCue(lift, verdict == "GoodLift", 1, kg),
-					character:GetPivot().Position)
+			local good = verdict == "GoodLift"
+			use.livePhase = nil
+			use.last = { lift = lift, weightKg = kg, good = good }
+			local fail = if good then nil else StationAnimationConfig.failFor(lift, failedPart)
+			local seconds = MeetLiftAnimation.finish(use.anim, good, fail)
+			local barCue = MeetSoundConfig.endOfLiftCue(lift, good, failedPart, kg)
+			if fail then
+				task.delay(fail.release + MeetSoundConfig.fallSeconds(lift, failedPart), barSound, barCue)
+				task.delay(seconds, backAtSpot)
+			elseif good and lift == "Deadlift" then
+				task.delay(seconds, barSound, barCue)
+				task.delay(seconds + LEAVE_AFTER_FINISH_SECONDS, backAtSpot)
+			elseif good then
+				-- A good squat or bench: the bar goes back into the J-cups as the lifter comes off it.
+				task.delay(seconds + LEAVE_AFTER_FINISH_SECONDS, backAtSpot)
+				task.delay(seconds + LEAVE_AFTER_FINISH_SECONDS + MeetSoundConfig.RackGlideSeconds, barSound, barCue)
+			else
+				backAtSpot()
 			end
-			sendState(player)
-		end)
-		if not started then
-			use.lifting = false
-			hooks.notify(player, "The lift could not start: " .. tostring(reason))
 		end
-		sendState(player)
+		task.spawn(function()
+			if lift ~= "Deadlift" then
+				barSound("BarRack")
+			end
+			task.wait(MeetLiftAnimation.unrack(use.anim) + START_BEAT_SECONDS)
+			if not stillHere() then
+				return
+			end
+			-- Which part of the lift (minigame 1 or 2) a miss failed in: the fail animation shows it.
+			local failedPart = 1
+			local started, reason = LiftAttemptService.startServerAttempt(player, lift, kg, function(verdict)
+				onVerdict(failedPart, verdict)
+			end, function(event: string, index: number, _count: number, phaseSeconds: number?, passed: boolean?)
+				if not stillHere() then
+					return
+				end
+				if event == "start" then
+					failedPart = index
+					use.livePhase = index
+					-- The first phase follows the minigame's live progress; the second is the pause, as in a meet.
+					MeetLiftAnimation.phase(use.anim, index, phaseSeconds, index == 1)
+				else
+					use.livePhase = nil
+					if passed then
+						MeetLiftAnimation.progress(use.anim, index, 1)
+					end
+				end
+			end)
+			if not started then
+				hooks.notify(player, "The lift could not start: " .. tostring(reason))
+				backAtSpot()
+			end
+		end)
 	end)
 
 	remotes.warmUpLeave.OnServerEvent:Connect(function(player: Player)

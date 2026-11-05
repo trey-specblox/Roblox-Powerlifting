@@ -194,6 +194,8 @@ type Lifter = {
 	livePhase: number?,
 	-- When their last progress update came (at most one per PROGRESS_MIN_GAP_SECONDS is used).
 	progressAt: number?,
+	-- From the walk out until they are back in the warm-up room: the next round waits for it.
+	outOnPlatform: boolean?,
 }
 
 type Meet = {
@@ -800,12 +802,12 @@ local function stillLifting(lifter: Lifter): boolean
 	return not lifter.withdrawn and (player == nil or player.Parent ~= nil)
 end
 
-local WALK_STEP_SECONDS = 3.5
-local WALK_REACHED_STUDS = 1.2
--- A turn on the way starts this close to its corner, so the walk flows round it.
-local WALK_CORNER_STUDS = 2.5
 -- The longest a lift waits for its lifter to arrive on the platform.
 local WALK_OUT_TIMEOUT_SECONDS = 12
+-- The longest the next round waits for everyone to be back in the warm-up room before anyone chooses.
+local WALK_BACK_TIMEOUT_SECONDS = 20
+-- After a good lift's finish, how long the lifter stays before racking the bar and walking off.
+local LEAVE_AFTER_FINISH_SECONDS = 0.8
 -- After the referee's start command, a beat before the lift starts.
 local COMMAND_BEAT_SECONDS = 0.6
 -- Room in a round for the unrack (squat walk-out) and the start command.
@@ -819,11 +821,12 @@ local PROGRESS_MIN_GAP_SECONDS = 0.05
 
 --[[
 	Walks a lifter along `points` to `final` (GAME_DESIGN §37.5: out from the
-	warm-up room to the platform, and back after the lift), in the background:
-	a player by their own humanoid (MoveTo, each step timed out so nobody gets
-	stuck), a computer lifter's body step by step. At the end they stand at
-	`final` exactly (a player anchored when `anchoredAtEnd`). `lifter.walking`
-	is true on the way; a newer walk ends this one.
+	warm-up room to the platform, and back after the lift), in the background.
+	The SERVER walks a player's body the same way as a computer lifter's, held
+	still (anchored), so their controls can't steer them away, stop their turn
+	coming, or be stopped by the closed doorways (user 2026-11-04). At the end
+	they stand at `final` exactly (a player anchored when `anchoredAtEnd`).
+	`lifter.walking` is true on the way; a newer walk ends this one.
 ]]
 local function walkLifter(lifter: Lifter, points: { Vector3 }, final: CFrame, anchoredAtEnd: boolean,
 	onArrive: (() -> ())?)
@@ -838,28 +841,8 @@ local function walkLifter(lifter: Lifter, points: { Vector3 }, final: CFrame, an
 		if player then
 			local body = bodyOf(player)
 			if body and body.humanoid.Health > 0 then
-				body.root.Anchored = false
-				-- One fluid walk at a calmer pace (user 2026-11-01): the next turn starts before a corner is reached,
-				-- so the lifter never stops on the way; the pace goes back afterwards.
-				local pace = body.humanoid.WalkSpeed
-				body.humanoid.WalkSpeed = LocalMeetConfig.WalkSpeed
-				local route = table.clone(points)
-				table.insert(route, final.Position)
-				for index, point in ipairs(route) do
-					if not current() then
-						break
-					end
-					local near = if index == #route then WALK_REACHED_STUDS else WALK_CORNER_STUDS
-					-- Arrived when close enough across the floor (MoveToFinished can fire late, from an older walk).
-					body.humanoid:MoveTo(point)
-					waitUntil(WALK_STEP_SECONDS, function()
-						local at = body.root.Position
-						return Vector2.new(point.X - at.X, point.Z - at.Z).Magnitude < near or not current()
-					end)
-				end
-				if body.humanoid.Parent then
-					body.humanoid.WalkSpeed = pace
-				end
+				body.root.Anchored = true
+				ComputerLifters.walkBody(body.character, points, final, current)
 			end
 			if current() then
 				standAt(player, final, anchoredAtEnd)
@@ -954,10 +937,10 @@ local function finishLift(lifter: Lifter, lift: string, good: boolean, failedPar
 	local barCue = MeetSoundConfig.endOfLiftCue(lift, good, failedPart, weightKg)
 	local barLandsIn = if fail then fail.release + MeetSoundConfig.fallSeconds(lift, failedPart) else 0
 	if good and commands and not commands.goodAtLockout then
+		-- The command only: the bar still has to go back, and makes its sound then (walkBack).
 		task.delay(seconds, function()
 			if handle and lifter.liftAnim == handle then
 				refereeCommand(lifter, commands.good)
-				soundCue(lifter, barCue)
 			end
 		end)
 	elseif good then
@@ -984,6 +967,13 @@ end
 -- then the way out, reversed.
 local function walkBack(lifter: Lifter)
 	endLift(lifter)
+	-- A good squat or bench: the bar goes back into the J-cups now (StationPoseAnimator glides it there).
+	if lifter.lastResult == "GoodLift" and lifter.currentLift ~= "Deadlift" then
+		task.delay(MeetSoundConfig.RackGlideSeconds, soundCue, lifter, "BarRack")
+	end
+	local function home()
+		lifter.outOnPlatform = false
+	end
 	local character = characterOf(lifter)
 	local spot = lifter.platform.liftSpot
 	if character then
@@ -1007,12 +997,13 @@ local function walkBack(lifter: Lifter)
 		local token = lifter.walkToken
 		task.delay(cheerSeconds, function()
 			if lifter.walkToken == token and stillLifting(lifter) then
-				walkLifter(lifter, back, lifter.platform.waitSpot, false)
+				walkLifter(lifter, back, lifter.platform.waitSpot, true, home)
 			end
 		end)
 		return
 	end
-	walkLifter(lifter, back, lifter.platform.waitSpot, false)
+	-- Held still at their waiting spot until the next walk out (user 2026-11-04): a lifter stays put all meet.
+	walkLifter(lifter, back, lifter.platform.waitSpot, true, home)
 end
 
 --[[
@@ -1154,6 +1145,8 @@ local function withdraw(player: Player, why: string)
 		player:SetAttribute(LocalMeetConfig.PlatformAttribute, nil)
 	end
 	release(player)
+	-- Off the platform: the doorways are closed to anyone walking back by themselves.
+	standAt(player, lifter.platform.waitSpot, false)
 	LocalMeetVenue.clearStaff(lifter.platform)
 	LocalMeetVenue.setLights(lifter.platform, nil)
 	lifter.recordAttempt = nil
@@ -1305,10 +1298,12 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		lights = lifter.lights })
 	log("%s %s attempt %d: %s kg %s", lifter.name, lift, attemptNumber, kgText(weightKg), result)
 	updateStandings(current)
-	-- Rack the bar and walk away (§37.5): back to the warm-up room once the lights have shown, while the others
-	-- still lift. A walk out that started meanwhile (the next round) wins.
+	-- Rack the bar and walk away (§37.5): back to the warm-up room, while the others still lift. After a good lift
+	-- soon after its finish; after a miss once its fail animation has played. A walk out that started meanwhile wins.
 	local token = lifter.walkToken
-	task.delay(LocalMeetConfig.ResultSeconds, function()
+	local finish = StationAnimationConfig.MeetStages[lift].finish
+	local leaveIn = if good then finish[2] - finish[1] + LEAVE_AFTER_FINISH_SECONDS else LocalMeetConfig.ResultSeconds
+	task.delay(leaveIn, function()
 		if meet == current and not current.final and stillLifting(lifter) and lifter.walkToken == token then
 			walkBack(lifter)
 		end
@@ -1513,6 +1508,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			LocalMeetVenue.setLights(lifter.platform, nil)
 			-- The walk out from the warm-up room straight in to the bar (§37.5: the rack faces the entrance), then set
 			-- up for the lift.
+			lifter.outOnPlatform = true
 			local approach = lifter.platform.rack and MeetLiftAnimation.approachFor(lifter.platform.rack, lift)
 			walkLifter(lifter, lifter.platform.walkOut, approach or lifter.platform.liftSpot, true, function()
 				setUpLift(lifter, lift)
@@ -1537,6 +1533,15 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 
 	-- The last verdict stays up for a moment before the next round.
 	task.wait(LocalMeetConfig.ResultSeconds)
+	-- Everyone is back in the warm-up room before anyone chooses their next attempt (user 2026-11-04).
+	waitUntil(WALK_BACK_TIMEOUT_SECONDS, function()
+		for _, lifter in ipairs(lifting) do
+			if stillLifting(lifter) and lifter.outOnPlatform then
+				return false
+			end
+		end
+		return true
+	end)
 	for _, lifter in ipairs(lifting) do
 		LocalMeetVenue.coachSays(lifter.platform, nil)
 	end
@@ -1763,7 +1768,8 @@ local function runMeet(current: Meet)
 				warmUp.stop(player, false)
 			end
 			LiftAttemptService.setFreeAttemptsBlocked(player, true)
-			standAt(player, lifter.platform.waitSpot, false)
+			-- Held still from here until the meet ends or they withdraw (user 2026-11-04).
+			standAt(player, lifter.platform.waitSpot, true)
 		elseif plan then
 			lifter.body = ComputerLifters.spawnBody(plan, lifter.platform.waitSpot, cpuRandom)
 		end
@@ -2195,7 +2201,14 @@ function LocalMeetService.start()
 	set.liftProgress.OnServerEvent:Connect(function(player, fraction)
 		local current = meet
 		local lifter = current and current.byPlayer[player]
-		if lifter == nil or lifter.livePhase == nil or typeof(fraction) ~= "number" or fraction ~= fraction then
+		if typeof(fraction) ~= "number" or fraction ~= fraction then
+			return
+		end
+		-- Not lifting in the meet: perhaps at a warm-up rack.
+		if lifter == nil and warmUp then
+			warmUp.progress(player, math.clamp(fraction, 0, 1))
+		end
+		if lifter == nil or lifter.livePhase == nil then
 			return
 		end
 		local time = os.clock()

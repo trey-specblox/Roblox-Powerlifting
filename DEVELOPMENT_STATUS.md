@@ -3690,11 +3690,37 @@ and polish.
   change if they say so.
   COMMITTED 2026-11-04 with the user's approval on `main`, as "Make meets feel real: lift
   and fail animations, computer lifter bodies, weight-based bar sounds" (run `git log -1`
-  for the hash). NOT PUSHED. All this uncommitted work went into one commit because the
+  for the hash), then pushed to `origin/main` with the user's approval. This note was
+  corrected after the push. All this uncommitted work went into one commit because the
   features share files. Left out on purpose, still uncommitted: `.claude/` (personal hook
   and settings), `art/previews/` (renders, never tracked), the test file
   `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend` (changed, origin
   unclear, ask the user) and `References/DBD.md` (the user's vault note, no content change).
+  MEET FIXES 2026-11-04 (the user's list after playing a meet), COMMITTED and pushed with
+  the user's approval as "Keep meets on rails: closed platforms, locked lifters, centred
+  deadlift bar, rack sound, warm-up lifts" (run `git log -1` for the hash): barricade wall
+  raised to wall height and platform doorways closed (`LocalMeetVenue`); players' walks now
+  server-run and anchored, using `ComputerLifters.walkBody` (`walkLifter`); next round waits
+  until everyone is back (`outOnPlatform`); a good lift leaves the platform 0.8 s after its
+  finish instead of 6 s; rack sound moved to when the bar goes back and rebuilt louder (new
+  id); deadlift bar centred on the platform (`StationLayout.deadliftZ`, attribute
+  DeadliftAtCentre); warm-up racks animate (`LocalMeetWarmUp`) and carry a bar.
+  TESTED IN STUDIO: running and jumping at the barricade stops at it; at a doorway too; the
+  corridor stays open. A full meet to the deadlifts with the player constantly trying to
+  walk off and jump: every Choose came back in the warm-up room, walks out were not
+  disturbed (Ready to Lifting about 8 s), rack sound with the bar 0.2 studs from the
+  J-cups, deadlift bar 0.00 from the platform's middle, thuds with it 0.13-0.22 above the
+  floor, no errors or warnings. Warm-up racks: deadlift and squat animate and make sounds;
+  bench not run there; good lifts there not run (the test played no minigames). Withdrawing
+  from a platform (now moves the player to their waiting spot) not run. Doorway and walk
+  changes are not tested with two real players. Nothing heard by Claude; the new rack sound
+  is not yet heard by the user. Then the user chose to lock lifters between rounds too:
+  anchored at their waiting spot from the weigh-in until the meet ends or they withdraw.
+  TESTED: a whole meet with the player constantly trying to move: about 2,200 samples, never
+  free; all 9 choose screens at the waiting spot; controls back in the lobby afterwards; no
+  errors or warnings. LEAVE from the platform mid-lift: lands in the lobby, free to walk,
+  stopped at the barricade going back; no errors. Good lifts and bench at warm-up racks, and
+  two real players, still not run.
   NEXT: discuss why meets feel bland (the user's next topic).
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched

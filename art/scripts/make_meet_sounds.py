@@ -273,6 +273,15 @@ def build_thud(tier, bar):
     return fades(x, 0.4, 0.0005)
 
 
+def build_rack():
+    """The bar going back into the J-cups: the real take at real speed, with its plates settling and a short low knock, and
+    soft clipping, so it can be heard over the crowd (user, 2026-11-04: "there is no bar racking sound affect")."""
+    take = peak_to(starts_now(cut("rack", 20.09, 1.2)), 0)
+    plates = fades(peak_to(band(cut("rattle", 4.34, 0.9), 200, 9000), 0), 0.3, 0.02)
+    x = stack((take, 1, 0), (plates, 0.3, 0.03), (tight_note(120, 0.04), 0.45, 0))
+    return peak_to(fades(saturate(x, 2.2), 0.3, 0.0005), -1.5)
+
+
 def build_caught():
     """Spotters catching a missed squat or bench: rack, plates clattering, a short thump."""
     x = stack((peak_to(cut("rack", 4.16, 1.2), 0), 0.8, 0), (peak_to(cut("shake", 8.38, 1.0), 0), 0.5, 0.02),
@@ -439,7 +448,7 @@ def main():
         done[tier["name"]] = build_thud(tier, bar)
     report_thuds(done)
     # The fullest of the six takes by measurement.
-    done["BarRack"] = peak_to(fades(cut("rack", 20.09, 1.7)), -3)
+    done["BarRack"] = build_rack()
     done["BarCaught"] = build_caught()
     # A gym squat or bench rep's rattle at the bottom: the bench press shaking take the user approved, as recorded.
     done["BarShake"] = peak_to(fades(cut("shake", 8.38, 1.0), 0.3), -3)

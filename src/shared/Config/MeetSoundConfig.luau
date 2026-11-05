@@ -15,7 +15,7 @@
 
 	The cues, and when the server sends them:
 	  Clap        the head referee's command (real referees clap as they call)
-	  BarRack     the bar leaving or going back into the J-cups
+	  BarRack     the bar leaving the J-cups, and going back into them after the lift
 	  BarThud1-4  a deadlift landing, light to massive (barThudCue picks by the bar's weight)
 	  BarCaught   the spotters taking a missed squat or bench
 	  BarShake    a gym squat or bench rep, at the bottom (StationRepSounds)
@@ -46,7 +46,7 @@ end
 
 MeetSoundConfig.Cues = {
 	Clap = cue("rbxassetid://117883845964473", 0.5, 14, 60, 2, 0, "Own work, made by make_meet_sounds.py"),
-	BarRack = cue("rbxassetid://75804757791644", 0.8, 14, 70, 2, 0, "Sonniss: Borg Sound, Gym weights"),
+	BarRack = cue("rbxassetid://86935138704030", 1, 16, 80, 2, 0, "Sonniss layers (Borg Sound, Gym weights), made by make_meet_sounds.py"),
 	-- The plates' hit gets louder and deeper with the weight, and carries further across the hall. All four volumes stay
 	-- equal: the loudness is in the files, so the bar's own noise after the hit sounds the same at every weight.
 	BarThud1 = cue("rbxassetid://99006547979222", 1, 14, 80, 2, 0, "Sonniss layers, made by make_meet_sounds.py"),
@@ -115,6 +115,9 @@ MeetSoundConfig.DropFallSeconds = 0.3
 function MeetSoundConfig.fallSeconds(lift: string, failedPart: number): number
 	return if lift == "Deadlift" and failedPart >= 2 then MeetSoundConfig.DropFallSeconds else 0
 end
+
+-- From a good squat or bench's bar being let go to it reaching the J-cups (StationPoseAnimator GLIDE_RATE 7).
+MeetSoundConfig.RackGlideSeconds = 0.3
 
 -- From the lights to the crowd's cheer, or from a missed bar landing to the groan.
 MeetSoundConfig.CrowdDelaySeconds = 0.25

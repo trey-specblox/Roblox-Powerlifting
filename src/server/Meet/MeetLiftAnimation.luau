@@ -111,7 +111,8 @@ local function frameFor(character: Model, root: BasePart, rack: Model, lift: str
 		return floor * CFrame.new(0, standingHeight(character, root), SQUAT_UNDER_Z) * FACING_RACK
 	elseif lift == "Deadlift" then
 		-- Behind the floor bar, facing the rack, as at a gym rack.
-		return floor * CFrame.new(0, standingHeight(character, root), layout.deadliftStandZ) * FACING_RACK
+		local _, standZ = StationLayout.deadliftZ(rack, layout)
+		return floor * CFrame.new(0, standingHeight(character, root), standZ) * FACING_RACK
 	elseif lift == "Bench" then
 		local head = character:FindFirstChild("Head")
 		local headUp = if head and head:IsA("BasePart") then root.CFrame:PointToObjectSpace(head.Position).Y else 1.5
@@ -201,7 +202,8 @@ function MeetLiftAnimation.approachFor(rack: Model, lift: string): CFrame?
 	if layout == nil then
 		return nil
 	end
-	local z = APPROACH_Z[lift] or layout.deadliftStandZ
+	local _, deadliftStandZ = StationLayout.deadliftZ(rack, layout)
+	local z = APPROACH_Z[lift] or deadliftStandZ
 	return StationLayout.floorFrame(rack) * CFrame.new(0, 0, z) * FACING_RACK
 end
 

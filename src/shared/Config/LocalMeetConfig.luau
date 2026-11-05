@@ -98,7 +98,7 @@ LocalMeetConfig.ComputerLifters = {
 	MakeChances = { 0.95, 0.85, 0.6 },
 	-- How long it takes over a lift, in seconds.
 	LiftSeconds = { 4, 9 },
-	-- Its walk out to the platform and back (studs per second, as a player's, LocalMeetConfig.WalkSpeed), with
+	-- The walk out to the platform and back, for computer lifters and players alike (studs per second), with
 	-- Roblox's own R15 walk animation.
 	WalkSpeed = 9,
 	WalkAnimationId = "rbxassetid://507777826",
@@ -146,10 +146,6 @@ LocalMeetConfig.DoneSeconds = 20
 
 LocalMeetConfig.OpenerSuggestionPercent = MockMeetConfig.OpenerSuggestionPercent
 LocalMeetConfig.WeightStepKg = MockMeetConfig.WeightStepKg
-
--- The walk out to the bar and back (GAME_DESIGN §37.5): one fluid walk at a calm pace, studs per second
--- (Roblox's normal walk is 16).
-LocalMeetConfig.WalkSpeed = 9
 
 -- How long a player must wait between two presses of Exit or Sign up (stops button spam).
 LocalMeetConfig.ButtonCooldownSeconds = 1

@@ -249,7 +249,7 @@ function StationVisuals.show(rack: Instance, lift: string?, noRackForDeadlift: b
 	end
 	if barbell then
 		local centre = if lift == "Deadlift"
-			then Vector3.new(0, barbell.plateRadius, layout.deadliftBarZ)
+			then Vector3.new(0, barbell.plateRadius, (StationLayout.deadliftZ(rack, layout)))
 			else layout.barRest + Vector3.new(0, raise, 0)
 		placeBarbell(barbell, rack, centre)
 	end
