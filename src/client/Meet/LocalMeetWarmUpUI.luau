@@ -59,6 +59,7 @@ function LocalMeetWarmUpUI.build(handlers: Handlers): Ui
 	local holder, card = UIStyle.panel(gui, "Card", UDim2.new(0.5, -WIDTH / 2, 1, -HEIGHT - BOTTOM_GAP),
 		UDim2.fromOffset(WIDTH, HEIGHT))
 	UIStyle.titleTag(holder, "Tag", "WARM-UP", UDim2.fromOffset(-14, -24), UDim2.fromOffset(190, 40), nil, "bar")
+	UIStyle.collapsible(holder)
 
 	local state: LocalMeetRemotes.WarmUpState? = nil
 	local selected = MeetConfig.LiftOrder[1]

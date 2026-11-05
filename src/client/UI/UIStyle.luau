@@ -452,6 +452,49 @@ function UIStyle.isTouchOnly(): boolean
 	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 end
 
+--[[
+	Gives a panel (UIStyle.panel's holder, after its title tag) a − / + button, the same on every device (user
+	2026-11-05: "for every platform make sure they can close out any menu they want and open it back up the same
+	way"). Closed, only the title tag and the + stay. `startOpen` defaults to true; `rightRoom` leaves pixels free at
+	the panel's top right for something else there. Returns a function that opens or closes it from code.
+]]
+function UIStyle.collapsible(holder: Frame, startOpen: boolean?, rightRoom: number?): (open: boolean) -> ()
+	local size = if UIStyle.isTouchOnly() then 62 else 40
+	local tag = holder:FindFirstChild("Tag")
+	local button = Instance.new("TextButton")
+	button.Name = "Collapse"
+	button.Size = UDim2.fromOffset(size, size)
+	button.BackgroundColor3 = C.yellow
+	button.BorderSizePixel = 0
+	button.AutoButtonColor = true
+	button.FontFace = UIStyle.heading()
+	button.TextColor3 = C.ink
+	button.TextScaled = true
+	button.ZIndex = 6
+	button.Parent = holder
+	stroke(button, C.white, 2)
+	local openAt = UDim2.new(1, -size - (rightRoom or 0), 0, -size * 0.6)
+	local closedAt = if tag and tag:IsA("GuiObject")
+		then UDim2.new(tag.Position.X.Scale, tag.Position.X.Offset + tag.Size.X.Offset + 10, 0, -size * 0.6)
+		else openAt
+	local function setOpen(open: boolean)
+		for _, name in ipairs({ "Body", "Back" }) do
+			local piece = holder:FindFirstChild(name)
+			if piece and piece:IsA("GuiObject") then
+				piece.Visible = open
+			end
+		end
+		button.Text = if open then "−" else "+"
+		button.Position = if open then openAt else closedAt
+		button:SetAttribute("Open", open)
+	end
+	button.Activated:Connect(function()
+		setOpen(button:GetAttribute("Open") ~= true)
+	end)
+	setOpen(startOpen ~= false)
+	return setOpen
+end
+
 -- Each piece's position at full size, and the one last written for it (weak: a piece goes when it is destroyed).
 local fullSizePositions: { [GuiObject]: UDim2 } = setmetatable({}, { __mode = "k" }) :: any
 local writtenPositions: { [GuiObject]: UDim2 } = setmetatable({}, { __mode = "k" }) :: any

@@ -58,11 +58,12 @@ local LEFT = 172
 local STANDINGS_TOP_RIGHT = 110
 local ROWS = 8
 local ROW_HEIGHT = 30
--- The MEETS list. A phone shrinks every screen to under half size, so its buttons are drawn larger to be tappable.
-local LIST_SCALE = if UIStyle.isTouchOnly() then 1.3 else 1
+-- The MEETS list. A phone shrinks every screen to under half size, so its buttons are drawn a little larger to be tappable.
+local ON_PHONE = UIStyle.isTouchOnly()
+local LIST_SCALE = if ON_PHONE then 1.15 else 1
 local LIST_WIDTH = 560 * LIST_SCALE
-local LIST_TOP = 52 * LIST_SCALE
-local LIST_ROW_HEIGHT = 58 * LIST_SCALE
+local LIST_TOP = 50 * LIST_SCALE
+local LIST_ROW_HEIGHT = 52 * LIST_SCALE
 local LIST_BUTTON_HEIGHT = 42 * LIST_SCALE
 local LIST_BUTTON_WIDTH = 122 * LIST_SCALE
 local LIST_GAP = 8 * LIST_SCALE
@@ -99,6 +100,7 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 	local cardHolder, card = UIStyle.panel(gui, "Card", UDim2.fromOffset(LEFT, CARD_TOP),
 		UDim2.fromOffset(LIST_WIDTH, LIST_TOP + MEET_COUNT * LIST_ROW_HEIGHT + 10))
 	UIStyle.titleTag(cardHolder, "Tag", "MEETS", UDim2.fromOffset(-14, -24), UDim2.fromOffset(180, 40), nil, "star")
+	UIStyle.collapsible(cardHolder)
 	-- How far a meet could still raise each lift's CN (the meet allowance, GAME_DESIGN 33.3b).
 	local allowance = UIStyle.label(card, "Allowance", UDim2.fromOffset(18, 26 * LIST_SCALE),
 		UDim2.new(1, -36, 0, 18 * LIST_SCALE), C.muted)
@@ -110,9 +112,9 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 		local textWidth = LIST_WIDTH - 2 * (LIST_BUTTON_WIDTH + LIST_GAP) - 30
 		local buttonY = y + (LIST_ROW_HEIGHT - LIST_BUTTON_HEIGHT) / 2
 		listRows[index] = {
-			title = UIStyle.label(card, "Title_" .. index, UDim2.fromOffset(18, y + 6 * LIST_SCALE),
-				UDim2.fromOffset(textWidth, 24 * LIST_SCALE), C.white, UIStyle.heading()),
-			status = UIStyle.label(card, "Status_" .. index, UDim2.fromOffset(18, y + 32 * LIST_SCALE),
+			title = UIStyle.label(card, "Title_" .. index, UDim2.fromOffset(18, y + 4 * LIST_SCALE),
+				UDim2.fromOffset(textWidth, 23 * LIST_SCALE), C.white, UIStyle.heading()),
+			status = UIStyle.label(card, "Status_" .. index, UDim2.fromOffset(18, y + 29 * LIST_SCALE),
 				UDim2.fromOffset(textWidth, 17 * LIST_SCALE), C.muted),
 			signUp = UIStyle.button(card, "SignUp_" .. index, "SIGN UP",
 				UDim2.fromOffset(right - 2 * LIST_BUTTON_WIDTH - LIST_GAP, buttonY),
@@ -133,6 +135,19 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 		UDim2.new(1, -24 - standingsSize.X, 0, STANDINGS_TOP_RIGHT), UDim2.fromOffset(standingsSize.X, standingsSize.Y))
 	local standingsTag = UIStyle.titleTag(standingsHolder, "Tag", "STANDINGS", UDim2.fromOffset(-14, -24),
 		UDim2.fromOffset(260, 40), nil, "corner")
+	-- On a phone it starts closed: the + opens it.
+	UIStyle.collapsible(standingsHolder, not ON_PHONE)
+	-- The box is only as tall as its rows, so an empty one doesn't fill the screen.
+	local function fitStandings(rowCount: number)
+		local height = UDim2.new(1, 0, 0, 46 + math.max(rowCount, 1) * ROW_HEIGHT)
+		for _, name in ipairs({ "Body", "Back" }) do
+			local piece = standingsHolder:FindFirstChild(name)
+			if piece and piece:IsA("GuiObject") then
+				piece.Size = height
+			end
+		end
+	end
+	fitStandings(0)
 	local empty = UIStyle.label(standingsBody, "Empty", UDim2.fromOffset(18, 30), UDim2.new(1, -36, 0, 20), C.muted)
 	empty.Text = "No meet in this hall right now."
 	local rows: { { place: TextLabel, name: TextLabel, detail: TextLabel, score: TextLabel } } = {}
@@ -230,6 +245,7 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 	end
 
 	ui.drawStandings = function(standings: LocalMeetRemotes.Standings?)
+		fitStandings(if standings then #standings.rows else 0)
 		if standings == nil then
 			standingsTag.Text = "STANDINGS"
 			empty.Visible = true

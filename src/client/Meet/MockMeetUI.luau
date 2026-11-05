@@ -126,6 +126,7 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	-- ------------------------------------------------ scorecard
 	local scoreHolder, score = UIStyle.panel(gui, "Scorecard", UDim2.new(1, -350, 0.5, -130), UDim2.fromOffset(320, 252))
 	UIStyle.titleTag(scoreHolder, "Tag", "SCORECARD", UDim2.fromOffset(-14, -24), UDim2.fromOffset(190, 38), nil, "corner")
+	UIStyle.collapsible(scoreHolder)
 	local classText = UIStyle.label(score, "Class", UDim2.fromOffset(18, 24), UDim2.new(1, -36, 0, 18), C.muted)
 	local cells: { [string]: { TextLabel } } = {}
 	for row, lift in ipairs(MeetConfig.LiftOrder) do
@@ -168,6 +169,8 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	local timerText = UIStyle.label(timer, "Text", UDim2.new(0, 6, 0.14, 0), UDim2.new(1, -12, 0.72, 0), C.ink,
 		UIStyle.heading(), Enum.TextXAlignment.Center)
 	timerText.ZIndex = 5
+	-- Next to the timer. A new weight choice or the meet's end opens it again, so neither is missed.
+	local setActionOpen = UIStyle.collapsible(actionHolder, true, 100)
 
 	-- Choose: your CNs, this lift so far, the weight box with its lines, QUICK PICK and CONFIRM.
 	local choose = Instance.new("Frame")
@@ -454,6 +457,9 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		local token = drawToken
 		drawScorecard(state, chosenKg)
 
+		if state.phase ~= lastPhase and (state.phase == "Choose" or state.phase == "Done") then
+			setActionOpen(true)
+		end
 		local tall = state.phase == "Choose" or state.phase == "Ready"
 		actionHolder.Size = if state.phase == "Choose"
 			then UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL + (if state.race then RACE_TALL + 26 else 0))

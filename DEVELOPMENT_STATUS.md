@@ -3839,6 +3839,20 @@ and polish.
   the phone sizes of the MEETS list. WATCH on a gym record attempt lands in hall 1.
   ROJO NOTE: it applied many quick saves slowly and dropped the last ones; a checksum after a final
   tiny edit caught it each time.
+  MENUS CLOSE AND REOPEN 2026-11-05, COMMITTED and pushed to `origin/main` with the user's approval as
+  "Let every meet menu close and reopen, and shrink them on phones" (run `git log` for the hash), NOT
+  PUBLISHED (user after a phone test: "the
+  menus are really huge, for every platform make sure they can close out any menu they want and open it
+  back up the same way"): `UIStyle.collapsible` puts a − / + on MEETS, STANDINGS, SCORECARD, the meet's weight
+  and result panel, and WARM-UP. Closed, the title tag and + stay. A new weight choice or the meet's end
+  reopens that panel. Standings boxes are as tall as their rows and start closed on a phone. The MEETS list
+  is smaller on a phone (about 292 x 167 pt, was about 330 x 206). Full-screen menus already close (BACK or
+  EXIT, and their tabs); lift minigames deliberately don't.
+  TESTED IN STUDIO, real clicks: MEETS and STANDINGS closed and reopened; in a meet the weight panel and
+  scorecard closed, the next weight choice reopened its panel and the scorecard stayed closed; the choice
+  still counted with its panel closed; screenshots looked at; no script errors; disk checksums matched.
+  NOT VERIFIED: the WARM-UP button (same code, not clicked); a real phone: the buttons' tap size (about
+  28 pt) and the new sizes.
   NEXT: the user publishes and phone tests, and runs a two-player test of overlapping meets. Before
   publishing, the user confirms their ElevenLabs plan covers the shouts.
   Plan, following LocalMeetVenue: an outside

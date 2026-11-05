@@ -2190,6 +2190,12 @@ and placings."
 - **The stands are full of fake characters:** blocky seated figures in varied colours, some cheering,
   a different seating and colours section to section. Never real players' avatars.
 
+- **Every menu closes and reopens the same way, on every device** (user, same day): a − / + button
+  on the MEETS list, the standings, the scorecard, the meet's weight and result panel and the warm-up
+  card. Closed, its title and the + stay. A new weight choice or the meet's end reopens that panel, so
+  neither is missed. Full-screen menus close with BACK or EXIT and their tabs. The lift minigames don't
+  close, because the lift needs them. On a phone the standings start closed.
+
 The rule that full rewards need 2 real players in a meet is unchanged, so five meets can make meets
 with only one real player more common. Watch this once real players are in.
 A WATCH button on a gym record attempt still lands in hall 1, not the right hall. Not decided: whether
