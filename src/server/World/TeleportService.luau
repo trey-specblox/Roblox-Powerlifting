@@ -141,7 +141,7 @@ local function moveTo(player: Player, body: Body, destination: TeleportConfig.De
 	return true, nil
 end
 
-local function teleport(player: Player, destinationId: any): (boolean, string?)
+local function teleport(player: Player, destinationId: any, hallIndex: any): (boolean, string?)
 	if typeof(destinationId) ~= "string" then
 		return false, nil
 	end
@@ -162,7 +162,11 @@ local function teleport(player: Player, destinationId: any): (boolean, string?)
 	lastTeleport[player] = time
 	local ok, why
 	if destination.venue then
-		ok, why = LocalMeetService.teleportIn(player)
+		if hallIndex ~= nil then
+			ok, why = LocalMeetService.watchMeet(player, hallIndex)
+		else
+			ok, why = LocalMeetService.teleportIn(player)
+		end
 	else
 		-- Out of the Local meet venue first (a lifter in the running meet stays).
 		ok, why = LocalMeetService.teleportOut(player)
@@ -183,8 +187,8 @@ function TeleportService.start()
 	end
 	started = true
 	local remote = TeleportRemotes.createOnServer(ReplicatedStorage)
-	remote.OnServerInvoke = function(player: Player, destinationId: any)
-		local ok, result, message = pcall(teleport, player, destinationId)
+	remote.OnServerInvoke = function(player: Player, destinationId: any, hallIndex: any)
+		local ok, result, message = pcall(teleport, player, destinationId, hallIndex)
 		if not ok then
 			warn("[TeleportService] " .. tostring(result))
 			busy[player] = nil

@@ -2198,8 +2198,9 @@ and placings."
 
 The rule that full rewards need 2 real players in a meet is unchanged, so five meets can make meets
 with only one real player more common. Watch this once real players are in.
-A WATCH button on a gym record attempt still lands in hall 1, not the right hall. Not decided: whether
-to fix it.
+The WATCH button on a gym record attempt lands at the doors of that meet's hall (user, 2026-11-05),
+from the gym or from another hall, and the line names the meet ("at regional meet 3"). There is no
+button for the lifter, for anyone already in that hall, or for anyone lifting in a meet of their own.
 
 **How the lift games are played (user, 2026-11-05; built):** a tap anywhere on a phone or the
 left mouse button on a computer works every press game: the squat's bar, the bench's mashing and

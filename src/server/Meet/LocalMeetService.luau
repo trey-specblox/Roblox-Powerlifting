@@ -1168,7 +1168,7 @@ local function announceAttempt(current: Meet, lifter: Lifter, lift: string, kg: 
 	end
 	GymRecords.announceAttempt(player.Name, player.UserId, lifter.classLabel, chasing,
 		MeetLevelConfig.Levels[current.level].label,
-		TeleportConfig.LocalMeetId)
+		TeleportConfig.LocalMeetId, current.hall.index)
 end
 
 local function activeLifters(current: Meet): { Lifter }
@@ -1914,6 +1914,7 @@ local function runMeet(current: Meet)
 			local visit = visits[player]
 			if visit then
 				visit.hall = hall.index
+				player:SetAttribute(LocalMeetConfig.HallAttribute, hall.index)
 			end
 			local spot = lifter.platform.waitSpot
 			task.spawn(function()
@@ -2153,6 +2154,7 @@ local function leaveVenue(player: Player, sendBack: boolean)
 	end
 	if player.Parent then
 		player:SetAttribute(LocalMeetConfig.VenueAttribute, nil)
+		player:SetAttribute(LocalMeetConfig.HallAttribute, nil)
 	end
 	local body = bodyOf(player)
 	if sendBack and body and body.character == visit.character and body.humanoid.Health > 0 then
@@ -2174,9 +2176,9 @@ end
 	(`point`, which they must be standing near) or by the TELEPORT menu (`point`
 	nil). Returns whether they went, and why not when it is worth saying.
 ]]
-local function enterVenue(player: Player, point: BasePart?): (boolean, string?)
-	-- Everyone arrives in hall 1 (the sign-up list and SPECTATE reach the others).
-	local firstHall = halls[1]
+local function enterVenue(player: Player, point: BasePart?, toHall: Hall?): (boolean, string?)
+	-- Everyone arrives in hall 1 (the sign-up list and SPECTATE reach the others), unless they asked for a hall: WATCH.
+	local firstHall = toHall or halls[1]
 	if firstHall == nil then
 		return false, "The Local meet is closed right now."
 	end
@@ -2220,6 +2222,7 @@ local function enterVenue(player: Player, point: BasePart?): (boolean, string?)
 	visits[player] = visit
 	body.character:PivotTo(arrival)
 	player:SetAttribute(LocalMeetConfig.VenueAttribute, true)
+	player:SetAttribute(LocalMeetConfig.HallAttribute, firstHall.index)
 	table.insert(visit.connections, body.humanoid.Died:Connect(function()
 		leaveVenue(player, false)
 	end))
@@ -2350,6 +2353,7 @@ local function spectate(player: Player, hall: Hall)
 		return
 	end
 	visit.hall = hall.index
+	player:SetAttribute(LocalMeetConfig.HallAttribute, hall.index)
 	body.root.Anchored = false
 	body.character:PivotTo(arrival)
 	log("%s is watching meet %d", player.Name, hall.index)
@@ -2359,6 +2363,31 @@ local function spectate(player: Player, hall: Hall)
 		remotes.standings:FireClient(player, if current then buildStandings(current)
 			else { heading = "STANDINGS", final = false, rows = {} })
 	end
+end
+
+--[[
+	WATCH on a record attempt (TeleportService): to the doors of that meet's hall, from
+	the gym or from another hall. `hallIndex` comes from the client: anyone may go and
+	watch any meet, so it can only choose a real hall. Returns whether they went, and why not.
+]]
+function LocalMeetService.watchMeet(player: Player, hallIndex: any): (boolean, string?)
+	local hall = hallFromClient(hallIndex)
+	if hall == nil then
+		return false, nil
+	end
+	local visit = visits[player]
+	if visit == nil then
+		return enterVenue(player, nil, hall)
+	end
+	if visit.hall == hall.index then
+		return false, string.format("You are already at meet %d.", hall.index)
+	end
+	local _, lifting = activeLifter(player)
+	if lifting then
+		return false, "You are lifting in a meet. Press LEAVE first."
+	end
+	spectate(player, hall)
+	return visit.hall == hall.index, nil
 end
 
 local function pressAllowed(player: Player): boolean

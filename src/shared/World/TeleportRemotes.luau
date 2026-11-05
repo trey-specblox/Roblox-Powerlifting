@@ -6,8 +6,9 @@
 	The TELEPORT menu's one remote (TeleportConfig). Same pattern as the other
 	remotes: the server creates it in code, the client waits for it.
 
-		RequestTeleport   client -> server  (destinationId: string) -> (ok: boolean, message: string?)
-			Asks to go to one of TeleportConfig.Destinations. The server checks
+		RequestTeleport   client -> server  (destinationId: string, hallIndex: number?) -> (ok: boolean, message: string?)
+			Asks to go to one of TeleportConfig.Destinations, and for the Local
+			meet venue optionally which meet's hall (WATCH). The server checks
 			everything (TeleportService) and moves the player itself; `message`
 			says why not.
 ]]

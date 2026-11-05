@@ -60,6 +60,8 @@ export type AttemptNews = {
 	-- Where it happens, for the line ("LOCAL MEET"), and the TELEPORT place that goes there.
 	where: string,
 	watch: string?,
+	-- Which of the five meets, so WATCH lands in the right hall.
+	hall: number?,
 }
 
 local function remoteIn(folder: Instance, name: string): RemoteEvent

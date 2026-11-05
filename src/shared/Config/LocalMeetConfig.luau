@@ -30,6 +30,8 @@ LocalMeetConfig.PromptDistanceStuds = 8
 -- meet (their platform number). The client shows the venue screen and the meet screen from them.
 LocalMeetConfig.VenueAttribute = "LocalMeetVenue"
 LocalMeetConfig.PlatformAttribute = "LocalMeetPlatform"
+-- Which of the five halls they are in, while in the venue (the client hides WATCH for a lift in their own hall).
+LocalMeetConfig.HallAttribute = "LocalMeetHall"
 
 -- Where the temporary venue is built: far from the gym (about 2000 studs across round 0,0,0) and from
 -- the Mock Meet rooms (+X from 4000), high up, so nobody walks in by accident.

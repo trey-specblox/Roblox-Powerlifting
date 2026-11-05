@@ -182,7 +182,7 @@ function GymRecordAnnouncer.start()
 		`seconds`. It wraps to stay on screen with the button beside it (user 2026-11-05: on a phone a line ran
 		off the edge, so its time and GO button couldn't be seen).
 	]]
-	local function show(text: string, seconds: number, watch: string?, buttonText: string?)
+	local function show(text: string, seconds: number, watch: string?, buttonText: string?, watchHall: number?)
 		while #lines >= MAX_LINES do
 			remove(lines[1])
 		end
@@ -250,7 +250,7 @@ function GymRecordAnnouncer.start()
 				asking = true
 				button.Text = "…"
 				local ok, went, message = pcall(function()
-					return teleportRemote:InvokeServer(watch)
+					return teleportRemote:InvokeServer(watch, watchHall)
 				end)
 				if ok and went then
 					button.Visible = false
@@ -318,12 +318,14 @@ function GymRecordAnnouncer.start()
 		if typeof(news) ~= "table" or typeof(news.records) ~= "table" or #news.records == 0 then
 			return
 		end
-		-- No WATCH for the lifter, or for anyone already at the meet.
-		local there = news.userId == player.UserId or player:GetAttribute(LocalMeetConfig.VenueAttribute) ~= nil
+		-- No WATCH for the lifter, for anyone in that meet's hall, or for anyone lifting in a meet of their own.
+		local there = news.userId == player.UserId or player:GetAttribute(LocalMeetConfig.PlatformAttribute) ~= nil
+			or (news.hall ~= nil and player:GetAttribute(LocalMeetConfig.HallAttribute) == news.hall)
 		local watch = if there or typeof(news.watch) ~= "string" then nil else news.watch
-		show(string.format("%s is going for a %s: %s (%s) at the %s", coloured(news.name, "#FACE24"),
-			levelText(news.records[1].level), recordsText(news.records), news.classLabel, string.lower(news.where)),
-			ATTEMPT_SECONDS, watch)
+		local place = string.lower(news.where) .. (if news.hall then " " .. news.hall else "")
+		show(string.format("%s is going for a %s: %s (%s) at %s", coloured(news.name, "#FACE24"),
+			levelText(news.records[1].level), recordsText(news.records), news.classLabel, place),
+			ATTEMPT_SECONDS, watch, nil, news.hall)
 	end)
 end
 

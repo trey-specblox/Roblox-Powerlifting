@@ -365,10 +365,11 @@ end
 	Tells everyone in the server that `name` (UserId `userId`) is about to try
 	the records in `chasing` (from wouldBreak) at `where` (user 2026-10-30: "if
 	a player confirms a number and its a gym record ... then it gets announced
-	+ a tiny option to tp to watch"). `watch` is the TELEPORT place to go there.
+	+ a tiny option to tp to watch"). `watch` is the TELEPORT place to go there,
+	and `hall` which of the five meets it is.
 ]]
 function GymRecords.announceAttempt(name: string, userId: number, classKey: string, chasing: { Broken }, where: string,
-	watch: string?)
+	watch: string?, hall: number?)
 	local remote = attemptRemote
 	if remote == nil or #chasing == 0 then
 		return
@@ -378,7 +379,7 @@ function GymRecords.announceAttempt(name: string, userId: number, classKey: stri
 		table.insert(list, { level = "GYM", record = record.record, kg = record.kg })
 	end
 	local news: GymRecordRemotes.AttemptNews = { name = name, userId = userId, classLabel = classKey, records = list,
-		where = where, watch = watch }
+		where = where, watch = watch, hall = hall }
 	remote:FireAllClients(news)
 end
 

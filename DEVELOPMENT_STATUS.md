@@ -3887,7 +3887,7 @@ and polish.
   `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
   User, 2026-11-05: "Keyboard is good and works" (their report on the phone keyboard).
   PRACTICE AT GYM RACKS 2026-11-05, approved by the user ("Commit feels good"), COMMITTED on `main` as "Let players
-  practice any lift and weight at a gym rack" (run `git log` for the hash), NOT PUSHED, NOT PUBLISHED
+  practice any lift and weight at a gym rack" (4ad8a07), pushed to `origin/main` with the user's approval (this note corrected after the push), NOT PUBLISHED
   (GAME_DESIGN §34.3): "Practice Lifts" is a
   third choice in the rack menu (prompt now "Train / Practice"). New server `GymPractice` is a second
   `LocalMeetWarmUp` with no prompts of its own, so lift, weight rules, minigames, animations, bar sounds and the
@@ -3907,8 +3907,23 @@ and polish.
   but was not re-run.
   Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
   `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
-  NEXT: what the user chooses. Practice needs a push and a publish to reach the live game. Meet ideas left: stakes that build through the attempts, rituals before the lift.
-  Known: WATCH on a gym record attempt lands in hall 1; five halls may make solo-reward meets more common.
+  WATCH GOES TO THE RIGHT HALL 2026-11-05, COMMITTED and pushed to `origin/main` with the user's approval as "Send
+  WATCH on a record attempt to that meet's hall" (run `git log` for the hash), NOT PUBLISHED: `AttemptNews` carries `hall`; the button
+  sends it with its teleport request; new `LocalMeetService.watchMeet` checks it's a real hall, then enters at that
+  hall's doors from outside (`enterVenue`'s new `toHall`) or uses `spectate` from another hall. New player attribute
+  `LocalMeetConfig.HallAttribute` tells the client which hall they're in. The TELEPORT menu and the doors still
+  arrive in hall 1. The Regional / State news GO button still goes to hall 1 too (left as is).
+  TESTED IN STUDIO, one player, real clicks, scripts checked against disk by checksum (Rojo dropped edits to one file
+  again; caught and re-sent), with the news message sent by a test from the server rather than by a real record
+  attempt: from the gym, WATCH for meet 3 landed in hall 3 (MEETS list: YOU ARE HERE); in hall 3, no button for a
+  meet 3 lift and a working one for meet 2, which moved to hall 2; hall 99, "x" and 2.5 refused with nothing moved;
+  asking for your own hall says so; the TELEPORT menu from the gym still lands in hall 1; no script errors.
+  NOT VERIFIED: a real record attempt end to end (needs a meet paying rewards and a record-beating weight); the
+  button hidden while lifting in a meet; a phone.
+  Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
+  `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
+  NEXT: what the user chooses. Practice and the WATCH fix need a publish to reach the live game. Meet ideas left: stakes that build through the attempts, rituals before the lift.
+  Known: five halls may make solo-reward meets more common.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched
   entrances) whose doors teleport to the interior at its own far Origin;
