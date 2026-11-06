@@ -44,6 +44,8 @@ local MIN_SECONDS_BETWEEN_ASKS = 0.4
 
 local started = false
 local lastAsked: { [Player]: number } = {}
+-- The rarity an admin has set their own crates to give (AdminService), until they turn it off or leave.
+local forcedRarity: { [Player]: string } = {}
 
 local function root(player: Player): BasePart?
 	local character = player.Character
@@ -98,7 +100,10 @@ local function openCrate(player: Player, crateId: any): (boolean, string, ShopRe
 	end
 	local piece = GearStats.roll(crateRandom, crate.slot)
 	-- Studio only: the workspace attribute StudioCrateRarity forces what comes out, to see every reveal.
-	local forced = if RunService:IsStudio() then Workspace:GetAttribute("StudioCrateRarity") else nil
+	local forced: any = forcedRarity[player]
+	if forced == nil and RunService:IsStudio() then
+		forced = Workspace:GetAttribute("StudioCrateRarity")
+	end
 	if GearStats.rarity(forced) then
 		piece.rarity = forced
 	end
@@ -132,6 +137,18 @@ local function setUpCounter(instance: Instance, remotes: ShopRemotes.RemoteSet)
 			remotes.open:FireClient(player)
 		end
 	end)
+end
+
+--[[
+	Makes this player's crates give one rarity, or roll normally with nil. SERVER-ONLY: AdminService
+	has checked the player is an admin. The roll's item and look stay random.
+]]
+function ShopService.setForcedRarity(player: Player, rarity: string?)
+	forcedRarity[player] = rarity
+end
+
+function ShopService.getForcedRarity(player: Player): string?
+	return forcedRarity[player]
 end
 
 -- Copies the crate into ReplicatedStorage once, for the menu's opening intro. Without it the menu goes straight to the reel.
@@ -206,6 +223,7 @@ function ShopService.start()
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		lastAsked[player] = nil
+		forcedRarity[player] = nil
 	end)
 end
 

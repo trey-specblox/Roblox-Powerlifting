@@ -91,6 +91,10 @@ StationRepSounds.start()
 local GymRecordAnnouncer = require(MeetFolder:WaitForChild("GymRecordAnnouncer"))
 task.spawn(GymRecordAnnouncer.start)
 
+-- The admin panel, only on an admin's screen: the server says who is one and checks every press.
+local AdminPanel = require(script:WaitForChild("UI"):WaitForChild("AdminPanel"))
+task.spawn(AdminPanel.start)
+
 --[[
 	TEMPORARY. There is no rack, barbell or attempt-selection UI yet, so a complete
 	lift is started from the keyboard. Deleting the Dev folder and these two lines

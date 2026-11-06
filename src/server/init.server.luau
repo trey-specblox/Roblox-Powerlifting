@@ -94,6 +94,10 @@ ShopService.start()
 local GearService = require(script:WaitForChild("Economy"):WaitForChild("GearService"))
 GearService.start()
 
+-- The admin panel: the server checks the account on every use (only for the accounts listed in AdminService).
+local AdminService = require(script:WaitForChild("Admin"):WaitForChild("AdminService"))
+AdminService.start()
+
 --[[
 	The orchestrator owns every lift attempt and all the lifting remotes. The phase
 	services are driven by it rather than started on their own, so phase order is a
