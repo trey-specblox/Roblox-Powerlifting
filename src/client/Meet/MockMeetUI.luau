@@ -594,7 +594,9 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		elseif state.phase == "Result" then
 			stepTag.Text = attemptText
 			local good = state.verdict == "GoodLift"
-			setBanner(if good then "GOOD LIFT" else "NO LIFT", if good then C.white else C.red, if good then C.ink else C.white)
+			-- A Local meet's good lift that did something says so ("NEW BEST!", GAME_DESIGN §37.5).
+			setBanner(if good then state.moment or "GOOD LIFT" else "NO LIFT", if good then C.white else C.red,
+				if good then C.ink else C.white)
 			-- The Local meet's referees' lights after the weight.
 			sub.RichText = state.lights ~= nil
 			sub.Text = kgText(state.declaredKg or 0) .. " kg" .. (if state.lights then "     " .. lightDots(state.lights) else "")

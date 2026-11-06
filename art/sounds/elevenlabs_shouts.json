@@ -1,5 +1,5 @@
 {
-  "about": "Shouts people yell during a meet lift (GAME_DESIGN 37.5, cues LiftShout1-8). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py.",
+  "about": "Shouts people yell at a meet (GAME_DESIGN 37.5): on the walk out, during the lift, after a good lift or a miss, and after a big moment. Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
   "sounds": {
     "LiftShout_1": {
       "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
@@ -79,6 +79,470 @@
       "license": "ElevenLabs generated; commercial use depends on the account's plan",
       "ids": {
         "audio": "rbxassetid://108091981985004"
+      }
+    },
+    "WalkShout_3": {
+      "about": "Single young man yelling a long drawn out \"Let's goooooo!\" with hyped excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://79247368338280"
+      }
+    },
+    "WalkShout_4": {
+      "about": "Single woman yelling a long hyped \"Let's goooo!\" with raw excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://98604994214888"
+      }
+    },
+    "WalkShout_5": {
+      "about": "Single deep voiced man yelling \"Light weight!\" with confident intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://101894713441519"
+      }
+    },
+    "WalkShout_6": {
+      "about": "Single young woman yelling \"You own this!\" with raw excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_6.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://132519921470853"
+      }
+    },
+    "WalkShout_7": {
+      "about": "Single raspy voiced man yelling \"This is yours!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_7.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://138547795525987"
+      }
+    },
+    "WalkShout_8": {
+      "about": "Single teenage boy yelling \"Go get it!\" with raw excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_8.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://82667830825330"
+      }
+    },
+    "WalkShout_9": {
+      "about": "Single older woman calling out \"Nice and tight!\" firmly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_9.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://113888590268054"
+      }
+    },
+    "WalkShout_10": {
+      "about": "Single big burly man yelling \"Time to work!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_10.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://104016337436187"
+      }
+    },
+    "WalkShout_11": {
+      "about": "Single man yelling \"Easy money!\" with a cheerful confident tone, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_11.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://85863084757990"
+      }
+    },
+    "LiftShout_9": {
+      "about": "Single pumped up male sports fan cheering, one long happy triumphant \"YEEEEAAAAAH!\" hyping up his friend, big smile in his voice, like a fan celebrating at a game, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_9.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://123615255611016"
+      }
+    },
+    "LiftShout_10": {
+      "about": "Single excited woman sports fan cheering, one long joyful hyped \"WOOOOOOOO!\" rallying her friend on, big smile in her voice, like a fan celebrating at a game, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_10.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://110678563480923"
+      }
+    },
+    "LiftShout_11": {
+      "about": "Single big deep voiced man giving a proud rallying battle cheer, one long hyped \"HOOOOO-RAAAAH!\" pumping up his teammate, confident and happy, like a coach celebrating at a game, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_11.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://111261566401497"
+      }
+    },
+    "LiftShout_12": {
+      "about": "Single hyped young man cheering, one long excited \"AAAAYYYYYYY!\" celebrating and rallying his friend on, laughing with joy in his voice, like a fan at a game, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_12.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://120019086737764"
+      }
+    },
+    "LiftShout_13": {
+      "about": "Single older man yelling \"Push! Push! Push!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_13.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://88128578376287"
+      }
+    },
+    "LiftShout_14": {
+      "about": "Single woman yelling \"Get it! Get it!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_14.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://92859395750675"
+      }
+    },
+    "LiftShout_15": {
+      "about": "Single gruff man yelling \"Don't you quit!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_15.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://70809770249736"
+      }
+    },
+    "LiftShout_16": {
+      "about": "Single young woman yelling \"All you! All you!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_16.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://113179212662492"
+      }
+    },
+    "LiftShout_17": {
+      "about": "Single man yelling \"Finish it!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_17.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://138376250510208"
+      }
+    },
+    "LiftShout_18": {
+      "about": "Single deep voiced man yelling \"Stay tight!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_18.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://92491501492797"
+      }
+    },
+    "LiftShout_19": {
+      "about": "Single woman yelling \"Keep going!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_19.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://131316488877824"
+      }
+    },
+    "LiftShout_20": {
+      "about": "Single raspy voiced man yelling frantically \"Up! Up! Up!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_20.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://135790096814440"
+      }
+    },
+    "LiftShout_21": {
+      "about": "Single woman screaming \"Up! Up!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_21.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://121978364157695"
+      }
+    },
+    "SquatShout_1": {
+      "about": "Single gruff man yelling \"Knees out!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://75834581112249"
+      }
+    },
+    "SquatShout_2": {
+      "about": "Single woman yelling \"Chest up!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://106441317874920"
+      }
+    },
+    "SquatShout_3": {
+      "about": "Single young man yelling \"Stand it up!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://81238679048761"
+      }
+    },
+    "BenchShout_1": {
+      "about": "Single deep voiced man yelling \"Leg drive!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://104462044381291"
+      }
+    },
+    "BenchShout_2": {
+      "about": "Single woman yelling \"Stay on it!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://97462955193534"
+      }
+    },
+    "BenchShout_3": {
+      "about": "Single older man yelling \"Squeeze it!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://108076731648106"
+      }
+    },
+    "DeadliftShout_1": {
+      "about": "Single man yelling \"Pull! Pull! Pull!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://82181720916294"
+      }
+    },
+    "DeadliftShout_2": {
+      "about": "Single woman yelling \"Lock it out!\" with raw intensity, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://104521722412983"
+      }
+    },
+    "DeadliftShout_3": {
+      "about": "Single gruff man yelling \"Hips through!\" with raw urgency, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://81875562795817"
+      }
+    },
+    "GoodShout_1": {
+      "about": "Single young man yelling a long joyful \"Let's goooooo!\" celebrating, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://125876457036400"
+      }
+    },
+    "GoodShout_2": {
+      "about": "Single woman yelling \"Yeah! Let's go!\" joyfully celebrating, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://83399404070933"
+      }
+    },
+    "GoodShout_3": {
+      "about": "Single deep voiced man yelling \"That's what I'm talking about!\" happily celebrating, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://127084376899712"
+      }
+    },
+    "GoodShout_4": {
+      "about": "Single man yelling \"Light work!\" with a confident laugh in his voice, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://102327352629954"
+      }
+    },
+    "GoodShout_5": {
+      "about": "Single young woman yelling \"Too easy!\" happily, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://98125825945499"
+      }
+    },
+    "GoodShout_6": {
+      "about": "Single gruff older man yelling \"There it is!\" proudly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_6.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://123984005671168"
+      }
+    },
+    "GoodShout_7": {
+      "about": "Single woman calling out \"Beautiful lift!\" warmly and loudly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_7.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://89927247474830"
+      }
+    },
+    "GoodShout_8": {
+      "about": "Single young man yelling \"So strong!\" with hyped excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_8.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://97483044506373"
+      }
+    },
+    "GoodShout_9": {
+      "about": "Single man yelling \"What a lift!\" with amazement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_9.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://108238962444743"
+      }
+    },
+    "GoodShout_10": {
+      "about": "Single woman whooping a long joyful \"WOOOOOO!\" with no other words, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_10.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://101878361109447"
+      }
+    },
+    "MissShout_1": {
+      "about": "Single man laughing loudly, a short big belly laugh, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://111464244047245"
+      }
+    },
+    "MissShout_2": {
+      "about": "Single woman calling out \"Nice try!\" warmly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://132065134091851"
+      }
+    },
+    "MissShout_3": {
+      "about": "Single woman laughing out loud, a short loud cackling laugh, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://103552772847361"
+      }
+    },
+    "MissShout_4": {
+      "about": "Single young man laughing hard, a short wheezing laugh, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://138261206183662"
+      }
+    },
+    "MissShout_5": {
+      "about": "Single deep voiced man calling out \"Nice try!\" kindly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://107755833351562"
+      }
+    },
+    "MissShout_6": {
+      "about": "Single young woman calling out \"So close!\" with disappointment, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_6.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://90471194455503"
+      }
+    },
+    "MissShout_7": {
+      "about": "Single gruff older man calling out \"You'll get it next time!\" encouragingly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_7.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://128205685292520"
+      }
+    },
+    "MissShout_8": {
+      "about": "Single man calling out clearly \"You've got the next one!\" encouragingly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_8.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://89232899893228"
+      }
+    },
+    "MissShout_9": {
+      "about": "Single woman calling out \"Unlucky!\" sympathetically, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_9.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://133322911119247"
+      }
+    },
+    "MissShout_10": {
+      "about": "Single teenage boy calling out \"Almost!\" with disappointment, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_10.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://107299750113352"
+      }
+    },
+    "MissShout_11": {
+      "about": "Single man groaning a disappointed \"Ooooooh!\" reacting to a near miss, no other words, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_11.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://123781580033789"
+      }
+    },
+    "MissShout_12": {
+      "about": "Single woman calling out \"Next one!\" firmly and encouragingly, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_12.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://90086924258505"
+      }
+    },
+    "BigShout_1": {
+      "about": "Single young man screaming \"New PR! New PR!\" with wild excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://127030106765313"
+      }
+    },
+    "BigShout_2": {
+      "about": "Single woman screaming \"That's a PR!\" with wild excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://139968385671294"
+      }
+    },
+    "BigShout_3": {
+      "about": "Single deep voiced man yelling \"New gym record!\" with wild excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://103825655529490"
+      }
+    },
+    "BigShout_4": {
+      "about": "Single man yelling \"Yes! Still in it!\" with huge relief and excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://132348431572583"
+      }
+    },
+    "BigShout_5": {
+      "about": "Single woman yelling clearly in English \"You took the lead!\" with wild excitement, in a large gym hall, slight room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://94374920564013"
       }
     }
   }

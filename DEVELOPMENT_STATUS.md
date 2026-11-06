@@ -3922,7 +3922,47 @@ and polish.
   button hidden while lifting in a meet; a phone.
   Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
   `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
-  NEXT: what the user chooses. Practice and the WATCH fix need a publish to reach the live game. Meet ideas left: stakes that build through the attempts, rituals before the lift.
+  STAKES THAT BUILD BUILT 2026-11-05, COMMITTED AND PUSHED (the commit after 6a33ee1), NOT PUBLISHED (GAME_DESIGN §37.5): `LocalMeetConfig.StakesBuild`
+  holds a value per level (1 opener, 2 second, 3 third, 4 top) for crowd, shouts, stage light, camera and the crowd's
+  answer. `LocalMeetService`: `stakesFor` also says whether it raises the level; `stakesLevelFor`; `momentAfter`;
+  `officialBest`; `placeOf`. Sound cues can carry a volume (`LocalMeetSound`'s third value); `LocalMeetVenue.setStageLight`;
+  state fields `stakesLevel` and `moment`; `MockMeetUI` shows the moment in place of GOOD LIFT.
+  TESTED IN STUDIO, one real player and computer lifters, a full meet to the awards on code checked against disk by
+  checksum (Rojo dropped edits three times; caught and re-sent), with a test-only script accepting weights and sending
+  correct typing and timing inputs: levels 1-4 as designed, including a raised second attempt and level 1 after a
+  bomb-out; own crowd volumes and spacing as set; stage light 2.6 up to 4.68 and back; camera closer at level 4 than 2
+  (8.95 v 9.51 studs); MUST MAKE IT then STILL IN THE MEET!; NEW GYM RECORD! with two cheers 0.7 s apart; the panel
+  screenshot showed it with nothing overlapping; the card stays off after the lights; no script errors from this code.
+  (Logged "reported a 12.40s pull" came from the test script's own input.) A first version put the moment on the
+  card, which covered the minigame's GOOD LIFT in a short window, so it moved to the panel.
+  NOT VERIFIED: how any of it sounds or how the brighter light looks (Claude can't hear; volumes are first guesses,
+  look at level 4 first); FOR THE WIN, FOR 2ND PLACE and FOR A NEW BEST on a real player's card (no such attempt came
+  up); NEW BEST!; two real players; a phone; a Mock Meet after the panel change.
+  MANY MORE CROWD VOICES 2026-11-05, COMMITTED AND PUSHED (same commit as stakes), NOT PUBLISHED (user asked; GAME_DESIGN §37.5, table of lines): 58 new
+  ElevenLabs Sound Effects, made in bulk, about 1,165 credits (60 takes at 17, 14 word checks at 5.5-16.5). Prompts and
+  ids in `art/sounds/elevenlabs_shouts.json`; cut and levelled by `art/scripts/make_lift_shouts.py` (now 3 s at most, and it
+  only makes what isn't uploaded); all uploaded under the group. WAVs in `D:\Powerlifting Roblox Extras\Sounds\Shouts`,
+  with `Listen_All_New_Shouts.wav` (sent to the user; 2 minutes, in order). New cues WalkShout3-11, LiftShout9-21,
+  Squat/Bench/DeadliftShout1-3, GoodShout1-10, MissShout1-12, BigShout1-5, one Sound each (`shout` in `MeetSoundConfig`).
+  `crowdBehind` deals every line once in a random order; `liftShouts(lift)` adds that lift's own; `liftOne` adds voices after the
+  lights (`StakesBuild.ReactionVoices`), a big moment's own line first.
+  USER REVIEW same day: the scream sounded scary and terrified, they wanted a rallying celebration scream. LiftShout9-12 (all
+  four wordless yells, since which one they heard isn't known) remade as happy cheers, 4 takes at 17 credits, uploaded, cues
+  changed. Old takes kept in `Shouts\Rejected_TooScared`; `Shouts\Listen_New_Cheers.wav` has the four new ones. User approved how the four sound (same day).
+  WORD CHECK: only the 12 riskiest, read by transcription. 10 right (one dropped "You'll": "Get it next time"). Two wrong,
+  replaced and re-checked: "That's the lead!" read "Close the lid" (now "You took the lead!"), "Shake it off!" read "Take it
+  off!" (now "You've got the next one!"). So the other lines (about 30 spoken) are unchecked and some may be off.
+  TESTED IN STUDIO, full meet, one player and computer lifters, changed scripts checked by checksum, the same test-only
+  input script: all 78 shout Sounds loaded (58 new, 10 old with two each); 45 different lines played on or next to the
+  player's platform; walk lines on the walk; a lift's own lines in that lift; after the lights 1, 2 or 3 voices by level;
+  BigShout3 first after NEW GYM RECORD!; no script errors from this code (logged "reported a 12.40s pull" is the test script's).
+  NOT VERIFIED: how any of it sounds (Claude can't hear), loudness against the crowd, whether laughs feel right to the
+  player they're aimed at; two players; a phone (58 more short sounds to load: not measured). Neighbouring platforms within
+  22 studs count as own, so their lines can double up, as before.
+  NEXT: the user plays a meet, judging the stakes and the other voices (only the four new cheers are approved by ear so far);
+  then what they choose. Practice, the WATCH fix, stakes and voices all need a publish from Studio to reach the live game. Meet
+  idea left: rituals before the lift. Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
+  `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
   Known: five halls may make solo-reward meets more common.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched

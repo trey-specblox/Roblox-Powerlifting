@@ -6378,8 +6378,54 @@ until the user has judged how it looks and sounds.
 - **Walking back:** the player has their normal camera again.
 
 It decides nothing and changes no lift result. LEAVE ends it at once. **Mock Meets don't have
-it**: they have no crowd. Next ideas, not decided: stakes that build through the attempts,
-a real crowd in the stands, rituals before the lift.
+it**: they have no crowd. Next idea, not decided: rituals before the lift.
+
+**Stakes that build (user, 2026-11-05: "Yes, start stakes"; part of making meets less bland):**
+a meet gets bigger as it goes. **[PROVISIONAL]** until the user has judged how it looks and sounds.
+Every lifter gets it, computer lifters too. Each attempt has a level:
+
+| Level | When |
+|---|---|
+| 1 | An opener |
+| 2 | A second attempt |
+| 3 | A third attempt |
+| 4 | The top: a third attempt with something on it, or the meet's last attempt |
+
+Something on the line (a gym record, a must-make, the lead, a place, a new best) raises an earlier
+attempt one level too. Once a lifter has bombed out, everything is level 1.
+
+- **The crowd:** the higher the level, the louder it yells and the closer together the shouts come.
+  Meets stay loud at every level (§37.5: never a hush). Other platforms' shouts stay spaced out.
+- **The stage light:** that platform's light gets brighter, from the walk out until the walk back.
+  (First idea: darker lights on third attempts. Eight platforms lift at once, so the hall can't
+  darken for one of them. One platform getting brighter says the same thing.)
+- **The camera:** the slow push in goes further.
+- **The card says more:** besides the lines above, FOR A NEW BEST SQUAT; and on the meet's last
+  attempt, FOR THE WIN and FOR 2ND PLACE.
+- **The lights:** the crowd's answer, cheer or groan, is louder the higher the level.
+- **A good lift that did something gets its own reaction:** NEW GYM RECORD!, STILL IN THE MEET! (a
+  must-make, made), TAKES THE LEAD!, NEW BEST!, or UP TO 2ND!. The cheer is louder with a second
+  one after it, and the lifter's result panel says it in place of GOOD LIFT, once the minigame's
+  own verdict has gone, so the two never overlap. On their own screen only.
+
+A new best only counts in a meet that saves bests. It decides nothing and changes no lift result.
+No new parts or lights.
+
+**Many more crowd voices (user, 2026-11-05: "add a lot more crowd noises ... Just add more to the
+rotation and mix"):** 68 lines in all, many voices and tones, so a meet doesn't repeat itself.
+Every line plays once, in a random order, before any comes round again in that walk or lift.
+
+| When | Lines |
+|---|---|
+| Walking up | Let's goooo!, Light weight!, You own this!, This is yours!, Go get it!, Nice and tight!, Time to work!, Easy money!, and the earlier ones |
+| During any lift | Wordless happy rallying cheers (YEAAAH!, WOOOO!, HOO-RAH!, AYYYY!; never frightened screams, user 2026-11-05), Push! Push! Push!, Get it!, Don't you quit!, All you!, Finish it!, Stay tight!, Keep going!, Up! Up!, and the earlier ones |
+| During that lift only | Squat: Knees out!, Chest up!, Stand it up!. Bench: Leg drive!, Stay on it!, Squeeze it!. Deadlift: Pull! Pull!, Lock it out!, Hips through! |
+| After a good lift | Let's goooo!, Yeah! Let's go!, That's what I'm talking about!, Light work!, Too easy!, There it is!, Beautiful lift!, So strong!, What a lift!, a long whoop |
+| After a miss | Three loud laughs, Nice try! (two voices), So close!, You'll get it next time!, You've got the next one!, Unlucky!, Almost!, Ooooh!, Next one! |
+| First after a big moment | New PR!, That's a PR!, New gym record!, Yes! Still in it!, You took the lead! |
+
+After the lights one voice reacts on levels 1 and 2, two on level 3, three on level 4, over the
+crowd's cheer or groan. Other platforms' voices stay spaced out, as before.
 
 > **Built 2026-11-05:** client `MeetLiftMoment`, `MeetSoundController.expectRoar`, `stakesFor`
 > and `crowdBehind` in `LocalMeetService`, settings in `LocalMeetConfig.LiftMoment` and

@@ -210,6 +210,9 @@ type Lifter = {
 	outOnPlatform: boolean?,
 	-- Stops the crowd yelling them on (crowdBehind), while it does.
 	stopCrowd: (() -> ())?,
+	-- How much hangs on their current attempt (LocalMeetConfig.StakesBuild), and what, in a few words.
+	stakesLevel: number?,
+	stakesLine: string?,
 }
 
 type Meet = {
@@ -917,13 +920,13 @@ local function characterOf(lifter: Lifter): Model?
 end
 
 -- A sound on the lifter's platform, for the people in that hall (MeetSoundController). Sound only.
-local function soundCue(lifter: Lifter, cue: string)
+local function soundCue(lifter: Lifter, cue: string, volume: number?)
 	local set, rack = remotes, lifter.platform.rack
 	if set and rack then
 		local at = rack:GetPivot().Position
 		for player, visit in pairs(visits) do
 			if visit.hall == lifter.hall.index then
-				set.sound:FireClient(player, cue, at)
+				set.sound:FireClient(player, cue, at, volume)
 			end
 		end
 	end
@@ -1023,6 +1026,7 @@ end
 -- then the way out, reversed.
 local function walkBack(lifter: Lifter)
 	endLift(lifter)
+	LocalMeetVenue.setStageLight(lifter.platform, 1)
 	-- A good squat or bench: the bar goes back into the J-cups now (StationPoseAnimator glides it there).
 	if lifter.lastResult == "GoodLift" and lifter.currentLift ~= "Deadlift" then
 		task.delay(MeetSoundConfig.RackGlideSeconds, soundCue, lifter, "BarRack")
@@ -1204,6 +1208,7 @@ local function withdraw(player: Player, why: string)
 	standAt(player, lifter.platform.waitSpot, false)
 	LocalMeetVenue.clearStaff(lifter.platform)
 	LocalMeetVenue.setLights(lifter.platform, nil)
+	LocalMeetVenue.setStageLight(lifter.platform, 1)
 	lifter.recordAttempt = nil
 	boardFor(lifter, { "WITHDRAWN" })
 	log("%s withdrew from the meet (%s)", player.Name, why)
@@ -1225,7 +1230,8 @@ end
 	`shouts` between. Sound only. Replaces whatever was running for this lifter; nil just
 	stops it. It also stops if the lifter leaves. PERFORMANCE: about one small message a
 	second per lifter, only during their turn; each client spaces out the shouts it plays
-	from other platforms.
+	from other platforms. The higher the attempt's stakes level, the louder and the closer
+	together (LocalMeetConfig.StakesBuild).
 ]]
 local function crowdBehind(lifter: Lifter, shouts: { string }?)
 	if lifter.stopCrowd then
@@ -1236,6 +1242,9 @@ local function crowdBehind(lifter: Lifter, shouts: { string }?)
 		return
 	end
 	local settings = MeetSoundConfig.LiftCrowd
+	local build = LocalMeetConfig.StakesBuild
+	local level = lifter.stakesLevel or 1
+	local gap = build.ShoutGapSeconds[level]
 	local active = true
 	local stopAt = os.clock() + WALK_OUT_TIMEOUT_SECONDS + UNRACK_ALLOWANCE_SECONDS + LIFT_TIMEOUT_SECONDS
 	lifter.stopCrowd = function()
@@ -1243,23 +1252,63 @@ local function crowdBehind(lifter: Lifter, shouts: { string }?)
 	end
 	task.spawn(function()
 		local nextCrowdAt = 0
-		local lastShout: string? = nil
+		-- Every line once, in a random order, before any comes round again.
+		local bag: { string } = {}
 		while active and stillLifting(lifter) and os.clock() < stopAt do
 			if os.clock() >= nextCrowdAt then
-				soundCue(lifter, "LiftCrowd")
+				soundCue(lifter, "LiftCrowd", build.CrowdVolume[level])
 				nextCrowdAt = os.clock() + settings.CrowdEverySeconds
 			end
 			if #shouts > 0 then
-				local shout = shouts[cpuRandom:NextInteger(1, #shouts)]
-				if shout == lastShout then
-					shout = shouts[table.find(shouts, shout) :: number % #shouts + 1]
+				if #bag == 0 then
+					bag = table.clone(shouts)
+					cpuRandom:Shuffle(bag)
 				end
-				lastShout = shout
-				soundCue(lifter, shout)
+				soundCue(lifter, table.remove(bag) :: string, build.ShoutVolume[level])
 			end
-			task.wait(cpuRandom:NextNumber(settings.ShoutGapSeconds[1], settings.ShoutGapSeconds[2]))
+			task.wait(cpuRandom:NextNumber(gap[1], gap[2]))
 		end
 	end)
+end
+
+-- The last attempt of the last lift: the meet's final attempt.
+local function isMeetsLastAttempt(lift: string, attemptNumber: number): boolean
+	return lift == MeetConfig.LiftOrder[#MeetConfig.LiftOrder] and attemptNumber >= MeetConfig.AttemptsPerLift
+end
+
+-- The lifter's place right now, or nil with no score yet. Set below, with the race.
+local placeOf: (current: Meet, lifter: Lifter) -> number?
+
+-- The lifter's best official meet lift in this class so far, or nil (a computer lifter has none).
+local function officialBest(lifter: Lifter, lift: string): number?
+	local player = lifter.player
+	local data = player and PlayerDataService.getData(player)
+	local build = data and ProfileOperations.getBuild(data, lifter.classLabel)
+	local bests = build and (build :: any).officialMeetBest
+	local best = if typeof(bests) == "table" then bests[lift] else nil
+	return if typeof(best) == "number" and best > 0 then best else nil
+end
+
+-- What a good lift just did, in a few words, or nil when it did nothing special (§37.5). Against how things stood before it.
+local function momentAfter(current: Meet, lifter: Lifter, wasRecordAttempt: boolean, wasMustMake: boolean, weightKg: number,
+	bestBefore: number?, placeBefore: number?): string?
+	if wasRecordAttempt then
+		return "NEW GYM RECORD!"
+	end
+	if wasMustMake then
+		return "STILL IN THE MEET!"
+	end
+	local placeNow = placeOf(current, lifter)
+	if placeBefore and placeNow == 1 and placeBefore ~= 1 then
+		return "TAKES THE LEAD!"
+	end
+	if bestBefore and weightKg > bestBefore then
+		return "NEW BEST!"
+	end
+	if placeBefore and placeNow and placeNow < placeBefore then
+		return string.format("UP TO %s!", string.upper(placeText(placeNow)))
+	end
+	return nil
 end
 
 local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number)
@@ -1303,7 +1352,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		end
 	end
 
-	crowdBehind(lifter, MeetSoundConfig.liftShouts())
+	crowdBehind(lifter, MeetSoundConfig.liftShouts(lift))
 	if player == nil then
 		-- A computer lifter (§37.2): the same stages as a player's minigames, over its lift time; the server decides.
 		lifter.liftsStarted += 1
@@ -1374,6 +1423,12 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	end
 	crowdBehind(lifter, nil)
 	local result: AttemptRules.AttemptResult = if verdict == "GoodLift" then "GoodLift" else "NoLift"
+	local wasRecordAttempt = lifter.recordAttempt ~= nil
+	-- The last attempt at this lift, with none made yet: a miss would have been a bomb-out.
+	local wasMustMake = attemptNumber >= MeetConfig.AttemptsPerLift and bestOf(lifter, lift) == nil and not bombed(lifter)
+	-- Only a meet that saves bests can set a new one.
+	local bestBefore = if current.rewards then officialBest(lifter, lift) else nil
+	local placeBefore = placeOf(current, lifter)
 	-- The attempt is over: the sign comes down (a record it set shows in the facts once saved).
 	lifter.recordAttempt = nil
 	local good = result == "GoodLift"
@@ -1383,20 +1438,42 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	if good then
 		saveOfficialBest(current, lifter, lift, weightKg)
 	end
+	local moment = if good then momentAfter(current, lifter, wasRecordAttempt, wasMustMake, weightKg, bestBefore, placeBefore)
+		else nil
 	-- The minigames decide; the three referees show it.
 	lifter.lights = if good then { "White", "White", "White" } else { "Red", "Red", "Red" }
 	lifter.roundDone = true
 	LocalMeetVenue.setLights(lifter.platform, lifter.lights)
 	soundCue(lifter, if good then "LightsGood" else "LightsBad")
-	-- The hall cheers the lights, and groans when the missed bar actually goes.
-	task.delay(MeetSoundConfig.CrowdDelaySeconds + barLandsIn, soundCue, lifter, if good then "CrowdCheer" else "CrowdGroan")
+	-- The hall cheers the lights, and groans when the missed bar actually goes: more the more hung on it, and a big
+	-- moment gets a second cheer.
+	local build = LocalMeetConfig.StakesBuild
+	local answer = build.AnswerVolume[lifter.stakesLevel or 1] * (if moment then build.BigMomentVolume else 1)
+	local answerIn = MeetSoundConfig.CrowdDelaySeconds + barLandsIn
+	task.delay(answerIn, soundCue, lifter, if good then "CrowdCheer" else "CrowdGroan", answer)
+	if moment then
+		task.delay(answerIn + build.SecondCheerSeconds, soundCue, lifter, "CrowdCheer", answer)
+	end
+	-- Then single voices over it (user 2026-11-05): the more hung on it, the more of them. A big moment gets its own first.
+	local level = lifter.stakesLevel or 1
+	local bag = table.clone(if good then MeetSoundConfig.goodShouts() else MeetSoundConfig.missShouts())
+	cpuRandom:Shuffle(bag)
+	local fitting = if moment then MeetSoundConfig.momentShouts(moment) else {}
+	if #fitting > 0 then
+		table.insert(bag, pick(fitting))
+	end
+	for voice = 1, math.min(build.ReactionVoices[level], #bag) do
+		task.delay(answerIn + build.ReactionDelaySeconds + (voice - 1) * build.ReactionGapSeconds, soundCue, lifter,
+			table.remove(bag) :: string, build.ShoutVolume[level])
+	end
 	LocalMeetVenue.coachSays(lifter.platform, pick(if good then COACH_GOOD else COACH_MISS))
 	boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 		string.format("%s KG  ·  %s", kgText(weightKg), if good then "GOOD LIFT" else "NO LIFT"), lightsText(lifter.lights) },
 		if good then "good" else "bad")
 	sendState(lifter, "Result", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg, verdict = result,
-		lights = lifter.lights })
-	log("%s %s attempt %d: %s kg %s", lifter.name, lift, attemptNumber, kgText(weightKg), result)
+		lights = lifter.lights, moment = moment })
+	log("%s %s attempt %d: %s kg %s (stakes level %d%s%s)", lifter.name, lift, attemptNumber, kgText(weightKg), result,
+		lifter.stakesLevel or 1, if lifter.stakesLine then ", " .. lifter.stakesLine else "", if moment then " -> " .. moment else "")
 	updateStandings(current)
 	-- Rack the bar and walk away (§37.5): back to the warm-up room, while the others still lift. After a good lift
 	-- soon after its finish; after a miss once its fail animation has played. A walk out that started meanwhile wins.
@@ -1436,6 +1513,15 @@ local function liveScores(current: Meet): { LiveScore }
 		entry.place = index
 	end
 	return list
+end
+
+placeOf = function(current: Meet, lifter: Lifter): number?
+	for _, entry in ipairs(liveScores(current)) do
+		if entry.lifter == lifter then
+			return entry.place
+		end
+	end
+	return nil
 end
 
 --[[
@@ -1479,23 +1565,22 @@ end
 
 --[[
 	What this attempt is for, in a few words, for the lifter's card (client
-	MeetLiftMoment, §37.5), or nil when nothing special hangs on it. As things stand
-	when they walk out: the others are lifting at the same time.
+	MeetLiftMoment, §37.5), or nil when nothing special hangs on it, and whether it
+	raises the attempt's stakes level. As things stand when they walk out: the others
+	are lifting at the same time. On the meet's last attempt the lead is the win.
 ]]
-local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number): string?
+local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number): (string?, boolean)
 	if bombed(lifter) then
-		return nil
+		return nil, false
 	end
 	if lifter.recordAttempt then
-		return "FOR THE GYM RECORD"
+		return "FOR THE GYM RECORD", true
 	end
 	local race = raceFor(current, lifter, lift, attemptNumber)
 	if race.mustMake then
-		return "MUST MAKE IT FOR A TOTAL"
+		return "MUST MAKE IT FOR A TOTAL", true
 	end
-	if #race.rivals == 0 then
-		return nil
-	end
+	local last = isMeetsLastAttempt(lift, attemptNumber)
 	local ahead, passed = 0, 0
 	for _, rival in ipairs(race.rivals) do
 		if rival.needKg > 0 then
@@ -1505,14 +1590,34 @@ local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNum
 			end
 		end
 	end
-	if ahead == 0 then
-		return "LEADING THE MEET"
-	elseif passed == ahead then
-		return "TO TAKE THE LEAD"
-	elseif passed > 0 then
-		return "TO MOVE UP TO " .. string.upper(placeText(ahead - passed + 1))
+	if ahead > 0 and passed == ahead then
+		return if last then "FOR THE WIN" else "TO TAKE THE LEAD", true
 	end
-	return nil
+	-- A new best only counts in a meet that saves it.
+	local best = if current.rewards then officialBest(lifter, lift) else nil
+	if best and weightKg > best then
+		return "FOR A NEW BEST " .. string.upper(lift), true
+	end
+	if passed > 0 then
+		local place = string.upper(placeText(ahead - passed + 1))
+		return if last then "FOR " .. place .. " PLACE" else "TO MOVE UP TO " .. place, true
+	end
+	if #race.rivals > 0 and ahead == 0 then
+		return "LEADING THE MEET", false
+	end
+	return nil, false
+end
+
+-- How much hangs on this attempt (LocalMeetConfig.StakesBuild): which attempt it is, and one higher with something on it.
+local function stakesLevelFor(lifter: Lifter, lift: string, attemptNumber: number, raises: boolean): number
+	if bombed(lifter) then
+		return 1
+	end
+	local level = math.clamp(attemptNumber, 1, MeetConfig.AttemptsPerLift)
+	if raises or isMeetsLastAttempt(lift, attemptNumber) then
+		level += 1
+	end
+	return math.min(level, #LocalMeetConfig.StakesBuild.CrowdVolume)
 end
 
 --[[
@@ -1644,6 +1749,10 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			task.spawn(announceAttempt, current, lifter, lift, weightKg)
 			lifter.readyPressed = false
 			LocalMeetVenue.setLights(lifter.platform, nil)
+			-- How much hangs on it sets the crowd, the stage light and the lifter's camera (LocalMeetConfig.StakesBuild).
+			local stakes, raises = stakesFor(current, lifter, lift, attemptNumber, weightKg)
+			lifter.stakesLevel, lifter.stakesLine = stakesLevelFor(lifter, lift, attemptNumber, raises), stakes
+			LocalMeetVenue.setStageLight(lifter.platform, LocalMeetConfig.StakesBuild.StageLight[lifter.stakesLevel])
 			-- The walk out from the warm-up room straight in to the bar (§37.5: the rack faces the entrance), then set
 			-- up for the lift.
 			lifter.outOnPlatform = true
@@ -1657,7 +1766,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 				string.format("BAR LOADED  ·  %s KG", kgText(weightKg)) })
 			sendState(lifter, "Ready", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
-				autoLift = true, stakes = if lifter.player then stakesFor(current, lifter, lift, attemptNumber, weightKg) else nil })
+				autoLift = true, stakes = stakes, stakesLevel = lifter.stakesLevel })
 			table.insert(lifting, lifter)
 			task.spawn(liftOne, current, lifter, lift, attemptNumber, weightKg)
 		end
@@ -1876,6 +1985,7 @@ local function finishMeet(current: Meet)
 		local player = lifter.player
 		LocalMeetVenue.clearStaff(lifter.platform)
 		LocalMeetVenue.setLights(lifter.platform, nil)
+		LocalMeetVenue.setStageLight(lifter.platform, 1)
 		LocalMeetVenue.showLifter(lifter.platform, nil)
 		LocalMeetVenue.rackFor(lifter.platform, nil)
 		if player == nil then

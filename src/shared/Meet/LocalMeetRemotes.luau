@@ -75,7 +75,7 @@ LocalMeetRemotes.LEVEL_NEWS = "LocalMeetLevelNews"
 -- Client -> server, visual only: the live progress of the lifter's running minigame (0..1), so their character's
 -- lift follows it (GAME_DESIGN §37.5). Never decides anything.
 LocalMeetRemotes.LIFT_PROGRESS = "LocalMeetLiftProgress"
--- Server -> clients, sound only: a meet sound cue (MeetSoundConfig) and where it happened.
+-- Server -> clients, sound only: a meet sound cue (MeetSoundConfig), where it happened, and optionally how loud (x normal).
 LocalMeetRemotes.SOUND = "LocalMeetSound"
 
 export type RemoteSet = {

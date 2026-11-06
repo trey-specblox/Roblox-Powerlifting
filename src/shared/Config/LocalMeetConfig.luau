@@ -210,8 +210,7 @@ LocalMeetConfig.LiftMoment = {
 		Bench = { eye = Vector3.new(3.4, 4.2, -9), look = Vector3.new(0, 1.8, -0.5) },
 		Deadlift = { eye = Vector3.new(6.8, 3, 6.6), look = Vector3.new(0, 2.5, -1) },
 	} :: { [string]: { eye: Vector3, look: Vector3 } },
-	-- The slow push in: this share of the way to what it looks at, over this long.
-	PushInShare = 0.18,
+	-- The slow push in takes this long; how far it goes is StakesBuild.PushInShare.
 	PushInSeconds = 14,
 	-- How quickly the camera catches up with where it should be (higher = tighter).
 	WalkRate = 4,
@@ -228,6 +227,42 @@ LocalMeetConfig.LiftMoment = {
 	ReleaseBack = 13,
 	ReleaseUp = 5,
 	CardSlideSeconds = 0.35,
+}
+
+--[[
+	Stakes that build through the attempts (GAME_DESIGN §37.5, user 2026-11-05). Each
+	attempt has a level, and these lists have one entry per level:
+		1  an opener
+		2  a second attempt
+		3  a third attempt
+		4  the top: a third attempt with something on it, or the meet's last lift
+	Something on the line (a record, the lead, a new best) raises an earlier attempt one
+	level too. Volumes and brightness multiply the normal ones. First guesses: Claude
+	can't hear or judge them, so the user's ear and eye set them.
+	PERFORMANCE: no new parts, lights or sounds, and no extra messages except a second
+	cheer after a big moment. Shouts from other platforms stay spaced out
+	(MeetSoundConfig.LiftCrowd.OthersShoutGapSeconds), however high their levels.
+]]
+LocalMeetConfig.StakesBuild = {
+	-- The crowd under the lift, and the single voices.
+	CrowdVolume = { 1, 1.25, 1.6, 2 },
+	ShoutVolume = { 1, 1, 1.1, 1.25 },
+	-- The time between two shouts for this lifter, in seconds: a random time between these.
+	ShoutGapSeconds = { { 1.0, 2.2 }, { 0.9, 1.9 }, { 0.7, 1.5 }, { 0.5, 1.1 } },
+	-- The platform's stage light, from the walk out to the walk back.
+	StageLight = { 1, 1.15, 1.4, 1.8 },
+	-- The camera's slow push in: this share of the way to what it looks at.
+	PushInShare = { 0.18, 0.22, 0.28, 0.34 },
+	-- The crowd's answer at the lights, cheer or groan.
+	AnswerVolume = { 1, 1.15, 1.35, 1.6 },
+	-- A new best, a change of place or a record: the cheer is this much louder, and a second one follows it.
+	BigMomentVolume = 1.3,
+	SecondCheerSeconds = 0.7,
+	-- How many single voices react after the lights (MeetSoundConfig.goodShouts, missShouts), when the first comes
+	-- after the cheer or groan starts, and how far apart the rest are.
+	ReactionVoices = { 1, 1, 2, 3 },
+	ReactionDelaySeconds = 0.3,
+	ReactionGapSeconds = 0.8,
 }
 
 -- ------------------------------------------------ the warm-up room (GAME_DESIGN §29.10, build step 3)

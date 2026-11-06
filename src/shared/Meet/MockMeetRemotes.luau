@@ -92,6 +92,10 @@ export type MeetState = {
 	autoLift: boolean?,
 	-- (Local meet, Ready) what this attempt is for, for the lifter's card ("TO TAKE THE LEAD"), when anything.
 	stakes: string?,
+	-- (Local meet, Ready) how much hangs on it: LocalMeetConfig.StakesBuild's level.
+	stakesLevel: number?,
+	-- (Local meet, Result) what a good lift just did, shown in place of GOOD LIFT ("NEW BEST!"), when anything.
+	moment: string?,
 }
 
 --[[

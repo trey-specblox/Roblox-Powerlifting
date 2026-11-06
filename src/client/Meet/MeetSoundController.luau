@@ -123,7 +123,7 @@ local function startVoice(state: CueState, config: MeetSoundConfig.Cue, at: Vect
 	voice.sound:Play()
 end
 
-local function play(name: string, at: Vector3)
+local function play(name: string, at: Vector3, volume: number?)
 	local config = MeetSoundConfig.Cues[name]
 	local state = cues[name]
 	local listener = listenerPosition()
@@ -146,10 +146,10 @@ local function play(name: string, at: Vector3)
 		end
 		lastOtherShoutAt = now
 	end
-	local scale = 1
+	local scale = volume or 1
 	if isOwn and (name == "CrowdCheer" or name == "CrowdGroan") and os.clock() < roarUntil then
 		roarUntil = 0
-		scale = MeetSoundConfig.LiftCrowd.RoarVolume
+		scale *= MeetSoundConfig.LiftCrowd.RoarVolume
 	end
 	startVoice(state, config, at, isOwn, scale)
 end
@@ -297,8 +297,8 @@ function MeetSoundController.start()
 	makeCues(group)
 	task.spawn(runBackgrounds, group)
 	local remotes = LocalMeetRemotes.waitForClient(ReplicatedStorage)
-	remotes.sound.OnClientEvent:Connect(function(name: string, at: Vector3)
-		play(name, at)
+	remotes.sound.OnClientEvent:Connect(function(name: string, at: Vector3, volume: number?)
+		play(name, at, volume)
 	end)
 end
 

@@ -10,6 +10,8 @@
 		at the bar  the camera glides to the lift's shot and slowly pushes in
 		Result   the crowd's answer is louder than usual (MeetSoundController.expectRoar)
 		walk back  the camera goes back to normal
+	The higher the attempt's stakes level (LocalMeetConfig.StakesBuild), the further the
+	camera pushes in.
 	The crowd yelling during the lift comes from the server, for every lifter
 	(LocalMeetService crowdBehind).
 
@@ -58,6 +60,8 @@ type Run = {
 	eye: Vector3?,
 	look: Vector3?,
 	rayParams: RaycastParams,
+	-- How far the slow push in goes on this attempt.
+	pushInShare: number,
 }
 
 local run: Run? = nil
@@ -261,7 +265,7 @@ local function step(dt: number)
 			eye = camera.CFrame.Position
 		else
 			-- The slow push in, while the lift runs.
-			local pushed = math.min(1, elapsed / SETTINGS.PushInSeconds) * SETTINGS.PushInShare
+			local pushed = math.min(1, elapsed / SETTINGS.PushInSeconds) * current.pushInShare
 			eye = (current.eye :: Vector3):Lerp(look, pushed)
 		end
 		rate = SETTINGS.SetRate
@@ -280,7 +284,9 @@ local function begin(state: MockMeetRemotes.MeetState)
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.FilterDescendantsInstances = { character }
 	params.RespectCanCollide = true
-	run = { stage = "Walk", lift = state.lift, stageStart = os.clock(), rayParams = params }
+	local shares = LocalMeetConfig.StakesBuild.PushInShare
+	run = { stage = "Walk", lift = state.lift, stageStart = os.clock(), rayParams = params,
+		pushInShare = shares[state.stakesLevel or 1] or shares[1] }
 	local camera = Workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
 	RunService:BindToRenderStep(RENDER_NAME, Enum.RenderPriority.Camera.Value + 1, step)

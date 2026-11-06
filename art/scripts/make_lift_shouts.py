@@ -1,28 +1,29 @@
-"""Prepares the shouts people yell during a meet lift (GAME_DESIGN §37.5, cues LiftShout1-8).
+"""Prepares the shouts people yell at a meet (GAME_DESIGN §37.5, the *Shout cues in MeetSoundConfig).
 
 Made with ElevenLabs Sound Effects; the prompts are in art/sounds/elevenlabs_shouts.json. This reads the downloaded
 MP3s from Shouts/Raw, cuts the silence off both ends, makes them mono (a Roblox sound placed in the world needs that to
 come from a place), evens out their loudness so no one voice jumps out, and writes one WAV each to Shouts.
+Newer shouts have a raw file named after their manifest entry (Raw/GoodShout_1.mp3); it only makes the ones not uploaded yet.
 
 The audio stays outside the repo, like the other game sounds. Run with:
     uv run --no-project --with numpy --with soundfile python art/scripts/make_lift_shouts.py
 Upload with:
     python art/scripts/upload_group_images.py art/sounds/elevenlabs_shouts.json
 """
+import json
 import pathlib
 
 import numpy as np
 import soundfile as sf
 
 SHOUTS = pathlib.Path(r"D:\Powerlifting Roblox Extras\Sounds\Shouts")
-COUNT = 8
-# The walk-out's own lines (cues WalkShout1-2): Easy weight! and Easy!
-WALK_COUNT = 2
+MANIFEST = pathlib.Path(__file__).resolve().parent.parent / "sounds" / "elevenlabs_shouts.json"
 # A sound counts as started or finished at this level, relative to the file's own peak.
 EDGE_DB = -35
 KEEP_BEFORE_SECONDS = 0.01
 # After the last loud moment, kept for the room's echo, and faded out.
 KEEP_AFTER_SECONDS = 0.25
+MAX_SECONDS = 3
 FADE_SECONDS = 0.08
 # All brought to about this loudness over their loud part, with the peak never above PEAK_LIMIT.
 TARGET_RMS_DB = -14
@@ -48,7 +49,8 @@ def prepare(path, out):
     loud = np.nonzero(levels >= edge)[0]
     start = max(0, loud[0] * size - int(KEEP_BEFORE_SECONDS * rate))
     end = min(len(mono), (loud[-1] + 1) * size + int(KEEP_AFTER_SECONDS * rate))
-    cut = mono[start:end].copy()
+    # A few takes ramble on (one was 8 s long): a shout is short, or it talks over the next one.
+    cut = mono[start:min(end, start + int(MAX_SECONDS * rate))].copy()
 
     fade = min(len(cut), int(FADE_SECONDS * rate))
     cut[-fade:] *= np.linspace(1, 0, fade)
@@ -69,10 +71,11 @@ def prepare(path, out):
 
 
 def main():
-    for number in range(1, COUNT + 1):
-        prepare(SHOUTS / "Raw" / f"shout{number}.mp3", SHOUTS / f"LiftShout_{number}.wav")
-    for number in range(1, WALK_COUNT + 1):
-        prepare(SHOUTS / "Raw" / f"walk{number}.mp3", SHOUTS / f"WalkShout_{number}.wav")
+    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    for name, entry in manifest["sounds"].items():
+        raw = SHOUTS / "Raw" / f"{name}.mp3"
+        if raw.exists() and not entry.get("ids", {}).get("audio"):
+            prepare(raw, SHOUTS / f"{name}.wav")
 
 
 if __name__ == "__main__":

@@ -158,6 +158,7 @@ local ENTRANCE_FRONT_Z = -37
 local ENTRANCE_X = 162
 
 local looks = StarterGymConfig.Looks
+local STAGE_LIGHT_BRIGHTNESS = 2.6
 local LAMP_OFF = Color3.fromRGB(46, 48, 54)
 local LAMP_WHITE = Color3.fromRGB(255, 252, 245)
 local LAMP_RED = Color3.fromRGB(230, 36, 40)
@@ -183,6 +184,8 @@ export type Platform = {
 	lamps: { BasePart },
 	-- The three referee chairs: a point on each seat under the referee's hips, facing the platform.
 	refSeats: { CFrame },
+	-- The stage light hung over the platform (stageLight), if it was made.
+	stageLight: SurfaceLight?,
 	-- Where the coach stands: at the doorway the lifter walks out from (GAME_DESIGN §37.5).
 	coachSpot: Vector3,
 	-- The rack, chairs and light box: taken away while the awards stage stands.
@@ -537,7 +540,7 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			CFrame.lookAt(lightAt, lightAt - Vector3.yAxis, Vector3.zAxis))
 			or decor("StageLight_" .. index, Vector3.new(x - 1, lightY - 1, PLATFORM_Z - 1), Vector3.new(x + 1, lightY,
 				PLATFORM_Z + 1), looks.GlowWhite)
-		shine(can, 50, 2.6, 60)
+		shine(can, 50, STAGE_LIGHT_BRIGHTNESS, 60)
 
 		local staff = Instance.new("Folder")
 		staff.Name = "Staff_" .. index
@@ -568,6 +571,7 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			display = display,
 			lamps = lamps,
 			refSeats = refSeats,
+			stageLight = can:FindFirstChildOfClass("SurfaceLight"),
 			-- Beside the doorway on the platform's side, against the back wall, clear of the walk.
 			coachSpot = centre + Vector3.new(doorX - side * 2.5, 0, Z_BACK - 0.8),
 			gear = gear,
@@ -898,6 +902,14 @@ function LocalMeetVenue.setLights(platform: Platform, lights: { string }?)
 		local light = lights and lights[index]
 		lamp.Material = if light then Enum.Material.Neon else Enum.Material.SmoothPlastic
 		lamp.Color = if light == "White" then LAMP_WHITE elseif light == "Red" then LAMP_RED else LAMP_OFF
+	end
+end
+
+-- Sets the platform's stage light to `scale` x its normal brightness (LocalMeetConfig.StakesBuild; 1 = normal).
+function LocalMeetVenue.setStageLight(platform: Platform, scale: number)
+	local light = platform.stageLight
+	if light then
+		light.Brightness = STAGE_LIGHT_BRIGHTNESS * scale
 	end
 end
 
