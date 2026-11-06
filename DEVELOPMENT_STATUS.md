@@ -3963,6 +3963,49 @@ and polish.
   then what they choose. Practice, the WATCH fix, stakes and voices all need a publish from Studio to reach the live game. Meet
   idea left: rituals before the lift. Left out of the commit on purpose, still uncommitted: `.claude/`, `art/previews/`,
   `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
+  USER'S LIVE TEST 2026-11-06 -> CHALK UP AND PLAIN ATTEMPT SELECTION, COMMITTED AND PUSHED (the commit after 07f7492), NOT PUBLISHED (GAME_DESIGN §37.5):
+  - Quick picks: `AttemptChoice.quickPicks` (all different, all allowed); `MockMeetUI` shows true %, hides spare buttons.
+  - Race: `raceFor` counts rivals' declared weights (`subtotalIfMade`; computer lifters now declare before anyone chooses;
+    `refreshRaces` re-sends when a player declares); RaceView `lastAttempt`, rival `declaredKg`. `drawRace` and `coachLineFor`
+    say "YOU NEED A 25 KG BENCH TO TAKE THE LEAD". Stakes lines use the same numbers.
+  - Coach: walks to the lifter in the warm-up room (`coachWalk`; real players' coaches only), `coachBackSpot` on squat,
+    `coachFrontSpot` across the stand otherwise, `coachDoorSpot` for the lift; bigger bubble. The wall stopped cutting the bubble
+    because coach and camera are now in the room. `AlwaysOnTop` was tried and dropped: its bubble did not show in screen captures.
+  - Chalk: model LocalMeet_03 (rbxassetid://103112945740574, `art/scripts/build_local_meet_03.py`, user approved the upload, CHECK
+    PASSED, 2,150 tris, 5 MeshParts per stand, only on platforms in use, up to 40). Animations `art/scripts/chalk_animations.py`,
+    published with upload_animations.py, ids in `LocalMeetConfig.Chalk`. Server `MeetChalk`, client `MeetChalkShot` (camera, puffs,
+    sounds on the lifter's own screen). Sounds ChalkRub, ChalkClap, BackSlap (ElevenLabs, 51 credits) in elevenlabs_shouts.json.
+  - TESTED IN STUDIO, one player and computer lifters, scripts checked by checksum: squat and bench shots by screenshot (lifter
+    chalking, puff, coach behind on squat and facing across the stand on bench, bubble readable, nothing overlapping but the
+    standings near the coach's arm, since nudged with `Shot.ClearShare`); race numbers right by hand (rivals 27.5 + 22.5, own 22.5:
+    needs 30); eight race wordings and quick picks for CN 25, 60, 100 by a probe on the panel; no script errors from this code.
+    NOT VERIFIED: how the animation looks moving (user's eyes), the sounds (Claude can't hear), a phone's screen, two real players,
+    a real last attempt showing TO WIN THE MEET (the test lifter bombed or the run stopped first; wording tested on the panel only),
+    a Mock Meet after the quick pick change. The Mock Meet has no chalk routine yet.
+  - FOR LATER (user, recorded in §37.5): real turn-based meets: sit on a bench to wait, get up on your turn, chalk, choose.
+  OVER THE LIMIT 2026-11-06, COMMITTED AND PUSHED (same commit), NOT PUBLISHED (user's screenshot of PASSED at CN 25; GAME_DESIGN §37.5, user picked 150% ceiling, growing
+  coins, 125% limit kept, total and place only): `LiftAttemptConfig.MeetCeilingPercent`; `AttemptChoice.meetBounds`, `isOverLimit`, `bestWithinLimit`,
+  `overLimit` argument on `nextWeights` and `check` (real lifters at meets only; computer lifters, warm-ups stay at 125%); quick picks add over-limit weights
+  in yellow with a line saying what they do; `MeetCnAllowance.settle` skips them; `CoinConfig.overLimitCoins`, `MeetPayout.forMeet` items; Local and Mock
+  Scale use `bestWithinLimit`; no official best, record sign or NEW BEST; moment OVER THE LIMIT!, stakes OVER THE LIMIT.
+  The same day's test also found the coach's bubble cut by the doorway while they walked in: `coachTell` now holds the line until they arrive.
+  TESTED IN STUDIO, scripts checked by checksum: at CN 25 a good 30 kg no longer passes (next choice 32.5 to 37.5); real lifts at 120, 130 and 150% started and
+  were judged; the console shows no official best or record for 130 and 150%, CN unchanged, moment OVER THE LIMIT!; by probe: quick picks for CN 25, 60, 100,
+  200, weights refused past 150% and past 125% for warm-ups and computer lifters, coins at each %, `MeetPayout.forMeet` stacking and paying nothing without a
+  total, `MeetCnAllowance.settle` (good or missed 130% on CN 100: no raise, 0 days; 110%: raises); coach's bubble hidden on the walk, shown on arrival, by
+  polling it. NOT VERIFIED: coins actually paid in a meet with a total (the test lifter can't make bench, so it bombed: only the sums are tested); OVER THE
+  LIMIT on the Ready card (bombed lifters get no stakes); a Mock Meet; a phone.
+  USER'S TWO-PLAYER TEST 2026-11-06: over-limit lifts and coins worked in a real meet (+385 coins, total 90 kg, by the user).
+  POINTS AND NEW STANDINGS 2026-11-06, COMMITTED AND PUSHED (same commit), NOT PUBLISHED (GAME_DESIGN §37.4 "Points"): `MeetLevelConfig.Points` replaces ScoreTotals; `MeetPlacing.points`,
+  `totalForPoints`, `rank` by points on real bodyweight; race, stakes, scoreboard, result note and venue wording ("Most points win") follow. `LocalMeetLobbyUI`
+  standings: place, name, class, total, points, own row highlighted, a line with the gaps (`StandingRow.userId`, `.points`).
+  BUG FOUND from the user's screenshot: computer lifters' keys were -1, -2, ... and a Studio test server's players have UserIds -1, -2, ..., so two lifters
+  shared a key: rows repeated and the player's own vanished (Studio only; real UserIds are positive). Now -1000 - index.
+  TESTED IN STUDIO, scripts checked by checksum: points by probe (bw 59 total 90 = 14.89, 53 = 15.78, 59/600 = 99.28, 120/900 = 104.62, back to kg exact), rank and
+  ties by probe, the panel in a real meet by screenshot (own row highlighted, nothing overlapping), the gaps line by a probe for 1st, middle, last, bombed and
+  a spectator, no script errors. NOT VERIFIED: the gaps line on a real scored row in a real meet (the test lifter missed its squats), the key fix with two
+  real test players (only the user's test can show it), a phone.
+  USER, same day, after the points and standings: "Its good." They did not say what they re-tested. NEXT: a publish from Studio takes all this live; then what they choose. Left out of the commit on purpose: `.claude/`, `art/previews/`, `art/exports/ScaleTest_2StudCube.fbx`, `art/blender/PowerRack_01.blend`, `References/DBD.md`.
   Known: five halls may make solo-reward meets more common.
   Plan, following LocalMeetVenue: an outside
   entrance building next to the gym (domed arena, brick base, arched

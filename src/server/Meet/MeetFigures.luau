@@ -70,6 +70,8 @@ export type Kind = "Coach" | "Referee"
 
 local looks = StarterGymConfig.Looks
 local WHITE = Color3.fromRGB(255, 255, 255)
+-- The coach's speech bubble: big enough for a whole sentence (GAME_DESIGN §37.5).
+local COACH_BUBBLE = Vector2.new(320, 84)
 
 local OUTFITS: { [Kind]: { skin: Color3, top: Color3, trousers: Color3, tag: string } } = {
 	-- Navy top, grey trousers.
@@ -197,7 +199,8 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	local head = figure:FindFirstChild("Head") :: BasePart?
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = kind .. "Tag"
-	billboard.Size = UDim2.fromOffset(220, 90)
+	billboard.Size = if kind == "Coach" then UDim2.fromOffset(COACH_BUBBLE.X, COACH_BUBBLE.Y + 34)
+		else UDim2.fromOffset(220, 90)
 	billboard.StudsOffset = Vector3.new(0, 2.6, 0)
 	billboard.LightInfluence = 0
 	billboard.MaxDistance = 80
@@ -224,7 +227,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	-- left side and a tail pointing at the figure.
 	local bubble = Instance.new("Frame")
 	bubble.Name = "Bubble"
-	bubble.Size = UDim2.new(1, 0, 0, 56)
+	bubble.Size = UDim2.new(1, 0, 0, if kind == "Coach" then COACH_BUBBLE.Y else 56)
 	bubble.Rotation = 3
 	bubble.BackgroundColor3 = StyledScreen.Colours.white
 	bubble.Visible = false
@@ -399,6 +402,25 @@ function MeetFigures.moveSpotter(figure: Model, at: Vector3, watching: Vector3)
 	local height = figure:GetAttribute("StandHeight")
 	local standAt = at + Vector3.new(0, if typeof(height) == "number" then height else 3, 0)
 	figure:PivotTo(CFrame.lookAt(standAt, Vector3.new(watching.X, standAt.Y, watching.Z)))
+end
+
+-- Shows or hides the coach's clipboard (both hands are on the lifter's back when they chalk it).
+function MeetFigures.showClipboard(figure: Model?, show: boolean)
+	if figure == nil then
+		return
+	end
+	-- The Blender clipboard is a model of parts; without it, two plain blocks stand in (build).
+	for _, child in ipairs(figure:GetChildren()) do
+		if string.sub(child.Name, 1, 9) == "Clipboard" then
+			local parts: { Instance } = child:GetDescendants()
+			table.insert(parts, child)
+			for _, part in ipairs(parts) do
+				if part:IsA("BasePart") then
+					part.Transparency = if show then 0 else 1
+				end
+			end
+		end
+	end
 end
 
 -- Shows `line` in a figure's speech bubble (the label MeetFigures.build returned); nil hides it.

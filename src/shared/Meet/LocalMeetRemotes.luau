@@ -155,8 +155,10 @@ export type StandingRow = {
 	best: { [string]: number },
 	-- The sum of the bests so far, or the final total.
 	subtotalKg: number,
-	-- Score as a percentage (Total / class reference Total x 100), or nil for none.
-	scorePercent: number?,
+	-- IPF GL points (MeetPlacing), or nil for none.
+	points: number?,
+	-- The real player's UserId (a computer lifter has none), so each player's screen can pick out their own row.
+	userId: number?,
 	-- 1 = first; nil for no place (yet).
 	place: number?,
 	-- "Lifting", "Bombed" (a lift with no good attempt), "Withdrawn", or "Done".

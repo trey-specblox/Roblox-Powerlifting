@@ -31,6 +31,8 @@ export type Lifter = {
 	qualified: boolean,
 	-- 9 good lifts of 9.
 	perfect: boolean,
+	-- Good lifts over the normal limit (GAME_DESIGN §37.5): each pays CoinConfig.overLimitCoins, on top of the rest.
+	overLimit: { { lift: string, percentOfCn: number } }?,
 }
 
 -- One payment: how many coins and what for (the pop-up's reason).
@@ -88,6 +90,15 @@ function MeetPayout.forMeet(lifters: { Lifter }, settings: Settings, multiplier:
 		end
 		if lifter.hasTotal and lifter.perfect and settings.PerfectBonus > 0 then
 			table.insert(items, { amount = settings.PerfectBonus, reason = "9/9" })
+		end
+		if lifter.hasTotal then
+			for _, heavy in ipairs(lifter.overLimit or {}) do
+				local amount = CoinConfig.overLimitCoins(heavy.percentOfCn)
+				if amount > 0 then
+					table.insert(items, { amount = amount, reason = string.format("Over the limit: %s %d%%", heavy.lift,
+						math.floor(heavy.percentOfCn * 100 + 0.5)) })
+				end
+			end
 		end
 		result[lifter.key] = items
 	end

@@ -202,6 +202,35 @@ LocalMeetConfig.Awards = {
 	rack-local: from the rack's pivot, +Z toward the rack from the walk-in side,
 	feet near Y = 0. `eye` is where the camera stands, `look` what it looks at.
 ]]
+--[[
+	CHALKING UP while choosing a weight (GAME_DESIGN §37.5, user 2026-11-06). The lifter
+	at the chalk stand in the warm-up room; the coach behind them on squat, chalking
+	their upper back, and in front of them on bench and deadlift, talking to them.
+	Made by art/scripts/chalk_animations.py; keep its distances and times in step.
+]]
+LocalMeetConfig.Chalk = {
+	LifterAnimationId = "rbxassetid://117237414323040",
+	CoachBackAnimationId = "rbxassetid://113361762391365",
+	CoachTalkAnimationId = "rbxassetid://107749236099343",
+	-- From the lifter's spot to the stand's post, and to the coach behind them.
+	StandAheadStuds = 1.75,
+	CoachBehindStuds = 2,
+	-- The coach in front of the lifter, facing them across the stand: in plain view of the camera, with the wall behind
+	-- them, so nothing cuts off what they say (user 2026-11-06: their words went through the wall).
+	CoachFrontAheadStuds = 3.7,
+	CoachFrontSideStuds = 0.8,
+	-- However fast everyone chooses, the walk out waits this long, so a lifter is seen chalking up once (to the claps).
+	MinSeconds = 5.4,
+	-- Where things happen in the animations' loop (seconds).
+	RubAt = { 1.3, 3.1 },
+	ClapAt = { 4.4, 4.77 },
+	SlapAt = { 4.85, 5.15 },
+	PuffParticles = 14,
+	-- The camera: side-on to them, this far back and this far up from the middle of the group, gliding at this rate,
+	-- with the group this share of the way across the clear part of the screen.
+	Shot = { Back = 10, Up = 1.2, Rate = 3, ClearShare = 0.58 },
+}
+
 LocalMeetConfig.LiftMoment = {
 	Shots = {
 		-- Near the head referee's own view (user 2026-11-05): they stand at Z 13.45, facing the lifter through the rack.

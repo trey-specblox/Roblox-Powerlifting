@@ -1,5 +1,5 @@
 {
-  "about": "Shouts people yell at a meet (GAME_DESIGN 37.5): on the walk out, during the lift, after a good lift or a miss, and after a big moment. Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
+  "about": "Shouts people yell at a meet, and the sounds of chalking up (GAME_DESIGN 37.5): on the walk out, during the lift, after a good lift or a miss, and after a big moment. Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
   "sounds": {
     "LiftShout_1": {
       "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
@@ -543,6 +543,30 @@
       "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
       "ids": {
         "audio": "rbxassetid://94374920564013"
+      }
+    },
+    "ChalkRub_1": {
+      "about": "Close up of a weightlifter rubbing chalk between dry hands, soft powdery scraping and rubbing palms together, in a quiet gym room",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChalkRub_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://70735128991498"
+      }
+    },
+    "ChalkClap_1": {
+      "about": "A weightlifter clapping chalky hands once, a single dull dry clap with a soft puff of chalk dust, in a gym room",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChalkClap_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://80485192542230"
+      }
+    },
+    "BackSlap_1": {
+      "about": "A coach giving one firm open-hand slap on a lifter's upper back through a shirt, a single meaty pat with a little chalk dust, in a gym room",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BackSlap_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://92544739948841"
       }
     }
   }

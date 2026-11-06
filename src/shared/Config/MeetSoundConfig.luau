@@ -86,6 +86,10 @@ MeetSoundConfig.Cues = {
 	-- On the walk out to the bar only (walkOutShouts).
 	WalkShout1 = cue("rbxassetid://82391465593479", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Easy weight!"),
 	WalkShout2 = cue("rbxassetid://108091981985004", 0.8, 24, 90, 2, 2, "ElevenLabs Sound Effects: Easy!"),
+	-- Chalking up (MeetChalkShot): only on the lifter's own screen, so near and quiet.
+	ChalkRub = cue("rbxassetid://70735128991498", 0.5, 10, 40, 1, 0, "ElevenLabs Sound Effects: rubbing chalk between the hands"),
+	ChalkClap = cue("rbxassetid://80485192542230", 0.7, 10, 40, 2, 0, "ElevenLabs Sound Effects: a chalky clap"),
+	BackSlap = cue("rbxassetid://92544739948841", 0.7, 10, 40, 2, 0, "ElevenLabs Sound Effects: a slap on the upper back"),
 	-- On the walk out, more voices.
 	WalkShout3 = shout("rbxassetid://79247368338280", "ElevenLabs Sound Effects: Let's goooooo!"),
 	WalkShout4 = shout("rbxassetid://98604994214888", "ElevenLabs Sound Effects: Let's goooo!"),

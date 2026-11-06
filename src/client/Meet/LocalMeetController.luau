@@ -34,6 +34,7 @@ local LocalMeetLobbyUI = require(script.Parent:WaitForChild("LocalMeetLobbyUI"))
 local LocalMeetAwards = require(script.Parent:WaitForChild("LocalMeetAwards"))
 local LocalMeetWarmUpUI = require(script.Parent:WaitForChild("LocalMeetWarmUpUI"))
 local MeetLiftMoment = require(script.Parent:WaitForChild("MeetLiftMoment"))
+local MeetChalkShot = require(script.Parent:WaitForChild("MeetChalkShot"))
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 
 local LocalMeetController = {}
@@ -56,6 +57,8 @@ function LocalMeetController.start()
 		sub = "REFEREES  ·  COACH WATCHING",
 		liftMoment = true,
 	})
+	-- Chalking up while they choose: the camera beside the panel, the puffs of chalk and their sounds.
+	remotes.state.OnClientEvent:Connect(MeetChalkShot.onState)
 	-- The lifter's turn on their own screen: the camera and the card.
 	remotes.state.OnClientEvent:Connect(MeetLiftMoment.onState)
 
@@ -103,6 +106,7 @@ function LocalMeetController.start()
 		ui.drawStandings(standings)
 		holdFooting(lifting)
 		if not lifting then
+			MeetChalkShot.stop(true)
 			MeetLiftMoment.stop(true)
 			ui.setClearView(false)
 		end

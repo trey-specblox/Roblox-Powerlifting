@@ -222,7 +222,7 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 			statusBox.Visible = false
 			sign.Enabled = false
 			strip.BackgroundColor3, facts.TextColor3 = S.yellow, S.ink
-			factList = { "LOCAL MEET", "EVERYONE LIFTS TOGETHER", "BEST SCORE WINS" }
+			factList = { "LOCAL MEET", "EVERYONE LIFTS TOGETHER", "MOST POINTS WIN" }
 			factStart = 1
 			drawFacts()
 			return

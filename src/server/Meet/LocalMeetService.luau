@@ -116,6 +116,8 @@ local MeetPayout = require(script.Parent:WaitForChild("MeetPayout"))
 local Trophies = require(script.Parent:WaitForChild("Trophies"))
 local ComputerLifters = require(script.Parent:WaitForChild("ComputerLifters"))
 local MeetLiftAnimation = require(script.Parent:WaitForChild("MeetLiftAnimation"))
+local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
+local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
@@ -213,6 +215,14 @@ type Lifter = {
 	-- How much hangs on their current attempt (LocalMeetConfig.StakesBuild), and what, in a few words.
 	stakesLevel: number?,
 	stakesLine: string?,
+	-- Chalking up while they choose (LocalMeetConfig.Chalk): their animation and their coach's; a new walk of the
+	-- coach's bumps the token and ends the old one.
+	chalkTrack: AnimationTrack?,
+	coachTrack: AnimationTrack?,
+	coachToken: number?,
+	-- What the coach has to say, and whether they have reached the lifter to say it (see coachTell).
+	coachLine: string?,
+	coachHere: boolean?,
 }
 
 type Meet = {
@@ -441,7 +451,7 @@ end
 local function perksOf(level: string): { string }
 	local info = MeetLevelConfig.Levels[level]
 	if info.potMultiplier <= 1 then
-		return { "Everyone lifts together", "Best score wins" }
+		return { "Everyone lifts together", "Most points win" }
 	end
 	return { string.format("Prize pot x%d", info.potMultiplier), if info.titles then "Top 3 earn titles" else "" }
 end
@@ -558,7 +568,7 @@ local function buildStandings(current: Meet): LocalMeetRemotes.Standings
 			elseif current.final then "Done" else "Lifting"
 		-- Live: rank by the subtotal so far; final: by the total (nil for a bomb-out).
 		local rankKg: number? = if out then nil elseif current.final then result.total elseif subtotal > 0 then subtotal else nil
-		table.insert(entries, { key = lifter.key, classLabel = lifter.classLabel, bodyweightKg = lifter.bodyweightKg,
+		table.insert(entries, { key = lifter.key, bodyweightKg = lifter.bodyweightKg,
 			totalKg = rankKg, goodLifts = goodLiftCount(lifter), order = lifter.order })
 		rowsByKey[lifter.key] = {
 			name = lifter.name,
@@ -567,7 +577,8 @@ local function buildStandings(current: Meet): LocalMeetRemotes.Standings
 			bodyweightKg = lifter.bodyweightKg,
 			best = result.best,
 			subtotalKg = subtotal,
-			scorePercent = nil,
+			points = nil,
+			userId = if lifter.player then lifter.player.UserId else nil,
 			place = nil,
 			status = status,
 			lights = lifter.lights,
@@ -576,7 +587,7 @@ local function buildStandings(current: Meet): LocalMeetRemotes.Standings
 	local rows: { LocalMeetRemotes.StandingRow } = {}
 	for _, placing in ipairs(MeetPlacing.rank(entries)) do
 		local row = rowsByKey[placing.key]
-		row.scorePercent = if placing.score then placing.score * 100 else nil
+		row.points = placing.points
 		row.place = placing.place
 		table.insert(rows, row)
 	end
@@ -597,7 +608,7 @@ local function updateStandings(current: Meet)
 	for _, row in ipairs(standings.rows) do
 		table.insert(lines, string.format("%s  %s  ·  %s  ·  %s kg%s",
 			if row.place then placeText(row.place) else "—", row.name, row.classLabel, kgText(row.subtotalKg),
-			if row.scorePercent then string.format("  ·  %.1f%%", row.scorePercent)
+			if row.points then string.format("  ·  %.2f PTS", row.points)
 				elseif row.status == "Bombed" then "  ·  BOMBED OUT"
 				elseif row.status == "Withdrawn" then "  ·  WITHDRAWN" else ""))
 	end
@@ -651,7 +662,10 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	local saved = PlayerDataService.update(player, function(data)
 		if totalKg then
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
-				local kg = best[lift]
+				-- (A lift over the normal limit counts for the total, not for Scale, §37.5.)
+				local kg = if best[lift]
+					then AttemptChoice.bestWithinLimit(lifter.competitionNumber[lift], lifter.lifts[lift].history)
+					else nil
 				if kg then
 					scaleOutcomes[lift] = ProfileOperations.raiseCompetitionScale(data, lifter.classLabel, lift, kg)
 				end
@@ -919,6 +933,75 @@ local function characterOf(lifter: Lifter): Model?
 	return if player then player.Character else lifter.body
 end
 
+--[[
+	Walks a real lifter's coach to `final` (GAME_DESIGN §37.5), through the doorway
+	when they're on the other side of the wall; then `onArrive`. A computer
+	lifter's coach stays at the doorway: nobody reads what they say, and walking
+	every coach would cost eight more moving bodies per hall.
+]]
+local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model) -> ())?)
+	local coach = LocalMeetVenue.coachFigure(lifter.platform)
+	if coach == nil or lifter.player == nil then
+		return
+	end
+	local walkOut = lifter.platform.walkOut
+	local wallZ = walkOut[1].Z
+	local going = final.Position.Z < wallZ
+	local points: { Vector3 } = {}
+	if (coach:GetPivot().Position.Z < wallZ) ~= going then
+		points = if going then { walkOut[1], walkOut[2] } else { walkOut[2], walkOut[1] }
+	end
+	local token = (lifter.coachToken or 0) + 1
+	lifter.coachToken = token
+	local function current(): boolean
+		return lifter.coachToken == token and stillLifting(lifter) and coach.Parent ~= nil
+	end
+	task.spawn(function()
+		ComputerLifters.walkBody(coach, points, final, current)
+		if onArrive and current() then
+			onArrive(coach)
+		end
+	end)
+end
+
+local function stopChalk(lifter: Lifter)
+	MeetChalk.stop(lifter.chalkTrack)
+	MeetChalk.stop(lifter.coachTrack)
+	lifter.chalkTrack, lifter.coachTrack = nil, nil
+end
+
+--[[
+	What the coach tells the lifter while they choose. It waits until the coach has walked in: said on the way, the
+	doorway's walls would cut the bubble off (user 2026-11-06: their words went through the wall).
+]]
+local function coachTell(lifter: Lifter, line: string?)
+	lifter.coachLine = line
+	if lifter.coachHere then
+		LocalMeetVenue.coachSays(lifter.platform, line)
+	end
+end
+
+--[[
+	Chalking up while they choose (user 2026-11-06): the lifter at the stand; on squat
+	the coach behind them chalking their upper back, otherwise in front of them,
+	talking to them.
+]]
+local function startChalk(lifter: Lifter, lift: string)
+	stopChalk(lifter)
+	local chalk = LocalMeetConfig.Chalk
+	lifter.chalkTrack = MeetChalk.play(characterOf(lifter), chalk.LifterAnimationId)
+	local onBack = lift == "Squat"
+	local platform = lifter.platform
+	MeetFigures.showClipboard(LocalMeetVenue.coachFigure(platform), not onBack)
+	lifter.coachHere, lifter.coachLine = false, nil
+	LocalMeetVenue.coachSays(platform, nil)
+	coachWalk(lifter, if onBack then platform.coachBackSpot else platform.coachFrontSpot, function(coach: Model)
+		lifter.coachTrack = MeetChalk.play(coach, if onBack then chalk.CoachBackAnimationId else chalk.CoachTalkAnimationId)
+		lifter.coachHere = true
+		LocalMeetVenue.coachSays(platform, lifter.coachLine)
+	end)
+end
+
 -- A sound on the lifter's platform, for the people in that hall (MeetSoundController). Sound only.
 local function soundCue(lifter: Lifter, cue: string, volume: number?)
 	local set, rack = remotes, lifter.platform.rack
@@ -1134,6 +1217,10 @@ local function announceAttempt(current: Meet, lifter: Lifter, lift: string, kg: 
 	if not current.rewards or player == nil or lifter.announcedKg == kg then
 		return
 	end
+	-- A lift over the normal limit can't set a record (§37.5).
+	if AttemptChoice.isOverLimit(lifter.competitionNumber[lift], kg) then
+		return
+	end
 	lifter.announcedKg = kg
 	local claims: { [string]: number } = { [lift] = kg }
 	local data = PlayerDataService.getData(player)
@@ -1200,6 +1287,7 @@ local function withdraw(player: Player, why: string)
 	LiftAttemptService.abandon(player)
 	LiftAttemptService.setFreeAttemptsBlocked(player, false)
 	endLift(lifter)
+	stopChalk(lifter)
 	if player.Parent then
 		player:SetAttribute(LocalMeetConfig.PlatformAttribute, nil)
 	end
@@ -1291,7 +1379,7 @@ end
 
 -- What a good lift just did, in a few words, or nil when it did nothing special (§37.5). Against how things stood before it.
 local function momentAfter(current: Meet, lifter: Lifter, wasRecordAttempt: boolean, wasMustMake: boolean, weightKg: number,
-	bestBefore: number?, placeBefore: number?): string?
+	bestBefore: number?, placeBefore: number?, overLimit: boolean): string?
 	if wasRecordAttempt then
 		return "NEW GYM RECORD!"
 	end
@@ -1301,6 +1389,9 @@ local function momentAfter(current: Meet, lifter: Lifter, wasRecordAttempt: bool
 	local placeNow = placeOf(current, lifter)
 	if placeBefore and placeNow == 1 and placeBefore ~= 1 then
 		return "TAKES THE LEAD!"
+	end
+	if overLimit then
+		return "OVER THE LIMIT!"
 	end
 	if bestBefore and weightKg > bestBefore then
 		return "NEW BEST!"
@@ -1435,10 +1526,14 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	table.insert(lifter.lifts[lift].history, { weightKg = weightKg, result = result })
 	lifter.lastResult, lifter.lastKg = result, weightKg
 	local barLandsIn = finishLift(lifter, lift, good, failedPart, weightKg)
-	if good then
+	-- A lift over the normal limit counts for the total and the place, and pays coins at the end of the meet, but sets
+	-- no best or record (§37.5).
+	local overLimit = AttemptChoice.isOverLimit(lifter.competitionNumber[lift], weightKg)
+	if good and not overLimit then
 		saveOfficialBest(current, lifter, lift, weightKg)
 	end
-	local moment = if good then momentAfter(current, lifter, wasRecordAttempt, wasMustMake, weightKg, bestBefore, placeBefore)
+	local moment = if good
+		then momentAfter(current, lifter, wasRecordAttempt, wasMustMake, weightKg, bestBefore, placeBefore, overLimit)
 		else nil
 	-- The minigames decide; the three referees show it.
 	lifter.lights = if good then { "White", "White", "White" } else { "Red", "Red", "Red" }
@@ -1491,7 +1586,7 @@ end
 
 type LiveScore = { lifter: Lifter, score: number, place: number }
 
--- Everyone's live score (best lifts so far / their class's score Total), best first, with their place.
+-- Everyone's live points (on their best lifts so far), best first, with their place.
 local function liveScores(current: Meet): { LiveScore }
 	local list: { LiveScore } = {}
 	for _, lifter in ipairs(current.lifters) do
@@ -1500,7 +1595,7 @@ local function liveScores(current: Meet): { LiveScore }
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
 				subtotal += bestOf(lifter, lift) or 0
 			end
-			local score = if subtotal > 0 then MeetPlacing.score(lifter.classLabel, subtotal) else nil
+			local score = if subtotal > 0 then MeetPlacing.points(lifter.bodyweightKg, subtotal) else nil
 			if score then
 				table.insert(list, { lifter = lifter, score = score, place = 0 })
 			end
@@ -1524,15 +1619,25 @@ placeOf = function(current: Meet, lifter: Lifter): number?
 	return nil
 end
 
+-- A lifter's subtotal if they make the weight they have declared this round (their best lifts so far otherwise).
+local function subtotalIfMade(lifter: Lifter, lift: string): number
+	local subtotal = 0
+	for _, name in ipairs(MeetConfig.LiftOrder) do
+		local best = bestOf(lifter, name) or 0
+		subtotal += if name == lift then math.max(best, lifter.chosenKg or 0) else best
+	end
+	return subtotal
+end
+
 --[[
 	What this attempt can do for `lifter` (MockMeetRemotes.RaceView): for each
-	rival with a score, the lightest weight on the meet's step that puts the
-	lifter's score above theirs if made (0 = already ahead). Scores compare
-	totals across classes, so the kilograms already include that sum: the
-	player never has to work out a percentage.
+	rival, the lightest weight on the meet's step that puts the lifter's score
+	above theirs if both make the weight they declared (0 = ahead even if the
+	lifter misses). Rivals with nothing yet and no declared weight don't count.
+	Points compare totals across bodyweights, so the kilograms already include that
+	sum: the player never has to work out any points.
 ]]
 local function raceFor(current: Meet, lifter: Lifter, lift: string, attemptNumber: number): MockMeetRemotes.RaceView
-	local reference = MeetLevelConfig.ScoreTotals[lifter.classLabel] or 1
 	local step = LocalMeetConfig.WeightStepKg
 	local others = 0
 	for _, name in ipairs(MeetConfig.LiftOrder) do
@@ -1542,24 +1647,26 @@ local function raceFor(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	end
 	local bestHere = bestOf(lifter, lift) or 0
 	local rivals: { MockMeetRemotes.RaceRival } = {}
-	local place: number? = nil
-	for _, entry in ipairs(liveScores(current)) do
-		if entry.lifter == lifter then
-			place = entry.place
-		else
-			-- My score beats theirs once my subtotal passes theirs measured in my class.
-			local needSubtotal = entry.score * reference
-			local needKg = 0
-			if others + bestHere <= needSubtotal + 1e-6 then
-				needKg = (math.floor((needSubtotal - others) / step + 1e-6) + 1) * step
+	for _, other in ipairs(current.lifters) do
+		if other ~= lifter and not other.withdrawn and not bombed(other) then
+			local subtotal = subtotalIfMade(other, lift)
+			local points = if subtotal > 0 then MeetPlacing.points(other.bodyweightKg, subtotal) else nil
+			if points then
+				-- My points beat theirs once my subtotal passes the total that gives their points at my bodyweight.
+				local needSubtotal = MeetPlacing.totalForPoints(lifter.bodyweightKg, points)
+				local needKg = 0
+				if others + bestHere <= needSubtotal + 1e-6 then
+					needKg = (math.floor((needSubtotal - others) / step + 1e-6) + 1) * step
+				end
+				table.insert(rivals, { name = other.name, needKg = needKg, declaredKg = other.chosenKg })
 			end
-			table.insert(rivals, { name = entry.lifter.name, needKg = needKg })
 		end
 	end
 	return {
-		place = place,
+		place = placeOf(current, lifter),
 		rivals = rivals,
 		mustMake = bestHere <= 0 and attemptNumber >= MeetConfig.AttemptsPerLift,
+		lastAttempt = isMeetsLastAttempt(lift, attemptNumber),
 	}
 end
 
@@ -1594,13 +1701,17 @@ local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNum
 		return if last then "FOR THE WIN" else "TO TAKE THE LEAD", true
 	end
 	-- A new best only counts in a meet that saves it.
+	local overLimit = AttemptChoice.isOverLimit(lifter.competitionNumber[lift], weightKg)
 	local best = if current.rewards then officialBest(lifter, lift) else nil
-	if best and weightKg > best then
+	if best and weightKg > best and not overLimit then
 		return "FOR A NEW BEST " .. string.upper(lift), true
 	end
 	if passed > 0 then
 		local place = string.upper(placeText(ahead - passed + 1))
 		return if last then "FOR " .. place .. " PLACE" else "TO MOVE UP TO " .. place, true
+	end
+	if overLimit then
+		return "OVER THE LIMIT", true
 	end
 	if #race.rivals > 0 and ahead == 0 then
 		return "LEADING THE MEET", false
@@ -1620,50 +1731,63 @@ local function stakesLevelFor(lifter: Lifter, lift: string, attemptNumber: numbe
 	return math.min(level, #LocalMeetConfig.StakesBuild.CrowdVolume)
 end
 
+-- "a 25 kg bench" ("an 80 kg bench").
+local function weightOf(kg: number, lift: string): string
+	local whole = math.floor(kg)
+	local an = string.sub(tostring(whole), 1, 1) == "8" or whole == 11 or whole == 18
+	return string.format("%s %s kg %s", if an then "an" else "a", kgText(kg), string.lower(lift))
+end
+
 --[[
-	What the coach tells their lifter as they choose (only that lifter sees it):
-	a bomb-out warning first, then a rival ahead who just missed ("Tess missed
-	30 kg! 27.5 kg takes 1st."), then the next place to chase, or that they lead.
+	What the coach tells their lifter as they choose (only that lifter sees it),
+	the same thing THE RACE says at the top: a bomb-out warning first, then the
+	weight that takes first, or the best place still in reach ("You need a 25 kg
+	bench to take the lead."), after a rival's miss if one just missed ("Tess
+	missed 30 kg!", user 2026-11-01), or that they lead.
 ]]
-local function coachLineFor(current: Meet, lifter: Lifter, race: MockMeetRemotes.RaceView, maxKg: number): string?
+local function coachLineFor(current: Meet, lifter: Lifter, race: MockMeetRemotes.RaceView, lift: string, minKg: number,
+	maxKg: number): string?
 	if race.mustMake then
 		return "Make this one or you bomb out. Play it safe!"
 	end
-	local ahead: { { name: string, needKg: number, place: number, missed: boolean, missedKg: number? } } = {}
-	local byName: { [string]: Lifter } = {}
-	for _, other in ipairs(current.lifters) do
-		byName[other.name] = other
-	end
-	local places: { [string]: number } = {}
-	for _, entry in ipairs(liveScores(current)) do
-		places[entry.lifter.name] = entry.place
-	end
+	local ahead: { MockMeetRemotes.RaceRival } = {}
 	for _, rival in ipairs(race.rivals) do
-		local other = byName[rival.name]
-		if rival.needKg > 0 and other then
-			table.insert(ahead, { name = rival.name, needKg = rival.needKg, place = places[rival.name] or 0,
-				missed = other.lastResult == "NoLift", missedKg = other.lastKg })
+		if rival.needKg > 0 then
+			table.insert(ahead, rival)
 		end
 	end
-	-- The nearest place first.
 	table.sort(ahead, function(a, b)
 		return a.needKg < b.needKg
 	end)
-	for _, rival in ipairs(ahead) do
-		if rival.missed and rival.needKg <= maxKg then
-			return string.format("%s missed %s kg! %s kg takes %s.", rival.name, kgText(rival.missedKg or 0),
-				kgText(rival.needKg), placeText(rival.place))
+	if #ahead == 0 then
+		return if #race.rivals > 0 then "You're in the lead. Don't give it away!" else nil
+	end
+	local line: string
+	local topKg = math.max(ahead[#ahead].needKg, minKg)
+	if topKg <= maxKg then
+		local goal = if race.lastAttempt then "win the meet" elseif race.place == 1 then "stay in the lead" else "take the lead"
+		line = string.format("You need %s to %s.", weightOf(topKg, lift), goal)
+	else
+		line = "1st is out of reach this attempt. Lock in your spot."
+		for index = #ahead - 1, 1, -1 do
+			local needKg = math.max(ahead[index].needKg, minKg)
+			if needKg <= maxKg then
+				line = string.format("1st is out of reach. Try %s for %s.", weightOf(needKg, lift), placeText(#ahead - index + 1))
+				break
+			end
 		end
 	end
-	local nearest = ahead[1]
-	if nearest and nearest.needKg <= maxKg then
-		return string.format("%s kg passes %s for %s.", kgText(nearest.needKg), nearest.name, placeText(nearest.place))
-	elseif nearest then
-		return string.format("%s is out of reach this attempt. Lock in your spot.", nearest.name)
-	elseif #race.rivals > 0 then
-		return "You're in the lead. Don't give it away!"
+	-- A rival ahead who just missed comes first.
+	for _, other in ipairs(current.lifters) do
+		if other ~= lifter and other.lastResult == "NoLift" and other.lastKg then
+			for _, rival in ipairs(ahead) do
+				if rival.name == other.name then
+					return string.format("%s missed %s kg! %s", other.name, kgText(other.lastKg), line)
+				end
+			end
+		end
 	end
-	return nil
+	return line
 end
 
 -- One round: everyone chooses, everyone lifts, the lights show.
@@ -1671,18 +1795,52 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 	current.heading = string.format("%s  ·  ROUND %d", string.upper(lift), attemptNumber)
 	updateStandings(current)
 
-	-- Choose.
+	-- Choose. Computer lifters declare first, so the race can count what they're going for.
 	local choosing: { Lifter } = {}
 	for _, lifter in ipairs(activeLifters(current)) do
 		lifter.choice, lifter.chosenKg, lifter.readyPressed, lifter.roundDone, lifter.lights = nil, nil, false, false, nil
 		lifter.announcedKg, lifter.recordAttempt = nil, nil
 		lifter.currentLift = lift
+		if lifter.player == nil then
+			local cn, history = lifter.competitionNumber[lift], lifter.lifts[lift].history
+			local _, default = AttemptChoice.nextWeights(cn, history, LocalMeetConfig.WeightStepKg,
+				LocalMeetConfig.OpenerSuggestionPercent)
+			if default then
+				-- (Section 37.2) At once.
+				lifter.chosenKg = ComputerLifters.nextWeight(cn, history, attemptNumber) or default
+			end
+		end
+	end
+	local chooseStarted = os.clock()
+	local chooseEnds = chooseStarted + LocalMeetConfig.ChooseSeconds
+	local function chalkView(lifter: Lifter): MockMeetRemotes.ChalkView
+		local platform = lifter.platform
+		return { at = platform.chalkCentre, out = platform.chalkOut, coach = LocalMeetVenue.coachFigure(platform) }
+	end
+	-- Puts the weight choice on a player's screen with the race as it stands, and the coach's word on it.
+	local function offerChoice(lifter: Lifter, minKg: number, maxKg: number, default: number)
+		local secondsLeft = math.max(1, chooseEnds - os.clock())
+		if bombed(lifter) then
+			-- No total any more: no race to show.
+			sendState(lifter, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
+				suggestedKg = default, secondsLeft = secondsLeft, chalk = chalkView(lifter) })
+			coachTell(lifter, "No total today. Use these lifts as practice.")
+		else
+			-- The race: what this attempt can do, in kilograms, and the coach's word on it (only they see it).
+			local race = raceFor(current, lifter, lift, attemptNumber)
+			sendState(lifter, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
+				suggestedKg = default, secondsLeft = secondsLeft, race = race, chalk = chalkView(lifter) })
+			coachTell(lifter, coachLineFor(current, lifter, race, lift, minKg, maxKg))
+		end
+	end
+	for _, lifter in ipairs(activeLifters(current)) do
 		-- The rack set up for this lift, like a gym training rack (§37.5): no bench for squat and deadlift.
 		LocalMeetVenue.rackFor(lifter.platform, lift)
 		local cn = lifter.competitionNumber[lift]
 		local history = lifter.lifts[lift].history
+		-- A real lifter may go over the normal limit (§37.5), so they're never stuck passing; a computer lifter stays under.
 		local minKg, default = AttemptChoice.nextWeights(cn, history, LocalMeetConfig.WeightStepKg,
-			LocalMeetConfig.OpenerSuggestionPercent)
+			LocalMeetConfig.OpenerSuggestionPercent, lifter.player ~= nil)
 		if minKg == nil or default == nil then
 			-- No heavier weight is allowed inside the bounds: the attempt is passed.
 			lifter.lifts[lift].passed += 1
@@ -1692,25 +1850,27 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber), "PASSED" })
 		else
 			lifter.defaultKg = default
-			local _, maxKg = AttemptChoice.bounds(cn, LocalMeetConfig.WeightStepKg)
 			table.insert(choosing, lifter)
-			if lifter.player == nil then
-				-- A computer lifter declares at once (§37.2).
-				lifter.chosenKg = ComputerLifters.nextWeight(cn, history, attemptNumber) or default
-			end
-			if lifter.player and bombed(lifter) then
-				-- No total any more: no race to show.
-				sendState(lifter, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
-					suggestedKg = default, secondsLeft = LocalMeetConfig.ChooseSeconds })
-				LocalMeetVenue.coachSays(lifter.platform, "No total today. Use these lifts as practice.")
-			elseif lifter.player then
-				-- The race: what this attempt can do, in kilograms, and the coach's word on it (only they see it).
-				local race = raceFor(current, lifter, lift, attemptNumber)
-				sendState(lifter, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
-					suggestedKg = default, secondsLeft = LocalMeetConfig.ChooseSeconds, race = race })
-				LocalMeetVenue.coachSays(lifter.platform, coachLineFor(current, lifter, race, maxKg))
+			startChalk(lifter, lift)
+			if lifter.player then
+				local _, maxKg = AttemptChoice.meetBounds(cn, LocalMeetConfig.WeightStepKg)
+				offerChoice(lifter, minKg, maxKg, default)
 			end
 			boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber), "CHOOSING A WEIGHT" })
+		end
+	end
+	-- A player's declared weight changes the race for anyone still choosing.
+	local function refreshRaces()
+		for _, lifter in ipairs(choosing) do
+			if lifter.player and lifter.chosenKg == nil and stillLifting(lifter) then
+				local cn = lifter.competitionNumber[lift]
+				local minKg, default = AttemptChoice.nextWeights(cn, lifter.lifts[lift].history, LocalMeetConfig.WeightStepKg,
+					LocalMeetConfig.OpenerSuggestionPercent, true)
+				if minKg and default then
+					local _, maxKg = AttemptChoice.meetBounds(cn, LocalMeetConfig.WeightStepKg)
+					offerChoice(lifter, minKg, maxKg, default)
+				end
+			end
 		end
 	end
 	waitUntil(LocalMeetConfig.ChooseSeconds, function()
@@ -1721,12 +1881,14 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 				if requested ~= nil then
 					lifter.choice = nil
 					local kg, problem = AttemptChoice.check(lifter.competitionNumber[lift], lifter.lifts[lift].history,
-						LocalMeetConfig.WeightStepKg, requested)
+						LocalMeetConfig.WeightStepKg, requested, true)
 					if kg then
 						lifter.chosenKg = kg
 						task.spawn(announceAttempt, current, lifter, lift, kg)
 						sendState(lifter, "Waiting", { lift = lift, attemptNumber = attemptNumber, declaredKg = kg,
-							note = string.format("%s kg declared. Waiting for the other lifters to choose.", kgText(kg)) })
+							note = string.format("%s kg declared. Waiting for the other lifters to choose.", kgText(kg)),
+							chalk = chalkView(lifter) })
+						refreshRaces()
 					elseif lifter.player then
 						notify(lifter.player, problem or "That weight is not allowed.")
 					end
@@ -1738,6 +1900,17 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 		end
 		return everyone
 	end)
+	-- Everyone gets to be seen chalking up, however fast they chose.
+	local chalkLeft = chooseStarted + LocalMeetConfig.Chalk.MinSeconds - os.clock()
+	if chalkLeft > 0 then
+		task.wait(chalkLeft)
+	end
+	-- A weight left to the default (time ran out) counts for everyone's stakes below.
+	for _, lifter in ipairs(choosing) do
+		if stillLifting(lifter) then
+			lifter.chosenKg = lifter.chosenKg or lifter.defaultKg or 0
+		end
+	end
 
 	-- Lift: everyone on their own platform at once; each walks out, sets up and lifts on the referee's command.
 	local lifting: { Lifter } = {}
@@ -1756,13 +1929,21 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			-- The walk out from the warm-up room straight in to the bar (§37.5: the rack faces the entrance), then set
 			-- up for the lift.
 			lifter.outOnPlatform = true
+			-- Hands chalked: the coach goes ahead to the doorway to watch.
+			stopChalk(lifter)
+			MeetFigures.showClipboard(LocalMeetVenue.coachFigure(lifter.platform), true)
+			lifter.coachHere = false
+			LocalMeetVenue.coachSays(lifter.platform, nil)
+			-- (A word for the lifter once there, not on the way through the doorway.)
+			coachWalk(lifter, lifter.platform.coachDoorSpot, function()
+				LocalMeetVenue.coachSays(lifter.platform, pick(COACH_READY))
+			end)
 			-- The crowd starts as they step out (user 2026-11-05), with its own lines until the lift starts.
 			crowdBehind(lifter, MeetSoundConfig.walkOutShouts())
 			local approach = lifter.platform.rack and MeetLiftAnimation.approachFor(lifter.platform.rack, lift)
 			walkLifter(lifter, lifter.platform.walkOut, approach or lifter.platform.liftSpot, true, function()
 				setUpLift(lifter, lift)
 			end)
-			LocalMeetVenue.coachSays(lifter.platform, pick(COACH_READY))
 			boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 				string.format("BAR LOADED  ·  %s KG", kgText(weightKg)) })
 			sendState(lifter, "Ready", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
@@ -1856,7 +2037,7 @@ local function finishMeet(current: Meet)
 	local entries: { MeetPlacing.Entry } = {}
 	for _, lifter in ipairs(current.lifters) do
 		local result = MeetTotal.resolve(meetAttempts(lifter))
-		table.insert(entries, { key = lifter.key, classLabel = lifter.classLabel, bodyweightKg = lifter.bodyweightKg,
+		table.insert(entries, { key = lifter.key, bodyweightKg = lifter.bodyweightKg,
 			totalKg = if lifter.withdrawn then nil else result.total, goodLifts = goodLiftCount(lifter), order = lifter.order })
 	end
 	-- Rewards go by the real lifters' order among themselves: a computer lifter never takes one (§37.2).
@@ -1892,8 +2073,18 @@ local function finishMeet(current: Meet)
 			if lifter.player then
 				local place = current.rewardPlaces[lifter.key]
 				local good = goodLiftCount(lifter)
+				local overLimit: { { lift: string, percentOfCn: number } } = {}
+				for _, lift in ipairs(MeetConfig.LiftOrder) do
+					local cn = lifter.competitionNumber[lift]
+					for _, attempt in ipairs(lifter.lifts[lift].history) do
+						if attempt.result == "GoodLift" and AttemptChoice.isOverLimit(cn, attempt.weightKg) then
+							table.insert(overLimit, { lift = lift, percentOfCn = attempt.weightKg / cn })
+						end
+					end
+				end
 				table.insert(results, { key = lifter.key, place = place, hasTotal = not lifter.withdrawn and place ~= nil,
-					qualified = lifter.liftsStarted > 0, perfect = good == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift })
+					qualified = lifter.liftsStarted > 0, perfect = good == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift,
+					overLimit = overLimit })
 			end
 		end
 		local settings = CoinConfig.LocalMeet
@@ -1929,11 +2120,11 @@ local function finishMeet(current: Meet)
 			table.insert(saved, 1, string.format("+%s %s", CoinConfig.format(lifter.coinsEarned), CoinConfig.Name))
 		end
 		local note: string
-		if placing and placing.place and placing.score then
-			note = string.format("%s PLACE of %d  ·  SCORE %.1f%%%s", string.upper(placeText(placing.place)),
-				#current.lifters, placing.score * 100, if #saved > 0 then "  ·  " .. table.concat(saved, "  ·  ") else "")
+		if placing and placing.place and placing.points then
+			note = string.format("%s PLACE of %d  ·  %.2f POINTS%s", string.upper(placeText(placing.place)),
+				#current.lifters, placing.points, if #saved > 0 then "  ·  " .. table.concat(saved, "  ·  ") else "")
 			boardFor(lifter, { string.format("%s PLACE", string.upper(placeText(placing.place))),
-				string.format("TOTAL %s KG", kgText(result.total or 0)), string.format("SCORE %.1f%%", placing.score * 100) })
+				string.format("TOTAL %s KG", kgText(result.total or 0)), string.format("%.2f POINTS", placing.points) })
 		else
 			note = "No total, no place  ·  A bomb-out saves nothing" .. (if current.rewards or current.solo
 				then " (misses above your CN still used your meet allowance)" else "")
@@ -2208,7 +2399,9 @@ local function tryStartMeet(hall: Hall)
 			table.insert(current.lifters, {
 				hall = hall,
 				player = nil,
-				key = -cpuIndex,
+				-- Far from any real player's: a Studio test server's players have UserIds -1, -2, ... (two lifters on one
+			-- key overwrote each other in the standings, user's two-player test 2026-11-06).
+			key = -1000 - cpuIndex,
 				cpu = plan,
 				body = nil,
 				name = plan.name,

@@ -9,6 +9,8 @@
 	below (step 3); the Shop's prices come with the Shop (step 4).
 ]]
 
+local LiftAttemptConfig = require(script.Parent:WaitForChild("LiftAttemptConfig"))
+
 local CoinConfig = {}
 
 -- What the money is called on screens (user's pick).
@@ -51,7 +53,23 @@ CoinConfig.LocalMeet = {
 	PerfectBonus = 50,
 	GymRecordBonus = 150,
 	OwnGymRecordBonus = 40,
+	-- A good lift over the normal limit (LiftAttemptConfig.MeetCeilingPercent): this, plus OverLimitStepBonus for every
+	-- full OverLimitStepPercent of CN past the limit. Each such lift pays, on top of everything else.
+	OverLimitBonus = 50,
+	OverLimitStepBonus = 25,
+	OverLimitStepPercent = 0.05,
 }
+
+-- What a good meet lift at `percentOfCn` (1.3 = 130% of CN) pays for going over the normal limit; 0 at or under it.
+function CoinConfig.overLimitCoins(percentOfCn: number): number
+	local past = percentOfCn - LiftAttemptConfig.MaximumAttemptPercent
+	if past <= 1e-6 then
+		return 0
+	end
+	local settings = CoinConfig.LocalMeet
+	return settings.OverLimitBonus
+		+ settings.OverLimitStepBonus * math.floor(past / settings.OverLimitStepPercent + 1e-6)
+end
 
 -- The player attribute the server keeps at the player's balance, for screens (CoinDisplayService).
 CoinConfig.BalanceAttribute = "Coins"

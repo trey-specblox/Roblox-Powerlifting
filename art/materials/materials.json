@@ -816,6 +816,14 @@
         "model": "rbxassetid://120696869428785"
       },
       "supersedes": "rbxassetid://107253247735603 (yellow screen-frame backs and the number panel, 2026-11-01; unused); rbxassetid://108120033847582 (before the gantry banners were added, 2026-11-01; unused)"
+    },
+    "LocalMeet_03": {
+      "about": "The chalk stand each lifter chalks up at in the Local meet's warm-up room (MeetChalkStand), from the user's photos: black square post and cross-shaped foot, stainless bowl with chalk blocks and powder, CENTRAL on the post. Made by art/scripts/build_local_meet_03.py (art/blender/LocalMeet_03.blend).",
+      "file": "art/exports/LocalMeet_03.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://103112945740574"
+      }
     }
   },
   "images": {

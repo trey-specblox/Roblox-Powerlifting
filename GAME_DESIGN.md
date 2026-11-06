@@ -2163,7 +2163,7 @@ Worlds and Sheffield come later and are untouched here.
 | Question | Decision |
 |---|---|
 | Turns | **Everyone lifts together.** Each lifter has their own platform, side by side; every lifter takes squat attempt 1 at the same time, then attempt 2, and so on (9 rounds). A whole meet takes about 15 minutes even with 8 players. Chosen over one platform with the lightest bar first (about 50 minutes for 8 players) |
-| Placing | **One ranking by score** for everyone in the meet: **Score = Total ÷ the weight class's score Total**, shown as a percentage. The score Totals are made-up, evenly spaced numbers for Local and Regional meets (user, 2026-11-01; `MeetLevelConfig.ScoreTotals`): about 8% more per class, 59 kg 670 · 66 kg 725 · 74 kg 780 · 83 kg 845 · 93 kg 915 · 105 kg 985 · 120 kg 1065 · 120+ kg 1150, so no class scores more easily than its neighbours. (Until 2026-11-01 this used `ReferenceRecordConfig`'s real records, which were uneven: 83 kg was below 74 kg. Those still drive difficulty, prestige and Sheffield, §32.4.) A light lifter can beat a heavy one, and a lifter alone in their class does not win automatically. Class winners are shown too. A bomb-out has no score and no place. **Ties: more good lifts first** (user, 2026-11-01: on an equal score 9/9 beats 8/9; good lifts do not outrank score, so heavy third attempts stay worth taking), then **[PROVISIONAL]** the lighter bodyweight, as in real meets |
+| Placing | **[CHANGED BY THE USER, 2026-11-06: points, not %. See §37.4 "Points".]** **One ranking by score** for everyone in the meet: **Score = Total ÷ the weight class's score Total**, shown as a percentage. The score Totals are made-up, evenly spaced numbers for Local and Regional meets (user, 2026-11-01; `MeetLevelConfig.ScoreTotals`): about 8% more per class, 59 kg 670 · 66 kg 725 · 74 kg 780 · 83 kg 845 · 93 kg 915 · 105 kg 985 · 120 kg 1065 · 120+ kg 1150, so no class scores more easily than its neighbours. (Until 2026-11-01 this used `ReferenceRecordConfig`'s real records, which were uneven: 83 kg was below 74 kg. Those still drive difficulty, prestige and Sheffield, §32.4.) A light lifter can beat a heavy one, and a lifter alone in their class does not win automatically. Class winners are shown too. A bomb-out has no score and no place. **Ties: more good lifts first** (user, 2026-11-01: on an equal score 9/9 beats 8/9; good lifts do not outrank score, so heavy third attempts stay worth taking), then **[PROVISIONAL]** the lighter bodyweight, as in real meets |
 | Start | **[CHANGED BY THE USER, 2026-11-01: a meet runs with 1 real player, and computer lifters fill it up to 4; 2 real players now only gate the full rewards. See §37.2.]** **On a timer.** A Local meet starts every **10 minutes** if at least **2 real players** (`MeetConfig.OfficialLocalMeetMinimumRealPlayers`) have signed up at the sign-up desk; sign-ups close **1 minute** before the start. Fewer than 2: no meet, and the sign-ups carry to the next start. **[PROVISIONAL]** times |
 | Venue | **A separate building on the same server**, reached through a door from the gym (like the Mock Meet rooms), so friends and chat stay together. Not a separate Roblox place. Modelled in Blender like the rest of the map (§15's list: platforms, judges, seating, scoreboard, attempt board, warm-up, awards area) |
 | Rules inside a meet | Everything the Mock Meet already has: weigh-in with the class locked, 3 attempts per lift in 2.5 kg steps inside 40-125% of CN, a choose timer and a ready timer, the existing minigames. **Plus three referees with lights** (official meets keep referees, §29.10) and the coach watching |
@@ -3683,7 +3683,7 @@ repeated raises.
 | Rule | Decision |
 |---|---|
 | Which meets | **Only meets against other players** (Local, Nationals, Worlds, Sheffield and any later multi-player meet). The **solo Mock Meet never raises CN**; it only raises Competition Scale (§33.7) |
-| What a good lift does | A **good** lift above the lift's current CN raises CN **all the way to the weight lifted** (200 kg CN and a good 250 kg lift: CN 250 kg). A failed lift does nothing (§33.6). CN never goes down |
+| What a good lift does | **[ADDED BY THE USER, 2026-11-06: a lift over 125% of CN raises no CN and costs no allowance; it pays coins instead, §37.5 "Over the limit".]** A **good** lift above the lift's current CN raises CN **all the way to the weight lifted** (200 kg CN and a good 250 kg lift: CN 250 kg). A failed lift does nothing (§33.6). CN never goes down |
 | ~~The weekly limit~~ | ~~at most +25% per lift per week~~ **[CHANGED BY THE USER, 2026-10-29: daily instead of weekly, "so players can have a NEED to play the game"; a weekly limit lets a once-a-week player gain as much as a daily one]** |
 | The daily allowance | **[CHANGED BY THE USER, 2026-11-01: a day is now worth 2× a full day of gym training for that lift, half in a meet with only one real player; see §37.1. The rest of this row still holds.]** Each lift's allowance **refills +4% of its CN per day** and **stacks for up to 3 days** (at most +12% waiting). One maximum-risk lift can use all that is waiting; several small raises add up to the same. Missing a day is not wasted; more than 3 days off is. **[PROVISIONAL]** values (user picked from options, 2026-10-29) |
 | Near the world record | The daily allowance **gets smaller the closer the lift's CN is to the weight class's world-record level** (the Progression Reference, §29.4), **on the same curve training uses** (user, 2026-10-29): one day is worth `4% x Hill(PP)` (§29.3), so about +4% far from the reference, +2% at 0.75 of it, under +1% at the reference, never zero. The unlimited class (120+ kg) has no reference, so meets never raise its CN, as training never does |
@@ -5854,7 +5854,7 @@ in their weight class and stay in it. This reopens the ladder points
 | Question | Decision |
 |---|---|
 | **When State runs** | **On a timer:** a State meet starts every **20 minutes** if at least **2 qualified players** signed up at the State arena's sign-up desk, like the Local meet (§29.10). Fewer than 2: no meet, and sign-ups carry to the next start. **[PROVISIONAL]** times |
-| **Placing** | **One ranking by score** for everyone, as at Local and Regional (§29.10's `MeetPlacing`): Total ÷ the class's score Total, ties by more good lifts, then lighter bodyweight. The **top 3 overall** get the State titles. Class winners are shown too. Lifters still enter only in the class they qualified in (§36.3) |
+| **Placing** | **One ranking by IPF GL points** for everyone, as at Local and Regional (§37.4 "Points", changed by the user 2026-11-06), ties by more good lifts, then lighter bodyweight. The **top 3 overall** get the State titles. Class winners are shown too. Lifters still enter only in the class they qualified in (§36.3) |
 | **What State pays** | All four: the **bigger coin pot** (×3 the Local pot, `MeetLevelConfig`); **titles and trophies** for the top 3 (already built); a **Nationals spot** for the top 3 (the details come with the Nationals design); and a **State finisher badge** for everyone who finishes with a total, for that season |
 | **The format ("slower, big stage")** | **4 racks, one lifter at a time** (user, 2026-11-01, settling "one main platform" vs §36.1's 4 racks): each of the 4 lifters has **their own rack**, with its live screen above and its spectate zone, and they lift **in turn**, lightest bar first in each round as in real meets, with the camera and the big screens on each lift. **At most 4 lifters** per meet, about 20 minutes. **[PROVISIONAL]**: with more than 4 sign-ups, the first 4 lift and the rest carry to the next meet |
 
@@ -5974,8 +5974,26 @@ The user found the Local meet hard to follow:
 | Rule | Decision |
 |---|---|
 | **Private coach** | Each lifter's coach (its name tag and speech bubble) shows **only on that lifter's own screen**. A computer lifter's coach says nothing. |
-| **THE RACE** (on the weight-choosing panel) | It says in **plain kilograms**, with no % to work out: **IF MADE** (your place with this weight, and who you pass), **IF MISSED** (you stay where you are, or "BOMB OUT" on a last attempt with no good lift yet), and **NEEDED FOR 1ST / 2ND / 3RD** (the weight each place needs, or "OUT OF REACH"). It compares everyone's **best lifts so far** (the others lift this round too) and converts between weight classes automatically. |
+| **THE RACE** (on the weight-choosing panel) | It says in **plain kilograms**, with no % to work out, and converts between weight classes automatically. Reworded 2026-11-06 (§37.5 "Attempt selection made plain"): the weight you need for the lead or the win comes first, and it counts what rivals have declared. |
 | **The coach as you choose** | In this order: a bomb-out warning; a rival ahead who just missed ("Silas (CPU) missed 27.5 kg! 25 kg takes 3rd."); the weight that passes the next lifter; "out of reach, lock in your spot"; or "You're in the lead". After a bomb-out the coach says the lifts are practice. |
+
+**Points (user, 2026-11-06: "im changing the % to POINTS, this is IPF points the actual point system"):**
+every meet against other players ranks by points, replacing the old % of a made-up class Total.
+
+`points = total x 100 / (A - B x e^(-C x bodyweight))`, with total and bodyweight in kg.
+
+- **One real set of numbers for everyone** (user's pick): the IPF GL men's raw numbers, A 1199.72839,
+  B 1025.18162, C 0.00921. No men's/women's or equipped tables.
+- It uses the lifter's real weigh-in bodyweight, not the class limit. A 90 kg total is 14.89 points at
+  59 kg and 15.78 at 53 kg.
+- Live standings work it out on the subtotal so far. Ties work as before: more good lifts, then
+  lighter bodyweight, then earlier entry. A bomb-out has no points and no place.
+
+**The standings panel (user, 2026-11-06: "i cant see my name or do a quick look to see how much more
+% i am over the next person"):** each row shows place, name, **weight class, total and points**. The
+player's own row is highlighted in yellow, and a line under the table says where they stand, for
+example "YOU: 2ND · 1.14 BEHIND THEO (CPU) · 0.82 AHEAD OF ROSA (CPU)". Spectators see no highlight
+or line. Lift-by-lift numbers left the panel; the scorecard still has the lifter's own.
 
 > **Built (2026-11-01).**
 >
@@ -6378,7 +6396,7 @@ until the user has judged how it looks and sounds.
 - **Walking back:** the player has their normal camera again.
 
 It decides nothing and changes no lift result. LEAVE ends it at once. **Mock Meets don't have
-it**: they have no crowd. Next idea, not decided: rituals before the lift.
+it**: they have no crowd. Rituals before the lift: chalking up, built 2026-11-06 (below).
 
 **Stakes that build (user, 2026-11-05: "Yes, start stakes"; part of making meets less bland):**
 a meet gets bigger as it goes. **[PROVISIONAL]** until the user has judged how it looks and sounds.
@@ -6426,6 +6444,60 @@ Every line plays once, in a random order, before any comes round again in that w
 
 After the lights one voice reacts on levels 1 and 2, two on level 3, three on level 4, over the
 crowd's cheer or groan. Other platforms' voices stay spaced out, as before.
+
+**Chalking up while choosing a weight (user, 2026-11-06, from their photos of meet chalk stands):**
+"a clean animation where the lifter is seen putting on the chalk while waiting for attempt
+selection."
+
+- **The chalk stand:** every platform in use has one in the warm-up room beside the lifter's waiting
+  spot: black post and X foot, stainless bowl of chalk blocks, CENTRAL on the post.
+- **The lifter** faces the stand while they choose: hands in the bowl, rubs their palms, claps twice
+  with a puff of chalk, relaxes, and repeats until they walk out. Everyone is seen doing it once
+  (about 5 seconds), however fast they choose.
+- **The coach is with the lifter, not behind the wall:**
+  - **Squat:** behind the lifter, chalking their upper back while the lifter does their hands, then
+    two slaps on the back. No clipboard, both hands on the back.
+  - **Bench and deadlift:** facing the lifter across the stand, holding the clipboard, talking.
+  - As the lifter walks out, the coach goes ahead to the doorway to watch the lift.
+  - The coach speaks only once they have arrived, so the doorway never cuts off what they say.
+  - A computer lifter's coach stays at the doorway, to save performance. Computer lifters chalk up too.
+- **The view:** the camera holds side-on to the group, and at a Local meet the weight panel sits on
+  the right instead of the middle (changes the 2026-11-01 "in the middle" choice for this meet only,
+  so the lifter can be seen). The scorecard hides while choosing, as the panel takes its place.
+
+**Attempt selection made plain (user, 2026-11-06):**
+
+- **QUICK PICK:** every button is a different weight the lifter may actually choose, with its true %
+  of their CN. On a small CN the old shares rounded to the same weight ("100% 25kg but 105% 25kg").
+- **THE RACE** now counts the weight each rival has declared, as if they make it, not only finished
+  lifts (which said "needed 2.5 kg" at the start of a lift). It says the one thing that matters
+  first: **"YOU NEED A 25 KG BENCH TO TAKE THE LEAD"**, or "TO STAY IN THE LEAD", or on the meet's
+  last attempt "TO WIN THE MEET"; "1ST IS OUT OF REACH · A 27.5 KG BENCH GETS YOU 2ND"; or "YOU STAY
+  IN 1ST EVEN IF YOU MISS". The needed weight is never below what the lifter may choose. Under it:
+  what the weight in the box does if made or missed, then what the top rivals are going for. It
+  updates when another player declares. The coach says the same thing in their bubble.
+- This replaces the earlier IF MADE / IF MISSED / NEEDED FOR 1ST-2ND-3RD lines (§37.4).
+
+**Over the limit (user, 2026-11-06: "A lifter should be able to attempt heavier weights ... if they
+succeed it wont go towards their CN, but they will get performance bonuses that stack with their
+other bonuses"; numbers picked by the user from options):**
+
+| Rule | Decision |
+|---|---|
+| The normal limit | **125% of CN**, unchanged. Up to here a good lift can raise CN as in §33.3b |
+| How heavy | A real lifter at a meet may go on up to **150% of CN**, so nobody has to pass at 125%. An attempt is only passed once they have made 150%. There is a top limit because difficulty hardly rises past 120% (98 at 120%, about 99 at 130%): with none, a skilled player could type any weight and win |
+| What a good lift over the limit counts for | **The total and the place only.** No CN raise, no Competition Scale, no official best, no gym record, no record attempt sign |
+| A miss over the limit | Costs **no meet allowance** (it could not have raised CN), but it still counts as a miss |
+| The performance bonus | **50 coins, plus 25 for every full 5% of CN past 125%**: 130% pays 75, 140% pays 125, 150% pays 175. **Every** such good lift pays, on top of all other bonuses. Paid at the end of the meet, only with a total. [PROVISIONAL] numbers, `CoinConfig.LocalMeet` |
+| Where | Local meets and up. The Mock Meet also allows it, so it never forces a pass, but pays no coins, as it pays none anywhere |
+| Not for | Computer lifters, warm-up racks and gym racks, which stay at 125% |
+
+This changes the "40-125% of CN" range in §29.10 and §33.3b for real lifters at meets only.
+
+**For later, when meets make lifters wait their turn (user, 2026-11-06, not built):** meets with real
+turns, where you wait for other players, get a seat. After a lift the lifter walks back and **sits
+down on a bench** to wait. When their turn comes they **get up, start chalking up and choose their
+attempt**, as above. Today everyone lifts at once, so nobody waits long enough to sit.
 
 > **Built 2026-11-05:** client `MeetLiftMoment`, `MeetSoundController.expectRoar`, `stakesFor`
 > and `crowdBehind` in `LocalMeetService`, settings in `LocalMeetConfig.LiftMoment` and

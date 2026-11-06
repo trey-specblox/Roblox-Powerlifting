@@ -188,6 +188,14 @@ export type Platform = {
 	stageLight: SurfaceLight?,
 	-- Where the coach stands: at the doorway the lifter walks out from (GAME_DESIGN §37.5).
 	coachSpot: Vector3,
+	-- At the doorway, watching the lift; behind or in front of the lifter while they chalk up (floor points, facing).
+	coachDoorSpot: CFrame,
+	coachBackSpot: CFrame,
+	coachFrontSpot: CFrame,
+	-- The chalk stand (floor point, its front to the room), the middle of the group round it, the way into the room.
+	chalkStandSpot: CFrame,
+	chalkCentre: Vector3,
+	chalkOut: Vector3,
 	-- The rack, chairs and light box: taken away while the awards stage stands.
 	gear: Folder,
 	-- The referees and coach while a meet runs (cleared after it).
@@ -555,6 +563,7 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 		-- Through the doorway, along behind the platform to its middle, then straight in to the bar (the rack faces
 		-- the entrance, user 2026-11-01): onto the platform square across its back edge. The last stretch, to the
 		-- lift's own spot at the rack, is MeetLiftAnimation.approachFor.
+		local chalk = LocalMeetConfig.Chalk
 		local walkOut = {
 			centre + Vector3.new(doorX, 0, Z_BACK + 1),
 			centre + Vector3.new(doorX, 0, Z_BACK - 3),
@@ -564,7 +573,8 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			index = index,
 			-- Facing the rack (and through it the head referee).
 			liftSpot = CFrame.lookAt(liftAt, liftAt - Vector3.zAxis),
-			waitSpot = CFrame.lookAt(waitAt, waitAt - Vector3.zAxis),
+			-- Facing their chalk stand (further from the doorway, along the wall).
+			waitSpot = CFrame.lookAt(waitAt, waitAt - Vector3.xAxis * side),
 			walkOut = walkOut,
 			rack = gear:FindFirstChild("CompetitionRack") :: Model?,
 			privateTags = {},
@@ -574,6 +584,15 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			stageLight = can:FindFirstChildOfClass("SurfaceLight"),
 			-- Beside the doorway on the platform's side, against the back wall, clear of the walk.
 			coachSpot = centre + Vector3.new(doorX - side * 2.5, 0, Z_BACK - 0.8),
+			coachDoorSpot = CFrame.lookAt(centre + Vector3.new(doorX - side * 2.5, 0, Z_BACK - 0.8),
+				Vector3.new(liftAt.X, centre.Y, liftAt.Z)),
+			coachBackSpot = CFrame.lookAt(waitAt + Vector3.xAxis * side * chalk.CoachBehindStuds, waitAt),
+			coachFrontSpot = CFrame.lookAt(waitAt - Vector3.xAxis * side * chalk.CoachFrontAheadStuds
+				- Vector3.zAxis * chalk.CoachFrontSideStuds, waitAt),
+			chalkStandSpot = CFrame.lookAt(waitAt - Vector3.xAxis * side * chalk.StandAheadStuds,
+				waitAt - Vector3.xAxis * side * chalk.StandAheadStuds + Vector3.zAxis),
+			chalkCentre = waitAt - Vector3.xAxis * side * 0.2 + Vector3.new(0, 2.8, 0),
+			chalkOut = Vector3.zAxis,
 			gear = gear,
 			staff = staff,
 			coachLine = nil,
@@ -637,7 +656,7 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 	local scoreboard = wallBoard("Scoreboard", "MeetBoard", "MeetBoard_Screen", 1, Vector3.new(-hx + 0.06, 0, 0),
 		Vector3.xAxis, Vector3.new(-hx, 18, -27), "LOCAL MEET", { "Sign up at the desk", "A meet every 10 minutes" }, "star", 30)
 	local banner = wallBoard("Banner", "MeetBanner", "MeetBanner_Cloth", 1, Vector3.new(hx, 0, 0), -Vector3.xAxis,
-		Vector3.new(hx, 16, -27), "LOCAL MEET", { "Everyone lifts together", "Best score wins" }, "dots", 30)
+		Vector3.new(hx, 16, -27), "LOCAL MEET", { "Everyone lifts together", "Most points win" }, "dots", 30)
 
 	-- ---------------------------------------------------------------- the lobby
 	-- The sign-up desk right by the doors, facing whoever walks in: MockMeet_01's desk with its monitor.
@@ -951,6 +970,13 @@ function LocalMeetVenue.staffPlatform(platform: Platform)
 		end
 	end
 	platform.coachLine = MeetFigures.build(platform.staff, "Coach", platform.coachSpot, liftAt)
+	-- Their chalk stand in the warm-up room (one mesh reused; decor, and only on platforms in use).
+	local stand = RoomProps.propCopy("MeetChalkStand", 1)
+	if stand then
+		stand.Name = "ChalkStand"
+		stand:PivotTo(platform.chalkStandSpot)
+		stand.Parent = platform.staff
+	end
 	-- The three spotters, each a different skin tone; rackFor stands them for the lift.
 	local skins = LocalMeetConfig.ComputerLifters.SkinColours
 	for index = 1, #SPOTTER_ROLES do
@@ -1061,6 +1087,12 @@ function LocalMeetVenue.standSpotters(platform: Platform, lift: string?)
 			spotter.Parent = nil
 		end
 	end
+end
+
+-- The platform's coach, while a meet runs and they have one.
+function LocalMeetVenue.coachFigure(platform: Platform): Model?
+	local coach = platform.staff:FindFirstChild("Coach")
+	return if coach and coach:IsA("Model") then coach else nil
 end
 
 -- What the platform's coach says; nil hides it.

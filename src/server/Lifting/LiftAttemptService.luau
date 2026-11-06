@@ -541,7 +541,9 @@ function createAttempt(player: Player, liftName: string, requestedPercent: numbe
 	if weightKg ~= nil then
 		percent = weightKg / forecastedMax
 		local e = 1e-6
-		if percent < LiftAttemptConfig.MinimumAttemptPercent - e or percent > LiftAttemptConfig.MaximumAttemptPercent + e then
+		-- A meet may go past the normal limit (the meet's own AttemptChoice check says who may).
+		local ceiling = if isCompetition then LiftAttemptConfig.MeetCeilingPercent else LiftAttemptConfig.MaximumAttemptPercent
+		if percent < LiftAttemptConfig.MinimumAttemptPercent - e or percent > ceiling + e then
 			return false, string.format("%.1f kg is outside the allowed range of the Competition Number", weightKg)
 		end
 		attemptWeightKg = weightKg

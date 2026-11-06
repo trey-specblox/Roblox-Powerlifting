@@ -113,43 +113,13 @@ MeetLevelConfig.Ladder = {
 }
 
 --[[
-	SCORE TOTALS (user, 2026-11-01): the made-up reference Total for each
-	weight class that a Local or Regional meet scores against
-	(Score = Total / ScoreTotals[class], MeetPlacing). Evenly spaced: each
-	class is about 8% above the one below, from 670 kg (59 kg) to 1150 kg
-	(120+ kg), so no class scores more easily than its neighbours. Even
-	percentage steps, not even kg steps, because strength grows by about the
-	same percentage per class (bodyweight^(2/3)); even kg steps would favour
-	the heavy classes. Separate from ReferenceRecordConfig's real records,
-	which keep driving difficulty and prestige. State and Nationals may get
-	their own table later. Labels must match WeightClassConfig exactly.
+	POINTS (user, 2026-11-06, GAME_DESIGN §37.4): every meet against other players
+	ranks by IPF GL points, in place of the old % of a made-up class Total:
+		points = total x 100 / (A - B x e^(-C x bodyweight))
+	One set of the real numbers for everyone (the IPF's men's raw ones, user's pick): the
+	game has no men's or women's tables, and no equipped lifting.
 ]]
-MeetLevelConfig.ScoreTotals = {
-	["59 kg"] = 670,
-	["66 kg"] = 725,
-	["74 kg"] = 780,
-	["83 kg"] = 845,
-	["93 kg"] = 915,
-	["105 kg"] = 985,
-	["120 kg"] = 1065,
-	["120+ kg"] = 1150,
-} :: { [string]: number }
-
--- Startup check: one positive score Total per weight class, nothing else (a missing class would leave its
--- lifters with no score and no place).
-do
-	local WeightClassConfig = require(script.Parent:WaitForChild("WeightClassConfig"))
-	local validLabels: { [string]: boolean } = {}
-	for _, class in ipairs(WeightClassConfig.Classes) do
-		validLabels[class.label] = true
-		local value = MeetLevelConfig.ScoreTotals[class.label]
-		assert(typeof(value) == "number" and value > 0,
-			string.format("[MeetLevelConfig] ScoreTotals is missing a positive Total for the %s class", class.label))
-	end
-	for label in pairs(MeetLevelConfig.ScoreTotals) do
-		assert(validLabels[label], string.format("[MeetLevelConfig] ScoreTotals has unknown weight class %q", label))
-	end
-end
+MeetLevelConfig.Points = { A = 1199.72839, B = 1025.18162, C = 0.00921 }
 
 -- The ladder points for finishing an official meet at `level` in `place` (nil = no top 3 place), with
 -- `perfect` = every attempt a good lift.

@@ -41,6 +41,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local LiftAttemptConfig = require(Shared:WaitForChild("Config"):WaitForChild("LiftAttemptConfig"))
 local ProgressionConfig = require(Shared:WaitForChild("Config"):WaitForChild("ProgressionConfig"))
 local AttemptRules = require(Shared:WaitForChild("Meet"):WaitForChild("AttemptRules"))
 local ResourceRegeneration = require(script.Parent:WaitForChild("ResourceRegeneration"))
@@ -145,7 +146,9 @@ function MeetCnAllowance.settle(resource: Resource, nowUnix: number, lift: strin
 	local raisedTo = cnKg
 	for _, attempt in ipairs(history) do
 		local weight = attempt.weightKg
-		if isFinite(weight) and weight > raisedTo + 1e-6 then
+		-- A lift over the normal limit never touches CN or its allowance, made or missed (GAME_DESIGN §37.5).
+		local overLimit = isFinite(weight) and weight > cnKg * LiftAttemptConfig.MaximumAttemptPercent + 1e-6
+		if isFinite(weight) and not overLimit and weight > raisedTo + 1e-6 then
 			-- What going from what is raised so far to this weight costs, in days.
 			local wantDays = (weight - raisedTo) / cnKg / daily
 			if attempt.result == "GoodLift" then

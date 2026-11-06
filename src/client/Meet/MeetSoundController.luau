@@ -154,6 +154,11 @@ local function play(name: string, at: Vector3, volume: number?)
 	startVoice(state, config, at, isOwn, scale)
 end
 
+-- A sound this player's own screen starts itself (MeetChalkShot).
+function MeetSoundController.playAt(name: string, at: Vector3)
+	play(name, at)
+end
+
 -- The player's own lift was just judged (MeetLiftMoment): the crowd's answer, due in a moment, is louder than usual.
 function MeetSoundController.expectRoar()
 	roarUntil = os.clock() + MeetSoundConfig.LiftCrowd.RoarWindowSeconds

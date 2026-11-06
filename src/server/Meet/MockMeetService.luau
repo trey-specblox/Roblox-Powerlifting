@@ -167,19 +167,19 @@ end
 
 -- The range of weights the lifter may declare on this lift: the Competition Number's percentage bounds.
 local function bounds(visit: Visit, lift: string): (number, number)
-	return AttemptChoice.bounds(visit.competitionNumber[lift], MockMeetConfig.WeightStepKg)
+	return AttemptChoice.meetBounds(visit.competitionNumber[lift], MockMeetConfig.WeightStepKg)
 end
 
 -- The lightest legal next weight and the default, or nil when the attempt is passed.
 local function nextWeights(visit: Visit, lift: string): (number?, number?)
 	return AttemptChoice.nextWeights(visit.competitionNumber[lift], visit.lifts[lift].history, MockMeetConfig.WeightStepKg,
-		MockMeetConfig.OpenerSuggestionPercent)
+		MockMeetConfig.OpenerSuggestionPercent, true)
 end
 
 -- Checks a weight the client asked for. Returns the weight, or nil and a reason to show.
 local function checkChoice(visit: Visit, lift: string, requested: unknown): (number?, string?)
 	return AttemptChoice.check(visit.competitionNumber[lift], visit.lifts[lift].history, MockMeetConfig.WeightStepKg,
-		requested)
+		requested, true)
 end
 
 -- ---------------------------------------------------------------- what the client and the board see
@@ -298,8 +298,14 @@ local function saveMeetResult(player: Player, visit: Visit, result: MeetTotal.Me
 	local totalOutcome: ProfileOperations.ScaleRaiseOutcome = "Rejected"
 	PlayerDataService.update(player, function(data)
 		for _, lift in ipairs(MeetConfig.LiftOrder) do
-			scaleOutcomes[lift], scaleKgs[lift] =
-				ProfileOperations.raiseCompetitionScale(data, visit.classLabel, lift, result.best[lift])
+			-- A lift over the normal limit counts for the total, not for Scale (GAME_DESIGN §37.5).
+			local provenKg = AttemptChoice.bestWithinLimit(visit.competitionNumber[lift], visit.lifts[lift].history)
+			if provenKg then
+				scaleOutcomes[lift], scaleKgs[lift] =
+					ProfileOperations.raiseCompetitionScale(data, visit.classLabel, lift, provenKg)
+			else
+				scaleOutcomes[lift] = "Unchanged"
+			end
 		end
 		totalOutcome = ProfileOperations.raiseBestTotal(data, visit.classLabel, totalKg)
 	end)

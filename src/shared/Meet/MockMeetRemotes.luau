@@ -96,25 +96,35 @@ export type MeetState = {
 	stakesLevel: number?,
 	-- (Local meet, Result) what a good lift just did, shown in place of GOOD LIFT ("NEW BEST!"), when anything.
 	moment: string?,
+	-- (Local meet, Choose and the Waiting after it) the lifter is chalking up: ChalkView (client MeetChalkShot).
+	chalk: ChalkView?,
 }
+
+-- Where the lifter's chalking up happens: the middle of the group, the way out into the room, and their coach.
+export type ChalkView = { at: Vector3, out: Vector3, coach: Model? }
 
 --[[
 	THE RACE (Local meet, user 2026-11-01: "It needs to be clear what you need
 	to do before clicking that confirm weight button"). Sent with Choose, so
 	the panel can say in plain kilograms what a weight does, without anyone
-	working out scores. Measured against everyone's best lifts SO FAR (the
-	others lift this round too).
-		place     the lifter's place right now (nil: no score yet)
-		rivals    everyone else with a score: their name, and the lightest
-		          weight THIS attempt that puts the lifter ahead of them if
-		          made (0 = already ahead whatever happens)
-		mustMake  true when missing this attempt means a bomb-out
+	working out scores. Measured against everyone's best lifts so far PLUS the
+	weight they have declared this round, as if they make it (user 2026-11-06:
+	"it is telling you that you need a 25kg bench to take the lead again";
+	counting only finished lifts said "needed 2.5 kg" at the start of a lift).
+		place        the lifter's place right now (nil: no score yet)
+		rivals       everyone else with a score or a declared weight: their name,
+		             the weight they declared this round (nil: none yet), and the
+		             lightest weight THIS attempt that puts the lifter ahead of them
+		             if both are made (0 = ahead even if the lifter misses)
+		mustMake     true when missing this attempt means a bomb-out
+		lastAttempt  true on the meet's last attempt: the lead is the win
 ]]
-export type RaceRival = { name: string, needKg: number }
+export type RaceRival = { name: string, needKg: number, declaredKg: number? }
 export type RaceView = {
 	place: number?,
 	rivals: { RaceRival },
 	mustMake: boolean,
+	lastAttempt: boolean,
 }
 
 --[[

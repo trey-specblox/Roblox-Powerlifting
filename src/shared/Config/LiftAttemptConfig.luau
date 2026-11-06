@@ -55,6 +55,14 @@ local LiftAttemptConfig = {}
 ]]
 LiftAttemptConfig.MinimumAttemptPercent = 0.40
 LiftAttemptConfig.MaximumAttemptPercent = 1.25
+--[[
+	OVER THE LIMIT (GAME_DESIGN §37.5, user 2026-11-06): at a meet a lifter may go past
+	MaximumAttemptPercent, up to this. A good lift there counts for the total and the
+	place and pays coins (CoinConfig.overLimitCoins), but raises no Competition Number,
+	Competition Scale, official best or gym record; a miss costs no meet allowance. Not
+	unlimited, because difficulty hardly rises past 120% (IntensityConfig).
+]]
+LiftAttemptConfig.MeetCeilingPercent = 1.50
 
 --[[
 	Default pause between one phase passing and the next being presented.
@@ -218,6 +226,10 @@ assert(
 	LiftAttemptConfig.MinimumAttemptPercent > 0
 		and LiftAttemptConfig.MinimumAttemptPercent < LiftAttemptConfig.MaximumAttemptPercent,
 	"[LiftAttemptConfig] attempt percentage bounds are inverted"
+)
+assert(
+	LiftAttemptConfig.MeetCeilingPercent >= LiftAttemptConfig.MaximumAttemptPercent,
+	"[LiftAttemptConfig] the meet's ceiling is below the normal limit"
 )
 
 return LiftAttemptConfig

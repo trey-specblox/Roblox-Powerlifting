@@ -14,7 +14,7 @@
 		             button and a SPECTATE button that teleports there, and how far a
 		             meet could still raise each lift's CN; hidden while lifting
 		             (the meet screen's title is there)
-		right        the STANDINGS: place, name, class, subtotal or total, score;
+		right        the STANDINGS: place, name, class, subtotal or total, points, and the player's own row and gaps;
 		             on the left in the card's place while lifting (the meet
 		             screen's scorecard is on the right)
 
@@ -22,6 +22,7 @@
 	panel at its centre).
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -58,6 +59,18 @@ local LEFT = 172
 local STANDINGS_TOP_RIGHT = 110
 local ROWS = 8
 local ROW_HEIGHT = 30
+local STANDINGS_WIDTH = 470
+-- Where the first row starts (under the title tag and the column heads), and the room for the player's own line under the last.
+local ROWS_TOP = 44
+local FOOT_HEIGHT = 28
+-- The columns, across the panel (user, 2026-11-06: place, name, weight class, total, points).
+local COLUMN = {
+	placeWidth = 42,
+	name = 62, nameWidth = 176,
+	class = 240, classWidth = 62,
+	total = 304, totalWidth = 62,
+	points = 370, pointsWidth = 84,
+}
 -- The MEETS list. A phone shrinks every screen to under half size, so its buttons are drawn a little larger to be tappable.
 local ON_PHONE = UIStyle.isTouchOnly()
 local LIST_SCALE = if ON_PHONE then 1.15 else 1
@@ -130,16 +143,16 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 	end
 
 	-- ------------------------------------------------ the STANDINGS
-	local standingsSize = Vector2.new(400, 46 + ROWS * ROW_HEIGHT)
+	local standingsSize = Vector2.new(STANDINGS_WIDTH, ROWS_TOP + ROWS * ROW_HEIGHT + FOOT_HEIGHT + 8)
 	local standingsHolder, standingsBody = UIStyle.panel(gui, "Standings",
 		UDim2.new(1, -24 - standingsSize.X, 0, STANDINGS_TOP_RIGHT), UDim2.fromOffset(standingsSize.X, standingsSize.Y))
 	local standingsTag = UIStyle.titleTag(standingsHolder, "Tag", "STANDINGS", UDim2.fromOffset(-14, -24),
 		UDim2.fromOffset(260, 40), nil, "corner")
 	-- On a phone it starts closed: the + opens it.
 	UIStyle.collapsible(standingsHolder, not ON_PHONE)
-	-- The box is only as tall as its rows, so an empty one doesn't fill the screen.
-	local function fitStandings(rowCount: number)
-		local height = UDim2.new(1, 0, 0, 46 + math.max(rowCount, 1) * ROW_HEIGHT)
+	-- The box is only as tall as its rows, and the line about the player's own place.
+	local function fitStandings(rowCount: number, hasYouLine: boolean)
+		local height = UDim2.new(1, 0, 0, ROWS_TOP + math.max(rowCount, 1) * ROW_HEIGHT + (if hasYouLine then FOOT_HEIGHT else 0) + 8)
 		for _, name in ipairs({ "Body", "Back" }) do
 			local piece = standingsHolder:FindFirstChild(name)
 			if piece and piece:IsA("GuiObject") then
@@ -147,22 +160,43 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 			end
 		end
 	end
-	fitStandings(0)
-	local empty = UIStyle.label(standingsBody, "Empty", UDim2.fromOffset(18, 30), UDim2.new(1, -36, 0, 20), C.muted)
+	fitStandings(0, false)
+	local empty = UIStyle.label(standingsBody, "Empty", UDim2.fromOffset(18, ROWS_TOP), UDim2.new(1, -36, 0, 20), C.muted)
 	empty.Text = "No meet in this hall right now."
-	local rows: { { place: TextLabel, name: TextLabel, detail: TextLabel, score: TextLabel } } = {}
-	for index = 1, ROWS do
-		local y = 26 + (index - 1) * ROW_HEIGHT
-		local place = UIStyle.label(standingsBody, "Place_" .. index, UDim2.fromOffset(16, y), UDim2.fromOffset(46, 22), C.yellow,
-			UIStyle.heading())
-		local name = UIStyle.label(standingsBody, "Name_" .. index, UDim2.fromOffset(66, y), UDim2.fromOffset(130, 22), C.white,
-			UIStyle.heading())
-		local detail = UIStyle.label(standingsBody, "Detail_" .. index, UDim2.fromOffset(200, y + 3), UDim2.fromOffset(110, 16),
-			C.muted)
-		local score = UIStyle.label(standingsBody, "Score_" .. index, UDim2.fromOffset(312, y), UDim2.fromOffset(72, 22), C.white,
-			UIStyle.heading(), Enum.TextXAlignment.Right)
-		rows[index] = { place = place, name = name, detail = detail, score = score }
+	-- The columns: place, name, weight class, total, points (user, 2026-11-06).
+	local function columnHead(name: string, x: number, width: number, align: Enum.TextXAlignment?)
+		local head = UIStyle.label(standingsBody, "Head_" .. name, UDim2.fromOffset(x, 26), UDim2.fromOffset(width, 14), C.muted,
+			UIStyle.heading(), align)
+		head.Text = name
+		return head
 	end
+	local heads = { columnHead("CLASS", COLUMN.class, COLUMN.classWidth, Enum.TextXAlignment.Center),
+		columnHead("TOTAL", COLUMN.total, COLUMN.totalWidth, Enum.TextXAlignment.Right),
+		columnHead("POINTS", COLUMN.points, COLUMN.pointsWidth, Enum.TextXAlignment.Right) }
+	local rows: { { back: Frame, place: TextLabel, name: TextLabel, class: TextLabel, total: TextLabel, points: TextLabel } } = {}
+	for index = 1, ROWS do
+		local y = ROWS_TOP + (index - 1) * ROW_HEIGHT
+		-- The player's own row stands out, so they can find themselves at a glance.
+		local back = UIStyle.frame(standingsBody, "RowBack_" .. index, UDim2.fromOffset(8, y - 3), UDim2.new(1, -16, 0, ROW_HEIGHT - 2),
+			C.yellow)
+		back.BackgroundTransparency = 0.82
+		back.Visible = false
+		UIStyle.stroke(back, C.yellow, 1, 0.2)
+		local place = UIStyle.label(standingsBody, "Place_" .. index, UDim2.fromOffset(16, y), UDim2.fromOffset(COLUMN.placeWidth, 22), C.yellow,
+			UIStyle.heading())
+		local name = UIStyle.label(standingsBody, "Name_" .. index, UDim2.fromOffset(COLUMN.name, y), UDim2.fromOffset(COLUMN.nameWidth, 22), C.white,
+			UIStyle.heading())
+		local class = UIStyle.label(standingsBody, "Class_" .. index, UDim2.fromOffset(COLUMN.class, y + 3), UDim2.fromOffset(COLUMN.classWidth, 16),
+			C.muted, nil, Enum.TextXAlignment.Center)
+		local total = UIStyle.label(standingsBody, "Total_" .. index, UDim2.fromOffset(COLUMN.total, y), UDim2.fromOffset(COLUMN.totalWidth, 22), C.white,
+			UIStyle.heading(), Enum.TextXAlignment.Right)
+		local points = UIStyle.label(standingsBody, "Points_" .. index, UDim2.fromOffset(COLUMN.points, y), UDim2.fromOffset(COLUMN.pointsWidth, 22),
+			C.white, UIStyle.heading(), Enum.TextXAlignment.Right)
+		rows[index] = { back = back, place = place, name = name, class = class, total = total, points = points }
+	end
+	-- Where the player stands, in points, against the lifters either side of them.
+	local youLine = UIStyle.label(standingsBody, "You", UDim2.fromOffset(16, ROWS_TOP), UDim2.new(1, -32, 0, 20), C.yellow, UIStyle.heading())
+	youLine.Visible = false
 
 	local ui = {} :: Ui
 	ui.gui = gui
@@ -244,41 +278,86 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 		end
 	end
 
+	-- "YOU: 2ND  ·  1.25 BEHIND THEO (CPU)  ·  0.80 AHEAD OF NADIA (CPU)".
+	local function youText(all: { LocalMeetRemotes.StandingRow }, index: number): string
+		local mine = all[index]
+		if mine.status == "Bombed" then
+			return "YOU: BOMBED OUT, NO POINTS"
+		elseif mine.status == "Withdrawn" then
+			return "YOU: WITHDRAWN"
+		end
+		local points = mine.points
+		if points == nil then
+			return "YOU: NO POINTS YET"
+		end
+		local parts = { "YOU: " .. string.upper(placeText(mine.place or index)) }
+		local above, below = all[index - 1], all[index + 1]
+		if above and above.points then
+			table.insert(parts, string.format("%.2f BEHIND %s", above.points - points, string.upper(above.name)))
+		end
+		if below and below.points then
+			table.insert(parts, string.format("%.2f AHEAD OF %s", points - below.points, string.upper(below.name)))
+		end
+		return table.concat(parts, "  ·  ")
+	end
+
 	ui.drawStandings = function(standings: LocalMeetRemotes.Standings?)
-		fitStandings(if standings then #standings.rows else 0)
+		local function clearRow(row: { back: Frame, place: TextLabel, name: TextLabel, class: TextLabel, total: TextLabel, points: TextLabel })
+			row.back.Visible = false
+			row.place.Text, row.name.Text, row.class.Text, row.total.Text, row.points.Text = "", "", "", "", ""
+		end
 		if standings == nil then
+			fitStandings(0, false)
 			standingsTag.Text = "STANDINGS"
 			empty.Visible = true
+			youLine.Visible = false
+			for _, head in ipairs(heads) do
+				head.Visible = false
+			end
 			for _, row in ipairs(rows) do
-				row.place.Text, row.name.Text, row.detail.Text, row.score.Text = "", "", "", ""
+				clearRow(row)
 			end
 			return
 		end
 		local heading = if standings.final then "FINAL STANDINGS" else standings.heading
 		standingsTag.Text = if standings.meetIndex then string.format("MEET %d  ·  %s", standings.meetIndex, heading) else heading
 		empty.Visible = #standings.rows == 0
+		for _, head in ipairs(heads) do
+			head.Visible = #standings.rows > 0
+		end
+		local myIndex: number? = nil
+		local me = Players.LocalPlayer.UserId
 		for index, row in ipairs(rows) do
 			local data = standings.rows[index]
 			if data == nil then
-				row.place.Text, row.name.Text, row.detail.Text, row.score.Text = "", "", "", ""
+				clearRow(row)
 				continue
 			end
+			local own = data.userId == me
+			if own then
+				myIndex = index
+			end
+			row.back.Visible = own
 			row.place.Text = if data.place then placeText(data.place) else "—"
 			row.name.Text = data.name
-			local parts = {}
-			for _, lift in ipairs(MeetConfig.LiftOrder) do
-				table.insert(parts, if data.best[lift] then kgText(data.best[lift]) else "—")
-			end
-			row.detail.Text = string.format("%s  ·  %s", data.classLabel, table.concat(parts, "/"))
+			row.name.TextColor3 = if own then C.yellow else C.white
+			row.class.Text = data.classLabel
+			row.total.Text = kgText(data.subtotalKg)
 			if data.status == "Bombed" then
-				row.score.Text, row.score.TextColor3 = "BOMB", C.red
+				row.points.Text, row.points.TextColor3 = "BOMB", C.red
 			elseif data.status == "Withdrawn" then
-				row.score.Text, row.score.TextColor3 = "OUT", C.muted
-			elseif data.scorePercent then
-				row.score.Text, row.score.TextColor3 = string.format("%.1f%%", data.scorePercent), C.white
+				row.points.Text, row.points.TextColor3 = "OUT", C.muted
+			elseif data.points then
+				row.points.Text, row.points.TextColor3 = string.format("%.2f", data.points), if own then C.yellow else C.white
 			else
-				row.score.Text, row.score.TextColor3 = kgText(data.subtotalKg), C.muted
+				row.points.Text, row.points.TextColor3 = "—", C.muted
 			end
+		end
+		fitStandings(#standings.rows, myIndex ~= nil)
+		youLine.Visible = myIndex ~= nil
+		if myIndex then
+			youLine.Text = youText(standings.rows, myIndex)
+			youLine.Position = UDim2.fromOffset(16, ROWS_TOP + #standings.rows * ROW_HEIGHT + 4)
 		end
 	end
 
