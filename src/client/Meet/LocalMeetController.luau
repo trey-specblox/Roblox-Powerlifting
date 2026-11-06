@@ -35,7 +35,7 @@ local LocalMeetAwards = require(script.Parent:WaitForChild("LocalMeetAwards"))
 local LocalMeetWarmUpUI = require(script.Parent:WaitForChild("LocalMeetWarmUpUI"))
 local MeetLiftMoment = require(script.Parent:WaitForChild("MeetLiftMoment"))
 local MeetChalkShot = require(script.Parent:WaitForChild("MeetChalkShot"))
-local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local MeetsTab = require(script.Parent:WaitForChild("MeetsTab"))
 
 local LocalMeetController = {}
 
@@ -96,13 +96,19 @@ function LocalMeetController.start()
 		end
 	end
 
+	-- Elsewhere in the game, the MEETS tab can open the list (user 2026-11-06).
+	local listOpen = false
+	local tab: MeetsTab.Tab
 	local function refresh()
 		local inVenue = player:GetAttribute(LocalMeetConfig.VenueAttribute) ~= nil
 		local lifting = player:GetAttribute(LocalMeetConfig.PlatformAttribute) ~= nil
 		if not inVenue then
-			lobby, standings = nil, nil
+			standings = nil
+		else
+			listOpen = false
 		end
-		ui.setMode(inVenue, lifting)
+		tab.setVisible(not inVenue)
+		ui.setMode(inVenue, lifting, listOpen)
 		ui.drawStandings(standings)
 		holdFooting(lifting)
 		if not lifting then
@@ -111,10 +117,16 @@ function LocalMeetController.start()
 			ui.setClearView(false)
 		end
 	end
+	tab = MeetsTab.build(function()
+		listOpen = not listOpen
+		if listOpen then
+			remotes.lobbyRequest:FireServer()
+		end
+		refresh()
+	end)
 	remotes.state.OnClientEvent:Connect(function(state: MockMeetRemotes.MeetState)
-		-- On a phone the weight choice needs the room too: it says where the lifter stands anyway.
-		ui.setClearView(state.phase == "Ready" or state.phase == "Lifting"
-			or (state.phase == "Choose" and UIStyle.isTouchOnly()))
+		-- The weight panel sits to the right now, so the standings stay beside it, on a phone too (user 2026-11-06).
+		ui.setClearView(state.phase == "Ready" or state.phase == "Lifting")
 	end)
 	player:GetAttributeChangedSignal(LocalMeetConfig.VenueAttribute):Connect(refresh)
 	player:GetAttributeChangedSignal(LocalMeetConfig.PlatformAttribute):Connect(refresh)
@@ -154,6 +166,22 @@ function LocalMeetController.start()
 		nextDraw = os.clock() + 0.25
 		ui.drawLobby(lobby, Workspace:GetServerTimeNow())
 	end)
+	-- The tab counts down to the meet the player is signed up for, once a second.
+	task.spawn(function()
+		while true do
+			local text: string? = nil
+			for _, meet in ipairs(if lobby then (lobby :: LocalMeetRemotes.LobbyState).meets else {}) do
+				if meet.signedUp then
+					local seconds = math.max(0, math.ceil(meet.nextStartAt - Workspace:GetServerTimeNow()))
+					text = string.format("MEET %d  %d:%02d", meet.index, seconds // 60, seconds % 60)
+				end
+			end
+			tab.setCountdown(text)
+			task.wait(1)
+		end
+	end)
+	-- The list and the countdown work from anywhere, so ask for them from the start.
+	remotes.lobbyRequest:FireServer()
 end
 
 return LocalMeetController

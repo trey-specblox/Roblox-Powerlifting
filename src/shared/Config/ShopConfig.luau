@@ -3,10 +3,10 @@
 	ShopConfig
 	Shared / Config
 
-	The Shop's catalogue (GAME_DESIGN.md 30.6, the money system's step 4):
-	cosmetic gear bought with coins. APPEARANCE ONLY: nothing here changes a
-	lift. The server reads the prices from here (never from a client); the
-	client reads the same list to draw the menu.
+	The gear's looks (GAME_DESIGN.md §35.12): what a crate piece can look like, and what
+	anyone who bought an item before crates still owns. NOTHING HERE IS FOR SALE any more
+	(user 2026-11-06: gear is unlocked through crates only), so `price` is only a record
+	of what an item cost. APPEARANCE ONLY: stats are on crate gear (GearStatsConfig).
 
 	Each item is one of the Shop's Blender gear models (ServerStorage.
 	PropTemplates.ShopGear_01, every logo says CENTRAL) in its own colours:
@@ -19,9 +19,8 @@
 		MannequinSinglet  Black (the body), Red (side panels), Trim, Patch,
 		                  Shorts, ShortsRed (the stand and form stay)
 
-	[PROVISIONAL] prices, about 150 to 1,500 coins (GAME_DESIGN 30.6). A new
-	item is one more line; an item's `id` is saved in players' inventories,
-	so never rename or reuse one.
+	A new look is one more line; an item's `id` is saved in players' inventories, so
+	never rename or reuse one.
 ]]
 
 local ShopConfig = {}
@@ -39,7 +38,7 @@ export type Item = {
 ShopConfig.CounterTag = "ShopCounter"
 ShopConfig.PromptDistanceStuds = 8
 ShopConfig.PromptHoldSeconds = 0.3
--- A purchase is refused unless the player stands this close to the counter.
+-- A crate is refused unless the player stands this close to the counter.
 ShopConfig.MaxBuyDistanceStuds = 24
 
 -- The menu's tabs, in order.

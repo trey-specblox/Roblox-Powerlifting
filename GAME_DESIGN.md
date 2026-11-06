@@ -2121,7 +2121,7 @@ multiplayer-only, not because progression requires it.
     The server checks every teleport: not during a lift, on a machine or posed at a
     rack, in the private Mock Meet room, or while lifting in a running Local meet
     (LEAVE first); a 2-second wait between teleports. Teleporting out of the Local
-    meet venue takes the player off its sign-up list, like its EXIT. New places are
+    meet venue keeps the player on any sign-up list, like its EXIT (changed by the user 2026-11-06, §37.5 "Sign up from anywhere"). New places are
     one line in `TeleportConfig`.
 - **Meet first, rewards next.** The first build is the whole meet: weigh-in (class
   locked, §32.7), attempt choice, the 9 lifts with the existing minigames, judges'
@@ -2744,6 +2744,9 @@ Equipment reward chance and/or reward quality may scale from:
 
 Exact item pools, rarity tiers, probabilities, and equipment effects are TBD.
 
+> **DECIDED (user, 2026-11-06, §35.12):** normal stat gear comes **from crates only**, not as a meet reward. Meets drop only
+> DripStones and the super-rare suits, at the end of the meet, as above.
+
 Going 9/9 should generally be more rewarding than performing poorly, but players should
 not be encouraged to intentionally choose trivial attempts merely to farm item rolls.
 
@@ -2795,6 +2798,7 @@ and players a reason to enter meets.
     full bonus; beating **your own** record pays a **small bonus** (user's choice,
     about a quarter); an empty spot pays none; one bonus per lift (a Total record
     broken by the same lift is not paid again).
+- **[CHANGED BY THE USER, 2026-11-06: gear is no longer sold. Crates are the only way to get it, §35.12.]**
 - **What coins buy first:** **cosmetic gear in the Shop** (belts, knee sleeves,
   wrist wraps, singlets in colours and designs; **appearance only**, no lifting
   stats). Equipment with real stats (§30.4, §19) stays undecided. No entry fees yet.
@@ -5398,7 +5402,7 @@ Open questions, for the ladder's own design (**answered in §35.8**, except Nati
 - **Rewards per step:** prize pot, top-3 bonuses, and later item drops (§30.4).
 - **Per step:** the CN raise rules (§33.3b) and records.
 
-### 35.5 DripStone: [IDEA; needs a decision first]
+### 35.5 DripStone: [DESIGNED IN §35.12, user 2026-11-06; kept for its reasoning]
 
 **A rare item that combines two pieces of gear:** the **look** of one (for
 example a singlet with a design the player loves) with the **stat buff** of
@@ -5607,7 +5611,7 @@ keep meeting stronger lifters.
 >   shows "QUALIFIED FOR NATIONALS".
 > - **Qualifying unlocks nothing yet:** Nationals itself is step 3.
 
-### 35.9 Shop crates with stat rolls: [IDEA from the user, 2026-10-31; needs a design]
+### 35.9 Shop crates with stat rolls: [DESIGNED IN §35.12, user 2026-11-06; kept for its reasoning]
 
 **Crates at the Shop.** Opening one is two rolls:
 
@@ -5653,7 +5657,7 @@ Open questions:
 - Whether a stat item can be sold or rerolled.
 - How stats show in MY GEAR and on the Shop card.
 
-### 35.10 Super-rare equipment: squat suit, bench shirt, deadlift suit: [IDEA from the user, 2026-10-31]
+### 35.10 Super-rare equipment: squat suit, bench shirt, deadlift suit: [DESIGNED IN §35.12, user 2026-11-06; the drop chances below stand]
 
 **The rarest items in the game:** the supportive gear of equipped
 powerlifting:
@@ -5692,9 +5696,94 @@ The ladder build continues first: step 2 (ladder points and seasons), then
 Nationals. Crates (§35.9) and the super-rare equipment (§35.10) both need **one
 shared design session for gear stats**: the stat list, the size of each bonus,
 the caps, and how stats change the lifting difficulty. That session also
-settles DripStone (§35.5). Building crates comes after it. The equipment's drop
+settles DripStone (§35.5). **Held 2026-11-06: §35.12.** Building crates comes after it. The equipment's drop
 chances by meet level are ready to plug in once Nationals, Worlds and
 Sheffield meets exist.
+
+### 35.12 Gear stats, crates, DripStone and rare suits: [APPROVED by the user, 2026-11-06, picked from options; gear and crates built, DripStone and suits not yet]
+
+**Why it stays fair:** gear makes a lift easier to perform and technique faster to train. It never raises
+Competition Number: the modifier system has no way to touch it (`ModifierChannel`). Stats are never bought with
+Robux (§34.2): crates cost coins earned by playing, and the odds are always shown. Numbers are [PROVISIONAL].
+
+**This changes §30.6, and replaces buying (user, 2026-11-06: "remove the ability to buy knee sleeeves belts, wrist
+wraps, and singlets. i just want them to be able to unlock it through crates"):** belts, knee sleeves, wrist wraps and
+singlets can't be bought any more. **Crates are the only way to get gear, and every piece has stats.** The Shop sells
+only crates. What a player already bought stays theirs, wearable for its look, with no stats. Stats and looks are kept
+apart (§19), so the gear can be rebalanced without touching its models.
+
+**What gear does.** Each piece has two stats, set by its rarity:
+
+| Rarity | Crate odds | Technique bonus | Technique training speed | Scrap value |
+|---|---|---|---|---|
+| Common | 60% | +1 | +2% | 50 coins |
+| Uncommon | 25% | +1.5 | +3% | 100 coins |
+| Rare | 10% | +2 | +5% | 200 coins |
+| Epic | 4% | +3 | +7% | 400 coins |
+| Legendary | 1% | +4 | +10% | 800 coins |
+
+- **Technique bonus:** added to effective technique (10 to 99.5, §34), so minigames get easier. It can't pass the ceiling.
+- **Training speed:** technique training only, **never CN**, capped at **+25%** in total.
+- **Where it works:** everywhere you lift: meets, Mock Meets, warm-ups and practice.
+
+**Which piece helps which lift (like real lifting):**
+
+| Lift | Pieces that help | Most from a full Legendary set |
+|---|---|---|
+| Squat | Knee sleeves, belt, singlet | +12 |
+| Bench | Wrist wraps, belt, singlet | +12 |
+| Deadlift | Wrist wraps, belt, singlet | +12 |
+
+Training speed counts the pieces that help the lift being trained. (The first choice had the belt off bench and a
+smaller singlet, but that left bench with 2 pieces and no lift reaching +12, so the user picked this instead.)
+
+**Crates:**
+
+- **500 coins each**, sold at the Shop. Meets pay about 100 to 400, so roughly 2 meets per crate, and a Legendary takes
+  about 100 crates on average.
+- **One crate per item (user, 2026-11-06: "I want every item to have its own crate, like a belt crate, wrist wrap crate,
+  singlet crate, knee sleeve crate"):** the player chooses the crate, so they choose the item. This replaces the first of the
+  two rolls this section first approved, which picked the item at random. **What is left to chance is its rarity,** on the
+  same odds in every crate, and its look, from the Shop's existing looks for that item. All four costing the same is Claude's
+  choice, open to change: belts and singlets help all three lifts, wraps two and sleeves one, so they may need different prices.
+- **Every piece is its own item,** so there are no duplicates.
+- **Scrap:** any piece can be scrapped for the coins above. On average that returns about 99 coins per crate, so a
+  crate really costs about 400 and scrapping can't pay for more crates.
+- **Normal stat gear comes from crates only,** not as a meet reward (settles §30.4).
+- **Opening is a spinning reel (user, 2026-11-06, shown a CS:GO case opening: "remake our crate opening to have a animations
+  like that"):** gear cards race past a marker with a tick for each card, slow over about 5.5 seconds and stop on the prize; a
+  tap skips it. Our own look, with our gear on the cards and a bar in each card's rarity colour. **The reel is only a display:**
+  the server rolls and saves the piece before it starts, and the other cards are rolled on the same odds, so it never fakes a
+  near miss.
+- **The crate's intro, before the reel (user, 2026-11-06):** the crate drops onto a lifting platform with a thud, rattles, its
+  latches snap and its lid flies up, then a circle of light fills the panel and fades to show the reel, about 2 seconds, and the
+  same tap skips it. Each crate has its own colour and big lettering (user: "the difference is too subtle ... like CENTRAL
+  Belts"): CENTRAL over BELTS on navy, WRAPS on red, SINGLETS on teal, SLEEVES on charcoal.
+
+**DripStone** (§35.5): puts one piece's stats onto another piece's look, of the same item type.
+
+- A meet reward: about **5% for each of the top 3** at Regional meets and up.
+- The piece that gives its stats is **used up**, so stats can't be copied.
+
+**Rare suits** (§35.10, drop chances as listed there):
+
+- **Squat suit, bench shirt, deadlift suit:** **+15 technique on their one lift.** Each replaces the singlet while
+  worn, so on other lifts you lose the singlet's bonus. Stacks with other gear: up to +23 with Legendary belt and sleeves.
+- **Who rolls:** every real lifter who finishes with a total, once per meet. A drop is announced to the whole server.
+- **Records:** suit lifts **count for everything**, gym records and official bests included (user's pick; real
+  powerlifting keeps raw and equipped apart, and the user chose not to here).
+- **Normal gear** counts as raw, like belts and sleeves in real meets.
+
+**Built 2026-11-06 with Claude's choices, open to change:** a player holds at most **100 pieces**, and a full inventory has to scrap
+before opening another crate; a worn piece has to be taken off before it can be scrapped; the crate's model appears only in the
+Shop's opening intro, not standing in the gym. The deadlift's typing pull is pure player skill and ignores technique, so gear helps its lockout, not its pull.
+
+**Still to decide when it is built:** the DripStone screen; whether a piece being used up can be worn at the time; whether
+suits give any training speed; trading (no trading system exists).
+
+**To watch once it is live:** suits and Legendary sets on gym records, since a lucky drop could put a record out of
+others' reach; and the coins against crate prices. Each piece needs no new model unless it has a new look; the three
+suits each need a worn model made in Blender.
 
 ## 36. The State Championship: its own venue (user, 2026-11-01)
 
@@ -6493,6 +6582,20 @@ other bonuses"; numbers picked by the user from options):**
 | Not for | Computer lifters, warm-up racks and gym racks, which stay at 125% |
 
 This changes the "40-125% of CN" range in §29.10 and §33.3b for real lifters at meets only.
+
+**Sign up from anywhere (user, 2026-11-06: "I should be able to sign up, go do something else, then be
+automatically teleports to compete in my meet"):**
+
+- **A MEETS tab** on the left edge, outside the venue, opens the same list of five meets, with WATCH in
+  place of SPECTATE. Once signed up, the tab counts down: "MEET 3 0:45".
+- **Leaving the venue keeps the sign-up:** EXIT, the TELEPORT menu or dying. Only leaving the game or
+  pressing TAKE OFF removes it.
+- **15 seconds before the meet** a lifter elsewhere is told they are about to be taken there.
+- **At the start** the game brings them to the hall: off a training rack or cardio machine, and out of
+  a gym lift, none of which is worth missing a meet for.
+- **Someone in their Mock Meet stays there**, and stays on the list for the next meet, as does anyone
+  who could not be brought (dead at that moment, for example). They are told so.
+- After the meet they are still in the venue; EXIT takes them back to where they were.
 
 **For later, when meets make lifters wait their turn (user, 2026-11-06, not built):** meets with real
 turns, where you wait for other players, get a seat. After a lift the lifter walks back and **sits

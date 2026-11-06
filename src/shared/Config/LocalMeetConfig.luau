@@ -62,6 +62,10 @@ LocalMeetConfig.PlatformSpacingStuds = 24
 -- CycleSeconds / HallCount: 2 minutes.
 LocalMeetConfig.CycleSeconds = 10 * 60
 LocalMeetConfig.SignUpClosesSeconds = 60
+-- A lifter signed up from elsewhere is told this long before their meet that they're about to be taken there.
+LocalMeetConfig.CallSeconds = 15
+-- The MEETS tab on the left edge: above the coins, clear of a phone's thumbstick (from the middle of the screen).
+LocalMeetConfig.MeetsTabOffsetY = -146
 -- In Studio, so a test does not wait ten minutes.
 LocalMeetConfig.StudioCycleSeconds = 90
 LocalMeetConfig.StudioSignUpClosesSeconds = 15

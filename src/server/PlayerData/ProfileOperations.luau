@@ -53,6 +53,7 @@ local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
 local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
 local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
+local GearStats = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Economy"):WaitForChild("GearStats"))
 local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
 local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
 local AttemptRules = require(Shared:WaitForChild("Meet"):WaitForChild("AttemptRules"))
@@ -946,7 +947,9 @@ end
 	schema 13)
 	=========================================================================
 
-	purchaseItem is the ONLY way an item becomes owned, and it takes the coins
+	NOTHING CALLS purchaseItem IN THE GAME ANY MORE: gear is unlocked through crates only
+	(user 2026-11-06, GAME_DESIGN §35.12; openCrate below). What players bought stays owned.
+	It stays for the save tests in Dev. It was the ONLY way an item became owned, and took the coins
 	in the same step, so a purchase can never give the item without the coins
 	going or the coins going without the item. SECURITY BOUNDARY: it trusts
 	its caller (ShopService) for the price, which comes from ShopConfig on the
@@ -1032,12 +1035,23 @@ local function wearingOf(data: ProfileData): { [string]: string }?
 	return if typeof(wearing) == "table" then wearing else nil
 end
 
--- A copy of what is worn: slot -> item id (only owned items).
+-- A copy of what is worn: slot -> the item id whose look shows (only owned items, or a worn stat piece's look).
 function ProfileOperations.getWorn(data: ProfileData): { [string]: string }
 	local copy: { [string]: string } = {}
 	for slot, itemId in pairs(wearingOf(data) or {}) do
 		if typeof(slot) == "string" and typeof(itemId) == "string" and ProfileOperations.ownsItem(data, itemId) then
 			copy[slot] = itemId
+		end
+	end
+	local inventory = (data :: any).inventory
+	local pieces = if typeof(inventory) == "table" then inventory.pieces else nil
+	local wearingPieces = if typeof(inventory) == "table" then inventory.wearingPieces else nil
+	if typeof(pieces) == "table" and typeof(wearingPieces) == "table" then
+		for slot, pieceId in pairs(wearingPieces) do
+			local piece = pieces[pieceId]
+			if typeof(piece) == "table" and piece.slot == slot and typeof(piece.look) == "string" then
+				copy[slot] = piece.look
+			end
 		end
 	end
 	return copy
@@ -1053,8 +1067,14 @@ function ProfileOperations.setWorn(data: ProfileData, slot: string, itemId: stri
 	if wearing == nil or typeof(slot) ~= "string" or #slot == 0 or #slot > MAX_SLOT_LENGTH then
 		return "Rejected"
 	end
+	-- A slot holds one thing: anything here takes a worn stat piece off.
+	local inventory = (data :: any).inventory
+	local wearingPieces = if typeof(inventory) == "table" then inventory.wearingPieces else nil
 	if itemId == nil then
 		wearing[slot] = nil
+		if typeof(wearingPieces) == "table" then
+			wearingPieces[slot] = nil
+		end
 		return "TakenOff"
 	end
 	if not isItemId(itemId) then
@@ -1064,6 +1084,134 @@ function ProfileOperations.setWorn(data: ProfileData, slot: string, itemId: stri
 		return "NotOwned"
 	end
 	wearing[slot] = itemId
+	if typeof(wearingPieces) == "table" then
+		wearingPieces[slot] = nil
+	end
+	return "Worn"
+end
+
+--[[
+	=========================================================================
+	GEAR WITH STATS  (GAME_DESIGN.md §35.12; schema 19)
+	=========================================================================
+
+	openCrate is the ONLY way a piece is made, and it takes the coins in the same
+	step; scrapPiece is the ONLY way one goes, and it pays in the same step.
+	SECURITY BOUNDARY: they trust their caller (ShopService, GearService) for the
+	price, the roll and the scrap value, all made on the server from GearStatsConfig,
+	never from a client; they check everything else themselves.
+]]
+
+export type CrateOutcome = "Opened" | "NotEnough" | "Full" | "Rejected"
+export type ScrapOutcome = "Scrapped" | "IsWorn" | "NotOwned" | "Rejected"
+
+-- The pieces map, the worn map and the next number, or nil when any is unusable.
+local function piecesOf(data: ProfileData): (any?, any?)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" or typeof(inventory.pieces) ~= "table" or typeof(inventory.wearingPieces) ~= "table"
+		or not isFiniteNumber(inventory.nextPieceId) or inventory.nextPieceId < 1 then
+		return nil, nil
+	end
+	return inventory, inventory.pieces
+end
+
+-- A copy of the player's stat pieces: id -> piece.
+function ProfileOperations.getPieces(data: ProfileData): { [string]: PlayerProfileSchema.StatPiece }
+	local copy: { [string]: PlayerProfileSchema.StatPiece } = {}
+	local _, pieces = piecesOf(data)
+	for id, piece in pairs(pieces or {}) do
+		if typeof(id) == "string" and typeof(piece) == "table" then
+			copy[id] = { slot = piece.slot, rarity = piece.rarity, look = piece.look }
+		end
+	end
+	return copy
+end
+
+-- A copy of which piece is worn in each slot: slot -> piece id.
+function ProfileOperations.getWornPieces(data: ProfileData): { [string]: string }
+	local copy: { [string]: string } = {}
+	local inventory, pieces = piecesOf(data)
+	if inventory == nil then
+		return copy
+	end
+	for slot, pieceId in pairs(inventory.wearingPieces) do
+		if typeof(slot) == "string" and typeof(pieceId) == "string" and (pieces :: any)[pieceId] then
+			copy[slot] = pieceId
+		end
+	end
+	return copy
+end
+
+--[[
+	Takes `price` coins and adds `piece` as a new piece, together. Returns "Opened", the
+	new piece's id and the balance; "NotEnough" or "Full" with the unchanged balance; or
+	"Rejected" (an unusable wallet or inventory, a bad price or piece). Only "Opened"
+	changes anything.
+]]
+function ProfileOperations.openCrate(data: ProfileData, price: number, piece: PlayerProfileSchema.StatPiece, maxPieces: number)
+	: (CrateOutcome, string?, number?)
+	local wallet = walletOf(data)
+	local inventory, pieces = piecesOf(data)
+	if wallet == nil or inventory == nil or not isWholeCoins(price) or typeof(piece) ~= "table"
+		or not isItemId(piece.slot) or not isItemId(piece.rarity) or not isItemId(piece.look) then
+		return "Rejected", nil, nil
+	end
+	if wallet.coins < price then
+		return "NotEnough", nil, wallet.coins
+	end
+	local count = 0
+	for _ in pairs(pieces) do
+		count += 1
+	end
+	if count >= maxPieces then
+		return "Full", nil, wallet.coins
+	end
+	local id = tostring(inventory.nextPieceId)
+	wallet.coins -= price
+	wallet.spentTotal += price
+	inventory.nextPieceId += 1
+	pieces[id] = { slot = piece.slot, rarity = piece.rarity, look = piece.look }
+	return "Opened", id, wallet.coins
+end
+
+--[[
+	Removes a piece and pays `value` coins, together. A worn piece is refused, so nothing
+	gets scrapped by accident. Returns the outcome and the balance; only "Scrapped"
+	changes anything.
+]]
+function ProfileOperations.scrapPiece(data: ProfileData, pieceId: string, value: number): (ScrapOutcome, number?)
+	local wallet = walletOf(data)
+	local inventory, pieces = piecesOf(data)
+	if wallet == nil or inventory == nil or not isItemId(pieceId) or not isWholeCoins(value)
+		or wallet.coins + value > CoinConfig.MaxBalance then
+		return "Rejected", nil
+	end
+	local piece = pieces[pieceId]
+	if piece == nil then
+		return "NotOwned", wallet.coins
+	end
+	if inventory.wearingPieces[piece.slot] == pieceId then
+		return "IsWorn", wallet.coins
+	end
+	pieces[pieceId] = nil
+	wallet.coins += value
+	wallet.earnedTotal += value
+	return "Scrapped", wallet.coins
+end
+
+-- Puts a piece on in its own slot, taking off whatever is there. "Worn", "NotOwned" or "Rejected".
+function ProfileOperations.setWornPiece(data: ProfileData, pieceId: string): WearOutcome
+	local inventory, pieces = piecesOf(data)
+	local wearing = wearingOf(data)
+	if inventory == nil or wearing == nil or not isItemId(pieceId) then
+		return "Rejected"
+	end
+	local piece = pieces[pieceId]
+	if piece == nil then
+		return "NotOwned"
+	end
+	wearing[piece.slot] = nil
+	inventory.wearingPieces[piece.slot] = pieceId
 	return "Worn"
 end
 
@@ -1626,7 +1774,9 @@ function ProfileOperations.applyTechniqueTraining(
 	-- PHASE 2: COMPUTE, on locals only.
 	--------------------------------------------------------------------------
 
-	local totalRaw = TechniqueTraining.rawPointsFor(elapsedSeconds)
+	-- Worn gear speeds up technique training (§35.12), and only technique: the CN award above never reads it.
+	local gearSpeed = GearStats.trainingSpeed(GearStats.wornRarities((data :: any).inventory), lift)
+	local totalRaw = TechniqueTraining.rawPointsFor(elapsedSeconds, gearSpeed)
 
 	if not isFiniteNumber(totalRaw) or totalRaw < 0 then
 		return techniqueRejection(lift, primary, "InvariantViolated")

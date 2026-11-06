@@ -10,14 +10,15 @@
 		OpenShop   server -> one client
 			The player held E at the Shop's counter: open the menu.
 		GetShop    client -> server  () -> ShopView?
-			What the asking player owns and their coins. Read only.
-		BuyItem    client -> server  (itemId: string) -> (ok: boolean, message: string, view: ShopView?)
-			Asks to buy one item. The server checks the item, the price (its
-			own, from ShopConfig), the coins, that it is not owned yet and that
-			the player is at the counter; the client only sends the id.
+			The asking player's coins. Read only.
+		OpenCrate  client -> server  (crateId: string) -> (ok, message, view, pieceId?, piece?)
+			Asks to open one of the gear crates (GAME_DESIGN §35.12). The server checks the
+			crate, the coins and the counter, and rolls what is inside itself; the client
+			only says which crate.
 
 	The Shop's gear models for the menu's previews are copied by the server
-	into ReplicatedStorage[PREVIEWS_NAME] (the templates live in ServerStorage).
+	into ReplicatedStorage[PREVIEWS_NAME] (the templates live in ServerStorage), and the
+	crate for its opening intro into ReplicatedStorage[CRATE_MODEL_NAME].
 ]]
 
 local ShopRemotes = {}
@@ -25,18 +26,18 @@ local ShopRemotes = {}
 ShopRemotes.FOLDER_NAME = "ShopRemotes"
 ShopRemotes.OPEN = "OpenShop"
 ShopRemotes.GET = "GetShop"
-ShopRemotes.BUY = "BuyItem"
+ShopRemotes.CRATE = "OpenCrate"
 ShopRemotes.PREVIEWS_NAME = "ShopPreviews"
+ShopRemotes.CRATE_MODEL_NAME = "ShopGearCrate"
 
 export type ShopView = {
-	owned: { string },
 	coins: number,
 }
 
 export type RemoteSet = {
 	open: RemoteEvent,
 	get: RemoteFunction,
-	buy: RemoteFunction,
+	crate: RemoteFunction,
 }
 
 function ShopRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
@@ -61,7 +62,7 @@ function ShopRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 	return {
 		open = make(ShopRemotes.OPEN, "RemoteEvent") :: RemoteEvent,
 		get = make(ShopRemotes.GET, "RemoteFunction") :: RemoteFunction,
-		buy = make(ShopRemotes.BUY, "RemoteFunction") :: RemoteFunction,
+		crate = make(ShopRemotes.CRATE, "RemoteFunction") :: RemoteFunction,
 	}
 end
 
@@ -71,7 +72,7 @@ function ShopRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 	return {
 		open = folder:WaitForChild(ShopRemotes.OPEN) :: RemoteEvent,
 		get = folder:WaitForChild(ShopRemotes.GET) :: RemoteFunction,
-		buy = folder:WaitForChild(ShopRemotes.BUY) :: RemoteFunction,
+		crate = folder:WaitForChild(ShopRemotes.CRATE) :: RemoteFunction,
 	}
 end
 

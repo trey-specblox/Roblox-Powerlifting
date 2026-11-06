@@ -84,6 +84,7 @@ local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig")
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local TrainingAllowance = require(ProgressionFolder:WaitForChild("TrainingAllowance"))
 local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTraining"))
+local GearStats = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Economy"):WaitForChild("GearStats"))
 
 local DifficultyFolder = Shared:WaitForChild("Difficulty")
 local TechniqueCurve = require(DifficultyFolder:WaitForChild("TechniqueCurve"))
@@ -333,7 +334,9 @@ local function sendState(player: Player, notice: string?)
 		evToday = evToday,
 		evCap = ProgressionConfig.DailyTraining.DailyCapEV,
 		liftHoursToday = liftHours,
-		techniqueRawPerHour = TechniqueTraining.baseRawPerHour(),
+		-- With the gear they wear for this lift (§35.12).
+		techniqueRawPerHour = TechniqueTraining.baseRawPerHour() * (1 + (if selection and selection.lift and data
+			then GearStats.trainingSpeed(GearStats.wornRarities((data :: any).inventory), selection.lift) else 0)),
 		techniquePrimaryShare = ProgressionConfig.DailyTraining.TechniquePrimaryShare,
 		techniqueStats = techniqueStats,
 		sessionGains = if session then table.clone(session.techniqueGains) else {},
@@ -860,6 +863,12 @@ end
 	RackSpawner) and starts the tick loop. Call once, from the server entry
 	point, AFTER PlayerDataService.start().
 ]]
+-- Takes the player off any rack, training or practising: their meet is starting (LocalMeetService). Safe if they aren't on one.
+function TrainingStationService.letGo(player: Player, notice: string?)
+	GymPractice.stop(player)
+	endTraining(player, "their meet is starting", notice)
+end
+
 function TrainingStationService.start()
 	assert(not started, "[TrainingStationService] start() must only be called once")
 	started = true

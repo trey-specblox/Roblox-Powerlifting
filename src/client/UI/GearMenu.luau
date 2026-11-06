@@ -9,6 +9,10 @@
 	belt, knee sleeves, wrist wraps): what is worn, and a card for every owned
 	item in that slot (3D preview, name, WEAR or WORN), and TAKE OFF.
 
+	Gear with stats from crates (GAME_DESIGN §35.12) comes first in each row, best
+	first, edged in its rarity's colour, with its stats and SCRAP (press twice). The
+	status line adds up what the worn pieces give on each lift.
+
 	It only asks (GearRemotes) and shows the server's answer; the server
 	checks ownership and dresses the character. Built from UIStyle.
 ]]
@@ -21,7 +25,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local ShopConfig = require(ConfigFolder:WaitForChild("ShopConfig"))
 local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
-local GearRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("GearRemotes"))
+local EconomyFolder = Shared:WaitForChild("Economy")
+local GearRemotes = require(EconomyFolder:WaitForChild("GearRemotes"))
+local GearStats = require(EconomyFolder:WaitForChild("GearStats"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local MenuKeys = require(script.Parent:WaitForChild("MenuKeys"))
@@ -36,8 +42,10 @@ local PANEL_WIDTH, PANEL_HEIGHT = 900, 560
 local TAB_OFFSET_Y = 144
 -- A row with owned items is tall enough for its cards; an empty one only for its heading and one line.
 local EMPTY_ROW_HEIGHT = 70
-local CARD_WIDTH, CARD_HEIGHT, CARD_GAP = 150, 118, 10
+local CARD_WIDTH, CARD_HEIGHT, CARD_GAP = 170, 142, 10
 local PREVIEW_HEIGHT = 62
+-- SCRAP's second press has to come within this long.
+local CONFIRM_SECONDS = 3
 local started = false
 
 function GearMenu.start()
@@ -112,7 +120,19 @@ function GearMenu.start()
 		if view and not view.drawn then
 			return "Your choices are saved. The gear shows on you once its models are in the game."
 		end
-		return "Gear is for looks only. Wear one item per slot."
+		-- What the worn pieces give on each lift, or how to get some.
+		local worn: { [string]: string } = {}
+		for slot, pieceId in pairs(if view then view.wearingPieces else {}) do
+			local piece = view and view.pieces[pieceId]
+			if piece then
+				worn[slot] = piece.rarity
+			end
+		end
+		if next(worn) == nil then
+			return "Wear one item per slot. Gear from crates at the Shop has stats."
+		end
+		return string.format("TECHNIQUE FROM GEAR:  SQUAT +%s  ·  BENCH +%s  ·  DEADLIFT +%s", tostring(GearStats.techniqueBonus(worn, "Squat")),
+			tostring(GearStats.techniqueBonus(worn, "Bench")), tostring(GearStats.techniqueBonus(worn, "Deadlift")))
 	end
 
 	local refresh: () -> ()
@@ -126,6 +146,29 @@ function GearMenu.start()
 		local ok, done, message, newView = pcall(function()
 			-- false takes the slot's item off (nil would not reach the server as an argument).
 			return remotes.set:InvokeServer(slotId, if itemId then itemId else false)
+		end)
+		asking = false
+		if ok then
+			status.TextColor3 = if done then C.yellow else C.red
+			status.Text = if typeof(message) == "string" then message else ""
+			if newView then
+				view = newView
+				refresh()
+			end
+		else
+			status.TextColor3, status.Text = C.red, "That didn't go through. Try again."
+		end
+	end
+
+	-- Puts on or scraps a stat piece (a remote answering like `set`).
+	local function askPiece(remote: RemoteFunction, pieceId: string, waiting: string)
+		if asking then
+			return
+		end
+		asking = true
+		status.TextColor3, status.Text = C.muted, waiting
+		local ok, done, message, newView = pcall(function()
+			return remote:InvokeServer(pieceId)
 		end)
 		asking = false
 		if ok then
@@ -184,15 +227,98 @@ function GearMenu.start()
 			end
 			local wornId = if current then current.wearing[slot.id] else nil
 			local wornItem = if wornId then ShopConfig.find(wornId) else nil
-			wornText[slot.id].Text = if wornItem then "Wearing: " .. wornItem.name else "Nothing worn"
+			local wornPieceId = if current then current.wearingPieces[slot.id] else nil
+			local wornPiece = if current and wornPieceId then current.pieces[wornPieceId] else nil
+			wornText[slot.id].Text = if wornPiece then "Wearing: " .. GearStats.pieceName(wornPiece)
+				elseif wornItem then "Wearing: " .. wornItem.name
+				else "Nothing worn"
 			wornText[slot.id].TextColor3 = if wornItem then C.yellow else C.muted
 			takeOff[slot.id].Visible = wornItem ~= nil
 			local count = 0
+			-- Stat pieces first, best first.
+			local mine: { { id: string, piece: { slot: string, rarity: string, look: string } } } = {}
+			for id, piece in pairs(if current then current.pieces else {}) do
+				if piece.slot == slot.id then
+					table.insert(mine, { id = id, piece = piece })
+				end
+			end
+			table.sort(mine, function(a, b)
+				local rankA, rankB = GearStats.rank(a.piece.rarity), GearStats.rank(b.piece.rarity)
+				if rankA ~= rankB then
+					return rankA > rankB
+				end
+				return (tonumber(a.id) or 0) > (tonumber(b.id) or 0)
+			end)
+			for _, entry in ipairs(mine) do
+				local piece = entry.piece
+				local rarity = GearStats.rarity(piece.rarity)
+				local look = ShopConfig.find(piece.look)
+				if rarity and look then
+					local isWorn = entry.id == wornPieceId
+					local card = UIStyle.frame(strip, "Piece_" .. entry.id,
+						UDim2.fromOffset(2 + count * (CARD_WIDTH + CARD_GAP), 2), UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT), C.navyDeep)
+					UIStyle.stroke(card, rarity.colour, if isWorn then 3 else 2, 0)
+					GearPreview.build(card, look, UDim2.fromOffset(4, 4), UDim2.new(1, -8, 0, PREVIEW_HEIGHT))
+					local name = UIStyle.text(card, "Name", UDim2.fromOffset(6, PREVIEW_HEIGHT + 6), UDim2.new(1, -12, 0, 18),
+						SIZES.small, rarity.colour, UIStyle.heading())
+					name.Text = GearStats.pieceName(piece)
+					name.TextScaled = true
+					local stats = UIStyle.text(card, "Stats", UDim2.fromOffset(6, PREVIEW_HEIGHT + 25), UDim2.new(1, -12, 0, 14),
+						SIZES.small, C.white)
+					stats.Text = GearStats.statText(piece.rarity)
+					stats.TextScaled = true
+					local wear = Instance.new("TextButton")
+					wear.Name = "Wear"
+					wear.Position = UDim2.new(0, 6, 1, -30)
+					wear.Size = if isWorn then UDim2.new(1, -12, 0, 24) else UDim2.new(0.5, -8, 0, 24)
+					wear.BorderSizePixel = 0
+					wear.FontFace = UIStyle.heading()
+					wear.TextSize = SIZES.small
+					if isWorn then
+						wear.Text, wear.BackgroundColor3, wear.TextColor3 = "WORN", C.empty, C.muted
+						wear.AutoButtonColor = false
+					else
+						wear.Text, wear.BackgroundColor3, wear.TextColor3 = "WEAR", C.yellow, C.ink
+						wear.Activated:Connect(function()
+							task.spawn(askPiece, remotes.setPiece, entry.id, "Changing...")
+						end)
+					end
+					wear.Parent = card
+					if not isWorn then
+						local scrap = Instance.new("TextButton")
+						scrap.Name = "Scrap"
+						scrap.Position = UDim2.new(0.5, 2, 1, -30)
+						scrap.Size = UDim2.new(0.5, -8, 0, 24)
+						scrap.BorderSizePixel = 0
+						scrap.FontFace = UIStyle.heading()
+						scrap.TextSize = SIZES.small
+						scrap.Text, scrap.BackgroundColor3, scrap.TextColor3 = "SCRAP", C.empty, C.white
+						-- The first press asks; a piece can't be got back.
+						local sureUntil = 0
+						scrap.Activated:Connect(function()
+							if os.clock() >= sureUntil then
+								sureUntil = os.clock() + CONFIRM_SECONDS
+								scrap.Text, scrap.BackgroundColor3, scrap.TextColor3 = "+" .. rarity.scrap .. "?", C.white, C.ink
+								task.delay(CONFIRM_SECONDS + 0.05, function()
+									if scrap.Parent and os.clock() >= sureUntil then
+										scrap.Text, scrap.BackgroundColor3, scrap.TextColor3 = "SCRAP", C.empty, C.white
+									end
+								end)
+							else
+								task.spawn(askPiece, remotes.scrap, entry.id, "Scrapping...")
+							end
+						end)
+						scrap.Parent = card
+					end
+					count += 1
+				end
+			end
 			for _, item in ipairs(ShopConfig.Items) do
 				if item.category == slot.category and owned[item.id] then
 					local card = UIStyle.frame(strip, "Item_" .. item.id,
 						UDim2.fromOffset(2 + count * (CARD_WIDTH + CARD_GAP), 2), UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT), C.navyDeep)
-					UIStyle.stroke(card, if item.id == wornId then C.yellow else C.white, if item.id == wornId then 2 else 1, 0.4)
+					local itemWorn = item.id == wornId and wornPiece == nil
+					UIStyle.stroke(card, if itemWorn then C.yellow else C.white, if itemWorn then 2 else 1, 0.4)
 					GearPreview.build(card, item, UDim2.fromOffset(4, 4), UDim2.new(1, -8, 0, PREVIEW_HEIGHT))
 					local name = UIStyle.text(card, "Name", UDim2.fromOffset(6, PREVIEW_HEIGHT + 6), UDim2.new(1, -12, 0, 20),
 						SIZES.small, C.white, UIStyle.heading())
@@ -205,7 +331,7 @@ function GearMenu.start()
 					button.BorderSizePixel = 0
 					button.FontFace = UIStyle.heading()
 					button.TextSize = SIZES.small
-					if item.id == wornId then
+					if itemWorn then
 						button.Text, button.BackgroundColor3, button.TextColor3 = "WORN", C.empty, C.muted
 						button.AutoButtonColor = false
 					else
@@ -220,7 +346,7 @@ function GearMenu.start()
 			end
 			if count == 0 then
 				local none = UIStyle.text(strip, "None", UDim2.fromOffset(2, 0), UDim2.fromOffset(500, 26), SIZES.body, C.muted)
-				none.Text = "Nothing yet. Buy one at the Shop."
+				none.Text = "Nothing yet. Open a crate at the Shop."
 			end
 			strip.CanvasSize = UDim2.fromOffset(2 + count * (CARD_WIDTH + CARD_GAP), 0)
 			local height = if count > 0 then 30 + CARD_HEIGHT + 22 else EMPTY_ROW_HEIGHT

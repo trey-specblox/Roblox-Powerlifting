@@ -453,30 +453,6 @@ function PlayerDataService.addCoins(player: Player, amount: number, reason: stri
 end
 
 --[[
-	Buys a Shop item: takes `price` coins and adds `itemId` to the inventory in
-	one step (ProfileOperations.purchaseItem). SERVER-ONLY: the price comes from
-	ShopConfig, never from a client; the caller (ShopService) checks the item
-	is for sale. `reason` labels the log and the coin pop-up. Returns the
-	outcome and the balance; nil with no active session.
-]]
-function PlayerDataService.purchaseItem(player: Player, itemId: string, price: number, reason: string)
-	: (ProfileOperations.PurchaseOutcome?, number?)
-	local data = activeData(player, "purchaseItem")
-	if data == nil then
-		return nil, nil
-	end
-	local outcome: ProfileOperations.PurchaseOutcome, balance = ProfileOperations.purchaseItem(data, itemId, price)
-	if outcome == "Bought" then
-		print(string.format("[PlayerDataService] %s bought %s for %d coins: %d left", player.Name, itemId, price,
-			balance :: number))
-		coinsChanged(player, -price, balance :: number, reason)
-	elseif outcome == "Rejected" then
-		warn(string.format("[PlayerDataService] %s: buying %s for %s refused", player.Name, tostring(itemId), tostring(price)))
-	end
-	return outcome, balance
-end
-
---[[
 	Puts on (or, with itemId nil, takes off) the gear in `slot`
 	(ProfileOperations.setWorn). SERVER-ONLY: the caller (GearService) checks
 	the slot and that the item belongs in it. Returns the outcome; nil with no
@@ -494,7 +470,67 @@ function PlayerDataService.setWorn(player: Player, slot: string, itemId: string?
 	return outcome
 end
 
--- What the player wears (slot -> item id), or nil when the data is not loaded.
+--[[
+	Opens a crate: takes `price` coins and adds `piece` in one step
+	(ProfileOperations.openCrate). SERVER-ONLY: the price and the roll come from the
+	server (GearStatsConfig, GearStats.roll), never from a client. Returns the outcome,
+	the piece's id and the balance; nil with no active session.
+]]
+function PlayerDataService.openCrate(player: Player, price: number, piece: any, maxPieces: number)
+	: (ProfileOperations.CrateOutcome?, string?, number?)
+	local data = activeData(player, "openCrate")
+	if data == nil then
+		return nil, nil, nil
+	end
+	local outcome: ProfileOperations.CrateOutcome, id, balance = ProfileOperations.openCrate(data, price, piece, maxPieces)
+	if outcome == "Opened" then
+		print(string.format("[PlayerDataService] %s opened a crate for %d coins: piece %s, %s %s (%s): %d left", player.Name, price,
+			tostring(id), tostring(piece.rarity), tostring(piece.slot), tostring(piece.look), balance :: number))
+		coinsChanged(player, -price, balance :: number, "Gear crate")
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: a crate for %s refused", player.Name, tostring(price)))
+	end
+	return outcome, id, balance
+end
+
+--[[
+	Scraps a piece for `value` coins (ProfileOperations.scrapPiece). SERVER-ONLY: the value
+	comes from GearStatsConfig. Returns the outcome and the balance; nil with no session.
+]]
+function PlayerDataService.scrapPiece(player: Player, pieceId: string, value: number): (ProfileOperations.ScrapOutcome?, number?)
+	local data = activeData(player, "scrapPiece")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome: ProfileOperations.ScrapOutcome, balance = ProfileOperations.scrapPiece(data, pieceId, value)
+	if outcome == "Scrapped" then
+		print(string.format("[PlayerDataService] %s scrapped piece %s for %d coins: %d", player.Name, pieceId, value, balance :: number))
+		coinsChanged(player, value, balance :: number, "Scrapped gear")
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: scrapping %s refused", player.Name, tostring(pieceId)))
+	end
+	return outcome, balance
+end
+
+-- Puts a stat piece on (ProfileOperations.setWornPiece). Returns the outcome; nil with no active session.
+function PlayerDataService.setWornPiece(player: Player, pieceId: string): ProfileOperations.WearOutcome?
+	local data = activeData(player, "setWornPiece")
+	return if data then ProfileOperations.setWornPiece(data, pieceId) else nil
+end
+
+-- The player's stat pieces (id -> piece), or nil when the data is not loaded.
+function PlayerDataService.getPieces(player: Player): { [string]: any }?
+	local data = activeData(player, "getPieces")
+	return if data then ProfileOperations.getPieces(data) else nil
+end
+
+-- Which stat piece is worn in each slot (slot -> piece id), or nil when the data is not loaded.
+function PlayerDataService.getWornPieces(player: Player): { [string]: string }?
+	local data = activeData(player, "getWornPieces")
+	return if data then ProfileOperations.getWornPieces(data) else nil
+end
+
+-- What the player wears (slot -> the item id whose look shows), or nil when the data is not loaded.
 function PlayerDataService.getWorn(player: Player): { [string]: string }?
 	local data = activeData(player, "getWorn")
 	return if data then ProfileOperations.getWorn(data) else nil

@@ -61,6 +61,7 @@ local SkillCheckChallenge = require(LiftingFolder:WaitForChild("SkillCheckChalle
 local DifficultyResolver = require(DifficultyFolder:WaitForChild("DifficultyResolver"))
 local ModifierRegistry = require(ModifiersFolder:WaitForChild("ModifierRegistry"))
 local ScaleChallenge = require(Shared:WaitForChild("Progression"):WaitForChild("ScaleChallenge"))
+local GearStats = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Economy"):WaitForChild("GearStats"))
 
 local PlayerDataService = require(script.Parent.Parent.PlayerData.PlayerDataService)
 local ControlPhaseService = require(script.Parent.ControlPhaseService)
@@ -756,6 +757,8 @@ function LiftAttemptService.start()
 
 	-- The Competition Scale challenge (GAME_DESIGN 33.4): meet attempts above proven weight feel a little harder.
 	ModifierRegistry.register(ScaleChallenge.SourceName, ScaleChallenge.producer)
+	-- Worn gear makes every lift a little easier to perform (GAME_DESIGN §35.12).
+	ModifierRegistry.register(GearStats.SourceName, GearStats.producer)
 
 	set.requestLiftAttempt.OnServerEvent:Connect(onRequestLiftAttempt)
 	set.reportPhaseInput.OnServerEvent:Connect(onReportPhaseInput)

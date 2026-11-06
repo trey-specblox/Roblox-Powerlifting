@@ -24,10 +24,9 @@
 	ONE PLACE COMPUTES THE AMOUNT
 	=========================================================================
 
-	`rawPointsFor` is the only function that turns time into points. A future,
-	APPROVED training buff (ModifierChannel.TrainingEffectiveness already names
-	the home for coach and food bonuses) would be applied there and nowhere
-	else. None is applied today: the result is exactly rate x hours.
+	`rawPointsFor` is the only function that turns time into points. An APPROVED
+	training buff is applied there and nowhere else: today worn gear's speed
+	(GearStats, GAME_DESIGN §35.12), so the result is rate x hours x (1 + speed).
 
 	=========================================================================
 	THE SPLIT ALWAYS ADDS UP
@@ -124,12 +123,13 @@ end
 	nothing rather than erroring. The caller (the award operation) refuses
 	over-long intervals separately.
 ]]
-function TechniqueTraining.rawPointsFor(elapsedSeconds: number): number
+function TechniqueTraining.rawPointsFor(elapsedSeconds: number, speedBonus: number?): number
 	if not isFiniteNumber(elapsedSeconds) or elapsedSeconds <= 0 then
 		return 0
 	end
 
-	return TechniqueTraining.baseRawPerHour() * (elapsedSeconds / SECONDS_PER_HOUR)
+	local speed = if isFiniteNumber(speedBonus) and (speedBonus :: number) > 0 then 1 + (speedBonus :: number) else 1
+	return TechniqueTraining.baseRawPerHour() * speed * (elapsedSeconds / SECONDS_PER_HOUR)
 end
 
 --[[

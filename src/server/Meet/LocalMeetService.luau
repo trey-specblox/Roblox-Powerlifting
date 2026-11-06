@@ -122,6 +122,8 @@ local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
+local TrainingStationService = require(ServerFolder:WaitForChild("Training"):WaitForChild("TrainingStationService"))
+local CardioMachineService = require(ServerFolder:WaitForChild("World"):WaitForChild("CardioMachineService"))
 
 local LocalMeetService = {}
 
@@ -253,6 +255,8 @@ type Hall = {
 	nextStartAt: number,
 	-- Its next meet's level, rolled when its sign-ups open (GAME_DESIGN §35.8).
 	nextLevel: string,
+	-- The start its signed-up lifters were last told about (CallSeconds before it).
+	calledFor: number?,
 }
 
 -- Filled when the venue is built; empty until then.
@@ -411,10 +415,11 @@ local function allowancePercent(player: Player): { [string]: number }
 end
 
 local function sendLobby(player: Player)
-	local visit = visits[player]
-	if remotes == nil or visit == nil then
+	if remotes == nil then
 		return
 	end
+	-- From anywhere in the game: the MEETS tab shows this too (user 2026-11-06).
+	local visit = visits[player]
 	local mine = signedUpAt(player)
 	local meets: { LocalMeetRemotes.MeetRow } = {}
 	for _, hall in ipairs(halls) do
@@ -433,7 +438,7 @@ local function sendLobby(player: Player)
 	end
 	local state: LocalMeetRemotes.LobbyState = {
 		meets = meets,
-		hereIndex = visit.hall,
+		hereIndex = if visit then visit.hall else nil,
 		allowancePercent = allowancePercent(player),
 		minimumLifters = minimumLifters(),
 		maxLifters = LocalMeetConfig.MaxLifters,
@@ -442,7 +447,7 @@ local function sendLobby(player: Player)
 end
 
 local function broadcastLobby()
-	for player in pairs(visits) do
+	for _, player in ipairs(Players:GetPlayers()) do
 		sendLobby(player)
 	end
 end
@@ -2287,19 +2292,56 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 		stateQualified = ProfileOperations.getLadder(data, classKey, os.time()).qualified }, nil
 end
 
+-- Moves a player into the venue. Set below, with the rest of the way in and out.
+local enterVenue: (player: Player, point: BasePart?, toHall: Hall?) -> (boolean, string?)
+
+--[[
+	Takes everyone on this hall's list who is elsewhere in the game to the hall (user
+	2026-11-06): off a rack or a cardio machine, out of a gym lift, nothing there is worth
+	missing a meet for. Someone in their Mock Meet stays there, and stays on the list. Waits
+	for them all, at most as long as the stream can take.
+]]
+local function bringToMeet(hall: Hall)
+	local waiting = 0
+	for _, player in ipairs(table.clone(hall.signUps)) do
+		if visits[player] == nil and player:GetAttribute(MOCK_MEET_ATTRIBUTE) == nil then
+			waiting += 1
+			task.spawn(function()
+				if LiftAttemptService.isAttemptActive(player) then
+					LiftAttemptService.abandon(player)
+				end
+				TrainingStationService.letGo(player, "Your meet is starting.")
+				CardioMachineService.hopOff(player)
+				local went, why = enterVenue(player, nil, hall)
+				if not went then
+					log("could not bring %s to meet %d: %s", player.Name, hall.index, tostring(why))
+				end
+				waiting -= 1
+			end)
+		end
+	end
+	local gaveUpAt = os.clock() + STREAM_TIMEOUT_SECONDS + 2
+	while waiting > 0 and os.clock() < gaveUpAt do
+		task.wait(0.1)
+	end
+end
+
 -- At a hall's timetable start: holds its meet if enough signed-up lifters are ready.
 local function tryStartMeet(hall: Hall)
 	local v = hall.venue
 	if hall.meet ~= nil then
 		return
 	end
-	-- Only names still in the venue, alive and free can lift; the list keeps its order.
+	-- Anyone signed up who went off to do something else is taken there now (user 2026-11-06).
+	bringToMeet(hall)
+	-- Only names now in the venue, alive and free can lift; the list keeps its order, and anyone who can't lift stays
+	-- on it for the next meet.
 	local ready: { Player } = {}
 	for _, player in ipairs(table.clone(hall.signUps)) do
 		local body = bodyOf(player)
 		local visit = visits[player]
 		if visit == nil or body == nil or body.character ~= visit.character or body.humanoid.Health <= 0 then
-			removeSignUp(player)
+			notify(player, string.format("You missed meet %d. You stay on its list for the next one.", hall.index))
 		elseif not LiftAttemptService.isAttemptActive(player) then
 			table.insert(ready, player)
 		end
@@ -2446,7 +2488,7 @@ local function leaveVenue(player: Player, sendBack: boolean)
 		warmUp.stop(player, false)
 	end
 	withdraw(player, "left the venue")
-	removeSignUp(player)
+	-- Their sign-up stays: they can go and do something else, and are brought back for the meet (user 2026-11-06).
 	local visit = visits[player]
 	if visit == nil then
 		return
@@ -2479,7 +2521,7 @@ end
 	(`point`, which they must be standing near) or by the TELEPORT menu (`point`
 	nil). Returns whether they went, and why not when it is worth saying.
 ]]
-local function enterVenue(player: Player, point: BasePart?, toHall: Hall?): (boolean, string?)
+enterVenue = function(player: Player, point: BasePart?, toHall: Hall?): (boolean, string?)
 	-- Everyone arrives in hall 1 (the sign-up list and SPECTATE reach the others), unless they asked for a hall: WATCH.
 	local firstHall = toHall or halls[1]
 	if firstHall == nil then
@@ -2559,8 +2601,8 @@ end
 
 --[[
 	The TELEPORT menu, before it moves a player somewhere else: takes them out
-	of the venue (and off the sign-up list) without sending them back. A lifter
-	in the running meet must press LEAVE first. Returns whether they may go.
+	of the venue without sending them back (they stay on any sign-up list). A
+	lifter in the running meet must press LEAVE first. Returns whether they may go.
 ]]
 function LocalMeetService.teleportOut(player: Player): (boolean, string?)
 	if visits[player] == nil then
@@ -2584,9 +2626,6 @@ end
 
 -- A hall's sign-up desk and the SIGN UP buttons: puts the player's name on that meet's list (off any other), or takes it off.
 local function toggleSignUp(player: Player, hall: Hall)
-	if visits[player] == nil then
-		return
-	end
 	local _, lifting = activeLifter(player)
 	if lifting then
 		notify(player, "You are lifting in a meet.")
@@ -2693,6 +2732,10 @@ function LocalMeetService.watchMeet(player: Player, hallIndex: any): (boolean, s
 	return visit.hall == hall.index, nil
 end
 
+-- How often one player may ask for the meets list, and when each last did.
+local LOBBY_REQUEST_GAP_SECONDS = 0.5
+local lastLobbyRequest: { [Player]: number } = {}
+
 local function pressAllowed(player: Player): boolean
 	local time = os.clock()
 	if time - (lastPress[player] or 0) < LocalMeetConfig.ButtonCooldownSeconds then
@@ -2792,11 +2835,29 @@ function LocalMeetService.start()
 	set.spectate.OnServerEvent:Connect(function(player, hallIndex)
 		local hall = hallFromClient(hallIndex)
 		if hall and pressAllowed(player) then
-			spectate(player, hall)
+			if visits[player] then
+				spectate(player, hall)
+			else
+				-- WATCH on the MEETS tab, from elsewhere in the game.
+				local _, why = LocalMeetService.watchMeet(player, hallIndex)
+				if why then
+					notify(player, why)
+				end
+			end
+		end
+	end)
+	-- Not a button: it has its own limit, so opening the list can't swallow the SIGN UP pressed right after it.
+	set.lobbyRequest.OnServerEvent:Connect(function(player)
+		local time = os.clock()
+		if time - (lastLobbyRequest[player] or 0) >= LOBBY_REQUEST_GAP_SECONDS then
+			lastLobbyRequest[player] = time
+			sendLobby(player)
 		end
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
+		removeSignUp(player)
+		lastLobbyRequest[player] = nil
 		leaveVenue(player, false)
 		entering[player] = nil
 		lastPress[player] = nil
@@ -2874,6 +2935,17 @@ function LocalMeetService.start()
 
 		while true do
 			for _, hall in ipairs(halls) do
+				-- Anyone signed up from elsewhere hears they're about to go.
+				if hall.calledFor ~= hall.nextStartAt and hall.meet == nil
+					and hall.nextStartAt - now() <= LocalMeetConfig.CallSeconds then
+					hall.calledFor = hall.nextStartAt
+					for _, player in ipairs(hall.signUps) do
+						if visits[player] == nil then
+							notify(player, string.format("Meet %d starts in %d seconds. Taking you there.", hall.index,
+								LocalMeetConfig.CallSeconds))
+						end
+					end
+				end
 				if now() >= hall.nextStartAt then
 					tryStartMeet(hall)
 					-- Its next meet's sign-ups open now, with its level (a meet that did not start does not keep its level).

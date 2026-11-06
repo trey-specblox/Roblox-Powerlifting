@@ -16,8 +16,8 @@
 		- is in their private Mock Meet room
 		- lifts in the running Local meet (LEAVE first)
 		- teleported less than CooldownSeconds ago
-	Leaving the Local meet venue this way takes them off its sign-up list, the
-	same as its EXIT.
+	Leaving the Local meet venue this way keeps them on any sign-up list, the same
+	as its EXIT: they are brought back when the meet starts (LocalMeetService).
 ]]
 
 local CollectionService = game:GetService("CollectionService")

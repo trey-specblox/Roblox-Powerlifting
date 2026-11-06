@@ -824,6 +824,14 @@
       "ids": {
         "model": "rbxassetid://103112945740574"
       }
+    },
+    "GearCrate_01": {
+      "about": "The CENTRAL gear crates that drop and pop open before the crate reel (GearCrate): one road case, recoloured and relabelled per crate by the game, with big CENTRAL BELTS, WRAPS, SINGLETS or SLEEVES lettering, a swinging lid and latches, on a lifting platform with two bumper plates. Made by art/scripts/build_gear_crate_01.py (art/blender/GearCrate_01.blend).",
+      "file": "art/exports/GearCrate_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://70433507633305"
+      }
     }
   },
   "images": {
@@ -923,6 +931,14 @@
       "license": "own work",
       "ids": {
         "audio": "rbxassetid://74322878777614"
+      }
+    },
+    "Crate_Tick": {
+      "about": "The crate reel's tick, own work, made by art/scripts/make_crate_tick.py",
+      "file": "art/sounds/Crate_Tick.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://77524292668778"
       }
     }
   }

@@ -77,6 +77,8 @@ LocalMeetRemotes.LEVEL_NEWS = "LocalMeetLevelNews"
 LocalMeetRemotes.LIFT_PROGRESS = "LocalMeetLiftProgress"
 -- Server -> clients, sound only: a meet sound cue (MeetSoundConfig), where it happened, and optionally how loud (x normal).
 LocalMeetRemotes.SOUND = "LocalMeetSound"
+-- Client -> server: "send me the meets list" (no arguments). The list works from anywhere, not only in the venue.
+LocalMeetRemotes.LOBBY_REQUEST = "LocalMeetLobbyRequest"
 
 export type RemoteSet = {
 	leave: RemoteEvent,
@@ -95,6 +97,7 @@ export type RemoteSet = {
 	warmUpState: RemoteEvent,
 	levelNews: RemoteEvent,
 	liftProgress: RemoteEvent,
+	lobbyRequest: RemoteEvent,
 	sound: RemoteEvent,
 }
 
@@ -102,7 +105,7 @@ local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemote
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
 	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND,
-	LocalMeetRemotes.SPECTATE }
+	LocalMeetRemotes.SPECTATE, LocalMeetRemotes.LOBBY_REQUEST }
 
 --[[
 	One of the five meets, as the sign-up list shows it. `nextStartAt` is in
@@ -127,8 +130,8 @@ export type MeetRow = {
 -- The timetable and sign-ups, server -> client, sent when they change.
 export type LobbyState = {
 	meets: { MeetRow },
-	-- The hall this player is in.
-	hereIndex: number,
+	-- The hall this player is in, or nil when they are elsewhere in the game.
+	hereIndex: number?,
 	minimumLifters: number,
 	maxLifters: number,
 	-- How far a meet could raise each lift's CN right now (8.5 = +8.5%), for THIS player's current
@@ -251,6 +254,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
 		levelNews = get(LocalMeetRemotes.LEVEL_NEWS),
 		liftProgress = get(LocalMeetRemotes.LIFT_PROGRESS),
+		lobbyRequest = get(LocalMeetRemotes.LOBBY_REQUEST),
 		sound = get(LocalMeetRemotes.SOUND),
 	}
 end
@@ -278,6 +282,7 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		warmUpState = get(LocalMeetRemotes.WARM_UP_STATE),
 		levelNews = get(LocalMeetRemotes.LEVEL_NEWS),
 		liftProgress = get(LocalMeetRemotes.LIFT_PROGRESS),
+		lobbyRequest = get(LocalMeetRemotes.LOBBY_REQUEST),
 		sound = get(LocalMeetRemotes.SOUND),
 	}
 end

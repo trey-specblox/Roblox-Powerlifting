@@ -43,8 +43,9 @@ export type Handlers = {
 
 export type Ui = {
 	gui: ScreenGui,
-	-- Shows the venue screen, and whether the player is lifting (which hides the card and EXIT).
-	setMode: (inVenue: boolean, lifting: boolean) -> (),
+	-- Shows the venue screen, and whether the player is lifting (which hides the card and EXIT). `listOpen`: elsewhere in
+	-- the game, the MEETS tab has the list open (the list alone, no EXIT or standings).
+	setMode: (inVenue: boolean, lifting: boolean, listOpen: boolean) -> (),
 	setClearView: (clear: boolean) -> (),
 	-- `serverNow` is workspace:GetServerTimeNow().
 	drawLobby: (lobby: LocalMeetRemotes.LobbyState?, serverNow: number) -> (),
@@ -149,7 +150,7 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 	local standingsTag = UIStyle.titleTag(standingsHolder, "Tag", "STANDINGS", UDim2.fromOffset(-14, -24),
 		UDim2.fromOffset(260, 40), nil, "corner")
 	-- On a phone it starts closed: the + opens it.
-	UIStyle.collapsible(standingsHolder, not ON_PHONE)
+	local setStandingsOpen = UIStyle.collapsible(standingsHolder, not ON_PHONE)
 	-- The box is only as tall as its rows, and the line about the player's own place.
 	local function fitStandings(rowCount: number, hasYouLine: boolean)
 		local height = UDim2.new(1, 0, 0, ROWS_TOP + math.max(rowCount, 1) * ROW_HEIGHT + (if hasYouLine then FOOT_HEIGHT else 0) + 8)
@@ -202,11 +203,19 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 	ui.gui = gui
 
 	local liftingNow = false
-	ui.setMode = function(inVenue: boolean, lifting: boolean)
-		gui.Enabled = inVenue
+	local inVenueNow = false
+	local clearView = false
+	ui.setMode = function(inVenue: boolean, lifting: boolean, listOpen: boolean)
+		gui.Enabled = inVenue or listOpen
+		-- A meet starting opens the standings, on a phone too, where they start closed in the lobby (user 2026-11-06).
+		if lifting and not liftingNow then
+			setStandingsOpen(true)
+		end
 		liftingNow = lifting
-		exit.Visible = not lifting
+		inVenueNow = inVenue
+		exit.Visible = inVenue and not lifting
 		cardHolder.Visible = not lifting
+		standingsHolder.Visible = inVenue and not clearView
 		-- In the lobby on the right (under EXIT), so short screens fit it beside the card; while lifting in the
 		-- card's place on the left, as the meet screen's scorecard is on the right. fitToScreen anchors the panel
 		-- at its centre, so place the centre.
@@ -219,7 +228,8 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 
 	-- The lifter's turn (MeetLiftMoment): nothing over the view until the verdict.
 	ui.setClearView = function(clear: boolean)
-		standingsHolder.Visible = not clear
+		clearView = clear
+		standingsHolder.Visible = inVenueNow and not clear
 	end
 
 	ui.drawLobby = function(lobby: LocalMeetRemotes.LobbyState?, serverNow: number)
@@ -272,7 +282,7 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 				row.status.TextColor3 = C.muted
 				row.signUp.Text = "SIGN UP"
 			end
-			row.spectate.Text = if lobby.hereIndex == index then "YOU ARE HERE" else "SPECTATE"
+			row.spectate.Text = if lobby.hereIndex == index then "YOU ARE HERE" elseif lobby.hereIndex then "SPECTATE" else "WATCH"
 			row.spectate.AutoButtonColor = lobby.hereIndex ~= index
 			row.spectate.TextTransparency = if lobby.hereIndex == index then 0.5 else 0
 		end

@@ -595,6 +595,7 @@ StarterGymConfig.PropAssets = {
 	{ id = 82188043511002 }, -- Fronts_01: barbell (lying, standing), wall bar rack, gun rack, judges' lights, stick,
 	-- duster, foam tile, blinds
 	{ id = 103112945740574 }, -- LocalMeet_03: the chalk stand a lifter chalks up at (art/scripts/build_local_meet_03.py)
+	{ id = 70433507633305 }, -- GearCrate_01: the gear crates in the Shop's opening intro (art/scripts/build_gear_crate_01.py)
 	{ id = 139793685980962 }, -- Steel_01: steel I-beam and round handrail (StarterGymBuilder stretches them)
 	{ id = 96498344946081 }, -- LocalMeet_01: referee light box, tiered seating, awards podium, plate tree, the venue's
 	-- entrance building outside the gym (all placed by LocalMeetVenue)
@@ -968,6 +969,14 @@ StarterGymConfig.PropColourways = {
 	Barricade = { { Frame = "Silver", Feet = "Black", Banner = "Navy", Stripe = "Yellow", Logo = "White" } },
 	RefChair = { { Frame = "Black", Cushion = "Red", Logo = "White" } },
 	MeetChalkStand = { { Frame = "Black", Collar = "Yellow", Bowl = "Silver", Chalk = "White", Logo = "White" } },
+	-- The Shop's menu colours the Body and Lid for the crate being opened and keeps only its labels (GearStatsConfig.Crates).
+	GearCrate = { {
+		Body = "Navy", Lid = "Navy", Steel = "Silver", LidSteel = "Silver", Yellow = "Yellow", LidYellow = "Yellow",
+		Rubber = "Black", Logo = "White", LidLogo = "White", Glow = "WarmGlow", LatchLeft = "Silver", LatchRight = "Silver",
+		LabelBelt = "Yellow", LabelWristWraps = "Yellow", LabelSinglet = "Yellow", LabelKneeSleeves = "Yellow",
+		LidLabelBelt = "Yellow", LidLabelWristWraps = "Yellow", LidLabelSinglet = "Yellow", LidLabelKneeSleeves = "Yellow",
+		PlatformWood = "Oak", PlatformRubber = "Black", PlateRed = "Red", PlateBlue = "Blue",
+	} },
 	PlatformSign = { { Base = "Black", Pole = "Silver", Board = "Navy", Screen = "Black", Trim = "Yellow",
 		Logo = "White" } },
 	AwardsBackdrop = { {

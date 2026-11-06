@@ -158,6 +158,11 @@ local function release(player: Player)
 	body.root.Anchored = false
 end
 
+-- Takes the player off their machine: their meet is starting (LocalMeetService). Safe if they aren't on one.
+function CardioMachineService.hopOff(player: Player)
+	release(player)
+end
+
 --[[
 	Puts `player` on `machine` if everything allows it. Called by the machine's
 	prompt (also usable from a Studio test).

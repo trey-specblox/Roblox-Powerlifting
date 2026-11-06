@@ -1,5 +1,5 @@
 {
-  "about": "Shouts people yell at a meet, and the sounds of chalking up (GAME_DESIGN 37.5): on the walk out, during the lift, after a good lift or a miss, and after a big moment. Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
+  "about": "Shouts people yell at a meet, the sounds of chalking up and of opening a gear crate (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment. Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
   "sounds": {
     "LiftShout_1": {
       "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
@@ -567,6 +567,38 @@
       "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
       "ids": {
         "audio": "rbxassetid://92544739948841"
+      }
+    },
+    "CrateOpen_1": {
+      "about": "A heavy gym equipment crate being unlatched and flipped open, metal latches clack, then the wooden lid thuds, short and satisfying, game reward sound",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateOpen_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://78601167944819"
+      }
+    },
+    "CrateBig_1": {
+      "about": "A short triumphant rare item reveal for a game, bright rising shimmer ending in a powerful brass and metal hit, exciting and celebratory, no voice",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateBig_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://93621931694016"
+      }
+    },
+    "CrateDrop_1": {
+      "about": "A heavy metal road case dropped onto a rubber gym floor from waist height, one deep solid thud with a short metallic clank of latches, no echo, game sound effect",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateDrop_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://89711320801766"
+      }
+    },
+    "CrateRattle_1": {
+      "about": "A heavy metal equipment case shaking and rattling faster and faster, latches jiggling and steel corners knocking, building anticipation, under one second, game sound effect, no voice",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateRattle_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://104195321031097"
       }
     }
   }

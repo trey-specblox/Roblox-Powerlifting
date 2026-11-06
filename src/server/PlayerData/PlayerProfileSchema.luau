@@ -57,9 +57,9 @@ local PlayerProfileSchema = {}
 	the Shop inventory; version 14: the gear being worn; version 15: meet
 	titles in the career; version 16: ladder points in the career; version
 	17: ladder points per weight class; version 18: how many times the
-	player has qualified for State).
+	player has qualified for State; version 19: gear with stats).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 18
+PlayerProfileSchema.CURRENT_VERSION = 19
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -297,6 +297,23 @@ export type Inventory = {
 	-- an owned item id. A slot that is missing is empty. Only ProfileOperations.setWorn writes it, and only
 	-- with an item the player owns.
 	wearing: { [string]: string },
+	-- Gear with stats (version 19, GAME_DESIGN §35.12): piece id -> what it is. Each piece is its own item, so there are
+	-- no duplicates. It saves only its rarity, so its stats can be rebalanced (GearStatsConfig). Only
+	-- ProfileOperations.openCrate adds one, together with the coins it costs, and scrapPiece removes one.
+	pieces: { [string]: StatPiece },
+	-- Which piece is worn in a slot; a slot has either this or `wearing`, never both.
+	wearingPieces: { [string]: string },
+	-- The next piece's number. Only ever goes up, so an id is never reused.
+	nextPieceId: number,
+}
+
+export type StatPiece = {
+	-- A WornGearConfig slot id.
+	slot: string,
+	-- A GearStatsConfig rarity id.
+	rarity: string,
+	-- The ShopConfig item whose look it has.
+	look: string,
 }
 
 -- (The three account-wide Competition Budgets, section 29.9, added in version 3, were removed in
@@ -547,6 +564,9 @@ local template: ProfileData = {
 	inventory = {
 		owned = {},
 		wearing = {},
+		pieces = {},
+		wearingPieces = {},
+		nextPieceId = 1,
 	},
 
 	bodyweight = {
@@ -1573,6 +1593,62 @@ migrations[17] = function(data: ProfileData)
 		return
 	end
 	career.stateQualifications = counted
+end
+
+--[[
+	Version 18 to 19: gear with stats (user, 2026-11-06; GAME_DESIGN §35.12).
+
+	NOBODY HAS A PIECE YET: pieces did not exist before. This step makes sure the three
+	new inventory fields exist and REPAIRS, NEVER OVERWRITES: a piece is kept when its
+	three fields are non-empty strings, a worn entry when it names a kept piece for that
+	slot; anything else is dropped (nothing else could have written it). `nextPieceId` is
+	kept when usable and always above every kept piece's number, so an id is never reused.
+	An inventory that is missing altogether is created empty (as step 12 does).
+
+	What the player owns from the Shop and wears from it is NOT read, written or removed.
+
+	IDEMPOTENT: a second run finds clean fields and changes nothing.
+]]
+migrations[18] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		(data :: any).inventory = { owned = {}, wearing = {}, pieces = {}, wearingPieces = {}, nextPieceId = 1 }
+		return
+	end
+	if typeof(inventory.pieces) ~= "table" then
+		inventory.pieces = {}
+	end
+	local badPieces = {}
+	local highest = 0
+	for id, piece in pairs(inventory.pieces) do
+		local number = if typeof(id) == "string" then tonumber(id) else nil
+		if number == nil or typeof(piece) ~= "table" or typeof(piece.slot) ~= "string" or piece.slot == ""
+			or typeof(piece.rarity) ~= "string" or piece.rarity == "" or typeof(piece.look) ~= "string" or piece.look == "" then
+			table.insert(badPieces, id)
+		else
+			highest = math.max(highest, number)
+		end
+	end
+	for _, id in ipairs(badPieces) do
+		inventory.pieces[id] = nil
+	end
+	if typeof(inventory.wearingPieces) ~= "table" then
+		inventory.wearingPieces = {}
+	end
+	local badWorn = {}
+	for slot, pieceId in pairs(inventory.wearingPieces) do
+		local piece = inventory.pieces[pieceId]
+		if piece == nil or piece.slot ~= slot then
+			table.insert(badWorn, slot)
+		end
+	end
+	for _, slot in ipairs(badWorn) do
+		inventory.wearingPieces[slot] = nil
+	end
+	local stored = inventory.nextPieceId
+	if not isUsableCounter(stored) or stored ~= math.floor(stored) or stored <= highest then
+		inventory.nextPieceId = highest + 1
+	end
 end
 
 --[[

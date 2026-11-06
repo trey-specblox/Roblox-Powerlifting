@@ -13,8 +13,12 @@
 		  models, WornGearConfig.AssetId, loaded once and fitted by
 		  WornGearFit), on every spawn and after every change
 
-	Looks only: the pieces have no mass, no collision, no touch or query, no
-	shadow. R6 bodies are not dressed (the gear is fitted to R15).
+	- SetWornPiece puts on a piece of stat gear and ScrapPiece scraps one for coins
+	  (GAME_DESIGN §35.12); the coins come from its rarity, never from a client
+
+	The worn models have no mass, no collision, no touch or query, no shadow. R6
+	bodies are not dressed (the gear is fitted to R15). A worn piece's stats are read
+	when a lift starts or training ticks (GearStats), so they work on any rig.
 ]]
 
 local Players = game:GetService("Players")
@@ -24,7 +28,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local ShopConfig = require(ConfigFolder:WaitForChild("ShopConfig"))
 local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
-local GearRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("GearRemotes"))
+local EconomyFolder = Shared:WaitForChild("Economy")
+local GearRemotes = require(EconomyFolder:WaitForChild("GearRemotes"))
+local GearStats = require(EconomyFolder:WaitForChild("GearStats"))
 
 local PlayerDataFolder = script.Parent.Parent:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
@@ -88,7 +94,8 @@ local function viewFor(player: Player): GearRemotes.GearView?
 	if owned == nil or wearing == nil then
 		return nil
 	end
-	return { owned = owned, wearing = wearing, drawn = loadPieces() ~= nil }
+	return { owned = owned, wearing = wearing, drawn = loadPieces() ~= nil,
+		pieces = PlayerDataService.getPieces(player) or {}, wearingPieces = PlayerDataService.getWornPieces(player) or {} }
 end
 
 local function tooFast(player: Player): boolean
@@ -120,12 +127,47 @@ local function setWorn(player: Player, slotId: any, itemId: any): (boolean, stri
 	end
 	local outcome = PlayerDataService.setWorn(player, slot.id, item.id)
 	if outcome == "NotOwned" then
-		return false, "You don't own that yet. Buy it at the Shop.", viewFor(player)
+		return false, "You don't own that. Gear comes from crates at the Shop.", viewFor(player)
 	elseif outcome ~= "Worn" then
 		return false, "That didn't go through. Try again.", viewFor(player)
 	end
 	dress(player)
 	return true, string.format("Wearing the %s.", item.name), viewFor(player)
+end
+
+-- Puts on a piece of stat gear, in its own slot.
+local function setWornPiece(player: Player, pieceId: any): (boolean, string, GearRemotes.GearView?)
+	if typeof(pieceId) ~= "string" then
+		return false, "Unknown gear.", nil
+	end
+	local outcome = PlayerDataService.setWornPiece(player, pieceId)
+	if outcome == "NotOwned" then
+		return false, "You don't have that any more.", viewFor(player)
+	elseif outcome ~= "Worn" then
+		return false, "That didn't go through. Try again.", viewFor(player)
+	end
+	dress(player)
+	local piece = (PlayerDataService.getPieces(player) or {})[pieceId]
+	return true, if piece then "Wearing the " .. GearStats.pieceName(piece) .. "." else "Worn.", viewFor(player)
+end
+
+-- Scraps a piece; the coins are the server's, from the piece's rarity.
+local function scrapPiece(player: Player, pieceId: any): (boolean, string, GearRemotes.GearView?)
+	if typeof(pieceId) ~= "string" then
+		return false, "Unknown gear.", nil
+	end
+	local piece = (PlayerDataService.getPieces(player) or {})[pieceId]
+	local rarity = if piece then GearStats.rarity(piece.rarity) else nil
+	if piece == nil or rarity == nil then
+		return false, "You don't have that any more.", viewFor(player)
+	end
+	local outcome = PlayerDataService.scrapPiece(player, pieceId, rarity.scrap)
+	if outcome == "IsWorn" then
+		return false, "Take it off before you scrap it.", viewFor(player)
+	elseif outcome ~= "Scrapped" then
+		return false, "That didn't go through. Try again.", viewFor(player)
+	end
+	return true, string.format("Scrapped for %d coins.", rarity.scrap), viewFor(player)
 end
 
 -- Fits the gear again when a body part changes size (Roblox can scale an avatar a moment after it spawns).
@@ -189,6 +231,18 @@ function GearService.start()
 			return false, "One moment...", nil
 		end
 		return setWorn(player, slotId, itemId)
+	end
+	remotes.setPiece.OnServerInvoke = function(player: Player, pieceId: any): (boolean, string, GearRemotes.GearView?)
+		if tooFast(player) then
+			return false, "One moment...", nil
+		end
+		return setWornPiece(player, pieceId)
+	end
+	remotes.scrap.OnServerInvoke = function(player: Player, pieceId: any): (boolean, string, GearRemotes.GearView?)
+		if tooFast(player) then
+			return false, "One moment...", nil
+		end
+		return scrapPiece(player, pieceId)
 	end
 	task.spawn(loadPieces)
 	local function track(player: Player)
