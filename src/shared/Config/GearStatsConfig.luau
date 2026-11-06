@@ -28,6 +28,8 @@ export type Rarity = {
 	-- The coins a piece scraps for.
 	scrap: number,
 	colour: Color3,
+	-- Only the rare suits: the one lift it helps, whatever its slot helps otherwise.
+	onlyLift: string?,
 }
 
 -- One crate at the Shop. Its id is only sent when asking to open one; it is never saved.
@@ -35,6 +37,8 @@ export type Crate = {
 	id: string,
 	-- The WornGearConfig slot of everything inside.
 	slot: string,
+	-- The ShopConfig category its looks come from, when it isn't the slot's own.
+	category: string?,
 	name: string,
 	-- The menu's short name for it.
 	button: string,
@@ -59,8 +63,25 @@ GearStatsConfig.SlotLifts = {
 	KneeSleeves = { Squat = true },
 	Belt = { Squat = true, Bench = true, Deadlift = true },
 	WristWraps = { Bench = true, Deadlift = true },
+	BenchShirt = { Bench = true },
 	Singlet = { Squat = true, Bench = true, Deadlift = true },
 } :: { [string]: { [string]: boolean } }
+
+--[[
+	The rare suits (GAME_DESIGN §35.10, §35.12): the supportive gear of equipped lifting, a meet's rarest drop, never in a crate.
+	Each is a rarity of its own with one look. +15 on its one lift; the squat and deadlift suits go in the singlet's slot
+	and replace it, the bench shirt has its own slot under the singlet. No training speed, and 5,000 coins if scrapped (Claude's
+	choices, 2026-11-06, open to change). The drop chances are MeetLevelConfig's. An id is saved: never rename or reuse one.
+]]
+export type Suit = Rarity & { slot: string, look: string, name: string }
+GearStatsConfig.Suits = {
+	{ id = "SquatSuit", name = "SQUAT SUIT", odds = 0, technique = 15, trainingSpeed = 0, scrap = 5000, colour = rgb(255, 96, 60),
+		onlyLift = "Squat", slot = "Singlet", look = "suit_squat" },
+	{ id = "BenchShirt", name = "BENCH SHIRT", odds = 0, technique = 15, trainingSpeed = 0, scrap = 5000, colour = rgb(255, 96, 60),
+		onlyLift = "Bench", slot = "BenchShirt", look = "shirt_bench" },
+	{ id = "DeadliftSuit", name = "DEADLIFT SUIT", odds = 0, technique = 15, trainingSpeed = 0, scrap = 5000, colour = rgb(255, 96, 60),
+		onlyLift = "Deadlift", slot = "Singlet", look = "suit_deadlift" },
+} :: { Suit }
 
 -- Gear's total technique training speed on one lift stops here.
 GearStatsConfig.MaxTrainingSpeed = 0.25
@@ -68,12 +89,15 @@ GearStatsConfig.MaxTrainingSpeed = 0.25
 -- One crate per item (user 2026-11-06: "every item to have its own crate"). [PROVISIONAL] all the same price.
 GearStatsConfig.Crates = {
 	{ id = "Belt", slot = "Belt", name = "BELT CRATE", button = "BELT", price = 500, colour = rgb(28, 44, 100) },
-	{ id = "WristWraps", slot = "WristWraps", name = "WRIST WRAP CRATE", button = "WRAPS", price = 500, colour = rgb(150, 28, 36) },
+	{ id = "WristWraps", slot = "WristWraps", name = "WRIST WRAP CRATE", button = "WRIST", price = 500, colour = rgb(150, 28, 36) },
 	{ id = "Singlet", slot = "Singlet", name = "SINGLET CRATE", button = "SINGLET", price = 500, colour = rgb(16, 110, 110) },
 	{ id = "KneeSleeves", slot = "KneeSleeves", name = "KNEE SLEEVE CRATE", button = "SLEEVES", price = 500, colour = rgb(44, 46, 54) },
+	{ id = "KneeWraps", slot = "KneeSleeves", category = "KNEE WRAPS", name = "KNEE WRAP CRATE", button = "KNEE", price = 500, colour = rgb(30, 100, 50) },
 } :: { Crate }
 -- How many stat pieces a player can hold: a full inventory has to scrap before opening another crate.
 GearStatsConfig.MaxPieces = 100
+
+-- (Knee wraps' crate holds the sleeves' slot: wraps replace sleeves while worn, and help squat as they do.)
 
 -- The crate's sounds, played on the player's own screen: Drop, Rattle and Open through its intro, Tick for the reel's
 -- cards passing, Big for Epic and up.

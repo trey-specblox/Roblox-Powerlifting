@@ -38,23 +38,42 @@ export type Piece = {
 	look: string,
 }
 
+-- The rare suit with this id, or nil. Safe with anything a client sends.
+function GearStats.suit(id: any): GearStatsConfig.Suit?
+	for _, suit in ipairs(GearStatsConfig.Suits) do
+		if suit.id == id then
+			return suit
+		end
+	end
+	return nil
+end
+
 function GearStats.rarity(id: any): GearStatsConfig.Rarity?
 	for _, rarity in ipairs(GearStatsConfig.Rarities) do
 		if rarity.id == id then
 			return rarity
 		end
 	end
-	return nil
+	return GearStats.suit(id)
 end
 
--- A rarity's place from the bottom (1 = Common); 0 for an unknown one.
+-- A rarity's place from the bottom (1 = Common), the rare suits above them all; 0 for an unknown one.
 function GearStats.rank(id: any): number
 	for index, rarity in ipairs(GearStatsConfig.Rarities) do
 		if rarity.id == id then
 			return index
 		end
 	end
-	return 0
+	return if GearStats.suit(id) then #GearStatsConfig.Rarities + 1 else 0
+end
+
+-- Whether a piece of this rarity in this slot helps this lift.
+local function helps(slot: string, rarity: GearStatsConfig.Rarity, lift: string): boolean
+	if rarity.onlyLift then
+		return rarity.onlyLift == lift
+	end
+	local lifts = GearStatsConfig.SlotLifts[slot]
+	return lifts ~= nil and lifts[lift] == true
 end
 
 -- The crate with this id, or nil. Safe with anything a client sends.
@@ -67,12 +86,15 @@ function GearStats.crate(id: any): GearStatsConfig.Crate?
 	return nil
 end
 
--- What a crate of this item gives: its rarity by the odds, with one of that item's Shop looks.
-function GearStats.roll(random: Random, slotId: string): Piece
-	local category: string? = nil
-	for _, slot in ipairs(WornGearConfig.Slots) do
-		if slot.id == slotId then
-			category = slot.category
+-- What this crate gives: its rarity by the odds, with one of its item's looks.
+function GearStats.roll(random: Random, crate: GearStatsConfig.Crate): Piece
+	local slotId = crate.slot
+	local category: string? = crate.category
+	if category == nil then
+		for _, slot in ipairs(WornGearConfig.Slots) do
+			if slot.id == slotId then
+				category = slot.category
+			end
 		end
 	end
 	local looks: { string } = {}
@@ -115,9 +137,8 @@ end
 function GearStats.techniqueBonus(worn: { [string]: string }, lift: string): number
 	local total = 0
 	for slot, rarityId in pairs(worn) do
-		local helps = GearStatsConfig.SlotLifts[slot]
 		local rarity = GearStats.rarity(rarityId)
-		if helps and helps[lift] and rarity then
+		if rarity and helps(slot, rarity, lift) then
 			total += rarity.technique
 		end
 	end
@@ -128,17 +149,20 @@ end
 function GearStats.trainingSpeed(worn: { [string]: string }, lift: string): number
 	local total = 0
 	for slot, rarityId in pairs(worn) do
-		local helps = GearStatsConfig.SlotLifts[slot]
 		local rarity = GearStats.rarity(rarityId)
-		if helps and helps[lift] and rarity then
+		if rarity and helps(slot, rarity, lift) then
 			total += rarity.trainingSpeed
 		end
 	end
 	return math.min(total, GearStatsConfig.MaxTrainingSpeed)
 end
 
--- "RARE GOLD STANDARD BELT".
+-- "RARE GOLD STANDARD BELT", or a rare suit's own name.
 function GearStats.pieceName(piece: Piece): string
+	local suit = GearStats.suit(piece.rarity)
+	if suit then
+		return suit.name
+	end
 	local item = ShopConfig.find(piece.look)
 	return string.upper(piece.rarity .. " " .. (if item then item.name else "gear"))
 end
@@ -148,6 +172,9 @@ function GearStats.statText(rarityId: string): string
 	local rarity = GearStats.rarity(rarityId)
 	if rarity == nil then
 		return ""
+	end
+	if rarity.onlyLift then
+		return string.format("+%s TECHNIQUE ON %s", tostring(rarity.technique), string.upper(rarity.onlyLift))
 	end
 	return string.format("+%s TECHNIQUE  ·  +%d%% TRAINING", tostring(rarity.technique), math.floor(rarity.trainingSpeed * 100 + 0.5))
 end

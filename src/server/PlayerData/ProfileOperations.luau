@@ -1095,8 +1095,9 @@ end
 	GEAR WITH STATS  (GAME_DESIGN.md §35.12; schema 19)
 	=========================================================================
 
-	openCrate is the ONLY way a piece is made, and it takes the coins in the same
-	step; scrapPiece is the ONLY way one goes, and it pays in the same step.
+	openCrate makes a piece and takes the coins in the same step; grantPiece makes one
+	for free, for a rare suit a meet dropped or the admin panel gave. scrapPiece is the ONLY
+	way one goes, and it pays in the same step.
 	SECURITY BOUNDARY: they trust their caller (ShopService, GearService) for the
 	price, the roll and the scrap value, all made on the server from GearStatsConfig,
 	never from a client; they check everything else themselves.
@@ -1172,6 +1173,21 @@ function ProfileOperations.openCrate(data: ProfileData, price: number, piece: Pl
 	inventory.nextPieceId += 1
 	pieces[id] = { slot = piece.slot, rarity = piece.rarity, look = piece.look }
 	return "Opened", id, wallet.coins
+end
+
+--[[
+	Adds `piece` for free and returns its id, or nil for an unusable inventory or a bad piece. Never refused for being full: a
+	rare suit is never lost. SERVER-ONLY: the caller chose the piece; no client may.
+]]
+function ProfileOperations.grantPiece(data: ProfileData, piece: PlayerProfileSchema.StatPiece): string?
+	local inventory, pieces = piecesOf(data)
+	if inventory == nil or typeof(piece) ~= "table" or not isItemId(piece.slot) or not isItemId(piece.rarity) or not isItemId(piece.look) then
+		return nil
+	end
+	local id = tostring(inventory.nextPieceId)
+	inventory.nextPieceId += 1
+	pieces[id] = { slot = piece.slot, rarity = piece.rarity, look = piece.look }
+	return id
 end
 
 --[[

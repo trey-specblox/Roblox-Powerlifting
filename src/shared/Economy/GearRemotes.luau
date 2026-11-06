@@ -16,6 +16,8 @@
 			Puts on a piece of stat gear, in its own slot (GAME_DESIGN §35.12).
 		ScrapPiece    client -> server  (pieceId: string) -> (ok, message, view)
 			Scraps a piece for coins. The server decides the coins, from its rarity.
+		SuitDropped   server -> every client  (news: SuitDropNews)
+			Someone got a rare suit at a meet (GAME_DESIGN §35.12). Display only.
 ]]
 
 local GearRemotes = {}
@@ -25,6 +27,13 @@ GearRemotes.GET = "GetGear"
 GearRemotes.SET = "SetWorn"
 GearRemotes.SET_PIECE = "SetWornPiece"
 GearRemotes.SCRAP = "ScrapPiece"
+GearRemotes.SUIT_DROPPED = "SuitDropped"
+
+export type SuitDropNews = {
+	name: string,
+	userId: number,
+	suitName: string,
+}
 
 export type GearView = {
 	owned: { string },
@@ -42,6 +51,7 @@ export type RemoteSet = {
 	set: RemoteFunction,
 	setPiece: RemoteFunction,
 	scrap: RemoteFunction,
+	suitDropped: RemoteEvent,
 }
 
 function GearRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
@@ -63,8 +73,15 @@ function GearRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		made.Parent = folder
 		return made
 	end
+	local suitDropped = (folder :: Instance):FindFirstChild(GearRemotes.SUIT_DROPPED)
+	if suitDropped == nil then
+		local created = Instance.new("RemoteEvent")
+		created.Name = GearRemotes.SUIT_DROPPED
+		created.Parent = folder
+		suitDropped = created
+	end
 	return { get = make(GearRemotes.GET), set = make(GearRemotes.SET), setPiece = make(GearRemotes.SET_PIECE),
-		scrap = make(GearRemotes.SCRAP) }
+		scrap = make(GearRemotes.SCRAP), suitDropped = suitDropped :: RemoteEvent }
 end
 
 -- Waits for the remotes to replicate. Client only.
@@ -75,6 +92,7 @@ function GearRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		set = folder:WaitForChild(GearRemotes.SET) :: RemoteFunction,
 		setPiece = folder:WaitForChild(GearRemotes.SET_PIECE) :: RemoteFunction,
 		scrap = folder:WaitForChild(GearRemotes.SCRAP) :: RemoteFunction,
+		suitDropped = folder:WaitForChild(GearRemotes.SUIT_DROPPED) :: RemoteEvent,
 	}
 end
 

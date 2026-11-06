@@ -5685,8 +5685,8 @@ Open questions:
   How big, without breaking CN, Scale and records (§33)?
 - **Records:** real powerlifting keeps raw and equipped records apart. Do
   equipped lifts count toward gym and world records (§31)?
-- **Wearing them:** a suit or shirt replaces the singlet while worn (a new
-  worn model each, made in Blender like the other gear).
+- **Wearing them:** a new worn model each, made in Blender like the other gear. (Which ones replace
+  the singlet: corrected in §35.12.)
 - **Trading:** can they be traded? (No trading system exists.)
 - **Showing them off:** a server-wide announcement when one drops?
 
@@ -5700,7 +5700,7 @@ settles DripStone (§35.5). **Held 2026-11-06: §35.12.** Building crates comes 
 chances by meet level are ready to plug in once Nationals, Worlds and
 Sheffield meets exist.
 
-### 35.12 Gear stats, crates, DripStone and rare suits: [APPROVED by the user, 2026-11-06, picked from options; gear and crates built, DripStone and suits not yet]
+### 35.12 Gear stats, crates, DripStone and rare suits: [APPROVED by the user, 2026-11-06, picked from options; gear, crates, rare suits and knee wraps built, DripStone not yet]
 
 **Why it stays fair:** gear makes a lift easier to perform and technique faster to train. It never raises
 Competition Number: the modifier system has no way to touch it (`ModifierChannel`). Stats are never bought with
@@ -5760,6 +5760,17 @@ smaller singlet, but that left bench with 2 pieces and no lift reaching +12, so 
   same tap skips it. Each crate has its own colour and big lettering (user: "the difference is too subtle ... like CENTRAL
   Belts"): CENTRAL over BELTS on navy, WRAPS on red, SINGLETS on teal, SLEEVES on charcoal.
 
+**The rare suits' later plan (user, 2026-11-06, "just for you to remember"; NOT BUILT, details not settled):**
+
+- **Getting one:** only by winning it as a drop. **Stats: technique only.**
+- **Skin crates:** owning a suit unlocks crates that reroll **just its cosmetic**, never its stats, unboxed for **a lot of coins**.
+- **A cutscene when one drops:** the coach says "You should use this... Let me see you try it on i have to know if you can handle it"
+  (the user's words).
+- **A test they must pass:** the player **must** take the gear to a mock meet and beat the minigame. A bench shirt is three attempts in
+  the shirt. The weights are a % of their max; the user is not sure of the number yet.
+- **Still open:** the %, whether the suits are three attempts too, what failing means, and whether a suit can be worn in real meets before
+  passing. Today a dropped suit can be worn straight away.
+
 **DripStone** (§35.5): puts one piece's stats onto another piece's look, of the same item type.
 
 - A meet reward: about **5% for each of the top 3** at Regional meets and up.
@@ -5767,8 +5778,22 @@ smaller singlet, but that left bench with 2 pieces and no lift reaching +12, so 
 
 **Rare suits** (§35.10, drop chances as listed there):
 
-- **Squat suit, bench shirt, deadlift suit:** **+15 technique on their one lift.** Each replaces the singlet while
-  worn, so on other lifts you lose the singlet's bonus. Stacks with other gear: up to +23 with Legendary belt and sleeves.
+- **Squat suit, bench shirt, deadlift suit:** **+15 technique on their one lift.**
+- **How they are worn (corrected by the user with photos, 2026-11-06: "Your supposed to wear you singlet over ur bench shirt
+  ... Squat suits are just way tighter singlets, same as deadlift suits"):** the **squat and deadlift suits are very tight
+  singlets**, so each replaces the singlet while worn and on other lifts you lose the singlet's bonus. The **bench shirt is
+  worn under the singlet**, in its own slot, so it replaces nothing. With Legendary gear that makes up to **+23** on squat and
+  deadlift and **+27** on bench; the bench's extra +4 is to watch once it is live.
+- **The bench shirt pushes the arms forward (user, 2026-11-06, with a photo):** a player wearing it stands with their arms held
+  out in front, as a real shirt forces them.
+- **How they look (user, 2026-11-06: "way more texturized ... very rough ... rough and 3d modeled ... cannot just be a flat
+  plane"):** rough stiff canvas with real depth: creases, doubled straps, raised stitching, rolled hems, sewn patches.
+- **Knee wraps are a new item of their own (user, 2026-11-06),** not part of the suits: a striped strap wound round the knee.
+  They have **their own crate, the fifth** (500 coins, the same odds), and are worn **in place of the sleeves**, helping squat as sleeves do
+  (Claude's suggestion, accepted when the user approved the upload).
+- **Built with Claude's choices, open to change:** a suit gives **no training speed** and scraps for **5,000 coins**. Suits drop
+  **only at meets that pay a prize pot**, not alone with computer lifters, so nobody can farm them. A dropped suit arrives **even with a
+  full inventory**. The news is the one quiet line at the top of the screen and the chat, as records are (§31.6).
 - **Who rolls:** every real lifter who finishes with a total, once per meet. A drop is announced to the whole server.
 - **Records:** suit lifts **count for everything**, gym records and official bests included (user's pick; real
   powerlifting keeps raw and equipped apart, and the user chose not to here).
@@ -5778,8 +5803,8 @@ smaller singlet, but that left bench with 2 pieces and no lift reaching +12, so 
 before opening another crate; a worn piece has to be taken off before it can be scrapped; the crate's model appears only in the
 Shop's opening intro, not standing in the gym. The deadlift's typing pull is pure player skill and ignores technique, so gear helps its lockout, not its pull.
 
-**Still to decide when it is built:** the DripStone screen; whether a piece being used up can be worn at the time; whether
-suits give any training speed; trading (no trading system exists).
+**Still to decide when it is built:** the DripStone screen; whether a piece being used up can be worn at the time; trading (no
+trading system exists).
 
 **To watch once it is live:** suits and Legendary sets on gym records, since a lucky drop could put a record out of
 others' reach; and the coins against crate prices. Each piece needs no new model unless it has a new look; the three

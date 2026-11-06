@@ -29,6 +29,7 @@ local GearStats = require(Shared:WaitForChild("Economy"):WaitForChild("GearStats
 local ServerRoot = script.Parent.Parent
 local PlayerDataService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
 local ShopService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("ShopService"))
+local GearService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("GearService"))
 
 local AdminService = {}
 
@@ -67,6 +68,17 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 			end
 		end
 		return false, "That isn't a coin button."
+	end,
+	-- A rare suit with no server-wide news, to test wearing it.
+	GiveSuit = function(player: Player, value: any): (boolean, string)
+		local suit = GearStats.suit(value)
+		if suit == nil then
+			return false, "That isn't a suit."
+		end
+		if GearService.giveSuit(player, suit.id, false) then
+			return true, suit.name .. " added. Wear it from GEAR."
+		end
+		return false, "No suit added: your save hasn't loaded."
 	end,
 	CrateRarity = function(player: Player, value: any): (boolean, string)
 		if value == nil then

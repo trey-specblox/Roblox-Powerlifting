@@ -102,6 +102,16 @@
     },
     "MaterialService": {
       "$ignoreUnknownInstances": true,
+      "Suit_RoughCanvas": {
+        "$className": "MaterialVariant",
+        "$properties": {
+          "BaseMaterial": "Fabric",
+          "StudsPerTile": 1.2,
+          "ColorMap": "rbxassetid://77913741997628",
+          "NormalMap": "rbxassetid://126714973613895",
+          "RoughnessMap": "rbxassetid://72577262654714"
+        }
+      },
       "SBar_DarkWoodFloor": {
         "$className": "MaterialVariant",
         "$properties": {

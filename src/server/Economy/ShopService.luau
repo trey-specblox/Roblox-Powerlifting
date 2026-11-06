@@ -98,7 +98,7 @@ local function openCrate(player: Player, crateId: any): (boolean, string, ShopRe
 	if not atCounter(player) then
 		return false, "Come to the shop counter to open a crate.", nil, nil, nil
 	end
-	local piece = GearStats.roll(crateRandom, crate.slot)
+	local piece = GearStats.roll(crateRandom, crate)
 	-- Studio only: the workspace attribute StudioCrateRarity forces what comes out, to see every reveal.
 	local forced: any = forcedRarity[player]
 	if forced == nil and RunService:IsStudio() then

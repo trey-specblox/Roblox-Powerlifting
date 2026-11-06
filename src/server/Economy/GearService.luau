@@ -16,6 +16,9 @@
 	- SetWornPiece puts on a piece of stat gear and ScrapPiece scraps one for coins
 	  (GAME_DESIGN §35.12); the coins come from its rarity, never from a client
 
+	- giveSuit makes a rare suit (a meet's drop or the admin panel; GAME_DESIGN §35.12), and a worn bench
+	  shirt holds the arms forward. Previews of the worn-only models go to the menus.
+
 	The worn models have no mass, no collision, no touch or query, no shadow. R6
 	bodies are not dressed (the gear is fitted to R15). A worn piece's stats are read
 	when a lift starts or training ticks (GearStats), so they work on any rig.
@@ -30,6 +33,7 @@ local ShopConfig = require(ConfigFolder:WaitForChild("ShopConfig"))
 local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
 local EconomyFolder = Shared:WaitForChild("Economy")
 local GearRemotes = require(EconomyFolder:WaitForChild("GearRemotes"))
+local ShopRemotes = require(EconomyFolder:WaitForChild("ShopRemotes"))
 local GearStats = require(EconomyFolder:WaitForChild("GearStats"))
 
 local PlayerDataFolder = script.Parent.Parent:WaitForChild("PlayerData")
@@ -45,9 +49,31 @@ local started = false
 local lastAsked: { [Player]: number } = {}
 local pieces: WornGearFit.Pieces? = nil
 local loadTried = false
+local remotesSet: GearRemotes.RemoteSet? = nil
+local armTracks: { [Model]: AnimationTrack } = {}
 
 local function log(message: string, ...: any)
 	print("[GearService] " .. string.format(message, ...))
+end
+
+-- Previews of the models only worn, never in the Shop's own gear file, for the menus (GearPreview finds them by `model`).
+local function sharePreviews(loaded: WornGearFit.Pieces)
+	local folder = ReplicatedStorage:FindFirstChild(ShopRemotes.PREVIEWS_NAME)
+	if folder == nil then
+		local made = Instance.new("Folder")
+		made.Name = ShopRemotes.PREVIEWS_NAME
+		made.Parent = ReplicatedStorage
+		folder = made
+	end
+	for _, item in ipairs(ShopConfig.Items) do
+		local slot = if item.rough then WornGearConfig.slot(item.slot or "BenchShirt") else nil
+		local wornName = item.worn or (slot and slot.worn)
+		local list = wornName and loaded[wornName]
+		if slot and list and #list > 0 and (folder :: Instance):FindFirstChild(item.model) == nil then
+			-- One leg is enough to see knee wraps, and half the triangles in a crate's reel of them.
+			WornGearFit.previewModel(item.model, list, slot.id == "KneeSleeves").Parent = folder
+		end
+	end
 end
 
 -- The uploaded model's pieces (WornGearFit.fromModel), or nil when it is not uploaded or did not load.
@@ -66,12 +92,41 @@ local function loadPieces(): WornGearFit.Pieces?
 		loaded:Destroy()
 		pieces = result
 		log("worn gear loaded: %d pieces", count)
+		sharePreviews(result)
 	end)
 	if not ok then
 		warn("[GearService] the worn gear models did not load (gear is saved but not drawn): " .. tostring(problem))
 		pieces = nil
 	end
 	return pieces
+end
+
+-- Holds the arms forward while a bench shirt is worn, on any R15 body. Every lift and machine animation takes over by itself.
+local function holdArms(character: Model, wearing: boolean)
+	local track = armTracks[character]
+	if wearing and track == nil then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+		if humanoid and animator and humanoid.RigType == Enum.HumanoidRigType.R15 then
+			local animation = Instance.new("Animation")
+			animation.AnimationId = WornGearConfig.BenchShirtArmsAnimation
+			local ok, loaded = pcall(function()
+				return animator:LoadAnimation(animation)
+			end)
+			if ok then
+				loaded.Priority = Enum.AnimationPriority.Movement
+				loaded.Looped = true
+				loaded:Play(0.3)
+				armTracks[character] = loaded
+				character.Destroying:Once(function()
+					armTracks[character] = nil
+				end)
+			end
+		end
+	elseif not wearing and track then
+		track:Stop(0.3)
+		armTracks[character] = nil
+	end
 end
 
 -- Rebuilds the character's worn gear from the save. Safe to call any time.
@@ -83,6 +138,7 @@ local function dress(player: Player)
 	end
 	local loaded = if next(worn) then loadPieces() else nil
 	local made = WornGearFit.dress(character, worn, loaded or {})
+	holdArms(character, worn.BenchShirt ~= nil)
 	if made > 0 then
 		log("%s dressed: %d pieces", player.Name, made)
 	end
@@ -170,6 +226,23 @@ local function scrapPiece(player: Player, pieceId: any): (boolean, string, GearR
 	return true, string.format("Scrapped for %d coins.", rarity.scrap), viewFor(player)
 end
 
+--[[
+	Gives a rare suit, by its id, and tells everyone when `announce` (a meet's drop; the admin panel doesn't).
+	SERVER-ONLY: the caller checked why. Returns the piece's id, or nil.
+]]
+function GearService.giveSuit(player: Player, suitId: string, announce: boolean): string?
+	local suit = GearStats.suit(suitId)
+	if suit == nil then
+		return nil
+	end
+	local id = PlayerDataService.grantPiece(player, { slot = suit.slot, rarity = suit.id, look = suit.look })
+	if id and announce and remotesSet then
+		local news: GearRemotes.SuitDropNews = { name = player.Name, userId = player.UserId, suitName = suit.name }
+		remotesSet.suitDropped:FireAllClients(news)
+	end
+	return id
+end
+
 -- Fits the gear again when a body part changes size (Roblox can scale an avatar a moment after it spawns).
 local function refitOnResize(player: Player, character: Model)
 	local pending = false
@@ -220,6 +293,7 @@ function GearService.start()
 	end
 	started = true
 	local remotes = GearRemotes.createOnServer(ReplicatedStorage)
+	remotesSet = remotes
 	remotes.get.OnServerInvoke = function(player: Player): GearRemotes.GearView?
 		if tooFast(player) then
 			return nil

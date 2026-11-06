@@ -9,6 +9,9 @@
 	belt, knee sleeves, wrist wraps): what is worn, and a card for every owned
 	item in that slot (3D preview, name, WEAR or WORN), and TAKE OFF.
 
+	The rare suits go in these rows too: a squat or deadlift suit under SINGLET, a bench shirt in its own row, and knee wraps
+	under KNEE SLEEVES.
+
 	Gear with stats from crates (GAME_DESIGN §35.12) comes first in each row, best
 	first, edged in its rarity's colour, with its stats and SCRAP (press twice). The
 	status line adds up what the worn pieces give on each lift.
@@ -346,7 +349,7 @@ function GearMenu.start()
 			end
 			if count == 0 then
 				local none = UIStyle.text(strip, "None", UDim2.fromOffset(2, 0), UDim2.fromOffset(500, 26), SIZES.body, C.muted)
-				none.Text = "Nothing yet. Open a crate at the Shop."
+				none.Text = if slot.id == "BenchShirt" then "Rare: drops at official meets." else "Nothing yet. Open a crate at the Shop."
 			end
 			strip.CanvasSize = UDim2.fromOffset(2 + count * (CARD_WIDTH + CARD_GAP), 0)
 			local height = if count > 0 then 30 + CARD_HEIGHT + 22 else EMPTY_ROW_HEIGHT

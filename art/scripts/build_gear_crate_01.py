@@ -193,7 +193,7 @@ def lid_top(x, up, depth):
 def label(text):
     # The item, big, on the front under CENTRAL.
     def build(bm):
-        B.add_text(bm, text, 0.78, 0.014, H.on_front((0, 0, 0), -HD, Z0 + 0.8))
+        B.add_text(bm, text, 0.78 if len(text) < 9 else 0.56, 0.014, H.on_front((0, 0, 0), -HD, Z0 + 0.8))
 
     return build
 
@@ -201,15 +201,15 @@ def label(text):
 def lid_label(text):
     # The item again on the lid's top, under its CENTRAL.
     def build(bm):
-        B.add_text(bm, text, 0.6, 0.014, lambda x, up, depth: lid_top(x, up - 0.42, depth))
+        B.add_text(bm, text, 0.6 if len(text) < 9 else 0.42, 0.014, lambda x, up, depth: lid_top(x, up - 0.42, depth))
 
     return build
 
 
 # Short enough to be big: each fits between the case's upright rails.
-LABELS = {"Belt": "BELTS", "WristWraps": "WRAPS", "Singlet": "SINGLETS", "KneeSleeves": "SLEEVES"}
+LABELS = {"Belt": "BELTS", "WristWraps": "WRAPS", "Singlet": "SINGLETS", "KneeSleeves": "SLEEVES", "KneeWraps": "KNEE WRAPS"}
 # The crates' colours, as GearStatsConfig.Crates has them.
-CRATE_COLOURS = {"Belt": (28, 44, 100), "WristWraps": (150, 28, 36), "Singlet": (16, 110, 110), "KneeSleeves": (44, 46, 54)}
+CRATE_COLOURS = {"Belt": (28, 44, 100), "WristWraps": (150, 28, 36), "Singlet": (16, 110, 110), "KneeSleeves": (44, 46, 54), "KneeWraps": (30, 100, 50)}
 
 
 def lid_logo(bm):

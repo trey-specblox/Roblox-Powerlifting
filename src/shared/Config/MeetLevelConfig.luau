@@ -32,16 +32,18 @@ export type Level = {
 	ladderMultiplier: number,
 	-- Whether the top 3 earn a title and a trophy.
 	titles: boolean,
+	-- The chance each lifter with a total gets a rare suit (GAME_DESIGN §35.10). Only at meets that pay a prize pot.
+	suitDropChance: number,
 }
 
 MeetLevelConfig.Levels = {
-	Local = { id = "Local", label = "LOCAL MEET", chance = 0, potMultiplier = 1, ladderMultiplier = 1, titles = false },
-	Regional = { id = "Regional", label = "REGIONAL MEET", chance = 0.25, potMultiplier = 2, ladderMultiplier = 2,
+	Local = { id = "Local", label = "LOCAL MEET", suitDropChance = 0.0001, chance = 0, potMultiplier = 1, ladderMultiplier = 1, titles = false },
+	Regional = { id = "Regional", label = "REGIONAL MEET", suitDropChance = 0.001, chance = 0.25, potMultiplier = 2, ladderMultiplier = 2,
 		titles = true },
 	-- chance 0: State is never rolled in the Local venue any more (user, 2026-11-01, GAME_DESIGN §36): a new
 	-- player's first meet must not be a State meet. State gets its own arena; until then it only happens when
 	-- forced in Studio (workspace attribute ForceMeetLevel). Its titles stay for the arena.
-	State = { id = "State", label = "STATE MEET", chance = 0, potMultiplier = 3, ladderMultiplier = 3, titles = true },
+	State = { id = "State", label = "STATE MEET", suitDropChance = 0.005, chance = 0, potMultiplier = 3, ladderMultiplier = 3, titles = true },
 } :: { [LevelId]: Level }
 
 -- Rolled in this order (the rarest first); Local when none comes up.

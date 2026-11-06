@@ -15,6 +15,10 @@
 	GymRecordRemotes.ATTEMPT: a lifter declared a record weight at a meet; the
 	small WATCH button asks the server to teleport the player there
 	(TeleportRemotes), skipped for the lifter and for players already there.
+	GearRemotes.SUIT_DROPPED: someone got a rare suit at a meet (GAME_DESIGN §35.12), also in the chat:
+
+		treylicious1 got the SQUAT SUIT at a meet!
+
 	LocalMeetRemotes.LEVEL_NEWS: the next meet is a Regional or State meet
 	(GAME_DESIGN §35.8), with a GO button to the venue (skipped for players
 	already there):
@@ -36,6 +40,8 @@ local GymRecordRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("GymRe
 local TeleportRemotes = require(Shared:WaitForChild("World"):WaitForChild("TeleportRemotes"))
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("LocalMeetRemotes"))
+local GearRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("GearRemotes"))
+local GearStatsConfig = require(Shared:WaitForChild("Config"):WaitForChild("GearStatsConfig"))
 
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 local C = UIStyle.Colours
@@ -311,6 +317,24 @@ function GymRecordAnnouncer.start()
 			show(string.format("Meet %d's next is a %s: prize pot x%d, titles for the top 3. Sign up within %d:%02d",
 				news.hallIndex, coloured(news.levelLabel, "#FACE24"), news.potMultiplier or 1, left // 60, left % 60), LEVEL_SECONDS,
 				if there then nil else "LocalMeet", "GO ▶")
+		end)
+	end)
+
+	task.spawn(function()
+		local gear = GearRemotes.waitForClient(ReplicatedStorage)
+		local bigSound = Instance.new("Sound")
+		bigSound.SoundId = GearStatsConfig.Sounds.Big
+		bigSound.Volume = 0.8
+		bigSound.Parent = playerGui
+		gear.suitDropped.OnClientEvent:Connect(function(news: GearRemotes.SuitDropNews)
+			if typeof(news) ~= "table" or typeof(news.name) ~= "string" or typeof(news.suitName) ~= "string" then
+				return
+			end
+			show(string.format("%s got the %s at a meet!", coloured(news.name, "#FACE24"), coloured(news.suitName, "#FF603C")), RECORD_SECONDS, nil)
+			sayInChat(string.format("RARE DROP: %s got the %s at a meet!", news.name, news.suitName))
+			if news.userId == player.UserId then
+				bigSound:Play()
+			end
 		end)
 	end)
 

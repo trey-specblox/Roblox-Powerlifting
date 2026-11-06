@@ -531,7 +531,7 @@ function ShopMenu.start()
 			local cards: { Frame } = {}
 			local prizeEdge: UIStroke? = nil
 			for index = 1, REEL.Cards do
-				local card, edge = reelCard(index, if index == REEL.PrizeAt then prize else GearStats.roll(fillerRandom, crate.slot))
+				local card, edge = reelCard(index, if index == REEL.PrizeAt then prize else GearStats.roll(fillerRandom, crate))
 				if card then
 					cards[index] = card
 				end

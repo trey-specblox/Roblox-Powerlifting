@@ -11,6 +11,7 @@
 		an ADMIN tab on the left edge, above MEETS, usable by touch
 		GIVE COINS      +1,000  +10,000  +100,000
 		CRATES GIVE     NORMAL ODDS, or one rarity every time
+		GIVE A SUIT     each rare suit (no server-wide news)
 
 	PERFORMANCE: nothing for other players; a few buttons for the admin.
 ]]
@@ -31,7 +32,7 @@ local SIZES = UIStyle.TextSizes
 
 local AdminPanel = {}
 
-local PANEL_WIDTH, PANEL_HEIGHT = 640, 470
+local PANEL_WIDTH, PANEL_HEIGHT = 640, 570
 local MARGIN = 24
 local GAP = 10
 local BUTTON_HEIGHT = 56
@@ -152,6 +153,15 @@ function AdminPanel.start()
 		local text = if id == NORMAL then "NORMAL ODDS" else string.upper(id)
 		rarityButtons[id] = UIStyle.button(body, "Rarity_" .. id, text, position, size, "outline", function()
 			ask("CrateRarity", if id == NORMAL then nil else id)
+		end)
+	end
+
+	local suitsTitle = UIStyle.text(body, "SuitsTitle", UDim2.fromOffset(MARGIN, 358), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
+	suitsTitle.Text = "GIVE A SUIT"
+	for index, suit in ipairs(GearStatsConfig.Suits) do
+		local position, size = cell(index, #GearStatsConfig.Suits, 390)
+		UIStyle.button(body, "Suit_" .. suit.id, suit.name, position, size, "outline", function()
+			ask("GiveSuit", suit.id)
 		end)
 	end
 

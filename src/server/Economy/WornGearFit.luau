@@ -69,7 +69,14 @@ function WornGearFit.fromModel(model: Instance): (Pieces, number)
 
 	local result: Pieces = {}
 	local count = 0
+	local models: { { worn: string, parts: { [string]: { part: string, joint: string } } } } = {}
 	for _, slot in ipairs(WornGearConfig.Slots) do
+		table.insert(models, { worn = slot.worn, parts = slot.parts })
+	end
+	for _, other in ipairs(WornGearConfig.OtherModels) do
+		table.insert(models, other)
+	end
+	for _, slot in ipairs(models) do
 		local list: { Piece } = {}
 		for name, part in pairs(byName) do
 			local wornName, colourKey, segment = string.match(name, "^(%a+)_(%a+)_?(%a*)$")
@@ -130,15 +137,17 @@ function WornGearFit.dress(character: Model, worn: { [string]: string }, pieces:
 	for _, slot in ipairs(WornGearConfig.Slots) do
 		local itemId = worn[slot.id]
 		local item = if itemId then ShopConfig.find(itemId) else nil
-		if item and item.category == slot.category then
-			local list: { Piece } = pieces[slot.worn] or {}
+		if item and WornGearConfig.fits(slot, item) then
+			local list: { Piece } = pieces[item.worn or slot.worn] or {}
+			-- A singlet or suit goes on wider over a bench shirt.
+			local over = if slot.id == "Singlet" and worn.BenchShirt then WornGearConfig.OverShirt else nil
 			for _, info in ipairs(list) do
 				local default = WornGearConfig.DefaultBody[info.part]
 				local sides: { string } = if info.limb then { "Right", "Left" } else { "" }
 				for _, side in ipairs(sides) do
 					local bodyPart = character:FindFirstChild(side .. info.part)
 					if bodyPart and bodyPart:IsA("BasePart") then
-						local scale = bodyPart.Size / default.size
+						local scale = bodyPart.Size / default.size * ((over and over[info.part]) or Vector3.one)
 						local relative = if side == "Left" then WornGearFit.mirrored(info.relative) else info.relative
 						local rotation = relative - relative.Position
 						-- From the wearer's own joint mark; without one, from where the joint would be on a
@@ -159,6 +168,9 @@ function WornGearFit.dress(character: Model, worn: { [string]: string }, pieces:
 						piece.Size = scaledSize(info.template.Size, rotation, scale)
 						piece.Color = item.colours[info.colourKey] or WornGearConfig.FallbackColour
 						piece.Material = WornGearConfig.Materials[info.colourKey] or Enum.Material.Fabric
+						if item.rough and WornGearConfig.RoughKeys[info.colourKey] then
+							piece.MaterialVariant = WornGearConfig.RoughVariant
+						end
 						piece.Anchored = false
 						piece.CanCollide = false
 						piece.CanTouch = false
@@ -180,6 +192,55 @@ function WornGearFit.dress(character: Model, worn: { [string]: string }, pieces:
 	end
 	folder.Parent = character
 	return made
+end
+
+--[[
+	A preview of a worn model for the menus' 3D views (GearPreview): its pieces as on a default body, round a plain grey
+	stand-in, named "<name>_<colour key>" so each item colours it, in the rough canvas. `oneLeg` keeps limb pieces to the right
+	side. Not parented. Nothing here is worn or saved.
+]]
+function WornGearFit.previewModel(name: string, list: { Piece }, oneLeg: boolean): Model
+	local model = Instance.new("Model")
+	model.Name = name
+	local function place(part: BasePart, at: CFrame)
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+		part.CastShadow = false
+		part.CFrame = at
+		part.Parent = model
+	end
+	local standIn: { [string]: boolean } = {}
+	for _, info in ipairs(list) do
+		standIn[info.part] = true
+		local jointAt = WornGearConfig.Joints[info.joint]
+		local right = CFrame.new(jointAt) * info.relative
+		local sides: { CFrame } = if info.limb and not oneLeg then { right, WornGearFit.mirrored(right) } else { right }
+		for _, at in ipairs(sides) do
+			local piece = info.template:Clone()
+			piece.Name = name .. "_" .. info.colourKey
+			piece.Material = WornGearConfig.Materials[info.colourKey] or Enum.Material.Fabric
+			if WornGearConfig.RoughKeys[info.colourKey] then
+				piece.MaterialVariant = WornGearConfig.RoughVariant
+			end
+			place(piece, at)
+		end
+	end
+	for partName in pairs(standIn) do
+		local default = WornGearConfig.DefaultBody[partName]
+		local limb = WornGearConfig.LimbParts[partName] == true
+		local spots: { Vector3 } = if limb and not oneLeg then { default.centre, default.centre * Vector3.new(-1, 1, 1) } else { default.centre }
+		for _, centre in ipairs(spots) do
+			local block = Instance.new("Part")
+			block.Name = name .. "_StandIn"
+			block.Size = default.size * 0.97
+			block.Color = Color3.fromRGB(150, 150, 156)
+			block.Material = Enum.Material.SmoothPlastic
+			place(block, CFrame.new(centre))
+		end
+	end
+	return model
 end
 
 return WornGearFit

@@ -18,7 +18,16 @@ local WornGearConfig = {}
 
 -- The group Model asset with every worn piece (art/exports/WornGear_01.glb, materials.json "WornGear_01"; 0 would
 -- mean not uploaded: the gear is then saved and chosen, but not drawn).
-WornGearConfig.AssetId = 115016229826377
+WornGearConfig.AssetId = 130216457283907
+
+-- Holds the arms forward while a bench shirt is worn (art/scripts/shirt_animations.py; Movement priority, so every lift,
+-- chalk, station and cardio animation, all Action, takes over by itself).
+WornGearConfig.BenchShirtArmsAnimation = "rbxassetid://128402843443034"
+
+-- The rough canvas (art/scripts/make_suit_canvas.py, a MaterialVariant in default.project.json) and the pieces of a `rough`
+-- item that wear it. Its base material is Fabric.
+WornGearConfig.RoughVariant = "Suit_RoughCanvas"
+WornGearConfig.RoughKeys = { Body = true, Panel = true, Shoulder = true, Trim = true } :: { [string]: boolean }
 
 -- Folder in the character that holds the worn pieces (rebuilt whenever what is worn changes).
 WornGearConfig.FolderName = "WornGear"
@@ -42,6 +51,12 @@ WornGearConfig.Slots = {
 		Lower = { part = "LowerTorso", joint = "Waist" },
 		Leg = { part = "UpperLeg", joint = "Hip" },
 	} },
+	-- Worn under the singlet (user 2026-11-06), so it has its own slot and takes nothing off.
+	{ id = "BenchShirt", category = "BENCH SHIRTS", label = "BENCH SHIRT", worn = "WornBenchShirt", parts = {
+		Upper = { part = "UpperTorso", joint = "Neck" },
+		Lower = { part = "LowerTorso", joint = "Waist" },
+		Sleeve = { part = "UpperArm", joint = "Shoulder" },
+	} },
 	{ id = "Belt", category = "BELTS", label = "BELT", worn = "WornLeverBelt",
 		parts = { [""] = { part = "LowerTorso", joint = "Waist" } } },
 	{ id = "KneeSleeves", category = "KNEE SLEEVES", label = "KNEE SLEEVES", worn = "WornKneeSleeve", parts = {
@@ -51,6 +66,32 @@ WornGearConfig.Slots = {
 	{ id = "WristWraps", category = "WRIST WRAPS", label = "WRIST WRAPS", worn = "WornWristWrap",
 		parts = { [""] = { part = "LowerArm", joint = "Wrist" } } },
 } :: { Slot }
+
+--[[
+	Worn models that aren't a slot's own: an item says which with `worn`. They sit on the body as their slot's model does.
+]]
+local function partsOf(slotId: string): { [string]: { part: string, joint: string } }
+	for _, slot in ipairs(WornGearConfig.Slots) do
+		if slot.id == slotId then
+			return slot.parts
+		end
+	end
+	error("[WornGearConfig] no slot " .. slotId)
+end
+WornGearConfig.OtherModels = {
+	{ worn = "WornSquatSuit", parts = partsOf("Singlet") },
+	{ worn = "WornDeadliftSuit", parts = partsOf("Singlet") },
+	{ worn = "WornKneeWrap", parts = partsOf("KneeSleeves") },
+}
+
+--[[
+	A singlet or suit over a bench shirt is fitted wider on the torso, so the shirt's thick pleats stay under it (user: "wear
+	you singlet over ur bench shirt"). Each part's size is multiplied by this, per part axis.
+]]
+WornGearConfig.OverShirt = {
+	UpperTorso = Vector3.new(1.06, 1, 1.14),
+	LowerTorso = Vector3.new(1.06, 1, 1.14),
+} :: { [string]: Vector3 }
 
 -- R15 parts that come in a Left and a Right.
 WornGearConfig.LimbParts = { UpperArm = true, LowerArm = true, Hand = true, UpperLeg = true, LowerLeg = true, Foot = true }
@@ -85,6 +126,7 @@ WornGearConfig.Joints = {
 	Hip = Vector3.new(0.500, -1.000, 0),
 	Knee = Vector3.new(0.500, -1.921, 0),
 	Wrist = Vector3.new(1.472, -0.734, 0),
+	Shoulder = Vector3.new(0.972, 0.847, 0),
 }
 
 --[[
@@ -118,6 +160,14 @@ function WornGearConfig.slot(id: string): Slot?
 		end
 	end
 	return nil
+end
+
+-- Whether a ShopConfig item goes in this slot.
+function WornGearConfig.fits(slot: Slot, item: { category: string, slot: string? }): boolean
+	if item.slot then
+		return item.slot == slot.id
+	end
+	return item.category == slot.category
 end
 
 -- The slot a ShopConfig category goes in, or nil.

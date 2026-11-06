@@ -10,8 +10,8 @@
 		GetAdminPanel  client -> server  () -> AdminView?
 			The asking admin's panel, or nil for anyone else (the client then builds nothing).
 		AdminAction    client -> server  (action: string, value: any) -> (ok, message, view?)
-			"Coins" with a button id from AdminConfig.CoinButtons, or "CrateRarity" with a
-			rarity id, or nil to turn it off. Never an amount.
+			"Coins" with a button id from AdminConfig.CoinButtons, "CrateRarity" with a
+			rarity id or nil to turn it off, or "GiveSuit" with a suit id. Never an amount.
 ]]
 
 local AdminRemotes = {}

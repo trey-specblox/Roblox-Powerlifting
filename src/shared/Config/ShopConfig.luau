@@ -21,6 +21,13 @@
 
 	A new look is one more line; an item's `id` is saved in players' inventories, so
 	never rename or reuse one.
+
+	The rare suits and knee wraps (GAME_DESIGN §35.12) are worn in a slot of their own category's, on their own worn
+	model, in the rough canvas, with a preview GearService builds from that model:
+
+		WornSquatSuit, WornDeadliftSuit  Body, Panel, Trim, Stitch, Label, Patch
+		WornBenchShirt                   Body, Shoulder, Panel, Trim, Stitch, Label, Patch
+		WornKneeWrap                     Body, Stripes, Accent
 ]]
 
 local ShopConfig = {}
@@ -32,6 +39,12 @@ export type Item = {
 	model: string,
 	colours: { [string]: Color3 },
 	price: number,
+	-- The WornGearConfig slot it goes in, when its category isn't that slot's own.
+	slot: string?,
+	-- The worn model, when it isn't its slot's own.
+	worn: string?,
+	-- Worn in the rough canvas (WornGearConfig.RoughVariant).
+	rough: boolean?,
 }
 
 -- The invisible point at the Shop's counter (RoomProps), where the "Browse the shop" prompt sits.
@@ -47,6 +60,7 @@ ShopConfig.Categories = { "BELTS", "KNEE SLEEVES", "WRIST WRAPS", "SINGLETS" }
 local rgb = Color3.fromRGB
 local BLACK, WHITE, STEEL = rgb(22, 22, 24), rgb(238, 238, 238), rgb(150, 152, 158)
 local GOLD, NAVY, YELLOW = rgb(214, 170, 52), rgb(20, 30, 74), rgb(250, 206, 36)
+local DARK, THREAD = rgb(46, 46, 52), rgb(226, 196, 110)
 
 ShopConfig.Items = {
 	-- Belts.
@@ -94,6 +108,32 @@ ShopConfig.Items = {
 			ShortsRed = WHITE } },
 	{ id = "singlet_gold", name = "Black & Gold Singlet", category = "SINGLETS", model = "MannequinSinglet", price = 1500,
 		colours = { Black = BLACK, Red = GOLD, Trim = GOLD, Patch = GOLD, Shorts = BLACK, ShortsRed = GOLD } },
+
+	-- The rare suits: meet drops only (GearStatsConfig.Suits), never in a crate. No colour is near black: dark colours
+	-- hide the canvas's weave.
+	{ id = "suit_squat", name = "Squat Suit", category = "SUITS", model = "PreviewSquatSuit", price = 0, slot = "Singlet",
+		worn = "WornSquatSuit", rough = true,
+		colours = { Body = rgb(176, 30, 38), Panel = DARK, Trim = DARK, Stitch = THREAD, Label = DARK, Patch = THREAD } },
+	{ id = "suit_deadlift", name = "Deadlift Suit", category = "SUITS", model = "PreviewDeadliftSuit", price = 0, slot = "Singlet",
+		worn = "WornDeadliftSuit", rough = true,
+		colours = { Body = rgb(104, 52, 170), Panel = DARK, Trim = DARK, Stitch = THREAD, Label = DARK, Patch = THREAD } },
+	{ id = "shirt_bench", name = "Bench Shirt", category = "BENCH SHIRTS", model = "PreviewBenchShirt", price = 0, rough = true,
+		colours = { Body = rgb(240, 120, 24), Shoulder = rgb(240, 120, 24), Panel = DARK, Trim = DARK,
+			Stitch = rgb(40, 30, 20), Label = DARK, Patch = WHITE } },
+
+	-- Knee wraps: their own crate, worn in place of the sleeves.
+	{ id = "wraps_knee_navy", name = "Competition Knee Wraps", category = "KNEE WRAPS", model = "PreviewKneeWrap", price = 0,
+		slot = "KneeSleeves", worn = "WornKneeWrap", rough = true,
+		colours = { Body = rgb(40, 48, 84), Stripes = rgb(60, 130, 240), Accent = rgb(220, 50, 50) } },
+	{ id = "wraps_knee_red", name = "Red Knee Wraps", category = "KNEE WRAPS", model = "PreviewKneeWrap", price = 0,
+		slot = "KneeSleeves", worn = "WornKneeWrap", rough = true,
+		colours = { Body = rgb(160, 32, 38), Stripes = WHITE, Accent = rgb(250, 206, 36) } },
+	{ id = "wraps_knee_grey", name = "Heavy Grey Knee Wraps", category = "KNEE WRAPS", model = "PreviewKneeWrap", price = 0,
+		slot = "KneeSleeves", worn = "WornKneeWrap", rough = true,
+		colours = { Body = rgb(120, 122, 128), Stripes = rgb(250, 206, 36), Accent = BLACK } },
+	{ id = "wraps_knee_green", name = "Green Knee Wraps", category = "KNEE WRAPS", model = "PreviewKneeWrap", price = 0,
+		slot = "KneeSleeves", worn = "WornKneeWrap", rough = true,
+		colours = { Body = rgb(30, 110, 60), Stripes = rgb(232, 224, 200), Accent = rgb(250, 206, 36) } },
 } :: { Item }
 
 -- The item with this id, or nil.

@@ -494,6 +494,22 @@ function PlayerDataService.openCrate(player: Player, price: number, piece: any, 
 end
 
 --[[
+	Adds a free piece (ProfileOperations.grantPiece). SERVER-ONLY: a rare suit a meet dropped or the admin panel gave, chosen on
+	the server. Returns its id; nil with no active session or a bad piece.
+]]
+function PlayerDataService.grantPiece(player: Player, piece: any): string?
+	local data = activeData(player, "grantPiece")
+	if data == nil then
+		return nil
+	end
+	local id = ProfileOperations.grantPiece(data, piece)
+	if id then
+		print(string.format("[PlayerDataService] %s was given piece %s: %s (%s)", player.Name, id, tostring(piece.rarity), tostring(piece.look)))
+	end
+	return id
+end
+
+--[[
 	Scraps a piece for `value` coins (ProfileOperations.scrapPiece). SERVER-ONLY: the value
 	comes from GearStatsConfig. Returns the outcome and the balance; nil with no session.
 ]]

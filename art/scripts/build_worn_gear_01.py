@@ -29,7 +29,8 @@
 #                   (LowerTorso); Shorts_Leg, ShortsRed_Leg (UpperLeg)
 #
 # A fully dressed player wears 29 small pieces (belt 5, sleeves 4 x 2, wraps 3 x 2, singlet 6 + 2 x 2): no
-# collision, no shadows (step 5b).
+# collision, no shadows (step 5b). A suit in place of the singlet adds about 5 more; a bench shirt about 12; knee wraps
+# take the sleeves' place, 12 for 8.
 #
 # The "Preview" collection (skipped by check_models.py) holds a reference R15 body and four dressed figures in
 # Shop colours, one of them squatting, for the user's approval. Run in an empty file.
@@ -45,8 +46,11 @@ from mathutils import Matrix, Vector
 SCRIPTS = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else r"D:\Powerlifting Roblox\art\scripts"
 sys.path.insert(0, SCRIPTS)
 import prop_helpers as H  # noqa: E402
+import worn_rough  # noqa: E402
 
 importlib.reload(H)
+importlib.reload(worn_rough)
+from worn_rough import grain, relief, ridge, rope, stitches, strap  # noqa: E402
 
 B = H.Builder("WornGear_01")
 BRAND = H.BRAND
@@ -221,8 +225,8 @@ def is_side(cols, i, limit=0.85):
 PART_OF = {}
 
 
-def piece(name, part, mat, build):
-    obj = B.piece(name, mat, build)
+def piece(name, part, mat, build, smooth=True):
+    obj = B.piece(name, mat, build, smooth)
     obj["body_part"] = part
     PART_OF[name] = part
     return obj
@@ -444,6 +448,480 @@ piece("WornSinglet_Shorts_Leg", "UpperLeg", MAT["Black"],
 piece("WornSinglet_ShortsRed_Leg", "UpperLeg", MAT["Red"],
       lambda bm: band(bm, thigh, -1.52, HIP_Y + 0.05, GARMENT_T, lambda i, k: is_side(thigh, i)))
 
+# =================================================================== The rare suits (GAME_DESIGN 35.10, 35.12)
+# The supportive gear of equipped powerlifting, the rarest things in the game, from the user's photos (2026-11-06):
+#   WornSquatSuit    "just way tighter singlets": skin-tight, with wide straps and very short legs. Replaces the singlet.
+#   WornDeadliftSuit the same cut, its legs a little shorter. Replaces the singlet.
+#   WornBenchShirt   a stiff shirt worn UNDER the singlet: a coloured front, black sides and back with a strap, a thick rolled
+#                    collar, pleats across the chest, thick short sleeves with a patch. Its own slot.
+# They are rough, stiff canvas (user: "way more texturized ... rough and 3d modeled ... cannot just be a flat plane"). So nothing
+# here is a plain shell: every surface has creases and lumps (worn_rough.relief), every seam is raised piping with thread
+# stitched down it, every edge is a rolled hem, and the lettering is on patches sewn on top. The canvas's weave is a
+# MaterialVariant in the game (Suit_RoughCanvas, make_suit_canvas.py), not in these meshes.
+SUIT_ITEMS = ("WornSquatSuit", "WornBenchShirt", "WornDeadliftSuit")
+SUIT_OFF = 0.028
+
+
+def on_back(y_back, z_mid):
+    """place() for text on the flat back, looking toward +Y: a half turn of the front's, so it reads and stays one-sided."""
+    def place(x, up, depth):
+        return Vector((-x, y_back + depth, z_mid + up))
+    return place
+
+
+def column_at(cols, lx, front):
+    """The column nearest this sideways position, on the front or the back."""
+    return min((c for c in cols if (c["lz"] < 0) == front), key=lambda c: abs(c["lx"] - lx))
+
+
+def out_from(c, y, amount):
+    return P(c["x"] + c["nx"] * amount, y, c["z"] + c["nz"] * amount)
+
+
+def label_plate(bm, y_front, z_mid, width, height):
+    # A patch sewn on: a thick plate with soft edges, on the front.
+    H.rounded_box(bm, Vector((0, y_front - 0.02, z_mid)), (width, 0.04, height), 0.018, 1)
+
+
+def back_plate(bm, y_back, z_mid, width, height):
+    H.rounded_box(bm, Vector((0, y_back + 0.02, z_mid)), (width, 0.04, height), 0.018, 1)
+
+
+def word_width(word, size):
+    return len(word) * size * 0.72 + 0.14
+
+
+def suit_labels(worn, y_front, y_back, word, size, chest_z, word_z, back_z):
+    """A small patch sewn on the chest with CENTRAL on it, and the lift's name in raised lettering, front and back."""
+    def plates(bm):
+        label_plate(bm, y_front, chest_z, 0.98, 0.26)
+
+    def letters(bm):
+        front = y_front - 0.04
+        B.add_text(bm, BRAND, 0.15, 0.006, H.on_front(Vector((0, 0, 0)), front, chest_z))
+        # The letters stand up off the cloth, thick enough to catch the light.
+        B.add_text(bm, word, size, 0.016, H.on_front(Vector((0, 0, 0)), y_front + 0.004, word_z))
+        B.add_text(bm, word, size, 0.016, on_back(y_back - 0.004, back_z))
+
+    piece(worn + "_Label_Upper", "UpperTorso", MAT["Black"], plates, smooth=False)
+    piece(worn + "_Patch_Upper", "UpperTorso", MAT["White"], letters, smooth=False)
+
+
+def tight_suit(worn, word, word_size, leg_low, seed):
+    """A skin-tight one-piece of stiff canvas: wide doubled straps, a deep neck, very short legs."""
+    off = SUIT_OFF
+    shell = ring(thx + off, thz + off, R_TORSO, step=0.075, corner=5)
+    top = tcy + thy + off
+    strap_in, strap_out = 0.34, 0.74
+    tops = singlet_tops_for(shell, thx + off, thz + off, R_TORSO, top, strap_in, strap_out, 0.3, 0.46, 0.16)
+    side = [is_side(shell, i) for i in range(len(shell))]
+    # How far each column is round from a seam between the coloured body and the side panel, for the groove along it.
+    to_seam = []
+    for i, c in enumerate(shell):
+        best = 9.0
+        for j in range(len(shell)):
+            if side[j] != side[(j + 1) % len(shell)]:
+                best = min(best, abs(shell[j]["s"] - c["s"]))
+        to_seam.append(best)
+    ROWS = 22
+    bottom = tcy - thy - 0.02
+    rows_cache = {}
+
+    def rows_of(i):
+        if i not in rows_cache:
+            rows_cache[i] = [bottom + (tops[i] - bottom) * k / ROWS for k in range(ROWS + 1)]
+        return rows_cache[i]
+
+    index_of = {id(c): i for i, c in enumerate(shell)}
+
+    def shell_disp(c, y):
+        x = c["lx"]
+        d = 0.012 + 0.009 * grain(c["s"], y, seed)
+        if c["lz"] < 0:
+            # Pulled tight from the straps to the armpits, and bunched into rolls above the belt.
+            for sx in (-1, 1):
+                d += 0.06 * ridge(x, y, sx * 0.56, 1.0, sx * 0.94, 0.2, 0.12)
+                d += 0.05 * ridge(x, y, sx * 0.3, 0.8, sx * 0.9, -0.12, 0.1)
+                d += 0.04 * ridge(x, y, sx * 0.1, 0.28, sx * 0.9, -0.3, 0.09)
+            d += 0.06 * ridge(x, y, -0.9, -0.42, 0.9, -0.36, 0.07)
+            d += 0.05 * ridge(x, y, -0.86, -0.2, 0.8, -0.27, 0.06)
+            # Calmer under the patch and the lettering.
+            if abs(x) < 0.7 and -0.22 < y < 0.56:
+                d *= 0.45
+        else:
+            for sx in (-1, 1):
+                d += 0.055 * ridge(x, y, sx * 0.4, 0.98, sx * 0.9, 0.02, 0.12)
+            d += 0.05 * ridge(x, y, -0.9, -0.36, 0.9, -0.42, 0.07)
+            d += 0.04 * ridge(x, y, -0.9, -0.14, 0.9, -0.2, 0.06)
+            if abs(x) < 0.66 and 0.06 < y < 0.5:
+                d *= 0.45
+        # A groove along each panel seam, with the piping in it.
+        d -= 0.018 * max(0.0, 1 - to_seam[index_of[id(c)]] / 0.06)
+        return max(d, 0.0)
+
+    def strap_path(sx):
+        # Roblox x, y, z down the chest, over the shoulder, down the back, standing on the cloth.
+        x = sx * (strap_in + strap_out) / 2
+        front, back = -(thz + off) - 0.036, thz + off + 0.036
+        line = [(x, 0.4, front), (x, 0.7, front), (x, 0.95, front - 0.004), (x, top + 0.0, front + 0.02), (x, top + 0.028, front + 0.1),
+                (x, top + 0.028, back - 0.1), (x, top + 0.0, back - 0.02), (x, 0.95, back + 0.004), (x, 0.7, back), (x, 0.4, back)]
+        return [P(*q) for q in line]
+
+    def body_piece(bm):
+        relief(bm, P, shell, rows_of, shell_disp, lambda i, k: not side[i])
+        # The doubled straps: solid bands sewn on top, from the chest over the shoulder and down the back.
+        for sx in (-1, 1):
+            strap(bm, strap_path(sx), strap_out - strap_in + 0.04, 0.05)
+
+    piece(worn + "_Body_Upper", "UpperTorso", MAT["Red"], body_piece)
+    piece(worn + "_Panel_Upper", "UpperTorso", MAT["Black"],
+          lambda bm: relief(bm, P, shell, rows_of, shell_disp, lambda i, k: side[i]))
+
+    def trim_piece(bm):
+        # Rolled edges round the neck and armholes, tight against the cloth, all the way between the straps.
+        run = []
+        for i in list(range(len(shell))) + [0]:
+            c = shell[i]
+            if tops[i] < top - 0.012:
+                run.append(out_from(c, tops[i], shell_disp(c, tops[i]) + 0.004))
+            else:
+                if len(run) > 2:
+                    rope(bm, run[::2] + [run[-1]], 0.026, 5)
+                run = []
+        if len(run) > 2:
+            rope(bm, run[::2] + [run[-1]], 0.026, 5)
+        # Raised piping sitting in the groove down each side seam.
+        for j in range(len(shell)):
+            if side[j] != side[(j + 1) % len(shell)] and tops[j] > bottom + 0.2:
+                c = shell[j]
+                ys = [bottom + (tops[j] - 0.03 - bottom) * k / 6 for k in range(7)]
+                rope(bm, [out_from(c, y, shell_disp(c, y) + 0.006) for y in ys], 0.02, 5)
+
+    piece(worn + "_Trim_Upper", "UpperTorso", MAT["Grey"], trim_piece)
+
+    def thread_piece(bm):
+        # Two rows of thread down each strap, front and back.
+        for sx in (-1, 1):
+            middle = (strap_in + strap_out) / 2
+            for offset in (-0.13, 0.13):
+                x = sx * (middle + offset)
+                stitches(bm, [Vector((-x, -(thz + off) - 0.062, z)) for z in (0.44, top)])
+                stitches(bm, [Vector((-x, thz + off + 0.062, z)) for z in (0.44, top)])
+
+    piece(worn + "_Stitch_Upper", "UpperTorso", MAT["White"], thread_piece, smooth=False)
+    suit_labels(worn, -(thz + off + 0.022), thz + off + 0.022, word, word_size, 0.42, 0.03, 0.26)
+
+    hip = ring(lthx + off + 0.006, lthz + off + 0.006, 0.13, step=0.12, corner=4)
+    hip_rows = [ltcy - lthy - 0.03 + (2 * lthy + 0.08) * k / 7 for k in range(8)]
+
+    def hip_disp(c, y):
+        d = 0.01 + 0.008 * grain(c["s"], y, seed + 3)
+        if c["lz"] < 0:
+            # The creases where the hip folds into the leg, from the user's photo.
+            for sx in (-1, 1):
+                d += 0.04 * ridge(c["lx"], y, sx * 0.1, -1.04, sx * 0.86, -0.74, 0.1)
+        return d
+
+    piece(worn + "_Body_Lower", "LowerTorso", MAT["Red"],
+          lambda bm: relief(bm, P, hip, lambda i: hip_rows, hip_disp, lambda i, k: not is_side(hip, i)))
+    piece(worn + "_Panel_Lower", "LowerTorso", MAT["Black"],
+          lambda bm: relief(bm, P, hip, lambda i: hip_rows, hip_disp, lambda i, k: is_side(hip, i)))
+
+    leg_off = off + 0.008
+    legs = ring(lhx + leg_off, lhz + leg_off, 0.12, lcx, lcz, step=0.11, corner=4)
+    top_y = HIP_Y + 0.05
+    leg_rows = [leg_low + (top_y - leg_low) * k / 5 for k in range(6)]
+
+    def leg_disp(c, y):
+        d = 0.008 + 0.009 * grain(c["s"], y, seed + 5)
+        d += 0.022 * max(0.0, 1 - (y - leg_low) / 0.09)  # bunched at the hem
+        return d
+
+    piece(worn + "_Body_Leg", "UpperLeg", MAT["Red"],
+          lambda bm: relief(bm, P, legs, lambda i: leg_rows, leg_disp, lambda i, k: not is_side(legs, i)))
+    piece(worn + "_Panel_Leg", "UpperLeg", MAT["Black"],
+          lambda bm: relief(bm, P, legs, lambda i: leg_rows, leg_disp, lambda i, k: is_side(legs, i)))
+    # A thick rolled hem, with a band of thread above it.
+    hem_points = [out_from(c, leg_low, 0.03) for c in legs[::2]]
+    piece(worn + "_Trim_Leg", "UpperLeg", MAT["Grey"], lambda bm: rope(bm, hem_points, 0.034, 5, closed=True))
+
+
+def singlet_tops_for(cols, hx, hz, r, top, strap_in, strap_out, armhole, neck_front, neck_back):
+    """Each column's top: the neckline, the strap or the armhole (as singlet_tops, with this suit's own sizes)."""
+    ix, iz = hx - r, hz - r
+    lf, lc, ls = 2 * ix, math.pi * r / 2, 2 * iz
+    perimeter = 2 * lf + 2 * ls + 4 * lc
+    s_right = lf + lc + ls / 2
+    s_left = s_right + perimeter / 2
+    reach = ls / 2 + lc + (ix - strap_out)
+
+    def round_trip(v):
+        v %= perimeter
+        return min(v, perimeter - v)
+
+    result = []
+    for c in cols:
+        d = min(round_trip(c["s"] - s_right), round_trip(c["s"] - s_left))
+        if d < reach:
+            result.append(top - (top - armhole) * math.sqrt(1 - (d / reach) ** 2))
+        elif abs(c["lx"]) < strap_in:
+            result.append(top - (neck_front if c["lz"] < 0 else neck_back) * (1 - (c["lx"] / strap_in) ** 2))
+        else:
+            result.append(top)
+    return result
+
+
+tight_suit("WornSquatSuit", "SQUAT", 0.34, -1.34, 1.0)
+tight_suit("WornDeadliftSuit", "DEADLIFT", 0.24, -1.26, 4.0)
+
+# ------------------------------------------------------------------- the bench shirt, under the singlet
+# The stiffest thing in the game. When a singlet goes over it, the game fits the singlet wider (WornGearFit), so this
+# can stand well off the body.
+SHIRT_OFF = 0.02
+shirt = ring(thx + SHIRT_OFF, thz + SHIRT_OFF, R_TORSO, step=0.075, corner=5)
+SHIRT_TOP = tcy + thy + SHIRT_OFF
+SHIRT_FRONT, SHIRT_BACK = -(thz + SHIRT_OFF), thz + SHIRT_OFF
+NECK_WIDE = 0.6
+
+
+def shirt_top_at(c):
+    u = min(1.0, abs(c["lx"]) / NECK_WIDE)
+    return SHIRT_TOP - (0.2 if c["lz"] < 0 else 0.12) * (1 - u * u)
+
+
+def is_side_at(cols, c):
+    return is_side(cols, cols.index(c))
+
+
+shirt_tops = [shirt_top_at(c) for c in shirt]
+shirt_front_cells = [c["lz"] < 0 and not is_side(shirt, i) for i, c in enumerate(shirt)]
+SHIRT_ROWS = 24
+shirt_bottom = tcy - thy - 0.02
+shirt_rows_cache = {}
+
+
+def shirt_rows(i):
+    if i not in shirt_rows_cache:
+        shirt_rows_cache[i] = [shirt_bottom + (shirt_tops[i] - shirt_bottom) * k / SHIRT_ROWS for k in range(SHIRT_ROWS + 1)]
+    return shirt_rows_cache[i]
+
+
+def shirt_disp(c, y):
+    x = c["lx"]
+    d = 0.012 + 0.009 * grain(c["s"], y, 7.0)
+    if c["lz"] < 0:
+        # Heavy stitched pleats across the chest, like the user's photo, and stiff folds below them.
+        for level, amount in ((0.84, 0.06), (0.66, 0.075), (0.48, 0.075)):
+            d += amount * ridge(x, y, -1.05, level, 1.05, level - 0.02, 0.085)
+        for sx in (-1, 1):
+            d += 0.05 * ridge(x, y, sx * 0.2, 0.34, sx * 0.94, -0.34, 0.11)
+            d += 0.04 * ridge(x, y, sx * 0.1, -0.1, sx * 0.9, -0.5, 0.09)
+        if abs(x) < 0.66 and -0.2 < y < 0.3:
+            d *= 0.45
+    else:
+        for level in (0.72, 0.26, -0.26):
+            d += 0.03 * ridge(x, y, -1.05, level, 1.05, level + 0.03, 0.08)
+    return d
+
+
+def shirt_body(bm):
+    relief(bm, P, shirt, shirt_rows, shirt_disp, lambda i, k: shirt_front_cells[i])
+
+
+piece("WornBenchShirt_Body_Upper", "UpperTorso", MAT["Red"], shirt_body)
+
+
+def shirt_panel(bm):
+    relief(bm, P, shirt, shirt_rows, shirt_disp, lambda i, k: not shirt_front_cells[i])
+
+
+piece("WornBenchShirt_Panel_Upper", "UpperTorso", MAT["Black"], shirt_panel)
+
+
+def shirt_shoulders(bm):
+    # Thick padded shoulders, closing the top over the arm.
+    width = thx + SHIRT_OFF - NECK_WIDE + 0.04
+    for side_x in (-1, 1):
+        H.rounded_box(bm, P(side_x * (NECK_WIDE + width / 2 - 0.02), SHIRT_TOP + 0.015, 0), (width, 2 * (thz + SHIRT_OFF) + 0.06, 0.07), 0.03, 2)
+
+
+piece("WornBenchShirt_Shoulder_Upper", "UpperTorso", MAT["Red"], shirt_shoulders)
+
+
+shirt_hips = ring(lthx + 0.026, lthz + 0.026, 0.13, step=0.12, corner=4)
+
+
+def shirt_trim(bm):
+    # The thick rolled collar, the seams between front and back, the seam over each shoulder, the strap across the back.
+    collar = []
+    for i, c in enumerate(shirt):
+        if abs(c["lx"]) <= NECK_WIDE:
+            collar.append((c["lz"] < 0, c["lx"], out_from(c, shirt_tops[i], 0.012)))
+    front = [p for is_front, _, p in sorted((e for e in collar if e[0]), key=lambda e: e[1])]
+    back = [p for is_front, _, p in sorted((e for e in collar if not e[0]), key=lambda e: -e[1])]
+    rope(bm, (front + back)[::2], 0.058, 6, closed=True)
+    for j in range(len(shirt)):
+        if shirt_front_cells[j] != shirt_front_cells[(j + 1) % len(shirt)]:
+            c = shirt[j]
+            rope(bm, [out_from(c, y, 0.03) for y in (shirt_bottom, -0.2, 0.2, 0.6, shirt_tops[j])], 0.026, 5)
+    # A thick rolled hem along the bottom of the front.
+    hem = [out_from(c, ltcy - lthy, 0.04) for c in shirt_hips if c["lz"] < 0 and not is_side_at(shirt_hips, c)]
+    if len(hem) > 1:
+        rope(bm, sorted(hem, key=lambda v: v.x), 0.03, 5)
+    # The wide strap across the back, thick, with its flap standing out at one side.
+    H.rounded_box(bm, Vector((0, SHIRT_BACK + 0.05, -0.2)), (1.7, 0.07, 0.36), 0.03, 2)
+    H.rounded_box(bm, P(thx + SHIRT_OFF + 0.06, -0.2, 0.36), (0.14, 0.42, 0.36), 0.03, 2)
+
+
+piece("WornBenchShirt_Trim_Upper", "UpperTorso", MAT["Grey"], shirt_trim)
+
+
+def shirt_thread(bm):
+    # Thread along each chest pleat, and round the strap.
+    for level in (0.77, 0.59):
+        columns = [column_at(shirt, x, True) for x in (-0.84, -0.42, 0.0, 0.42, 0.84)]
+        stitches(bm, [out_from(c, level, shirt_disp(c, level) + 0.006) for c in columns])
+    stitches(bm, [Vector((x, SHIRT_BACK + 0.09, -0.08)) for x in (-0.8, 0.8)])
+    stitches(bm, [Vector((x, SHIRT_BACK + 0.09, -0.32)) for x in (-0.8, 0.8)])
+
+
+piece("WornBenchShirt_Stitch_Upper", "UpperTorso", MAT["White"], shirt_thread, smooth=False)
+suit_labels("WornBenchShirt", SHIRT_FRONT - 0.022, SHIRT_BACK + 0.022, "BENCH", 0.3, 0.2, -0.08, 0.34)
+
+shirt_hip_rows = [ltcy - lthy + (2 * lthy + 0.05) * k / 6 for k in range(7)]
+
+
+def shirt_hip_disp(c, y):
+    return 0.008 + 0.008 * grain(c["s"], y, 9.0)
+
+
+piece("WornBenchShirt_Body_Lower", "LowerTorso", MAT["Red"],
+      lambda bm: relief(bm, P, shirt_hips, lambda i: shirt_hip_rows, shirt_hip_disp, lambda i, k: shirt_hips[i]["lz"] < 0 and not is_side(shirt_hips, i)))
+piece("WornBenchShirt_Panel_Lower", "LowerTorso", MAT["Black"],
+      lambda bm: relief(bm, P, shirt_hips, lambda i: shirt_hip_rows, shirt_hip_disp, lambda i, k: not (shirt_hips[i]["lz"] < 0 and not is_side(shirt_hips, i))))
+
+# The sleeves are the thickest part: stiff, short, standing well off the arm, with rolls where they fold.
+uahx, _, uahz, uacx, uacy, uacz = part_box("UpperArm")
+SHIRT_SLEEVE_LOW, SHIRT_SLEEVE_HIGH = 0.36, 1.1
+arm = ring(uahx + 0.075, uahz + 0.075, 0.17, uacx, uacz, step=0.13, corner=4)
+arm_rows = [SHIRT_SLEEVE_LOW + (SHIRT_SLEEVE_HIGH - SHIRT_SLEEVE_LOW) * k / 10 for k in range(11)]
+ARM_FRONT = -(uahz + 0.075)
+
+
+def arm_disp(c, y):
+    d = 0.012 + 0.01 * grain(c["s"], y, 11.0)
+    # Two thick rolls round the sleeve, and a bunch at the hem.
+    for level in (0.96, 0.58):
+        d += 0.06 * max(0.0, 1 - abs(y - level) / 0.075)
+    d += 0.04 * max(0.0, 1 - (y - SHIRT_SLEEVE_LOW) / 0.1)
+    return d
+
+
+def shirt_sleeve(bm):
+    relief(bm, P, arm, lambda i: arm_rows, arm_disp)
+    H.rounded_box(bm, P(uacx, SHIRT_SLEEVE_HIGH + 0.01, uacz), (2 * (uahx + 0.075), 2 * (uahz + 0.075), 0.05), 0.04, 2)
+
+
+piece("WornBenchShirt_Body_Sleeve", "UpperArm", MAT["Red"], shirt_sleeve)
+piece("WornBenchShirt_Trim_Sleeve", "UpperArm", MAT["Grey"],
+      lambda bm: rope(bm, [out_from(c, SHIRT_SLEEVE_LOW, 0.05) for c in arm[::2]], 0.04, 5, closed=True))
+
+
+def sleeve_label(bm):
+    H.rounded_box(bm, P(uacx, 0.79, ARM_FRONT - 0.03), (0.86, 0.04, 0.3), 0.018, 1)
+
+
+piece("WornBenchShirt_Label_Sleeve", "UpperArm", MAT["Black"], sleeve_label, smooth=False)
+
+
+def sleeve_letters(bm):
+    # On the sleeve's front, so it reads the right way round on both arms (one mesh for both).
+    face = ARM_FRONT - 0.05
+    badge(bm, -uacx, face, 0.79, 0.78, 0.24, 0.024, depth=0.012)
+    B.add_text(bm, BRAND, 0.13, 0.005, H.on_front(P(uacx, 0, 0), face, 0.79))
+
+
+piece("WornBenchShirt_Patch_Sleeve", "UpperArm", MAT["White"], sleeve_letters, smooth=False)
+
+# =================================================================== WornKneeWrap (UpperLeg + LowerLeg)
+# Knee wraps, a separate item from the sleeves (user's photo, 2026-11-06): one long striped strap wound tight round the knee,
+# each turn lapping the last, crossing over itself at the knee, its end tucked in. A real spiral, not a tube. Two pieces so
+# it bends with the knee, like the sleeves. Replaces the sleeves while worn.
+WRAP_TURNS = 6
+WRAP_TOP = KNEE_Y + 0.5
+WRAP_PITCH = (WRAP_TOP - (KNEE_Y - 0.5)) / WRAP_TURNS
+WRAP_WIDE = WRAP_PITCH * 1.7
+# PERFORMANCE: common crate gear, so far fewer points than a suit: about 3,600 triangles a pair.
+wrap_ring = ring(lhx + 0.05, lhz + 0.05, 0.17, lcx, lcz, step=0.36, corner=2)
+WRAP_ROUND = wrap_ring[-1]["s"] + (Vector((wrap_ring[0]["x"], wrap_ring[0]["z"])) - Vector((wrap_ring[-1]["x"], wrap_ring[-1]["z"]))).length
+# The ring once round with its start repeated at the end, so each turn runs on unbroken into the next.
+wrap_cols = wrap_ring + [dict(wrap_ring[0], s=WRAP_ROUND)]
+
+
+def wrap_centre(turn, c):
+    # Down the leg as it goes round, and tilted the other way over the knee, so the turns cross there as in the photo.
+    y = WRAP_TOP - WRAP_PITCH * (turn + c["s"] / WRAP_ROUND)
+    near_knee = max(0.0, 1 - abs(y - KNEE_Y) / 0.26)
+    return y + 0.05 * near_knee * math.sin(2 * math.pi * c["s"] / WRAP_ROUND + turn)
+
+
+def wrap_strip(bm, upper):
+    n = len(wrap_ring)
+    for turn in range(WRAP_TURNS):
+        layer = 0.02 + 0.006 * turn + (0.03 if abs(WRAP_TOP - WRAP_PITCH * (turn + 0.5) - KNEE_Y) < 0.24 else 0.0)
+        centres = [wrap_centre(turn, c) for c in wrap_cols]
+
+        def rows(i, centres=centres):
+            return [centres[i] + WRAP_WIDE * (k / 2 - 0.5) for k in range(3)]
+
+        def disp(c, y, centres=centres, layer=layer):
+            across = abs(y - wrap_centre(turn, c)) / (WRAP_WIDE / 2)
+            return layer + 0.024 * max(0.0, 1 - across * across) + 0.004 * grain(c["s"], y, turn)
+
+        def keep(i, k, centres=centres):
+            return i < n and (centres[i] >= KNEE_Y) == upper
+
+        relief(bm, P, wrap_cols, rows, disp, keep)
+
+
+def wrap_lines(bm, upper, sideways, every):
+    for turn in range(0, WRAP_TURNS, every):
+        layer = 0.05 + 0.006 * turn + (0.03 if abs(WRAP_TOP - WRAP_PITCH * (turn + 0.5) - KNEE_Y) < 0.24 else 0.0)
+        line, runs = [], []
+        for c in wrap_cols:
+            y = wrap_centre(turn, c) + sideways
+            if (y >= KNEE_Y) == upper:
+                line.append(out_from(c, y, layer))
+            elif len(line) > 1:
+                runs.append(line)
+                line = []
+            else:
+                line = []
+        if len(line) > 1:
+            runs.append(line)
+        for run in runs:
+            rope(bm, run, 0.013, 3)
+
+
+def wrap_under(bm, upper):
+    # Hidden under the turns, and fills the knee when it bends.
+    low, high = (KNEE_Y - 0.2, WRAP_TOP - 0.02) if upper else (KNEE_Y - 0.48, KNEE_Y + 0.2)
+    band(bm, ring(lhx + 0.03, lhz + 0.03, 0.15, lcx, lcz), low, high, 0.02)
+
+
+def wrap_tail(bm):
+    # The strap's end, tucked over the last turn with its hook.
+    front = -(lhz + 0.14)
+    H.rounded_box(bm, P(lcx + 0.05, KNEE_Y - 0.36, front), (0.5, 0.05, 0.24), 0.02, 1)
+
+
+piece("WornKneeWrap_Body_Upper", "UpperLeg", MAT["Black"], lambda bm: (wrap_under(bm, True), wrap_strip(bm, True)))
+piece("WornKneeWrap_Body_Lower", "LowerLeg", MAT["Black"], lambda bm: (wrap_under(bm, False), wrap_strip(bm, False), wrap_tail(bm)))
+piece("WornKneeWrap_Stripes_Upper", "UpperLeg", MAT["Red"], lambda bm: wrap_lines(bm, True, 0.022, 1), smooth=False)
+piece("WornKneeWrap_Stripes_Lower", "LowerLeg", MAT["Red"], lambda bm: wrap_lines(bm, False, 0.022, 1), smooth=False)
+piece("WornKneeWrap_Accent_Upper", "UpperLeg", MAT["White"], lambda bm: wrap_lines(bm, True, -0.022, 3), smooth=False)
+piece("WornKneeWrap_Accent_Lower", "LowerLeg", MAT["White"], lambda bm: wrap_lines(bm, False, -0.022, 3), smooth=False)
+
 WORN = [o for o in B.coll.objects if o.name.startswith("Worn")]
 
 # =================================================================== preview (not exported)
@@ -500,7 +978,7 @@ def pose_matrix(part, side, pose):
     return m
 
 
-def figure(label, offset, colours, pose=None, with_worn=False):
+def figure(label, offset, colours, pose=None, with_worn=False, only=None):
     """A reference body wearing the gear: `colours` maps Worn<Item> -> ShopConfig colour key -> sRGB (missing keys
     keep the model's own colours). with_worn: the exported pieces themselves already stand here (the right limbs)."""
     pose = pose or {}
@@ -515,6 +993,10 @@ def figure(label, offset, colours, pose=None, with_worn=False):
             ob.matrix_world = shift @ pose_matrix(part, side or "Right", pose) @ Matrix.Translation(centre)
     for src in WORN:
         part = PART_OF[src.name]
+        # `only` dresses a figure in just those items; the others wear the normal gear, never a suit or knee wraps.
+        item_name = src.name.split("_")[0]
+        if item_name not in only if only else item_name in SUIT_ITEMS + ("WornKneeWrap",):
+            continue
         for side in (("Right", "Left") if part in LIMBS else ("",)):
             if with_worn and side != "Left":
                 continue
@@ -523,7 +1005,12 @@ def figure(label, offset, colours, pose=None, with_worn=False):
                 loc.x = -loc.x
             ob = bpy.data.objects.new(f"Preview_{label}_{side}_{src.name}", src.data)
             preview.objects.link(ob)
-            ob.matrix_world = shift @ pose_matrix(part, side or "Right", pose) @ Matrix.Translation(loc)
+            # A singlet over a bench shirt is fitted wider, as the game does (WornGearFit).
+            over = Matrix.Identity(4)
+            if only and "WornBenchShirt" in only and item_name == "WornSinglet" and part in ("UpperTorso", "LowerTorso"):
+                body = P(*BODY[part][1])
+                over = Matrix.Translation(body) @ Matrix.Diagonal((1.06, 1.14, 1.0, 1)) @ Matrix.Translation(-body)
+            ob.matrix_world = shift @ pose_matrix(part, side or "Right", pose) @ over @ Matrix.Translation(loc)
             item, key = src.name.split("_")[:2]
             colour = colours.get(item, {}).get(key)
             if colour:
@@ -558,6 +1045,26 @@ figure("Classic", (0, 0, 0), {}, with_worn=True)
 figure("Navy", (-4.5, 0, 0), NAVY_SET)
 figure("Gold", (-9.0, 0, 0), GOLD_SET)
 figure("Squat", (-14.0, 0, 0), TEAL_SET, {"lean": 30, "thigh": -70, "knee": 95, "ankle": -25, "shoulder": -30})
+
+# The rare suits and knee wraps, standing and in their lifts. Their colours go in ShopConfig too. No colour is near black:
+# dark colours hide the canvas's weave in the game.
+DARK = (46, 46, 52)
+THREAD = (226, 196, 110)
+SQUAT_COLOURS = {"Body": (176, 30, 38), "Panel": DARK, "Trim": DARK, "Stitch": THREAD, "Label": DARK, "Patch": THREAD}
+DEADLIFT_COLOURS = {"Body": (104, 52, 170), "Panel": DARK, "Trim": DARK, "Stitch": THREAD, "Label": DARK, "Patch": THREAD}
+SHIRT_COLOURS = {"Body": (240, 120, 24), "Shoulder": (240, 120, 24), "Panel": DARK, "Trim": DARK, "Stitch": (40, 30, 20),
+                 "Label": DARK, "Patch": WHITE}
+WRAP_COLOURS = {"Body": (28, 34, 60), "Stripes": (60, 130, 240), "Accent": (220, 50, 50)}
+figure("SuitSquat", (-22.0, 0, 0), {"WornSquatSuit": SQUAT_COLOURS}, only=("WornSquatSuit",))
+figure("SuitShirt", (-26.0, 0, 0), {"WornBenchShirt": SHIRT_COLOURS}, only=("WornBenchShirt",))
+figure("SuitBoth", (-30.0, 0, 0), {"WornBenchShirt": SHIRT_COLOURS}, only=("WornBenchShirt", "WornSinglet"))
+figure("SuitDeadlift", (-34.0, 0, 0), {"WornDeadliftSuit": DEADLIFT_COLOURS}, only=("WornDeadliftSuit",))
+figure("SuitWraps", (-38.0, 0, 0), {"WornKneeWrap": WRAP_COLOURS}, only=("WornKneeWrap", "WornSinglet"))
+figure("PoseSquat", (-23.0, 8, 0), {"WornSquatSuit": SQUAT_COLOURS, "WornKneeWrap": WRAP_COLOURS},
+       {"lean": 30, "thigh": -70, "knee": 95, "ankle": -25, "shoulder": -30}, only=("WornSquatSuit", "WornKneeWrap"))
+figure("PoseBench", (-28.0, 8, 0), {"WornBenchShirt": SHIRT_COLOURS}, {"shoulder": -80}, only=("WornBenchShirt", "WornSinglet"))
+figure("PoseDeadlift", (-33.0, 8, 0), {"WornDeadliftSuit": DEADLIFT_COLOURS},
+       {"lean": 50, "thigh": -40, "knee": 40, "ankle": -10}, only=("WornDeadliftSuit",))
 
 # Every material is drawn from one side, as Roblox does.
 for mat in bpy.data.materials:

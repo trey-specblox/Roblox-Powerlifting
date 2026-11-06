@@ -95,6 +95,7 @@ local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local TeleportConfig = require(ConfigFolder:WaitForChild("TeleportConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
+local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
@@ -120,6 +121,7 @@ local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
+local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local TrainingStationService = require(ServerFolder:WaitForChild("Training"):WaitForChild("TrainingStationService"))
@@ -271,6 +273,7 @@ local entering: { [Player]: boolean } = {}
 local levelRandom = Random.new()
 -- Computer lifters' strength, attempts and makes (§37.2).
 local cpuRandom = Random.new()
+local suitRandom = Random.new()
 local lastPress: { [Player]: number } = {}
 
 local function log(message: string, ...: any)
@@ -2030,6 +2033,31 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 end
 
 -- Ends the meet: the final ranking, everyone's result, then the platforms are cleared.
+--[[
+	Rolls a lifter's rare suit (GAME_DESIGN §35.10, §35.12): once a meet, for a real lifter with a total, only at a meet that pays a
+	prize pot, so nobody can farm them alone with computer lifters. Returns the suit's name when one dropped.
+	Studio only: the workspace attribute ForceSuitDrop (a suit's id) drops that suit at any meet.
+]]
+local function rollSuit(current: Meet, player: Player): string?
+	local forced = if RunService:IsStudio() then Workspace:GetAttribute("ForceSuitDrop") else nil
+	local suitId: string? = nil
+	if typeof(forced) == "string" and GearStatsConfig.Suits then
+		suitId = forced
+	elseif current.rewards and suitRandom:NextNumber() < MeetLevelConfig.Levels[current.level].suitDropChance then
+		suitId = GearStatsConfig.Suits[suitRandom:NextInteger(1, #GearStatsConfig.Suits)].id
+	end
+	if suitId == nil or GearService.giveSuit(player, suitId, true) == nil then
+		return nil
+	end
+	for _, suit in ipairs(GearStatsConfig.Suits) do
+		if suit.id == suitId then
+			log("%s got the %s at a %s meet", player.Name, suit.name, current.level)
+			return suit.name
+		end
+	end
+	return nil
+end
+
 local function finishMeet(current: Meet)
 	current.final = true
 	current.heading = "FINAL"
@@ -2119,6 +2147,12 @@ local function finishMeet(current: Meet)
 			end
 			if current.solo and result.total then
 				table.insert(saved, "Alone with computer lifters: half strength, no prize pot")
+			end
+			if result.total and player.Parent then
+				local suitName = rollSuit(current, player)
+				if suitName then
+					table.insert(saved, 1, "RARE DROP: THE " .. suitName)
+				end
 			end
 		end
 		if lifter.coinsEarned > 0 then
