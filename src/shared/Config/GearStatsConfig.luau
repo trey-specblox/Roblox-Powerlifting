@@ -83,6 +83,24 @@ GearStatsConfig.Suits = {
 		onlyLift = "Deadlift", slot = "Singlet", look = "suit_deadlift" },
 } :: { Suit }
 
+--[[
+	The coach's test (user's picks, 2026-11-06): a rare suit is locked until passed. Three attempts in the gear, on its own lift, at
+	these shares of the player's Competition Number; every one must be good. A try costs the wait, passed or not, counted from when
+	it starts, so walking out can't dodge a fail.
+]]
+GearStatsConfig.SuitTest = {
+	Shares = { 1.0, 1.05, 1.10 },
+	WaitSeconds = 24 * 60 * 60,
+	-- In Studio, so a test does not wait a day.
+	StudioWaitSeconds = 20,
+}
+
+-- The coach's cutscene (client SuitCutscene): its art (art/scripts/make_cutscene_art.py).
+GearStatsConfig.CutsceneArt = {
+	Bubble = "rbxassetid://111472851400982",
+	Panel = "rbxassetid://101738144418251",
+}
+
 -- Gear's total technique training speed on one lift stops here.
 GearStatsConfig.MaxTrainingSpeed = 0.25
 

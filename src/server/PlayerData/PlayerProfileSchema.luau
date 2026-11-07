@@ -57,9 +57,10 @@ local PlayerProfileSchema = {}
 	the Shop inventory; version 14: the gear being worn; version 15: meet
 	titles in the career; version 16: ladder points in the career; version
 	17: ladder points per weight class; version 18: how many times the
-	player has qualified for State; version 19: gear with stats).
+	player has qualified for State; version 19: gear with stats; version 20:
+	the coach's tests for rare suits).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 19
+PlayerProfileSchema.CURRENT_VERSION = 20
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -305,6 +306,11 @@ export type Inventory = {
 	wearingPieces: { [string]: string },
 	-- The next piece's number. Only ever goes up, so an id is never reused.
 	nextPieceId: number,
+	-- The coach's test for each rare suit (version 20, GAME_DESIGN §35.12): suit id -> passed, or when it can next be tried
+	-- (os.time). Written only by ProfileOperations.startSuitTrial, endSuitTrial and resetSuitTests.
+	suitTests: { [string]: { passed: boolean?, nextTryAt: number? } },
+	-- A test running now: the piece on loan for it, and what was worn before. Cleared on the next load if the server went down.
+	suitTrial: { pieceId: string, slot: string, before: string?, beforeItem: string? }?,
 }
 
 export type StatPiece = {
@@ -567,6 +573,7 @@ local template: ProfileData = {
 		pieces = {},
 		wearingPieces = {},
 		nextPieceId = 1,
+		suitTests = {},
 	},
 
 	bodyweight = {
@@ -1648,6 +1655,35 @@ migrations[18] = function(data: ProfileData)
 	local stored = inventory.nextPieceId
 	if not isUsableCounter(stored) or stored ~= math.floor(stored) or stored <= highest then
 		inventory.nextPieceId = highest + 1
+	end
+end
+
+--[[
+	Version 19 -> 20: the coach's tests for rare suits. Nobody has passed one yet, so any suit is now locked: it stays owned but
+	comes off, whatever was under it stays gone (the slot is just empty). The ids are written out here, as they were at this version.
+]]
+migrations[19] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return
+	end
+	if typeof(inventory.suitTests) ~= "table" then
+		inventory.suitTests = {}
+	end
+	local pieces = inventory.pieces
+	local wearingPieces = inventory.wearingPieces
+	if typeof(pieces) == "table" and typeof(wearingPieces) == "table" then
+		local locked = { SquatSuit = true, BenchShirt = true, DeadliftSuit = true }
+		local off = {}
+		for slot, pieceId in pairs(wearingPieces) do
+			local piece = pieces[pieceId]
+			if typeof(piece) == "table" and locked[piece.rarity] then
+				table.insert(off, slot)
+			end
+		end
+		for _, slot in ipairs(off) do
+			wearingPieces[slot] = nil
+		end
 	end
 end
 

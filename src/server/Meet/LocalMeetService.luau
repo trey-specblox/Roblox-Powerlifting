@@ -136,6 +136,9 @@ local MOCK_MEET_ATTRIBUTE = "MockMeetSlot"
 local MAX_TRIGGER_DISTANCE = LocalMeetConfig.PromptDistanceStuds + 4
 local STREAM_TIMEOUT_SECONDS = 5
 local POLL_SECONDS = 0.1
+-- The coach's cutscene: how long after the player is moved it starts, and how long it waits for them to be alive.
+local DROP_SCENE_SETTLE_SECONDS = 1
+local DROP_SCENE_WAIT_SECONDS = 10
 local LIFT_TIMEOUT_SECONDS = LiftAttemptConfig.MaxAttemptSeconds + 5
 local PASSED = "Passed"
 
@@ -227,6 +230,9 @@ type Lifter = {
 	-- What the coach has to say, and whether they have reached the lifter to say it (see coachTell).
 	coachLine: string?,
 	coachHere: boolean?,
+	-- A rare suit won at this meet: the coach's cutscene plays once the awards are over.
+	droppedSuit: string?,
+	droppedPiece: string?,
 }
 
 type Meet = {
@@ -2032,23 +2038,64 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 	end
 end
 
+--[[
+	The coach's cutscene for a suit this lifter just won, once, however they leave: the end of the awards, or LEAVE, EXIT or the
+	TELEPORT menu during them (user 2026-11-06: pressing LEAVE on the results skipped it). It waits a moment for any move to finish,
+	and for a living body. A player who never sees it can still start the test from MY GEAR.
+]]
+local function showDroppedSuit(lifter: Lifter, player: Player)
+	local suitId, pieceId = lifter.droppedSuit, lifter.droppedPiece
+	if suitId == nil or pieceId == nil then
+		return
+	end
+	lifter.droppedSuit, lifter.droppedPiece = nil, nil
+	task.spawn(function()
+		task.wait(DROP_SCENE_SETTLE_SECONDS)
+		local giveUpAt = os.clock() + DROP_SCENE_WAIT_SECONDS
+		while player.Parent and os.clock() < giveUpAt do
+			local body = bodyOf(player)
+			if body and body.humanoid.Health > 0 then
+				GearService.playCutscene(player, suitId, pieceId)
+				return
+			end
+			task.wait(0.25)
+		end
+	end)
+end
+
 -- Ends the meet: the final ranking, everyone's result, then the platforms are cleared.
+-- The chance of a rare suit at this level of meet. Never anything but MeetLevelConfig's in a live game.
+local function suitChance(level: string): number
+	local override = if RunService:IsStudio() then Workspace:GetAttribute("StudioSuitDropChance") else nil
+	return if typeof(override) == "number" then override else MeetLevelConfig.Levels[level].suitDropChance
+end
+
 --[[
 	Rolls a lifter's rare suit (GAME_DESIGN §35.10, §35.12): once a meet, for a real lifter with a total, only at a meet that pays a
 	prize pot, so nobody can farm them alone with computer lifters. Returns the suit's name when one dropped.
-	Studio only: the workspace attribute ForceSuitDrop (a suit's id) drops that suit at any meet.
+	An admin's panel can force their own next one (GearService.takeForcedDrop), at any meet. Studio only: the workspace
+	attribute ForceSuitDrop (a suit's id) does the same for everyone, and StudioSuitDropChance (0 to 1) replaces the normal
+	chance, to test the random path without touching MeetLevelConfig.
 ]]
-local function rollSuit(current: Meet, player: Player): string?
-	local forced = if RunService:IsStudio() then Workspace:GetAttribute("ForceSuitDrop") else nil
+local function rollSuit(current: Meet, lifter: Lifter, player: Player): string?
+	local forced: any = GearService.takeForcedDrop(player)
+	if forced == nil and RunService:IsStudio() then
+		forced = Workspace:GetAttribute("ForceSuitDrop")
+	end
 	local suitId: string? = nil
-	if typeof(forced) == "string" and GearStatsConfig.Suits then
+	if typeof(forced) == "string" then
 		suitId = forced
-	elseif current.rewards and suitRandom:NextNumber() < MeetLevelConfig.Levels[current.level].suitDropChance then
+	elseif current.rewards and suitRandom:NextNumber() < suitChance(current.level) then
 		suitId = GearStatsConfig.Suits[suitRandom:NextInteger(1, #GearStatsConfig.Suits)].id
 	end
-	if suitId == nil or GearService.giveSuit(player, suitId, true) == nil then
+	if suitId == nil then
 		return nil
 	end
+	local pieceId = GearService.giveSuit(player, suitId, true)
+	if pieceId == nil then
+		return nil
+	end
+	lifter.droppedSuit, lifter.droppedPiece = suitId, pieceId
 	for _, suit in ipairs(GearStatsConfig.Suits) do
 		if suit.id == suitId then
 			log("%s got the %s at a %s meet", player.Name, suit.name, current.level)
@@ -2149,7 +2196,7 @@ local function finishMeet(current: Meet)
 				table.insert(saved, "Alone with computer lifters: half strength, no prize pot")
 			end
 			if result.total and player.Parent then
-				local suitName = rollSuit(current, player)
+				local suitName = rollSuit(current, lifter, player)
 				if suitName then
 					table.insert(saved, 1, "RARE DROP: THE " .. suitName)
 				end
@@ -2232,6 +2279,7 @@ local function finishMeet(current: Meet)
 			if visits[player] then
 				standAt(player, LocalMeetVenue.lobbySpotFor(v, index), false)
 			end
+			showDroppedSuit(lifter, player)
 		end
 	end
 	current.hall.meet = nil
@@ -2521,10 +2569,14 @@ local function leaveVenue(player: Player, sendBack: boolean)
 	if warmUp then
 		warmUp.stop(player, false)
 	end
+	local _, leaving = activeLifter(player)
 	withdraw(player, "left the venue")
 	-- Their sign-up stays: they can go and do something else, and are brought back for the meet (user 2026-11-06).
 	local visit = visits[player]
 	if visit == nil then
+		if leaving then
+			showDroppedSuit(leaving, player)
+		end
 		return
 	end
 	visits[player] = nil
@@ -2548,6 +2600,9 @@ local function leaveVenue(player: Player, sendBack: boolean)
 	end
 	log("%s left the venue", player.Name)
 	broadcastLobby()
+	if leaving then
+		showDroppedSuit(leaving, player)
+	end
 end
 
 --[[
@@ -2853,6 +2908,9 @@ function LocalMeetService.start()
 		withdraw(player, "pressed LEAVE")
 		if lifter and visits[player] then
 			standAt(player, LocalMeetVenue.lobbySpotFor(lifter.hall.venue, lifter.order), false)
+		end
+		if lifter then
+			showDroppedSuit(lifter, player)
 		end
 	end)
 	set.exit.OnServerEvent:Connect(function(player)

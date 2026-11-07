@@ -618,9 +618,9 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 			hint.TextColor3 = if problem then C.red elseif overLimit then C.yellow else C.muted
 			confirm.BackgroundTransparency = if problem or kg == nil then 0.5 else 0
 		elseif state.phase == "WeighIn" then
-			stepTag.Text = "WEIGH-IN"
-			setBanner(string.format("%.1f KG", state.bodyweightKg), C.white, C.ink)
-			sub.Text = string.format("You lift in the %s class today.", state.classLabel)
+			stepTag.Text = state.stepTag or "WEIGH-IN"
+			setBanner(state.banner or string.format("%.1f KG", state.bodyweightKg), C.white, C.ink)
+			sub.Text = state.note or string.format("You lift in the %s class today.", state.classLabel)
 		elseif state.phase == "Ready" then
 			stepTag.Text = attemptText
 			setBanner("BAR LOADED  ·  " .. kgText(state.declaredKg or 0) .. " KG", C.white, C.ink)
@@ -640,9 +640,14 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 			setBanner(if state.declaredKg then kgText(state.declaredKg) .. " KG DECLARED" else "PASSED", C.white, C.ink)
 			sub.Text = state.note or "Waiting for the other lifters."
 		elseif state.phase == "Done" then
-			stepTag.Text = "MEET OVER"
-			setBanner(if state.total then "TOTAL  " .. kgText(state.total) .. " KG" else "BOMBED OUT",
-				if state.total then C.white else C.red, if state.total then C.ink else C.white)
+			stepTag.Text = state.stepTag or "MEET OVER"
+			if state.banner then
+				local good = not state.bombedOut
+				setBanner(state.banner, if good then C.yellow else C.red, if good then C.ink else C.white)
+			else
+				setBanner(if state.total then "TOTAL  " .. kgText(state.total) .. " KG" else "BOMBED OUT",
+					if state.total then C.white else C.red, if state.total then C.ink else C.white)
+			end
 			local best = state.best or {}
 			local parts = {}
 			for _, lift in ipairs(MeetConfig.LiftOrder) do

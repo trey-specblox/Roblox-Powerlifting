@@ -179,6 +179,9 @@ local function onPlayerAdded(player: Player)
 
 	local finalVersion = PlayerProfileSchema.migrate(profile.Data, fromVersion)
 
+	-- A suit test the server went down during: nothing stays on loan. Its wait still counts.
+	ProfileOperations.endSuitTrial(profile.Data, false)
+
 	profile.OnSessionEnd:Connect(function()
 		profiles[player] = nil
 		log("session ended for %s", player.Name)
@@ -507,6 +510,35 @@ function PlayerDataService.grantPiece(player: Player, piece: any): string?
 		print(string.format("[PlayerDataService] %s was given piece %s: %s (%s)", player.Name, id, tostring(piece.rarity), tostring(piece.look)))
 	end
 	return id
+end
+
+-- The coach's tests for rare suits (ProfileOperations). SERVER-ONLY; MockMeetService runs them, and only the server decides a result.
+function PlayerDataService.getSuitTests(player: Player): { [string]: { passed: boolean?, nextTryAt: number? } }?
+	local data = activeData(player, "getSuitTests")
+	return if data then ProfileOperations.getSuitTests(data) else nil
+end
+
+function PlayerDataService.startSuitTrial(player: Player, suitId: string, pieceId: string, waitSeconds: number): (ProfileOperations.SuitTrialOutcome?, number?)
+	local data = activeData(player, "startSuitTrial")
+	if data == nil then
+		return nil, nil
+	end
+	return ProfileOperations.startSuitTrial(data, suitId, pieceId, os.time(), waitSeconds)
+end
+
+function PlayerDataService.endSuitTrial(player: Player, passed: boolean)
+	local data = activeData(player, "endSuitTrial")
+	if data then
+		ProfileOperations.endSuitTrial(data, passed)
+		print(string.format("[PlayerDataService] %s's suit test ended: %s", player.Name, if passed then "passed" else "not passed"))
+	end
+end
+
+function PlayerDataService.resetSuitTests(player: Player, isSuit: (string) -> boolean)
+	local data = activeData(player, "resetSuitTests")
+	if data then
+		ProfileOperations.resetSuitTests(data, isSuit)
+	end
 end
 
 --[[

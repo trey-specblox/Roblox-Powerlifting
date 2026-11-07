@@ -38,6 +38,11 @@
 		Done: best lifts and the total (MeetTotal), or bombed out.
 	While in a meet the player's own attempt requests (the test keys) are ignored.
 
+	THE COACH'S TEST (GAME_DESIGN §35.12, user 2026-11-06): a locked rare suit is proven in the same room. Three attempts in the
+	gear on its own lift, at fixed shares of the Competition Number (no choosing), and every one must be good; the first miss
+	ends it. It saves only the test's result: never Scale, Total, Competition Number or coins, and it doesn't use the mock meet's
+	cooldown. The try and its wait start on arrival, so leaving counts as not passing.
+
 	LEAVING. Leave (MockMeetRemotes.LEAVE: the server only moves the sender, out
 	of the room the server put them in) puts them back where they checked in.
 	Dying, respawning or leaving the game also ends it; in every case the room
@@ -55,12 +60,16 @@ local MockMeetConfig = require(ConfigFolder:WaitForChild("MockMeetConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
 local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
+local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
+local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local AttemptRules = require(MeetFolder:WaitForChild("AttemptRules"))
 local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
 local MeetTotal = require(MeetFolder:WaitForChild("MeetTotal"))
+local GearStats = require(Shared:WaitForChild("Economy"):WaitForChild("GearStats"))
+local GearRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("GearRemotes"))
 
 local ServerFolder = script.Parent.Parent
 local MockMeetArena = require(script.Parent:WaitForChild("MockMeetArena"))
@@ -69,6 +78,8 @@ local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataServi
 -- For the two meet-only raises (Scale, best Total); see their security notes.
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
+local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
+local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 
 local MockMeetService = {}
 
@@ -83,6 +94,9 @@ local LIFT_TIMEOUT_SECONDS = LiftAttemptConfig.MaxAttemptSeconds + 5
 local PASSED = "Passed"
 
 type Body = { character: Model, root: BasePart, humanoid: Humanoid }
+
+-- A running coach's test: which suit, on which piece. `running` once the save has it on loan; `over` once the result is in.
+type SuitTest = { suit: GearStatsConfig.Suit, pieceId: string, running: boolean, over: boolean }
 
 -- One lift's attempts as the meet keeps them: AttemptRules' history, plus passed attempts.
 type LiftRecord = { history: AttemptRules.AttemptHistory, passed: number }
@@ -101,6 +115,8 @@ type Visit = {
 	-- What the client last asked for (cleared when read).
 	choice: number?,
 	readyPressed: boolean,
+	-- Set when this visit is the coach's test instead of a mock meet.
+	suitTest: SuitTest?,
 }
 
 -- Who is in which room. Entries are removed on every way out, so no room is left behind.
@@ -122,6 +138,10 @@ local function notify(player: Player, message: string)
 	if remotes and player.Parent then
 		remotes.notice:FireClient(player, message)
 	end
+end
+
+local function suitWaitSeconds(): number
+	return if RunService:IsStudio() then GearStatsConfig.SuitTest.StudioWaitSeconds else GearStatsConfig.SuitTest.WaitSeconds
 end
 
 local function cooldownSeconds(): number
@@ -351,42 +371,47 @@ local function waitFor(player: Player, visit: Visit, seconds: number, done: () -
 	return stillIn(player, visit) and done()
 end
 
--- One attempt: choose, ready, lift, result. Returns false when the visit ended.
-local function runAttempt(player: Player, visit: Visit, lift: string, attemptNumber: number): boolean
+-- One attempt: choose, ready, lift, result. Returns false when the visit ended. With `fixedKg` (the coach's test) there is no choosing.
+local function runAttempt(player: Player, visit: Visit, lift: string, attemptNumber: number, fixedKg: number?): boolean
 	local record = visit.lifts[lift]
-	local minKg, default = nextWeights(visit, lift)
-	if minKg == nil or default == nil then
-		-- No heavier weight is allowed inside the bounds: the attempt is passed.
-		record.passed += 1
-		notify(player, string.format("%s attempt %d passed: no heavier weight is allowed.", lift, attemptNumber))
-		return stillIn(player, visit)
-	end
-	local _, maxKg = bounds(visit, lift)
+	local weightKg: number
+	if fixedKg then
+		weightKg = fixedKg
+	else
+		local minKg, default = nextWeights(visit, lift)
+		if minKg == nil or default == nil then
+			-- No heavier weight is allowed inside the bounds: the attempt is passed.
+			record.passed += 1
+			notify(player, string.format("%s attempt %d passed: no heavier weight is allowed.", lift, attemptNumber))
+			return stillIn(player, visit)
+		end
+		local _, maxKg = bounds(visit, lift)
 
-	-- Choose.
-	visit.choice = nil
-	local chosen: number? = nil
-	updateBoard(player, visit, lift, attemptNumber, nil)
-	sendState(player, visit, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
-		suggestedKg = default, secondsLeft = MockMeetConfig.ChooseSeconds })
-	waitFor(player, visit, MockMeetConfig.ChooseSeconds, function()
-		local requested = visit.choice
-		if requested == nil then
-			return false
-		end
+		-- Choose.
 		visit.choice = nil
-		local kg, problem = checkChoice(visit, lift, requested)
-		if kg == nil then
-			notify(player, problem or "That weight is not allowed.")
+		local chosen: number? = nil
+		updateBoard(player, visit, lift, attemptNumber, nil)
+		sendState(player, visit, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
+			suggestedKg = default, secondsLeft = MockMeetConfig.ChooseSeconds })
+		waitFor(player, visit, MockMeetConfig.ChooseSeconds, function()
+			local requested = visit.choice
+			if requested == nil then
+				return false
+			end
+			visit.choice = nil
+			local kg, problem = checkChoice(visit, lift, requested)
+			if kg == nil then
+				notify(player, problem or "That weight is not allowed.")
+				return false
+			end
+			chosen = kg
+			return true
+		end)
+		if not stillIn(player, visit) then
 			return false
 		end
-		chosen = kg
-		return true
-	end)
-	if not stillIn(player, visit) then
-		return false
+		weightKg = chosen or default
 	end
-	local weightKg = chosen or default
 
 	-- Ready: on the platform, LIFT to start.
 	visit.readyPressed = false
@@ -472,6 +497,47 @@ local function runMeet(player: Player, visit: Visit)
 	log("%s finished a mock meet: total %s", player.Name, if result.total then kgText(result.total) else "bombed out")
 end
 
+-- The coach's test: three attempts on the suit's own lift at fixed weights. The first miss ends it. Saves only its result.
+local function runSuitTest(player: Player, visit: Visit, test: SuitTest)
+	local lift = test.suit.onlyLift :: string
+	local weights = GearStats.suitTestWeights(visit.competitionNumber[lift], MockMeetConfig.WeightStepKg)
+	updateBoard(player, visit, nil, nil, nil)
+	MockMeetArena.coachSays(visit.room, "Three lifts in that gear. Show me you can handle it.")
+	local shown: { string } = {}
+	for _, kg in ipairs(weights) do
+		table.insert(shown, kgText(kg))
+	end
+	sendState(player, visit, "WeighIn", { secondsLeft = MockMeetConfig.WeighInSeconds, stepTag = test.suit.name .. " TEST",
+		banner = table.concat(shown, "  ·  ") .. " KG", note = "All three must be good lifts. The coach is watching." })
+	task.wait(MockMeetConfig.WeighInSeconds)
+	local passed = true
+	for attemptNumber, kg in ipairs(weights) do
+		if not stillIn(player, visit) or not runAttempt(player, visit, lift, attemptNumber, kg) then
+			-- Gone before the end: `finish` takes the gear back, and the wait stands.
+			log("%s left the %s test", player.Name, test.suit.id)
+			return
+		end
+		local history = visit.lifts[lift].history
+		if history[#history].result ~= "GoodLift" then
+			passed = false
+			break
+		end
+	end
+	test.over = true
+	PlayerDataService.endSuitTrial(player, passed)
+	GearService.redress(player)
+	if passed then
+		GearService.celebrateTest(player)
+	end
+	MockMeetArena.coachSays(visit.room, if passed then "You can handle it. It's yours." else "Not yet. Come back tomorrow.")
+	updateBoard(player, visit, nil, nil, nil)
+	sendState(player, visit, "Done", { best = MeetTotal.resolve(meetAttempts(visit)).best, bombedOut = not passed,
+		stepTag = test.suit.name .. " TEST", banner = if passed then "PASSED" else "NOT YET",
+		note = if passed then "You can handle it. The " .. test.suit.name .. " is yours, and you're wearing it."
+			else "You keep the " .. test.suit.name .. ". Try again in " .. GearStats.waitText(suitWaitSeconds()) .. "." })
+	log("%s %s the %s test", player.Name, if passed then "passed" else "did not pass", test.suit.id)
+end
+
 -- ---------------------------------------------------------------- in and out
 
 --[[
@@ -496,6 +562,13 @@ local function finish(player: Player, sendBack: boolean)
 	if player.Parent then
 		player:SetAttribute(MockMeetConfig.SlotAttribute, nil)
 	end
+	-- Left the coach's test before its result: the gear on loan comes off. (If they left the game the next load does this.)
+	local test = visit.suitTest
+	if test and test.running and not test.over and player.Parent then
+		test.over = true
+		PlayerDataService.endSuitTrial(player, false)
+		GearService.redress(player)
+	end
 
 	local body = bodyOf(player)
 	if body and body.character == visit.character then
@@ -515,38 +588,8 @@ local function finish(player: Player, sendBack: boolean)
 	log("%s left mock meet room %d", player.Name, visit.room.slot)
 end
 
---[[
-	Moves `player` into their own new room and starts their meet if everything
-	allows it. Called by the check-in prompt (also usable from a Studio test).
-	Returns whether they went.
-]]
-function MockMeetService.checkIn(player: Player, point: BasePart): boolean
-	if visits[player] or entering[player] then
-		return false
-	end
-	local body = bodyOf(player)
-	if body == nil or body.humanoid.Health <= 0 or body.root.Anchored then
-		return false
-	end
-	for _, attribute in ipairs(BUSY_ATTRIBUTES) do
-		if body.character:GetAttribute(attribute) ~= nil then
-			return false
-		end
-	end
-	if (body.root.Position - point.Position).Magnitude > MAX_TRIGGER_DISTANCE + body.root.Size.Y then
-		return false
-	end
-	if LiftAttemptService.isAttemptActive(player) then
-		notify(player, "Finish your lift first.")
-		return false
-	end
-	local last = lastCheckIn[player.UserId]
-	local remaining = math.ceil(if last then cooldownSeconds() - (os.clock() - last) else 0)
-	if remaining > 0 then
-		notify(player, string.format("Your next Mock Meet is ready in %d:%02d.", remaining // 60, remaining % 60))
-		return false
-	end
-
+-- Builds the player's room and moves them in, for a mock meet or, with `suitTest`, the coach's test. Returns whether they went.
+local function enterRoom(player: Player, body: Body, suitTest: SuitTest?): boolean
 	-- The weigh-in reads the player's data; nothing is written. The class it locks is the build the meet saves to.
 	local data = PlayerDataService.getData(player)
 	if data == nil then
@@ -611,9 +654,21 @@ function MockMeetService.checkIn(player: Player, point: BasePart): boolean
 		lifts = lifts,
 		choice = nil,
 		readyPressed = false,
+		suitTest = suitTest,
 	}
 	visits[player] = visit
-	lastCheckIn[player.UserId] = os.clock()
+	if suitTest == nil then
+		lastCheckIn[player.UserId] = os.clock()
+	else
+		-- Only now it can't fail for the room's sake: the try starts here, and with it the wait.
+		local outcome = PlayerDataService.startSuitTrial(player, suitTest.suit.id, suitTest.pieceId, suitWaitSeconds())
+		if outcome ~= "Started" then
+			finish(player, false)
+			return false
+		end
+		suitTest.running = true
+		GearService.redress(player)
+	end
 	LiftAttemptService.setFreeAttemptsBlocked(player, true)
 	body.character:PivotTo(arrival)
 	player:SetAttribute(MockMeetConfig.SlotAttribute, slot)
@@ -629,8 +684,89 @@ function MockMeetService.checkIn(player: Player, point: BasePart): boolean
 		finish(player, false)
 	end))
 	log("%s entered mock meet room %d (%.1f kg, %s class)", player.Name, slot, bodyweightKg, visit.classLabel)
-	task.spawn(runMeet, player, visit)
+	if suitTest then
+		task.spawn(runSuitTest, player, visit, suitTest)
+	else
+		task.spawn(runMeet, player, visit)
+	end
 	return true
+end
+
+--[[
+	Moves `player` into their own new room and starts their meet if everything
+	allows it. Called by the check-in prompt (also usable from a Studio test).
+	Returns whether they went.
+]]
+function MockMeetService.checkIn(player: Player, point: BasePart): boolean
+	if visits[player] or entering[player] then
+		return false
+	end
+	local body = bodyOf(player)
+	if body == nil or body.humanoid.Health <= 0 or body.root.Anchored then
+		return false
+	end
+	for _, attribute in ipairs(BUSY_ATTRIBUTES) do
+		if body.character:GetAttribute(attribute) ~= nil then
+			return false
+		end
+	end
+	if (body.root.Position - point.Position).Magnitude > MAX_TRIGGER_DISTANCE + body.root.Size.Y then
+		return false
+	end
+	if LiftAttemptService.isAttemptActive(player) then
+		notify(player, "Finish your lift first.")
+		return false
+	end
+	local last = lastCheckIn[player.UserId]
+	local remaining = math.ceil(if last then cooldownSeconds() - (os.clock() - last) else 0)
+	if remaining > 0 then
+		notify(player, string.format("Your next Mock Meet is ready in %d:%02d.", remaining // 60, remaining % 60))
+		return false
+	end
+
+	return enterRoom(player, body, nil)
+end
+
+--[[
+	Starts the coach's test for a locked rare suit (GAME_DESIGN §35.12): from the cutscene or MY GEAR, anywhere the player is free
+	to go. It checks everything itself; the client only names the piece. Returns whether they went, and what to tell them.
+]]
+function MockMeetService.startSuitTest(player: Player, pieceId: string): (boolean, string)
+	if visits[player] or entering[player] then
+		return false, "You're in a mock meet room already."
+	end
+	if player:GetAttribute(LocalMeetConfig.PlatformAttribute) ~= nil then
+		return false, "Finish your meet first."
+	end
+	local body = bodyOf(player)
+	if body == nil or body.humanoid.Health <= 0 or body.root.Anchored then
+		return false, "You can't go right now."
+	end
+	for _, attribute in ipairs(BUSY_ATTRIBUTES) do
+		if body.character:GetAttribute(attribute) ~= nil then
+			return false, "Step off first."
+		end
+	end
+	if LiftAttemptService.isAttemptActive(player) then
+		return false, "Finish your lift first."
+	end
+	local piece = (PlayerDataService.getPieces(player) or {})[pieceId]
+	local suit = if piece then GearStats.suit(piece.rarity) else nil
+	if suit == nil then
+		return false, "You don't have that."
+	end
+	local test = (PlayerDataService.getSuitTests(player) or {})[suit.id]
+	if test and test.passed then
+		return false, "You've passed this one."
+	end
+	local left = if test and test.nextTryAt then test.nextTryAt - os.time() else 0
+	if left > 0 then
+		return false, "The coach will see you again in " .. GearStats.waitText(left) .. "."
+	end
+	if enterRoom(player, body, { suit = suit, pieceId = pieceId, running = false, over = false }) then
+		return true, "Show the coach you can handle it."
+	end
+	return false, "That didn't go through. Try again."
 end
 
 -- The "Start Mock Meet" prompt on a check-in point.
@@ -687,6 +823,15 @@ function MockMeetService.start()
 		setUpCheckIn(point)
 	end
 	CollectionService:GetInstanceAddedSignal(MockMeetConfig.CheckInTag):Connect(setUpCheckIn)
+
+	-- The way in to the coach's test, and the coach's figure for the cutscene to copy on the winner's screen.
+	GearService.setTestStarter(MockMeetService.startSuitTest)
+	task.spawn(function()
+		local folder = Instance.new("Folder")
+		folder.Name = GearRemotes.COACH_FIGURE
+		MeetFigures.build(folder, "Coach", Vector3.zero, Vector3.new(0, 0, -5))
+		folder.Parent = ReplicatedStorage
+	end)
 
 	Players.PlayerRemoving:Connect(function(player)
 		finish(player, false)

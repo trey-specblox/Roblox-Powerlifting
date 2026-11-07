@@ -12,6 +12,7 @@
 		GIVE COINS      +1,000  +10,000  +100,000
 		CRATES GIVE     NORMAL ODDS, or one rarity every time
 		GIVE A SUIT     each rare suit (no server-wide news)
+		NEXT MEET DROPS the normal chance, or a chosen suit: a real drop at your next meet with a total
 
 	PERFORMANCE: nothing for other players; a few buttons for the admin.
 ]]
@@ -32,10 +33,10 @@ local SIZES = UIStyle.TextSizes
 
 local AdminPanel = {}
 
-local PANEL_WIDTH, PANEL_HEIGHT = 640, 570
+local PANEL_WIDTH, PANEL_HEIGHT = 640, 550
 local MARGIN = 24
 local GAP = 10
-local BUTTON_HEIGHT = 56
+local BUTTON_HEIGHT = 50
 
 local started = false
 
@@ -95,19 +96,24 @@ function AdminPanel.start()
 	end
 
 	local rarityButtons: { [string]: TextButton } = {}
+	local dropButtons: { [string]: TextButton } = {}
 	local NORMAL = "Normal"
+
+	local function highlight(buttons: { [string]: TextButton }, chosen: string)
+		for id, button in pairs(buttons) do
+			local isChosen = id == chosen
+			button.BackgroundColor3 = if isChosen then C.yellow else C.navyDeep
+			button.TextColor3 = if isChosen then C.ink else C.white
+		end
+	end
 
 	local function apply(view: AdminRemotes.AdminView?)
 		if view == nil then
 			return
 		end
 		coinsText.Text = string.format("%s %s", CoinConfig.format(view.coins), CoinConfig.Name)
-		local chosen = view.crateRarity or NORMAL
-		for id, button in pairs(rarityButtons) do
-			local isChosen = id == chosen
-			button.BackgroundColor3 = if isChosen then C.yellow else C.navyDeep
-			button.TextColor3 = if isChosen then C.ink else C.white
-		end
+		highlight(rarityButtons, view.crateRarity or NORMAL)
+		highlight(dropButtons, view.forcedDrop or NORMAL)
 	end
 
 	local busy = false
@@ -130,16 +136,16 @@ function AdminPanel.start()
 		end
 	end
 
-	local coinsTitle = UIStyle.text(body, "CoinsTitle", UDim2.fromOffset(MARGIN, 90), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
+	local coinsTitle = UIStyle.text(body, "CoinsTitle", UDim2.fromOffset(MARGIN, 88), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
 	coinsTitle.Text = "GIVE COINS"
 	for index, coinButton in ipairs(AdminConfig.CoinButtons) do
-		local position, size = cell(index, #AdminConfig.CoinButtons, 122)
+		local position, size = cell(index, #AdminConfig.CoinButtons, 118)
 		UIStyle.button(body, coinButton.id, coinButton.label, position, size, "outline", function()
 			ask("Coins", coinButton.id)
 		end)
 	end
 
-	local cratesTitle = UIStyle.text(body, "CratesTitle", UDim2.fromOffset(MARGIN, 190), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
+	local cratesTitle = UIStyle.text(body, "CratesTitle", UDim2.fromOffset(MARGIN, 174), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
 	cratesTitle.Text = "YOUR CRATES GIVE"
 	local choices: { string } = { NORMAL }
 	for _, rarity in ipairs(GearStatsConfig.Rarities) do
@@ -149,19 +155,36 @@ function AdminPanel.start()
 		-- Three to a row.
 		local column = (index - 1) % 3 + 1
 		local row = math.floor((index - 1) / 3)
-		local position, size = cell(column, 3, 222 + row * (BUTTON_HEIGHT + GAP))
+		local position, size = cell(column, 3, 204 + row * (BUTTON_HEIGHT + GAP))
 		local text = if id == NORMAL then "NORMAL ODDS" else string.upper(id)
 		rarityButtons[id] = UIStyle.button(body, "Rarity_" .. id, text, position, size, "outline", function()
 			ask("CrateRarity", if id == NORMAL then nil else id)
 		end)
 	end
 
-	local suitsTitle = UIStyle.text(body, "SuitsTitle", UDim2.fromOffset(MARGIN, 358), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
+	local suitsTitle = UIStyle.text(body, "SuitsTitle", UDim2.fromOffset(MARGIN, 320), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
 	suitsTitle.Text = "GIVE A SUIT"
 	for index, suit in ipairs(GearStatsConfig.Suits) do
-		local position, size = cell(index, #GearStatsConfig.Suits, 390)
+		local position, size = cell(index, #GearStatsConfig.Suits, 350)
 		UIStyle.button(body, "Suit_" .. suit.id, suit.name, position, size, "outline", function()
 			ask("GiveSuit", suit.id)
+		end)
+	end
+
+	UIStyle.button(body, "ResetTests", "RESET SUIT TESTS", UDim2.new(1, -MARGIN - 230, 0, 318), UDim2.fromOffset(230, 28), "outline", function()
+		ask("ResetSuitTests", nil)
+	end)
+
+	local dropsTitle = UIStyle.text(body, "DropsTitle", UDim2.fromOffset(MARGIN, 406), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
+	dropsTitle.Text = "YOUR NEXT MEET DROPS"
+	local drops: { { id: string, text: string } } = { { id = NORMAL, text = "NORMAL" } }
+	for _, suit in ipairs(GearStatsConfig.Suits) do
+		table.insert(drops, { id = suit.id, text = suit.name })
+	end
+	for index, drop in ipairs(drops) do
+		local position, size = cell(index, #drops, 436)
+		dropButtons[drop.id] = UIStyle.button(body, "Drop_" .. drop.id, drop.text, position, size, "outline", function()
+			ask("ForceDrop", if drop.id == NORMAL then nil else drop.id)
 		end)
 	end
 

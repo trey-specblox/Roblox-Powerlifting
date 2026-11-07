@@ -46,6 +46,9 @@ local MeetFigures = {}
 	to the warm-up room, 2026-11-01).
 ]]
 MeetFigures.GhostGroup = "MeetFigures"
+-- How tall the coach's clipboard is, in studs.
+local CLIPBOARD_HEIGHT = 1.1
+
 local ghostReady = false
 
 -- Puts every part of `model` in the ghost group (registering it the first time).
@@ -171,24 +174,39 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	end
 
 	if kind == "Coach" then
-		-- A clipboard held in front of the chest: the Coach front's Blender clipboard scaled to 1.4 tall, or blocks.
-		local chest = root.CFrame * CFrame.new(0, 0.2, -0.9) * CFrame.Angles(math.rad(-25), 0, 0)
-		local clipboard = RoomProps.propCopy("Clipboard", 1)
-		if clipboard then
-			clipboard.Name = "Clipboard"
-			clipboard:ScaleTo(1.4 / clipboard:GetExtentsSize().Y)
-			clipboard:PivotTo(chest * CFrame.new(0, -0.7, 0)) -- its pivot is its bottom middle
-			for _, part in ipairs(clipboard:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = true
-					part.CanQuery = false
-				end
+		-- A clipboard carried in the left hand, gripped by its top and hanging at the coach's side, its face outward (the
+		-- talking animation holds it up in this hand). Welded to the hand, so it follows the arm (user 2026-11-06: it used
+		-- to float in front of the chest). The Coach front's Blender clipboard, or blocks.
+		local hand = figure:FindFirstChild("LeftHand")
+		if hand and hand:IsA("BasePart") then
+			local held = hand.CFrame * CFrame.new(0, 0.15, 0) * CFrame.Angles(0, math.rad(90), 0)
+			local function carried(part: BasePart)
+				BuildParts.decor(part)
+				part.Anchored = false
+				part.Massless = true
+				part.CanQuery = false
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = hand
+				weld.Part1 = part
+				weld.Parent = part
 			end
-			clipboard.Parent = figure
-		else
-			BuildParts.decor(BuildParts.placed(figure, "Clipboard", Vector3.new(1.1, 1.4, 0.08), chest, looks.Wood))
-			BuildParts.decor(BuildParts.placed(figure, "Clipboard_Paper", Vector3.new(0.9, 1.15, 0.02),
-				chest * CFrame.new(0, -0.05, -0.05), looks.LaneWhite))
+			local clipboard = RoomProps.propCopy("Clipboard", 1)
+			if clipboard then
+				clipboard.Name = "Clipboard"
+				clipboard:ScaleTo(CLIPBOARD_HEIGHT / clipboard:GetExtentsSize().Y)
+				clipboard:PivotTo(held * CFrame.new(0, -CLIPBOARD_HEIGHT, 0)) -- its pivot is its bottom middle
+				for _, part in ipairs(clipboard:GetDescendants()) do
+					if part:IsA("BasePart") then
+						carried(part)
+					end
+				end
+				clipboard.Parent = figure
+			else
+				local middle = held * CFrame.new(0, -CLIPBOARD_HEIGHT / 2, 0)
+				carried(BuildParts.placed(figure, "Clipboard", Vector3.new(0.85, CLIPBOARD_HEIGHT, 0.08), middle, looks.Wood))
+				carried(BuildParts.placed(figure, "Clipboard_Paper", Vector3.new(0.7, CLIPBOARD_HEIGHT - 0.2, 0.02),
+					middle * CFrame.new(0, -0.05, -0.05), looks.LaneWhite))
+			end
 		end
 	end
 

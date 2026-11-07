@@ -1190,6 +1190,107 @@ function ProfileOperations.grantPiece(data: ProfileData, piece: PlayerProfileSch
 	return id
 end
 
+export type SuitTrialOutcome = "Started" | "NotOwned" | "Passed" | "Waiting" | "Rejected"
+
+-- The tests table, made if a save somehow lacks it.
+local function suitTestsOf(inventory: any): { [string]: any }
+	if typeof(inventory.suitTests) ~= "table" then
+		inventory.suitTests = {}
+	end
+	return inventory.suitTests
+end
+
+-- A copy of the coach's tests: suit id -> passed, and when it can next be tried.
+function ProfileOperations.getSuitTests(data: ProfileData): { [string]: { passed: boolean?, nextTryAt: number? } }
+	local copy: { [string]: { passed: boolean?, nextTryAt: number? } } = {}
+	local inventory = (data :: any).inventory
+	if typeof(inventory) == "table" and typeof(inventory.suitTests) == "table" then
+		for suitId, test in pairs(inventory.suitTests) do
+			if typeof(test) == "table" then
+				copy[suitId] = { passed = test.passed == true, nextTryAt = if typeof(test.nextTryAt) == "number" then test.nextTryAt else nil }
+			end
+		end
+	end
+	return copy
+end
+
+--[[
+	Starts a test: puts the piece on for it, remembering what was worn, and starts the wait, so walking out can't dodge a fail.
+	SERVER-ONLY: `now` and `waitSeconds` are the server's. Only "Started" changes anything.
+]]
+function ProfileOperations.startSuitTrial(data: ProfileData, suitId: string, pieceId: string, now: number, waitSeconds: number)
+	: (SuitTrialOutcome, number?)
+	local inventory, pieces = piecesOf(data)
+	local wearing = wearingOf(data)
+	if inventory == nil or wearing == nil or not isItemId(suitId) or not isItemId(pieceId) or inventory.suitTrial ~= nil then
+		return "Rejected", nil
+	end
+	local piece = pieces[pieceId]
+	if typeof(piece) ~= "table" or piece.rarity ~= suitId then
+		return "NotOwned", nil
+	end
+	local tests = suitTestsOf(inventory)
+	local test = tests[suitId]
+	if typeof(test) == "table" and test.passed == true then
+		return "Passed", nil
+	end
+	if typeof(test) == "table" and typeof(test.nextTryAt) == "number" and test.nextTryAt > now then
+		return "Waiting", test.nextTryAt - now
+	end
+	tests[suitId] = { nextTryAt = now + waitSeconds }
+	inventory.suitTrial = { pieceId = pieceId, slot = piece.slot, before = inventory.wearingPieces[piece.slot], beforeItem = wearing[piece.slot] }
+	wearing[piece.slot] = nil
+	inventory.wearingPieces[piece.slot] = pieceId
+	return "Started", nil
+end
+
+--[[
+	Ends a running test. Passed: the suit is unlocked for good and stays on. Otherwise what was worn goes back on. Safe with no test
+	running, and run on every load, so a server going down mid-test leaves nothing on loan.
+]]
+function ProfileOperations.endSuitTrial(data: ProfileData, passed: boolean)
+	local inventory, pieces = piecesOf(data)
+	local wearing = wearingOf(data)
+	local trial = if inventory then inventory.suitTrial else nil
+	if inventory == nil or wearing == nil or typeof(trial) ~= "table" then
+		return
+	end
+	inventory.suitTrial = nil
+	local piece = pieces[trial.pieceId]
+	if passed and typeof(piece) == "table" then
+		suitTestsOf(inventory)[piece.rarity] = { passed = true }
+		return
+	end
+	if inventory.wearingPieces[trial.slot] == trial.pieceId then
+		inventory.wearingPieces[trial.slot] = nil
+	end
+	if typeof(trial.before) == "string" and pieces[trial.before] then
+		inventory.wearingPieces[trial.slot] = trial.before
+	elseif typeof(trial.beforeItem) == "string" then
+		wearing[trial.slot] = trial.beforeItem
+	end
+end
+
+-- Forgets every test, passed or waiting, and takes any suit off. For the admin panel, to test all of this again.
+function ProfileOperations.resetSuitTests(data: ProfileData, isSuit: (string) -> boolean)
+	local inventory, pieces = piecesOf(data)
+	if inventory == nil then
+		return
+	end
+	inventory.suitTests = {}
+	inventory.suitTrial = nil
+	local off = {}
+	for slot, pieceId in pairs(inventory.wearingPieces) do
+		local piece = pieces[pieceId]
+		if typeof(piece) == "table" and isSuit(piece.rarity) then
+			table.insert(off, slot)
+		end
+	end
+	for _, slot in ipairs(off) do
+		inventory.wearingPieces[slot] = nil
+	end
+end
+
 --[[
 	Removes a piece and pays `value` coins, together. A worn piece is refused, so nothing
 	gets scrapped by accident. Returns the outcome and the balance; only "Scrapped"

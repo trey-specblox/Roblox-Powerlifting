@@ -5760,16 +5760,30 @@ smaller singlet, but that left bench with 2 pieces and no lift reaching +12, so 
   same tap skips it. Each crate has its own colour and big lettering (user: "the difference is too subtle ... like CENTRAL
   Belts"): CENTRAL over BELTS on navy, WRAPS on red, SINGLETS on teal, SLEEVES on charcoal.
 
-**The rare suits' later plan (user, 2026-11-06, "just for you to remember"; NOT BUILT, details not settled):**
+**The rare suits' plan (user, 2026-11-06; the cutscene and the test are BUILT, the skin crates are NOT, they wait for skins):**
 
 - **Getting one:** only by winning it as a drop. **Stats: technique only.**
 - **Skin crates:** owning a suit unlocks crates that reroll **just its cosmetic**, never its stats, unboxed for **a lot of coins**.
 - **A cutscene when one drops:** the coach says "You should use this... Let me see you try it on i have to know if you can handle it"
-  (the user's words).
-- **A test they must pass:** the player **must** take the gear to a mock meet and beat the minigame. A bench shirt is three attempts in
-  the shirt. The weights are a % of their max; the user is not sure of the number yet.
-- **Still open:** the %, whether the suits are three attempts too, what failing means, and whether a suit can be worn in real meets before
-  passing. Today a dropped suit can be worn straight away.
+  (the user's words). **How it plays (user, 2026-11-06):** the player gets the drop, all UI disappears, the coach walks up and really hands them
+  the suit, hands on it. **The shot stays on that moment, with the real coach beside the player, facing them and never turned to the screen.** A
+  comic-style dialogue pops up over it: a big portrait of the coach, their name, their line and the player's two answers.
+- **A test they must pass (the user's picks, 2026-11-06):** the player **must** take the gear to a mock meet and beat the minigame: **three
+  attempts in the gear on its own lift, at 100%, 105% and 110% of their Competition Number, and all three must be good.** **The suit is locked
+  until they pass:** it can't be worn. **If they fail they keep it but must wait 24 hours** to try again.
+- **Built with Claude's choices, open to change:** the cutscene plays after the meet's awards, and "Let's do it." or "Not yet." can be chosen (MY
+  GEAR has the same button). The test starts from anywhere the player is free. The first miss ends it. The 24 hours count from when a try
+  starts, so walking out can't dodge a fail. It saves only its result, never Scale, Total, Competition Number or coins, and doesn't use the
+  mock meet's cooldown. Passing once unlocks every suit of that kind, and it stays on. A suit can be scrapped while locked. The drop's news
+  line still shows at the meet.
+
+**Crate types and rarity looks, the user's idea (2026-11-06, "for your information"; NOT BUILT, skins come later, "I need a lot more skin ideas"):**
+
+- **Two crates by stat:** gear has two stats, technique (performance in a lift) and stat gain (training speed). Because competing gives
+  so many stats, a **"Competitor Crate"** would target the competitive stat and a **"Strength Crate"** the stat gain stat. Not settled: how these sit
+  with today's one crate per item, and whether each rolls only that stat.
+- **What each rarity looks like:** **Commons** are the models built so far. **Uncommons** are the current Epic and Legendary looks.
+  **Epics** get actual skins and models of their own, for example a "tungtungsahur" singlet. **Legendaries** get VFX on them.
 
 **DripStone** (§35.5): puts one piece's stats onto another piece's look, of the same item type.
 
@@ -6572,6 +6586,7 @@ selection."
   - **Squat:** behind the lifter, chalking their upper back while the lifter does their hands, then
     two slaps on the back. No clipboard, both hands on the back.
   - **Bench and deadlift:** facing the lifter across the stand, holding the clipboard, talking.
+  - **The clipboard is really in the coach's left hand** (user 2026-11-06), never floating in front of them.
   - As the lifter walks out, the coach goes ahead to the doorway to watch the lift.
   - The coach speaks only once they have arrived, so the doorway never cuts off what they say.
   - A computer lifter's coach stays at the doorway, to save performance. Computer lifters chalk up too.

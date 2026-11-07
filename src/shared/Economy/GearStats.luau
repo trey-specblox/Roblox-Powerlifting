@@ -116,7 +116,35 @@ function GearStats.roll(random: Random, crate: GearStatsConfig.Crate): Piece
 	return { slot = slotId, rarity = rarity, look = looks[random:NextInteger(1, #looks)] }
 end
 
--- slot -> rarity for what a saved inventory has on. Bad entries count for nothing.
+-- Whether a saved inventory has passed the coach's test for this suit (GAME_DESIGN §35.12).
+function GearStats.suitPassed(inventory: any, suitId: string): boolean
+	local tests = if typeof(inventory) == "table" then inventory.suitTests else nil
+	local test = if typeof(tests) == "table" then tests[suitId] else nil
+	return typeof(test) == "table" and test.passed == true
+end
+
+-- The three test weights for a Competition Number: its shares, on the weight step, each heavier than the last.
+function GearStats.suitTestWeights(competitionNumber: number, stepKg: number): { number }
+	local weights: { number } = {}
+	local last = 0
+	for _, share in ipairs(GearStatsConfig.SuitTest.Shares) do
+		local kg = math.max(math.floor(competitionNumber * share / stepKg + 0.5) * stepKg, last + stepKg)
+		table.insert(weights, kg)
+		last = kg
+	end
+	return weights
+end
+
+-- "23h 59m", or "0:20" under an hour.
+function GearStats.waitText(seconds: number): string
+	local whole = math.max(0, math.ceil(seconds))
+	if whole >= 3600 then
+		return string.format("%dh %02dm", whole // 3600, (whole % 3600) // 60)
+	end
+	return string.format("%d:%02d", whole // 60, whole % 60)
+end
+
+-- slot -> rarity for what a saved inventory has on. Bad entries count for nothing, nor does a suit still locked.
 function GearStats.wornRarities(inventory: any): { [string]: string }
 	local worn: { [string]: string } = {}
 	local wearing = if typeof(inventory) == "table" then inventory.wearingPieces else nil
@@ -127,7 +155,11 @@ function GearStats.wornRarities(inventory: any): { [string]: string }
 	for slot, pieceId in pairs(wearing) do
 		local piece = pieces[pieceId]
 		if typeof(piece) == "table" and piece.slot == slot and GearStats.rarity(piece.rarity) then
-			worn[slot] = piece.rarity
+			local trial = inventory.suitTrial
+			local inTest = typeof(trial) == "table" and trial.pieceId == pieceId
+			if GearStats.suit(piece.rarity) == nil or inTest or GearStats.suitPassed(inventory, piece.rarity) then
+				worn[slot] = piece.rarity
+			end
 		end
 	end
 	return worn

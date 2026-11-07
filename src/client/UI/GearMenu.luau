@@ -163,6 +163,25 @@ function GearMenu.start()
 		end
 	end
 
+	-- Asks to take the coach's test for a locked suit: the server moves the player there.
+	local function askTest(pieceId: string)
+		if asking then
+			return
+		end
+		asking = true
+		status.TextColor3, status.Text = C.muted, "Going..."
+		local ok, done, message = pcall(function()
+			return remotes.startTest:InvokeServer(pieceId)
+		end)
+		asking = false
+		if ok and done then
+			holder.Visible = false
+		else
+			status.TextColor3 = C.red
+			status.Text = if ok and typeof(message) == "string" then message else "That didn't go through. Try again."
+		end
+	end
+
 	-- Puts on or scraps a stat piece (a remote answering like `set`).
 	local function askPiece(remote: RemoteFunction, pieceId: string, waiting: string)
 		if asking then
@@ -277,9 +296,20 @@ function GearMenu.start()
 					wear.BorderSizePixel = 0
 					wear.FontFace = UIStyle.heading()
 					wear.TextSize = SIZES.small
+					-- A rare suit is locked until the coach's test is passed (GAME_DESIGN §35.12).
+					local test = current and current.suitTests[piece.rarity]
+					local locked = GearStats.suit(piece.rarity) ~= nil and not (test and test.passed)
 					if isWorn then
 						wear.Text, wear.BackgroundColor3, wear.TextColor3 = "WORN", C.empty, C.muted
 						wear.AutoButtonColor = false
+					elseif locked and test and test.waitSeconds > 0 then
+						wear.Text, wear.BackgroundColor3, wear.TextColor3 = GearStats.waitText(test.waitSeconds), C.empty, C.muted
+						wear.AutoButtonColor = false
+					elseif locked then
+						wear.Text, wear.BackgroundColor3, wear.TextColor3 = "TEST", C.yellow, C.ink
+						wear.Activated:Connect(function()
+							task.spawn(askTest, entry.id)
+						end)
 					else
 						wear.Text, wear.BackgroundColor3, wear.TextColor3 = "WEAR", C.yellow, C.ink
 						wear.Activated:Connect(function()

@@ -51,6 +51,10 @@ local pieces: WornGearFit.Pieces? = nil
 local loadTried = false
 local remotesSet: GearRemotes.RemoteSet? = nil
 local armTracks: { [Model]: AnimationTrack } = {}
+-- The suit an admin has set their own next meet to drop (AdminService), until it drops or they leave.
+local forcedDrops: { [Player]: string } = {}
+-- MockMeetService's way into a suit test (set when it starts; it needs this module, so not the other way round).
+local testStarter: ((Player, string) -> (boolean, string))? = nil
 
 local function log(message: string, ...: any)
 	print("[GearService] " .. string.format(message, ...))
@@ -150,7 +154,11 @@ local function viewFor(player: Player): GearRemotes.GearView?
 	if owned == nil or wearing == nil then
 		return nil
 	end
-	return { owned = owned, wearing = wearing, drawn = loadPieces() ~= nil,
+	local tests: { [string]: { passed: boolean, waitSeconds: number } } = {}
+	for suitId, test in pairs(PlayerDataService.getSuitTests(player) or {}) do
+		tests[suitId] = { passed = test.passed == true, waitSeconds = math.max(0, (test.nextTryAt or 0) - os.time()) }
+	end
+	return { owned = owned, wearing = wearing, drawn = loadPieces() ~= nil, suitTests = tests,
 		pieces = PlayerDataService.getPieces(player) or {}, wearingPieces = PlayerDataService.getWornPieces(player) or {} }
 end
 
@@ -195,6 +203,14 @@ end
 local function setWornPiece(player: Player, pieceId: any): (boolean, string, GearRemotes.GearView?)
 	if typeof(pieceId) ~= "string" then
 		return false, "Unknown gear.", nil
+	end
+	-- A rare suit is locked until the coach's test is passed (GAME_DESIGN §35.12).
+	local owned = (PlayerDataService.getPieces(player) or {})[pieceId]
+	if owned and GearStats.suit(owned.rarity) then
+		local test = (PlayerDataService.getSuitTests(player) or {})[owned.rarity]
+		if test == nil or not test.passed then
+			return false, "Pass the coach's test first.", viewFor(player)
+		end
 	end
 	local outcome = PlayerDataService.setWornPiece(player, pieceId)
 	if outcome == "NotOwned" then
@@ -241,6 +257,49 @@ function GearService.giveSuit(player: Player, suitId: string, announce: boolean)
 		remotesSet.suitDropped:FireAllClients(news)
 	end
 	return id
+end
+
+--[[
+	Makes this player's next meet with a total drop this suit, or nothing special with nil. SERVER-ONLY: AdminService
+	has checked the player is an admin.
+]]
+function GearService.setForcedDrop(player: Player, suitId: string?)
+	forcedDrops[player] = suitId
+end
+
+function GearService.getForcedDrop(player: Player): string?
+	return forcedDrops[player]
+end
+
+-- The forced suit, once: the meet that drops it uses it up.
+function GearService.takeForcedDrop(player: Player): string?
+	local suitId = forcedDrops[player]
+	forcedDrops[player] = nil
+	return suitId
+end
+
+-- Dresses the character again after something else changed what is worn (the suit test).
+function GearService.redress(player: Player)
+	dress(player)
+end
+
+-- Plays the coach's cutscene on this player's screen.
+function GearService.playCutscene(player: Player, suitId: string, pieceId: string)
+	if remotesSet and player.Parent then
+		local news: GearRemotes.SuitCutsceneNews = { suitId = suitId, pieceId = pieceId }
+		remotesSet.suitCutscene:FireClient(player, news)
+	end
+end
+
+-- The big sound on this player's screen, for passing a test.
+function GearService.celebrateTest(player: Player)
+	if remotesSet and player.Parent then
+		remotesSet.suitTestPassed:FireClient(player)
+	end
+end
+
+function GearService.setTestStarter(starter: (Player, string) -> (boolean, string))
+	testStarter = starter
 end
 
 -- Fits the gear again when a body part changes size (Roblox can scale an avatar a moment after it spawns).
@@ -312,6 +371,15 @@ function GearService.start()
 		end
 		return setWornPiece(player, pieceId)
 	end
+	remotes.startTest.OnServerInvoke = function(player: Player, pieceId: any): (boolean, string)
+		if tooFast(player) then
+			return false, "One moment..."
+		end
+		if typeof(pieceId) ~= "string" or testStarter == nil then
+			return false, "Unknown gear."
+		end
+		return testStarter(player, pieceId)
+	end
 	remotes.scrap.OnServerInvoke = function(player: Player, pieceId: any): (boolean, string, GearRemotes.GearView?)
 		if tooFast(player) then
 			return false, "One moment...", nil
@@ -333,6 +401,7 @@ function GearService.start()
 	Players.PlayerAdded:Connect(track)
 	Players.PlayerRemoving:Connect(function(player)
 		lastAsked[player] = nil
+		forcedDrops[player] = nil
 	end)
 end
 

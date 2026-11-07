@@ -18,6 +18,12 @@
 			Scraps a piece for coins. The server decides the coins, from its rarity.
 		SuitDropped   server -> every client  (news: SuitDropNews)
 			Someone got a rare suit at a meet (GAME_DESIGN §35.12). Display only.
+		SuitCutscene  server -> one client  (news: SuitCutsceneNews)
+			The coach's cutscene for the suit they just won. Display only.
+		StartSuitTest  client -> server  (pieceId: string) -> (ok, message)
+			Asks to take the coach's test for a locked suit. The server checks everything.
+		SuitTestPassed  server -> one client  ()
+			Passed: plays the big sound.
 ]]
 
 local GearRemotes = {}
@@ -28,6 +34,16 @@ GearRemotes.SET = "SetWorn"
 GearRemotes.SET_PIECE = "SetWornPiece"
 GearRemotes.SCRAP = "ScrapPiece"
 GearRemotes.SUIT_DROPPED = "SuitDropped"
+GearRemotes.SUIT_CUTSCENE = "SuitCutscene"
+GearRemotes.START_TEST = "StartSuitTest"
+GearRemotes.SUIT_TEST_PASSED = "SuitTestPassed"
+-- A folder in ReplicatedStorage holding the coach's figure, for the cutscene to copy.
+GearRemotes.COACH_FIGURE = "CoachFigure"
+
+export type SuitCutsceneNews = {
+	suitId: string,
+	pieceId: string,
+}
 
 export type SuitDropNews = {
 	name: string,
@@ -44,6 +60,8 @@ export type GearView = {
 	-- Gear with stats: piece id -> piece, and which piece is worn in each slot.
 	pieces: { [string]: { slot: string, rarity: string, look: string } },
 	wearingPieces: { [string]: string },
+	-- The coach's tests: suit id -> passed, or the seconds until it can be tried again.
+	suitTests: { [string]: { passed: boolean, waitSeconds: number } },
 }
 
 export type RemoteSet = {
@@ -52,6 +70,9 @@ export type RemoteSet = {
 	setPiece: RemoteFunction,
 	scrap: RemoteFunction,
 	suitDropped: RemoteEvent,
+	suitCutscene: RemoteEvent,
+	startTest: RemoteFunction,
+	suitTestPassed: RemoteEvent,
 }
 
 function GearRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
@@ -73,15 +94,20 @@ function GearRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		made.Parent = folder
 		return made
 	end
-	local suitDropped = (folder :: Instance):FindFirstChild(GearRemotes.SUIT_DROPPED)
-	if suitDropped == nil then
+	local function makeEvent(name: string): RemoteEvent
+		local existing = (folder :: Instance):FindFirstChild(name)
+		if existing then
+			return existing :: RemoteEvent
+		end
 		local created = Instance.new("RemoteEvent")
-		created.Name = GearRemotes.SUIT_DROPPED
+		created.Name = name
 		created.Parent = folder
-		suitDropped = created
+		return created
 	end
 	return { get = make(GearRemotes.GET), set = make(GearRemotes.SET), setPiece = make(GearRemotes.SET_PIECE),
-		scrap = make(GearRemotes.SCRAP), suitDropped = suitDropped :: RemoteEvent }
+		scrap = make(GearRemotes.SCRAP), suitDropped = makeEvent(GearRemotes.SUIT_DROPPED),
+		suitCutscene = makeEvent(GearRemotes.SUIT_CUTSCENE), startTest = make(GearRemotes.START_TEST),
+		suitTestPassed = makeEvent(GearRemotes.SUIT_TEST_PASSED) }
 end
 
 -- Waits for the remotes to replicate. Client only.
@@ -93,6 +119,9 @@ function GearRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		setPiece = folder:WaitForChild(GearRemotes.SET_PIECE) :: RemoteFunction,
 		scrap = folder:WaitForChild(GearRemotes.SCRAP) :: RemoteFunction,
 		suitDropped = folder:WaitForChild(GearRemotes.SUIT_DROPPED) :: RemoteEvent,
+		suitCutscene = folder:WaitForChild(GearRemotes.SUIT_CUTSCENE) :: RemoteEvent,
+		startTest = folder:WaitForChild(GearRemotes.START_TEST) :: RemoteFunction,
+		suitTestPassed = folder:WaitForChild(GearRemotes.SUIT_TEST_PASSED) :: RemoteEvent,
 	}
 end
 

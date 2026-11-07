@@ -10,8 +10,9 @@
 		GetAdminPanel  client -> server  () -> AdminView?
 			The asking admin's panel, or nil for anyone else (the client then builds nothing).
 		AdminAction    client -> server  (action: string, value: any) -> (ok, message, view?)
-			"Coins" with a button id from AdminConfig.CoinButtons, "CrateRarity" with a
-			rarity id or nil to turn it off, or "GiveSuit" with a suit id. Never an amount.
+			"ResetSuitTests", "Coins" with a button id from AdminConfig.CoinButtons, "CrateRarity" with a
+			rarity id or nil to turn it off, "GiveSuit" with a suit id, or "ForceDrop" with a
+			suit id or nil to turn it off. Never an amount.
 ]]
 
 local AdminRemotes = {}
@@ -24,6 +25,8 @@ export type AdminView = {
 	coins: number,
 	-- What the admin's crates are set to give; nil when they roll normally.
 	crateRarity: string?,
+	-- The suit the admin's next meet will drop; nil for the normal chance.
+	forcedDrop: string?,
 }
 
 export type RemoteSet = {

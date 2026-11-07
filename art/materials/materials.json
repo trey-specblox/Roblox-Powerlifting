@@ -883,6 +883,22 @@
       "ids": {
         "image": "rbxassetid://78602138170847"
       }
+    },
+    "Cutscene_Bubble": {
+      "about": "The coach's cutscene: a black speech tab with a white edge, for an answer. Drawn by art/scripts/make_cutscene_art.py.",
+      "file": "art/ui/Cutscene_Bubble.png",
+      "license": "own work",
+      "ids": {
+        "image": "rbxassetid://111472851400982"
+      }
+    },
+    "Cutscene_Panel": {
+      "about": "The coach's cutscene: a see-through dark panel down the left of the screen, its edge cut into yellow and white shards, for the portrait to stand on. Drawn by art/scripts/make_cutscene_art.py.",
+      "file": "art/ui/Cutscene_Panel.png",
+      "license": "own work",
+      "ids": {
+        "image": "rbxassetid://101738144418251"
+      }
     }
   },
   "sounds": {

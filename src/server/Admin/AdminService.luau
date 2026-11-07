@@ -11,7 +11,7 @@
 		  is on the server, where no client can read or change it
 		- a client sends which button, never an amount: amounts come from AdminConfig
 		- it only ever changes the admin's own account, and every use is in the server's log
-		- it does nothing that touches other players
+		- it does nothing that changes other players (a forced drop's news line is shown to them, like any drop's)
 
 	To add a tool: a new action in `actions` here, and its buttons in client AdminPanel.
 ]]
@@ -52,7 +52,8 @@ local function isAdmin(player: Player): boolean
 end
 
 local function viewFor(player: Player): AdminRemotes.AdminView
-	return { coins = PlayerDataService.getCoins(player) or 0, crateRarity = ShopService.getForcedRarity(player) }
+	return { coins = PlayerDataService.getCoins(player) or 0, crateRarity = ShopService.getForcedRarity(player),
+		forcedDrop = GearService.getForcedDrop(player) }
 end
 
 -- Each returns whether it worked and what to tell the admin. `value` comes from a client: check it before using it.
@@ -79,6 +80,27 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 			return true, suit.name .. " added. Wear it from GEAR."
 		end
 		return false, "No suit added: your save hasn't loaded."
+	end,
+	-- Forgets the admin's own suit tests, passed or waiting, to take them again.
+	ResetSuitTests = function(player: Player, _value: any): (boolean, string)
+		PlayerDataService.resetSuitTests(player, function(rarity: string): boolean
+			return GearStats.suit(rarity) ~= nil
+		end)
+		GearService.redress(player)
+		return true, "Your suit tests are reset, and your suits are locked again."
+	end,
+	-- A real drop at the admin's next meet with a total, with the server-wide news, to test all of it.
+	ForceDrop = function(player: Player, value: any): (boolean, string)
+		if value == nil then
+			GearService.setForcedDrop(player, nil)
+			return true, "Your next meet has the normal chance."
+		end
+		local suit = GearStats.suit(value)
+		if suit == nil then
+			return false, "That isn't a suit."
+		end
+		GearService.setForcedDrop(player, suit.id)
+		return true, "Finish a meet with a total to get the " .. suit.name .. "."
 	end,
 	CrateRarity = function(player: Player, value: any): (boolean, string)
 		if value == nil then
