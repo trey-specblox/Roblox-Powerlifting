@@ -123,14 +123,15 @@ function GearStats.suitPassed(inventory: any, suitId: string): boolean
 	return typeof(test) == "table" and test.passed == true
 end
 
--- The three test weights for a Competition Number: its shares, on the weight step, each heavier than the last.
+--[[
+	The three test weights for a Competition Number: its shares, rounded down to the weight step, so a test is never over the
+	approved shares (user 2026-11-06). On a small Competition Number two can be the same: 25 gives 25, 25, 27.5.
+]]
 function GearStats.suitTestWeights(competitionNumber: number, stepKg: number): { number }
 	local weights: { number } = {}
-	local last = 0
 	for _, share in ipairs(GearStatsConfig.SuitTest.Shares) do
-		local kg = math.max(math.floor(competitionNumber * share / stepKg + 0.5) * stepKg, last + stepKg)
-		table.insert(weights, kg)
-		last = kg
+		-- The tiny extra keeps 1.05 x 100, a hair under 105 in a computer's sums, from rounding down a whole step.
+		table.insert(weights, math.max(math.floor(competitionNumber * share / stepKg + 1e-6) * stepKg, stepKg))
 	end
 	return weights
 end

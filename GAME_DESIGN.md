@@ -5769,7 +5769,8 @@ smaller singlet, but that left bench with 2 pieces and no lift reaching +12, so 
   the suit, hands on it. **The shot stays on that moment, with the real coach beside the player, facing them and never turned to the screen.** A
   comic-style dialogue pops up over it: a big portrait of the coach, their name, their line and the player's two answers.
 - **A test they must pass (the user's picks, 2026-11-06):** the player **must** take the gear to a mock meet and beat the minigame: **three
-  attempts in the gear on its own lift, at 100%, 105% and 110% of their Competition Number, and all three must be good.** **The suit is locked
+  attempts in the gear on its own lift, at 100%, 105% and 110% of their Competition Number, rounded down to the weight step (so on a small
+  number two can match: 25 gives 25, 25, 27.5), and all three must be good.** **The suit is locked
   until they pass:** it can't be worn. **If they fail they keep it but must wait 24 hours** to try again.
 - **Built with Claude's choices, open to change:** the cutscene plays after the meet's awards, and "Let's do it." or "Not yet." can be chosen (MY
   GEAR has the same button). The test starts from anywhere the player is free. The first miss ends it. The 24 hours count from when a try

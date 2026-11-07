@@ -354,7 +354,12 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 			end
 			subtotal += best
 		end
-		if state.phase == "Done" then
+		if state.phase == "Done" and state.banner then
+			-- The coach's test is one lift, so it has no total: the card shows its result.
+			totalName.Text = "TEST"
+			totalValue.Text = state.banner
+			totalValue.TextColor3 = if state.bombedOut then C.red else C.yellow
+		elseif state.phase == "Done" then
 			totalName.Text = "TOTAL"
 			totalValue.Text = if state.total then kgText(state.total) .. " KG" else "BOMBED OUT"
 			totalValue.TextColor3 = if state.total then C.white else C.red
