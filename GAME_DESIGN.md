@@ -5999,8 +5999,16 @@ in their weight class and stay in it. This reopens the ladder points
 > everyone but the lifters competing in the meet** (user, 2026-11-01): its
 > walls cannot be jumped over. The 4 racks read RACK 1–4 left to right
 > from the main stand; their gantry screens say "RACK n · STATE
-> CHAMPIONSHIP" until the State meet draws the live minigame there. No
-> State meet runs yet.
+> CHAMPIONSHIP" until the State meet draws the live minigame there.
+
+> **Built (2026-11-06): the State meet itself.** Every 20 minutes at the arena, sign up at its desk or in the MEETS list (qualified
+> in your class, §36.3); it needs 2 lifters, at most 4 lift and the rest carry over, and there are never computer lifters.
+> **Each round (user 2026-11-06, choosing between two earlier decisions):** everyone sits on their bench and picks their weight there,
+> then the bar goes **strictly lightest first**, one lifter at a time. On their turn a lifter gets up, chalks up at their stand and walks
+> out, then walks back and sits down. So the choice is locked in before the turn, rather than made on the turn as first asked for
+> (memory of 2026-11-06). It pays the x3 pot, titles and trophies for the top 3 as already built. Each rack's screen shows its
+> lifter's name, lift, weight and result. **Not built yet, in this order:** the live minigame on those screens (next), the finisher badge,
+> the Nationals spot, then show-off items and spectator help (§36.5).
 
 ### 36.5 Still open
 

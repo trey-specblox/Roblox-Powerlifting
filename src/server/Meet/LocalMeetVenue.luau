@@ -207,6 +207,8 @@ export type Platform = {
 	-- Off the platform (no parent) for deadlift.
 	spotters: { Model },
 	spotterLift: string?,
+	-- At a meet with turns (the State meet): the middle of the bench's seat top, where they sit while they wait, facing out.
+	seatSpot: CFrame?,
 }
 
 export type Venue = {
@@ -304,6 +306,108 @@ local function writeSign(part: BasePart, out: Vector3, title: string, sub: strin
 end
 -- Shared with StateArenaVenue, whose signs use the same style.
 LocalMeetVenue.writeSign = writeSign
+
+--[[
+	What the awards stage takes away from a platform (the rack, the referees' chairs and their light box), for the platform whose
+	floor middle is `platformCentre`. The rack's open side faces +Z, where the lifter walks in. Returns the gear, its lamps and the
+	referees' seats, or nil and the reason. Shared with the State arena.
+]]
+function LocalMeetVenue.platformGear(parent: Instance, platformCentre: Vector3, index: number): (Folder?, { BasePart }, { CFrame }, string?)
+	local gear = Instance.new("Folder")
+	gear.Name = "Gear_" .. index
+	gear.Parent = parent
+	-- Turned round: its open front faces the entrance at the back (user 2026-11-01: "with the rack facing the
+	-- entrance"), so the lifter walks straight in to the bar, facing the head referee through the rack.
+	local placed, problem = MockMeetArena.placeRack(gear, platformCentre + Vector3.new(0, PLATFORM_HEIGHT, 0), math.pi)
+	if not placed then
+		return nil, {}, {}, problem
+	end
+	-- No rack on a meet's deadlift (rackFor), so the bar lies in the platform's middle (StationLayout.deadliftZ).
+	local platformRack = gear:FindFirstChild("CompetitionRack")
+	if platformRack then
+		platformRack:SetAttribute("DeadliftAtCentre", true)
+	end
+	local function prop(name: string, item: string, at: Vector3, toward: Vector3): Model?
+		local copy = RoomProps.propCopy(item, 1)
+		if copy then
+			copy.Name = name
+			copy:PivotTo(CFrame.lookAt(at, at + toward))
+			copy.Parent = gear
+		end
+		return copy
+	end
+	-- The referees' light box at the platform's front right corner, facing the spectators.
+	local half = PLATFORM_SIZE / 2
+	local lamps: { BasePart } = {}
+	local lights = prop("RefLights_" .. index, "RefLights", platformCentre + Vector3.new(half + 2.5, 0, -half + 1), -Vector3.zAxis)
+	if lights then
+		for lamp = 1, 3 do
+			local part = lights:FindFirstChild("RefLights_Lamp" .. lamp, true)
+			if part and part:IsA("BasePart") then
+				table.insert(lamps, part)
+			end
+		end
+	end
+	-- The three referee chairs round the lifter (left, middle, right); a seated referee's hips sit a little behind
+	-- the seat's middle.
+	local refSeats: { CFrame } = {}
+	for seat, spot in ipairs(REF_SEATS) do
+		local at = platformCentre + Vector3.new(spot.at.X, 0, spot.at.Y - PLATFORM_Z)
+		prop(string.format("RefChair_%d_%d", index, seat), "RefChair", at, spot.toward)
+		local hips = at + Vector3.new(0, CHAIR_SEAT_TOP, 0) - spot.toward * 0.45
+		table.insert(refSeats, CFrame.lookAt(hips, hips + spot.toward))
+	end
+	return gear, lamps, refSeats, nil
+end
+
+--[[
+	The awards stage, kept out of the venue until the end (showAwards): the 1-2-3 podium in front of the platforms and the backdrop
+	behind it, `middle` being the floor point level with the platforms' middles. Facing -Z. Returns the stage, the backdrop's title
+	and where 1st, 2nd and 3rd stand. Shared with the State arena.
+]]
+function LocalMeetVenue.awardsStage(middle: Vector3): (Model, BasePart?, { CFrame })
+	local awards = Instance.new("Model")
+	awards.Name = "AwardsStage"
+	local function prop(name: string, item: string, at: Vector3): Model?
+		local copy = RoomProps.propCopy(item, 1)
+		if copy then
+			copy.Name = name
+			copy:PivotTo(CFrame.lookAt(at, at - Vector3.zAxis))
+			copy.Parent = awards
+		end
+		return copy
+	end
+	local half = PLATFORM_SIZE / 2
+	local backdrop = prop("AwardsBackdrop", "AwardsBackdrop", middle + Vector3.new(0, PLATFORM_HEIGHT, -half + 2))
+	local backdropTitle: BasePart? = nil
+	if backdrop then
+		local title = backdrop:FindFirstChild("AwardsBackdrop_Title", true) :: BasePart?
+		backdropTitle = title
+		if title then
+			writeSign(title, -Vector3.zAxis, "LOCAL CENTRAL MEET", "AWARDS", 30)
+		end
+		local lenses = backdrop:FindFirstChild("AwardsBackdrop_Lenses", true) :: BasePart?
+		if lenses then
+			BuildParts.surfaceLight(lenses, StyledScreen.faceToward(lenses, -Vector3.yAxis), 24, 2, 80)
+		end
+	end
+	local podiumSpots: { CFrame } = {}
+	local podium = prop("AwardPodium", "AwardPodium", middle + Vector3.new(0, 0, -half - 3.5))
+	if podium then
+		for _, top in ipairs({ "AwardPodium_Gold", "AwardPodium_Silver", "AwardPodium_Bronze" }) do
+			local part = podium:FindFirstChild(top, true)
+			if part and part:IsA("BasePart") then
+				local surface = part.Position + Vector3.new(0, part.Size.Y / 2, 0)
+				local solid = BuildParts.box(awards, top .. "_Solid", Vector3.new(surface.X - 2.5, middle.Y, surface.Z - 2.5),
+					Vector3.new(surface.X + 2.5, surface.Y, surface.Z + 2.5), looks.Glass)
+				solid.Transparency = 1
+				solid.CastShadow = false
+				table.insert(podiumSpots, CFrame.lookAt(surface, surface - Vector3.zAxis))
+			end
+		end
+	end
+	return awards, backdropTitle, podiumSpots
+end
 
 -- Builds hall `hallIndex` once and returns it (later calls return the same one), or nil and the reason.
 function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
@@ -488,20 +592,10 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			Vector3.new(x + half + 0.3, PLATFORM_HEIGHT, PLATFORM_Z + half + 0.3))
 
 		-- The gear the awards stage replaces: the rack, the referee chairs and the light box.
-		local gear = Instance.new("Folder")
-		gear.Name = "Gear_" .. index
-		gear.Parent = model
-		-- Turned round: its open front faces the entrance at the back (user 2026-11-01: "with the rack facing the
-		-- entrance"), so the lifter walks straight in to the bar, facing the head referee through the rack.
-		local placed, problem = MockMeetArena.placeRack(gear, centre + Vector3.new(x, PLATFORM_HEIGHT, PLATFORM_Z), math.pi)
-		if not placed then
+		local gear, lamps, refSeats, problem = LocalMeetVenue.platformGear(model, centre + Vector3.new(x, 0, PLATFORM_Z), index)
+		if gear == nil then
 			model:Destroy()
 			return nil, problem
-		end
-		-- No rack on a meet's deadlift (rackFor), so the bar lies in the platform's middle (StationLayout.deadliftZ).
-		local platformRack = gear:FindFirstChild("CompetitionRack")
-		if platformRack then
-			platformRack:SetAttribute("DeadliftAtCentre", true)
 		end
 
 		-- The platform's big screen on the back wall above it (MockMeet_01's attempt board, scaled up): the lifter
@@ -516,29 +610,6 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 		local signScreen = sign and sign:FindFirstChild("PlatformSign_Screen", true) :: BasePart?
 		if signScreen then
 			writeSign(signScreen, -Vector3.zAxis, "PLATFORM " .. index, nil, 40)
-		end
-
-		-- The referees' light box at the platform's front right corner, facing the spectators.
-		local lamps: { BasePart } = {}
-		local lights = prop(gear, "RefLights_" .. index, "RefLights",
-			facing(Vector3.new(x + half + 2.5, 0, PLATFORM_FRONT + 1), -Vector3.zAxis))
-		if lights then
-			for lamp = 1, 3 do
-				local part = lights:FindFirstChild("RefLights_Lamp" .. lamp, true)
-				if part and part:IsA("BasePart") then
-					table.insert(lamps, part)
-				end
-			end
-		end
-
-		-- The three referee chairs round the lifter (left, middle, right); a seated referee's hips sit a little behind
-		-- the seat's middle.
-		local refSeats: { CFrame } = {}
-		for seat, spot in ipairs(REF_SEATS) do
-			prop(gear, string.format("RefChair_%d_%d", index, seat), "RefChair",
-				facing(Vector3.new(x + spot.at.X, 0, spot.at.Y), spot.toward))
-			local hips = centre + Vector3.new(x + spot.at.X, CHAIR_SEAT_TOP, spot.at.Y) - spot.toward * 0.45
-			table.insert(refSeats, CFrame.lookAt(hips, hips + spot.toward))
 		end
 
 		-- One stage light over each platform, hung from the ceiling.
@@ -758,35 +829,7 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 	-- ---------------------------------------------------------------- the awards stage (kept out until the end)
 	-- The 1-2-3 podium in front of platforms 4 and 5, the LOCAL CENTRAL MEET backdrop behind it standing on their
 	-- front edges.
-	local awards = Instance.new("Model")
-	awards.Name = "AwardsStage"
-	local backdrop = prop(awards, "AwardsBackdrop", "AwardsBackdrop",
-		facing(Vector3.new(0, PLATFORM_HEIGHT, PLATFORM_FRONT + 2), -Vector3.zAxis))
-	local backdropTitle: BasePart? = nil
-	if backdrop then
-		local title = backdrop:FindFirstChild("AwardsBackdrop_Title", true) :: BasePart?
-		backdropTitle = title
-		if title then
-			writeSign(title, -Vector3.zAxis, "LOCAL CENTRAL MEET", "AWARDS", 30)
-		end
-		local lenses = backdrop:FindFirstChild("AwardsBackdrop_Lenses", true) :: BasePart?
-		if lenses then
-			shine(lenses, 24, 2, 80)
-		end
-	end
-	local podiumSpots: { CFrame } = {}
-	local podium = prop(awards, "AwardPodium", "AwardPodium", facing(Vector3.new(0, 0, PLATFORM_FRONT - 3.5), -Vector3.zAxis))
-	if podium then
-		for _, top in ipairs({ "AwardPodium_Gold", "AwardPodium_Silver", "AwardPodium_Bronze" }) do
-			local part = podium:FindFirstChild(top, true)
-			if part and part:IsA("BasePart") then
-				local surface = part.Position + Vector3.new(0, part.Size.Y / 2, 0)
-				solid(top .. "_Solid", surface - centre - Vector3.new(2.5, surface.Y - centre.Y, 2.5),
-					surface - centre + Vector3.new(2.5, 0, 2.5), awards)
-				table.insert(podiumSpots, CFrame.lookAt(surface, surface - Vector3.zAxis))
-			end
-		end
-	end
+	local awards, backdropTitle, podiumSpots = LocalMeetVenue.awardsStage(centre + Vector3.new(0, 0, PLATFORM_Z))
 
 	model.PrimaryPart = model:FindFirstChild("Floor") :: BasePart
 	model.Parent = hallsFolder()

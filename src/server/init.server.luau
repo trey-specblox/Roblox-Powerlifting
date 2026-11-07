@@ -60,7 +60,7 @@ GymRecordsWall.start()
 local LocalMeetService = require(MeetFolder:WaitForChild("LocalMeetService"))
 LocalMeetService.start()
 
--- The State Championship arena and its entrance building beside the gym (GAME_DESIGN §36): visits for now.
+-- The way into the State Championship arena, which LocalMeetService runs as a hall (GAME_DESIGN §36).
 local StateArenaService = require(MeetFolder:WaitForChild("StateArenaService"))
 StateArenaService.start()
 

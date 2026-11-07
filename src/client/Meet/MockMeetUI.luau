@@ -115,7 +115,7 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	title.Position = UDim2.fromOffset(24, 18)
 	title.Size = UDim2.fromOffset(260, 70)
 	title.Parent = gui
-	UIStyle.titleTag(title, "Tag", look.tag, UDim2.fromOffset(0, 0), UDim2.fromOffset(230, 44), nil, "star")
+	local meetTitle = UIStyle.titleTag(title, "Tag", look.tag, UDim2.fromOffset(0, 0), UDim2.fromOffset(230, 44), nil, "star")
 	UIStyle.label(title, "Sub", UDim2.fromOffset(16, 48), UDim2.fromOffset(200, 18), C.yellow, UIStyle.heading()).Text =
 		look.sub
 
@@ -478,6 +478,7 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		end
 		drawToken += 1
 		local token = drawToken
+		meetTitle.Text = state.meetTitle or look.tag
 		drawScorecard(state, chosenKg)
 
 		if state.phase ~= lastPhase and (state.phase == "Choose" or state.phase == "Done") then

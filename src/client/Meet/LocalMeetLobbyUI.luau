@@ -81,7 +81,8 @@ local LIST_ROW_HEIGHT = 52 * LIST_SCALE
 local LIST_BUTTON_HEIGHT = 42 * LIST_SCALE
 local LIST_BUTTON_WIDTH = 122 * LIST_SCALE
 local LIST_GAP = 8 * LIST_SCALE
-local MEET_COUNT = 5
+-- The five halls and the State meet.
+local MEET_COUNT = 6
 
 local function kgText(kg: number): string
 	return if kg == math.floor(kg) then string.format("%d", kg) else string.format("%.1f", kg)
@@ -257,14 +258,19 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 				continue
 			end
 			-- "MEET 3  ·  REGIONAL x2": a Local meet just says its number.
-			row.title.Text = if meet.potMultiplier > 1
+			row.title.Text = if meet.state then string.format("STATE MEET  ·  x%d", meet.potMultiplier)
+				elseif meet.potMultiplier > 1
 				then string.format("MEET %d  ·  %s x%d", index, string.gsub(meet.levelLabel, " MEET$", ""), meet.potMultiplier)
 				else "MEET " .. index
 			row.title.TextColor3 = if meet.potMultiplier > 1 then C.yellow else C.white
 			local untilStart = meet.nextStartAt - serverNow
 			local closesIn = meet.signUpClosesAt - serverNow
-			local lifters = string.format("%d/%d", meet.signedUpCount, lobby.maxLifters)
-			if meet.signedUp then
+			local lifters = string.format("%d/%d", meet.signedUpCount, meet.maxLifters)
+			if meet.notQualified and not meet.running then
+				row.status.Text = "QUALIFY FIRST  ·  " .. meet.notQualified
+				row.status.TextColor3 = C.muted
+				row.signUp.Text = "SIGN UP"
+			elseif meet.signedUp then
 				row.status.Text = (if meet.running then "IN PROGRESS  ·  YOU ARE NEXT IN " else "YOU ARE SIGNED UP  ·  STARTS IN ")
 					.. clockText(untilStart)
 				row.status.TextColor3 = C.yellow

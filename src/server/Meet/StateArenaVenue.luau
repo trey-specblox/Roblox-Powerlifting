@@ -37,8 +37,8 @@
 
 	PERFORMANCE: the bowl is one seat mesh pair repeated 24 times (about
 	150,000 triangles in all); 4 rack spotlights and 8 bowl lights; only the
-	dome and the stands' shell cast shadows (72 parts). The State
-	meet (live screens, turns) comes later.
+	dome and the stands' shell cast shadows (72 parts). A meet adds, per rack in
+	use, the staff a Local meet's platform has. The live minigame screens come later.
 ]]
 
 local PhysicsService = game:GetService("PhysicsService")
@@ -49,6 +49,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local StateArenaConfig = require(ConfigFolder:WaitForChild("StateArenaConfig"))
 local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
+local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
+local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 
 local ServerFolder = script.Parent.Parent
 local WorldFolder = ServerFolder:WaitForChild("World")
@@ -56,6 +58,8 @@ local BuildParts = require(WorldFolder:WaitForChild("BuildParts"))
 local RoomProps = require(WorldFolder:WaitForChild("RoomProps"))
 local MockMeetArena = require(script.Parent:WaitForChild("MockMeetArena"))
 local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
+local LifterDisplay = require(script.Parent:WaitForChild("LifterDisplay"))
+local StyledScreen = require(WorldFolder:WaitForChild("StyledScreen"))
 
 local StateArenaVenue = {}
 
@@ -94,6 +98,18 @@ local PLATE_TREES = { Vector3.new(-24, 0, 69), Vector3.new(-8, 0, 69), Vector3.n
 local JUDGES_IN_FRONT = 17
 local PLATFORM_SIZE = 16
 local PLATFORM_HEIGHT = 0.6
+-- As a Local meet's platform: the lift spot behind the rack, on the side the lifter walks in from.
+local LIFT_SPOT_BEHIND = 6.2
+-- The lifters' waiting area, between the gantries and the warm-up racks: the line the gantries stand on, the walk along behind
+-- the platforms, where each waits at their chalk stand, and their bench (MeetBench, its seat this high) behind that.
+local WALK_LINE_Z = 10
+local WAIT_Z = 16
+local BENCH_Z = 21
+local BENCH_FROM_GAP = 6
+local BENCH_SEAT_TOP = 1.8
+-- The sign-up desk and where a lifter ends up after the meet: on the floor, on the spectators' side of the barricades.
+local DESK_Z = -40
+local LOBBY_Z = -29
 local BANNER_WEDGES = { 2, 4, 8, 10, 14, 16, 20, 22 }
 local BANNER_R, BANNER_Y = 143, 47
 local NAME_SIGN_R, NAME_SIGN_Y = 145.2, 47.5
@@ -120,6 +136,8 @@ export type Venue = {
 	-- Each rack's lifting spot (on its platform in front of the rack, facing the main stand) and its gantry screen.
 	liftSpots: { CFrame },
 	rackScreens: { BasePart },
+	-- The arena as a place to hold a meet, in the shape LocalMeetService runs every hall.
+	meet: LocalMeetVenue.Venue,
 }
 
 local venue: Venue? = nil
@@ -260,10 +278,24 @@ function StateArenaVenue.build(): (Venue?, string?)
 		end
 	end
 
+	-- Props from other files (not made in the arena's frame): their pivot, the bottom centre, goes on the spot,
+	-- facing `toward` (in the arena's frame).
+	local function prop(name: string, item: string, at: Vector3, toward: Vector3): Model?
+		local copy = RoomProps.propCopy(item, 1)
+		if copy then
+			copy.Name = name
+			local world = frame * at
+			copy:PivotTo(CFrame.lookAt(world, world + frame:VectorToWorldSpace(toward)))
+			copy.Parent = model
+		end
+		return copy
+	end
+
 	-- ---------------------------------------------------------------- the racks
 	local half = PLATFORM_SIZE / 2
 	local liftSpots: { CFrame } = {}
 	local rackScreens: { BasePart } = {}
+	local platforms: { LocalMeetVenue.Platform } = {}
 	for index = 1, StateArenaConfig.Racks do
 		local x = rackX(index)
 		-- MockMeet_01's platform was not made in the arena's frame: its pivot (the bottom centre) goes on the spot.
@@ -278,8 +310,9 @@ function StateArenaVenue.build(): (Venue?, string?)
 		end
 		solid("Platform_" .. index .. "_Solid", Vector3.new(PLATFORM_SIZE + 0.6, PLATFORM_HEIGHT, PLATFORM_SIZE + 0.6),
 			CFrame.new(x, PLATFORM_HEIGHT / 2, 0))
-		local placed, problem = MockMeetArena.placeRack(model, frame * Vector3.new(x, PLATFORM_HEIGHT, 0))
-		if not placed then
+		-- As on a Local meet's platform: the rack, the referees' chairs and lights, which make way for the awards.
+		local gear, lamps, refSeats, problem = LocalMeetVenue.platformGear(model, frame * Vector3.new(x, 0, 0), index)
+		if gear == nil then
 			model:Destroy()
 			return nil, problem
 		end
@@ -287,30 +320,72 @@ function StateArenaVenue.build(): (Venue?, string?)
 		-- The CENTRAL backdrop inside the gantry, from under the screen to the floor.
 		place(model, "GantryBanner", CFrame.new(x, 0, GANTRY_BEHIND), "GantryBanner_" .. index)
 		local screen = gantry and gantry:FindFirstChild("RackGantry_Screen", true) :: BasePart?
-		if screen then
-			-- The State meet will draw the lifter's live minigame here; until then, the rack's number.
-			LocalMeetVenue.writeSign(screen, frame:VectorToWorldSpace(-Vector3.zAxis), "RACK " .. index, "STATE CHAMPIONSHIP", 20)
-			table.insert(rackScreens, screen)
-		end
+		-- The lifter on this rack: their name, lift, weight and result (the live minigame goes here next).
+		local displayPart = screen or BuildParts.placed(model, "RackScreen_" .. index, Vector3.new(20, 9, 0.3),
+			frame * CFrame.new(x, 24, GANTRY_BEHIND), looks.Gadget)
+		local display = LifterDisplay.build(displayPart, frame:VectorToWorldSpace(-Vector3.zAxis), index, MeetConfig.LiftOrder)
+		table.insert(rackScreens, displayPart)
 		place(model, "JudgesTable", CFrame.new(x, 0, -JUDGES_IN_FRONT) * CFrame.Angles(0, math.pi, 0), "Judges_" .. index)
-		-- The frame's LookVector (-Z) points at the main stand.
-		local spot = frame * Vector3.new(x, PLATFORM_HEIGHT, -4)
-		table.insert(liftSpots, CFrame.lookAt(spot, spot + frame.LookVector))
+		-- The frame's LookVector (-Z) points at the main stand: the lifter walks in from behind the rack and faces it.
+		local spot = frame * Vector3.new(x, PLATFORM_HEIGHT, LIFT_SPOT_BEHIND)
+		local liftSpot = CFrame.lookAt(spot, spot + frame.LookVector)
+		table.insert(liftSpots, liftSpot)
+
+		local staff = Instance.new("Folder")
+		staff.Name = "Staff_" .. index
+		staff.Parent = model
+		-- The way out to the rack: from their spot at the chalk stand through the gap between the gantries (two racks share a
+		-- gap: their spots stand apart), along behind the platform to its middle. The bench is behind the stand, on the rack's side.
+		local chalk = LocalMeetConfig.Chalk
+		local gapX = if index <= 2 then StateArenaConfig.RackSpacingStuds else -StateArenaConfig.RackSpacingStuds
+		local side = if x < gapX then 1 else -1
+		local waitAt = frame * Vector3.new(gapX - side * 1.5, 0, WAIT_Z)
+		local doorSpot = frame * Vector3.new(gapX - side * 2.5, 0, WALK_LINE_Z + 1.2)
+		local benchAt = frame * Vector3.new(gapX - side * BENCH_FROM_GAP, 0, BENCH_Z)
+		local bench = prop("WaitBench_" .. index, "MeetBench", Vector3.new(gapX - side * BENCH_FROM_GAP, 0, BENCH_Z), -Vector3.zAxis)
+		if bench then
+			for _, part in ipairs(bench:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = false
+				end
+			end
+		end
+		local seat = benchAt + Vector3.new(0, BENCH_SEAT_TOP, 0)
+		table.insert(platforms, {
+			index = index,
+			liftSpot = liftSpot,
+			waitSpot = CFrame.lookAt(waitAt, waitAt - frame.RightVector * side),
+			walkOut = {
+				frame * Vector3.new(gapX, 0, GANTRY_BEHIND + 1),
+				frame * Vector3.new(gapX, 0, WALK_LINE_Z),
+				frame * Vector3.new(x, 0, WALK_LINE_Z),
+			},
+			rack = gear:FindFirstChild("CompetitionRack") :: Model?,
+			privateTags = {},
+			display = display,
+			lamps = lamps,
+			refSeats = refSeats,
+			stageLight = nil,
+			coachSpot = doorSpot,
+			coachDoorSpot = CFrame.lookAt(doorSpot, Vector3.new(spot.X, doorSpot.Y, spot.Z)),
+			coachBackSpot = CFrame.lookAt(waitAt + frame.RightVector * side * chalk.CoachBehindStuds, waitAt),
+			coachFrontSpot = CFrame.lookAt(waitAt - frame.RightVector * side * chalk.CoachFrontAheadStuds
+				- frame.ZVector * chalk.CoachFrontSideStuds, waitAt),
+			chalkStandSpot = CFrame.lookAt(waitAt - frame.RightVector * side * chalk.StandAheadStuds,
+				waitAt - frame.RightVector * side * chalk.StandAheadStuds + frame.ZVector),
+			chalkCentre = waitAt - frame.RightVector * side * 0.2 + Vector3.new(0, 2.8, 0),
+			chalkOut = frame.ZVector,
+			gear = gear,
+			staff = staff,
+			coachLine = nil,
+			headRefLine = nil,
+			spotters = {},
+			spotterLift = nil,
+			seatSpot = CFrame.lookAt(seat, seat - frame.ZVector),
+		})
 	end
 
 	-- ---------------------------------------------------------------- the meet area's barricades
-	-- Props from other files (not made in the arena's frame): their pivot, the bottom centre, goes on the spot,
-	-- facing `toward` (in the arena's frame).
-	local function prop(name: string, item: string, at: Vector3, toward: Vector3): Model?
-		local copy = RoomProps.propCopy(item, 1)
-		if copy then
-			copy.Name = name
-			local world = frame * at
-			copy:PivotTo(CFrame.lookAt(world, world + frame:VectorToWorldSpace(toward)))
-			copy.Parent = model
-		end
-		return copy
-	end
 	local barricades = 0
 	local function barricadeLine(from: Vector3, to: Vector3, out: Vector3)
 		local length = (to - from).Magnitude
@@ -408,6 +483,27 @@ function StateArenaVenue.build(): (Venue?, string?)
 	exitPoint.CanCollide = false
 	exitPoint.CanQuery = false
 
+	-- ---------------------------------------------------------------- signing up
+	-- MockMeet_01's desk on the floor, in front of the main stand, facing whoever comes down from it. (The MEETS tab signs up too.)
+	local desk = prop("SignUpDesk", "MeetDesk", Vector3.new(0, 0, DESK_Z), -Vector3.zAxis)
+	local deskScreen: StyledScreen.Handle? = nil
+	if desk then
+		solid("SignUpDesk_Solid", Vector3.new(10.5, 3.3, 2.3), CFrame.new(0, 1.65, DESK_Z))
+		local monitor = desk:FindFirstChild("MeetDesk_MonitorScreen", true) :: BasePart?
+		if monitor then
+			deskScreen = StyledScreen.build(monitor, StyledScreen.faceToward(monitor, frame.ZVector), "SIGN-UP",
+				{ "State meet desk", "Qualified lifters" }, "bar", 120)
+		end
+	end
+	local signUpPoint = BuildParts.placed(model, "SignUpPoint", Vector3.new(2, 4, 2), frame * CFrame.new(0, 2, DESK_Z - 4), looks.Glass)
+	hide(signUpPoint)
+	signUpPoint.CanCollide = false
+	signUpPoint.CanQuery = false
+
+	-- ---------------------------------------------------------------- the awards stage (kept out until the end)
+	local awards, backdropTitle, podiumSpots = LocalMeetVenue.awardsStage(frame.Position)
+	local lobbyAt = frame * Vector3.new(0, 0, LOBBY_Z)
+
 	model.Parent = Workspace
 	model:SetAttribute("WarmUpRacks", warmUpRacks)
 	venue = {
@@ -417,6 +513,21 @@ function StateArenaVenue.build(): (Venue?, string?)
 		exitPoint = exitPoint,
 		liftSpots = liftSpots,
 		rackScreens = rackScreens,
+		meet = {
+			model = model,
+			arrival = arrival,
+			lobbySpot = CFrame.lookAt(lobbyAt, lobbyAt + frame.ZVector),
+			platforms = platforms,
+			signUpPoint = signUpPoint,
+			exitPoint = exitPoint,
+			scoreboard = nil,
+			banner = nil,
+			deskScreen = deskScreen,
+			backdropTitle = backdropTitle,
+			awards = awards,
+			podiumSpots = podiumSpots,
+			warmUpRacks = {},
+		},
 	}
 	return venue, nil
 end

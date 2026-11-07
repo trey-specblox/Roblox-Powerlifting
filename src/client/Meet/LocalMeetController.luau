@@ -173,7 +173,7 @@ function LocalMeetController.start()
 			for _, meet in ipairs(if lobby then (lobby :: LocalMeetRemotes.LobbyState).meets else {}) do
 				if meet.signedUp then
 					local seconds = math.max(0, math.ceil(meet.nextStartAt - Workspace:GetServerTimeNow()))
-					text = string.format("MEET %d  %d:%02d", meet.index, seconds // 60, seconds % 60)
+					text = string.format("%s  %d:%02d", if meet.state then "STATE" else "MEET " .. meet.index, seconds // 60, seconds % 60)
 				end
 			end
 			tab.setCountdown(text)

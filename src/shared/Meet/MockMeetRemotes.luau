@@ -89,6 +89,8 @@ export type MeetState = {
 	-- The coach's test (GAME_DESIGN §35.12): what the step tag and Done's banner say instead.
 	stepTag: string?,
 	banner: string?,
+	-- A Local, Regional or State meet: which, for the screen's title.
+	meetTitle: string?,
 	-- (Local meet, Choose) where the lifter stands and what this attempt can do: RaceView.
 	race: RaceView?,
 	-- (Local meet, Ready) the lift starts by itself once the lifter is set up at the bar: no LIFT button.

@@ -125,6 +125,10 @@ export type MeetRow = {
 	levelLabel: string,
 	potMultiplier: number,
 	titles: boolean,
+	-- The State meet (GAME_DESIGN §36.4), how many may lift in this meet, and when THIS player isn't qualified for State, how far off.
+	state: boolean,
+	maxLifters: number,
+	notQualified: string?,
 }
 
 -- The timetable and sign-ups, server -> client, sent when they change.
