@@ -247,8 +247,8 @@ function loadTrack(body: Model, id: string): AnimationTrack?
 end
 
 -- Plays the walk on a computer lifter's body while it moves (Roblox's own R15 walk; nil without an animator).
-local function playWalk(body: Model): AnimationTrack?
-	local track = loadTrack(body, CONFIG.WalkAnimationId)
+local function playWalk(body: Model, animationId: string?): AnimationTrack?
+	local track = loadTrack(body, animationId or CONFIG.WalkAnimationId)
 	if track == nil then
 		return nil
 	end
@@ -288,11 +288,11 @@ end
 	out to the platform and back). Yields until it arrives, or stops where it
 	is when `stillGoing()` turns false.
 ]]
-function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFrame, stillGoing: () -> boolean)
+function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFrame, stillGoing: () -> boolean, walkAnimationId: string?)
 	if not body or not body.Parent then
 		return
 	end
-	local track = playWalk(body)
+	local track = playWalk(body, walkAnimationId)
 	local height = standingHeight(body)
 	-- The whole route as one line, walked at a steady pace without stopping at the corners (user 2026-11-01:
 	-- "one fluid walk"); the body turns smoothly toward where it is heading.

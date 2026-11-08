@@ -61,7 +61,7 @@ local PROGRESS_MIN_GAP_SECONDS = 0.05
 -- What LocalMeetService lends the warm-up (it owns the venue visits, the characters and the prompts' look).
 export type Hooks = {
 	-- Whether the player may step up to a warm-up rack now, or the reason they may not.
-	canUse: (player: Player) -> (boolean, string?),
+	canUse: (player: Player, rack: LocalMeetVenue.WarmUpRack) -> (boolean, string?),
 	standAt: (player: Player, spot: CFrame, anchored: boolean) -> (),
 	release: (player: Player) -> (),
 	notify: (player: Player, message: string) -> (),
@@ -190,7 +190,7 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 			hooks.notify(player, "Someone is already warming up on this rack.")
 			return
 		end
-		local ok, problem = hooks.canUse(player)
+		local ok, problem = hooks.canUse(player, rack)
 		if not ok then
 			hooks.notify(player, problem or "You cannot warm up right now.")
 			return
@@ -242,6 +242,7 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 		local character = player.Character
 		if rack and character then
 			StationVisuals.show(rack, lift)
+			StationVisuals.loadBar(rack, kg)
 			use.anim = MeetLiftAnimation.begin(character, rack, lift)
 		end
 		-- Only while the player is still on this rack (stop() ends a use; a new use is a new table).

@@ -75,6 +75,16 @@ LocalMeetRemotes.LEVEL_NEWS = "LocalMeetLevelNews"
 -- Client -> server, visual only: the live progress of the lifter's running minigame (0..1), so their character's
 -- lift follows it (GAME_DESIGN §37.5). Never decides anything.
 LocalMeetRemotes.LIFT_PROGRESS = "LocalMeetLiftProgress"
+-- The live minigame on a State rack's screen (GAME_DESIGN §36.1), visual only. LIVE_REPORT: the lifter's client -> server, numbers
+-- only, about 10 a second. LIVE_SHOW: server -> the players near that screen. Both may drop an update, which only costs a frame.
+-- LIVE_EVENT: server -> everyone, a phase starting or ending and the lift's result.
+LocalMeetRemotes.LIVE_REPORT = "LocalMeetLiveReport"
+LocalMeetRemotes.LIVE_SHOW = "LocalMeetLiveShow"
+LocalMeetRemotes.LIVE_EVENT = "LocalMeetLiveEvent"
+-- Cheering at the big meets (GAME_DESIGN §36.4, CheerConfig). CHEER_REPORT: a cheerer's client -> server, how loud (0..1) since its
+-- last report, about 4 a second, only while in a zone; may drop one. CHEER_STATE: server -> one client, its cheering bar (CheerView).
+LocalMeetRemotes.CHEER_REPORT = "LocalMeetCheerReport"
+LocalMeetRemotes.CHEER_STATE = "LocalMeetCheerState"
 -- Server -> clients, sound only: a meet sound cue (MeetSoundConfig), where it happened, and optionally how loud (x normal).
 LocalMeetRemotes.SOUND = "LocalMeetSound"
 -- Client -> server: "send me the meets list" (no arguments). The list works from anywhere, not only in the venue.
@@ -99,13 +109,20 @@ export type RemoteSet = {
 	liftProgress: RemoteEvent,
 	lobbyRequest: RemoteEvent,
 	sound: RemoteEvent,
+	liveReport: UnreliableRemoteEvent,
+	liveShow: UnreliableRemoteEvent,
+	liveEvent: RemoteEvent,
+	cheerReport: UnreliableRemoteEvent,
+	cheerState: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
 	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND,
-	LocalMeetRemotes.SPECTATE, LocalMeetRemotes.LOBBY_REQUEST }
+	LocalMeetRemotes.SPECTATE, LocalMeetRemotes.LOBBY_REQUEST, LocalMeetRemotes.LIVE_EVENT, LocalMeetRemotes.CHEER_STATE }
+-- Allowed to lose an update now and then.
+local UNRELIABLE_NAMES = { LocalMeetRemotes.LIVE_REPORT, LocalMeetRemotes.LIVE_SHOW, LocalMeetRemotes.CHEER_REPORT }
 
 --[[
 	One of the five meets, as the sign-up list shows it. `nextStartAt` is in
@@ -200,6 +217,26 @@ export type AwardsMoment = {
 	seconds: number,
 }
 
+--[[
+	A player's cheering bar, server -> that player (CHEER_STATE), when it changes. Display only.
+	  role "cheer": they stand in a rack's zone while `name` is up: the bar, whether it's full,
+	                whether the server counts their voice (voice false: no voice chat, so they can't help),
+	                and once the lift is over its `result` ("GOOD LIFT" / "NO LIFT").
+	  role "lifter": the crowd filled their bar: `bonus` technique on what is left of the lift.
+	  role "coins": they helped fill `name`'s bar and it was a good lift: `coins` earned.
+	  role "none": nothing to show.
+]]
+export type CheerView = {
+	role: string,
+	name: string?,
+	fill: number?,
+	full: boolean?,
+	voice: boolean?,
+	result: string?,
+	bonus: number?,
+	coins: number?,
+}
+
 -- The player's own warm-up, server -> client, whenever it changes. Display only.
 export type WarmUpState = {
 	-- The warm-up rack the player is at (1..), or nil when they are not at one.
@@ -227,7 +264,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 	end
 	assert(folder ~= nil)
 	for _, child in ipairs(folder:GetChildren()) do
-		if not table.find(NAMES, child.Name) then
+		if not table.find(NAMES, child.Name) and not table.find(UNRELIABLE_NAMES, child.Name) then
 			child:Destroy()
 		end
 	end
@@ -238,8 +275,18 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 			remote.Parent = folder
 		end
 	end
+	for _, name in ipairs(UNRELIABLE_NAMES) do
+		if folder:FindFirstChild(name) == nil then
+			local remote = Instance.new("UnreliableRemoteEvent")
+			remote.Name = name
+			remote.Parent = folder
+		end
+	end
 	local function get(name: string): RemoteEvent
 		return folder:FindFirstChild(name) :: RemoteEvent
+	end
+	local function getUnreliable(name: string): UnreliableRemoteEvent
+		return folder:FindFirstChild(name) :: UnreliableRemoteEvent
 	end
 	return {
 		leave = get(LocalMeetRemotes.LEAVE),
@@ -260,6 +307,11 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		liftProgress = get(LocalMeetRemotes.LIFT_PROGRESS),
 		lobbyRequest = get(LocalMeetRemotes.LOBBY_REQUEST),
 		sound = get(LocalMeetRemotes.SOUND),
+		liveReport = getUnreliable(LocalMeetRemotes.LIVE_REPORT),
+		liveShow = getUnreliable(LocalMeetRemotes.LIVE_SHOW),
+		liveEvent = get(LocalMeetRemotes.LIVE_EVENT),
+		cheerReport = getUnreliable(LocalMeetRemotes.CHEER_REPORT),
+		cheerState = get(LocalMeetRemotes.CHEER_STATE),
 	}
 end
 
@@ -269,6 +321,9 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 	local function get(name: string): RemoteEvent
 		return folder:WaitForChild(name) :: RemoteEvent
 	end
+	local function getUnreliable(name: string): UnreliableRemoteEvent
+		return folder:WaitForChild(name) :: UnreliableRemoteEvent
+	end
 	return {
 		leave = get(LocalMeetRemotes.LEAVE),
 		choose = get(LocalMeetRemotes.CHOOSE),
@@ -288,6 +343,11 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		liftProgress = get(LocalMeetRemotes.LIFT_PROGRESS),
 		lobbyRequest = get(LocalMeetRemotes.LOBBY_REQUEST),
 		sound = get(LocalMeetRemotes.SOUND),
+		liveReport = getUnreliable(LocalMeetRemotes.LIVE_REPORT),
+		liveShow = getUnreliable(LocalMeetRemotes.LIVE_SHOW),
+		liveEvent = get(LocalMeetRemotes.LIVE_EVENT),
+		cheerReport = getUnreliable(LocalMeetRemotes.CHEER_REPORT),
+		cheerState = get(LocalMeetRemotes.CHEER_STATE),
 	}
 end
 

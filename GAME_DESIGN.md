@@ -6007,8 +6007,66 @@ in their weight class and stay in it. This reopens the ladder points
 > then the bar goes **strictly lightest first**, one lifter at a time. On their turn a lifter gets up, chalks up at their stand and walks
 > out, then walks back and sits down. So the choice is locked in before the turn, rather than made on the turn as first asked for
 > (memory of 2026-11-06). It pays the x3 pot, titles and trophies for the top 3 as already built. Each rack's screen shows its
-> lifter's name, lift, weight and result. **Not built yet, in this order:** the live minigame on those screens (next), the finisher badge,
-> the Nationals spot, then show-off items and spectator help (§36.5).
+> lifter's name, lift, weight and result. **Not built yet, in this order:** the finisher badge, the Nationals spot, then show-off items
+> and spectator help (§36.5).
+
+> **Built (2026-11-07): the live minigame on the rack screens.** While a lifter lifts at the State meet, their rack's screen shows their
+> minigame as they play it: the squat's track and marker, the bench's closing ring with MASH! and HOLD!, the deadlift's letters, and the
+> timing check's ring with WAIT... and NOW!, in the same colours as on the lifter's own screen. Their name, lift and weight run along the
+> top, and it ends on GOOD LIFT or NO LIFT, then goes back to their card. The State meet only, as §36.1 asks: Local and Regional screens
+> stay as they were. It decides nothing: the lifter's client sends only numbers, which the server checks, and any words on the screen come
+> from the server, so nobody can put their own text on a big screen.
+> **A second screen for the benches (user, 2026-11-07):** the big screens face the stands, so each rack also has one on the back of its
+> banner, facing its benches, low enough to watch sitting down. It shows the same card and the same live minigame.
+> **Watching is from your own view, no WATCH button (user, 2026-11-07):** spectators watch the lifter in the world from wherever they
+> stand or sit, seeing the lifter and their game on the arena screens at the same time, and cheer them on in voice chat. Do not add a
+> button or an overlay that puts another lifter's game on the watcher's own screen.
+
+> **Cheering (user, 2026-11-08). This fills in §36.1's "Spectators help their lifter" and settles §36.2's voice question:**
+> - **Where:** State meets and up (Nationals and later, when they exist). Not Local or Regional (user's pick).
+> - **Who cheers:** spectators standing in a rack's **watching zone** in the stands, and other lifters watching **from behind that rack's
+>   coach**. Never the lifter themself. **Voice only (user's pick):** players without voice chat can watch, but cannot fill the bar or earn.
+> - **The cheering bar:** cheering through voice chat in a rack's zones fills that rack's bar; more people cheering fill it faster. When it
+>   maxes out, the lifter's lift gets easier.
+> - **How much easier: a second discount, not a doubled one.** It's based on the lifter's own gear Technique on that lift, like "30% off,
+>   then an extra 30% off" giving 51% and not 60%: a full bar adds bonus x (1 - bonus / 100). Gear with +15 gets +12.75 more (+27.75 in
+>   all, not +30). **A lifter with no stat gear counts as +5**, so a full bar adds +4.75 (user's pick). It never passes the technique ceiling.
+> - **Coins:** if the lift is good, everyone who helped fill the bar gets **coins equal to that lift's GL points** (the weight times the
+>   lifter's GL factor, the points meets rank by, §37.4). For example, a 200 kg squat by an 80 kg lifter is about 28 points, so 28 coins (user's pick).
+> - **Fairness [Claude, 2026-11-08]:** Roblox measures voice loudness only on the cheering player's own device; the server hears nothing.
+>   So the server checks that a cheerer is in a zone, has voice chat and isn't the lifter, limits how fast one person can fill the bar, and
+>   pays only for good lifts by someone else. A cheater could still fake their own loudness for a friend: that is the limit of voice.
+> - **Built (2026-11-08).** The zones are invisible; walk into one while that rack's lifter is up and the bar pops up at the top of the
+>   screen: **"CHEER FOR <NAME>"** (user 2026-11-08), with your own microphone's level beside it. The bar opens when the lifter is called
+>   up to chalk and closes when they sit back down; after the lift it shows GOOD LIFT or NO LIFT. A full bar gets a roar from the crowd.
+>   The lifter sees only a short note, "THE CROWD IS BEHIND YOU! +4.75 TECHNIQUE". **[Claude's numbers, to tune after a real voice
+>   test]:** one person yelling fills the bar in about 10 seconds, several in as little as 2.5; quiet, it drains over 30 seconds; coins
+>   need at least 2 seconds of full-voice cheering into that attempt.
+> - **Later, once entrance animations are longer (user 2026-11-08, not built):** a bar maxed out before the lifter starts their minigame
+>   makes **both parts** of the lift easier. Once the lifter is already in the minigame, the crowd has to **cheer again and fill the bar
+>   again** for the second part to get the buff. [Claude's reading: when the minigame starts the bar goes back to empty for the second
+>   part. Today a bar that fills at any point stays full, and helps every part that starts after it.]
+
+> **[CHANGED BY THE USER, 2026-11-06]: the State meet's format.** After playing the build above, the user changed it. This replaces §36.4's
+> "4 racks, at most 4 lifters" and "one lifter at a time" across the arena, and the "stuck on the bench" of the note above:
+>
+> - **Between meets the floor is empty:** the racks, banners, benches and meet area go away. Only the sign-up desk and small weigh-in
+>   booths with a shower curtain stand there. When the meet starts, those go. The booths are **scenery for now**; weigh-in stays automatic
+>   (the user's pick), so signing up from the MEETS list still works.
+> - **The timer restarts when a meet finishes** (20 minutes to the next), rather than running on a fixed clock. **[Claude's reading]**
+> - **One rack per 10 lifters signed up** (1-10: one rack, 11-20: two, and so on), **at most 4 racks, so 40 lifters [Claude's pick]**. Still at
+>   least 2 lifters and never computer lifters. **The racks run at the same time**, each with its own order, lightest bar first, one lifter at
+>   a time on that rack; everyone is ranked together (user's pick). A full rack takes about 37 minutes.
+> - **Waiting lifters are free:** after a lift they celebrate and walk to the bench and sit, but they can get up and roam, and practise at the
+>   warm-up racks. **When their turn comes they are brought back automatically**, so nobody loses an attempt by being away (user's pick).
+> - **A new worker at each rack** calls out who is up, who is on deck and who is in the hole. **Out loud too (user 2026-11-07), with each lifter's own name**, by Roblox's
+>   text to speech; a screen hears only its own rack's caller, or the nearest. If Roblox gives no voice for a line, the speech bubble still says it.
+> - **The lifter walks up first and the coach follows behind to watch (user 2026-11-07),** at every meet (§37.5).
+> - **The user wants different entrance animations (2026-11-07):** today's walk is "so bland and everyone has the same walk". Not built yet.
+> - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
+>   (§36.1) plug in later.
+> - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own
+>   banner (user 2026-11-07).**
 
 ### 36.5 Still open
 
@@ -6326,6 +6384,35 @@ bar, as at a real meet: one at each end of the bar and one behind the lifter.
 - **Later:** once the game has its own realistic bodies (players with muscles),
   the spotters get an **average build**.
 
+**The bar shows its real weight (user, 2026-11-07, with screenshots of each load):**
+
+- A bar is **20 kg**. **22.5 kg** is the bar and one silver a side, with no collars.
+- **Anything heavier has a 2.5 kg collar on each side.**
+- Plates: silver 1.25, black 2.5, white 5, green 10, yellow 15, blue 20, red 25 kg.
+- Each side takes **the biggest plates that fit**, biggest nearest the middle of the
+  bar: 75 kg is one red and a collar, never a blue and a white.
+- Plate sizes follow the screenshots, compared with the red.
+- **No NPC phases through or touches the bar**, whatever is loaded.
+- **The lightest weight anyone can choose is 20 kg, the empty bar** (user, 2026-11-07),
+  at meets, warm-up racks and gym practice. This raises the bottom of the "40-125% of CN"
+  range in §29.10 and §33.3b, for a Competition Number under 50 kg. Nothing else about the
+  range changes.
+
+> **Built (2026-11-07), and what the user left to Claude:**
+>
+> - The rules and sizes live in `src/shared/Training/BarLoad.luau`. A weight that
+>   isn't a whole 2.5 kg step shows the nearest one, and under 20 kg shows the bare bar.
+> - Until someone lifts on a rack, its bar holds one of a few everyday loads
+>   (`TrainingStationConfig.BarbellIdleLoadsKg`), always the same for that rack. It
+>   keeps the last lifter's load afterwards.
+> - **A light deadlift bar goes up on stacks of flat black rubber plates**, so the bar
+>   stays at the height the hands reach. Its plates rest on the stack rather than float.
+> - Spotters' hands stay past the outermost plate, and they go straight to their
+>   place when the lift changes rather than gliding through the bar.
+> - A good squat is walked back in, let down into the J-cups, and the lifter dips under
+>   it and steps out. A good bench goes up into the J-cups before the lifter gets up.
+> - Cheers and celebrations happen at the lift spot, clear of the bar.
+
 > **Built (2026-11-02): the fail animations and the spotters.**
 >
 > - **Animations:** `art/scripts/fail_animations.py` builds the six fails on the
@@ -6596,9 +6683,10 @@ selection."
     two slaps on the back. No clipboard, both hands on the back.
   - **Bench and deadlift:** facing the lifter across the stand, holding the clipboard, talking.
   - **The clipboard is really in the coach's left hand** (user 2026-11-06), never floating in front of them.
-  - As the lifter walks out, the coach goes ahead to the doorway to watch the lift.
-  - The coach speaks only once they have arrived, so the doorway never cuts off what they say.
-  - A computer lifter's coach stays at the doorway, to save performance. Computer lifters chalk up too.
+  - **[CHANGED BY THE USER, 2026-11-07]** The lifter walks out first and **the coach follows behind**, about 9 studs back on their own line,
+    never inside the lifter, then stops beside the doorway (or the banner's gap at State) and turns to **watch the lift**. They used to go
+    ahead of the lifter on the same path. When the lifter walks back, the coach lets them pass and follows. This holds at every meet.
+  - A computer lifter's coach stands watching at the doorway, to save performance. Computer lifters chalk up too.
 - **The view:** the camera holds side-on to the group, and at a Local meet the weight panel sits on
   the right instead of the middle (changes the 2026-11-01 "in the middle" choice for this meet only,
   so the lifter can be seen). The scorecard hides while choosing, as the panel takes its place.

@@ -328,6 +328,9 @@ local function redraw()
 	current.meterFill.Size = UDim2.new(1, 0, fraction, 0)
 	-- At a meet the squat goes down as the meter fills (GAME_DESIGN §37.5).
 	MeetLiftProgress.report(fraction)
+	-- And a State rack's big screen shows it all.
+	MeetLiftProgress.live(state.barPosition / challenge.trackHeightPx, state.markerPosition / challenge.trackHeightPx,
+		if state.effectiveInside then 1 else 0, fraction)
 
 	-- The plain reading of the meter, and the marker's state in its own colour.
 	current.progress.Text = string.format("CONTROL  %d%%", math.floor(fraction * 100))

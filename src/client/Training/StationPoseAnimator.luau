@@ -121,13 +121,17 @@ end
 -- ---------------------------------------------------------------- every lifter's bar
 
 type BarState = {
-	-- Each barbell part with its place relative to Bar_Shaft (the bar's centre).
+	barbell: Instance,
+	-- Each barbell part with its place relative to Bar_Shaft (the bar's centre), told by the server (BarOffset).
 	parts: { { part: BasePart, offset: CFrame } },
+	-- The server changed the plates on it (StationVisuals.loadBar): read the parts again before moving them.
+	changed: boolean,
 	moved: boolean,
 	-- Where the bar is drawn now. A bar let go of glides back to its rest instead of jumping (a meet's spotters
 	-- lifting it back to the J-cups, GAME_DESIGN §37.5).
 	shown: CFrame?,
 }
+local BAR_OFFSET_ATTRIBUTE = "BarOffset"
 -- How fast a let-go bar glides to its rest (per second; about 0.5 s to get there).
 local GLIDE_RATE = 7
 
@@ -145,14 +149,13 @@ local function barStateOf(barbell: Instance): BarState?
 	if shaft == nil or not shaft:IsA("BasePart") then
 		return nil
 	end
-	-- The parts' layout around the shaft never changes, whatever the server is doing.
-	local newState: BarState = { parts = {}, moved = false }
-	for _, part in ipairs(barbell:GetDescendants()) do
-		if part:IsA("BasePart") then
-			table.insert(newState.parts, { part = part, offset = shaft.CFrame:ToObjectSpace(part.CFrame) })
-		end
-	end
+	local newState: BarState = { barbell = barbell, parts = {}, changed = true, moved = false }
 	bars[barbell] = newState
+	local function changed()
+		newState.changed = true
+	end
+	barbell.DescendantAdded:Connect(changed)
+	barbell.DescendantRemoving:Connect(changed)
 	barbell.Destroying:Connect(function()
 		bars[barbell] = nil
 	end)
@@ -161,6 +164,16 @@ end
 
 local function placeBar(state: BarState, centre: CFrame)
 	state.shown = centre
+	if state.changed then
+		state.changed = false
+		table.clear(state.parts)
+		for _, part in ipairs(state.barbell:GetDescendants()) do
+			local offset = part:GetAttribute(BAR_OFFSET_ATTRIBUTE)
+			if part:IsA("BasePart") and typeof(offset) == "CFrame" then
+				table.insert(state.parts, { part = part, offset = offset })
+			end
+		end
+	end
 	for _, entry in ipairs(state.parts) do
 		entry.part.CFrame = centre * entry.offset
 	end

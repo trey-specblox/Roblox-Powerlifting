@@ -50,9 +50,13 @@ local ARM_ANGLE = math.rad(60)
 local MAX_CROUCH = math.rad(75)
 -- How far the back leans for each unit of crouch: a little for squat, more for bench ("bending their back").
 local LEAN_PER_CROUCH: { [string]: number } = { Squat = 0.3, Bench = 0.6 }
--- The hands' gap under the bar while the lifter has it, and once it is let go (carried).
-local HOVER = 0.35
-local CARRY = 0.15
+-- The hands' middle at least this far past the outermost plate or collar, and never nearer the middle of the bar than
+-- MIN_REACH, the end of the sleeve (which keeps the body, a little farther out, clear of the sleeve's tip).
+local PLATE_GAP = 0.5
+local MIN_REACH = 4.6
+-- The hands' gap under the bar while the lifter has it, and once it is let go: following it back, never touching it.
+local HOVER = 0.45
+local CARRY = 0.35
 -- The back spotter (squat): hands this far behind the lifter's hips (well below and behind their elbows, which
 -- stick out behind them holding the bar), at least this far in front of its own body; and its root never closer than
 -- BACK_CLEARANCE behind the lifter's root (no part of the lifter, even falling forward or deep in the squat,
@@ -73,7 +77,7 @@ local DECK_BACK = 1.65
 local RAIL_BACK = 1.95
 local RAIL_TOP = 0.26
 local BEHIND_LIFTER = 0.8
-local BENCH_OVER_BAR = 0.75
+local BENCH_OVER_BAR = 1.1
 local BENCH_TOWARD_HEAD = 0.35
 local LIFTER_CLEARANCE = 0.5
 local NEAR_HANDS_STUDS = 3
@@ -97,7 +101,7 @@ type Rig = {
 	waistToShoulder: Vector3,
 	joints: { [string]: Joint },
 }
-type State = { rig: Rig, root: CFrame?, crouch: number, back: number, lean: number, arms: number }
+type State = { rig: Rig, root: CFrame?, crouch: number, back: number, lean: number, arms: number, lift: unknown }
 
 local states: { [Model]: State } = {}
 
@@ -263,20 +267,17 @@ end
 
 -- ---------------------------------------------------------------- the bar and the lifter
 
--- How far along the bar (from its middle) the spotters' hands go: under the sleeve, past the plates and collar.
+-- How far along the bar (from its middle) the spotters' hands go: under the sleeve, past the plates and collar,
+-- whatever is loaded (user 2026-11-07: never touching the bar).
 local function handReach(barbell: Instance, shaft: BasePart): number
-	local plates, sleeveEnd = 0, 0
+	local plates = 0
 	for _, part in ipairs(barbell:GetDescendants()) do
-		if part:IsA("BasePart") then
+		if part:IsA("BasePart") and (string.sub(part.Name, 1, 5) == "Plate" or string.sub(part.Name, 1, 6) == "Collar") then
 			local x = math.abs(shaft.CFrame:PointToObjectSpace(part.Position).X)
-			if part.Name == "Bar_Sleeves" then
-				sleeveEnd = part.Size.X / 2
-			elseif string.sub(part.Name, 1, 5) == "Plate" or string.sub(part.Name, 1, 6) == "Collar" then
-				plates = math.max(plates, x + part.Size.X / 2)
-			end
+			plates = math.max(plates, x + part.Size.X / 2)
 		end
 	end
-	return math.max(plates + 0.25, (plates + sleeveEnd) / 2)
+	return math.max(plates + PLATE_GAP, MIN_REACH)
 end
 
 -- Every lifter on a meet platform, by their rack.
@@ -454,13 +455,21 @@ local function update(dt: number)
 			if rig == nil then
 				continue
 			end
-			state = { rig = rig, root = nil, crouch = 0, back = 0, lean = 0, arms = 0 }
+			state = { rig = rig, root = nil, crouch = 0, back = 0, lean = 0, arms = 0, lift = nil }
 			states[model] = state
 			model.Destroying:Connect(function()
 				states[model] = nil
 			end)
 		end
 		assert(state)
+		-- Set for another lift: straight to the new place. Gliding there would take it through the bar and its plates.
+		local rackLink = model:FindFirstChild("SpotterRack")
+		local rackNow = if rackLink and rackLink:IsA("ObjectValue") then rackLink.Value else nil
+		local liftNow = if rackNow then rackNow:GetAttribute("SpotterLift") else nil
+		if state.lift ~= liftNow then
+			state.lift = liftNow
+			state.root = nil
+		end
 		local target = targetPose(model, state.rig, lifters)
 		if target == nil then
 			continue

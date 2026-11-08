@@ -495,6 +495,11 @@ local function redraw()
 	current.target.setClosing(completionFraction(challenge, state.progress))
 	-- At a meet the bench bar comes down as the ring closes (GAME_DESIGN §37.5).
 	MeetLiftProgress.report(completionFraction(challenge, state.progress))
+	-- And a State rack's big screen shows it all: the ring, the cue (0 mash, 1 get ready, 2 hold, 3 done), the hold and the holds done.
+	MeetLiftProgress.live(completionFraction(challenge, state.progress),
+		if state.outcome == "Passed" then 3 elseif state.phaseState == "Hold" then 2 elseif state.phaseState == "HoldWarning" then 1 else 0,
+		if challenge.requiredHoldSeconds > 0 then math.clamp(state.heldRunSeconds / challenge.requiredHoldSeconds, 0, 1) else 0,
+		state.holdsCompleted)
 
 	--[[
 		Every state cue moves together: tag text, tag colours and ring colour.

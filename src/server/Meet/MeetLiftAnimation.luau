@@ -56,6 +56,13 @@ local WALKOUT_SECONDS = 2.4
 local UNRACK_HOLD_SECONDS = 0.8
 local BENCH_STEADY_SECONDS = 1.6
 local SETTLE_SECONDS = 0.7
+-- Putting a good lift's bar back (rerack): the walk in, the dip under it, and the step out, clear of its plates.
+local RERACK_WALK_SECONDS = 1.2
+local RERACK_DIP_SECONDS = 0.35
+local RERACK_DIP_SHARE = 0.6
+local RERACK_STEP_OUT_SECONDS = 0.6
+local RERACK_STEP_OUT_STUDS = 2.2
+local RERACK_BENCH_SECONDS = 0.6
 -- Where the walk to the rack ends, rack-local Z, for each lift (then the setup takes over).
 local APPROACH_Z = { Squat = -1.2, Bench = -3.4 }
 
@@ -353,6 +360,56 @@ function MeetLiftAnimation.finish(handle: Handle?, good: boolean, fail: StationA
 	local finish = stages.finish
 	stage(handle, finish[1], finish[2], finish[2] - finish[1])
 	return finish[2] - finish[1]
+end
+
+--[[
+	After a good squat or bench the bar goes back in the rack with the lifter clear
+	of it, so it never passes through them (user 2026-11-07).
+	  Squat  they walk it back in, let it down into the J-cups, dip under it and step out.
+	  Bench  it glides up into the J-cups while they stay lying under it.
+	  Deadlift  nothing: it is already on the floor in front of them.
+	Returns the seconds until the bar is in the rack, and until the lifter can go.
+]]
+function MeetLiftAnimation.rerack(handle: Handle?): (number, number)
+	if handle == nil or handle.lift == "Deadlift" then
+		return 0, 0
+	end
+	local character = handle.character
+	if handle.lift == "Bench" then
+		character:SetAttribute(BAR_HELD_ATTRIBUTE, false)
+		return 0, RERACK_BENCH_SECONDS
+	end
+	local stages = StationAnimationConfig.MeetStages.Squat
+	local dip = stages.phases[1]
+	handle.token += 1
+	local token = handle.token
+	-- Moves the character `distance` backwards (its own +Z) over `seconds`, eased.
+	local function move(distance: number, seconds: number)
+		local start = character:GetPivot()
+		local elapsed = 0
+		while elapsed < seconds do
+			if handle.token ~= token or not character.Parent then
+				return
+			end
+			elapsed = math.min(seconds, elapsed + task.wait())
+			local u = elapsed / seconds
+			character:PivotTo(start * CFrame.new(0, 0, distance * (u * u * (3 - 2 * u))))
+		end
+	end
+	character:SetAttribute(BAR_HELD_ATTRIBUTE, true)
+	task.spawn(function()
+		move(WALKOUT_Z - SQUAT_UNDER_Z, RERACK_WALK_SECONDS)
+		if handle.token ~= token or not character.Parent then
+			return
+		end
+		character:SetAttribute(BAR_HELD_ATTRIBUTE, false)
+		-- Down under the bar (part of the way into the squat), then back out from under it.
+		stage(handle, dip[1], dip[1] + (dip[2] - dip[1]) * RERACK_DIP_SHARE, RERACK_DIP_SECONDS)
+		token = handle.token
+		task.wait(RERACK_DIP_SECONDS)
+		move(RERACK_STEP_OUT_STUDS, RERACK_STEP_OUT_SECONDS)
+	end)
+	return RERACK_WALK_SECONDS, RERACK_WALK_SECONDS + RERACK_DIP_SECONDS + RERACK_STEP_OUT_SECONDS
 end
 
 -- Ends the lift: stops the animation and takes the marks off. Leaves the character where it is (still anchored).

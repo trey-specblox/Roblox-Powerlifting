@@ -102,6 +102,7 @@ local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
+local CheerConfig = require(ConfigFolder:WaitForChild("CheerConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
@@ -120,6 +121,8 @@ local Trophies = require(script.Parent:WaitForChild("Trophies"))
 local ComputerLifters = require(script.Parent:WaitForChild("ComputerLifters"))
 local MeetLiftAnimation = require(script.Parent:WaitForChild("MeetLiftAnimation"))
 local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
+local MeetLiveScreens = require(script.Parent:WaitForChild("MeetLiveScreens"))
+local MeetCheering = require(script.Parent:WaitForChild("MeetCheering"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
@@ -235,8 +238,11 @@ type Lifter = {
 	-- A rare suit won at this meet: the coach's cutscene plays once the awards are over.
 	droppedSuit: string?,
 	droppedPiece: string?,
-	-- Sitting on their bench between turns (the State meet).
-	sitTrack: AnimationTrack?,
+	-- The State meet: their seat on their rack's benches, and whether they have the rack's big screen (it's their turn).
+	seat: Seat?,
+	onScreen: boolean?,
+	-- It's their turn: they can't practise.
+	onTurn: boolean?,
 }
 
 type Meet = {
@@ -287,6 +293,9 @@ local levelRandom = Random.new()
 -- Computer lifters' strength, attempts and makes (§37.2).
 local cpuRandom = Random.new()
 local suitRandom = Random.new()
+-- The State arena, once built, and its warm-up racks.
+local stateArena: StateArenaVenue.Venue? = nil
+local stateRackSet: { [LocalMeetVenue.WarmUpRack]: boolean } = {}
 local lastPress: { [Player]: number } = {}
 
 local function log(message: string, ...: any)
@@ -321,7 +330,7 @@ local function minimumLifters(hall: Hall?): number
 end
 
 local function maximumLifters(hall: Hall): number
-	return if hall.state then StateArenaConfig.Racks else LocalMeetConfig.MaxLifters
+	return if hall.state then StateArenaConfig.MaxRacks * StateArenaConfig.LiftersPerRack else LocalMeetConfig.MaxLifters
 end
 
 -- How a message names a meet.
@@ -341,7 +350,11 @@ end
 -- A hall's next timetable start after `time`: the five halls are evenly staggered through the cycle.
 local function startAfter(time: number, hall: Hall): number
 	local cycle = cycleSeconds(hall)
-	local offset = if hall.state then 0 else (hall.index - 1) * cycle / LocalMeetConfig.HallCount
+	-- The State meet is on no fixed clock: the next one is a full wait after this moment (user 2026-11-06).
+	if hall.state then
+		return time + cycle
+	end
+	local offset = (hall.index - 1) * cycle / LocalMeetConfig.HallCount
 	return (math.floor((time - offset) / cycle) + 1) * cycle + offset
 end
 
@@ -889,6 +902,10 @@ end
 -- Writes the lifter's big screen: who they are, their numbers, what they are doing (`lines`) and the fun facts.
 local function boardFor(lifter: Lifter, lines: { string }, mood: ("good" | "bad")?)
 	lifter.boardLines, lifter.boardMood = lines, mood
+	-- Several lifters share a State rack: its screen shows the one lifting.
+	if lifter.hall.state and not lifter.onScreen then
+		return
+	end
 	local forecast = 0
 	local best: { [string]: number } = {}
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -965,7 +982,7 @@ local PROGRESS_MIN_GAP_SECONDS = 0.05
 	`lifter.walking` is true on the way; a newer walk ends this one.
 ]]
 local function walkLifter(lifter: Lifter, points: { Vector3 }, final: CFrame, anchoredAtEnd: boolean,
-	onArrive: (() -> ())?)
+	onArrive: (() -> ())?, animationId: string?)
 	local token = (lifter.walkToken or 0) + 1
 	lifter.walkToken = token
 	lifter.walking = true
@@ -978,7 +995,7 @@ local function walkLifter(lifter: Lifter, points: { Vector3 }, final: CFrame, an
 			local body = bodyOf(player)
 			if body and body.humanoid.Health > 0 then
 				body.root.Anchored = true
-				ComputerLifters.walkBody(body.character, points, final, current)
+				ComputerLifters.walkBody(body.character, points, final, current, animationId)
 			end
 			if current() then
 				standAt(player, final, anchoredAtEnd)
@@ -1003,21 +1020,25 @@ end
 
 --[[
 	Walks a real lifter's coach to `final` (GAME_DESIGN §37.5), through the doorway
-	when they're on the other side of the wall; then `onArrive`. A computer
-	lifter's coach stays at the doorway: nobody reads what they say, and walking
+	when they're on the other side of the wall, on their own line beside the lifter's (user 2026-11-07); then `onArrive`. A computer
+	lifter's coach stands watching at the doorway: nobody reads what they say, and walking
 	every coach would cost eight more moving bodies per hall.
 ]]
-local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model) -> ())?)
+local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model) -> ())?, via: Vector3?)
 	local coach = LocalMeetVenue.coachFigure(lifter.platform)
 	if coach == nil or lifter.player == nil then
 		return
 	end
-	local walkOut = lifter.platform.walkOut
-	local wallZ = walkOut[1].Z
+	-- Their own line through the doorway or past the banner, beside the lifter's (user 2026-11-07).
+	local way = lifter.platform.coachWay
+	local wallZ = way[1].Z
 	local going = final.Position.Z < wallZ
 	local points: { Vector3 } = {}
 	if (coach:GetPivot().Position.Z < wallZ) ~= going then
-		points = if going then { walkOut[1], walkOut[2] } else { walkOut[2], walkOut[1] }
+		points = if going then { way[1], way[2] } else { way[2], way[1] }
+	end
+	if via then
+		table.insert(points, via)
 	end
 	local token = (lifter.coachToken or 0) + 1
 	lifter.coachToken = token
@@ -1035,44 +1056,76 @@ end
 local function stopChalk(lifter: Lifter)
 	MeetChalk.stop(lifter.chalkTrack)
 	MeetChalk.stop(lifter.coachTrack)
-	MeetChalk.stop(lifter.sitTrack)
-	lifter.chalkTrack, lifter.coachTrack, lifter.sitTrack = nil, nil, nil
+	lifter.chalkTrack, lifter.coachTrack = nil, nil
+end
+
+-- Lets a lifter off their seat, if they are on it (they may have jumped off already).
+local function offSeat(lifter: Lifter)
+	local seat = lifter.seat
+	local player = lifter.player
+	if seat == nil or player == nil then
+		return
+	end
+	seat.Disabled = true
+	local weld = seat:FindFirstChild("SeatWeld")
+	if weld then
+		weld:Destroy()
+	end
+	local body = bodyOf(player)
+	if body then
+		body.humanoid.Sit = false
+	end
 end
 
 --[[
-	The State meet (user 2026-11-06, GAME_DESIGN §37.5): after a lift, and while they wait, a lifter walks to their bench and sits.
-	The sitting pose bends the legs at the hips, so the body comes down until the thighs rest on the seat.
+	The State meet (user 2026-11-06): a lifter sits on their bench, on a real seat, so they can jump up and roam the meet area or
+	practise at the warm-up racks while they wait. `walk`: walks there first. Their turn brings them back (bringBack).
 ]]
-local function sitLifter(lifter: Lifter)
+local function sitLifter(lifter: Lifter, walk: boolean)
 	local player = lifter.player
-	local seat = lifter.platform.seatSpot
-	if player == nil or seat == nil or lifter.sitTrack or not stillLifting(lifter) then
+	local seat = lifter.seat
+	if player == nil or seat == nil or not stillLifting(lifter) then
 		return
 	end
-	local floor = CFrame.new(seat.X, lifter.platform.waitSpot.Y, seat.Z) * seat.Rotation
-	walkLifter(lifter, {}, floor, true, function()
+	local inFront = CFrame.new(seat.Position.X, lifter.platform.waitSpot.Y, seat.Position.Z) * seat.CFrame.Rotation * CFrame.new(0, 0, -1.3)
+	local function sitDown()
 		local body = bodyOf(player)
-		local thigh = body and body.character:FindFirstChild("LeftUpperLeg")
-		if body == nil or thigh == nil or not thigh:IsA("BasePart") then
-			return
+		if body and stillLifting(lifter) then
+			standAt(player, inFront, false)
+			seat.Disabled = false
+			seat:Sit(body.humanoid)
 		end
-		local hips = body.root.Position.Y - (thigh.Position.Y + thigh.Size.Y / 2)
-		body.character:PivotTo(seat * CFrame.new(0, hips + thigh.Size.Z / 2, 0))
-		lifter.sitTrack = MeetChalk.play(body.character, StateArenaConfig.SitAnimationId)
-	end)
+	end
+	if walk then
+		walkLifter(lifter, {}, inFront, false, sitDown)
+	else
+		sitDown()
+	end
 end
 
--- Up off the bench to their spot at the chalk stand. Waits until they are there.
-local function standFromBench(lifter: Lifter)
-	MeetChalk.stop(lifter.sitTrack)
-	lifter.sitTrack = nil
+-- Their turn: from wherever they are (a seat, a warm-up rack, roaming) to their spot at the chalk stand. Waits until they are there.
+local function bringBack(lifter: Lifter)
 	local player = lifter.player
-	if player then
-		walkLifter(lifter, {}, lifter.platform.waitSpot, true)
-		waitUntil(WALK_BACK_TIMEOUT_SECONDS, function()
-			return not lifter.walking or not stillLifting(lifter)
-		end)
+	if player == nil then
+		return
 	end
+	if warmUp then
+		warmUp.stop(player, false)
+	end
+	if LiftAttemptService.isAttemptActive(player) then
+		LiftAttemptService.abandon(player)
+	end
+	offSeat(lifter)
+	local body = bodyOf(player)
+	local spot = lifter.platform.waitSpot
+	if body and (body.root.Position - spot.Position).Magnitude > StateArenaConfig.BringBackWalkStuds then
+		standAt(player, spot, true)
+		return
+	end
+	walkLifter(lifter, {}, spot, true)
+	waitUntil(WALK_BACK_TIMEOUT_SECONDS, function()
+		return not lifter.walking or not stillLifting(lifter)
+	end)
 end
 
 --[[
@@ -1104,6 +1157,30 @@ local function startChalk(lifter: Lifter, lift: string)
 		lifter.coachTrack = MeetChalk.play(coach, if onBack then chalk.CoachBackAnimationId else chalk.CoachTalkAnimationId)
 		lifter.coachHere = true
 		LocalMeetVenue.coachSays(platform, lifter.coachLine)
+	end, if onBack then platform.coachBackVia else platform.coachFrontVia)
+end
+
+-- The coach follows the lifter back from the platform, once they have gone past, to wait near the chalk stand (user 2026-11-07).
+local function coachFollowBack(lifter: Lifter)
+	local platform = lifter.platform
+	local player = lifter.player
+	local coach = LocalMeetVenue.coachFigure(platform)
+	if player == nil or coach == nil then
+		return
+	end
+	local token = lifter.coachToken
+	task.spawn(function()
+		local passedZ = platform.coachWay[1].Z
+		waitUntil(WALK_BACK_TIMEOUT_SECONDS, function()
+			local character = player.Character
+			return character == nil or character:GetPivot().Position.Z > passedZ or not lifter.outOnPlatform
+		end)
+		task.wait(LocalMeetConfig.CoachFollowSeconds)
+		-- (Their next turn may have called them to the chalk stand already.)
+		if lifter.coachToken == token and stillLifting(lifter) then
+			local rest = platform.coachSpot
+			coachWalk(lifter, CFrame.lookAt(rest, Vector3.new(platform.waitSpot.X, rest.Y, platform.waitSpot.Z)))
+		end
 	end)
 end
 
@@ -1137,6 +1214,9 @@ end
 
 -- The lift is over on the platform: the animation stops and the referee falls silent.
 local function endLift(lifter: Lifter)
+	if lifter.player then
+		MeetLiveScreens.stop(lifter.player)
+	end
 	MeetLiftAnimation.stop(lifter.liftAnim)
 	lifter.liftAnim = nil
 	lifter.livePhase = nil
@@ -1210,48 +1290,93 @@ local function finishLift(lifter: Lifter, lift: string, good: boolean, failedPar
 	return barLandsIn
 end
 
--- The walk back from the platform to the warm-up room: back on their feet where they are, out to the lift spot,
--- then the way out, reversed.
-local function walkBack(lifter: Lifter)
-	endLift(lifter)
+--[[
+	The winner's theme song and celebration at the awards. The defaults for
+	now (LocalMeetConfig.Awards); the user's custom theme songs and
+	celebrations (GAME_DESIGN §29.10) plug in HERE, e.g. read from the winner's
+	save, so the ceremony itself does not change.
+]]
+local function themeFor(_winner: Player): string
+	return LocalMeetConfig.Awards.DefaultThemeSoundId
+end
+
+local function celebrationFor(_winner: Player): string
+	return LocalMeetConfig.Awards.DefaultCelebrationAnimationId
+end
+
+-- The walk back from the platform to the warm-up room: the bar put back, back on their feet where they are, out to
+-- the lift spot, then the way out, reversed. `celebrate` (optional) plays at the lift spot, well clear of the bar, and
+-- says how long it takes; a computer lifter's cheer does the same (user 2026-11-07: nobody touches the bar).
+local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
 	LocalMeetVenue.setStageLight(lifter.platform, 1)
-	-- A good squat or bench: the bar goes back into the J-cups now (StationPoseAnimator glides it there).
-	if lifter.lastResult == "GoodLift" and lifter.currentLift ~= "Deadlift" then
-		task.delay(MeetSoundConfig.RackGlideSeconds, soundCue, lifter, "BarRack")
-	end
-	local function home()
-		lifter.outOnPlatform = false
-	end
-	local character = characterOf(lifter)
-	local spot = lifter.platform.liftSpot
-	if character then
-		local at = character:GetPivot().Position
-		local here = CFrame.new(at.X, spot.Y, at.Z) * spot.Rotation
-		local player = lifter.player
-		if player then
-			standAt(player, here, true)
-		else
-			ComputerLifters.moveBody(lifter.body, here)
+	local good = lifter.lastResult == "GoodLift"
+	local racked, clear = 0, 0
+	if good then
+		racked, clear = MeetLiftAnimation.rerack(lifter.liftAnim)
+		if lifter.currentLift ~= "Deadlift" then
+			task.delay(racked + MeetSoundConfig.RackGlideSeconds, soundCue, lifter, "BarRack")
 		end
 	end
-	local back: { Vector3 } = { spot.Position }
-	for index = #lifter.platform.walkOut, 1, -1 do
-		table.insert(back, lifter.platform.walkOut[index])
-	end
-	-- A computer lifter cheers a good lift before walking off, as players emote (§37.2).
-	local cheerSeconds = LocalMeetConfig.ComputerLifters.GoodLiftCheerSeconds
-	if lifter.player == nil and lifter.lastResult == "GoodLift" and lifter.body then
-		ComputerLifters.cheer(lifter.body, cheerSeconds)
-		local token = lifter.walkToken
-		task.delay(cheerSeconds, function()
-			if lifter.walkToken == token and stillLifting(lifter) then
-				walkLifter(lifter, back, lifter.platform.waitSpot, true, home)
+	local function leave()
+		endLift(lifter)
+		local function home()
+			lifter.outOnPlatform = false
+		end
+		local character = characterOf(lifter)
+		local spot = lifter.platform.liftSpot
+		if character then
+			local at = character:GetPivot().Position
+			local here = CFrame.new(at.X, spot.Y, at.Z) * spot.Rotation
+			local player = lifter.player
+			if player then
+				standAt(player, here, true)
+			else
+				ComputerLifters.moveBody(lifter.body, here)
 			end
-		end)
+		end
+		local back: { Vector3 } = {}
+		for index = #lifter.platform.walkOut, 1, -1 do
+			table.insert(back, lifter.platform.walkOut[index])
+		end
+		-- A computer lifter cheers a good lift before walking off, as players emote (§37.2).
+		local pause = celebrate
+		if lifter.player == nil and good and lifter.body then
+			pause = function(): number
+				local cheerSeconds = LocalMeetConfig.ComputerLifters.GoodLiftCheerSeconds
+				ComputerLifters.cheer(lifter.body, cheerSeconds)
+				return cheerSeconds
+			end
+		end
+		if pause then
+			local thePause = pause
+			walkLifter(lifter, {}, spot, true, function()
+				local seconds = thePause()
+				local token = lifter.walkToken
+				task.delay(seconds, function()
+					if lifter.walkToken == token and stillLifting(lifter) then
+						walkLifter(lifter, back, lifter.platform.waitSpot, true, home)
+						coachFollowBack(lifter)
+					end
+				end)
+			end)
+			return
+		end
+		table.insert(back, 1, spot.Position)
+		-- Held still at their waiting spot until the next walk out (user 2026-11-04): a lifter stays put all meet.
+		walkLifter(lifter, back, lifter.platform.waitSpot, true, home)
+		coachFollowBack(lifter)
+	end
+	if clear <= 0 then
+		leave()
 		return
 	end
-	-- Held still at their waiting spot until the next walk out (user 2026-11-04): a lifter stays put all meet.
-	walkLifter(lifter, back, lifter.platform.waitSpot, true, home)
+	-- A walk out that started meanwhile wins.
+	local token = lifter.walkToken
+	task.delay(clear, function()
+		if lifter.walkToken == token and stillLifting(lifter) then
+			leave()
+		end
+	end)
 end
 
 --[[
@@ -1384,6 +1509,7 @@ local function withdraw(player: Player, why: string)
 		return
 	end
 	lifter.withdrawn = true
+	MeetCheering.closeTurn(player)
 	-- No total: nothing is raised, and the misses so far use the meet allowance (§33.3b). Saved at once,
 	-- while the player's data is still loaded.
 	if not current.final then
@@ -1393,15 +1519,22 @@ local function withdraw(player: Player, why: string)
 	LiftAttemptService.setFreeAttemptsBlocked(player, false)
 	endLift(lifter)
 	stopChalk(lifter)
+	if lifter.hall.state then
+		offSeat(lifter)
+		StateArenaVenue.setCompetitor(player, false)
+	end
 	if player.Parent then
 		player:SetAttribute(LocalMeetConfig.PlatformAttribute, nil)
 	end
 	release(player)
 	-- Off the platform: the doorways are closed to anyone walking back by themselves.
 	standAt(player, lifter.platform.waitSpot, false)
-	LocalMeetVenue.clearStaff(lifter.platform)
-	LocalMeetVenue.setLights(lifter.platform, nil)
-	LocalMeetVenue.setStageLight(lifter.platform, 1)
+	-- (A State rack's staff and lights stay for the others on it.)
+	if not lifter.hall.state then
+		LocalMeetVenue.clearStaff(lifter.platform)
+		LocalMeetVenue.setLights(lifter.platform, nil)
+		LocalMeetVenue.setStageLight(lifter.platform, 1)
+	end
 	lifter.recordAttempt = nil
 	boardFor(lifter, { "WITHDRAWN" })
 	log("%s withdrew from the meet (%s)", player.Name, why)
@@ -1578,9 +1711,17 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	else
 		-- The lift follows the minigame: each phase moves the animation through its stretch; the head referee gives
 		-- the commands after the start (bench: PRESS) and the deadlift's DOWN at lockout.
-		local function onPhase(event: string, index: number, count: number, seconds: number?, passed: boolean?)
+		local function onPhase(event: string, index: number, count: number, seconds: number?, passed: boolean?, kind: string?,
+			challenge: any)
 			if not stillLifting(lifter) then
 				return
+			end
+			-- The State meet's screens show the minigame live (§36.1).
+			if current.hall.state and event == "start" and kind then
+				MeetLiveScreens.phaseStart(player, lifter.platform.display.guis, { name = lifter.name, lift = lift,
+					attemptNumber = attemptNumber, weightKg = weightKg }, kind, challenge)
+			elseif current.hall.state and event == "end" and passed and index < count then
+				MeetLiveScreens.phasePassed(player)
 			end
 			if event == "start" then
 				failedPart = index
@@ -1628,6 +1769,11 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	-- The attempt is over: the sign comes down (a record it set shows in the facts once saved).
 	lifter.recordAttempt = nil
 	local good = result == "GoodLift"
+	if player then
+		MeetLiveScreens.verdict(player, good)
+		-- Everyone who filled the crowd's bar for a good lift gets its points in coins (§36.4).
+		MeetCheering.result(player, good, weightKg)
+	end
 	table.insert(lifter.lifts[lift].history, { weightKg = weightKg, result = result })
 	lifter.lastResult, lifter.lastKg = result, weightKg
 	local barLandsIn = finishLift(lifter, lift, good, failedPart, weightKg)
@@ -1681,9 +1827,20 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	local finish = StationAnimationConfig.MeetStages[lift].finish
 	local leaveIn = if good then finish[2] - finish[1] + LEAVE_AFTER_FINISH_SECONDS else LocalMeetConfig.ResultSeconds
 	task.delay(leaveIn, function()
-		if current.hall.meet == current and not current.final and stillLifting(lifter) and lifter.walkToken == token then
-			walkBack(lifter)
+		if current.hall.meet ~= current or current.final or not stillLifting(lifter) or lifter.walkToken ~= token then
+			return
 		end
+		-- The State meet: a good lift gets its celebration (their own later, §36.1) before they walk back to the bench.
+		local player = lifter.player
+		if good and current.hall.state and player then
+			walkBack(lifter, function(): number
+				local track = MeetChalk.play(player.Character, celebrationFor(player))
+				task.delay(StateArenaConfig.CelebrateSeconds, MeetChalk.stop, track)
+				return StateArenaConfig.CelebrateSeconds
+			end)
+			return
+		end
+		walkBack(lifter)
 	end)
 end
 
@@ -1895,14 +2052,41 @@ local function coachLineFor(current: Meet, lifter: Lifter, race: MockMeetRemotes
 	return line
 end
 
--- One round: everyone chooses, everyone lifts, the lights show.
-local function runRound(current: Meet, lift: string, attemptNumber: number)
+--[[
+	A lifter's own walk out at the State meet (user 2026-11-06, GAME_DESIGN §36.1): the default walk for now. A style unlocked from a crate
+	plugs in HERE, read from the player's save (its animation id).
+]]
+local function walkOutAnimationFor(_player: Player): string?
+	return nil
+end
+
+-- A rack's caller (user 2026-11-06): the words over their head, nil to say nothing. `aloud`: what they say over the speakers
+-- (client MeetCallerVoice).
+local function callerSays(platform: LocalMeetVenue.Platform, line: string?, aloud: string?)
+	MeetFigures.say(platform.callerLine, line)
+	local caller = platform.caller
+	if caller and aloud then
+		caller:SetAttribute(StateArenaConfig.CallerLineAttribute, aloud)
+	end
+end
+
+-- One round: everyone chooses, everyone lifts, the lights show. `group`: only these lifters (a State rack, running beside the others).
+local function runRound(current: Meet, lift: string, attemptNumber: number, group: { Lifter }?)
 	current.heading = string.format("%s  ·  ROUND %d", string.upper(lift), attemptNumber)
 	updateStandings(current)
+	local function inThisRound(): { Lifter }
+		local list: { Lifter } = {}
+		for _, lifter in ipairs(activeLifters(current)) do
+			if group == nil or table.find(group, lifter) then
+				table.insert(list, lifter)
+			end
+		end
+		return list
+	end
 
 	-- Choose. Computer lifters declare first, so the race can count what they're going for.
 	local choosing: { Lifter } = {}
-	for _, lifter in ipairs(activeLifters(current)) do
+	for _, lifter in ipairs(inThisRound()) do
 		lifter.choice, lifter.chosenKg, lifter.readyPressed, lifter.roundDone, lifter.lights = nil, nil, false, false, nil
 		lifter.announcedKg, lifter.recordAttempt = nil, nil
 		lifter.currentLift = lift
@@ -1918,9 +2102,12 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 	end
 	local chooseStarted = os.clock()
 	local chooseEnds = chooseStarted + LocalMeetConfig.ChooseSeconds
-	-- The State meet (user 2026-11-06): everyone chooses from their bench, then lifts in turn, lightest bar first, chalking up
-	-- when their turn comes.
+	-- The State meet (user 2026-11-06): everyone chooses, wherever they are, then the rack lifts in turn, lightest bar first, each
+	-- chalking up when their turn comes.
 	local turns = current.hall.state
+	if turns and group and group[1] then
+		callerSays(group[1].platform, string.format("%s, ROUND %d. PICK YOUR WEIGHTS!", string.upper(lift), attemptNumber))
+	end
 	local function chalkView(lifter: Lifter): MockMeetRemotes.ChalkView
 		local platform = lifter.platform
 		return { at = platform.chalkCentre, out = platform.chalkOut, coach = LocalMeetVenue.coachFigure(platform) }
@@ -1936,16 +2123,20 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			-- No total any more: no race to show.
 			sendState(lifter, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
 				suggestedKg = default, secondsLeft = secondsLeft, chalk = choosingChalk(lifter) })
-			coachTell(lifter, "No total today. Use these lifts as practice.")
+			if not turns then
+				coachTell(lifter, "No total today. Use these lifts as practice.")
+			end
 		else
 			-- The race: what this attempt can do, in kilograms, and the coach's word on it (only they see it).
 			local race = raceFor(current, lifter, lift, attemptNumber)
 			sendState(lifter, "Choose", { lift = lift, attemptNumber = attemptNumber, minKg = minKg, maxKg = maxKg,
 				suggestedKg = default, secondsLeft = secondsLeft, race = race, chalk = choosingChalk(lifter) })
-			coachTell(lifter, coachLineFor(current, lifter, race, lift, minKg, maxKg))
+			if not turns then
+				coachTell(lifter, coachLineFor(current, lifter, race, lift, minKg, maxKg))
+			end
 		end
 	end
-	for _, lifter in ipairs(activeLifters(current)) do
+	for _, lifter in ipairs(inThisRound()) do
 		-- The rack set up for this lift, like a gym training rack (§37.5): no bench for squat and deadlift.
 		LocalMeetVenue.rackFor(lifter.platform, lift)
 		local cn = lifter.competitionNumber[lift]
@@ -1963,9 +2154,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 		else
 			lifter.defaultKg = default
 			table.insert(choosing, lifter)
-			if turns then
-				sitLifter(lifter)
-			else
+			if not turns then
 				startChalk(lifter, lift)
 			end
 			if lifter.player then
@@ -2035,6 +2224,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 			if stillLifting(lifter) then
 				local weightKg = lifter.chosenKg or lifter.defaultKg or 0
 				lifter.chosenKg = weightKg
+				LocalMeetVenue.loadBar(lifter.platform, weightKg)
 				-- A weight left to the default (time ran out) can be a record attempt too.
 				task.spawn(announceAttempt, current, lifter, lift, weightKg)
 				lifter.readyPressed = false
@@ -2046,25 +2236,29 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 				-- The walk out from the warm-up room straight in to the bar (§37.5: the rack faces the entrance), then set
 				-- up for the lift.
 				lifter.outOnPlatform = true
-				-- Hands chalked: the coach goes ahead to the doorway to watch.
+				-- Hands chalked: the lifter walks out first, and the coach follows behind to watch (user 2026-11-07).
 				stopChalk(lifter)
 				MeetFigures.showClipboard(LocalMeetVenue.coachFigure(lifter.platform), true)
 				lifter.coachHere = false
 				LocalMeetVenue.coachSays(lifter.platform, nil)
-				-- (A word for the lifter once there, not on the way through the doorway.)
-				coachWalk(lifter, lifter.platform.coachDoorSpot, function()
-					LocalMeetVenue.coachSays(lifter.platform, pick(COACH_READY))
+				-- (Their word for the lifter once there, not on the way through the doorway, where the wall would cut it off.)
+				task.delay(LocalMeetConfig.CoachFollowSeconds, function()
+					if stillLifting(lifter) and lifter.outOnPlatform then
+						coachWalk(lifter, lifter.platform.coachDoorSpot, function()
+							LocalMeetVenue.coachSays(lifter.platform, pick(COACH_READY))
+						end)
+					end
 				end)
 				-- The crowd starts as they step out (user 2026-11-05), with its own lines until the lift starts.
 				crowdBehind(lifter, MeetSoundConfig.walkOutShouts())
 				local approach = lifter.platform.rack and MeetLiftAnimation.approachFor(lifter.platform.rack, lift)
 				walkLifter(lifter, lifter.platform.walkOut, approach or lifter.platform.liftSpot, true, function()
 					setUpLift(lifter, lift)
-				end)
+				end, if turns and lifter.player then walkOutAnimationFor(lifter.player) else nil)
 				boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 					string.format("BAR LOADED  ·  %s KG", kgText(weightKg)) })
 				sendState(lifter, "Ready", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
-					autoLift = true, stakes = stakes, stakesLevel = lifter.stakesLevel })
+					autoLift = true, stakes = stakes, stakesLevel = lifter.stakesLevel, walkOutShot = turns })
 				table.insert(lifting, lifter)
 				task.spawn(liftOne, current, lifter, lift, attemptNumber, weightKg)
 			end
@@ -2098,7 +2292,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 		liftGroup(choosing)
 		return
 	end
-	-- One at a time, lightest bar first (GAME_DESIGN §36.4), ties in the order they lift in.
+	-- One at a time on this rack, lightest bar first (GAME_DESIGN §36.4), ties in the order they lift in.
 	local order = table.clone(choosing)
 	table.sort(order, function(a: Lifter, b: Lifter)
 		local aKg, bKg = a.chosenKg or 0, b.chosenKg or 0
@@ -2107,44 +2301,85 @@ local function runRound(current: Meet, lift: string, attemptNumber: number)
 	for position, lifter in ipairs(order) do
 		if stillLifting(lifter) then
 			local weightKg = lifter.chosenKg or 0
-			-- Everyone else watches from their bench, and knows when they're on.
+			-- The caller: who is up, on deck and in the hole. The next lifters still with us, in order.
+			local coming: { Lifter } = {}
+			for other = position + 1, #order do
+				if stillLifting(order[other]) then
+					table.insert(coming, order[other])
+				end
+			end
+			local platform = lifter.platform
+			local calls = { string.format("UP: %s, %s KG", lifter.name, kgText(weightKg)) }
+			if coming[1] then
+				table.insert(calls, "ON DECK: " .. coming[1].name)
+			end
+			if coming[2] then
+				table.insert(calls, "IN THE HOLE: " .. coming[2].name)
+			end
+			-- Out loud too, with whatever name each lifter goes by.
+			local spoken = { lifter.name .. ", you're up." }
+			if coming[1] then
+				table.insert(spoken, "On deck, " .. coming[1].name .. ".")
+			end
+			if coming[2] then
+				table.insert(spoken, "In the hole, " .. coming[2].name .. ".")
+			end
+			callerSays(platform, table.concat(calls, "\n"), table.concat(spoken, " "))
+			-- Everyone else on the rack hears where they stand, wherever they have got to.
 			for other = 1, #order do
 				local waiting = order[other]
 				if other ~= position and stillLifting(waiting) then
-					local left = other - position
+					local left = table.find(coming, waiting)
 					sendState(waiting, "Waiting", { lift = lift, attemptNumber = attemptNumber, declaredKg = waiting.chosenKg,
 						note = string.format("%s is lifting %s kg. %s", lifter.name, kgText(weightKg),
-							if left == 1 then "You are next." elseif left > 1 then string.format("You lift in %d turns.", left)
-								else "You have lifted this round.") })
+							if left == 1 then "You are ON DECK." elseif left == 2 then "You are IN THE HOLE."
+								elseif left then string.format("You lift in %d turns. Practise at a warm-up rack if you like.", left)
+								else "You have lifted this round. Practise at a warm-up rack if you like.") })
+					if left and left <= 2 and waiting.player then
+						notify(waiting.player, if left == 1 then "You are ON DECK. Your turn is next." else "You are IN THE HOLE.")
+					end
 				end
 			end
+			-- The rack's screen, staff tags and coach go to this lifter.
+			lifter.onTurn = true
+			for other = 1, #order do
+				order[other].onScreen = order[other] == lifter
+			end
+			LocalMeetVenue.staffFor(platform, lifter.player)
+			-- The crowd can cheer them on from this rack's watching zones (§36.4), from now until their lift is over. A full
+			-- bar gets a roar from the crowd.
+			local cheered = lifter.player
+			if cheered and CheerConfig.MeetLevels[current.level] then
+				MeetCheering.openTurn(platform.index, cheered, lifter.name, lift, lifter.bodyweightKg, current.rewards, function()
+					if stillLifting(lifter) then
+						soundCue(lifter, "CrowdCheer", MeetSoundConfig.LiftCrowd.RoarVolume)
+						local shouts = MeetSoundConfig.liftShouts(lift)
+						if #shouts > 0 then
+							task.delay(0.4, soundCue, lifter, pick(shouts), MeetSoundConfig.LiftCrowd.RoarVolume)
+						end
+					end
+				end)
+			end
+			-- Their bar, ready while they chalk up.
+			LocalMeetVenue.loadBar(platform, weightKg)
 			boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 				string.format("%s KG  ·  UP NEXT", kgText(weightKg)) })
-			standFromBench(lifter)
+			bringBack(lifter)
 			if stillLifting(lifter) then
 				startChalk(lifter, lift)
+				coachTell(lifter, pick(COACH_READY))
 				sendState(lifter, "Waiting", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
 					note = "You're up. Chalk your hands.", chalk = chalkView(lifter) })
 				task.wait(LocalMeetConfig.Chalk.MinSeconds)
 				liftGroup({ lifter })
-				sitLifter(lifter)
+				lifter.onTurn = false
+				sitLifter(lifter, true)
+			end
+			if cheered then
+				MeetCheering.closeTurn(cheered)
 			end
 		end
 	end
-end
-
---[[
-	The winner's theme song and celebration at the awards. The defaults for
-	now (LocalMeetConfig.Awards); the user's custom theme songs and
-	celebrations (GAME_DESIGN §29.10) plug in HERE, e.g. read from the winner's
-	save, so the ceremony itself does not change.
-]]
-local function themeFor(_winner: Player): string
-	return LocalMeetConfig.Awards.DefaultThemeSoundId
-end
-
-local function celebrationFor(_winner: Player): string
-	return LocalMeetConfig.Awards.DefaultCelebrationAnimationId
 end
 
 -- Tells everyone in the venue the awards ceremony has started (the camera shots, the cheer, the theme song).
@@ -2250,6 +2485,9 @@ end
 local function finishMeet(current: Meet)
 	current.final = true
 	current.heading = "FINAL"
+	if current.hall.state then
+		MeetCheering.closeAll()
+	end
 	-- Any walk back from the last round ends here: the awards place everyone.
 	for _, lifter in ipairs(current.lifters) do
 		lifter.walkToken = (lifter.walkToken or 0) + 1
@@ -2320,6 +2558,22 @@ local function finishMeet(current: Meet)
 		log("prize pot %d coins (%s, x%d, solo %s)", MeetPayout.pot(results, settings, multiplier), current.level, multiplier,
 			tostring(current.solo))
 	end
+	-- Each State rack's screen ends on the best finisher on it.
+	if current.hall.state then
+		local bestOnRack: { [LocalMeetVenue.Platform]: Lifter } = {}
+		for _, lifter in ipairs(current.lifters) do
+			lifter.onScreen = false
+			local placing = current.places[lifter.key]
+			local best = bestOnRack[lifter.platform]
+			local bestPlacing = best and current.places[best.key]
+			if best == nil or (placing and placing.place and (bestPlacing == nil or bestPlacing.place == nil or placing.place < bestPlacing.place)) then
+				bestOnRack[lifter.platform] = lifter
+			end
+		end
+		for _, lifter in pairs(bestOnRack) do
+			lifter.onScreen = true
+		end
+	end
 	for _, lifter in ipairs(current.lifters) do
 		local result = MeetTotal.resolve(meetAttempts(lifter))
 		local placing = current.places[lifter.key]
@@ -2372,11 +2626,14 @@ local function finishMeet(current: Meet)
 	local v = current.hall.venue
 	LocalMeetVenue.showAwards(v, true)
 	for _, lifter in ipairs(current.lifters) do
-		-- Up off the bench.
-		local seated = lifter.sitTrack ~= nil
-		stopChalk(lifter)
-		if seated and lifter.player and not lifter.withdrawn then
-			standAt(lifter.player, lifter.platform.waitSpot, true)
+		local player = lifter.player
+		if current.hall.state and player and not lifter.withdrawn then
+			-- Off the benches and the practice racks, and only the winners' names on the screens are left to draw (below).
+			stopChalk(lifter)
+			offSeat(lifter)
+			if warmUp then
+				warmUp.stop(player, false)
+			end
 		end
 		local placing = current.places[lifter.key]
 		local spot = placing and placing.place and v.podiumSpots[placing.place]
@@ -2427,15 +2684,24 @@ local function finishMeet(current: Meet)
 			if visits[player] then
 				standAt(player, LocalMeetVenue.lobbySpotFor(v, index), false)
 			end
+			if current.hall.state then
+				StateArenaVenue.setCompetitor(player, false)
+			end
 			showDroppedSuit(lifter, player)
 		end
 	end
 	current.hall.meet = nil
+	-- The State arena's floor goes back to the sign-up desk and booths, and the wait for the next meet starts now (user 2026-11-06).
+	if current.hall.state and stateArena then
+		stateArena.setFloor(0, 0)
+		current.hall.nextStartAt = startAfter(now(), current.hall)
+	end
 	broadcastLobby()
 end
 
 local function runMeet(current: Meet)
 	local hall = current.hall
+	local staffed: { [LocalMeetVenue.Platform]: boolean } = {}
 	for _, lifter in ipairs(current.lifters) do
 		local player = lifter.player
 		local plan = lifter.cpu
@@ -2458,14 +2724,28 @@ local function runMeet(current: Meet)
 					player:RequestStreamAroundAsync(spot.Position, STREAM_TIMEOUT_SECONDS)
 				end)
 			end)
-			standAt(player, spot, true)
+			if hall.state then
+				-- Into the meet area, onto their bench, free to get up and roam (user 2026-11-06).
+				StateArenaVenue.setCompetitor(player, true)
+				sitLifter(lifter, false)
+			else
+				standAt(player, spot, true)
+			end
 		elseif plan then
 			lifter.body = ComputerLifters.spawnBody(plan, lifter.platform.waitSpot, cpuRandom)
 		end
-		LocalMeetVenue.staffPlatform(lifter.platform)
-		-- Only the lifter sees their referees' and coach's tags and what the coach says; a computer lifter's staff
-		-- show nothing (§37.4, §37.5).
-		LocalMeetVenue.staffFor(lifter.platform, player)
+		-- (A State rack's lifters share one set of staff.)
+		if not staffed[lifter.platform] then
+			staffed[lifter.platform] = true
+			LocalMeetVenue.staffPlatform(lifter.platform)
+			-- Only the lifter sees their referees' and coach's tags and what the coach says; a computer lifter's staff
+			-- show nothing (§37.4, §37.5).
+			LocalMeetVenue.staffFor(lifter.platform, player)
+			-- A computer lifter's coach stays where they can watch (coachWalk says why).
+			if player == nil then
+				ComputerLifters.moveBody(LocalMeetVenue.coachFigure(lifter.platform), lifter.platform.coachDoorSpot)
+			end
+		end
 		boardFor(lifter, { "WEIGH-IN", string.format("%s CLASS  ·  %.1f KG", lifter.classLabel, lifter.bodyweightKg) })
 		sendState(lifter, "WeighIn", { secondsLeft = LocalMeetConfig.WeighInSeconds })
 	end
@@ -2473,6 +2753,41 @@ local function runMeet(current: Meet)
 	updateStandings(current)
 	broadcastLobby()
 	task.wait(LocalMeetConfig.WeighInSeconds)
+	-- The State meet: each rack runs on its own (user 2026-11-06), and the meet ends when they all have.
+	if hall.state then
+		local racks: { [LocalMeetVenue.Platform]: { Lifter } } = {}
+		for _, lifter in ipairs(current.lifters) do
+			racks[lifter.platform] = racks[lifter.platform] or {}
+			table.insert(racks[lifter.platform], lifter)
+		end
+		local running = 0
+		for platform, group in pairs(racks) do
+			running += 1
+			task.spawn(function()
+				for _, lift in ipairs(MeetConfig.LiftOrder) do
+					for attemptNumber = 1, MeetConfig.AttemptsPerLift do
+						local left = false
+						for _, lifter in ipairs(group) do
+							left = left or stillLifting(lifter)
+						end
+						if left then
+							local ok, problem = pcall(runRound, current, lift, attemptNumber, group)
+							if not ok then
+								warn("[LocalMeetService] a State rack's round failed: " .. tostring(problem))
+							end
+						end
+					end
+				end
+				callerSays(platform, "THAT'S THIS RACK DONE!")
+				running -= 1
+			end)
+		end
+		while running > 0 do
+			task.wait(0.5)
+		end
+		finishMeet(current)
+		return
+	end
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
 		for attemptNumber = 1, MeetConfig.AttemptsPerLift do
 			local realLeft = 0
@@ -2589,6 +2904,31 @@ local function tryStartMeet(hall: Hall)
 
 	local current: Meet = { hall = hall, lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, rewards = false,
 		solo = false, rewardPlaces = {}, places = {}, level = hall.nextLevel }
+	-- The State arena's floor is set up for this many lifters now: one rack per LiftersPerRack (user 2026-11-06).
+	local stateRacks = 0
+	local statePerRack = 0
+	if hall.state then
+		local arena = stateArena
+		local lifting = math.min(#ready, maximumLifters(hall))
+		if arena == nil then
+			return
+		end
+		stateRacks = math.clamp(math.ceil(lifting / StateArenaConfig.LiftersPerRack), 1, StateArenaConfig.MaxRacks)
+		statePerRack = math.ceil(lifting / stateRacks)
+		local problem = arena.setFloor(stateRacks, statePerRack)
+		if problem then
+			warn("[LocalMeetService] the State floor could not be set up: " .. problem)
+			arena.setFloor(0, 0)
+			return
+		end
+		-- Anyone watching from the floor steps back behind the new barricades.
+		for watcher, visit in pairs(visits) do
+			local body = bodyOf(watcher)
+			if visit.hall == hall.index and body and arena.inMeetArea(body.root.Position) and not table.find(ready, watcher) then
+				standAt(watcher, LocalMeetVenue.lobbySpotFor(v, 1), false)
+			end
+		end
+	end
 	for _, player in ipairs(ready) do
 		if #current.lifters >= maximumLifters(hall) then
 			notify(player, "This meet is full. You stay on the list for the next one.")
@@ -2610,6 +2950,10 @@ local function tryStartMeet(hall: Hall)
 			lifts[lift] = { history = {}, passed = 0 }
 		end
 		local index = #current.lifters + 1
+		-- At State, dealt round the racks in sign-up order.
+		local platformIndex = if hall.state then (index - 1) % stateRacks + 1 else index
+		local platform = v.platforms[platformIndex]
+		local seats = platform.seats
 		local lifter: Lifter = {
 			hall = hall,
 			player = player,
@@ -2617,7 +2961,8 @@ local function tryStartMeet(hall: Hall)
 			cpu = nil,
 			body = nil,
 			name = player.DisplayName,
-			platform = v.platforms[index],
+			platform = platform,
+			seat = if seats then seats[(index - 1) // math.max(stateRacks, 1) + 1] else nil,
 			order = index,
 			bodyweightKg = weigh.bodyweightKg,
 			classLabel = weigh.classLabel,
@@ -2650,6 +2995,9 @@ local function tryStartMeet(hall: Hall)
 			table.insert(hall.signUps, 1, current.lifters[index].player :: Player)
 		end
 		log("not enough lifters could weigh in: no meet")
+		if hall.state and stateArena then
+			stateArena.setFloor(0, 0)
+		end
 		return
 	end
 	-- Full rewards need enough REAL players; one real player gets the reduced ones (§37.2). In Studio the
@@ -3040,6 +3388,8 @@ function LocalMeetService.start()
 	Trophies.preload()
 
 	local set = LocalMeetRemotes.createOnServer(ReplicatedStorage)
+	MeetLiveScreens.start(set)
+	MeetCheering.start(set)
 	remotes = set
 	set.choose.OnServerEvent:Connect(function(player, weightKg)
 		local _, lifter = activeLifter(player)
@@ -3163,21 +3513,34 @@ function LocalMeetService.start()
 		-- The State arena, last on the list (GAME_DESIGN §36.4). Without it the five halls still run.
 		local arena, arenaProblem = StateArenaVenue.build()
 		if arena then
+			stateArena = arena
 			table.insert(builtHalls, { index = #builtHalls + 1, venue = arena.meet, signUps = {}, meet = nil, nextStartAt = 0,
 				nextLevel = "State", state = true })
+			for _, rack in ipairs(arena.meet.warmUpRacks) do
+				stateRackSet[rack] = true
+				table.insert(allRacks, rack)
+			end
 		else
 			warn("[LocalMeetService] the State arena could not be built: " .. tostring(arenaProblem))
 		end
 		halls = builtHalls
 		warmUp = LocalMeetWarmUp.new(allRacks, set, {
-			canUse = function(player: Player): (boolean, string?)
+			canUse = function(player: Player, rack: LocalMeetVenue.WarmUpRack): (boolean, string?)
 				local body = bodyOf(player)
 				if visits[player] == nil or body == nil or body.humanoid.Health <= 0 then
 					return false, nil
 				end
 				local _, lifter = activeLifter(player)
-				if lifter then
+				-- The State arena's racks are for its lifters while they wait for their turn (user 2026-11-06).
+				local atState = stateRackSet[rack] == true
+				if atState and (lifter == nil or not lifter.hall.state) then
+					return false, "These racks are for the lifters in the State meet."
+				end
+				if lifter and not (atState and not lifter.onTurn) then
 					return false, "You are lifting in this meet."
+				end
+				if atState and lifter then
+					offSeat(lifter)
 				end
 				if LiftAttemptService.isAttemptActive(player) then
 					return false, "Finish your lift first."
@@ -3220,7 +3583,8 @@ function LocalMeetService.start()
 						end
 					end
 				end
-				if now() >= hall.nextStartAt then
+				-- (A State meet in progress has no next start yet: the wait starts when it finishes.)
+				if now() >= hall.nextStartAt and not (hall.state and hall.meet) then
 					tryStartMeet(hall)
 					-- Its next meet's sign-ups open now, with its level (a meet that did not start does not keep its level).
 					hall.nextStartAt = startAfter(now(), hall)

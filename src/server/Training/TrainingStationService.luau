@@ -259,7 +259,12 @@ local function refreshSign(station: Station)
 	-- Which thud their deadlift reps make (StationRepSounds). Sound only.
 	local character = if session ~= nil and occupant ~= nil and lift ~= nil then occupant.Character else nil
 	if character and lift then
-		character:SetAttribute("StationBarKg", PlayerDataService.getCompetitionNumber(occupant :: Player, lift))
+		local barKg = PlayerDataService.getCompetitionNumber(occupant :: Player, lift)
+		character:SetAttribute("StationBarKg", barKg)
+		-- And the bar shows that weight.
+		if typeof(barKg) == "number" then
+			StationVisuals.loadBar(station.instance, barKg)
+		end
 	end
 
 	station.prompt.ObjectText = stationTitle(station)

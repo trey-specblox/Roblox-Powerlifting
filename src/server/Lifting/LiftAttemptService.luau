@@ -60,6 +60,8 @@ local TypingChallenge = require(LiftingFolder:WaitForChild("TypingChallenge"))
 local SkillCheckChallenge = require(LiftingFolder:WaitForChild("SkillCheckChallenge"))
 local DifficultyResolver = require(DifficultyFolder:WaitForChild("DifficultyResolver"))
 local ModifierRegistry = require(ModifiersFolder:WaitForChild("ModifierRegistry"))
+local ModifierSet = require(ModifiersFolder:WaitForChild("ModifierSet"))
+local ModifierChannel = require(ModifiersFolder:WaitForChild("ModifierChannel"))
 local ScaleChallenge = require(Shared:WaitForChild("Progression"):WaitForChild("ScaleChallenge"))
 local GearStats = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Economy"):WaitForChild("GearStats"))
 
@@ -126,9 +128,9 @@ type Attempt = {
 	onPhase: PhaseObserver?,
 }
 
--- `event` is "start" (with `seconds`) or "end" (with `passed`).
+-- `event` is "start" (with `seconds`, the phase's kind and its challenge) or "end" (with `passed`).
 export type PhaseObserver = (event: string, phaseIndex: number, phaseCount: number, seconds: number?,
-	passed: boolean?) -> ()
+	passed: boolean?, kind: string?, challenge: any) -> ()
 
 -- How long a phase can run, from its challenge (each phase kind names its own field).
 local function phaseSeconds(challenge: any): number?
@@ -145,6 +147,13 @@ local freeAttemptsBlocked: { [Player]: boolean? } = {}
 local nextAttemptId = 0
 local remotes: LiftingRemotes.RemoteSet? = nil
 local started = false
+--[[
+	A boost that can change DURING a lift (the crowd's cheering, MeetCheering): asked as each
+	phase starts, with the player and their gear's technique on the lift, it returns extra
+	effective technique (0 for none). Everything else about a lift stays locked at its start.
+]]
+local phaseBoost: ((player: Player, gearTechnique: number) -> number)? = nil
+local phaseBoostSource = ""
 
 local function log(message: string, ...: any)
 	print("[LiftAttemptService] " .. string.format(message, ...))
@@ -197,11 +206,32 @@ local function resolvePhaseDifficulty(attempt: Attempt, spec: PhaseSpec): any
 
 	local techniqueStat = if techniqueStatName then attempt.techniqueSnapshot[techniqueStatName] or 0 else 0
 
+	-- A live boost on top of the locked modifiers, for this phase only (the snapshot itself never changes).
+	local modifiers = attempt.modifierSnapshot
+	local boost = phaseBoost
+	if boost and modifiers then
+		local gear = 0
+		for _, modifier in ipairs(ModifierSet.relevantTo(modifiers, ModifierChannel.EffectiveTechnique)) do
+			if modifier.source == GearStats.SourceName and modifier.operation == "Add" then
+				gear += modifier.value
+			end
+		end
+		local ok, extra = pcall(boost, attempt.player, gear)
+		if ok and typeof(extra) == "number" and extra > 0 and extra == extra then
+			local boosted = ModifierSet.create()
+			ModifierSet.merge(boosted, modifiers)
+			ModifierSet.add(boosted, { channel = ModifierChannel.EffectiveTechnique, operation = "Add", value = extra,
+				source = phaseBoostSource })
+			modifiers = boosted
+			log("%s's %s gets +%.2f technique (%s)", attempt.player.Name, spec.phaseName, extra, phaseBoostSource)
+		end
+	end
+
 	return DifficultyResolver.resolve({
 		attemptWeight = attempt.attemptWeightKg,
 		forecastedMax = attempt.forecastedMaxKg,
 		techniqueStat = techniqueStat,
-		modifiers = attempt.modifierSnapshot,
+		modifiers = modifiers,
 	})
 end
 
@@ -433,7 +463,7 @@ function beginPhaseAtIndex(attempt: Attempt)
 			set.presentPhase:FireClient(player, payload)
 			local observer = attempt.onPhase
 			if observer then
-				task.spawn(observer, "start", phaseIndex, #attempt.phases, phaseSeconds(challenge), nil)
+				task.spawn(observer, "start", phaseIndex, #attempt.phases, phaseSeconds(challenge), nil, spec.kind, challenge)
 			end
 		end,
 		complete = function(result: LiftAttempt.PhaseResult)
@@ -694,6 +724,11 @@ function LiftAttemptService.abandon(player: Player)
 		log("%s's %s attempt was stopped", player.Name, attempt.displayName)
 	end
 	clearAttempt(player)
+end
+
+-- Sets the live boost asked at each phase's start (see phaseBoost), named `source` in the lift's modifiers. One at a time.
+function LiftAttemptService.setPhaseBoost(source: string, boost: (player: Player, gearTechnique: number) -> number)
+	phaseBoost, phaseBoostSource = boost, source
 end
 
 -- Whether an attempt (or its result hold) is live for the player.

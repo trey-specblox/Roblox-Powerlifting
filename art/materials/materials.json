@@ -849,6 +849,14 @@
         "model": "rbxassetid://101716180690166"
       },
       "supersedes": "rbxassetid://70433507633305 (four crates, before KNEE WRAPS, 2026-11-06; unused)"
+    },
+    "WeighBooth_01": {
+      "about": "The State arena's weigh-in booth, by the sign-up desk between meets (WeighBooth): navy walls, a half-drawn shower curtain on rings, a WEIGH-IN sign and a floor scale with a read-out. One mesh reused. Made by art/scripts/build_weigh_booth_01.py (art/blender/WeighBooth_01.blend).",
+      "file": "art/exports/WeighBooth_01.glb",
+      "license": "own work",
+      "ids": {
+        "model": "rbxassetid://106669210036999"
+      }
     }
   },
   "images": {

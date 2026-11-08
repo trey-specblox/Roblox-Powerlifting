@@ -69,12 +69,13 @@ function MeetFigures.makeGhost(model: Instance)
 	end
 end
 
-export type Kind = "Coach" | "Referee"
+export type Kind = "Coach" | "Referee" | "Caller"
 
 local looks = StarterGymConfig.Looks
 local WHITE = Color3.fromRGB(255, 255, 255)
 -- The coach's speech bubble: big enough for a whole sentence (GAME_DESIGN §37.5).
 local COACH_BUBBLE = Vector2.new(320, 84)
+local CALLER_BUBBLE_STUDS = Vector2.new(9, 3.2)
 
 local OUTFITS: { [Kind]: { skin: Color3, top: Color3, trousers: Color3, tag: string } } = {
 	-- Navy top, grey trousers.
@@ -83,6 +84,13 @@ local OUTFITS: { [Kind]: { skin: Color3, top: Color3, trousers: Color3, tag: str
 		top = Color3.fromRGB(28, 40, 78),
 		trousers = Color3.fromRGB(62, 64, 70),
 		tag = "COACH",
+	},
+	-- The worker calling out who is up (user 2026-11-06): the game's yellow, so they are easy to find.
+	Caller = {
+		skin = Color3.fromRGB(226, 182, 148),
+		top = Color3.fromRGB(242, 190, 30),
+		trousers = Color3.fromRGB(28, 40, 78),
+		tag = "CALLER",
 	},
 	-- A referee's white shirt and black trousers.
 	Referee = {
@@ -173,7 +181,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 		end
 	end
 
-	if kind == "Coach" then
+	if kind ~= "Referee" then
 		-- A clipboard carried in the left hand, gripped by its top and hanging at the coach's side, its face outward (the
 		-- talking animation holds it up in this hand). Welded to the hand, so it follows the arm (user 2026-11-06: it used
 		-- to float in front of the chest). The Coach front's Blender clipboard, or blocks.
@@ -217,7 +225,9 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	local head = figure:FindFirstChild("Head") :: BasePart?
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = kind .. "Tag"
-	billboard.Size = if kind == "Coach" then UDim2.fromOffset(COACH_BUBBLE.X, COACH_BUBBLE.Y + 34)
+	-- The caller's words are for everyone nearby, so they are sized in studs: they shrink with distance and never fill a screen.
+	billboard.Size = if kind == "Caller" then UDim2.fromScale(CALLER_BUBBLE_STUDS.X, CALLER_BUBBLE_STUDS.Y)
+		elseif kind == "Coach" then UDim2.fromOffset(COACH_BUBBLE.X, COACH_BUBBLE.Y + 34)
 		else UDim2.fromOffset(220, 90)
 	billboard.StudsOffset = Vector3.new(0, 2.6, 0)
 	billboard.LightInfluence = 0
@@ -228,7 +238,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	tag.Name = "Name"
 	tag.AnchorPoint = Vector2.new(0.5, 1)
 	tag.Position = UDim2.fromScale(0.5, 1)
-	tag.Size = UDim2.fromOffset(if kind == "Referee" then 110 else 90, 22)
+	tag.Size = if kind == "Caller" then UDim2.fromScale(0.3, 0.2) else UDim2.fromOffset(if kind == "Referee" then 110 else 90, 22)
 	tag.Rotation = -4
 	tag.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
 	tag.Text = outfit.tag
@@ -245,7 +255,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	-- left side and a tail pointing at the figure.
 	local bubble = Instance.new("Frame")
 	bubble.Name = "Bubble"
-	bubble.Size = UDim2.new(1, 0, 0, if kind == "Coach" then COACH_BUBBLE.Y else 56)
+	bubble.Size = if kind == "Caller" then UDim2.fromScale(1, 0.74) else UDim2.new(1, 0, 0, if kind == "Coach" then COACH_BUBBLE.Y else 56)
 	bubble.Rotation = 3
 	bubble.BackgroundColor3 = StyledScreen.Colours.white
 	bubble.Visible = false

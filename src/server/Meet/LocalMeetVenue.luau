@@ -143,6 +143,11 @@ local SPOTTER_TAG = "MeetSpotter"
 
 -- Where a lifter waits between attempts: just inside the warm-up room, behind the doorway next to their platform.
 local WAIT_BEHIND_WALL = 5
+local COACH_FROM_DOORWAY = 4.5
+-- The coach's line through a doorway, this far to the side of the lifter's, and how far round the lifter they go at the chalk stand.
+local COACH_LINE_ASIDE = 1
+local COACH_WATCH_ASIDE = 4
+local COACH_ROUND_LIFTER = 4
 local CHAIR_SEAT_TOP = 1.84
 -- The stands (LocalMeet_01's Bleachers: 24 wide, 12 deep, four steps of 1.5).
 local SEAT_W, SEAT_D, SEAT_STEP_H, SEAT_STEPS = 24, 12, 1.5, 4
@@ -186,10 +191,16 @@ export type Platform = {
 	refSeats: { CFrame },
 	-- The stage light hung over the platform (stageLight), if it was made.
 	stageLight: SurfaceLight?,
-	-- Where the coach stands: at the doorway the lifter walks out from (GAME_DESIGN §37.5).
+	-- Where the coach waits between turns, near the chalk stand, off the lifter's way (GAME_DESIGN §37.5).
 	coachSpot: Vector3,
-	-- At the doorway, watching the lift; behind or in front of the lifter while they chalk up (floor points, facing).
+	-- Where they stop to watch the lift, having followed the lifter out; behind or in front of the lifter while they chalk up (floor
+	-- points, facing).
 	coachDoorSpot: CFrame,
+	-- The coach's own line through the doorway or round the banner, beside the lifter's: first point on the waiting side.
+	coachWay: { Vector3 },
+	-- On the way to behind or in front of the lifter at the chalk stand, a point to go round them by (nil: the straight line is clear).
+	coachBackVia: Vector3?,
+	coachFrontVia: Vector3?,
 	coachBackSpot: CFrame,
 	coachFrontSpot: CFrame,
 	-- The chalk stand (floor point, its front to the room), the middle of the group round it, the way into the room.
@@ -207,8 +218,12 @@ export type Platform = {
 	-- Off the platform (no parent) for deadlift.
 	spotters: { Model },
 	spotterLift: string?,
-	-- At a meet with turns (the State meet): the middle of the bench's seat top, where they sit while they wait, facing out.
-	seatSpot: CFrame?,
+	-- At a meet with turns (the State meet): where the gear goes back to after the awards, the seats on its benches, and its caller's
+	-- speech bubble and figure.
+	gearHome: Instance?,
+	seats: { Seat }?,
+	callerLine: TextLabel?,
+	caller: Model?,
 }
 
 export type Venue = {
@@ -653,10 +668,18 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			lamps = lamps,
 			refSeats = refSeats,
 			stageLight = can:FindFirstChildOfClass("SurfaceLight"),
-			-- Beside the doorway on the platform's side, against the back wall, clear of the walk.
-			coachSpot = centre + Vector3.new(doorX - side * 2.5, 0, Z_BACK - 0.8),
-			coachDoorSpot = CFrame.lookAt(centre + Vector3.new(doorX - side * 2.5, 0, Z_BACK - 0.8),
+			-- All of the coach's places are on the far side of the doorway from the lifter's route (user 2026-11-07: never inside them).
+			-- Between turns, in the warm-up room.
+			coachSpot = centre + Vector3.new(doorX + side * COACH_FROM_DOORWAY, 0, Z_BACK + WAIT_BEHIND_WALL + 1.5),
+			-- Watching the lift, against the back wall, a body's width from the lifter's line through the doorway.
+			coachDoorSpot = CFrame.lookAt(centre + Vector3.new(doorX + side * COACH_WATCH_ASIDE, 0, Z_BACK - 0.8),
 				Vector3.new(liftAt.X, centre.Y, liftAt.Z)),
+			coachWay = {
+				centre + Vector3.new(doorX + side * COACH_LINE_ASIDE, 0, Z_BACK + 1),
+				centre + Vector3.new(doorX + side * COACH_LINE_ASIDE, 0, Z_BACK - 0.8),
+			},
+			coachBackVia = nil,
+			coachFrontVia = waitAt + Vector3.new(0, 0, COACH_ROUND_LIFTER),
 			coachBackSpot = CFrame.lookAt(waitAt + Vector3.xAxis * side * chalk.CoachBehindStuds, waitAt),
 			coachFrontSpot = CFrame.lookAt(waitAt - Vector3.xAxis * side * chalk.CoachFrontAheadStuds
 				- Vector3.zAxis * chalk.CoachFrontSideStuds, waitAt),
@@ -983,7 +1006,7 @@ end
 ]]
 function LocalMeetVenue.showAwards(v: Venue, on: boolean)
 	for _, platform in ipairs(v.platforms) do
-		platform.gear.Parent = if on then nil else v.model
+		platform.gear.Parent = if on then nil else (platform.gearHome or v.model)
 		if on then
 			for _, figure in ipairs(platform.staff:GetChildren()) do
 				if figure.Name == "Referee" then
@@ -1052,6 +1075,12 @@ end
 ]]
 function LocalMeetVenue.staffFor(platform: Platform, player: Player?)
 	local gui = player and player:FindFirstChildOfClass("PlayerGui")
+	-- A rack several lifters share: its tags move on to whoever is lifting.
+	if gui then
+		for _, billboard in ipairs(platform.privateTags) do
+			billboard.Parent = gui
+		end
+	end
 	for _, billboard in ipairs(platform.staff:GetDescendants()) do
 		if billboard:IsA("BillboardGui") then
 			if gui then
@@ -1101,6 +1130,14 @@ function LocalMeetVenue.rackFor(platform: Platform, lift: string?)
 		StationVisuals.show(rack, lift, true)
 	end
 	LocalMeetVenue.standSpotters(platform, lift)
+end
+
+-- The platform's bar loaded for the attempt coming up (BarLoad).
+function LocalMeetVenue.loadBar(platform: Platform, kg: number)
+	local rack = platform.rack
+	if rack and rack.Parent then
+		StationVisuals.loadBar(rack, kg)
+	end
 end
 
 --[[

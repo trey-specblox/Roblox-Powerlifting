@@ -95,6 +95,15 @@ task.spawn(GymRecordAnnouncer.start)
 local SuitCutscene = require(MeetFolder:WaitForChild("SuitCutscene"))
 task.spawn(SuitCutscene.start)
 
+-- The State meet's caller, out loud (GAME_DESIGN §36.4). Display only.
+local MeetCallerVoice = require(MeetFolder:WaitForChild("MeetCallerVoice"))
+task.spawn(MeetCallerVoice.start)
+local MeetLiveScreen = require(MeetFolder:WaitForChild("MeetLiveScreen"))
+task.spawn(MeetLiveScreen.start)
+-- Cheering at the big meets (GAME_DESIGN §36.4): the bar in a watching zone, and the microphone meter. Display only.
+local MeetCheerBar = require(MeetFolder:WaitForChild("MeetCheerBar"))
+task.spawn(MeetCheerBar.start)
+
 -- The admin panel, only on an admin's screen: the server says who is one and checks every press.
 local AdminPanel = require(script:WaitForChild("UI"):WaitForChild("AdminPanel"))
 task.spawn(AdminPanel.start)

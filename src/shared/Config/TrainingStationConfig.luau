@@ -198,12 +198,11 @@ end
 TrainingStationConfig.GymRacks = buildGymRacks(TrainingStationConfig.GymLayout)
 
 --[[
-	The plates on every station's barbell, per side, inside to outside, before
-	the lock collar (part names in ServerStorage.BarbellTemplates.Barbell_01).
-	Visual only: it shows a loaded bar, it is NOT the player's training weight.
-	2 x 25 kg + 2.5 kg collar per side on a 20 kg bar = 125 kg on the bar.
+	What a rack's bar is loaded with until someone lifts on it, whatever they left
+	aside: each rack always shows the same one of these (StationVisuals). Visual
+	only, and NOT the player's weight: a lift loads its own (BarLoad).
 ]]
-TrainingStationConfig.BarbellDisplayLoadPerSide = { "Plate_25", "Plate_25" }
+TrainingStationConfig.BarbellIdleLoadsKg = { 20, 60, 100, 40, 140, 80, 120, 180 }
 
 --[[
 	=========================================================================

@@ -91,6 +91,8 @@ export type MeetState = {
 	banner: string?,
 	-- A Local, Regional or State meet: which, for the screen's title.
 	meetTitle: string?,
+	-- This walk out gets the cinematic camera (the State meet, user 2026-11-06).
+	walkOutShot: boolean?,
 	-- (Local meet, Choose) where the lifter stands and what this attempt can do: RaceView.
 	race: RaceView?,
 	-- (Local meet, Ready) the lift starts by itself once the lifter is set up at the bar: no LIFT button.

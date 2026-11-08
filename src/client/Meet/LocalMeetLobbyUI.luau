@@ -270,6 +270,11 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 				row.status.Text = "QUALIFY FIRST  ·  " .. meet.notQualified
 				row.status.TextColor3 = C.muted
 				row.signUp.Text = "SIGN UP"
+			elseif meet.state and meet.running then
+				-- The wait for the next one starts when this one finishes.
+				row.status.Text = if meet.signedUp then "IN PROGRESS  ·  YOU ARE ON THE NEXT LIST" else "IN PROGRESS  ·  NEXT LIST " .. lifters
+				row.status.TextColor3 = if meet.signedUp then C.yellow else C.muted
+				row.signUp.Text = if meet.signedUp then "TAKE OFF" else "SIGN UP"
 			elseif meet.signedUp then
 				row.status.Text = (if meet.running then "IN PROGRESS  ·  YOU ARE NEXT IN " else "YOU ARE SIGNED UP  ·  STARTS IN ")
 					.. clockText(untilStart)
@@ -341,18 +346,22 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 		for _, head in ipairs(heads) do
 			head.Visible = #standings.rows > 0
 		end
+		-- The top of the list, up to the rows there are. More lifters than that (the State meet): your own row takes the last one.
 		local myIndex: number? = nil
 		local me = Players.LocalPlayer.UserId
+		for index, data in ipairs(standings.rows) do
+			if data.userId == me then
+				myIndex = index
+			end
+		end
+		local shownRows = math.min(#standings.rows, #rows)
 		for index, row in ipairs(rows) do
-			local data = standings.rows[index]
-			if data == nil then
+			local data = standings.rows[if index == shownRows and myIndex and myIndex > shownRows then myIndex else index]
+			if data == nil or index > shownRows then
 				clearRow(row)
 				continue
 			end
 			local own = data.userId == me
-			if own then
-				myIndex = index
-			end
 			row.back.Visible = own
 			row.place.Text = if data.place then placeText(data.place) else "—"
 			row.name.Text = data.name
@@ -369,11 +378,11 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 				row.points.Text, row.points.TextColor3 = "—", C.muted
 			end
 		end
-		fitStandings(#standings.rows, myIndex ~= nil)
+		fitStandings(shownRows, myIndex ~= nil)
 		youLine.Visible = myIndex ~= nil
 		if myIndex then
 			youLine.Text = youText(standings.rows, myIndex)
-			youLine.Position = UDim2.fromOffset(16, ROWS_TOP + #standings.rows * ROW_HEIGHT + 4)
+			youLine.Position = UDim2.fromOffset(16, ROWS_TOP + shownRows * ROW_HEIGHT + 4)
 		end
 	end
 

@@ -548,6 +548,8 @@ local function redraw(delta: number)
 		end
 	end
 	local flashing = os.clock() < flashUntil
+	-- A State rack's big screen shows it all: the bar, the letter they're on, a miss, and whether it's done.
+	MeetLiftProgress.live(fraction, state.expectedIndex, if flashing then 1 else 0, if done then 1 else 0)
 
 	--[[
 		Which word the row shows. Once the generated cues run out (which should not

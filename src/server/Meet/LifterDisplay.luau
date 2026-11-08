@@ -67,6 +67,8 @@ export type Card = {
 
 export type Handle = {
 	show: (card: Card?) -> (),
+	-- The screens themselves. A State meet's live minigame is drawn over them, on each player's device (MeetLiveScreen).
+	guis: { SurfaceGui },
 }
 
 local function kgText(kg: number): string
@@ -109,8 +111,9 @@ local function edge(parent: Instance, colour: Color3, thickness: number)
 	stroke.Parent = parent
 end
 
--- Builds the display on `part`'s face looking along `out`, for platform `index`.
-function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts: { string }): Handle
+-- Builds the display on `part`'s face looking along `out`, for platform `index`. `noSign`: leaves out the record attempt's
+-- floating sign, for a second screen of a rack that already has one.
+function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts: { string }, noSign: boolean?): Handle
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "LifterDisplay"
 	gui.Face = StyledScreen.faceToward(part, out)
@@ -118,6 +121,7 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 	gui.PixelsPerStud = 40
 	gui.LightInfluence = 0
 	gui.Brightness = 1.4
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.Parent = part
 
 	local back = box(gui, "Back", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), S.navy)
@@ -213,6 +217,7 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 	end)
 
 	local handle = {} :: Handle
+	handle.guis = { gui }
 	function handle.show(card: Card?)
 		if card == nil then
 			name.Text = "OPEN"
@@ -245,7 +250,7 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 		end
 		-- A record attempt: the sign above, and the strip turns red with the attempt first.
 		local attempt = card.recordAttempt
-		sign.Enabled = attempt ~= nil
+		sign.Enabled = attempt ~= nil and not noSign
 		local list = table.clone(card.facts)
 		if attempt then
 			signTitle.Text = attempt.title
@@ -265,6 +270,17 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 	end
 	handle.show(nil)
 	return handle
+end
+
+-- Two screens that show the same thing.
+function LifterDisplay.together(first: Handle, second: Handle): Handle
+	return {
+		show = function(card: Card?)
+			first.show(card)
+			second.show(card)
+		end,
+		guis = { first.guis[1], second.guis[1] },
+	}
 end
 
 return LifterDisplay

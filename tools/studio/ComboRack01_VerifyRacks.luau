@@ -260,7 +260,6 @@ local function run()
 		local shaft = barbellModel and barbellModel:FindFirstChild("Bar_Shaft") :: BasePart?
 		check(barbellModel ~= nil and shaft ~= nil, id .. ": has its Barbell (with Bar_Shaft)")
 		if barbellModel and shaft then
-			local loadSize = #config.BarbellDisplayLoadPerSide
 			local barParts, solidOrQueryable, unanchoredBar, insidePlates = 0, 0, 0, 0
 			for _, d in ipairs(barbellModel:GetDescendants()) do
 				if d:IsA("BasePart") then
@@ -277,8 +276,8 @@ local function run()
 					end
 				end
 			end
-			check(barParts == 2 + 2 * (loadSize + 1),
-				string.format("%s: barbell has bar + %d plates and a collar per side (%d parts)", id, loadSize, barParts))
+			-- The load depends on the weight (BarLoad); the bar itself is always two parts.
+			check(barParts >= 2, string.format("%s: barbell has its bar (%d parts)", id, barParts))
 			check(solidOrQueryable == 0 and unanchoredBar == 0,
 				string.format("%s: barbell anchored, not solid, not queryable", id))
 			check(insidePlates == 0, string.format("%s: all plates outside the J-cups", id))

@@ -212,6 +212,10 @@ LocalMeetConfig.Awards = {
 	their upper back, and in front of them on bench and deadlift, talking to them.
 	Made by art/scripts/chalk_animations.py; keep its distances and times in step.
 ]]
+-- The coach follows the lifter out to watch, and back again, this long after them (user 2026-11-07): about 9 studs behind at the walking
+-- speed, and on their own line.
+LocalMeetConfig.CoachFollowSeconds = 1
+
 LocalMeetConfig.Chalk = {
 	LifterAnimationId = "rbxassetid://117237414323040",
 	CoachBackAnimationId = "rbxassetid://113361762391365",
@@ -253,6 +257,11 @@ LocalMeetConfig.LiftMoment = {
 	WalkBack = 10,
 	WalkUp = 2.5,
 	WalkAhead = 6,
+	-- The State meet's walk out (user 2026-11-06): the camera in front of the lifter and to one side, looking back at them.
+	CinematicAhead = 11,
+	CinematicSide = 5,
+	CinematicUp = 0.6,
+	CinematicRate = 2.5,
 	-- The longest the camera stays on the platform after the lights; it normally leaves when the lifter does.
 	HoldMaxSeconds = 9,
 	-- Gliding back to behind the lifter before the player has the camera again.

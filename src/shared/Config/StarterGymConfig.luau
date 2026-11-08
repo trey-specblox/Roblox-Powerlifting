@@ -605,6 +605,7 @@ StarterGymConfig.PropAssets = {
 	-- judges' tables, camera tripods, banners, flag, name signs, gantry banners and its entrance building (all placed by
 	-- StateArenaVenue)
 	{ id = 73272782464755 }, -- Crowd_01: the fake spectators in the Local meet's stands (placed by LocalMeetVenue)
+	{ id = 106669210036999 }, -- WeighBooth_01: the State arena's weigh-in booth by the sign-up desk (placed by StateArenaVenue)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -856,6 +857,12 @@ StarterGymConfig.PropColourways = {
 	} },
 	MeetPlatform = { { Base = "Navy", Wood = "Oak", Rubber = "Charcoal", Edge = "Yellow", Logo = "White" } },
 	MeetBench = { { Slats = "Oak", Frame = "Yellow", Feet = "Black", Badge = "Navy", Logo = "White" } },
+	-- The State arena's weigh-in booth (WeighBooth_01, art/scripts/build_weigh_booth_01.py).
+	WeighBooth = { {
+		Base = "Charcoal", Frame = "Black", Walls = "Navy", Stripes = "Yellow", Sign = "Black", SignTrim = "Yellow", SignText = "White",
+		Curtain = "White", Hem = "Navy", Rail = "Silver", Rings = "Silver", ScaleBase = "Black", ScaleTop = "Silver", ScalePost = "Black",
+		ScaleScreen = "GlowGreen", ScaleLogo = "White",
+	} },
 	MeetBoard = { { Frame = "Black", Screen = "Black", Header = "Yellow", HeaderText = "Black", Trim = "Red" } },
 	MeetBanner = { { Cloth = "Navy", Rails = "Silver", Caps = "Yellow", Brackets = "Black" } },
 	-- The shared furniture (Furniture_01, art/scripts/build_furniture_01.py). The shelf frames take the room's

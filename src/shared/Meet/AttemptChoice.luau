@@ -6,7 +6,8 @@
 	Which weights a lifter may declare for their next meet attempt, shared by the
 	Mock Meet and the Local meet so both check a choice the same way (GAME_DESIGN
 	§29.10): a multiple of `stepKg`, inside the Competition Number's percentage
-	bounds (LiftAttemptConfig), and legal under AttemptRules (§15).
+	bounds (LiftAttemptConfig), never under the empty bar (BarLoad.BarKg, user
+	2026-11-07), and legal under AttemptRules (§15).
 
 	Pure: the caller passes the lift's Competition Number and attempt history.
 	The server's answer is the one that counts.
@@ -15,6 +16,7 @@
 local ConfigFolder = script.Parent.Parent:WaitForChild("Config")
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
 local AttemptRules = require(script.Parent:WaitForChild("AttemptRules"))
+local BarLoad = require(script.Parent.Parent:WaitForChild("Training"):WaitForChild("BarLoad"))
 
 local AttemptChoice = {}
 
@@ -31,16 +33,22 @@ local function roundUp(kg: number, stepKg: number): number
 	return math.ceil(kg / stepKg - 1e-6) * stepKg
 end
 
+-- The lightest weight allowed under `maxKg`: its share of the Competition Number, but at least the empty bar.
+local function lightest(competitionNumberKg: number, stepKg: number, maxKg: number): number
+	local share = roundUp(competitionNumberKg * LiftAttemptConfig.MinimumAttemptPercent, stepKg)
+	return math.min(math.max(share, BarLoad.BarKg), maxKg)
+end
+
 -- The range of weights the lifter may declare: the Competition Number's percentage bounds, on the step grid.
 function AttemptChoice.bounds(competitionNumberKg: number, stepKg: number): (number, number)
-	return roundUp(competitionNumberKg * LiftAttemptConfig.MinimumAttemptPercent, stepKg),
-		roundDown(competitionNumberKg * LiftAttemptConfig.MaximumAttemptPercent, stepKg)
+	local maxKg = roundDown(competitionNumberKg * LiftAttemptConfig.MaximumAttemptPercent, stepKg)
+	return lightest(competitionNumberKg, stepKg, maxKg), maxKg
 end
 
 -- The range a lifter may declare AT A MEET: as above, but up to the meet's ceiling, past the normal limit.
 function AttemptChoice.meetBounds(competitionNumberKg: number, stepKg: number): (number, number)
-	return roundUp(competitionNumberKg * LiftAttemptConfig.MinimumAttemptPercent, stepKg),
-		roundDown(competitionNumberKg * LiftAttemptConfig.MeetCeilingPercent, stepKg)
+	local maxKg = roundDown(competitionNumberKg * LiftAttemptConfig.MeetCeilingPercent, stepKg)
+	return lightest(competitionNumberKg, stepKg, maxKg), maxKg
 end
 
 -- True for a weight past the normal limit (LiftAttemptConfig.MeetCeilingPercent): it can't raise CN or set a record.

@@ -62,6 +62,8 @@ type Run = {
 	rayParams: RaycastParams,
 	-- How far the slow push in goes on this attempt.
 	pushInShare: number,
+	-- The walk out's cinematic shot, from in front of them (the State meet).
+	cinematic: boolean,
 }
 
 local run: Run? = nil
@@ -243,7 +245,15 @@ local function step(dt: number)
 	local eye: Vector3
 	local look: Vector3
 	local rate: number
-	if current.stage == "Walk" then
+	if current.stage == "Walk" and current.cinematic then
+		local ahead = flatLook(root, camera)
+		local side = ahead:Cross(Vector3.yAxis)
+		local from = root.Position + Vector3.new(0, 1, 0)
+		eye = clearOf(from, root.Position + ahead * SETTINGS.CinematicAhead + side * SETTINGS.CinematicSide
+			+ Vector3.new(0, SETTINGS.CinematicUp, 0), current.rayParams)
+		look = root.Position + Vector3.new(0, 0.8, 0)
+		rate = SETTINGS.CinematicRate
+	elseif current.stage == "Walk" then
 		local ahead = flatLook(root, camera)
 		local from = root.Position + Vector3.new(0, 1, 0)
 		eye = clearOf(from, root.Position - ahead * SETTINGS.WalkBack + Vector3.new(0, SETTINGS.WalkUp, 0), current.rayParams)
@@ -286,7 +296,7 @@ local function begin(state: MockMeetRemotes.MeetState)
 	params.RespectCanCollide = true
 	local shares = LocalMeetConfig.StakesBuild.PushInShare
 	run = { stage = "Walk", lift = state.lift, stageStart = os.clock(), rayParams = params,
-		pushInShare = shares[state.stakesLevel or 1] or shares[1] }
+		pushInShare = shares[state.stakesLevel or 1] or shares[1], cinematic = state.walkOutShot == true }
 	local camera = Workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
 	RunService:BindToRenderStep(RENDER_NAME, Enum.RenderPriority.Camera.Value + 1, step)
