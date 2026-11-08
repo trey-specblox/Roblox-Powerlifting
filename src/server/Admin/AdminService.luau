@@ -5,13 +5,16 @@
 
 	The admin panel's server side (user 2026-11-06: "give myself coins in the live game and
 	other stuff"; testing on a phone means joining the real game). It works in the live game
-	and changes the admin's REAL save, so:
+	and changes REAL saves, so:
 
 		- only the accounts in ADMIN_USER_IDS may use it, checked on every call. This list
 		  is on the server, where no client can read or change it
-		- a client sends which button, never an amount: amounts come from AdminConfig
-		- it only ever changes the admin's own account, and every use is in the server's log
-		- it does nothing that changes other players (a forced drop's news line is shown to them, like any drop's)
+		- a client sends which button, never a coin amount: amounts come from AdminConfig. A
+		  typed stat is clamped to AdminConfig.StatLimits
+		- the first page changes only the admin's own account. The PLAYER STATS page (user
+		  2026-11-08: "fully control anyones stats", to playtest with an alt) changes any
+		  player in the same server: their stats, State ladder, daily training and coins
+		- every use is in the server's log, with whose save it changed
 
 	To add a tool: a new action in `actions` here, and its buttons in client AdminPanel.
 ]]
@@ -25,11 +28,13 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AdminConfig = require(Shared:WaitForChild("Config"):WaitForChild("AdminConfig"))
 local AdminRemotes = require(Shared:WaitForChild("Admin"):WaitForChild("AdminRemotes"))
 local GearStats = require(Shared:WaitForChild("Economy"):WaitForChild("GearStats"))
+local TechniqueCurve = require(Shared:WaitForChild("Difficulty"):WaitForChild("TechniqueCurve"))
 
 local ServerRoot = script.Parent.Parent
 local PlayerDataService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
 local ShopService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("ShopService"))
 local GearService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("GearService"))
+local ProfileOperations = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("ProfileOperations"))
 
 local AdminService = {}
 
@@ -51,9 +56,71 @@ local function isAdmin(player: Player): boolean
 	return ADMIN_USER_IDS[player.UserId] == true
 end
 
-local function viewFor(player: Player): AdminRemotes.AdminView
+-- The player in this server with this UserId, or nil. Safe with anything a client sends.
+local function playerFor(userId: any): Player?
+	if typeof(userId) ~= "number" or userId ~= userId then
+		return nil
+	end
+	return Players:GetPlayerByUserId(userId)
+end
+
+-- A player's stats for the PLAYER STATS page, or nil when their save hasn't loaded.
+local function targetViewFor(target: Player): AdminRemotes.TargetView?
+	local data = PlayerDataService.getData(target)
+	local classKey = data and ProfileOperations.getActiveClassKey(data)
+	local build = data and ProfileOperations.getActiveBuild(data)
+	if data == nil or classKey == nil or build == nil then
+		return nil
+	end
+	local profile = data :: any
+	local values: { [string]: number } = {}
+	local effective: { [string]: number } = {}
+	local ladder = ProfileOperations.getLadder(data, classKey, os.time())
+	for _, field in ipairs(AdminConfig.StatFields) do
+		local value: any = nil
+		if field.kind == "Bodyweight" then
+			value = profile.bodyweight and profile.bodyweight.currentKg
+		elseif field.kind == "Ladder" then
+			value = ladder.points
+		elseif field.kind == "CompetitionNumber" and field.lift then
+			value = (build.competitionNumber :: any)[field.lift]
+		elseif field.kind == "Scale" and field.lift then
+			value = (build.competitionScale :: any)[field.lift]
+		elseif field.kind == "Technique" and field.stat then
+			value = profile.technique and profile.technique[field.stat]
+			if ProfileOperations.isFiniteNumber(value) and value >= 0 then
+				local ok, curved = pcall(TechniqueCurve.toEffective, value)
+				if ok then
+					effective[field.id] = curved
+				end
+			end
+		end
+		values[field.id] = if ProfileOperations.isFiniteNumber(value) then value else 0
+	end
+	return { userId = target.UserId, name = target.Name, classKey = classKey, ladderTarget = ladder.target,
+		qualified = ladder.qualified, coins = ProfileOperations.getCoins(data), values = values, effective = effective }
+end
+
+local function viewFor(player: Player, targetUserId: any?): AdminRemotes.AdminView
+	local list = {}
+	for _, other in ipairs(Players:GetPlayers()) do
+		table.insert(list, { userId = other.UserId, name = other.Name })
+	end
+	table.sort(list, function(a, b)
+		return a.name:lower() < b.name:lower()
+	end)
+	local target = if targetUserId == nil then player else playerFor(targetUserId)
 	return { coins = PlayerDataService.getCoins(player) or 0, crateRarity = ShopService.getForcedRarity(player),
-		forcedDrop = GearService.getForcedDrop(player) }
+		forcedDrop = GearService.getForcedDrop(player), players = list, target = if target then targetViewFor(target) else nil }
+end
+
+-- The PLAYER STATS page's target: the player in this server named by `value.userId`, or nil and why not.
+local function targetOf(value: any): (Player?, string)
+	local target = if typeof(value) == "table" then playerFor(value.userId) else nil
+	if target == nil then
+		return nil, "That player isn't in this server."
+	end
+	return target, ""
 end
 
 -- Each returns whether it worked and what to tell the admin. `value` comes from a client: check it before using it.
@@ -102,6 +169,51 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		GearService.setForcedDrop(player, suit.id)
 		return true, "Finish a meet with a total to get the " .. suit.name .. "."
 	end,
+	-- PLAYER STATS: one typed stat for any player here.
+	SetStat = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		local number = tonumber(value.value)
+		if number == nil then
+			return false, "Type a number."
+		end
+		local ok, message = PlayerDataService.adminSetStat(target, value.id, number)
+		return ok, target.Name .. ": " .. message
+	end,
+	QualifyState = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		local ok, message = PlayerDataService.adminQualifyForState(target)
+		return ok, target.Name .. ": " .. message
+	end,
+	RefillDaily = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		local ok, message = PlayerDataService.adminRefillDaily(target)
+		return ok, target.Name .. ": " .. message
+	end,
+	GiveCoinsTo = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		for _, button in ipairs(AdminConfig.CoinButtons) do
+			if button.id == value.id then
+				local outcome = PlayerDataService.addCoins(target, button.amount, "Admin panel")
+				if outcome == "Added" then
+					return true, string.format("%s: %s coins.", target.Name, button.label)
+				end
+				return false, target.Name .. ": no coins added (save not loaded, or at the coin limit)."
+			end
+		end
+		return false, "That isn't a coin button."
+	end,
 	CrateRarity = function(player: Player, value: any): (boolean, string)
 		if value == nil then
 			ShopService.setForcedRarity(player, nil)
@@ -121,12 +233,12 @@ function AdminService.start()
 	end
 	started = true
 	local remotes = AdminRemotes.createOnServer(ReplicatedStorage)
-	remotes.get.OnServerInvoke = function(player: Player): AdminRemotes.AdminView?
+	remotes.get.OnServerInvoke = function(player: Player, targetUserId: any): AdminRemotes.AdminView?
 		-- Everyone asks once on joining, so a refusal here isn't suspicious.
 		if not isAdmin(player) then
 			return nil
 		end
-		return viewFor(player)
+		return viewFor(player, targetUserId)
 	end
 	remotes.action.OnServerInvoke = function(player: Player, action: any, value: any): (boolean, string, AdminRemotes.AdminView?)
 		if not isAdmin(player) then
@@ -137,17 +249,22 @@ function AdminService.start()
 			return false, "", nil
 		end
 		local now = os.clock()
+		-- The PLAYER STATS page's player, so the answer shows them.
+		local targetUserId = if typeof(value) == "table" then value.userId else nil
 		if now - (lastAction[player] or -math.huge) < MIN_SECONDS_BETWEEN_ACTIONS then
-			return false, "One moment...", viewFor(player)
+			return false, "One moment...", viewFor(player, targetUserId)
 		end
 		lastAction[player] = now
 		local run = if typeof(action) == "string" then actions[action] else nil
 		if run == nil then
-			return false, "Unknown tool.", viewFor(player)
+			return false, "Unknown tool.", viewFor(player, targetUserId)
 		end
 		local ok, message = run(player, value)
-		print(string.format("[AdminService] %s used %s (%s): %s", player.Name, tostring(action), tostring(value), message))
-		return ok, message, viewFor(player)
+		local shown = if typeof(value) == "table"
+			then string.format("user %s, %s = %s", tostring(value.userId), tostring(value.id), tostring(value.value))
+			else tostring(value)
+		print(string.format("[AdminService] %s used %s (%s): %s", player.Name, tostring(action), shown, message))
+		return ok, message, viewFor(player, targetUserId)
 	end
 	Players.PlayerRemoving:Connect(function(player)
 		lastAction[player] = nil

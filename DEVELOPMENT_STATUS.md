@@ -13,8 +13,19 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**ADMIN PANEL: PLAYER STATS PAGE (2026-11-08), COMMITTED, NOT PUSHED** (user: "fully control anyones stats" to playtest with an alt).
+The panel has two pages: MY TOOLS (as before, own account) and PLAYER STATS: pick anyone in the server, type their bodyweight
+(sets the class), ladder points, CN and proven weight per lift, and the five raw technique stats (effective value in brackets);
+QUALIFY FOR STATE, REFILL DAILY (CN and technique allowances, training time) and coins for them. Fields and limits in
+`AdminConfig.StatFields` / `StatLimits`; writes only through the named `ProfileOperations.adminSetStat`, `adminQualifyForState`,
+`adminRefillDaily` (via PlayerDataService); `AdminService` still checks its server-only admin list on every call and logs whose save
+changed. It changes REAL saves of other players in the live game. Studio, own account: every stat set, 5000 capped to 1000, bad stat /
+non-number / player not in the server refused, typing in a box and pressing Enter sets it, and with Studio's State skip turned off the
+MEETS list said "LADDER 3/10" at 3 points and nothing after QUALIFY. NOT tested: on a second player (alt), phone. Not covered: the
+meet CN allowance (how far a meet can raise CN) has no refill button.
+
 **CHEERING AT STATE (2026-11-08), COMMITTED** with everything since `b089372` in "Add cheering, live rack screens and real
-bar plates" (user: "Commit changes"; neither commit is pushed): rules in
+bar plates" (`5961276`, user: "Commit changes"; pushed with `b089372` on 2026-11-08, user: "Push"): rules in
 GAME_DESIGN §36.4 "Cheering". Server `src/server/Meet/MeetCheering.luau` (zones, bar, bonus, coins), settings
 `src/shared/Config/CheerConfig.luau`, client `src/client/Meet/MeetCheerBar.luau` (the bar and the microphone meter), remotes
 CHEER_REPORT (unreliable) and CHEER_STATE, `LiftAttemptService.setPhaseBoost` (the bonus is asked at each phase's start), two invisible
@@ -40,7 +51,7 @@ Studio stopped rendering during that test (RenderStepped 0, screenshots timing o
 looked at, and its panel never animated: the user needs to look. COST: about 10 updates a second per lifting rack, sent only to
 players within 450 studs; one more reused board and SurfaceGui per rack while a meet runs, at most 4.
 
-**BARS SHOW THEIR REAL WEIGHT (2026-11-07), COMMITTED 2026-11-08** (not pushed): plate rules in `src/shared/Training/BarLoad.luau`, checked against all 20 of the user's screenshots and
+**BARS SHOW THEIR REAL WEIGHT (2026-11-07), COMMITTED AND PUSHED 2026-11-08:** plate rules in `src/shared/Training/BarLoad.luau`, checked against all 20 of the user's screenshots and
 the 75 kg example. Loaded at meets, warm-up racks, gym practice and gym training (`StationVisuals.loadBar`); light
 deadlifts sit on flat rubber stacks. Local meet (195 kg, 45 kg and real weights, computer lifters, lifts auto-passed
 by a test patch, now removed): spotters at least 0.35 studs from the bar, nothing touches a plate; the only contact

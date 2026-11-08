@@ -48,6 +48,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
+local AdminConfig = require(ConfigFolder:WaitForChild("AdminConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -1957,6 +1958,106 @@ function ProfileOperations.applyTechniqueTraining(
 		gains = gains,
 		after = after,
 	}
+end
+
+--[[
+	=========================================================================
+	ADMIN  (the admin panel's PLAYER STATS page, user 2026-11-08: "fully control
+	anyones stats" for playtesting)
+	=========================================================================
+
+	The one exception to "no setter": each of these REPLACES a value, because
+	that is what testing needs. They still name exactly what they change, from
+	AdminConfig.StatFields, and clamp it to AdminConfig.StatLimits.
+
+	SECURITY BOUNDARY: their only caller is AdminService, which checks the
+	caller is on its server-only admin list on every call.
+]]
+
+-- Sets one AdminConfig stat field to `value` (clamped). Returns whether it worked and what was set.
+function ProfileOperations.adminSetStat(data: ProfileData, fieldId: string, value: number, nowUnix: number): (boolean, string)
+	local field = AdminConfig.statField(fieldId)
+	local limits = field and AdminConfig.StatLimits[field.kind]
+	if field == nil or limits == nil then
+		return false, "That isn't a stat."
+	end
+	if not isFiniteNumber(value) then
+		return false, "Type a number."
+	end
+	local kind = field.kind
+	local set = math.clamp(value, limits.min, limits.max)
+	set = if kind == "Ladder" then math.floor(set + 0.5) else math.floor(set * 10 + 0.5) / 10
+	local profile = data :: any
+	if kind == "Bodyweight" then
+		local classKey = PlayerProfileSchema.classKeyFor(set)
+		if typeof(profile.bodyweight) ~= "table" or classKey == nil then
+			return false, "The save has no usable bodyweight."
+		end
+		profile.bodyweight.currentKg = set
+		profile.bodyweight.targetKg = set
+		PlayerProfileSchema.ensureBuild(data, classKey)
+		return true, string.format("Bodyweight %s kg: the %s class.", tostring(set), classKey)
+	elseif kind == "Technique" then
+		if typeof(profile.technique) ~= "table" or field.stat == nil then
+			return false, "The save has no technique stats."
+		end
+		profile.technique[field.stat] = set
+		return true, string.format("%s set to %s.", field.label, tostring(set))
+	end
+	local classKey = ProfileOperations.getActiveClassKey(data)
+	local build = ProfileOperations.getActiveBuild(data)
+	if classKey == nil or build == nil then
+		return false, "The save has no build for its class."
+	end
+	if kind == "CompetitionNumber" and field.lift then
+		(build.competitionNumber :: any)[field.lift] = set
+		return true, string.format("%s %s kg in %s.", field.label, tostring(set), classKey)
+	elseif kind == "Scale" and field.lift then
+		(build.competitionScale :: any)[field.lift] = set
+		return true, string.format("%s %s kg in %s.", field.label, tostring(set), classKey)
+	elseif kind == "Ladder" then
+		local ladders = laddersOf(data)
+		if ladders == nil then
+			return false, "The save has no ladders."
+		end
+		ladders[classKey] = { season = MeetLevelConfig.seasonFor(nowUnix), points = set, qualified = set >= targetFor(data) }
+		local view = ProfileOperations.getLadder(data, classKey, nowUnix)
+		return true, string.format("Ladder %d/%d in %s%s.", view.points, view.target, classKey,
+			if view.qualified then ": qualified for State" else "")
+	end
+	return false, "That isn't a stat."
+end
+
+-- Qualifies the player for State in their current class this season (their ladder at the target).
+function ProfileOperations.adminQualifyForState(data: ProfileData, nowUnix: number): (boolean, string)
+	local classKey = ProfileOperations.getActiveClassKey(data)
+	local ladders = laddersOf(data)
+	if classKey == nil or ladders == nil then
+		return false, "The save has no class or no ladders."
+	end
+	local target = targetFor(data)
+	ladders[classKey] = { season = MeetLevelConfig.seasonFor(nowUnix), points = target, qualified = true }
+	return true, string.format("Qualified for State in %s this season.", classKey)
+end
+
+-- Gives back today's training: the CN and technique allowances and the training time on every lift.
+function ProfileOperations.adminRefillDaily(data: ProfileData): (boolean, string)
+	local profile = data :: any
+	for _, name in ipairs({ "cnAllowance", "techniqueAllowance" }) do
+		local allowance = profile[name]
+		if typeof(allowance) == "table" and isFiniteNumber(allowance.spentToday) then
+			allowance.spentToday = 0
+		end
+	end
+	local time = profile.trainingTimeToday
+	if typeof(time) == "table" then
+		for _, lift in ipairs(ProgressionConfig.Lifts) do
+			if isFiniteNumber(time[lift]) then
+				time[lift] = 0
+			end
+		end
+	end
+	return true, "Today's training limits are full again."
 end
 
 return ProfileOperations

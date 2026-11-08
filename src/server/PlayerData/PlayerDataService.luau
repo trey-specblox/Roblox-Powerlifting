@@ -735,6 +735,34 @@ function PlayerDataService.awardTechniqueTraining(
 	return result
 end
 
+--[[
+	The admin panel's PLAYER STATS page (ProfileOperations ADMIN). SERVER-ONLY: the
+	caller (AdminService) checks the admin list on every call; the clock is read here.
+]]
+function PlayerDataService.adminSetStat(player: Player, fieldId: string, value: number): (boolean, string)
+	local data = activeData(player, "adminSetStat")
+	if data == nil then
+		return false, "That player's save hasn't loaded."
+	end
+	return ProfileOperations.adminSetStat(data, fieldId, value, os.time())
+end
+
+function PlayerDataService.adminQualifyForState(player: Player): (boolean, string)
+	local data = activeData(player, "adminQualifyForState")
+	if data == nil then
+		return false, "That player's save hasn't loaded."
+	end
+	return ProfileOperations.adminQualifyForState(data, os.time())
+end
+
+function PlayerDataService.adminRefillDaily(player: Player): (boolean, string)
+	local data = activeData(player, "adminRefillDaily")
+	if data == nil then
+		return false, "That player's save hasn't loaded."
+	end
+	return ProfileOperations.adminRefillDaily(data)
+end
+
 -- (Training Energy was retired in schema version 8, GAME_DESIGN 29.8, and the Competition Budget in version 10, 29.9.)
 
 return PlayerDataService
