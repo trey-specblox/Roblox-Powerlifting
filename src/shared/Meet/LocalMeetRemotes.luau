@@ -85,6 +85,8 @@ LocalMeetRemotes.LIVE_EVENT = "LocalMeetLiveEvent"
 -- last report, about 4 a second, only while in a zone; may drop one. CHEER_STATE: server -> one client, its cheering bar (CheerView).
 LocalMeetRemotes.CHEER_REPORT = "LocalMeetCheerReport"
 LocalMeetRemotes.CHEER_STATE = "LocalMeetCheerState"
+-- CHEER_CHOOSE: client -> server, in the lifters' zone (the meet area): cheer for the next (+1) or previous (-1) lifter up.
+LocalMeetRemotes.CHEER_CHOOSE = "LocalMeetCheerChoose"
 -- Server -> clients, sound only: a meet sound cue (MeetSoundConfig), where it happened, and optionally how loud (x normal).
 LocalMeetRemotes.SOUND = "LocalMeetSound"
 -- Client -> server: "send me the meets list" (no arguments). The list works from anywhere, not only in the venue.
@@ -114,13 +116,15 @@ export type RemoteSet = {
 	liveEvent: RemoteEvent,
 	cheerReport: UnreliableRemoteEvent,
 	cheerState: RemoteEvent,
+	cheerChoose: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
 	LocalMeetRemotes.NOTICE, LocalMeetRemotes.EXIT, LocalMeetRemotes.SIGN_UP, LocalMeetRemotes.LOBBY,
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
 	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND,
-	LocalMeetRemotes.SPECTATE, LocalMeetRemotes.LOBBY_REQUEST, LocalMeetRemotes.LIVE_EVENT, LocalMeetRemotes.CHEER_STATE }
+	LocalMeetRemotes.SPECTATE, LocalMeetRemotes.LOBBY_REQUEST, LocalMeetRemotes.LIVE_EVENT, LocalMeetRemotes.CHEER_STATE,
+	LocalMeetRemotes.CHEER_CHOOSE }
 -- Allowed to lose an update now and then.
 local UNRELIABLE_NAMES = { LocalMeetRemotes.LIVE_REPORT, LocalMeetRemotes.LIVE_SHOW, LocalMeetRemotes.CHEER_REPORT }
 
@@ -221,7 +225,8 @@ export type AwardsMoment = {
 	A player's cheering bar, server -> that player (CHEER_STATE), when it changes. Display only.
 	  role "cheer": they stand in a rack's zone while `name` is up: the bar, whether it's full,
 	                whether the server counts their voice (voice false: no voice chat, so they can't help),
-	                and once the lift is over its `result` ("GOOD LIFT" / "NO LIFT").
+	                and once the lift is over its `result` ("GOOD LIFT" / "NO LIFT"). In the lifters' zone, with
+	                several lifters up, `choice` of `choices`: which one they cheer for (CHEER_CHOOSE switches).
 	  role "lifter": the crowd filled their bar: `bonus` technique on what is left of the lift.
 	  role "coins": they helped fill `name`'s bar and it was a good lift: `coins` earned.
 	  role "none": nothing to show.
@@ -233,6 +238,8 @@ export type CheerView = {
 	full: boolean?,
 	voice: boolean?,
 	result: string?,
+	choice: number?,
+	choices: number?,
 	bonus: number?,
 	coins: number?,
 }
@@ -312,6 +319,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		liveEvent = get(LocalMeetRemotes.LIVE_EVENT),
 		cheerReport = getUnreliable(LocalMeetRemotes.CHEER_REPORT),
 		cheerState = get(LocalMeetRemotes.CHEER_STATE),
+		cheerChoose = get(LocalMeetRemotes.CHEER_CHOOSE),
 	}
 end
 
@@ -348,6 +356,7 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		liveEvent = get(LocalMeetRemotes.LIVE_EVENT),
 		cheerReport = getUnreliable(LocalMeetRemotes.CHEER_REPORT),
 		cheerState = get(LocalMeetRemotes.CHEER_STATE),
+		cheerChoose = get(LocalMeetRemotes.CHEER_CHOOSE),
 	}
 end
 

@@ -54,9 +54,11 @@ CheerConfig.MaxReportSpanSeconds = 0.5
 -- Coins go only to people who cheered at least this many full-voice seconds into that attempt's bar.
 CheerConfig.HelperSeconds = 2
 
--- The zones' tag (on invisible parts under each rack, StateArenaVenue) and the attribute naming their rack.
+-- The zones' tag (invisible parts, StateArenaVenue), the attribute naming a zone's rack, and the one marking the lifters' zone (the
+-- whole meet area), where each picks which rack's lifter to cheer for (user 2026-11-08: "They can only cheer for one lifter").
 CheerConfig.ZoneTag = "CheerZone"
 CheerConfig.ZoneRackAttribute = "RackIndex"
+CheerConfig.ZoneChoiceAttribute = "CheerChoice"
 
 -- Studio only: a number 0..1 on workspace that stands in for the local player's microphone, because Studio has no voice.
 CheerConfig.StudioLoudnessAttribute = "CheerTestLoudness"

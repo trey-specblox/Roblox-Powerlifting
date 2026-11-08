@@ -6018,6 +6018,9 @@ in their weight class and stay in it. This reopens the ladder points
 > from the server, so nobody can put their own text on a big screen.
 > **A second screen for the benches (user, 2026-11-07):** the big screens face the stands, so each rack also has one on the back of its
 > banner, facing its benches, low enough to watch sitting down. It shows the same card and the same live minigame.
+> **[CHANGED BY THE USER, 2026-11-08]:** "for realism" the lifters' side matches the spectators': the card and live minigame are up
+> high on the back of the gantry's screen. The lower board on the banner's back now shows the rack's **lifting order**: who is up, on
+> deck, in the hole and the next ones, with their weights.
 > **Watching is from your own view, no WATCH button (user, 2026-11-07):** spectators watch the lifter in the world from wherever they
 > stand or sit, seeing the lifter and their game on the arena screens at the same time, and cheer them on in voice chat. Do not add a
 > button or an overlay that puts another lifter's game on the watcher's own screen.
@@ -6026,6 +6029,10 @@ in their weight class and stay in it. This reopens the ladder points
 > - **Where:** State meets and up (Nationals and later, when they exist). Not Local or Regional (user's pick).
 > - **Who cheers:** spectators standing in a rack's **watching zone** in the stands, and other lifters watching **from behind that rack's
 >   coach**. Never the lifter themself. **Voice only (user's pick):** players without voice chat can watch, but cannot fill the bar or earn.
+> - **[CHANGED BY THE USER, 2026-11-08], the zones:** the spot behind the coach was too small. **For lifters the whole meet area is a
+>   cheer zone**, and they **pick which lifter to cheer for** (< and > on the bar) when more than one is up; **one lifter at a time**.
+>   **For spectators each rack's zone in the stands is as wide as its side referees, cut off at the gap** lifters walk out of, so in a
+>   busy meet nobody stands in two racks' zones.
 > - **The cheering bar:** cheering through voice chat in a rack's zones fills that rack's bar; more people cheering fill it faster. When it
 >   maxes out, the lifter's lift gets easier.
 > - **How much easier: a second discount, not a doubled one.** It's based on the lifter's own gear Technique on that lift, like "30% off,

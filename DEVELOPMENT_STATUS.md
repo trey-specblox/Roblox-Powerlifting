@@ -13,7 +13,23 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**ADMIN PANEL: PLAYER STATS PAGE (2026-11-08), COMMITTED, NOT PUSHED** (user: "fully control anyones stats" to playtest with an alt).
+**STATE SCREENS AND CHEER ZONES REDONE (2026-11-08), NOT COMMITTED** (user, after a two-client test: cheer bar and screens work).
+The lifters' live screen is now up on the back of the gantry's screen (invisible holder `RackGantry_BackScreen` on the black
+backing), and the lower board (`LiftingOrderBoard`, was `BenchScreen`) shows the rack's lifting order, 5 rows (UP, ON DECK, IN THE
+HOLE, 4., 5.), filled at each turn by LocalMeetService (`platform.orderBoard`). Cheer zones: `CheerZone_Coach` is gone; the whole
+meet area is `CheerZone_MeetArea` (attribute CheerChoice), where a lifter picks which rack's lifter to cheer for (CHEER_CHOOSE,
+< 2/3 > on the bar; default the lowest rack); the stands zone is 24 studs wide per rack (side referees at 10 plus 2, inside the gap at
+15.5). Studio, one player: zones and screens built, order board one line per lifter, live panel shown on the back screen, no errors.
+NOT tested: switching lifters (needs two racks lifting, 11+ lifters), a spectator in the narrower stands zone.
+
+**ADMIN: START A MEET NOW (2026-11-08), NOT COMMITTED** (user: "automatically start any meet"). MY TOOLS has a button per meet
+(MEET 1-5 with their level, STATE) showing how many signed up, or ON while it runs. It moves that meet's start to now
+(`LocalMeetService.adminStartNow`), so the meet clock starts it as usual: signed-up players are brought there, weigh-in, the minimum
+lifters (live: State needs 2). Refused with too few signed up or while it runs. Studio: refused with 0 signed up and for meet 99;
+after signing up, the State meet started within a second ("started early by the admin panel" in the log); refused again while running.
+NOT tested: a Local meet started this way, the live game.
+
+**ADMIN PANEL: PLAYER STATS PAGE (2026-11-08), COMMITTED AND PUSHED (`2200d68`)** (user: "fully control anyones stats" to playtest with an alt).
 The panel has two pages: MY TOOLS (as before, own account) and PLAYER STATS: pick anyone in the server, type their bodyweight
 (sets the class), ladder points, CN and proven weight per lift, and the five raw technique stats (effective value in brackets);
 QUALIFY FOR STATE, REFILL DAILY (CN and technique allowances, training time) and coins for them. Fields and limits in

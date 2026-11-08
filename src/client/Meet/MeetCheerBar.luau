@@ -8,7 +8,8 @@
 	  - walk into a rack's invisible watching zone while someone is up there and a
 	    bar pops up: "CHEER FOR <NAME>", how full the crowd has got it, and a small
 	    meter of your own microphone. Cheer through voice chat to fill it. Without
-	    voice chat it says so: voice only (user's pick).
+	    voice chat it says so: voice only (user's pick). In the lifters' zone (the
+	    whole meet area) with several lifters up, < and > pick which one to cheer for.
 	  - the lifter, when the crowd fills their bar: a short note, CROWD BONUS.
 	  - a cheerer, when the lift they helped with is good: the coins they earned.
 
@@ -151,6 +152,26 @@ function MeetCheerBar.start()
 	local micTrack = UIStyle.frame(body, "MicTrack", UDim2.new(1, -86, 0, 61), UDim2.fromOffset(68, 12), C.navyDeep)
 	UIStyle.stroke(micTrack, C.white, 1, 0.4)
 	local micFill = UIStyle.frame(micTrack, "MicFill", UDim2.fromScale(0, 0), UDim2.fromScale(0, 1), C.white)
+	-- In the lifters' zone with several lifters up: < 2/3 > picks which one to cheer for.
+	local switcher = Instance.new("Frame")
+	switcher.Name = "Switcher"
+	switcher.BackgroundTransparency = 1
+	switcher.Position = UDim2.new(1, -118, 0, -20)
+	switcher.Size = UDim2.fromOffset(118, 36)
+	switcher.ZIndex = 6
+	switcher.Visible = false
+	switcher.Parent = holder
+	local switchCount = UIStyle.label(switcher, "Count", UDim2.fromOffset(38, 4), UDim2.fromOffset(42, 28), C.white, UIStyle.heading(),
+		Enum.TextXAlignment.Center)
+	switchCount.ZIndex = 6
+	for index, step in ipairs({ -1, 1 }) do
+		local button = UIStyle.button(switcher, if step < 0 then "Previous" else "Next", if step < 0 then "<" else ">",
+			UDim2.fromOffset(if index == 1 then 0 else 82, 0), UDim2.fromOffset(36, 36), "outline", function()
+				set.cheerChoose:FireServer(step)
+			end)
+		button.ZIndex = 6
+		button.BackgroundColor3 = C.ink
+	end
 
 	-- The note at the top: the lifter's bonus, or a cheerer's coins.
 	local noteHolder, noteBody = UIStyle.panel(gui, "CheerNote", NOTE_AT, UDim2.fromOffset(400, 64))
@@ -227,6 +248,8 @@ function MeetCheerBar.start()
 		hint.TextColor3 = if canCheer or view.full or view.result then C.white else C.muted
 		micLabel.Visible = canCheer and view.result == nil
 		micTrack.Visible = canCheer and view.result == nil
+		switcher.Visible = view.choices ~= nil
+		switchCount.Text = if view.choices then string.format("%d/%d", view.choice or 1, view.choices) else ""
 		setShown(true)
 	end
 

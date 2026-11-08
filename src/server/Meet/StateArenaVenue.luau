@@ -41,8 +41,9 @@
 	(user 2026-11-06): between meets only the sign-up desk and weigh-in booths stand
 	there; a meet's racks, banners, benches, barricades and warm-up racks exist only
 	while it runs, so they cost nothing the rest of the time. A rack adds its staff
-	(about 8 figures), a banner, a screen (its live minigame: MeetLiveScreens), up to
-	3 benches and a spotlight.
+	(about 8 figures), a banner, a screen on both sides of its gantry (its live minigame:
+	MeetLiveScreens), a lifting order board for its benches, up to 3 benches and a
+	spotlight.
 ]]
 
 local CollectionService = game:GetService("CollectionService")
@@ -129,19 +130,22 @@ local COACH_WAY_FRONT_Z = 16
 -- Going round the lifter at the chalk stand, on the way to behind them.
 local COACH_ROUND_FROM_RACK = 3
 local COACH_ROUND_Z = 32
--- The screen for the lifters on the benches (user 2026-11-07), on the back of the banner: MeetBoard at this scale, its middle this high,
--- about 20 degrees above a seated lifter's eyes. The big one up on the gantry is too steep from there.
+-- The lifting order board for the lifters on the benches (user 2026-11-08; it showed the live minigame until then), on the back of the
+-- banner: MeetBoard at this scale, its middle this high. The live minigame is up on the back of the gantry's screen, as on the front.
 local BENCH_SCREEN_SCALE = 0.6
 local BENCH_SCREEN_Y = 9.5
+-- The back screen sits on the black backing behind the gantry's screen: this far behind the screen's middle (build_state_arena_01.py:
+-- the screen at -0.9, the backing's back face at -0.3).
+local BACK_SCREEN_BEHIND = 0.62
+-- The lifting order board is laid out for this many rows (LocalMeetService fills at most this many).
+local ORDER_BOARD_ROWS = 5
 local CALLER_Z = 29.5
--- Each rack's invisible cheering zones (GAME_DESIGN §36.4, user 2026-11-08; MeetCheering). The spectators' one: the stands in front
--- of the rack, from the barricade out to the outer wall and this high, as wide as the rack's share of the row (the end racks reach a
--- whole rack spacing past their middle). The lifters' one: behind the rack's coach where they watch, this wide, deep and high,
--- starting just behind the coach.
+-- The invisible cheering zones (GAME_DESIGN §36.4, user 2026-11-08; MeetCheering). The spectators': for each rack, the stands in
+-- front of it from the barricade out to the outer wall and this high, as wide as its side referees (their chairs, 10 studs from the
+-- middle, and a body more) and never past the gap a lifter walks out of, so nobody stands in two racks' zones. The lifters': the
+-- whole meet area, where each picks the lifter they cheer for.
 local STANDS_ZONE_TOP = 70
-local COACH_ZONE_WIDTH = 8
-local COACH_ZONE_DEPTH = 6
-local COACH_ZONE_HEIGHT = 12
+local STANDS_ZONE_HALF_WIDTH = math.min(10 + 2, LIFTER_LINE_FROM_RACK)
 local CALLER_ASIDE = 9
 local BENCH_Z = 34
 local BENCH_LENGTH = 10
@@ -550,20 +554,55 @@ function StateArenaVenue.build(): (Venue?, string?)
 		local displayPart = screen or BuildParts.placed(rack, "RackScreen", Vector3.new(20, 9, 0.3),
 			frame * CFrame.new(x, 24, GANTRY_BEHIND), looks.Gadget)
 		local display = LifterDisplay.build(displayPart, frame:VectorToWorldSpace(-Vector3.zAxis), index, MeetConfig.LiftOrder)
-		-- The same again on the back of the banner, for the lifters waiting on the benches.
+		local towardBenches = frame:VectorToWorldSpace(Vector3.zAxis)
+		-- The same up on the back of the gantry's screen, for the lifters behind it (user 2026-11-08: "on top as well"). An invisible
+		-- holder on the black backing carries it: nothing new to see but the screen.
+		if screen then
+			local back = Instance.new("Part")
+			back.Name = "RackGantry_BackScreen"
+			back.Anchored = true
+			back.CanCollide = false
+			back.CanTouch = false
+			back.CanQuery = false
+			back.CastShadow = false
+			back.Transparency = 1
+			back.Size = Vector3.new(screen.Size.X, screen.Size.Y, 0.05)
+			local at = screen.Position + towardBenches * BACK_SCREEN_BEHIND
+			back.CFrame = CFrame.lookAt(at, at + towardBenches)
+			back.Parent = rack
+			display = LifterDisplay.together(display, LifterDisplay.build(back, towardBenches, index, MeetConfig.LiftOrder, true))
+		end
+		-- Lower down on the back of the banner, facing the benches: the rack's lifting order (who is up, on deck, in the hole, ...).
 		local cloth = banner and banner:FindFirstChild("GantryBanner_Cloth", true)
-		local benchBoard = RoomProps.propCopy("MeetBoard", 1)
-		local benchScreen = benchBoard and benchBoard:FindFirstChild("MeetBoard_Screen", true)
-		if cloth and cloth:IsA("BasePart") and benchBoard and benchScreen and benchScreen:IsA("BasePart") then
-			local towardBenches = frame:VectorToWorldSpace(Vector3.zAxis)
-			benchBoard.Name = "BenchScreen"
-			benchBoard:ScaleTo(BENCH_SCREEN_SCALE)
-			MockMeetArena.hangOnWall(benchBoard, benchScreen, cloth.Position + towardBenches * (cloth.Size.Z / 2 + 0.02), towardBenches,
+		local orderBoard = RoomProps.propCopy("MeetBoard", 1)
+		local orderScreen = orderBoard and orderBoard:FindFirstChild("MeetBoard_Screen", true)
+		local showOrder: ((heading: string, lines: { string }) -> ())? = nil
+		if cloth and cloth:IsA("BasePart") and orderBoard and orderScreen and orderScreen:IsA("BasePart") then
+			orderBoard.Name = "LiftingOrderBoard"
+			orderBoard:ScaleTo(BENCH_SCREEN_SCALE)
+			MockMeetArena.hangOnWall(orderBoard, orderScreen, cloth.Position + towardBenches * (cloth.Size.Z / 2 + 0.02), towardBenches,
 				frame * Vector3.new(x, BENCH_SCREEN_Y, GANTRY_BEHIND))
-			benchBoard.Parent = rack
-			display = LifterDisplay.together(display, LifterDisplay.build(benchScreen, towardBenches, index, MeetConfig.LiftOrder, true))
-		elseif benchBoard then
-			benchBoard:Destroy()
+			orderBoard.Parent = rack
+			local written = StyledScreen.build(orderScreen, StyledScreen.faceToward(orderScreen, towardBenches), "LIFTING ORDER",
+				{ "WAITING FOR THE ROUND" }, "chevron")
+			showOrder = function(heading: string, lines: { string })
+				written.setTag(heading)
+				-- Always ORDER_BOARD_ROWS rows, so a short list keeps each name on one line; empty rows show no marker.
+				local rows = table.clone(lines)
+				while #rows < ORDER_BOARD_ROWS do
+					table.insert(rows, "")
+				end
+				written.setLines(rows)
+				local holder = written.gui:FindFirstChild("Lines", true)
+				for row, line in ipairs(rows) do
+					local marker = holder and holder:FindFirstChild("Marker_" .. row)
+					if line == "" and marker and marker:IsA("GuiObject") then
+						marker.Visible = false
+					end
+				end
+			end
+		elseif orderBoard then
+			orderBoard:Destroy()
 		end
 		place(rack, "JudgesTable", CFrame.new(x, 0, -JUDGES_IN_FRONT) * CFrame.Angles(0, math.pi, 0), "Judges")
 		local spotlight = Instance.new("SpotLight")
@@ -607,18 +646,9 @@ function StateArenaVenue.build(): (Venue?, string?)
 			CollectionService:AddTag(zone, CheerConfig.ZoneTag)
 			zone.Parent = rack
 		end
-		local spacing = StateArenaConfig.RackSpacingStuds
-		-- (Rack 1 is at the +X end of the row, the last rack at the -X end.)
-		local standsLeft = x - (if index == count then spacing else spacing / 2)
-		local standsRight = x + (if index == 1 then spacing else spacing / 2)
 		local standsNear, standsFar = MEET_FRONT_Z - 0.5, -WALL_R0
-		cheerZone("CheerZone_Stands", frame * CFrame.new((standsLeft + standsRight) / 2, STANDS_ZONE_TOP / 2 - 2, (standsNear + standsFar) / 2),
-			Vector3.new(standsRight - standsLeft, STANDS_ZONE_TOP + 4, standsNear - standsFar))
-		local coachAt = Vector3.new(x + side * COACH_WATCH_FROM_RACK, 0, COACH_WATCH_Z)
-		local away = (coachAt - Vector3.new(x, 0, LIFT_SPOT_BEHIND)).Unit
-		local zoneMiddle = coachAt + away * (0.5 + COACH_ZONE_DEPTH / 2) + Vector3.new(0, COACH_ZONE_HEIGHT / 2 - 1, 0)
-		cheerZone("CheerZone_Coach", frame * CFrame.lookAt(zoneMiddle, zoneMiddle + away),
-			Vector3.new(COACH_ZONE_WIDTH, COACH_ZONE_HEIGHT, COACH_ZONE_DEPTH))
+		cheerZone("CheerZone_Stands", frame * CFrame.new(x, STANDS_ZONE_TOP / 2 - 2, (standsNear + standsFar) / 2),
+			Vector3.new(2 * STANDS_ZONE_HALF_WIDTH, STANDS_ZONE_TOP + 4, standsNear - standsFar))
 		-- The benches behind the stand and real seats on them, enough for this rack's lifters: a lifter gets up by jumping.
 		local seats: { Seat } = {}
 		local benches = math.clamp(math.ceil(perRack / SEATS_PER_BENCH), 1, 3)
@@ -691,6 +721,7 @@ function StateArenaVenue.build(): (Venue?, string?)
 			seats = seats,
 			callerLine = callerLine,
 			caller = if caller and caller:IsA("Model") then caller else nil,
+			orderBoard = showOrder,
 		})
 		return nil
 	end
@@ -705,6 +736,23 @@ function StateArenaVenue.build(): (Venue?, string?)
 			if problem then
 				return problem
 			end
+		end
+		-- The lifters' cheering zone (§36.4): the whole meet area, where each picks which lifter to cheer for.
+		if racks > 0 then
+			local area = Instance.new("Part")
+			area.Name = "CheerZone_MeetArea"
+			area.Anchored = true
+			area.CanCollide = false
+			area.CanTouch = false
+			area.CanQuery = false
+			area.CastShadow = false
+			area.Transparency = 1
+			local far = FLOOR_WALL_R
+			area.Size = Vector3.new(2 * MEET_SIDE_X, WALK_Y, far - MEET_FRONT_Z)
+			area.CFrame = frame * CFrame.new(0, WALK_Y / 2 - 1, (MEET_FRONT_Z + far) / 2)
+			area:SetAttribute(CheerConfig.ZoneChoiceAttribute, true)
+			CollectionService:AddTag(area, CheerConfig.ZoneTag)
+			area.Parent = floor
 		end
 		return nil
 	end

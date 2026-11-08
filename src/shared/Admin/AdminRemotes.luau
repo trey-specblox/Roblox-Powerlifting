@@ -17,6 +17,7 @@
 			On any player in the server (PLAYER STATS, value = { userId = ..., ... }): "SetStat" with
 			`id` (an AdminConfig.StatFields id) and `value` (a number the server clamps), "QualifyState",
 			"RefillDaily", and "GiveCoinsTo" with `id` (a coin button id). Coins are never an amount.
+			"StartMeet" with a meet's number (AdminView.meets) starts it now, with whoever signed up.
 ]]
 
 local AdminRemotes = {}
@@ -35,6 +36,8 @@ export type AdminView = {
 	players: { { userId: number, name: string } },
 	-- The chosen player's stats; nil when they have left or their save hasn't loaded.
 	target: TargetView?,
+	-- Every meet, for START A MEET NOW: its number, name, how many signed up, whether it runs now.
+	meets: { { index: number, label: string, signedUp: number, running: boolean } },
 }
 
 -- One player's stats on the PLAYER STATS page. `values` by AdminConfig.StatFields id; `effective` the technique stats

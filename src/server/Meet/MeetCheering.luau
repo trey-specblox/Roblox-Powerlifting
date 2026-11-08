@@ -4,10 +4,11 @@
 	Server / Meet
 
 	Cheering at the big meets (GAME_DESIGN.md §36.4 "Cheering", user 2026-11-08;
-	numbers in CheerConfig). Each rack has invisible watching zones (StateArenaVenue):
-	one in the stands in front of it for spectators, one behind its coach for other
-	lifters. While a lifter is up on that rack, anyone standing in its zones sees a
-	bar, "CHEER FOR <name>", and cheering through voice chat fills it. When it is full
+	numbers in CheerConfig). Invisible zones (StateArenaVenue): each rack has one in the
+	stands in front of it for spectators, and the whole meet area is the lifters' zone,
+	where each picks which rack's lifter to cheer for (one at a time). While a lifter is
+	up, anyone cheering for them sees a bar, "CHEER FOR <name>", and cheering through
+	voice chat fills it. When it is full
 	the rest of the lift is easier (a second discount on the lifter's own gear
 	Technique, CheerConfig.bonusFor), and if the lift is good everyone who helped gets
 	the lift's GL points in coins.
@@ -71,6 +72,8 @@ local byLifter: { [Player]: Turn } = {}
 -- The turn whose zone each player stood in at the last tick.
 local standingIn: { [Player]: Turn } = {}
 local lastReportAt: { [Player]: number } = {}
+-- In the lifters' zone: the rack each player picked to cheer for.
+local pickedRack: { [Player]: number } = {}
 -- Whether each player has voice chat (nil: not known yet).
 local voiceOf: { [Player]: boolean } = {}
 local checkingVoice: { [Player]: boolean } = {}
@@ -108,13 +111,16 @@ local function hasVoice(player: Player): boolean
 	return false
 end
 
--- The rack whose zone holds this point, or nil.
-local function rackAt(point: Vector3): number?
+-- The rack whose zone holds this point (nil for none), or true for the lifters' zone, where each picks.
+local function zoneAt(point: Vector3): (number | boolean)?
 	for _, zone in ipairs(CollectionService:GetTagged(CheerConfig.ZoneTag)) do
 		if zone:IsA("BasePart") and zone:IsDescendantOf(workspace) then
 			local seen = zone.CFrame:PointToObjectSpace(point)
 			local half = zone.Size / 2
 			if math.abs(seen.X) <= half.X and math.abs(seen.Y) <= half.Y and math.abs(seen.Z) <= half.Z then
+				if zone:GetAttribute(CheerConfig.ZoneChoiceAttribute) == true then
+					return true
+				end
 				local rack = zone:GetAttribute(CheerConfig.ZoneRackAttribute)
 				if typeof(rack) == "number" then
 					return rack
@@ -123,6 +129,35 @@ local function rackAt(point: Vector3): number?
 		end
 	end
 	return nil
+end
+
+-- The lifters up now that `player` could cheer for, by rack: never their own turn.
+local function choicesFor(player: Player): { Turn }
+	local list: { Turn } = {}
+	if byLifter[player] then
+		return list
+	end
+	for _, turn in pairs(turns) do
+		table.insert(list, turn)
+	end
+	table.sort(list, function(a, b)
+		return a.rack < b.rack
+	end)
+	return list
+end
+
+-- In the lifters' zone: the lifter `player` cheers for (their pick if still up, else the first), its place and how many there are.
+local function pickedTurn(player: Player): (Turn?, number, number)
+	local list = choicesFor(player)
+	for index, turn in ipairs(list) do
+		if turn.rack == pickedRack[player] then
+			return turn, index, #list
+		end
+	end
+	if list[1] then
+		pickedRack[player] = list[1].rack
+	end
+	return list[1], 1, #list
 end
 
 -- The lifter's own gear Technique on this lift, as their lift's modifiers count it (GearStats.producer).
@@ -166,8 +201,14 @@ local function tick(dt: number)
 	for _, player in ipairs(Players:GetPlayers()) do
 		local character = player.Character
 		local root = character and character:FindFirstChild("HumanoidRootPart")
-		local rack = if root and root:IsA("BasePart") then rackAt(root.Position) else nil
-		local turn = if rack then turns[rack] else nil
+		local zone = if root and root:IsA("BasePart") then zoneAt(root.Position) else nil
+		local turn: Turn? = nil
+		local choice, choices = 0, 0
+		if zone == true then
+			turn, choice, choices = pickedTurn(player)
+		elseif typeof(zone) == "number" then
+			turn = turns[zone]
+		end
 		if turn and turn.lifter == player then
 			turn = nil
 		end
@@ -178,9 +219,10 @@ local function tick(dt: number)
 			local voice = hasVoice(player)
 			-- (The fill in steps of 2%, rounded down so it only shows full when it is, and a slowly draining bar doesn't send every tick.)
 			local fill = if turn.full then 1 else math.floor(turn.fill * 50) / 50
-			view = { role = "cheer", name = turn.name, fill = fill, full = turn.full, voice = voice, result = turn.verdict }
-			key = string.format("cheer|%d|%s|%.2f|%s|%s|%s", turn.rack, turn.name, fill, tostring(turn.full), tostring(voice),
-				turn.verdict or "")
+			view = { role = "cheer", name = turn.name, fill = fill, full = turn.full, voice = voice, result = turn.verdict,
+				choice = if choices > 1 then choice else nil, choices = if choices > 1 then choices else nil }
+			key = string.format("cheer|%d|%s|%.2f|%s|%s|%s|%d/%d", turn.rack, turn.name, fill, tostring(turn.full), tostring(voice),
+				turn.verdict or "", choice, choices)
 		end
 		if lastSent[player] ~= key then
 			lastSent[player] = key
@@ -211,6 +253,19 @@ local function onReport(player: Player, loudness: unknown)
 	end
 	turn.pending[player] = (turn.pending[player] or 0) + seconds
 	turn.helped[player] = (turn.helped[player] or 0) + seconds
+end
+
+-- In the lifters' zone: cheer for the next (+1) or previous (-1) lifter up. Takes effect at the next tick.
+local function onChoose(player: Player, step: unknown)
+	if typeof(step) ~= "number" or (step ~= 1 and step ~= -1) then
+		return
+	end
+	local list = choicesFor(player)
+	if #list < 2 then
+		return
+	end
+	local _, index = pickedTurn(player)
+	pickedRack[player] = list[(index - 1 + (step :: number)) % #list + 1].rack
 end
 
 --[[
@@ -306,10 +361,12 @@ function MeetCheering.start(set: LocalMeetRemotes.RemoteSet)
 	end
 	remotes = set
 	set.cheerReport.OnServerEvent:Connect(onReport)
+	set.cheerChoose.OnServerEvent:Connect(onChoose)
 	LiftAttemptService.setPhaseBoost(SOURCE_NAME, boostFor)
 	Players.PlayerRemoving:Connect(function(player)
 		MeetCheering.closeTurn(player)
 		standingIn[player], lastReportAt[player], voiceOf[player], checkingVoice[player], lastSent[player] = nil, nil, nil, nil, nil
+		pickedRack[player] = nil
 		for _, turn in pairs(turns) do
 			turn.pending[player], turn.helped[player] = nil, nil
 		end

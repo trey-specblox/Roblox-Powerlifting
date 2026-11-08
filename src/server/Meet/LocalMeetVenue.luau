@@ -224,6 +224,8 @@ export type Platform = {
 	seats: { Seat }?,
 	callerLine: TextLabel?,
 	caller: Model?,
+	-- The State meet's lifting order board behind the rack (heading, then one line per lifter coming up), when it has one.
+	orderBoard: ((heading: string, lines: { string }) -> ())?,
 }
 
 export type Venue = {

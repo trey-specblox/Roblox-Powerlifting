@@ -2071,6 +2071,9 @@ local function callerSays(platform: LocalMeetVenue.Platform, line: string?, alou
 end
 
 -- One round: everyone chooses, everyone lifts, the lights show. `group`: only these lifters (a State rack, running beside the others).
+-- The State meet's lifting order board shows at most this many lifters.
+local ORDER_BOARD_LINES = 5
+
 local function runRound(current: Meet, lift: string, attemptNumber: number, group: { Lifter }?)
 	current.heading = string.format("%s  ·  ROUND %d", string.upper(lift), attemptNumber)
 	updateStandings(current)
@@ -2107,6 +2110,10 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 	local turns = current.hall.state
 	if turns and group and group[1] then
 		callerSays(group[1].platform, string.format("%s, ROUND %d. PICK YOUR WEIGHTS!", string.upper(lift), attemptNumber))
+		local board = group[1].platform.orderBoard
+		if board then
+			board(string.format("%s  ·  ROUND %d", string.upper(lift), attemptNumber), { "CHOOSING WEIGHTS..." })
+		end
 	end
 	local function chalkView(lifter: Lifter): MockMeetRemotes.ChalkView
 		local platform = lifter.platform
@@ -2325,6 +2332,20 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				table.insert(spoken, "In the hole, " .. coming[2].name .. ".")
 			end
 			callerSays(platform, table.concat(calls, "\n"), table.concat(spoken, " "))
+			-- The lifting order board behind the rack: this lifter and the next ones, as many as fit.
+			local board = platform.orderBoard
+			if board then
+				local places = { "UP", "ON DECK", "IN THE HOLE" }
+				local lines = { string.format("UP  ·  %s  ·  %s KG", lifter.name, kgText(weightKg)) }
+				for place, upcoming in ipairs(coming) do
+					if #lines >= ORDER_BOARD_LINES then
+						break
+					end
+					table.insert(lines, string.format("%s  ·  %s  ·  %s KG", places[place + 1] or string.format("%d.", place + 1),
+						upcoming.name, kgText(upcoming.chosenKg or 0)))
+				end
+				board(string.format("%s  ·  ROUND %d", string.upper(lift), attemptNumber), lines)
+			end
 			-- Everyone else on the rack hears where they stand, wherever they have got to.
 			for other = 1, #order do
 				local waiting = order[other]
@@ -3346,6 +3367,46 @@ end
 -- How often one player may ask for the meets list, and when each last did.
 local LOBBY_REQUEST_GAP_SECONDS = 0.5
 local lastLobbyRequest: { [Player]: number } = {}
+
+--[[
+	The admin panel's START A MEET NOW (AdminService, user 2026-11-08: "automatically start any
+	meet"). Every meet, for its buttons: its name, how many are signed up, whether it runs now.
+]]
+function LocalMeetService.adminMeets(): { { index: number, label: string, signedUp: number, running: boolean } }
+	local list = {}
+	for _, hall in ipairs(halls) do
+		local label = if hall.state then "STATE"
+			elseif hall.nextLevel ~= "Local" then string.format("MEET %d %s", hall.index, string.upper(hall.nextLevel))
+			else "MEET " .. hall.index
+		table.insert(list, { index = hall.index, label = label, signedUp = #hall.signUps, running = hall.meet ~= nil })
+	end
+	return list
+end
+
+--[[
+	Starts meet `hallIndex` now instead of at its time: its start moves to now, and the meet clock
+	below starts it as at any start (taking its signed-up lifters there, the weigh-in, the minimum
+	number of lifters). Refused while it runs or with too few signed up. Returns whether it starts
+	and what to tell the admin. SERVER-ONLY: AdminService checks the admin list first.
+]]
+function LocalMeetService.adminStartNow(hallIndex: any): (boolean, string)
+	local hall = hallFromClient(hallIndex)
+	if hall == nil then
+		return false, "That isn't a meet."
+	end
+	local name = if hall.state then "The State meet" else "Meet " .. hall.index
+	if hall.meet then
+		return false, name .. " is already running."
+	end
+	local count, needed = #hall.signUps, minimumLifters(hall)
+	if count < needed then
+		return false, string.format("%s needs %d signed up; %d %s. Sign up from MEETS first.", name, needed, count,
+			if count == 1 then "is" else "are")
+	end
+	hall.nextStartAt = now()
+	log("%s started early by the admin panel, %d signed up", name, count)
+	return true, string.format("%s starts now with %d signed up.", name, count)
+end
 
 local function pressAllowed(player: Player): boolean
 	local time = os.clock()

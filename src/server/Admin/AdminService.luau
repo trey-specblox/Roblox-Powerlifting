@@ -14,6 +14,7 @@
 		- the first page changes only the admin's own account. The PLAYER STATS page (user
 		  2026-11-08: "fully control anyones stats", to playtest with an alt) changes any
 		  player in the same server: their stats, State ladder, daily training and coins
+		- START A MEET NOW (user 2026-11-08) starts any meet early, with whoever signed up
 		- every use is in the server's log, with whose save it changed
 
 	To add a tool: a new action in `actions` here, and its buttons in client AdminPanel.
@@ -35,6 +36,7 @@ local PlayerDataService = require(ServerRoot:WaitForChild("PlayerData"):WaitForC
 local ShopService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("ShopService"))
 local GearService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("GearService"))
 local ProfileOperations = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("ProfileOperations"))
+local LocalMeetService = require(ServerRoot:WaitForChild("Meet"):WaitForChild("LocalMeetService"))
 
 local AdminService = {}
 
@@ -111,7 +113,8 @@ local function viewFor(player: Player, targetUserId: any?): AdminRemotes.AdminVi
 	end)
 	local target = if targetUserId == nil then player else playerFor(targetUserId)
 	return { coins = PlayerDataService.getCoins(player) or 0, crateRarity = ShopService.getForcedRarity(player),
-		forcedDrop = GearService.getForcedDrop(player), players = list, target = if target then targetViewFor(target) else nil }
+		forcedDrop = GearService.getForcedDrop(player), players = list, target = if target then targetViewFor(target) else nil,
+		meets = LocalMeetService.adminMeets() }
 end
 
 -- The PLAYER STATS page's target: the player in this server named by `value.userId`, or nil and why not.
@@ -168,6 +171,10 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		end
 		GearService.setForcedDrop(player, suit.id)
 		return true, "Finish a meet with a total to get the " .. suit.name .. "."
+	end,
+	-- Starts meet `value` (its number, the State meet last) now, with whoever has signed up.
+	StartMeet = function(_player: Player, value: any): (boolean, string)
+		return LocalMeetService.adminStartNow(value)
 	end,
 	-- PLAYER STATS: one typed stat for any player here.
 	SetStat = function(_player: Player, value: any): (boolean, string)

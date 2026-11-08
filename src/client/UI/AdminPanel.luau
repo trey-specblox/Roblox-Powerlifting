@@ -14,6 +14,7 @@
 			CRATES GIVE     NORMAL ODDS, or one rarity every time
 			GIVE A SUIT     each rare suit (no server-wide news)
 			NEXT MEET DROPS the normal chance, or a chosen suit: a real drop at your next meet with a total
+			START A MEET NOW each meet: starts it now with whoever signed up (user 2026-11-08)
 		PLAYER STATS page (user 2026-11-08: "fully control anyones stats"), any player in the server:
 			< NAME >        pick the player
 			a box per stat  (AdminConfig.StatFields) showing their value now: type a new one and press
@@ -39,7 +40,7 @@ local SIZES = UIStyle.TextSizes
 
 local AdminPanel = {}
 
-local PANEL_WIDTH, PANEL_HEIGHT = 640, 650
+local PANEL_WIDTH, PANEL_HEIGHT = 640, 760
 local MARGIN = 24
 local GAP = 10
 local BUTTON_HEIGHT = 50
@@ -126,6 +127,10 @@ function AdminPanel.start()
 	local statsPage = page("StatsPage")
 
 	local rarityButtons: { [string]: TextButton } = {}
+	-- START A MEET NOW: each meet's button, by its number, made when the meets list first arrives (a server just started may
+	-- not have built its meets yet when the panel first asks).
+	local meetButtons: { [number]: TextButton } = {}
+	local makeMeetButtons: (meets: { { index: number, label: string, signedUp: number, running: boolean } }) -> ()
 	local dropButtons: { [string]: TextButton } = {}
 	local pageButtons: { [string]: TextButton } = {}
 	local NORMAL = "Normal"
@@ -184,6 +189,15 @@ function AdminPanel.start()
 		coinsText.Text = string.format("%s %s", CoinConfig.format(view.coins), CoinConfig.Name)
 		highlight(rarityButtons, view.crateRarity or NORMAL)
 		highlight(dropButtons, view.forcedDrop or NORMAL)
+		if next(meetButtons) == nil then
+			makeMeetButtons(view.meets or {})
+		end
+		for _, meet in ipairs(view.meets or {}) do
+			local button = meetButtons[meet.index]
+			if button then
+				button.Text = if meet.running then meet.label .. ": ON" else string.format("%s (%d)", meet.label, meet.signedUp)
+			end
+		end
 		applyTarget(view)
 	end
 
@@ -289,6 +303,20 @@ function AdminPanel.start()
 		dropButtons[drop.id] = UIStyle.button(toolsPage, "Drop_" .. drop.id, drop.text, position, size, "outline", function()
 			ask("ForceDrop", if drop.id == NORMAL then nil else drop.id)
 		end)
+	end
+
+	local meetsTitle = UIStyle.text(toolsPage, "MeetsTitle", UDim2.fromOffset(MARGIN, 548), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
+	meetsTitle.Text = "START A MEET NOW  (SIGNED UP)"
+	makeMeetButtons = function(meets)
+		for index, meet in ipairs(meets) do
+			-- Three to a row.
+			local column = (index - 1) % 3 + 1
+			local row = math.floor((index - 1) / 3)
+			local position, size = cell(column, 3, 578 + row * (BUTTON_HEIGHT + GAP))
+			meetButtons[meet.index] = UIStyle.button(toolsPage, "StartMeet_" .. meet.index, meet.label, position, size, "outline", function()
+				ask("StartMeet", meet.index)
+			end)
+		end
 	end
 
 	-- ------------------------------------------------------------ PLAYER STATS
