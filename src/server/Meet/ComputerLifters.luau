@@ -34,14 +34,31 @@ local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local AttemptRules = require(MeetFolder:WaitForChild("AttemptRules"))
 local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
+local MeetWalkPath = require(MeetFolder:WaitForChild("MeetWalkPath"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 
 local ComputerLifters = {}
 
 local CONFIG = LocalMeetConfig.ComputerLifters
 local FOLDER_NAME = "LocalMeetComputerLifters"
--- How much of the way to its new heading a walking body turns each frame (smooth turns at the corners).
-local TURN_RATE = 0.18
+
+-- How a walk looks (walkBody): a walk style over the last `styleStuds` (all of it when nil) at the `speed` it is made
+-- for, and a short upper-body move on top (`touchAnimationId`, `touchSeconds` long), timed to end as the walk does;
+-- `onTouch` is called as it starts (its sounds).
+export type WalkOptions = {
+	animationId: string?,
+	speed: number?,
+	styleStuds: number?,
+	touchAnimationId: string?,
+	touchSeconds: number?,
+	onTouch: (() -> ())?,
+}
+
+-- The walks under way. Mid-walk the server leaves the body where it started and each client draws the walk
+-- (MeetWalkPath, MeetWalkView); `from` is where the server's body stands, to tell whether anything else has moved it.
+type Walk = { path: MeetWalkPath.Path, startAt: number, from: CFrame }
+local walks: { [Model]: Walk } = {}
+local walkRemote: RemoteEvent? = nil
 
 -- What a computer lifter brings to the weigh-in.
 export type Plan = {
@@ -219,10 +236,52 @@ function ComputerLifters.spawnBody(plan: Plan, spot: CFrame, random: Random): Mo
 	return model
 end
 
--- Stands a computer lifter's body at `spot` (a floor point facing its way).
+-- Stands a computer lifter's body at `spot` (a floor point facing its way), ending any walk it was on.
 function ComputerLifters.moveBody(body: Model?, spot: CFrame)
 	if body and body.Parent then
+		if walks[body] then
+			walks[body] = nil
+			if walkRemote then
+				walkRemote:FireAllClients(body, nil)
+			end
+		end
 		body:PivotTo(spot * CFrame.new(0, standingHeight(body), 0))
+	end
+end
+
+-- The remote clients draw walks from (LocalMeetRemotes.WALK), set once by LocalMeetService.
+function ComputerLifters.setWalkRemote(remote: RemoteEvent)
+	walkRemote = remote
+end
+
+local function serverNow(): number
+	return Workspace:GetServerTimeNow()
+end
+
+-- Where a body really is: mid-walk the server's body still stands where the walk started, so it is worked out.
+function ComputerLifters.positionOf(body: Model): CFrame
+	local walk = walks[body]
+	if walk then
+		return (MeetWalkPath.at(walk.path, serverNow() - walk.startAt))
+	end
+	return body:GetPivot()
+end
+
+--[[
+	Ends `body`'s walk (clients stop drawing it) and puts the server's body where it has got to, or at `arrivedAt`;
+	unless something else has moved it since the walk started (a teleport), which then stands.
+]]
+local function endWalk(body: Model, arrivedAt: CFrame?)
+	local walk = walks[body]
+	if walk == nil then
+		return
+	end
+	walks[body] = nil
+	if walkRemote then
+		walkRemote:FireAllClients(body, nil)
+	end
+	if body.Parent and body:GetPivot().Position:FuzzyEq(walk.from.Position, 1e-3) then
+		body:PivotTo(arrivedAt or (MeetWalkPath.at(walk.path, serverNow() - walk.startAt)))
 	end
 end
 
@@ -247,14 +306,14 @@ function loadTrack(body: Model, id: string): AnimationTrack?
 end
 
 -- Plays the walk on a computer lifter's body while it moves (Roblox's own R15 walk; nil without an animator).
-local function playWalk(body: Model, animationId: string?): AnimationTrack?
+local function playWalk(body: Model, animationId: string?, fade: number?): AnimationTrack?
 	local track = loadTrack(body, animationId or CONFIG.WalkAnimationId)
 	if track == nil then
 		return nil
 	end
 	track.Priority = Enum.AnimationPriority.Movement
 	track.Looped = true
-	track:Play(0.1)
+	track:Play(fade or 0.2)
 	return track
 end
 
@@ -283,60 +342,100 @@ function ComputerLifters.cheer(body: Model?, seconds: number?): AnimationTrack?
 end
 
 --[[
-	Walks a computer lifter's body along `points` (floor points) to `final`,
-	facing the way it goes, at CONFIG.WalkSpeed (GAME_DESIGN §37.5: the walk
-	out to the platform and back). Yields until it arrives, or stops where it
-	is when `stillGoing()` turns false.
+	Walks a body (a computer lifter's, a coach's or a player's character with its root anchored) along `points` (floor
+	points) to `final` (GAME_DESIGN §37.5: the walk out to the platform and back), as one fluid walk (user 2026-11-01)
+	that eases in and out (MeetWalkPath). Yields until it arrives, or stops where it has got to when `stillGoing()`
+	turns false. `options` (§36.4): an entrance's walk style over the last stretch, and a short move on top.
+
+	Each client draws the walk every frame (MeetWalkView, user 2026-11-08: "not smooth"); the server sends it once and
+	plays the animations, and only puts its own body down where the walk ends.
 ]]
-function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFrame, stillGoing: () -> boolean, walkAnimationId: string?)
+function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFrame, stillGoing: () -> boolean,
+	options: WalkOptions?)
 	if not body or not body.Parent then
 		return
 	end
-	local track = playWalk(body, walkAnimationId)
+	local style = options or {}
+	-- A walk under way ends where it has got to, and this one starts there.
+	endWalk(body)
 	local height = standingHeight(body)
-	-- The whole route as one line, walked at a steady pace without stopping at the corners (user 2026-11-01:
-	-- "one fluid walk"); the body turns smoothly toward where it is heading.
-	local route = { body:GetPivot().Position - Vector3.new(0, height, 0) }
-	for _, point in ipairs(points) do
-		table.insert(route, point)
+	local pivot = body:GetPivot()
+	local styleId = style.animationId
+	local styleSpeed = if styleId then style.speed or CONFIG.WalkSpeed else nil
+	local spec: MeetWalkPath.Spec = {
+		from = pivot.Position - Vector3.new(0, height, 0),
+		look = pivot.LookVector,
+		points = points,
+		final = final,
+		height = height,
+		usualSpeed = CONFIG.WalkSpeed,
+		styleSpeed = styleSpeed,
+		styleStuds = if styleId then style.styleStuds or math.huge else nil,
+	}
+	local path = MeetWalkPath.new(spec)
+	local walk: Walk = { path = path, startAt = serverNow(), from = pivot }
+	walks[body] = walk
+	if walkRemote then
+		walkRemote:FireAllClients(body, MeetWalkPath.toData(spec), walk.startAt)
 	end
-	table.insert(route, final.Position)
-	local facing = body:GetPivot().LookVector
-	local segment, along = 1, 0
-	local arrived = true
-	while segment < #route do
-		if not stillGoing() or not body.Parent then
-			arrived = false
+
+	local styled = styleId ~= nil and path.styleFrom <= 0
+	local track = playWalk(body, if styled then styleId else nil)
+	-- The speed the playing walk is made for: its steps keep pace with the body as it speeds up and slows down.
+	local madeFor = if styled then styleSpeed or CONFIG.WalkSpeed else CONFIG.WalkSpeed
+	local rate = -1
+	local touch: AnimationTrack? = nil
+	local arrived = false
+	while true do
+		task.wait()
+		if walks[body] ~= walk then
+			-- A newer walk, or a move, ended this one.
 			break
 		end
-		along += CONFIG.WalkSpeed * task.wait()
-		local from, to = route[segment], route[segment + 1]
-		local length = (to - from).Magnitude
-		while along >= length and segment < #route do
-			along -= length
-			segment += 1
-			if segment < #route then
-				from, to = route[segment], route[segment + 1]
-				length = (to - from).Magnitude
+		if not stillGoing() or not body.Parent then
+			endWalk(body)
+			break
+		end
+		local t = serverNow() - walk.startAt
+		if t >= path.duration then
+			arrived = true
+			break
+		end
+		local along, speed = MeetWalkPath.progress(path, t)
+		if not styled and styleId and along >= path.styleFrom then
+			styled = true
+			if track then
+				track:Stop(0.4)
+			end
+			track = playWalk(body, styleId, 0.4)
+			madeFor = styleSpeed or CONFIG.WalkSpeed
+			rate = -1
+		end
+		if touch == nil and style.touchAnimationId and path.duration - t <= (style.touchSeconds or 0) then
+			touch = loadTrack(body, style.touchAnimationId)
+			if touch then
+				touch.Priority = Enum.AnimationPriority.Action
+				touch.Looped = false
+				touch:Play(0.2)
+			end
+			if style.onTouch then
+				task.spawn(style.onTouch)
 			end
 		end
-		if segment >= #route then
-			break
+		local wanted = math.clamp(speed / madeFor, 0.35, 1.25)
+		if track and math.abs(wanted - rate) > 0.08 then
+			track:AdjustSpeed(wanted)
+			rate = wanted
 		end
-		local at = if length > 1e-3 then from:Lerp(to, along / length) else to
-		local flat = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
-		if flat.Magnitude > 0.05 then
-			-- (A straight about-turn would blend to nothing: then face the new way at once.)
-			local blended = facing:Lerp(flat.Unit, TURN_RATE)
-			facing = if blended.Magnitude > 1e-3 then blended.Unit else flat.Unit
-		end
-		body:PivotTo(CFrame.lookAt(at, at + facing) + Vector3.new(0, height, 0))
 	end
 	if track then
-		track:Stop(0.2)
+		track:Stop(0.25)
+	end
+	if touch then
+		touch:Stop(0.3)
 	end
 	if arrived then
-		ComputerLifters.moveBody(body, final)
+		endWalk(body, final * CFrame.new(0, height, 0))
 	end
 end
 

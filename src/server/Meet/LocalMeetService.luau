@@ -103,6 +103,7 @@ local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig")
 local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
 local CheerConfig = require(ConfigFolder:WaitForChild("CheerConfig"))
+local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
@@ -121,6 +122,7 @@ local Trophies = require(script.Parent:WaitForChild("Trophies"))
 local ComputerLifters = require(script.Parent:WaitForChild("ComputerLifters"))
 local MeetLiftAnimation = require(script.Parent:WaitForChild("MeetLiftAnimation"))
 local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
+local MeetEntrance = require(script.Parent:WaitForChild("MeetEntrance"))
 local MeetLiveScreens = require(script.Parent:WaitForChild("MeetLiveScreens"))
 local MeetCheering = require(script.Parent:WaitForChild("MeetCheering"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
@@ -213,6 +215,10 @@ type Lifter = {
 	lastKg: number?,
 	-- On the walk out to the platform or back (GAME_DESIGN §37.5); a new walk bumps the token and ends the old one.
 	walking: boolean?,
+	-- A computer lifter's walk style for this meet (EntranceConfig id, picked at random); a player's is read from their save.
+	entranceId: string?,
+	-- How long their walk out may take this turn (their walk style's speed, plus the hype move): the lift waits this long.
+	walkOutSeconds: number?,
 	walkToken: number?,
 	-- The lift being animated on the platform (MeetLiftAnimation, §37.5).
 	liftAnim: MeetLiftAnimation.Handle?,
@@ -982,7 +988,7 @@ local PROGRESS_MIN_GAP_SECONDS = 0.05
 	`lifter.walking` is true on the way; a newer walk ends this one.
 ]]
 local function walkLifter(lifter: Lifter, points: { Vector3 }, final: CFrame, anchoredAtEnd: boolean,
-	onArrive: (() -> ())?, animationId: string?)
+	onArrive: (() -> ())?, options: ComputerLifters.WalkOptions?)
 	local token = (lifter.walkToken or 0) + 1
 	lifter.walkToken = token
 	lifter.walking = true
@@ -995,13 +1001,13 @@ local function walkLifter(lifter: Lifter, points: { Vector3 }, final: CFrame, an
 			local body = bodyOf(player)
 			if body and body.humanoid.Health > 0 then
 				body.root.Anchored = true
-				ComputerLifters.walkBody(body.character, points, final, current, animationId)
+				ComputerLifters.walkBody(body.character, points, final, current, options)
 			end
 			if current() then
 				standAt(player, final, anchoredAtEnd)
 			end
 		else
-			ComputerLifters.walkBody(lifter.body, points, final, current)
+			ComputerLifters.walkBody(lifter.body, points, final, current, options)
 		end
 		if lifter.walkToken == token then
 			if onArrive and current() then
@@ -1034,7 +1040,7 @@ local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model
 	local wallZ = way[1].Z
 	local going = final.Position.Z < wallZ
 	local points: { Vector3 } = {}
-	if (coach:GetPivot().Position.Z < wallZ) ~= going then
+	if (ComputerLifters.positionOf(coach).Position.Z < wallZ) ~= going then
 		points = if going then { way[1], way[2] } else { way[2], way[1] }
 	end
 	if via then
@@ -1173,7 +1179,7 @@ local function coachFollowBack(lifter: Lifter)
 		local passedZ = platform.coachWay[1].Z
 		waitUntil(WALK_BACK_TIMEOUT_SECONDS, function()
 			local character = player.Character
-			return character == nil or character:GetPivot().Position.Z > passedZ or not lifter.outOnPlatform
+			return character == nil or ComputerLifters.positionOf(character).Position.Z > passedZ or not lifter.outOnPlatform
 		end)
 		task.wait(LocalMeetConfig.CoachFollowSeconds)
 		-- (Their next turn may have called them to the chalk stand already.)
@@ -1572,7 +1578,7 @@ local function crowdBehind(lifter: Lifter, shouts: { string }?)
 	local level = lifter.stakesLevel or 1
 	local gap = build.ShoutGapSeconds[level]
 	local active = true
-	local stopAt = os.clock() + WALK_OUT_TIMEOUT_SECONDS + UNRACK_ALLOWANCE_SECONDS + LIFT_TIMEOUT_SECONDS
+	local stopAt = os.clock() + (lifter.walkOutSeconds or WALK_OUT_TIMEOUT_SECONDS) + UNRACK_ALLOWANCE_SECONDS + LIFT_TIMEOUT_SECONDS
 	lifter.stopCrowd = function()
 		active = false
 	end
@@ -1645,7 +1651,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	local verdict: string? = nil
 	-- Which part of the lift (minigame 1 or 2) a miss failed in: the fail animation shows it.
 	local failedPart = 1
-	waitUntil(WALK_OUT_TIMEOUT_SECONDS, function()
+	waitUntil(lifter.walkOutSeconds or WALK_OUT_TIMEOUT_SECONDS, function()
 		return not lifter.walking or not stillLifting(lifter)
 	end)
 	if not stillLifting(lifter) then
@@ -2053,11 +2059,18 @@ local function coachLineFor(current: Meet, lifter: Lifter, race: MockMeetRemotes
 end
 
 --[[
-	A lifter's own walk out at the State meet (user 2026-11-06, GAME_DESIGN §36.1): the default walk for now. A style unlocked from a crate
-	plugs in HERE, read from the player's save (its animation id).
+	A lifter's entrance (GAME_DESIGN §36.4, user 2026-11-08): a player's own from their save (the Default until crates hand out
+	others), a computer lifter's walk style picked at random once per meet.
 ]]
-local function walkOutAnimationFor(_player: Player): string?
-	return nil
+local function entranceOf(lifter: Lifter): EntranceConfig.Entrance?
+	local player = lifter.player
+	if player then
+		return EntranceConfig.get(PlayerDataService.getEntrance(player))
+	end
+	if lifter.entranceId == nil then
+		lifter.entranceId = MeetEntrance.randomComputerId()
+	end
+	return EntranceConfig.get(lifter.entranceId)
 end
 
 -- A rack's caller (user 2026-11-06): the words over their head, nil to say nothing. `aloud`: what they say over the speakers
@@ -2259,9 +2272,40 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				-- The crowd starts as they step out (user 2026-11-05), with its own lines until the lift starts.
 				crowdBehind(lifter, MeetSoundConfig.walkOutShouts())
 				local approach = lifter.platform.rack and MeetLiftAnimation.approachFor(lifter.platform.rack, lift)
-				walkLifter(lifter, lifter.platform.walkOut, approach or lifter.platform.liftSpot, true, function()
-					setUpLift(lifter, lift)
-				end, if turns and lifter.player then walkOutAnimationFor(lifter.player) else nil)
+				local final = approach or lifter.platform.liftSpot
+				-- Their entrance (§36.4): their walk style out to the bar, then at State and up their hype move there; at
+				-- Local and Regional the quick clap and belt tap over the last steps instead (user 2026-11-08), no longer.
+				local entrance = entranceOf(lifter)
+				local walkId, walkSpeed = MeetEntrance.walkOf(entrance)
+				local hype = if EntranceConfig.HypeMeetLevels[current.level] then entrance else nil
+				local touch = if hype == nil then EntranceConfig.QuickTouch else nil
+				local character = characterOf(lifter)
+				local route = { if character then ComputerLifters.positionOf(character).Position else final.Position }
+				for _, point in ipairs(lifter.platform.walkOut) do
+					table.insert(route, point)
+				end
+				table.insert(route, final.Position)
+				lifter.walkOutSeconds = math.max(WALK_OUT_TIMEOUT_SECONDS, MeetEntrance.walkOutSeconds(route, walkSpeed,
+					LocalMeetConfig.ComputerLifters.WalkSpeed) + MeetEntrance.hypeSeconds(hype) + 3)
+				walkLifter(lifter, lifter.platform.walkOut, final, true, function()
+					local token = lifter.walkToken
+					MeetEntrance.playHype(characterOf(lifter), hype)
+					-- (A walk out that ran out of time has already set them up at the bar.)
+					if lifter.walkToken == token and lifter.liftAnim == nil and stillLifting(lifter) then
+						setUpLift(lifter, lift)
+					end
+				end, {
+					animationId = walkId,
+					speed = walkSpeed,
+					styleStuds = EntranceConfig.StyleWalkStuds,
+					touchAnimationId = if touch and touch.animationId ~= "" then touch.animationId else nil,
+					touchSeconds = if touch then touch.seconds else nil,
+					onTouch = if touch then function()
+						for _, at in ipairs(touch.clapSeconds) do
+							task.delay(at, soundCue, lifter, "ChalkClap", touch.clapVolume)
+						end
+					end else nil,
+				})
 				boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 					string.format("BAR LOADED  ·  %s KG", kgText(weightKg)) })
 				sendState(lifter, "Ready", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
@@ -2270,7 +2314,11 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				task.spawn(liftOne, current, lifter, lift, attemptNumber, weightKg)
 			end
 		end
-		waitUntil(WALK_OUT_TIMEOUT_SECONDS + UNRACK_ALLOWANCE_SECONDS + LIFT_TIMEOUT_SECONDS + 2, function()
+		local walkOutSeconds = WALK_OUT_TIMEOUT_SECONDS
+		for _, lifter in ipairs(lifting) do
+			walkOutSeconds = math.max(walkOutSeconds, lifter.walkOutSeconds or 0)
+		end
+		waitUntil(walkOutSeconds + UNRACK_ALLOWANCE_SECONDS + LIFT_TIMEOUT_SECONDS + 2, function()
 			for _, lifter in ipairs(lifting) do
 				if stillLifting(lifter) and not lifter.roundDone then
 					return false
@@ -3449,6 +3497,7 @@ function LocalMeetService.start()
 	Trophies.preload()
 
 	local set = LocalMeetRemotes.createOnServer(ReplicatedStorage)
+	ComputerLifters.setWalkRemote(set.walk)
 	MeetLiveScreens.start(set)
 	MeetCheering.start(set)
 	remotes = set

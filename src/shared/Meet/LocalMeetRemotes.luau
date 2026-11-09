@@ -91,6 +91,9 @@ LocalMeetRemotes.CHEER_CHOOSE = "LocalMeetCheerChoose"
 LocalMeetRemotes.SOUND = "LocalMeetSound"
 -- Client -> server: "send me the meets list" (no arguments). The list works from anywhere, not only in the venue.
 LocalMeetRemotes.LOBBY_REQUEST = "LocalMeetLobbyRequest"
+-- Server -> every client, drawing only: a meet walk (MeetWalkPath) for a body: (body, spec data, server start time), or
+-- (body, nil) when it ends. Each client draws the walk every frame (MeetWalkView); the server keeps where the body is.
+LocalMeetRemotes.WALK = "LocalMeetWalk"
 
 export type RemoteSet = {
 	leave: RemoteEvent,
@@ -117,6 +120,7 @@ export type RemoteSet = {
 	cheerReport: UnreliableRemoteEvent,
 	cheerState: RemoteEvent,
 	cheerChoose: RemoteEvent,
+	walk: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
@@ -124,7 +128,7 @@ local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemote
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
 	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND,
 	LocalMeetRemotes.SPECTATE, LocalMeetRemotes.LOBBY_REQUEST, LocalMeetRemotes.LIVE_EVENT, LocalMeetRemotes.CHEER_STATE,
-	LocalMeetRemotes.CHEER_CHOOSE }
+	LocalMeetRemotes.CHEER_CHOOSE, LocalMeetRemotes.WALK }
 -- Allowed to lose an update now and then.
 local UNRELIABLE_NAMES = { LocalMeetRemotes.LIVE_REPORT, LocalMeetRemotes.LIVE_SHOW, LocalMeetRemotes.CHEER_REPORT }
 
@@ -320,6 +324,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		cheerReport = getUnreliable(LocalMeetRemotes.CHEER_REPORT),
 		cheerState = get(LocalMeetRemotes.CHEER_STATE),
 		cheerChoose = get(LocalMeetRemotes.CHEER_CHOOSE),
+		walk = get(LocalMeetRemotes.WALK),
 	}
 end
 
@@ -357,6 +362,7 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		cheerReport = getUnreliable(LocalMeetRemotes.CHEER_REPORT),
 		cheerState = get(LocalMeetRemotes.CHEER_STATE),
 		cheerChoose = get(LocalMeetRemotes.CHEER_CHOOSE),
+		walk = get(LocalMeetRemotes.WALK),
 	}
 end
 

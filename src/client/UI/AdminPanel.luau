@@ -32,6 +32,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local AdminConfig = require(ConfigFolder:WaitForChild("AdminConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
+local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local AdminRemotes = require(Shared:WaitForChild("Admin"):WaitForChild("AdminRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
@@ -419,6 +420,17 @@ function AdminPanel.start()
 		local position, size = cell(index, #AdminConfig.CoinButtons, coinsY, 44)
 		UIStyle.button(statsPage, "GiveTo_" .. coinButton.id, coinButton.label .. " COINS", position, size, "outline", function()
 			ask("GiveCoinsTo", { userId = targetUserId, id = coinButton.id })
+		end)
+	end
+	-- Their entrance at meets (§36.4): gives it and puts it on. Only the panel hands them out until crates do.
+	local entranceY = coinsY + 44 + GAP
+	local entranceTitle = UIStyle.text(statsPage, "EntranceTitle", UDim2.fromOffset(MARGIN, entranceY), UDim2.new(1, -2 * MARGIN, 0, 22),
+		SIZES.small, C.muted, UIStyle.font(Enum.FontWeight.Bold))
+	entranceTitle.Text = "MEET ENTRANCE (GIVES IT AND PUTS IT ON)"
+	for index, id in ipairs(EntranceConfig.Order) do
+		local position, size = cell(index, #EntranceConfig.Order, entranceY + 26, 44)
+		UIStyle.button(statsPage, "Entrance_" .. id, EntranceConfig.Entrances[id].name, position, size, "outline", function()
+			ask("GiveEntrance", { userId = targetUserId, id = id })
 		end)
 	end
 

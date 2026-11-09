@@ -79,6 +79,10 @@ task.spawn(LocalMeetController.start)
 local MeetSpotterAnimator = require(MeetFolder:WaitForChild("MeetSpotterAnimator"))
 MeetSpotterAnimator.start()
 
+-- The meet's walks (walk-outs, walks back, coaches), drawn smoothly every frame from what the server sends. Visual only.
+local MeetWalkView = require(MeetFolder:WaitForChild("MeetWalkView"))
+MeetWalkView.start()
+
 -- The meet's sounds: referee claps, the bar, the lights and the crowd (GAME_DESIGN §37.5).
 local MeetSoundController = require(MeetFolder:WaitForChild("MeetSoundController"))
 task.spawn(MeetSoundController.start)

@@ -6070,6 +6070,32 @@ in their weight class and stay in it. This reopens the ladder points
 >   text to speech; a screen hears only its own rack's caller, or the nearest. If Roblox gives no voice for a line, the speech bubble still says it.
 > - **The lifter walks up first and the coach follows behind to watch (user 2026-11-07),** at every meet (§37.5).
 > - **The user wants different entrance animations (2026-11-07):** today's walk is "so bland and everyone has the same walk". Not built yet.
+>   **[DECIDED BY THE USER, 2026-11-08]:**
+>   - **An entrance is a walk style plus a hype moment:** a lifter walks out in their own style (for example a swagger, a bouncy hype walk
+>     or a slow stomp), then stops at the platform's edge for a short hype move before the bar (for example chest slaps and a roar,
+>     tightening the belt, a flex or a neck roll). The longer entrance is what the two-part cheering rule (§36.4, Cheering) waits for.
+>   - **One default for now, the rest from crates:** the system and a few entrances are built, but players own only the default until
+>     crates exist (§35.9). Every entrance is saved per player, so crates only have to hand them out.
+>   - **Walk styles at every meet; the hype moment at State and up,** so Local meets (8 platforms at once) don't get longer.
+>   - **Computer lifters get a random walk style** at Local meets, so the room isn't all the same walk.
+>   - **[Claude, 2026-11-08, to judge in play]** The State walk out is about 55 studs, and a walk style looks right only at its own,
+>     slower speed (3.5 to 5.5 studs a second against the usual 9), so all the way it would add up to 10 seconds to every attempt.
+>     **The walk style covers the last 16 studs**, out on the platform; before that the usual walk. With the hype move an entrance is
+>     about 6 seconds longer than today's walk. The first four: **STANDARD** (the usual walk, a belt tug and a clap; everyone's),
+>     **SWAGGER** (swagger walk, double biceps flex), **HYPE** (bouncy walk, chest slaps and a roar), **STOMP** (slow heavy walk, a
+>     neck roll and a point at the bar). Until crates exist the admin panel's PLAYER STATS page hands them out, to test.
+>   - **[DECIDED BY THE USER, 2026-11-08], after Claude studied two elite meet videos (SBD Sheffield 2026, Avancus Houston 2026):**
+>     "These major celebration changes will be for State, Nationals, Worlds, Sheffield. Local and regional meets are specifically for
+>     grinding quickly and efficiently." The big presentation (the arena wall reacting with the lifter's name, record attempts and NEW
+>     RECORD; a darker arena with the active platform spotlit; the crowd chanting the lifter's name; the coach's ritual before the walk
+>     out; more celebration styles; lifter introductions; stakes on the big screen) belongs to **State and up only** (Nationals,
+>     Worlds and Sheffield don't exist yet). **Local and Regional meets stay quick:** nothing is added that makes them longer.
+>   - **[DECIDED BY THE USER, 2026-11-08] Local and Regional walk-outs:** "I don't want their entrances to be flashy and long but
+>     right now it is too bland, and not smooth." Walk styles stay at every meet. The fix: (1) **smooth walking** at every meet:
+>     every walk (out, back, coaches) eases into its stride, eases into a walk style, slows into the stop and turns smoothly, drawn
+>     every frame on each player's screen (it stuttered before); (2) the user chose **a quick "game face"** over the last steps of
+>     the walk out at Local and Regional (where no hype move plays): two chalky claps, then both hands tap the belt, arms only, so the
+>     legs keep walking; it ends as the walk does and **adds no time**. Everyone does it, players and computer lifters.
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own

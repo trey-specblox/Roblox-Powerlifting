@@ -13,7 +13,49 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**STATE SCREENS AND CHEER ZONES REDONE (2026-11-08), NOT COMMITTED** (user, after a two-client test: cheer bar and screens work).
+**SMOOTH WALK-OUTS AND THE LOCAL "GAME FACE" (2026-11-08), UPLOADED, TESTED, APPROVED BY THE USER ("Looks good, commit"), COMMITTED** (user: Local and Regional
+walk-outs "too bland, and not smooth", but not flashy or long; chose the quick game face; GAME_DESIGN §36.4). Cause of the
+stutter, measured in Studio: the server moved anchored bodies every frame and clients saw them move on about half the frames
+(player 101 moving / 115 frozen frames, CPU lifters 171 / 223). Now: `src/shared/Meet/MeetWalkPath.luau` (a walk worked out by
+time alone: eases in from standing, eases into a walk style, slows into the stop, looks 2.5 studs ahead at corners, turns from
+the start facing and into the final one), `src/client/Meet/MeetWalkView.luau` (draws walks every frame before the camera; stops
+when the walk ends, on the server's word, or when the server moves the body itself), new remote `LocalMeetWalk`.
+`ComputerLifters.walkBody` takes a `WalkOptions` table, sends the walk once, does not move the server body mid-walk (it puts it
+where the walk ended; `ComputerLifters.positionOf` gives the real place, used by coachWalk, coachFollowBack and the walk-out
+timing), keeps the walk animation's pace with the speed, and plays the touch. `MeetEntrance.walkOutSeconds` uses the eased
+timing. Game face: `Entrance_Touch_GameFace` (entrance_animations.py, arms only; parent poses at weight 0, which leaves the hips
+and waist to the walk; tested in Studio, weight 1 froze them), 1.5 s, claps at 0.32/0.56 s with the ChalkClap sound, uploaded
+rbxassetid://128059630802707 (`EntranceConfig.QuickTouch`). Studio, Local meet: client steps now even every frame with eased
+start and stop (no frozen frames); the uploaded touch keeps the walk's hips and legs moving; 4 touches seen, each starting about
+1.4 s before its walk ended, 2 clap sounds each; screenshot caught the belt tap mid-walk; no errors. NOT judged: how it looks
+and feels (the user's visual check). State meet with STOMP, re-run with the new walk code: 3-corner walk out, the Stomp walk
+(3.5) over the last stretch, 8.6 s, then the neck-roll hype move; no game face at State; no errors. NEXT: the user watches a Local meet
+walk-out (done, approved). NEXT: the State-and-up presentation (GAME_DESIGN §36.4) and the two-part cheering rule.
+
+**MEET ENTRANCES PART 1 (2026-11-08), UPLOADED AND TESTED, COMMITTED (with the smooth walk-outs)** (user: "Lets start entrance animations"; GAME_DESIGN
+§36.4 decisions of the same day). `art/scripts/entrance_animations.py` (Blender, same rig tools as the fails and chalk) wrote seven
+`art/animations/Entrance_*.rbxmx`: walks Swagger 4.49, Hype 5.48, Stomp 3.5 studs/s (made for that speed, looped, Movement priority)
+and hype moves Belt 3.0 s, Flex 3.2, ChestSlap 3.2, NeckRoll 3.0 (Action, once); its checks: no foot or hand below the floor, hands
+within 0.09 of their targets; previews (sheets and GIFs) in the session scratchpad, shown to the user. Code: `EntranceConfig` (ids
+EMPTY until upload: until then everyone walks as before and no hype plays), `MeetEntrance` (server), schema v21
+(`inventory.entrances` owned map, `inventory.entrance` chosen; Default never stored), `ProfileOperations.getEntrance /
+grantEntrance / setEntrance / adminGiveEntrance`, admin PLAYER STATS row MEET ENTRANCE (gives and puts on). LocalMeetService: the
+walk out uses the lifter's walk style over the last `StyleWalkStuds` (16), a computer lifter's is random per meet; at State
+(`HypeMeetLevels`) the hype move plays at the bar before the set-up; the walk-out wait (`walkOutSeconds`) grows with it.
+PlayerDataProbe: test 55 added, and 17 stale checks still expecting version 18/19 now read `CURRENT_VERSION`; 543 passed, 0 failed
+(probe switched off again). Studio State meet, one player, with STAND-IN ids (Roblox's walk, the chalk move; reverted): Default 54.5
+studs in 6.1 s, no hype; STOMP 37.9 studs at 9 then 16 studs at 3.5 (4.7 s), a 2.9 s hype, then the lift; admin refuses an unknown
+id; the entrance row fits the panel; no errors. Found and fixed on the way: the usual speed read from the wrong table (every
+Default walk out failed the round). UPLOADED (user: "Upload Entrances first"), group assets: Walk_Swagger 85475277226333,
+Walk_Hype 101259970458316, Walk_Stomp 105155362636460, Hype_Belt 89625871512191, Hype_Flex 102377451481538, Hype_ChestSlap
+110091133658573, Hype_NeckRoll 95478237981657 (in EntranceConfig). Studio with the real ids: all seven load (lengths 0.85/0.6/1.0,
+3.0/3.2/3.2/3.0; ChestSlap took a few seconds longer the first time); State meet with HYPE: 38 studs of the usual walk, the bouncy
+walk for the last 16 (about 3 s), the 3.1 s chest-slap roar, then the lift; Local meet: computer lifters walked out in Roblox's walk,
+Stomp and Hype (random), the player's Hype walk played and no hype move; no errors. NOT judged: how they LOOK in the game (the user's
+visual check). NEXT: the user watches them; then the State-and-up presentation the user chose after the meet videos (GAME_DESIGN
+§36.4, 2026-11-08: Local and Regional stay quick) and the two-part cheering rule.
+
+**STATE SCREENS AND CHEER ZONES REDONE (2026-11-08), COMMITTED (`f383241`)** (user, after a two-client test: cheer bar and screens work).
 The lifters' live screen is now up on the back of the gantry's screen (invisible holder `RackGantry_BackScreen` on the black
 backing), and the lower board (`LiftingOrderBoard`, was `BenchScreen`) shows the rack's lifting order, 5 rows (UP, ON DECK, IN THE
 HOLE, 4., 5.), filled at each turn by LocalMeetService (`platform.orderBoard`). Cheer zones: `CheerZone_Coach` is gone; the whole
@@ -22,7 +64,7 @@ meet area is `CheerZone_MeetArea` (attribute CheerChoice), where a lifter picks 
 15.5). Studio, one player: zones and screens built, order board one line per lifter, live panel shown on the back screen, no errors.
 NOT tested: switching lifters (needs two racks lifting, 11+ lifters), a spectator in the narrower stands zone.
 
-**ADMIN: START A MEET NOW (2026-11-08), NOT COMMITTED** (user: "automatically start any meet"). MY TOOLS has a button per meet
+**ADMIN: START A MEET NOW (2026-11-08), COMMITTED (`f383241`)** (user: "automatically start any meet"). MY TOOLS has a button per meet
 (MEET 1-5 with their level, STATE) showing how many signed up, or ON while it runs. It moves that meet's start to now
 (`LocalMeetService.adminStartNow`), so the meet clock starts it as usual: signed-up players are brought there, weigh-in, the minimum
 lifters (live: State needs 2). Refused with too few signed up or while it runs. Studio: refused with 0 signed up and for meet 99;

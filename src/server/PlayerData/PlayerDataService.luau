@@ -763,6 +763,20 @@ function PlayerDataService.adminRefillDaily(player: Player): (boolean, string)
 	return ProfileOperations.adminRefillDaily(data)
 end
 
+function PlayerDataService.adminGiveEntrance(player: Player, id: string): (boolean, string)
+	local data = activeData(player, "adminGiveEntrance")
+	if data == nil then
+		return false, "That player's save hasn't loaded."
+	end
+	return ProfileOperations.adminGiveEntrance(data, id)
+end
+
+-- The entrance a player uses at meets (EntranceConfig id); the Default when their save isn't loaded.
+function PlayerDataService.getEntrance(player: Player): string
+	local data = PlayerDataService.getData(player)
+	return if data then ProfileOperations.getEntrance(data) else "Default"
+end
+
 -- (Training Energy was retired in schema version 8, GAME_DESIGN 29.8, and the Competition Budget in version 10, 29.9.)
 
 return PlayerDataService

@@ -49,6 +49,7 @@ local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig")
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 local AdminConfig = require(ConfigFolder:WaitForChild("AdminConfig"))
+local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -2058,6 +2059,71 @@ function ProfileOperations.adminRefillDaily(data: ProfileData): (boolean, string
 		end
 	end
 	return true, "Today's training limits are full again."
+end
+
+--[[
+	MEET ENTRANCES (schema version 21, GAME_DESIGN §36.4). Everyone has the Default; others are granted (crates later,
+	the admin panel for now) and then can be chosen. An id EntranceConfig doesn't know is never granted or used.
+]]
+local function entrancesOf(data: ProfileData): { [string]: boolean }?
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return nil
+	end
+	if typeof(inventory.entrances) ~= "table" then
+		inventory.entrances = {}
+	end
+	return inventory.entrances
+end
+
+function ProfileOperations.ownsEntrance(data: ProfileData, id: string): boolean
+	if id == EntranceConfig.DefaultId then
+		return true
+	end
+	local owned = entrancesOf(data)
+	return EntranceConfig.get(id) ~= nil and owned ~= nil and owned[id] == true
+end
+
+-- The entrance they use at meets: the chosen one if they still own it, else the Default.
+function ProfileOperations.getEntrance(data: ProfileData): string
+	local inventory = (data :: any).inventory
+	local id = if typeof(inventory) == "table" then inventory.entrance else nil
+	if typeof(id) == "string" and ProfileOperations.ownsEntrance(data, id) then
+		return id
+	end
+	return EntranceConfig.DefaultId
+end
+
+-- Adds an entrance to what they own. False for an unknown id or a save without an inventory.
+function ProfileOperations.grantEntrance(data: ProfileData, id: string): boolean
+	local owned = entrancesOf(data)
+	if owned == nil or typeof(id) ~= "string" or EntranceConfig.get(id) == nil then
+		return false
+	end
+	if id ~= EntranceConfig.DefaultId then
+		owned[id] = true
+	end
+	return true
+end
+
+-- Chooses the entrance used at meets; only one they own.
+function ProfileOperations.setEntrance(data: ProfileData, id: string): (boolean, string)
+	if typeof(id) ~= "string" or not ProfileOperations.ownsEntrance(data, id) then
+		return false, "They don't own that entrance."
+	end
+	local inventory = (data :: any).inventory
+	inventory.entrance = if id == EntranceConfig.DefaultId then nil else id
+	return true, "Entrance set."
+end
+
+-- The admin panel: gives the entrance and puts it on.
+function ProfileOperations.adminGiveEntrance(data: ProfileData, id: string): (boolean, string)
+	local entrance = EntranceConfig.get(id)
+	if entrance == nil or not ProfileOperations.grantEntrance(data, id) then
+		return false, "That isn't an entrance."
+	end
+	ProfileOperations.setEntrance(data, id)
+	return true, string.format("Entrance: %s.", entrance.name)
 end
 
 return ProfileOperations

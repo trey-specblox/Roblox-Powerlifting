@@ -205,6 +205,18 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		local ok, message = PlayerDataService.adminRefillDaily(target)
 		return ok, target.Name .. ": " .. message
 	end,
+	-- Gives an entrance (EntranceConfig id) and puts it on: only the admin panel hands them out until crates do (§36.4).
+	GiveEntrance = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		if typeof(value.id) ~= "string" then
+			return false, "That isn't an entrance."
+		end
+		local ok, message = PlayerDataService.adminGiveEntrance(target, value.id)
+		return ok, target.Name .. ": " .. message
+	end,
 	GiveCoinsTo = function(_player: Player, value: any): (boolean, string)
 		local target, problem = targetOf(value)
 		if target == nil then

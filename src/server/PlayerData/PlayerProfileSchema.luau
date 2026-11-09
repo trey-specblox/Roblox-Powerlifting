@@ -58,9 +58,9 @@ local PlayerProfileSchema = {}
 	titles in the career; version 16: ladder points in the career; version
 	17: ladder points per weight class; version 18: how many times the
 	player has qualified for State; version 19: gear with stats; version 20:
-	the coach's tests for rare suits).
+	the coach's tests for rare suits; version 21: meet entrances).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 20
+PlayerProfileSchema.CURRENT_VERSION = 21
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -311,6 +311,11 @@ export type Inventory = {
 	suitTests: { [string]: { passed: boolean?, nextTryAt: number? } },
 	-- A test running now: the piece on loan for it, and what was worn before. Cleared on the next load if the server went down.
 	suitTrial: { pieceId: string, slot: string, before: string?, beforeItem: string? }?,
+	-- Meet entrances (version 21, GAME_DESIGN §36.4): entrance id (EntranceConfig) -> true. The Default is everyone's and
+	-- never stored. Written only by ProfileOperations.grantEntrance (crates later; the admin panel for now).
+	entrances: { [string]: boolean },
+	-- The entrance used at meets; nil is the Default. Written only by ProfileOperations.setEntrance, with one they own.
+	entrance: string?,
 }
 
 export type StatPiece = {
@@ -574,6 +579,7 @@ local template: ProfileData = {
 		wearingPieces = {},
 		nextPieceId = 1,
 		suitTests = {},
+		entrances = {},
 	},
 
 	bodyweight = {
@@ -1684,6 +1690,22 @@ migrations[19] = function(data: ProfileData)
 		for _, slot in ipairs(off) do
 			wearingPieces[slot] = nil
 		end
+	end
+end
+
+--[[
+	Version 20 -> 21: meet entrances. Nobody owns one yet, so an empty list and the Default in use.
+]]
+migrations[20] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return
+	end
+	if typeof(inventory.entrances) ~= "table" then
+		inventory.entrances = {}
+	end
+	if inventory.entrance ~= nil and typeof(inventory.entrance) ~= "string" then
+		inventory.entrance = nil
 	end
 end
 

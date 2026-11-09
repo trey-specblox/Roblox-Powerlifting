@@ -16,7 +16,8 @@
 			with a suit id, or "ForceDrop" with a suit id or nil to turn it off.
 			On any player in the server (PLAYER STATS, value = { userId = ..., ... }): "SetStat" with
 			`id` (an AdminConfig.StatFields id) and `value` (a number the server clamps), "QualifyState",
-			"RefillDaily", and "GiveCoinsTo" with `id` (a coin button id). Coins are never an amount.
+			"RefillDaily", "GiveCoinsTo" with `id` (a coin button id; coins are never an amount), and
+			"GiveEntrance" with `id` (an EntranceConfig id: gives it and puts it on).
 			"StartMeet" with a meet's number (AdminView.meets) starts it now, with whoever signed up.
 ]]
 
