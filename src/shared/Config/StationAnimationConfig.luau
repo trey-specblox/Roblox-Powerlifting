@@ -59,6 +59,26 @@ export type MeetStages = {
 	phases: { { number } },
 	finish: { number },
 }
+--[[
+	THE MEET SETUPS (GAME_DESIGN §37.5, user 2026-11-08: "On squat im basically teleporting inside the bar, no unrack
+	animation either on squat and bench. No walk up animation, no sitting down animation"), made after the SBD
+	Sheffield 2026 video by art/scripts/setup_animations.py. Each plays once from where the walk out ends
+	(MeetLiftAnimation.approachFor) and ends on the meet's rep pose above (MeetStages[lift].setup), so the lift carries
+	straight on:
+		Squat     two steps up, grip the bar wide, duck under it, brace, stand it up, three steps back, set
+		Bench     turn round, back up to the bench, sit on its end, lie back, slide up, grip, the hand-off to arms' length
+		Deadlift  set the feet, stand tall and breathe, hinge down, grip (right hand, then left), set
+	The root part stands at the lift's spot all along; the walking is in the animation. `barHeldAt`: when the bar
+	leaves its rest and is in the hands (the J-cups for squat and bench; the deadlift's stays on the floor until the
+	lift). An empty id: no setup, the lifter is put at the bar as before.
+]]
+export type Setup = { id: string, length: number, barHeldAt: number }
+StationAnimationConfig.Setups = {
+	Squat = { id = "rbxassetid://81320883735495", length = 6.7, barHeldAt = 3.1 },
+	Bench = { id = "rbxassetid://99874634718117", length = 6.9, barHeldAt = 5.4 },
+	Deadlift = { id = "rbxassetid://112100062833525", length = 3.3, barHeldAt = 3.3 },
+} :: { [string]: Setup }
+
 StationAnimationConfig.MeetStages = {
 	Squat = { setup = { 0.6, 0.6 }, phases = { { 0.6, 1.9 }, { 1.9, 2.1 } }, finish = { 2.1, 3.1 } },
 	Bench = { setup = { 0.6, 0.6 }, phases = { { 0.6, 2.0 }, { 2.0, 2.2 } }, finish = { 2.2, 3.0 } },

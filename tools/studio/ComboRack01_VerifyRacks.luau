@@ -290,7 +290,7 @@ local function run()
 				elseif atSquat then "squat"
 				else "bench"
 			barWhere = if near(Vector3.new(0, 3.14, -0.28)) then "bench"
-				elseif near(Vector3.new(0, 3.49, -0.28)) then "squat"
+				elseif near(Vector3.new(0, 3.665, -0.28)) then "squat"
 				elseif math.abs(at.X) <= POSITION_TOLERANCE and math.abs(at.Z + 4.2) <= POSITION_TOLERANCE then "floor"
 				else "UNKNOWN " .. fmtV(at)
 			check(barWhere == expected, string.format("%s: bar at %s position (expected %s)", id, barWhere, expected))

@@ -291,7 +291,7 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 		end
 		task.spawn(function()
 			if lift ~= "Deadlift" then
-				barSound("BarRack")
+				task.delay(MeetLiftAnimation.unrackSoundIn(use.anim), barSound, "BarRack")
 			end
 			task.wait(MeetLiftAnimation.unrack(use.anim) + START_BEAT_SECONDS)
 			if not stillHere() then

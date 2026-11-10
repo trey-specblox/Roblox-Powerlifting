@@ -130,8 +130,14 @@ type BarState = {
 	-- Where the bar is drawn now. A bar let go of glides back to its rest instead of jumping (a meet's spotters
 	-- lifting it back to the J-cups, GAME_DESIGN §37.5).
 	shown: CFrame?,
+	-- Whether the bar was held last frame, and a grab under way: the bar glides from its rest into the hands (a
+	-- meet's unrack and bench hand-off, user 2026-11-08), instead of jumping to wherever the hands are.
+	wasHeld: boolean?,
+	grabFrom: CFrame?,
+	grabAt: number?,
 }
 local BAR_OFFSET_ATTRIBUTE = "BarOffset"
+local GRAB_SECONDS = 0.3
 -- How fast a let-go bar glides to its rest (per second; about 0.5 s to get there).
 local GLIDE_RATE = 7
 
@@ -234,13 +240,25 @@ local function followHands(character: Model, rack: Instance?, lift: string, acti
 	local rightHand = character:FindFirstChild("RightHand")
 	if held and leftHand and leftHand:IsA("BasePart") and rightHand and rightHand:IsA("BasePart") then
 		local mid = (leftHand.Position + rightHand.Position) / 2
-		placeBar(state, CFrame.new(mid) * rack:GetPivot().Rotation)
+		local inHands = CFrame.new(mid) * rack:GetPivot().Rotation
+		if state.wasHeld == false and state.shown then
+			state.grabFrom, state.grabAt = state.shown, os.clock()
+		end
+		local from, at = state.grabFrom, state.grabAt
+		local u = if from and at then (os.clock() - at) / GRAB_SECONDS else 1
+		if from and u < 1 then
+			placeBar(state, from:Lerp(inHands, u * u * (3 - 2 * u)))
+		else
+			state.grabFrom, state.grabAt = nil, nil
+			placeBar(state, inHands)
+		end
 	else
 		local rest = restOf(barbell)
 		if rest then
 			glideBar(state, rest, dt)
 		end
 	end
+	state.wasHeld = held
 	state.moved = true
 	active[barbell] = true
 end

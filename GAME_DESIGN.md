@@ -6266,6 +6266,32 @@ Decisions:
 that players unlock. So the fail and celebration animations are chosen per
 player (a default now), never hard-wired.
 
+**Getting to the bar, as real lifters do (user, 2026-11-08).** The user's words: "On squat im basically teleporting
+inside the bar, no unrack animation either on squat and bench. No walk up animation, no sitting down animation." The
+user asked for the two meet videos they sent to be used as the reference. Then, after the first squat version: "the
+character literally breaking their knees touching the floor to get under the bar? change that... Make the Rackheight
+higher so the lifter is not visually touching the ground to get under the bar, just make it the height of their
+shoulder blades."
+
+| Lift | Decision |
+|---|---|
+| **Squat** | **The rack's J-cups sit at the lifter's shoulder blades.** The lifter walks up to the bar and grips it wide. They step under it with only a slight knee bend while the head ducks under the bar, and the bar sits across the upper back with the elbows back. They brace and stand straight up to lift it out of the J-cups, take three steps back and set their stance. |
+| **Bench** | The lifter turns round at the foot of the bench, steps back to it and **sits on its end**. They **lie back** and slide up until their eyes are under the bar, plant their feet, grip the bar and arch. The bar is **handed off** to arms' length. |
+| **Deadlift** | The lifter sets their feet, stands tall and breathes, then **bends down and grips the bar one hand at a time** (right, then left), drops the hips and sets. |
+
+**Later (user, 2026-11-08):** realistic bodies. Avatars will range from skinny-fat or skinny to big and buff. Within each
+weight class, the lower a lifter's stats are against that class's thresholds, the more fat or weak they look; the higher,
+the more muscle. They always look like their weight class: a 59 kg lifter looks like a 59 kg lifter. Not built yet. Until
+then, the block avatar's big head brushes the bar for a moment while ducking under it at squat, and while lying back
+at bench.
+
+> **Built (2026-11-08): the setups.** Squat, bench and deadlift each play a setup animation from where the walk out ends
+> (`art/scripts/setup_animations.py`, `StationAnimationConfig.Setups`, `MeetLiftAnimation`). The lift then carries
+> straight on from the setup's last pose. The bar stays in the J-cups until the unrack and slides into the hands at the
+> grab, which is the hand-off at bench. The rack's posts now have holes every 0.175 studs (was 0.35), so the squat J-cups
+> sit at 3.975 with the bar at 3.665 (was 3.49). The bench height is unchanged. Each attempt is longer: about +3 s squat,
+> +5 s bench, +1 s deadlift.
+
 > **Built (2026-11-01): step 1, the staging.**
 >
 > - **Waiting and walking:** each lifter waits in the warm-up room, 5 studs

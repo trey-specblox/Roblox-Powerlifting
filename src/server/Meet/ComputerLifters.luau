@@ -267,6 +267,20 @@ function ComputerLifters.positionOf(body: Model): CFrame
 	return body:GetPivot()
 end
 
+-- How long walkBody takes to walk `body` along `points` to `final` (no walk style).
+function ComputerLifters.walkSeconds(body: Model, points: { Vector3 }, final: CFrame): number
+	local height = standingHeight(body)
+	local pivot = ComputerLifters.positionOf(body)
+	return MeetWalkPath.new({
+		from = pivot.Position - Vector3.new(0, height, 0),
+		look = pivot.LookVector,
+		points = points,
+		final = final,
+		height = height,
+		usualSpeed = CONFIG.WalkSpeed,
+	}).duration
+end
+
 --[[
 	Ends `body`'s walk (clients stop drawing it) and puts the server's body where it has got to, or at `arrivedAt`;
 	unless something else has moved it since the walk started (a teleport), which then stands.

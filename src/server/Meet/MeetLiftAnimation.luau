@@ -13,6 +13,13 @@
 		Deadlift  behind the bar on the floor; hinge down and set
 	(unrack plays that part and says how long it takes; then the referee gives
 	the start command.)
+	With a published setup animation (StationAnimationConfig.Setups, user
+	2026-11-08: "no walk up animation, no sitting down animation"), the lifter
+	does all of that for real instead, from where the walk out ends: steps up to
+	the bar, grips it, ducks under and walks it out (squat); turns, sits on the
+	bench and lies back for the hand-off (bench); sets the feet and grips the floor
+	bar (deadlift). The root part stands at the lift's spot all along (the walking
+	is in the animation), and the bar stays in the J-cups until the unrack.
 	The station rep animation (StationAnimationConfig) then plays ONE STAGE AT
 	A TIME (StationAnimationConfig.MeetStages) instead of looping. Each minigame
 	phase moves it through its stretch over that phase's time, then holds it:
@@ -31,6 +38,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StationAnimationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config")
 	:WaitForChild("StationAnimationConfig"))
 local StationLayout = require(script.Parent.Parent:WaitForChild("Training"):WaitForChild("StationLayout"))
+local ComputerLifters = require(script.Parent:WaitForChild("ComputerLifters"))
 
 local MeetLiftAnimation = {}
 
@@ -63,8 +71,15 @@ local RERACK_DIP_SHARE = 0.6
 local RERACK_STEP_OUT_SECONDS = 0.6
 local RERACK_STEP_OUT_STUDS = 2.2
 local RERACK_BENCH_SECONDS = 0.6
--- Where the walk to the rack ends, rack-local Z, for each lift (then the setup takes over).
+-- Where the walk to the rack ends, rack-local Z, for each lift (then the setup takes over). With a setup animation
+-- the bench's walk ends just past the foot of the bench (pad to -3.4), where the lifter turns round to sit on it.
 local APPROACH_Z = { Squat = -1.2, Bench = -3.4 }
+local SETUP_APPROACH_Z = { Squat = -1.2, Bench = -4.6 }
+-- A lifter farther than this from where the setup starts (a warm-up rack's spot) walks there first.
+local PRE_WALK_STUDS = 0.4
+-- The setup's hand-over to the rep animation (both hold the same pose there), and a beat after it before the command.
+local SETUP_HANDOVER_SECONDS = 0.15
+local SETUP_SETTLE_SECONDS = 0.3
 
 export type Handle = {
 	character: Model,
@@ -76,7 +91,18 @@ export type Handle = {
 	token: number,
 	-- How far the running minigame has got at most (0..1): the lift never goes back down.
 	reached: number,
+	-- The setup animation while it plays (nil once the rep animation has taken over), and when the lifter is ready.
+	setupTrack: AnimationTrack?,
+	readyAt: number?,
+	-- When the setup takes the bar out of the J-cups (os.clock()).
+	barLeavesAt: number?,
 }
+
+-- The lift's published setup animation, or nil.
+local function setupOf(lift: string): StationAnimationConfig.Setup?
+	local setup = StationAnimationConfig.Setups[lift]
+	return if setup and setup.id ~= "" then setup else nil
+end
 
 local function animatorOf(character: Model): Animator?
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -114,8 +140,10 @@ local function frameFor(character: Model, root: BasePart, rack: Model, lift: str
 	end
 	local floor = StationLayout.floorFrame(rack)
 	if lift == "Squat" then
-		-- Under the bar in the J-cups, facing the rack (the walk-out comes after: unrack).
-		return floor * CFrame.new(0, standingHeight(character, root), SQUAT_UNDER_Z) * FACING_RACK
+		-- Under the bar in the J-cups, facing the rack (the walk-out comes after: unrack); with a setup animation,
+		-- where its walk-out ends.
+		local z = if setupOf("Squat") then WALKOUT_Z else SQUAT_UNDER_Z
+		return floor * CFrame.new(0, standingHeight(character, root), z) * FACING_RACK
 	elseif lift == "Deadlift" then
 		-- Behind the floor bar, facing the rack, as at a gym rack.
 		local _, standZ = StationLayout.deadliftZ(rack, layout)
@@ -163,8 +191,8 @@ function MeetLiftAnimation.begin(character: Model, rack: Model, lift: string): H
 	if root == nil or frame == nil or stages == nil then
 		return nil
 	end
+	-- (Put at the lift's spot further down: at once without a setup animation, or as its setup starts.)
 	root.Anchored = true
-	character:PivotTo(frame)
 	character:SetAttribute(LIFT_ATTRIBUTE, lift)
 	local rackValue = character:FindFirstChild(RACK_VALUE)
 	if rackValue == nil or not rackValue:IsA("ObjectValue") then
@@ -177,24 +205,101 @@ function MeetLiftAnimation.begin(character: Model, rack: Model, lift: string): H
 
 	local handle: Handle = { character = character, lift = lift, track = nil, failTrack = nil, token = 0, reached = 0 }
 	local animator = animatorOf(character)
-	local id = StationAnimationConfig.AnimationIds[lift]
-	if animator and id and id ~= "" then
+	local function load(id: string?, name: string): AnimationTrack?
+		if animator == nil or id == nil or id == "" then
+			return nil
+		end
 		local animation = Instance.new("Animation")
-		animation.Name = "MeetLift_" .. lift
+		animation.Name = name
 		animation.AnimationId = id
 		local ok, loaded = pcall(function()
 			return (animator :: Animator):LoadAnimation(animation)
 		end)
-		if ok then
-			local track = loaded :: AnimationTrack
-			track.Priority = Enum.AnimationPriority.Action
-			track.Looped = false
-			track:Play(FADE_SECONDS, 1, 0)
-			handle.track = track
+		if not ok then
+			return nil
+		end
+		local track = loaded :: AnimationTrack
+		track.Priority = Enum.AnimationPriority.Action
+		track.Looped = false
+		return track
+	end
+	handle.track = load(StationAnimationConfig.AnimationIds[lift], "MeetLift_" .. lift)
+	local setupStage = stages.setup
+	-- Into the rep animation's setup pose (held, or played for the deadlift's hinge without a setup animation).
+	local function startRep(fade: number)
+		local track = handle.track
+		if track then
+			track:Play(fade, 1, 0)
+			stage(handle, setupStage[1], setupStage[2], setupStage[2] - setupStage[1])
 		end
 	end
-	local setup = stages.setup
-	stage(handle, setup[1], setup[2], setup[2] - setup[1])
+
+	local setup = setupOf(lift)
+	local setupTrack = if setup then load(setup.id, "MeetSetup_" .. lift) else nil
+	if setup == nil or setupTrack == nil then
+		character:PivotTo(frame)
+		startRep(FADE_SECONDS)
+		return handle
+	end
+	-- From where they stand to where the setup starts first, when they are not there (a warm-up rack's spot).
+	local approach = MeetLiftAnimation.approachFor(rack, lift)
+	local walkSeconds = 0
+	if approach then
+		local here = character:GetPivot().Position
+		local away = Vector3.new(here.X - approach.Position.X, 0, here.Z - approach.Position.Z)
+		if away.Magnitude > PRE_WALK_STUDS then
+			walkSeconds = ComputerLifters.walkSeconds(character, {}, approach)
+		end
+	end
+	handle.setupTrack = setupTrack
+	handle.readyAt = os.clock() + walkSeconds + setup.length
+	handle.barLeavesAt = os.clock() + walkSeconds + setup.barHeldAt
+	-- The bar stays where it rests (the J-cups, the floor) until the setup takes it.
+	character:SetAttribute(BAR_HELD_ATTRIBUTE, false)
+	task.spawn(function()
+		local function current(): boolean
+			return handle.setupTrack == setupTrack and character.Parent ~= nil
+		end
+		if walkSeconds > 0 and approach then
+			ComputerLifters.walkBody(character, {}, approach, current)
+		end
+		if not current() then
+			return
+		end
+		-- The root part goes to the lift's spot and the setup starts in the same step: its first pose stands the body
+		-- where the walk ended. (No fade in: fading would slide the body between the two spots.)
+		character:PivotTo(frame)
+		setupTrack:Play(0)
+		-- The rep animation starts now too, all but weightless, held where the setup ends (set at the bar), so every
+		-- player's copy is already there at the hand-over. (Started at the hand-over, clients first showed its start,
+		-- standing, for a moment: the deadlift stood up and bent down again.)
+		local rep = handle.track
+		if rep then
+			rep:Play(0, 0.001, 0)
+			stage(handle, setupStage[2], setupStage[2], 0)
+		end
+		if setup.barHeldAt < setup.length - SETUP_HANDOVER_SECONDS then
+			task.delay(setup.barHeldAt, function()
+				if current() then
+					character:SetAttribute(BAR_HELD_ATTRIBUTE, true)
+				end
+			end)
+		end
+		task.wait(math.max(0, setup.length - SETUP_HANDOVER_SECONDS))
+		if not current() then
+			return
+		end
+		-- The rep animation takes over on the same pose.
+		if handle.track then
+			handle.track:AdjustWeight(1, SETUP_HANDOVER_SECONDS)
+		end
+		setupTrack:Stop(SETUP_HANDOVER_SECONDS)
+		handle.setupTrack = nil
+		character:SetAttribute(BAR_HELD_ATTRIBUTE, nil)
+		task.delay(SETUP_HANDOVER_SECONDS + 0.1, function()
+			setupTrack:Destroy()
+		end)
+	end)
 	return handle
 end
 
@@ -210,7 +315,7 @@ function MeetLiftAnimation.approachFor(rack: Model, lift: string): CFrame?
 		return nil
 	end
 	local _, deadliftStandZ = StationLayout.deadliftZ(rack, layout)
-	local z = APPROACH_Z[lift] or deadliftStandZ
+	local z = (if setupOf(lift) then SETUP_APPROACH_Z[lift] else APPROACH_Z[lift]) or deadliftStandZ
 	return StationLayout.floorFrame(rack) * CFrame.new(0, 0, z) * FACING_RACK
 end
 
@@ -224,6 +329,10 @@ end
 function MeetLiftAnimation.unrack(handle: Handle?): number
 	if handle == nil then
 		return 0
+	end
+	if handle.readyAt then
+		-- The setup animation does it all; the command comes once it is over.
+		return math.max(0, handle.readyAt - os.clock()) + SETUP_SETTLE_SECONDS
 	end
 	if handle.lift == "Bench" then
 		return BENCH_STEADY_SECONDS
@@ -259,6 +368,12 @@ function MeetLiftAnimation.unrack(handle: Handle?): number
 		end
 	end)
 	return UNRACK_HOLD_SECONDS + WALKOUT_SECONDS + SETTLE_SECONDS
+end
+
+-- Seconds until the bar comes out of the J-cups (its sound): later with a setup animation, now without one.
+function MeetLiftAnimation.unrackSoundIn(handle: Handle?): number
+	local at = handle and handle.barLeavesAt
+	return if at then math.max(0, at - os.clock()) else 0
 end
 
 --[[
@@ -418,8 +533,12 @@ function MeetLiftAnimation.stop(handle: Handle?)
 		return
 	end
 	handle.token += 1
-	local track, failTrack = handle.track, handle.failTrack
-	handle.track, handle.failTrack = nil, nil
+	local track, failTrack, setupTrack = handle.track, handle.failTrack, handle.setupTrack
+	handle.track, handle.failTrack, handle.setupTrack = nil, nil, nil
+	if setupTrack then
+		setupTrack:Stop(FADE_SECONDS)
+		setupTrack:Destroy()
+	end
 	if track then
 		track:Stop(FADE_SECONDS)
 		track:Destroy()

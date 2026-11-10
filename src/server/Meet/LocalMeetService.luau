@@ -969,8 +969,8 @@ local WALK_BACK_TIMEOUT_SECONDS = 20
 local LEAVE_AFTER_FINISH_SECONDS = 0.8
 -- After the referee's start command, a beat before the lift starts.
 local COMMAND_BEAT_SECONDS = 0.6
--- Room in a round for the unrack (squat walk-out) and the start command.
-local UNRACK_ALLOWANCE_SECONDS = 8
+-- Room in a round for the setup at the bar (MeetLiftAnimation: up to about 7 s, the bench's) and the start command.
+local UNRACK_ALLOWANCE_SECONDS = 10
 -- How far through the failing part a computer lifter's miss stops (§37.5: its fail animation takes over there).
 local CPU_FAIL_SHARE = 0.6
 -- From the start of a good deadlift's finish to its lockout (StationAnimationConfig.MeetStages: 2.2 -> 2.9 s).
@@ -1670,7 +1670,11 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	-- The unrack, then the start command ("SQUAT!", "START!"; the deadlift has none: the lifter goes when ready).
 	local commands = LocalMeetConfig.RefereeCommands[lift]
 	if lift ~= "Deadlift" then
-		soundCue(lifter, "BarRack")
+		task.delay(MeetLiftAnimation.unrackSoundIn(lifter.liftAnim), function()
+			if stillLifting(lifter) then
+				soundCue(lifter, "BarRack")
+			end
+		end)
 	end
 	waitUntil(MeetLiftAnimation.unrack(lifter.liftAnim), function()
 		return not stillLifting(lifter)

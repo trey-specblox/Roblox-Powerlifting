@@ -563,7 +563,7 @@ PREVIEW_BASES = {
     "Bench": T((0, BENCH_ROOT_HEIGHT, -0.3 - BENCH_HEAD_UP)) @ rx(90),
     "Deadlift": T((0, HRP_STAND_Y, -4.8)) @ FACE_RACK,
 }
-PREVIEW_BAR_REST = {"Squat": (0, 3.49, -0.28), "Bench": (0, 3.14, -0.28), "Deadlift": (0, 1.0, -4.2)}
+PREVIEW_BAR_REST = {"Squat": (0, 3.665, -0.28), "Bench": (0, 3.14, -0.28), "Deadlift": (0, 1.0, -4.2)}
 DISPLAY_LOAD = ("Plate_25", "Plate_25", "Collar_Lock")   # TrainingStationConfig + collar
 
 STATION_SPACING = 12.0             # Blender X between the preview stations

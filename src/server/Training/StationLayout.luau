@@ -48,13 +48,13 @@ local LAYOUTS: { [string]: Layout } = {
 	ComboRack_01 = {
 		benchParts = { "Bench_Pad", "Bench_Frame" },
 		jCupParts = { "JCup_Left", "JCup_Right", "JCupLiner_Left", "JCupLiner_Right", "JCupPin_Left", "JCupPin_Right" },
-		-- J-cups modelled at the 3.80 hole (squat, bar 3.49: just under an R15
-		-- avatar's 3.75 bar-on-back height); bench uses the 3.45 hole (bar 3.14:
-		-- just under its 3.25 lockout lying on the bench). Measured 2026-10-19 with
-		-- art/scripts/station_animations.py on the Roblox R15 block rig.
-		benchJCupDrop = -0.35,
-		-- J-cup seat at z 3.42 + bar shaft radius 0.07; seat centre 0.28 in front of the posts
-		barRest = Vector3.new(0, 3.49, -0.28),
+		-- J-cups modelled at the 3.975 hole (squat, bar 3.665: at the lifter's shoulder blades, just under an
+		-- R15 avatar's 3.75 bar-on-back height, so a slight knee bend gets under it; user 2026-11-08, "make it
+		-- the height of their shoulder blades", was the 3.80 hole and bar 3.49); bench uses the 3.45 hole (bar
+		-- 3.14: just under its 3.25 lockout lying on the bench). The posts' holes are 0.175 apart.
+		benchJCupDrop = -0.525,
+		-- J-cup seat at z 3.595 + bar shaft radius 0.07; seat centre 0.28 in front of the posts
+		barRest = Vector3.new(0, 3.665, -0.28),
 		-- the rack's clearance check keeps the floor 4.2 studs in front of the posts free
 		deadliftBarZ = -4.2,
 		benchPadTop = 1.2,

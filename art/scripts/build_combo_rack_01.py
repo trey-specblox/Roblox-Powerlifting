@@ -28,8 +28,11 @@ BASE_H = 0.25             # base rails occupy z 0 .. 0.25; posts stand on them
 SLEEVE_T, SLEEVE_TOP = 0.30, 2.90
 INSERT_T, INSERT_Z0, INSERT_TOP = 0.22, 2.50, 7.00   # insert continues hidden inside the sleeve
 SLEEVE_HOLES = [1.22, 1.57, 1.92, 2.27, 2.62]
-INSERT_HOLES = [3.10 + i * 0.35 for i in range(11)]  # z = 3.10 .. 6.60
-BENCH_HOLE, SQUAT_HOLE = INSERT_HOLES[1], INSERT_HOLES[2]   # 3.45 / 3.80 (set 2026-10-19 from the R15 rig, station_animations.py)
+# Every 0.175 (2026-11-08: was 0.35), so the squat J-cups can sit at the lifter's shoulder blades (user: "Make the
+# Rackheight higher so the lifter is not visually touching the ground to get under the bar, just make it the height of
+# their shoulder blades"): the bar racks at 3.665, just under the 3.75 where it rides on an R15 lifter's back standing.
+INSERT_HOLES = [3.10 + i * 0.175 for i in range(21)]  # z = 3.10 .. 6.60
+BENCH_HOLE, SQUAT_HOLE = INSERT_HOLES[2], INSERT_HOLES[5]   # 3.45 / 3.975 (bench set 2026-10-19 from the R15 rig)
 JCUP_Z = SQUAT_HOLE        # modelled at the squat hole; the game moves them to the bench hole (StationLayout)
 
 # Short front posts carry the front end of the safety arms.
@@ -317,7 +320,7 @@ print("triangles: total", sum(tris.values()), "| largest", max(tris.items(), key
 BAR_R, SLEEVE_X, PLATE_X1, PLATE_R = 0.10, 3.20, 4.95, 1.00
 BAR_Y = F - SEAT_Y / 2 - 0.03              # bar centre when racked, inside the J-cup
 BENCH_BAR_Z = SEAT_Z + BAR_R + (BENCH_HOLE - JCUP_Z)   # bar centre racked at bench height (3.14)
-SQUAT_BAR_Z = SEAT_Z + BAR_R + (SQUAT_HOLE - JCUP_Z)   # bar centre racked at squat height (3.49)
+SQUAT_BAR_Z = SEAT_Z + BAR_R + (SQUAT_HOLE - JCUP_Z)   # bar centre racked at squat height (3.665)
 CHEST_BAR_Z = PAD_TOP + 1.0 + BAR_R        # bar touching a lying R15 lifter's chest
 DEADLIFT_Y = -4.20
 

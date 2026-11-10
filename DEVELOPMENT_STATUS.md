@@ -13,6 +13,34 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**LIFT SETUPS AND THE RAISED SQUAT RACK (2026-11-08/09), UPLOADED, TESTED, APPROVED BY THE USER ("Looks good, commit"), COMMITTED** (user: "teleporting inside
+the bar, no unrack animation... no walk up animation, no sitting down animation", use the meet videos; then "make
+it the height of their shoulder blades"; GAME_DESIGN §37.5 "Getting to the bar"; memory realistic-lift-setups).
+`art/scripts/setup_animations.py` (Blender; the walking, sitting and lying are in the Root joint about the anchored root
+part, feet by two-bone leg IK, hands solved onto the real bar; checks: hands, floor, bar into the body, seam with the
+rep = 0) wrote `art/animations/Setup_{Squat,Bench,Deadlift}.rbxmx`, uploaded: Squat rbxassetid://81320883735495 (6.7 s,
+bar leaves the J-cups at 3.1), Bench rbxassetid://99874634718117 (6.9 s, hand-off at 5.4), Deadlift
+rbxassetid://112100062833525 (3.3 s). The duck under the squat bar was searched for the least head overlap with a
+quarter knee bend at most (0.08 left); bench lying back 0.17 (the block rig's big head; real bodies later, memory
+realistic-body-types). Rack: `build_combo_rack_01.py` insert holes every 0.175, squat hole 3.975 (bar 3.665),
+bench hole 3.45 unchanged; `ComboRack_01.blend` rebuilt (only the inserts and the J-cups changed; CHECK PASSED,
+inserts 1836 tris), inserts uploaded as `art/exports/ComboRackInserts_02.glb` (Model rbxassetid://104957113238990,
+meshes Left 106732119636975 / Right 76155092043429), `art/roblox/ComboRack_01.rbxmx` edited (2 MeshIds, 6 J-cup parts
++0.175); `StationLayout` barRest 3.665, benchJCupDrop -0.525; `ComboRack01_VerifyRacks.luau` squat bar 3.665. Code:
+`StationAnimationConfig.Setups`; `MeetLiftAnimation.begin` plays the setup from where the walk ends (root part at the
+lift's spot, setup started in the same step, no fade in; a lifter away from it, a warm-up rack, walks there first),
+`MeetBarHeld` false until the unrack, the rep animation started weightless at its set pose and faded in at the end,
+`unrack` = time left, `unrackSoundIn` times the rack sound; `ComputerLifters.walkSeconds`; `StationPoseAnimator`
+glides a grabbed bar into the hands (0.3 s); `UNRACK_ALLOWANCE_SECONDS` 10. Studio (Local/Regional meets, my player
++ 3 computer lifters): all four setups start with the walk's end (0.00 s later), bar held at +3.1 (squat), rep at
++6.55; squat screenshots: grip standing up at shoulder height, then bar on the back stepping back; bench numbers match
+the design (standing, sitting 2.9 s, lying 4.2, slid up and reaching 5.0, hand-off, lockout); deadlift hands on the
+bar at 2.6, bar on the floor through the hand-over; a stand-in 3 studs off walked 0.75 s then set up; template synced
+with all MeshIds; no errors. Found and fixed on the way: the deadlift rep restarted its own hinge at the hand-over
+(stood up and bent down again), and begin still teleported the body to the lift's spot first (a 0.4-stud jump and a
+step). NOT judged: how it all looks in motion (the user's visual check); the State arena's racks use the same template.
+NEXT: the State-and-up presentation (GAME_DESIGN §36.4) and the two-part cheering rule.
+
 **SMOOTH WALK-OUTS AND THE LOCAL "GAME FACE" (2026-11-08), UPLOADED, TESTED, APPROVED BY THE USER ("Looks good, commit"), COMMITTED** (user: Local and Regional
 walk-outs "too bland, and not smooth", but not flashy or long; chose the quick game face; GAME_DESIGN §36.4). Cause of the
 stutter, measured in Studio: the server moved anchored bodies every frame and clients saw them move on about half the frames
