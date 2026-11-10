@@ -246,6 +246,9 @@ export type CheerView = {
 	choices: number?,
 	bonus: number?,
 	coins: number?,
+	-- The lifter started their minigame before the bar was full: it went back to empty, and filling it now helps
+	-- the second part (role "cheer": the bar's words; role "lifter": the boost is for the next part).
+	secondPart: boolean?,
 }
 
 -- The player's own warm-up, server -> client, whenever it changes. Display only.

@@ -13,6 +13,17 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**TWO-PART CHEERING (2026-11-09), TESTED, COMMITTED (user: "Commit it")** (user: "Two-part cheering"; the rule of GAME_DESIGN §36.4
+"Cheering", 2026-11-08). `LiftAttemptService` now passes the phase number to the live boost (`setPhaseBoost`);
+`MeetCheering.boostFor`: as phase 1 (the minigame) starts, a bar not full goes back to empty (`turn.secondPart`), a full
+one helps both parts; `CheerView.secondPart` (LocalMeetRemotes); `MeetCheerBar`: "FILL IT BEFORE THEY START!" / "AGAIN!
+FILL IT FOR PART 2!" / "BOTH PARTS EASIER. KEEP IT LOUD!" / "PART 2 IS EASIER. KEEP IT LOUD!", the lifter's note "... ON
+YOUR NEXT PART". Studio: a temporary copy of MeetCheering exposing its internals: full before the minigame = +4.75 on both
+parts; half full, not refilled = 0 and 0 (bar to 0); refilled during part 1 = 0 then +4.75; a 60% bar empties at the
+start. Live State meet: the reset logged once per attempt as the minigame started (the real phase number); no errors.
+NOT tested: the bar's new words on screen and a real refill (they need a second player cheering in voice chat).
+NEXT: the State-and-up presentation (§36.4).
+
 **LIFT SETUPS AND THE RAISED SQUAT RACK (2026-11-08/09), UPLOADED, TESTED, APPROVED BY THE USER ("Looks good, commit"), COMMITTED** (user: "teleporting inside
 the bar, no unrack animation... no walk up animation, no sitting down animation", use the meet videos; then "make
 it the height of their shoulder blades"; GAME_DESIGN §37.5 "Getting to the bar"; memory realistic-lift-setups).

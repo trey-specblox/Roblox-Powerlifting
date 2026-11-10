@@ -6049,10 +6049,12 @@ in their weight class and stay in it. This reopens the ladder points
 >   The lifter sees only a short note, "THE CROWD IS BEHIND YOU! +4.75 TECHNIQUE". **[Claude's numbers, to tune after a real voice
 >   test]:** one person yelling fills the bar in about 10 seconds, several in as little as 2.5; quiet, it drains over 30 seconds; coins
 >   need at least 2 seconds of full-voice cheering into that attempt.
-> - **Later, once entrance animations are longer (user 2026-11-08, not built):** a bar maxed out before the lifter starts their minigame
->   makes **both parts** of the lift easier. Once the lifter is already in the minigame, the crowd has to **cheer again and fill the bar
->   again** for the second part to get the buff. [Claude's reading: when the minigame starts the bar goes back to empty for the second
->   part. Today a bar that fills at any point stays full, and helps every part that starts after it.]
+> - **Two parts (user 2026-11-08), built 2026-11-09 now that entrances and lift setups are longer:** a bar maxed out before the lifter
+>   starts their minigame makes **both parts** of the lift easier. Once the lifter is already in the minigame, the crowd has to **cheer
+>   again and fill the bar again** for the second part to get the buff. [Claude's reading, as built: when the minigame starts, a bar that
+>   isn't full goes back to empty; filling it during the first part helps the second. A full bar stays full and helps both parts.] The
+>   bar says so: "FILL IT BEFORE THEY START!", then "AGAIN! FILL IT FOR PART 2!"; full, "BOTH PARTS EASIER" or "PART 2 IS EASIER". The
+>   lifter's note adds "ON YOUR NEXT PART" for a refill. The crowd's roar still comes once per attempt.
 
 > **[CHANGED BY THE USER, 2026-11-06]: the State meet's format.** After playing the build above, the user changed it. This replaces §36.4's
 > "4 racks, at most 4 lifters" and "one lifter at a time" across the arena, and the "stuck on the bench" of the note above:

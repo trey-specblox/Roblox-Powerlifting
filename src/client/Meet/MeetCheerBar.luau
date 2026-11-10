@@ -240,10 +240,15 @@ function MeetCheerBar.start()
 		elseif view.full then
 			fullText.Text = "FULL!"
 			fullText.TextColor3 = C.ink
-			hint.Text = "THEIR LIFT IS EASIER. KEEP IT LOUD!"
+			hint.Text = if view.secondPart then "PART 2 IS EASIER. KEEP IT LOUD!"
+				else "BOTH PARTS EASIER. KEEP IT LOUD!"
+		elseif view.secondPart then
+			-- They started before it filled: it went back to empty, for the second part (two-part cheering).
+			fullText.Text = ""
+			hint.Text = if canCheer then "AGAIN! FILL IT FOR PART 2!" else "VOICE CHAT IS NEEDED TO CHEER"
 		else
 			fullText.Text = ""
-			hint.Text = if canCheer then "YELL IN VOICE CHAT TO FILL IT!" else "VOICE CHAT IS NEEDED TO CHEER"
+			hint.Text = if canCheer then "FILL IT BEFORE THEY START!" else "VOICE CHAT IS NEEDED TO CHEER"
 		end
 		hint.TextColor3 = if canCheer or view.full or view.result then C.white else C.muted
 		micLabel.Visible = canCheer and view.result == nil
@@ -262,7 +267,8 @@ function MeetCheerBar.start()
 			local bonus = string.format("%.2f", incoming.bonus or 0)
 			bonus = string.gsub(bonus, "0+$", "")
 			bonus = string.gsub(bonus, "%.$", "")
-			showNote(string.format("THE CROWD IS BEHIND YOU!  +%s TECHNIQUE", bonus), C.yellow, CheerConfig.LifterNoteSeconds)
+			showNote(string.format("THE CROWD IS BEHIND YOU!  +%s TECHNIQUE%s", bonus,
+				if incoming.secondPart then " ON YOUR NEXT PART" else ""), C.yellow, CheerConfig.LifterNoteSeconds)
 			return
 		elseif incoming.role == "coins" then
 			showNote(string.format("+%d COINS FOR CHEERING %s", incoming.coins or 0, string.upper(incoming.name or "")), C.yellow, 4)

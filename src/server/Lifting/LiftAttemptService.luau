@@ -149,10 +149,11 @@ local remotes: LiftingRemotes.RemoteSet? = nil
 local started = false
 --[[
 	A boost that can change DURING a lift (the crowd's cheering, MeetCheering): asked as each
-	phase starts, with the player and their gear's technique on the lift, it returns extra
-	effective technique (0 for none). Everything else about a lift stays locked at its start.
+	phase starts, with the player, their gear's technique on the lift and which phase it is
+	(1 = the first), it returns extra effective technique (0 for none). Everything else about
+	a lift stays locked at its start.
 ]]
-local phaseBoost: ((player: Player, gearTechnique: number) -> number)? = nil
+local phaseBoost: ((player: Player, gearTechnique: number, phaseIndex: number) -> number)? = nil
 local phaseBoostSource = ""
 
 local function log(message: string, ...: any)
@@ -216,7 +217,7 @@ local function resolvePhaseDifficulty(attempt: Attempt, spec: PhaseSpec): any
 				gear += modifier.value
 			end
 		end
-		local ok, extra = pcall(boost, attempt.player, gear)
+		local ok, extra = pcall(boost, attempt.player, gear, attempt.phaseIndex)
 		if ok and typeof(extra) == "number" and extra > 0 and extra == extra then
 			local boosted = ModifierSet.create()
 			ModifierSet.merge(boosted, modifiers)
@@ -727,7 +728,8 @@ function LiftAttemptService.abandon(player: Player)
 end
 
 -- Sets the live boost asked at each phase's start (see phaseBoost), named `source` in the lift's modifiers. One at a time.
-function LiftAttemptService.setPhaseBoost(source: string, boost: (player: Player, gearTechnique: number) -> number)
+function LiftAttemptService.setPhaseBoost(source: string,
+	boost: (player: Player, gearTechnique: number, phaseIndex: number) -> number)
 	phaseBoost, phaseBoostSource = boost, source
 end
 

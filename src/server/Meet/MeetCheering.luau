@@ -13,6 +13,11 @@
 	Technique, CheerConfig.bonusFor), and if the lift is good everyone who helped gets
 	the lift's GL points in coins.
 
+	TWO PARTS (user 2026-11-08): a bar full before the lifter starts their minigame makes
+	both parts of the lift easier. A bar that isn't full yet when the minigame starts goes
+	back to empty: the crowd has to cheer again and fill it during the first part for the
+	second part to get the boost.
+
 	TRUST: Roblox measures a voice's loudness only on that player's own device; the
 	server hears nothing. So the server takes a cheerer's word for how loud they were,
 	but only from someone standing in a zone of a rack whose lifter is up, who has voice
@@ -62,6 +67,8 @@ type Turn = {
 	paid: boolean,
 	-- "GOOD LIFT" or "NO LIFT" once the lift is over (the bar shows it until the turn ends).
 	verdict: string?,
+	-- The minigame started before the bar was full: it went back to empty, and filling it now helps the second part.
+	secondPart: boolean,
 	onFull: (() -> ())?,
 }
 
@@ -171,7 +178,8 @@ end
 
 local function fillUp(turn: Turn)
 	turn.fill, turn.full = 1, true
-	send(turn.lifter, { role = "lifter", name = turn.name, bonus = CheerConfig.bonusFor(gearTechnique(turn.lifter, turn.lift)) })
+	send(turn.lifter, { role = "lifter", name = turn.name, bonus = CheerConfig.bonusFor(gearTechnique(turn.lifter, turn.lift)),
+		secondPart = turn.secondPart })
 	print(string.format("[MeetCheering] the crowd filled %s's bar on rack %d", turn.name, turn.rack))
 	if turn.onFull then
 		task.spawn(turn.onFull)
@@ -220,9 +228,10 @@ local function tick(dt: number)
 			-- (The fill in steps of 2%, rounded down so it only shows full when it is, and a slowly draining bar doesn't send every tick.)
 			local fill = if turn.full then 1 else math.floor(turn.fill * 50) / 50
 			view = { role = "cheer", name = turn.name, fill = fill, full = turn.full, voice = voice, result = turn.verdict,
-				choice = if choices > 1 then choice else nil, choices = if choices > 1 then choices else nil }
-			key = string.format("cheer|%d|%s|%.2f|%s|%s|%s|%d/%d", turn.rack, turn.name, fill, tostring(turn.full), tostring(voice),
-				turn.verdict or "", choice, choices)
+				choice = if choices > 1 then choice else nil, choices = if choices > 1 then choices else nil,
+				secondPart = turn.secondPart }
+			key = string.format("cheer|%d|%s|%.2f|%s|%s|%s|%d/%d|%s", turn.rack, turn.name, fill, tostring(turn.full), tostring(voice),
+				turn.verdict or "", choice, choices, tostring(turn.secondPart))
 		end
 		if lastSent[player] ~= key then
 			lastSent[player] = key
@@ -293,6 +302,7 @@ function MeetCheering.openTurn(rack: number, lifter: Player, name: string, lift:
 		helped = {},
 		paid = false,
 		verdict = nil,
+		secondPart = false,
 		onFull = onFull,
 	}
 	turns[rack] = turn
@@ -348,11 +358,21 @@ end
 
 --[[
 	LiftAttemptService asks this as each phase of a lift starts: the extra technique for
-	`player` whose gear gives `gear` on the lift. 0 unless the crowd filled their bar.
+	`player` whose gear gives `gear` on the lift. 0 unless the crowd filled their bar. As the
+	first phase (the minigame) starts, a full bar counts for both parts; a bar not full yet
+	goes back to empty, to be filled again for the second part (user 2026-11-08).
 ]]
-local function boostFor(player: Player, gear: number): number
+local function boostFor(player: Player, gear: number, phaseIndex: number): number
 	local turn = byLifter[player]
-	return if turn and turn.full then CheerConfig.bonusFor(gear) else 0
+	if turn == nil then
+		return 0
+	end
+	if phaseIndex == 1 and not turn.full and not turn.secondPart then
+		turn.fill, turn.secondPart = 0, true
+		table.clear(turn.pending)
+		print(string.format("[MeetCheering] %s started without a full bar: it empties, fill it again for the second part", turn.name))
+	end
+	return if turn.full then CheerConfig.bonusFor(gear) else 0
 end
 
 function MeetCheering.start(set: LocalMeetRemotes.RemoteSet)
