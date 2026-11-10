@@ -67,6 +67,7 @@ local MockMeetArena = require(script.Parent:WaitForChild("MockMeetArena"))
 local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
 local LifterDisplay = require(script.Parent:WaitForChild("LifterDisplay"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
+local StateArenaShow = require(script.Parent:WaitForChild("StateArenaShow"))
 local StyledScreen = require(WorldFolder:WaitForChild("StyledScreen"))
 local StationVisuals = require(ServerFolder:WaitForChild("Training"):WaitForChild("StationVisuals"))
 
@@ -91,7 +92,8 @@ local WALK_STEP_Y = 23.5 -- a step at the walkway's back, half way up to the upp
 local SUITE_R0, SUITE_R1, SUITE_TOP = 146, 154, 56
 local WALL_R0, WALL_R1, WALL_TOP = 154, 156, 80
 -- The props, as in the Blender preview.
-local CUBE_Y = 62
+-- Hung lower than modelled (was 62; user 2026-11-10): its screens sit in view from the seats, 43 studs up.
+local CUBE_Y = 50
 -- The banners stand well behind the racks (user 2026-11-06), leaving a clear stretch to walk out along.
 local GANTRY_BEHIND = 22
 -- The meet area's barricade line (user 2026-11-01: "make sure the meet area is properly barricaded"): LocalMeet_02's
@@ -344,11 +346,16 @@ function StateArenaVenue.build(): (Venue?, string?)
 	-- ---------------------------------------------------------------- hung from the roof
 	local cube = place(model, "CentreCube", CFrame.new(0, CUBE_Y, 0))
 	local cubeScreens = cube and cube:FindFirstChild("CentreCube_Screens", true) :: BasePart?
-	if cubeScreens then
-		for _, out in ipairs({ Vector3.xAxis, -Vector3.xAxis, Vector3.zAxis, -Vector3.zAxis }) do
-			LocalMeetVenue.writeSign(cubeScreens, frame:VectorToWorldSpace(out), "STATE", "CHAMPIONSHIP", 12)
-		end
+	-- Its four screens follow the meet's biggest moment (StateArenaShow, user 2026-11-10); STATE CHAMPIONSHIP between.
+	local cubeOut: { Vector3 } = {}
+	for _, out in ipairs({ Vector3.xAxis, -Vector3.xAxis, Vector3.zAxis, -Vector3.zAxis }) do
+		table.insert(cubeOut, frame:VectorToWorldSpace(out))
 	end
+	StateArenaShow.attach(cubeScreens, cubeOut, model)
+	-- Where the arena is, for each player's StateArenaLights (dark only for those inside it).
+	model:SetAttribute("ArenaCentre", frame.Position)
+	model:SetAttribute("ArenaRadius", WALL_R1)
+	model:SetAttribute("ArenaTop", WALL_TOP + 40)
 	place(model, "ArenaFlag", CFrame.new(FLAG_AT))
 	for i, k in ipairs(BANNER_WEDGES) do
 		local a = k * WEDGE
@@ -360,7 +367,8 @@ function StateArenaVenue.build(): (Venue?, string?)
 			CFrame.Angles(0, a, 0) * CFrame.new(0, NAME_SIGN_Y, -NAME_SIGN_R) * CFrame.Angles(0, math.pi, 0), "NameSign_" .. i)
 		local screen = sign and sign:FindFirstChild("NameSign_Screen", true) :: BasePart?
 		if screen then
-			LocalMeetVenue.writeSign(screen, towardMiddle(frame, screen), "STATE CHAMPIONSHIP", nil, 20)
+			-- It shows the meet's biggest moment too, like the cube (StateArenaShow; STATE CHAMPIONSHIP between).
+			StateArenaShow.addWideScreen(screen, towardMiddle(frame, screen))
 		end
 	end
 
@@ -471,7 +479,10 @@ function StateArenaVenue.build(): (Venue?, string?)
 		light.Range = 60
 		light.Brightness = 1.5
 		light.Color = StarterGymConfig.LightColor
-		light.Parent = lamp("BowlLight_" .. i, Vector3.new(120 * math.sin(a), 52, -120 * math.cos(a)))
+		local bowlLamp = lamp("BowlLight_" .. i, Vector3.new(120 * math.sin(a), 52, -120 * math.cos(a)))
+		light.Parent = bowlLamp
+		-- Dimmed for a meet on each spectator's screen (StateArenaLights).
+		CollectionService:AddTag(bowlLamp, StateArenaShow.BowlLightTag)
 	end
 
 	-- ---------------------------------------------------------------- arriving and leaving
@@ -616,6 +627,10 @@ function StateArenaVenue.build(): (Venue?, string?)
 		lampPart.CanQuery = false
 		lampPart.Parent = rack
 		spotlight.Parent = lampPart
+		-- Spotlit while a lifter is on this rack, dim otherwise, on each player's screen in the arena (StateArenaLights).
+		lampPart:SetAttribute("Rack", index)
+		lampPart:SetAttribute(StateArenaShow.ActiveAttribute, false)
+		CollectionService:AddTag(lampPart, StateArenaShow.RackLightTag)
 		-- The frame's LookVector (-Z) points at the main stand: the lifter walks in from behind the rack and faces it.
 		local spot = frame * Vector3.new(x, PLATFORM_HEIGHT, LIFT_SPOT_BEHIND)
 		local staff = Instance.new("Folder")

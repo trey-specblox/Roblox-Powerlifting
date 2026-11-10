@@ -125,6 +125,7 @@ local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
 local MeetEntrance = require(script.Parent:WaitForChild("MeetEntrance"))
 local MeetLiveScreens = require(script.Parent:WaitForChild("MeetLiveScreens"))
 local MeetCheering = require(script.Parent:WaitForChild("MeetCheering"))
+local StateArenaShow = require(script.Parent:WaitForChild("StateArenaShow"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
@@ -233,6 +234,8 @@ type Lifter = {
 	-- How much hangs on their current attempt (LocalMeetConfig.StakesBuild), and what, in a few words.
 	stakesLevel: number?,
 	stakesLine: string?,
+	-- A good lift's big moment ("NEW GYM RECORD!", "TAKES THE LEAD!"...), shown until their next turn (the State cube).
+	moment: string?,
 	-- Chalking up while they choose (LocalMeetConfig.Chalk): their animation and their coach's; a new walk of the
 	-- coach's bumps the token and ends the old one.
 	chalkTrack: AnimationTrack?,
@@ -922,6 +925,18 @@ local function boardFor(lifter: Lifter, lines: { string }, mood: ("good" | "bad"
 		end
 	end
 	local player = lifter.player
+	-- The State arena's centre cube follows every rack's screen and shows the biggest moment (StateArenaShow).
+	if lifter.hall.state then
+		StateArenaShow.show(lifter.platform.index, {
+			name = if player then player.Name else lifter.name,
+			status = lines,
+			mood = mood,
+			recordAttempt = lifter.recordAttempt,
+			stakesLevel = lifter.stakesLevel,
+			stakesLine = lifter.stakesLine,
+			moment = lifter.moment,
+		})
+	end
 	LocalMeetVenue.showLifter(lifter.platform, {
 		name = if player then player.Name else lifter.name,
 		classLabel = lifter.classLabel,
@@ -1823,6 +1838,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 			table.remove(bag) :: string, build.ShoutVolume[level])
 	end
 	LocalMeetVenue.coachSays(lifter.platform, pick(if good then COACH_GOOD else COACH_MISS))
+	lifter.moment = moment
 	boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 		string.format("%s KG  ·  %s", kgText(weightKg), if good then "GOOD LIFT" else "NO LIFT"), lightsText(lifter.lights) },
 		if good then "good" else "bad")
@@ -2419,6 +2435,9 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				order[other].onScreen = order[other] == lifter
 			end
 			LocalMeetVenue.staffFor(platform, lifter.player)
+			-- Their rack is spotlit in the dark arena, from now until they sit back down (StateArenaShow).
+			StateArenaShow.rackActive(platform.index, true)
+			lifter.moment = nil
 			-- The crowd can cheer them on from this rack's watching zones (§36.4), from now until their lift is over. A full
 			-- bar gets a roar from the crowd.
 			local cheered = lifter.player
@@ -2451,6 +2470,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 			if cheered then
 				MeetCheering.closeTurn(cheered)
 			end
+			StateArenaShow.rackActive(platform.index, false)
 		end
 	end
 end
@@ -2560,6 +2580,7 @@ local function finishMeet(current: Meet)
 	current.heading = "FINAL"
 	if current.hall.state then
 		MeetCheering.closeAll()
+		StateArenaShow.meetOn(false)
 	end
 	-- Any walk back from the last round ends here: the awards place everyone.
 	for _, lifter in ipairs(current.lifters) do
@@ -2826,8 +2847,10 @@ local function runMeet(current: Meet)
 	updateStandings(current)
 	broadcastLobby()
 	task.wait(LocalMeetConfig.WeighInSeconds)
-	-- The State meet: each rack runs on its own (user 2026-11-06), and the meet ends when they all have.
+	-- The State meet: each rack runs on its own (user 2026-11-06), and the meet ends when they all have. The arena goes
+	-- dark, its racks spotlit as lifters come up (StateArenaShow, user 2026-11-10).
 	if hall.state then
+		StateArenaShow.meetOn(true)
 		local racks: { [LocalMeetVenue.Platform]: { Lifter } } = {}
 		for _, lifter in ipairs(current.lifters) do
 			racks[lifter.platform] = racks[lifter.platform] or {}

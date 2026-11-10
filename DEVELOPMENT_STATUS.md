@@ -13,6 +13,27 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**STATE PRESENTATION PART 1: THE CENTRE CUBE AND THE DARK ARENA (2026-11-10), TESTED, APPROVED ("Looks good, commit"), COMMITTED** (user: "lets start", picks
+"The biggest moment" and "Whole meet, lit racks"; GAME_DESIGN §36.4). New `src/server/Meet/StateArenaShow.luau`: the centre
+cube's four screens (one SurfaceGui per face of `CentreCube_Screens`, the game's screen style) show the biggest moment of up to
+four racks: record attempt (red) > NEW GYM RECORD! (flashing gold, 9 s) > another moment (6 s) > a result (5 s) > the highest
+stakes; equals swap every 6 s; STATE CHAMPIONSHIP when nobody is up. Fed from `LocalMeetService.boardFor` for State racks (the
+rack screen's own lines, mood, record attempt, stakes and the new `lifter.moment`); `rackActive` at a turn's open and close;
+`meetOn` at the State meet's start and `finishMeet`. It marks the lights: the arena model's `MeetLit`, each rack lamp's `Active`
+(tag `StateRackLight`, attribute `Rack`), bowl lamps tagged `StateBowlLight`; the arena model carries `ArenaCentre`/`ArenaRadius`/
+`ArenaTop`. New `src/client/Meet/StateArenaLights.luau`: while MeetLit and the player is inside the arena, eases Lighting to dark
+(ambient 0.07, brightness 0.3, exposure -0.35), the bowl lights to 20%, an active rack's spotlight to 10 (idle 1), and back to the
+saved values exactly afterwards. Studio State meet (1 player): dark on at the start, rack 1 spotlit 9.5 when called up; the cube
+went UP NEXT -> BAR LOADED -> NO LIFT with the lights; a test copy showed the red GYM RECORD ATTEMPT look and the NEW GYM RECORD!
+look (screenshots); MeetLit off restored ambient 0.33 / brightness 1.6 / exposure -0.25, bowl 1.5, rack 4; no game errors.
+NOT seen: a real record attempt on the live cube (Studio's records are empty) and several racks at once (needs 11+ players).
+Then (user: "I cant see the cube", "I cant run two clients because i dont have the admin panel, on the test clients"; pick "Big side
+signs + lower cube"): `StateArenaShow.addWideScreen` puts the same show on the two side-wall NameSign screens (a one-row layout:
+tag, name and line, strip on the right); `CUBE_Y` 62 -> 50 (screens 43 studs up); `AdminService.isAdmin` lets Studio test players
+(UserId <= 0, only in Studio) use the panel, so a Test > Clients and Servers run has it on every client. Studio, from the main
+stand: the dark arena, the active rack spotlit, the cube and both side signs showing "PLATFORM 1 · treylicious1 · SQUAT · ATTEMPT
+1 · 22.5 KG · UP NEXT" (screenshot); no errors. NEXT: the name chant, coach ritual, celebrations, introductions (§36.4).
+
 **TWO-PART CHEERING (2026-11-09), TESTED, COMMITTED (user: "Commit it")** (user: "Two-part cheering"; the rule of GAME_DESIGN §36.4
 "Cheering", 2026-11-08). `LiftAttemptService` now passes the phase number to the live boost (`setPhaseBoost`);
 `MeetCheering.boostFor`: as phase 1 (the minigame) starts, a bar not full goes back to empty (`turn.secondPart`), a full

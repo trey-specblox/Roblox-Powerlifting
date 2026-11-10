@@ -55,6 +55,12 @@ local function isAdmin(player: Player): boolean
 	if RunService:IsStudio() and Workspace:GetAttribute("StudioNotAdmin") == true then
 		return false
 	end
+	-- Studio only: the test players of a multi-client test (Test > Clients and Servers) have made-up UserIds of 0 or below,
+	-- so each can use the panel there (user 2026-11-10: "I cant run two clients because i dont have the admin panel"). No
+	-- real account has such an id, and outside Studio this never applies.
+	if RunService:IsStudio() and player.UserId <= 0 then
+		return true
+	end
 	return ADMIN_USER_IDS[player.UserId] == true
 end
 

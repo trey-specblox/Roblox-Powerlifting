@@ -6098,6 +6098,20 @@ in their weight class and stay in it. This reopens the ladder points
 >     every frame on each player's screen (it stuttered before); (2) the user chose **a quick "game face"** over the last steps of
 >     the walk out at Local and Regional (where no hype move plays): two chalky claps, then both hands tap the belt, arms only, so the
 >     legs keep walking; it ends as the walk does and **adds no time**. Everyone does it, players and computer lifters.
+>   - **[DECIDED BY THE USER, 2026-11-10] The arena wall and the dark arena (State and up), the first of the presentation:**
+>     - **The centre cube follows the biggest moment (user's pick):** up to four racks lift at once, so all four of its screens show
+>       one lifter. First a **GYM RECORD ATTEMPT** on the bar (the screen turns red, with what is tried); then a record just broken,
+>       **NEW GYM RECORD!** flashing gold; then another big moment just made (TAKES THE LEAD!...); then a lift's result (GOOD LIFT /
+>       NO LIFT); otherwise the lifter up with the most riding on it, the stakes in the strip. Equals swap every few seconds; with
+>       nobody up it says STATE CHAMPIONSHIP.
+>     - **Dark for the whole meet, lit racks (user's pick):** from the meet's start to its end the arena is dark and its bowl lights
+>       low; a rack with a lifter on it (called up to sitting back down) is spotlit bright, idle racks stay dim. Only for players
+>       inside the arena; normal again when the meet ends.
+>     - **[CHANGED BY THE USER, 2026-11-10] Easier to see:** the cube was hard to see (55 studs up, over the racks), so the **two big
+>       side-wall signs show the same moment too**, and the cube **hangs lower** (its screens 43 studs up, was 55) so it sits in view
+>       from the seats (user's pick).
+>     - **Built 2026-11-10** (`StateArenaShow`, `StateArenaLights`). Still to come from the list: the name chant, the coach's ritual,
+>       celebration styles, lifter introductions.
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own
