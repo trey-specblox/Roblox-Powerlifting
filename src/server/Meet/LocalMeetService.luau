@@ -1163,13 +1163,14 @@ end
 --[[
 	Chalking up while they choose (user 2026-11-06): the lifter at the stand; on squat
 	the coach behind them chalking their upper back, otherwise in front of them,
-	talking to them.
+	talking to them. With the coach's ritual (`ritual`, State and up) the coach always
+	starts in front, talking, and goes round to their back for the send off (coachSendOff).
 ]]
-local function startChalk(lifter: Lifter, lift: string)
+local function startChalk(lifter: Lifter, lift: string, ritual: boolean?)
 	stopChalk(lifter)
 	local chalk = LocalMeetConfig.Chalk
 	lifter.chalkTrack = MeetChalk.play(characterOf(lifter), chalk.LifterAnimationId)
-	local onBack = lift == "Squat"
+	local onBack = lift == "Squat" and not ritual
 	local platform = lifter.platform
 	MeetFigures.showClipboard(LocalMeetVenue.coachFigure(platform), not onBack)
 	lifter.coachHere, lifter.coachLine = false, nil
@@ -1179,6 +1180,37 @@ local function startChalk(lifter: Lifter, lift: string)
 		lifter.coachHere = true
 		LocalMeetVenue.coachSays(platform, lifter.coachLine)
 	end, if onBack then platform.coachBackVia else platform.coachFrontVia)
+end
+
+--[[
+	The coach's ritual (GAME_DESIGN §36.4, user 2026-11-11): halfway through the chalking up the coach goes round to the
+	lifter's back, slaps it twice and shouts `line` (text only). The lifter's own screen cuts to it (MeetRitualShot).
+]]
+local function coachSendOff(lifter: Lifter, line: string)
+	if not stillLifting(lifter) or lifter.chalkTrack == nil then
+		return
+	end
+	local platform = lifter.platform
+	MeetChalk.stop(lifter.coachTrack)
+	lifter.coachTrack = nil
+	lifter.coachHere = false
+	LocalMeetVenue.coachSays(platform, nil)
+	MeetFigures.showClipboard(LocalMeetVenue.coachFigure(platform), false)
+	coachWalk(lifter, platform.coachBackSpot, function(coach: Model)
+		-- (Still chalking up: the walk out may have begun while they came round.)
+		if lifter.chalkTrack == nil then
+			return
+		end
+		local track = MeetChalk.play(coach, LocalMeetConfig.Chalk.CoachBackAnimationId)
+		if track then
+			local first = LocalMeetConfig.Chalk.SlapAt[1] - LocalMeetConfig.Ritual.SlapLeadSeconds
+			track.TimePosition = math.max(0, first)
+		end
+		lifter.coachTrack = track
+		lifter.coachHere = true
+		lifter.coachLine = line
+		LocalMeetVenue.coachSays(platform, line)
+	end, platform.coachBackVia)
 end
 
 -- The coach follows the lifter back from the platform, once they have gone past, to wait near the chalk stand (user 2026-11-07).
@@ -2484,15 +2516,24 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				string.format("%s KG  ·  UP NEXT", kgText(weightKg)) })
 			bringBack(lifter)
 			if stillLifting(lifter) then
-				startChalk(lifter, lift)
+				-- The coach's ritual before the walk out (§36.4, user 2026-11-11): every turn at State and up.
+				local ritual = LocalMeetConfig.Ritual
+				local withRitual = ritual.MeetLevels[current.level] == true
+				startChalk(lifter, lift, withRitual)
 				-- On a third attempt the State crowd starts its chant as they chalk up (user 2026-11-10), until the result.
 				if current.hall.state and attemptNumber >= MeetConfig.AttemptsPerLift then
 					StateArenaShow.chant(platform.index, lift, liftForFirst(current, lifter, lift, attemptNumber, weightKg))
 				end
 				coachTell(lifter, pick(COACH_READY))
+				local ritualView: MockMeetRemotes.RitualView? = nil
+				if withRitual then
+					local sendOffLine = pick(ritual.SendOffLines)
+					ritualView = { startedAt = now(), coachLine = lifter.coachLine, sendOffLine = sendOffLine }
+					task.delay(ritual.CoachMoveAt, coachSendOff, lifter, sendOffLine)
+				end
 				sendState(lifter, "Waiting", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
-					note = "You're up. Chalk your hands.", chalk = chalkView(lifter) })
-				task.wait(LocalMeetConfig.Chalk.MinSeconds)
+					note = "You're up. Chalk your hands.", chalk = chalkView(lifter), ritual = ritualView })
+				task.wait(if withRitual then ritual.Seconds else LocalMeetConfig.Chalk.MinSeconds)
 				liftGroup({ lifter })
 				lifter.onTurn = false
 				sitLifter(lifter, true)

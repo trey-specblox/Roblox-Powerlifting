@@ -6111,7 +6111,7 @@ in their weight class and stay in it. This reopens the ladder points
 >       side-wall signs show the same moment too**, and the cube **hangs lower** (its screens 43 studs up, was 55) so it sits in view
 >       from the seats (user's pick).
 >     - **Built 2026-11-10** (`StateArenaShow`, `StateArenaLights`). Still to come from the list: the coach's ritual,
->       celebration styles, lifter introductions.
+>       celebration styles (lifter introductions dropped by the user, 2026-11-11).
 >   - **[CHANGED BY THE USER, 2026-11-10] The crowd's chant, NOT the lifter's name:** "i dont think the ai voice could say the names
 >     clearly, and in a good way. So instead ... stomps, claps, the chant can be 'Lift Or lose' 'Squat it up' 'Press it up' 'Lift it
 >     up' 'This all you'" (reference: a game's "sudden death" music, for its feel only: the beat is our own). From a lifter's walk out
@@ -6140,6 +6140,20 @@ in their weight class and stay in it. This reopens the ladder points
 >     UP); a third attempt for first place repeats LIFT OR LOSE.
 >   - **[CHANGED BY THE USER, 2026-11-10] Deadlift has two chants:** "the bench's chant shoulder of been 'PRESS IT UP' Deadlift is
 >     'lift it up' 'pick it up'". Bench repeats PRESS IT UP; deadlift's loop has LIFT IT UP and PICK IT UP in turn.
+>   - **[CHANGED BY THE USER, 2026-11-11] No lifter introductions; the coach's ritual as a cinematic:** "We dont need lifter
+>     introductions. We can do coach ritual before the walk out." Reference: https://www.youtube.com/watch?v=dHn-gvJpzPU (Austin
+>     Perkins at the IPF World Classic 2026), for its camera angles and scene changes: "once it is the lifters turn to lift, the
+>     camera angle changes and a little cinematic scene plays ... the coach talking to the lifter WHILE the lifter is chalking
+>     up, then walking out with the coach ritual, slapping the back, shouting etc." Studied (2026-11-11): every change is a hard cut, slightly
+>     handheld, the background soft; before each attempt a profile close-up of the face with a caption (attempt and weight),
+>     over the coach's shoulder while they talk, detail inserts (hands, belt), from behind with the coach's hand on the back,
+>     following from behind toward the lit platform, a low side shot crossing the stage, then wide for the lift. The user's
+>     choices: **every turn at State and up** (Local and Regional unchanged); the coach's words **as text only** (no voice);
+>     **a Skip button after the first time each meet** (the first turn always plays it). Only on the lifter's own screen.
+>     **Built 2026-11-11** (LocalMeetConfig.Ritual, MeetRitualShot, MeetCinema, MeetLiftMoment): about 7.6 s at the chalk
+>     stand (Face with the caption, OverCoach with the coach's line, Hands, SendOff: the coach goes round, slaps the back twice
+>     and shouts), then the walk out low behind them and low from in front to one side; black bars, every other screen and the
+>     staff tags hidden meanwhile. It replaces the State walk out's earlier in-front shot.
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own

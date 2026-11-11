@@ -105,10 +105,16 @@ export type MeetState = {
 	moment: string?,
 	-- (Local meet, Choose and the Waiting after it) the lifter is chalking up: ChalkView (client MeetChalkShot).
 	chalk: ChalkView?,
+	-- (State and up, the Waiting of their turn) the coach's ritual cinematic plays (client MeetRitualShot).
+	ritual: RitualView?,
 }
 
 -- Where the lifter's chalking up happens: the middle of the group, the way out into the room, and their coach.
 export type ChalkView = { at: Vector3, out: Vector3, coach: Model? }
+
+-- The coach's ritual (LocalMeetConfig.Ritual): when it started (Workspace:GetServerTimeNow()), what the coach says
+-- while the lifter chalks up, and what they shout with the back slaps.
+export type RitualView = { startedAt: number, coachLine: string?, sendOffLine: string }
 
 --[[
 	THE RACE (Local meet, user 2026-11-01: "It needs to be clear what you need

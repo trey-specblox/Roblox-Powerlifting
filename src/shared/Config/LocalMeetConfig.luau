@@ -257,11 +257,7 @@ LocalMeetConfig.LiftMoment = {
 	WalkBack = 10,
 	WalkUp = 2.5,
 	WalkAhead = 6,
-	-- The State meet's walk out (user 2026-11-06): the camera in front of the lifter and to one side, looking back at them.
-	CinematicAhead = 11,
-	CinematicSide = 5,
-	CinematicUp = 0.6,
-	CinematicRate = 2.5,
+	-- (The State meet's walk out has the coach's ritual's shots now: Ritual.Walk.)
 	-- The longest the camera stays on the platform after the lights; it normally leaves when the lifter does.
 	HoldMaxSeconds = 9,
 	-- Gliding back to behind the lifter before the player has the camera again.
@@ -269,6 +265,61 @@ LocalMeetConfig.LiftMoment = {
 	ReleaseBack = 13,
 	ReleaseUp = 5,
 	CardSlideSeconds = 0.35,
+}
+
+--[[
+	The coach's ritual before the walk out (GAME_DESIGN §36.4, user 2026-11-11), a short cinematic on the lifter's own
+	screen on every turn at State and up. Shot list from the user's reference video (IPF World Classic 2026): hard cuts,
+	slightly handheld, the background soft, black bars top and bottom.
+		Face      a profile close-up of the lifter chalking up; the attempt and weight come up below
+		OverCoach over the coach's shoulder: the lifter faces the camera while the coach talks (their words as a subtitle)
+		Hands     the hands, close, on the chalk claps
+		SendOff   from behind: the coach, now behind the lifter, slaps their back twice and shouts (text only, user's choice)
+		Follow    the walk out, low behind the lifter, toward the lit platform
+		Side      low, from in front and to one side as they come to the bar; then the lift's own shot (LiftMoment)
+		          takes over
+	The first turn of each meet always plays it; after that a SKIP button cuts straight to the plain camera.
+	Server timings are in seconds from "You're up" (the chalking up starts then).
+	PERFORMANCE: on the lifter's own screen only: one camera move a frame, a depth of field effect and a few frames of
+	screen text while it runs. Nothing for anyone else.
+]]
+LocalMeetConfig.Ritual = {
+	-- Meets where it plays: State and up (Nationals, Worlds and Sheffield join here when they exist).
+	MeetLevels = { State = true } :: { [string]: boolean },
+	-- The chalking up lasts this long with the ritual (Chalk.MinSeconds without it).
+	Seconds = 7.6,
+	-- The coach leaves the front of the stand for the lifter's back (during the Hands shot, off camera).
+	CoachMoveAt = 3.9,
+	-- The coach's back-slap animation starts this far into its loop, so the slaps come soon after they arrive.
+	SlapLeadSeconds = 0.45,
+	-- What the coach shouts with the slaps (text only).
+	SendOffLines = { "LET'S GO!", "YOUR WEIGHT!", "THIS IS YOURS!", "BIG LIFT! GO!", "TAKE IT!" },
+	-- The shots at the chalk stand: when each one cuts in (seconds from "You're up").
+	Shots = {
+		{ name = "Face", from = 0 },
+		{ name = "OverCoach", from = 2.0 },
+		{ name = "Hands", from = 4.15 },
+		{ name = "SendOff", from = 5.1 },
+	},
+	-- The walk out: the Follow shot this long, then Side until the lifter is at the bar (MeetLiftMoment).
+	FollowSeconds = 2.6,
+	-- Follow: this far behind the lifter and this far above (below: low) their middle, looking this far ahead of them.
+	-- Side: this far out to the side, this far ahead of them and this far above their middle, looking back at them (the
+	-- earlier State walk out's shot, clear of the side referees: straight out to the side sat behind their chairs).
+	-- Rate: how tightly the camera rides with them between cuts.
+	Walk = { FollowBack = 6, FollowUp = -0.5, FollowAhead = 10, SideOut = 5, SideAhead = 11, SideUp = 0.6, SideLookUp = 0.8,
+		Rate = 8 },
+	-- The camera's lens (degrees) during the ritual: narrower than usual, like the video's long lens.
+	FieldOfView = 42,
+	-- The black bars: this share of the screen's height each, sliding in and out this fast.
+	BarShare = 0.085,
+	BarSeconds = 0.35,
+	-- The caption under the Face shot: on screen this long.
+	CaptionSeconds = 2.2,
+	-- Handheld: how far (studs) and how much (degrees) the camera drifts, and how quickly.
+	Shake = { Studs = 0.04, Degrees = 0.45, Speed = 0.55 },
+	-- The soft background: blurred beyond the subject (FarIntensity), the foreground a little (NearIntensity).
+	Focus = { FarIntensity = 0.5, NearIntensity = 0.45, InFocusRadius = 2.5 },
 }
 
 --[[

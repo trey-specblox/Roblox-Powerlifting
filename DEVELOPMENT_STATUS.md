@@ -13,6 +13,25 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**THE COACH'S RITUAL CINEMATIC (2026-11-11), TESTED IN STUDIO, NOT COMMITTED** (user: "We dont need lifter introductions. We
+can do coach ritual before the walk out", reference https://www.youtube.com/watch?v=dHn-gvJpzPU for its angles and scene
+changes; choices: every turn at State and up, the coach's words as text only, SKIP after the first turn of a meet; GAME_DESIGN
+§36.4). Studied the video with contact sheets (hard cuts, handheld, soft backgrounds: profile close-up with a lower third, over
+the coach's shoulder, detail inserts, from behind with the coach's hand on the back, following from behind, low walk-on).
+`LocalMeetConfig.Ritual` (shots, timings, lens 42, bars, handheld, focus, walk shots). Server `LocalMeetService`: on a State turn
+`startChalk(..., ritual)` puts the coach in front talking on every lift, `coachSendOff` (at 3.9 s) walks the coach round to the
+lifter's back, plays the back-slap animation near its slaps and says the send-off line; the chalking up lasts 7.6 s (5.4
+without); the Waiting state carries `ritual = { startedAt, coachLine, sendOffLine }` (`MockMeetRemotes.RitualView`). Client:
+new `MeetCinema` (bars, every other ScreenGui and the private staff BillboardGuis hidden and restored, lens, DepthOfField, caption,
+subtitle, handheld, SKIP), new `MeetRitualShot` (Face, OverCoach, Hands, SendOff on the server's clock; SKIP from the second
+turn), `MeetChalkShot` keeps off the camera meanwhile, `MeetLiftMoment` walk out: Follow (low behind) then Side (low, in front
+and to one side: the earlier State walk shot; straight out to the side sat behind the side referees' chairs), the bars off and the
+card up at the bar (the old in-front State walk shot and its LiftMoment.Cinematic* settings are gone). Studio State meets (solo),
+screenshots of every shot after framing fixes: caption FIRST SQUAT 20 KG, coach's line as subtitle, coach soft in the
+foreground, hands in the chalk bowl, the back slap with LET'S GO!, low follow, walk-on; SKIP hidden on turn 1, shown on turn 2,
+clicked: screens, lens 70, blur and the chalk camera back; tags 0/4 during, 4/4 after; no new errors. NOT judged: how it feels
+in play (the user's eyes); Studio's test window reset the camera type once (test tool quirk; the shots now re-assert it).
+
 **STATE CROWD CHANT, PART 6: BENCH AND DEADLIFT CHANTS (2026-11-10), TESTED IN STUDIO, COMMITTED** (user: bench is
 "PRESS IT UP", deadlift "'lift it up' 'pick it up'"; "Make them, but make sure they are just like the other chants"; GAME_DESIGN
 §36.4). Nine ElevenLabs takes with the same two prompts as the squat and LIFT OR LOSE chants (about 233 credits with the word

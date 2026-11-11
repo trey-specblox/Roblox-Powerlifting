@@ -8,7 +8,8 @@
 	lifter is seen putting on the chalk while waiting for attempt selection"). The
 	server plays the animations (MeetChalk); on the lifter's own screen, this:
 		- holds the camera side-on to the lifter, the stand and the coach, with them in
-		  the clear part of the screen beside the choose panel
+		  the clear part of the screen beside the choose panel (not while the coach's
+		  ritual has it, State and up: MeetRitualShot)
 		- puts a puff of chalk on each clap and slap, and plays their sounds
 
 	Display only: it decides and saves nothing.
@@ -27,6 +28,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local MockMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("MockMeetRemotes"))
 
+local MeetCinema = require(script.Parent:WaitForChild("MeetCinema"))
 local MeetLiftMoment = require(script.Parent:WaitForChild("MeetLiftMoment"))
 local MeetSoundController = require(script.Parent:WaitForChild("MeetSoundController"))
 
@@ -142,6 +144,10 @@ local function step(dt: number)
 	end
 	follow(current.lifter)
 	follow(current.coach)
+	-- The coach's ritual has the camera (State and up, MeetRitualShot): only the puffs and sounds here.
+	if MeetCinema.ritualCamera then
+		return
+	end
 	local camera = Workspace.CurrentCamera
 	local viewport = camera.ViewportSize
 	local shot = SETTINGS.Shot

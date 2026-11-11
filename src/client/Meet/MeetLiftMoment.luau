@@ -12,6 +12,10 @@
 		walk back  the camera goes back to normal
 	The higher the attempt's stakes level (LocalMeetConfig.StakesBuild), the further the
 	camera pushes in.
+	At State and up the coach's ritual (MeetRitualShot, user 2026-11-11) carries on into the
+	walk out with its own shots, hard cuts and handheld (LocalMeetConfig.Ritual): low behind
+	the lifter toward the platform, then low from the side; the film look (MeetCinema) ends
+	and the card comes up at the bar. Skipped, the walk out gets the plain camera.
 	The crowd yelling during the lift comes from the server, for every lifter
 	(LocalMeetService crowdBehind).
 
@@ -33,6 +37,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local MockMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("MockMeetRemotes"))
 
+local MeetCinema = require(script.Parent:WaitForChild("MeetCinema"))
 local MeetSoundController = require(script.Parent:WaitForChild("MeetSoundController"))
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 local C = UIStyle.Colours
@@ -40,6 +45,7 @@ local C = UIStyle.Colours
 local MeetLiftMoment = {}
 
 local SETTINGS = LocalMeetConfig.LiftMoment
+local RITUAL = LocalMeetConfig.Ritual
 local RENDER_NAME = "MeetLiftMoment"
 -- The attribute and value MeetLiftAnimation puts on a character while it is set up at a bar.
 local LIFT_ATTRIBUTE = "MeetLift"
@@ -62,8 +68,11 @@ type Run = {
 	rayParams: RaycastParams,
 	-- How far the slow push in goes on this attempt.
 	pushInShare: number,
-	-- The walk out's cinematic shot, from in front of them (the State meet).
-	cinematic: boolean,
+	-- The walk out gets the coach's ritual's shots (State and up, not skipped), and which one is on.
+	ritualWalk: boolean,
+	walkShot: string?,
+	-- The card waits for the bar while the ritual's shots run.
+	cardState: MockMeetRemotes.MeetState?,
 }
 
 local run: Run? = nil
@@ -200,12 +209,16 @@ end
 
 -- Ends the turn's camera. `restore`: the camera goes back on the player (false: something else takes it straight over).
 local function finish(restore: boolean)
-	if run == nil then
+	local current = run
+	if current == nil then
 		return
 	end
 	run = nil
 	RunService:UnbindFromRenderStep(RENDER_NAME)
 	hideCard()
+	if current.ritualWalk then
+		MeetCinema.close()
+	end
 	if restore then
 		local camera = Workspace.CurrentCamera
 		local humanoid = Players.LocalPlayer.Character and Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
@@ -213,6 +226,17 @@ local function finish(restore: boolean)
 			camera.CameraSubject = humanoid
 		end
 		camera.CameraType = Enum.CameraType.Custom
+	end
+end
+
+-- The coach's ritual skipped on the way out, or done at the bar: the film look ends and the card comes up.
+local function endRitual(current: Run)
+	current.ritualWalk = false
+	MeetCinema.close()
+	local cardState = current.cardState
+	if cardState then
+		current.cardState = nil
+		showCard(cardState)
 	end
 end
 
@@ -231,11 +255,17 @@ local function step(dt: number)
 	local atBar = character:GetAttribute(LIFT_ATTRIBUTE) ~= nil
 	local elapsed = os.clock() - current.stageStart
 
+	if current.ritualWalk and not MeetCinema.walkShots then
+		endRitual(current)
+	end
 	if current.stage == "Walk" and atBar then
 		current.eye, current.look = shotAtBar(character, current.lift)
 		if current.eye then
 			enterStage(current, "Set")
 			elapsed = 0
+			if current.ritualWalk then
+				endRitual(current)
+			end
 		end
 	elseif current.stage == "Hold" and (not atBar or elapsed > SETTINGS.HoldMaxSeconds) then
 		enterStage(current, "Release")
@@ -245,14 +275,31 @@ local function step(dt: number)
 	local eye: Vector3
 	local look: Vector3
 	local rate: number
-	if current.stage == "Walk" and current.cinematic then
+	if current.stage == "Walk" and current.ritualWalk then
+		-- The coach's ritual's walk out: low behind them toward the lit platform, then low from in front and to one side.
 		local ahead = flatLook(root, camera)
-		local side = ahead:Cross(Vector3.yAxis)
+		local shot = if elapsed < RITUAL.FollowSeconds then "Follow" else "Side"
 		local from = root.Position + Vector3.new(0, 1, 0)
-		eye = clearOf(from, root.Position + ahead * SETTINGS.CinematicAhead + side * SETTINGS.CinematicSide
-			+ Vector3.new(0, SETTINGS.CinematicUp, 0), current.rayParams)
-		look = root.Position + Vector3.new(0, 0.8, 0)
-		rate = SETTINGS.CinematicRate
+		if shot == "Follow" then
+			eye = root.Position - ahead * RITUAL.Walk.FollowBack + Vector3.new(0, RITUAL.Walk.FollowUp, 0)
+			look = root.Position + ahead * RITUAL.Walk.FollowAhead + Vector3.new(0, 1.6, 0)
+		else
+			-- In front and to one side, low, looking back at them as they come (clear of the side referees).
+			local side = ahead:Cross(Vector3.yAxis)
+			eye = root.Position + side * RITUAL.Walk.SideOut + ahead * RITUAL.Walk.SideAhead + Vector3.new(0, RITUAL.Walk.SideUp, 0)
+			look = root.Position + Vector3.new(0, RITUAL.Walk.SideLookUp, 0)
+		end
+		eye = clearOf(from, eye, current.rayParams)
+		MeetCinema.focus((eye - root.Position).Magnitude)
+		local target = CFrame.lookAt(eye, look) * MeetCinema.handheld(os.clock())
+		-- A hard cut into each shot, then it rides with them.
+		if shot ~= current.walkShot then
+			current.walkShot = shot
+			camera.CFrame = target
+		else
+			camera.CFrame = camera.CFrame:Lerp(target, 1 - math.exp(-RITUAL.Walk.Rate * dt))
+		end
+		return
 	elseif current.stage == "Walk" then
 		local ahead = flatLook(root, camera)
 		local from = root.Position + Vector3.new(0, 1, 0)
@@ -285,6 +332,9 @@ end
 
 -- The lifter's turn starts (the Ready state, as they walk out).
 local function begin(state: MockMeetRemotes.MeetState)
+	-- The coach's ritual carries on into the walk out (State and up, not skipped). (Read before finish, which ends the
+	-- film look of an earlier turn still running.)
+	local ritualWalk = state.walkOutShot == true and MeetCinema.walkShots and MeetCinema.isOpen()
 	finish(false)
 	local character = Players.LocalPlayer.Character
 	if character == nil or state.lift == nil then
@@ -296,11 +346,14 @@ local function begin(state: MockMeetRemotes.MeetState)
 	params.RespectCanCollide = true
 	local shares = LocalMeetConfig.StakesBuild.PushInShare
 	run = { stage = "Walk", lift = state.lift, stageStart = os.clock(), rayParams = params,
-		pushInShare = shares[state.stakesLevel or 1] or shares[1], cinematic = state.walkOutShot == true }
+		pushInShare = shares[state.stakesLevel or 1] or shares[1], ritualWalk = ritualWalk, walkShot = nil,
+		cardState = if ritualWalk then state else nil }
 	local camera = Workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
 	RunService:BindToRenderStep(RENDER_NAME, Enum.RenderPriority.Camera.Value + 1, step)
-	showCard(state)
+	if not ritualWalk then
+		showCard(state)
+	end
 end
 
 -- Every state of the meet the player is lifting in (LocalMeetController).

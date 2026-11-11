@@ -35,6 +35,7 @@ local LocalMeetAwards = require(script.Parent:WaitForChild("LocalMeetAwards"))
 local LocalMeetWarmUpUI = require(script.Parent:WaitForChild("LocalMeetWarmUpUI"))
 local MeetLiftMoment = require(script.Parent:WaitForChild("MeetLiftMoment"))
 local MeetChalkShot = require(script.Parent:WaitForChild("MeetChalkShot"))
+local MeetRitualShot = require(script.Parent:WaitForChild("MeetRitualShot"))
 local MeetsTab = require(script.Parent:WaitForChild("MeetsTab"))
 
 local LocalMeetController = {}
@@ -59,6 +60,8 @@ function LocalMeetController.start()
 	})
 	-- Chalking up while they choose: the camera beside the panel, the puffs of chalk and their sounds.
 	remotes.state.OnClientEvent:Connect(MeetChalkShot.onState)
+	-- The coach's ritual on their turn at State and up: the cinematic at the chalk stand (on into the walk out).
+	remotes.state.OnClientEvent:Connect(MeetRitualShot.onState)
 	-- The lifter's turn on their own screen: the camera and the card.
 	remotes.state.OnClientEvent:Connect(MeetLiftMoment.onState)
 
@@ -112,6 +115,7 @@ function LocalMeetController.start()
 		ui.drawStandings(standings)
 		holdFooting(lifting)
 		if not lifting then
+			MeetRitualShot.stop()
 			MeetChalkShot.stop(true)
 			MeetLiftMoment.stop(true)
 			ui.setClearView(false)
