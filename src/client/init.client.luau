@@ -82,6 +82,9 @@ MeetSpotterAnimator.start()
 -- The dark State arena with its racks spotlit, while a State meet runs and you are inside. Visual only.
 local StateArenaLights = require(MeetFolder:WaitForChild("StateArenaLights"))
 StateArenaLights.start()
+-- The State arena crowd's stomp-clap chant, on third attempts from chalking up to the lift's result. Sound only.
+local MeetChant = require(MeetFolder:WaitForChild("MeetChant"))
+MeetChant.start()
 
 -- The meet's walks (walk-outs, walks back, coaches), drawn smoothly every frame from what the server sends. Visual only.
 local MeetWalkView = require(MeetFolder:WaitForChild("MeetWalkView"))

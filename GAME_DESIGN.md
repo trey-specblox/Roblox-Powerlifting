@@ -6110,8 +6110,36 @@ in their weight class and stay in it. This reopens the ladder points
 >     - **[CHANGED BY THE USER, 2026-11-10] Easier to see:** the cube was hard to see (55 studs up, over the racks), so the **two big
 >       side-wall signs show the same moment too**, and the cube **hangs lower** (its screens 43 studs up, was 55) so it sits in view
 >       from the seats (user's pick).
->     - **Built 2026-11-10** (`StateArenaShow`, `StateArenaLights`). Still to come from the list: the name chant, the coach's ritual,
+>     - **Built 2026-11-10** (`StateArenaShow`, `StateArenaLights`). Still to come from the list: the coach's ritual,
 >       celebration styles, lifter introductions.
+>   - **[CHANGED BY THE USER, 2026-11-10] The crowd's chant, NOT the lifter's name:** "i dont think the ai voice could say the names
+>     clearly, and in a good way. So instead ... stomps, claps, the chant can be 'Lift Or lose' 'Squat it up' 'Press it up' 'Lift it
+>     up' 'This all you'" (reference: a game's "sudden death" music, for its feel only: the beat is our own). From a lifter's walk out
+>     until their lift's result, everyone in the arena hears the crowd stomp, stomp and clap (116 BPM), and a chant on every loop: the
+>     lift's own (SQUAT IT UP / PRESS IT UP / LIFT IT UP), then LIFT OR LOSE or THIS ALL YOU, in turn. The beat is built and in the
+>     game (own work). The chants are made with ElevenLabs (user's go-ahead, 2026-11-10) and word-checked: LIFT OR LOSE, SQUAT IT UP
+>     and THIS ALL YOU are in the game; PRESS IT UP and LIFT IT UP wait for the user to pick a take by ear (the word check could not
+>     confirm any).
+>   - **[CHANGED BY THE USER, 2026-11-10] Only on third attempts:** "I want the chants to play when ... someone is on a 3rd
+>     attempt and if they make the lift they get number one, the chants is 'Lift or lose' when someone is on a normal 3rd attempt
+>     the normal lift chants." The stomp-clap beat and chants play only from a lifter's walk out on a third attempt until its
+>     result. If making the weight they chose would put them in first place (passing everyone ahead of them, the same check as
+>     the card's "TO TAKE THE LEAD" / "FOR THE WIN"), the crowd chants LIFT OR LOSE every loop. On any other third attempt it
+>     chants the lift's own chant (SQUAT IT UP / PRESS IT UP / LIFT IT UP) and THIS ALL YOU in turn (THIS ALL YOU alone while that
+>     lift's chant is not made yet). With several lifters out at once, LIFT OR LOSE wins; otherwise whoever walked out last.
+>   - **[CLARIFIED BY THE USER, 2026-11-10] It starts at the chalk:** "when it is third attempt, i want the chants to start
+>     playing while the lifter is in its animation on putting on chalk." The beat and chants start when the lifter is called up
+>     and starts chalking up at the chalk stand, not at the walk out, and go on until the lift's result.
+>   - **[CHANGED BY THE USER, 2026-11-10] One mix, faster, one chant:** the first chants "dont blend in with the background
+>     audio enough ... You can hear where the audio starts, and theres like a tiny stutter" and were nothing like the
+>     reference; then "Rebuild as one mix", and "the clap is too slow. its it needs to be quicker and more repeatable. Remove
+>     'this all you' from the audio. just make the chants repeat whatever lifts main chants is more often and with the faster
+>     claps." Each chant is now one finished stereo loop (art/scripts/make_chant_mix.py): the stomp, stomp, clap beat at 144
+>     BPM with the chant stacked into a whole crowd, all in the same arena echo as the background crowd, the chant on every
+>     other bar. THIS ALL YOU is gone. A normal third attempt repeats its lift's own chant (SQUAT IT UP / PRESS IT UP / LIFT IT
+>     UP); a third attempt for first place repeats LIFT OR LOSE.
+>   - **[CHANGED BY THE USER, 2026-11-10] Deadlift has two chants:** "the bench's chant shoulder of been 'PRESS IT UP' Deadlift is
+>     'lift it up' 'pick it up'". Bench repeats PRESS IT UP; deadlift's loop has LIFT IT UP and PICK IT UP in turn.
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own

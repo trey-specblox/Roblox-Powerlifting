@@ -1793,6 +1793,10 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	local placeBefore = placeOf(current, lifter)
 	-- The attempt is over: the sign comes down (a record it set shows in the facts once saved).
 	lifter.recordAttempt = nil
+	-- The crowd's chant for it stops (the cheer or the groan takes over).
+	if lifter.hall.state then
+		StateArenaShow.chant(lifter.platform.index, nil)
+	end
 	local good = result == "GoodLift"
 	if player then
 		MeetLiveScreens.verdict(player, good)
@@ -1958,6 +1962,29 @@ local function raceFor(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	}
 end
 
+-- How many rivals are ahead of the lifter, and how many of them making `weightKg` passes.
+local function rivalsPassed(race: MockMeetRemotes.RaceView, weightKg: number): (number, number)
+	local ahead, passed = 0, 0
+	for _, rival in ipairs(race.rivals) do
+		if rival.needKg > 0 then
+			ahead += 1
+			if weightKg >= rival.needKg then
+				passed += 1
+			end
+		end
+	end
+	return ahead, passed
+end
+
+-- Whether making `weightKg` puts the lifter in first place, as things stand when they walk out (the crowd's LIFT OR LOSE).
+local function liftForFirst(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number): boolean
+	if bombed(lifter) then
+		return false
+	end
+	local ahead, passed = rivalsPassed(raceFor(current, lifter, lift, attemptNumber), weightKg)
+	return ahead > 0 and passed == ahead
+end
+
 --[[
 	What this attempt is for, in a few words, for the lifter's card (client
 	MeetLiftMoment, §37.5), or nil when nothing special hangs on it, and whether it
@@ -1976,15 +2003,7 @@ local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNum
 		return "MUST MAKE IT FOR A TOTAL", true
 	end
 	local last = isMeetsLastAttempt(lift, attemptNumber)
-	local ahead, passed = 0, 0
-	for _, rival in ipairs(race.rivals) do
-		if rival.needKg > 0 then
-			ahead += 1
-			if weightKg >= rival.needKg then
-				passed += 1
-			end
-		end
-	end
+	local ahead, passed = rivalsPassed(race, weightKg)
 	if ahead > 0 and passed == ahead then
 		return if last then "FOR THE WIN" else "TO TAKE THE LEAD", true
 	end
@@ -2276,6 +2295,13 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				-- The walk out from the warm-up room straight in to the bar (§37.5: the rack faces the entrance), then set
 				-- up for the lift.
 				lifter.outOnPlatform = true
+				-- At State, on a third attempt, the arena's crowd stomps, claps and chants until the lift's result (§36.4,
+				-- MeetChant, user 2026-11-10): LIFT OR LOSE when making it puts them first, else the lift's own chant. At a
+				-- meet with turns it started already while they chalked up (below); here it starts for a meet without turns.
+				if current.hall.state and attemptNumber >= MeetConfig.AttemptsPerLift then
+					StateArenaShow.chant(lifter.platform.index, lift,
+						liftForFirst(current, lifter, lift, attemptNumber, weightKg))
+				end
 				-- Hands chalked: the lifter walks out first, and the coach follows behind to watch (user 2026-11-07).
 				stopChalk(lifter)
 				MeetFigures.showClipboard(LocalMeetVenue.coachFigure(lifter.platform), true)
@@ -2459,6 +2485,10 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 			bringBack(lifter)
 			if stillLifting(lifter) then
 				startChalk(lifter, lift)
+				-- On a third attempt the State crowd starts its chant as they chalk up (user 2026-11-10), until the result.
+				if current.hall.state and attemptNumber >= MeetConfig.AttemptsPerLift then
+					StateArenaShow.chant(platform.index, lift, liftForFirst(current, lifter, lift, attemptNumber, weightKg))
+				end
 				coachTell(lifter, pick(COACH_READY))
 				sendState(lifter, "Waiting", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
 					note = "You're up. Chalk your hands.", chalk = chalkView(lifter) })

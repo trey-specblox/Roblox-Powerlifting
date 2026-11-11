@@ -252,6 +252,29 @@ MeetSoundConfig.LiftCrowd = {
 	RoarWindowSeconds = 6,
 }
 
+--[[
+	The State arena crowd's chant (GAME_DESIGN §36.4, user 2026-11-10: "stomps, claps, the chant can be 'Lift Or lose' 'Squat it up'
+	'Press it up' 'Lift it up'"; no names, an AI voice can't say them well). Only on third attempts, from the lifter chalking up
+	until their lift's result. Each chant is ONE finished stereo loop (user: "Rebuild as one mix"; art/scripts/make_chant_mix.py):
+	the crowd stomping, stomping and clapping at 144 BPM ("the clap is too slow"), with the chant on every other bar, all in the
+	arena's echo. LIFT OR LOSE when making it puts the lifter first, else the lift's own chant ("Remove 'this all you'"; deadlift
+	has two, "'lift it up' 'pick it up'"). Played looped on each player's screen while they are in the arena (MeetChant). A
+	lift whose mix has an empty id has no chant.
+]]
+MeetSoundConfig.Chant = {
+	-- What the arena chants for (its Chant attribute: "LiftOrLose" or the lift): the loop and its volume (about 5 dB over
+	-- the arena's background crowd, worked out by make_chant_mix.py).
+	Mixes = {
+		LiftOrLose = { id = "rbxassetid://102688704977029", volume = 0.44 },
+		Squat = { id = "rbxassetid://109418282642406", volume = 0.5 },
+		Bench = { id = "rbxassetid://77510660676043", volume = 0.53 },
+		-- (LIFT IT UP and PICK IT UP in turn, user 2026-11-10.)
+		Deadlift = { id = "rbxassetid://94448130535726", volume = 0.66 },
+	} :: { [string]: { id: string, volume: number } },
+	FadeInSeconds = 1.5,
+	FadeOutSeconds = 0.9,
+}
+
 -- Those of these cues that have a sound.
 local function withSounds(cues: { string }): { string }
 	local names = {}

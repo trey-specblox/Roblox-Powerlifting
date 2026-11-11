@@ -910,6 +910,14 @@
     }
   },
   "sounds": {
+    "ChantBeat": {
+      "about": "The State arena crowd's first chant beat: stomp, stomp, clap, 116 BPM, a seamless 4-bar loop. Own work, made from scratch by art/scripts/make_chant_beat.py. No longer played on its own: the game plays the ChantMix_ loops (art/scripts/make_chant_mix.py), which reuse this script's crowd at 144 BPM",
+      "file": "art/sounds/ChantBeat.wav",
+      "license": "own work",
+      "ids": {
+        "audio": "rbxassetid://75581947336971"
+      }
+    },
     "Rhythm_Kick": {
       "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
       "file": "art/sounds/Rhythm_Kick.wav",

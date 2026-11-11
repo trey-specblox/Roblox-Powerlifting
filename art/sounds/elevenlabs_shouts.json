@@ -1,5 +1,5 @@
 {
-  "about": "Shouts people yell at a meet, the sounds of chalking up and of opening a gear crate (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment. Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
+  "about": "Shouts people yell at a meet, the sounds of chalking up and of opening a gear crate (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment; and the State arena crowd's chants (GAME_DESIGN 36.4, MeetSoundConfig.Chant; the ChantMix_ loops are mixed by art/scripts/make_chant_mix.py). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
   "sounds": {
     "LiftShout_1": {
       "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
@@ -599,6 +599,86 @@
       "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
       "ids": {
         "audio": "rbxassetid://104195321031097"
+      }
+    },
+    "Chant_LiftOrLose": {
+      "about": "A packed stadium crowd of excited sports fans chanting in unison, clearly in English, \"LIFT! OR! LOSE!\" three loud words in rhythm, hyping up their athlete, happy and rallying, big arena echo, about 2 seconds",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_LiftOrLose.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://109769382818593"
+      }
+    },
+    "Chant_SquatItUp": {
+      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"SQUAT IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_SquatItUp.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://82700761660432"
+      }
+    },
+    "Chant_ThisAllYou": {
+      "about": "A packed stadium crowd of excited sports fans chanting in unison, clearly in English, \"THIS! ALL! YOU!\" three loud words in rhythm, hyping up their athlete, happy and rallying, big arena echo, about 2 seconds",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_ThisAllYou.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://119631593039458"
+      }
+    },
+    "ChantMix_LiftOrLose": {
+      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_LiftOrLose take (LIFT OR LOSE) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_LiftOrLose.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://102688704977029"
+      }
+    },
+    "ChantMix_SquatItUp": {
+      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_SquatItUp take (SQUAT IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_SquatItUp.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://109418282642406"
+      }
+    },
+    "Chant_PressItUp": {
+      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"PRESS IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take D, word check read \"Press it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_PressItUp.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "Chant_LiftItUp": {
+      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"LIFT IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take F, word check read \"Lift it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_LiftItUp.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "Chant_PickItUp": {
+      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"PICK IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take C, word check read \"Pick it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_PickItUp.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "ChantMix_PressItUp": {
+      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_PressItUp take (PRESS IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_PressItUp.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://77510660676043"
+      }
+    },
+    "ChantMix_Deadlift": {
+      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_LiftItUp and Chant_PickItUp takes (LIFT IT UP, then PICK IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_Deadlift.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://94448130535726"
       }
     }
   }

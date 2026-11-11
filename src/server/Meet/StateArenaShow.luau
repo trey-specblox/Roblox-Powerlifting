@@ -40,6 +40,7 @@ StateArenaShow.RackLightTag = "StateRackLight"
 StateArenaShow.BowlLightTag = "StateBowlLight"
 StateArenaShow.MeetLitAttribute = "MeetLit"
 StateArenaShow.ActiveAttribute = "Active"
+StateArenaShow.ChantAttribute = "Chant"
 
 -- How long a moment stays the cube's first choice (seconds), and how often equals swap.
 local NEW_RECORD_SECONDS = 9
@@ -89,6 +90,8 @@ local featured: number? = nil
 local featuredSince = 0
 local flashOn = false
 local started = false
+-- The racks whose lifter is out (walked out, lift not over), and for which lift: the crowd chants (chant).
+local chanting: { [number]: { lift: string, forFirst: boolean, at: number } } = {}
 
 local function frame(parent: Instance, name: string, position: UDim2, size: UDim2, colour: Color3, rotation: number?): Frame
 	local f = Instance.new("Frame")
@@ -322,9 +325,34 @@ function StateArenaShow.meetOn(on: boolean)
 	end
 	if not on then
 		table.clear(entries)
+		table.clear(chanting)
+		if arenaModel then
+			arenaModel:SetAttribute(StateArenaShow.ChantAttribute, nil)
+		end
 		for _, lamp in ipairs(CollectionService:GetTagged(StateArenaShow.RackLightTag)) do
 			lamp:SetAttribute(StateArenaShow.ActiveAttribute, false)
 		end
+	end
+end
+
+--[[
+	The crowd's chant (user 2026-11-10; MeetSoundConfig.Chant): rack `rack`'s lifter walked out on a third attempt for `lift`
+	(`forFirst`: making it puts them first), or (nil) their lift is over. The arena chants while any such lifter is out: LIFT
+	OR LOSE while anyone out is lifting for first place, else for the lift of whoever walked out last. The arena model's Chant
+	attribute ("LiftOrLose" or the lift), which each player's MeetChant plays.
+]]
+function StateArenaShow.chant(rack: number, lift: string?, forFirst: boolean?)
+	chanting[rack] = if lift then { lift = lift, forFirst = forFirst == true, at = os.clock() } else nil
+	local latest: { lift: string, forFirst: boolean, at: number }? = nil
+	for _, entry in pairs(chanting) do
+		if latest == nil or (entry.forFirst and not latest.forFirst)
+			or (entry.forFirst == latest.forFirst and entry.at > latest.at) then
+			latest = entry
+		end
+	end
+	if arenaModel then
+		arenaModel:SetAttribute(StateArenaShow.ChantAttribute,
+			if latest == nil then nil elseif latest.forFirst then "LiftOrLose" else latest.lift)
 	end
 end
 
@@ -336,6 +364,10 @@ function StateArenaShow.rackActive(rack: number, active: boolean)
 		end
 	end
 	if not active then
+		-- (A turn that ended without a result, a withdrawal: the chant for it stops too.)
+		if chanting[rack] then
+			StateArenaShow.chant(rack, nil)
+		end
 		-- Their result stays on the cube a little while (priority ages it out), then the rack drops off it.
 		local entry = entries[rack]
 		if entry then

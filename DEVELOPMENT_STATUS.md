@@ -13,6 +13,78 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**STATE CROWD CHANT, PART 6: BENCH AND DEADLIFT CHANTS (2026-11-10), TESTED IN STUDIO, COMMITTED** (user: bench is
+"PRESS IT UP", deadlift "'lift it up' 'pick it up'"; "Make them, but make sure they are just like the other chants"; GAME_DESIGN
+§36.4). Nine ElevenLabs takes with the same two prompts as the squat and LIFT OR LOSE chants (about 233 credits with the word
+checks). Word checks: PRESS IT UP D/E/F all "Press it up!" (D used); LIFT IT UP D "Get up!", E blank, F "Lift it up!" (F used);
+PICK IT UP A/B blank, C "Pick it up!" (C used). All takes kept in Shouts/Takes; the used ones in Shouts/Raw. make_chant_mix.py
+now takes a chant per chant bar (deadlift: LIFT IT UP on bar 1, PICK IT UP on bar 3) and levels each take before mixing; the
+LiftOrLose and SquatItUp mixes rebuilt bit-identical to the uploaded files. Uploaded: ChantMix_PressItUp
+rbxassetid://77510660676043 (volume 0.53), ChantMix_Deadlift rbxassetid://94448130535726 (0.66). Studio State meet (solo, a whole
+meet): each lift's rounds 1-2 silent; squat #3, bench #3 and deadlift #3 each started its own mix at "You're up. Chalk your
+hands.", looped every 6.67 s at its volume, and stopped about 1 s after the result; no chant errors or warnings. How it sounds
+in the game is the user's call.
+
+**STATE CROWD CHANT, PART 5: ONE MIX, FASTER, ONE CHANT (2026-11-10), TESTED IN STUDIO, COMMITTED** (user: the first
+chants did not blend with the arena's background crowd, you could hear them start, a tiny stutter; "Rebuild as one mix"; "the
+clap is too slow ... Remove 'this all you' ... repeat whatever lifts main chants"; "Good, put it in"; GAME_DESIGN §36.4).
+New `art/scripts/make_chant_mix.py`: one stereo loop per chant (6.67 s, 144 BPM: the beat's crowd made twice for width, the
+word-checked take stacked 14 times into a crowd on bars 1 and 3, one arena echo, the bed's filtering, the join in the quiet
+rest of bar 4). Uploaded: ChantMix_LiftOrLose rbxassetid://102688704977029, ChantMix_SquatItUp rbxassetid://109418282642406
+(art/sounds/elevenlabs_shouts.json). `MeetSoundConfig.Chant` is now `Mixes` (LiftOrLose, Squat; Bench and Deadlift empty until
+the user picks a take from the 4_Pick listening files) with volumes 0.44 / 0.5, fade in 1.5 s, out 0.9 s. `MeetChant` plays one
+looped mix, preloaded (ContentProvider), Heartbeat fades, crossfades from one chant to another. The old beat and clips
+(ChantBeat, Chant_*) are no longer played. Studio State meet (solo): squat rounds 1-2 silent; squat #3 Chant_Squat at "You're up.
+Chalk your hands.", looped every 6.67 s at 0.50, faded and stopped 1.0 s after the result; the arena's Chant set by hand on the
+client: LiftOrLose faded in to 0.44, LiftOrLose to Squat crossfaded in 2 s, Bench (no mix) and nil went quiet; no chant errors.
+How it sounds in the game is the user's call.
+
+**STATE CROWD CHANT, PART 4: IT STARTS AT THE CHALK (2026-11-10), TESTED IN STUDIO, COMMITTED** (user: on a third attempt
+the chants start "while the lifter is in its animation on putting on chalk"; GAME_DESIGN §36.4). `LocalMeetService`: the turn
+(called up from the bench) calls `StateArenaShow.chant` right after `startChalk` on a third attempt; the walk-out call stays
+for a meet without turns. Studio State meet (solo): squat rounds 1-2 silent; squat #3 the Chant attribute and the beat at
+"You're up. Chalk your hands." (5.4 s before the walk out), SQUAT IT UP 4.3 s later, then THIS ALL YOU, SQUAT IT UP; the beat
+stopped 0.9 s after the result.
+
+**STATE CROWD CHANT, PART 3: THIRD ATTEMPTS ONLY (2026-11-10), TESTED IN STUDIO, COMMITTED** (user:
+chants on 3rd attempts, "Lift or lose" when making it gets them number one, else the normal lift chants; GAME_DESIGN §36.4).
+`LocalMeetService`: new `rivalsPassed` (shared with `stakesFor`) and `liftForFirst`; the walk-out hook calls
+`StateArenaShow.chant(rack, lift, forFirst)` only when `attemptNumber >= MeetConfig.AttemptsPerLift`. `StateArenaShow.chant` sets
+the Chant attribute to "LiftOrLose" while any lifter out is lifting for first, else the latest lift. `MeetSoundConfig.Chant`:
+`Others` replaced by `ForFirst = "LiftOrLose"` and `Between = "ThisAllYou"`. `MeetChant`: LIFT OR LOSE every loop for first,
+else the lift's own and THIS ALL YOU in turn; a run counter stops a chant from an earlier run playing late. The beat now fades
+on Heartbeat, not a tween: in the first Studio run the test client drew 0 frames a second, tweens froze, and after the bench
+third attempt the beat never stopped (a minimised player window could do the same). Studio State meet (solo, 1 lifter), with
+sources checked synced: squat and bench rounds 1-2 silent; squat #3 the beat at the walk out, SQUAT IT UP 4.1 s later, then THIS
+ALL YOU, SQUAT IT UP, THIS ALL YOU every 8.3 s, the beat stopped 0.9 s after the result; bench #3 (no chant of its own yet) THIS
+ALL YOU every loop; the arena's Chant set to "LiftOrLose" by hand on the client: LIFT OR LOSE every 8.3 s, then a clean stop; no
+errors. NOT tested: the server choosing LiftOrLose for real (a solo meet has no one to pass; it uses the same check as the card's
+TO TAKE THE LEAD / FOR THE WIN); a two-player test would show it. How it sounds is the user's call.
+
+**STATE CROWD CHANT, PART 2: THE CHANTS (2026-11-10), NOT TESTED IN STUDIO YET, COMMITTED** (user: "Yes, make them").
+ElevenLabs Sound Effects, flow "State crowd chants", 12 takes plus 12 word checks, about 370 credits. Word checks: LIFT OR LOSE
+take B "Lift or lose!", SQUAT IT UP take A "Squat it up!", THIS ALL YOU take B "This all you"; these three are in
+`art/sounds/elevenlabs_shouts.json` (Chant_LiftOrLose, Chant_SquatItUp, Chant_ThisAllYou), cut by make_lift_shouts.py and uploaded
+(rbxassetid://109769382818593, 82700761660432, 119631593039458), and filled in `MeetSoundConfig.Chant.Phrases`. PRESS IT UP (takes
+A, B, C) and LIFT IT UP (B, C) came back blank in every word check, and LIFT IT UP A read "Give it up!" (rejected); all takes are in
+Extras\Sounds\Shouts\Takes. `MeetChant` now gives a lift with no chant of its own the others every loop. Listening files in
+Extras\Sounds\ChantListen (1_Squat_InGame.wav, 2_Pick_*.wav) were sent to the user. NOT done: a Studio test (no place was open in
+Studio); the user's pick for PRESS IT UP and LIFT IT UP (copy the take to Shouts\Raw\Chant_PressItUp.mp3 / Chant_LiftItUp.mp3, add
+the manifest entry, run make_lift_shouts.py and the upload, fill the id); how it sounds (the user's ears).
+
+**STATE CROWD CHANT, PART 1: THE BEAT (2026-11-10), TESTED, COMMITTED** (user: stomps, claps and the chants "LIFT OR LOSE",
+"SQUAT IT UP", "PRESS IT UP", "LIFT IT UP", "THIS ALL YOU", no names; GAME_DESIGN §36.4). `art/scripts/make_chant_beat.py`
+(own work, made from scratch: 60 stompers, 80 clappers, each a little out of time, an arena echo, a seamless 4-bar loop at
+116 BPM: stomp, stomp, clap, rest) wrote `art/sounds/ChantBeat.wav` (listed in `art/materials/materials.json`), uploaded
+rbxassetid://75581947336971; a listening file `ChantBeat_Listen.wav` in Extras\Sounds was sent to the user. `MeetSoundConfig.Chant`
+(beat, loop 8.2758 s, chants on bars 3-4 at 4.1379 s, five phrase ids EMPTY), `StateArenaShow.chant` (the arena model's Chant
+attribute: the lift of whoever walked out last, while any rack's lifter is out), hooks in `LocalMeetService` (walk out on, the
+result off; `rackActive(false)` and `meetOn(false)` clear it), new `src/client/Meet/MeetChant.luau` (plays the beat in the arena,
+fades in/out, a chant per loop: the lift's own, then LIFT OR LOSE / THIS ALL YOU; `StateArenaLights.insideArena` now public).
+Studio State meet: the beat loaded (8.28 s), started at the walk out (Chant=Squat), looped through the lift, faded out at the
+result and started again at the next walk out; no errors. NOT done: the five chants (ElevenLabs credits need the user's OK, about
+250-350); how it sounds (the user's ears). NEXT: the user's OK for the chants, then make, word-check, upload and fill the ids.
+
 **STATE PRESENTATION PART 1: THE CENTRE CUBE AND THE DARK ARENA (2026-11-10), TESTED, APPROVED ("Looks good, commit"), COMMITTED** (user: "lets start", picks
 "The biggest moment" and "Whole meet, lit racks"; GAME_DESIGN §36.4). New `src/server/Meet/StateArenaShow.luau`: the centre
 cube's four screens (one SurfaceGui per face of `CentreCube_Screens`, the game's screen style) show the biggest moment of up to

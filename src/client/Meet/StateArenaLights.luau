@@ -140,6 +140,9 @@ local function apply(dt: number)
 	end
 end
 
+-- Whether a State meet is on and this player is inside the arena (MeetChant plays the crowd's chant only then).
+StateArenaLights.insideArena = insideArena
+
 function StateArenaLights.start()
 	task.spawn(function()
 		while true do
