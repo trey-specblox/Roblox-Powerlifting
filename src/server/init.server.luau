@@ -93,6 +93,9 @@ CoinDisplayService.start()
 -- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
 local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))
 ShopService.start()
+-- The celebration spin at the NPC in the dumbbell corner (the server rolls and takes the coins).
+local CelebrationSpinService = require(script:WaitForChild("Economy"):WaitForChild("CelebrationSpinService"))
+CelebrationSpinService.start()
 
 -- Wearing the gear: MY GEAR's choices are saved, and every R15 character is dressed in them.
 local GearService = require(script:WaitForChild("Economy"):WaitForChild("GearService"))

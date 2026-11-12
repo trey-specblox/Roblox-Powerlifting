@@ -13,6 +13,40 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**THE CELEBRATION SPIN (2026-11-11), TESTED IN STUDIO, COMMITTED** (user: "Alright commit changes look good"; commit "Add the celebration spin...") (GAME_DESIGN §36.4, "Unlocking celebrations").
+The user: replace the corner bench in the dumbbell area with a placeholder NPC; hold E for a "rollable" celebration screen
+like their reference Short. Their choices: a reroll (each spin replaces your one celebration), 500 coins, the gear crates'
+odds, 250 coins back when it lands on the one you have.
+- Save data: schema **v22**, `inventory.celebration` (nil = the Default). ProfileOperations `getCelebration`,
+  `spinCelebration` (coins, result and refund in one step), `adminSetCelebration`; PlayerDataService wrappers (coin changes
+  reach the HUD). PlayerDataProbe section 56 added (and the old "migrated to 21" checks now read CURRENT_VERSION).
+- Server: new `src/server/Economy/CelebrationSpinService.luau` (the NPC "Hype Man" on RoomProps' tagged spot, idle loop,
+  shows off a random celebration every ~18-24 s while a player is within 40 studs; prompt; GetSpinner / SpinCelebration
+  remotes: too-fast check, within 24 studs of the NPC, the server rolls; Studio-only attribute `StudioCelebrationRarity`
+  forces a rarity). `CelebrationService.forPlayer` now returns the saved celebration. AdminService `SetCelebration`.
+  `RoomProps` TrainingZone: Bench_1 and its two dumbbells removed, an invisible tagged spot in their place.
+- Client: new `CelebrationSpinner` (the screen) and `CelebrationStage` (the avatar stage, now shared with the viewer);
+  `CelebrationViewer` uses the stage, gets MAKE IT MINE (admin) and opens without admin buttons from SEE ALL.
+- Studio (place 96814269062063): the NPC stands in the old bench's place facing the room; the bench and dumbbells are gone;
+  holding E opened the screen; spins took 500 coins and saved the result (Finger to the Sky, then forced Legendaries
+  Leap & Bow, Record Jump, Disbelief, then Disbelief again: "You already had it: 250 COINS back", 2,750 left); SKIP lands at
+  once; SEE ALL opens the viewer and CLOSE returns to the spin screen. Pure-function checks of the save rules passed. No
+  errors in the console. NOT tested: a State meet doing a spun celebration (forPlayer is a one-line change), the NPC's
+  show-off by eye, how it all sounds (Claude can't hear), multiplayer. Rojo's Studio plugin dropped mid-session and
+  reconnected by itself; all 16 changed scripts were checked against disk before testing.
+- RESTYLED (user, with screenshots of their reference beside ours: "Make it like my reference, the UI, rarity, color,
+  description, character angle, background the visual quality is bad"; then "didnt i give u a ui kit"): built with the
+  techniques of their UI kit (`RobloxUIReferences/roblox-ui/kit`, scanned clean 2026-11-01: UIShadow glows, rays,
+  vignette, button shine and gloss). The avatar now fills the whole card, close and seen from a little below, with no
+  platform, in front of a dark backdrop lit in the rarity's colour (a soft glow, slowly turning rays, glowing shards drifting
+  around it). The name is huge (Fredoka One) in a rarity gradient with a thick dark outline and a coloured halo, sized to fit
+  on one line; then the rarity and the description in outlined text. At the bottom: a YOUR COINS bar (where the reference
+  has LUCKY SPINS), a big glossy SPIN button (green SKIP while spinning), SPIN PRICE in green, the odds; SEE ALL and a red X
+  on the corners. The whole card changes colour with every name the reel flips to; the landing flashes, swells the glow and
+  spins the rays. `CelebrationStage.new` got a `bare` option (no platform, see-through). Studio: opened, a forced Epic spin
+  ran and landed (Wingspan Crunch, purple), X closes, no errors or warnings. The user still needs to judge the look.
+- Next: a real NPC model/name later (the user called this a placeholder); a State meet with a spun celebration still to watch.
+
 **CELEBRATIONS FROM REAL MEETS (2026-11-11), TESTED IN STUDIO, COMMITTED** (user: "Sounds good, commit"; commit "Add 19 celebrations from real meets...") (newest first: NO VOICES, CLEAN BODY SOUNDS and
 VFX below the first list) (GAME_DESIGN §36.4, "Celebrations from real
 meets"). The user sent 15 meet videos; all were studied frame by frame (six helper agents, muted 1080p frame grids in the

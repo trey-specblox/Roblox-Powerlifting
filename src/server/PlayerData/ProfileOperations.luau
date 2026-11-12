@@ -50,6 +50,7 @@ local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 local AdminConfig = require(ConfigFolder:WaitForChild("AdminConfig"))
 local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
+local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -2124,6 +2125,62 @@ function ProfileOperations.adminGiveEntrance(data: ProfileData, id: string): (bo
 	end
 	ProfileOperations.setEntrance(data, id)
 	return true, string.format("Entrance: %s.", entrance.name)
+end
+
+--[[
+	THE PLAYER'S CELEBRATION (schema version 22, GAME_DESIGN §36.4). One at a time: a reroll (user 2026-11-11, like a
+	style reroll), so a spin replaces it. An id CelebrationConfig doesn't know is never saved or used.
+]]
+
+-- The celebration they do after a good lift: theirs if CelebrationConfig still has it, else the Default.
+function ProfileOperations.getCelebration(data: ProfileData): string
+	local inventory = (data :: any).inventory
+	local id = if typeof(inventory) == "table" then inventory.celebration else nil
+	if typeof(id) == "string" and CelebrationConfig.byId[id] ~= nil then
+		return id
+	end
+	return CelebrationConfig.Default
+end
+
+local function setCelebration(inventory: any, id: string)
+	inventory.celebration = if id == CelebrationConfig.Default then nil else id
+end
+
+export type SpinOutcome = "Spun" | "NotEnough" | "Rejected"
+
+--[[
+	One spin: takes `price` coins, makes `resultId` their celebration, and when it was already theirs gives `refund` coins
+	back (user 2026-11-11: a duplicate gives coins back), all in one step. SERVER-ONLY: the price, the refund and the
+	roll are the server's (CelebrationSpinService), never a client's. Returns the outcome, the balance and the coins given
+	back; only "Spun" changes anything.
+]]
+function ProfileOperations.spinCelebration(data: ProfileData, price: number, resultId: string, refund: number)
+	: (SpinOutcome, number?, number)
+	local wallet = walletOf(data)
+	local inventory = (data :: any).inventory
+	if wallet == nil or typeof(inventory) ~= "table" or not isWholeCoins(price) or not isWholeCoins(refund) or refund > price
+		or typeof(resultId) ~= "string" or CelebrationConfig.byId[resultId] == nil then
+		return "Rejected", nil, 0
+	end
+	if wallet.coins < price then
+		return "NotEnough", wallet.coins, 0
+	end
+	local given = if ProfileOperations.getCelebration(data) == resultId then refund else 0
+	wallet.coins += given - price
+	wallet.spentTotal += price - given
+	setCelebration(inventory, resultId)
+	return "Spun", wallet.coins, given
+end
+
+-- The admin panel: makes any celebration theirs, for free.
+function ProfileOperations.adminSetCelebration(data: ProfileData, id: string): (boolean, string)
+	local celebration = CelebrationConfig.byId[id]
+	local inventory = (data :: any).inventory
+	if celebration == nil or typeof(inventory) ~= "table" then
+		return false, "That isn't a celebration."
+	end
+	setCelebration(inventory, id)
+	return true, string.format("Celebration: %s.", celebration.name)
 end
 
 return ProfileOperations

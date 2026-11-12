@@ -8,8 +8,8 @@
 	(CelebrationRemotes): each player's game draws its effects (client CelebrationFx: wind trails, chalk, the shout,
 	dust), and the celebrating player's screen runs its cinematic, if it has one.
 
-	Which celebration a lifter does is decided HERE (forPlayer / forComputer): the Default for everyone for now (user
-	2026-11-11); crates will hand out the others later, and forPlayer reads what the player owns and picked.
+	Which celebration a lifter does is decided HERE (forPlayer / forComputer): a player's is the one saved in their data
+	(the Default until they spin at the celebration NPC, CelebrationSpinService); a computer lifter does the Default.
 
 	PERFORMANCE: one animation track and a few short Sounds, made for the celebration and removed after it (the effects
 	are drawn on each player's own device, client CelebrationFx).
@@ -22,6 +22,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CelebrationConfig = require(Shared:WaitForChild("Config"):WaitForChild("CelebrationConfig"))
 local MeetSoundConfig = require(Shared:WaitForChild("Config"):WaitForChild("MeetSoundConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
+local PlayerDataService = require(script.Parent.Parent:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
 
 local CelebrationService = {}
 
@@ -42,9 +43,9 @@ function CelebrationService.start()
 	startedRemote = CelebrationRemotes.createOnServer(ReplicatedStorage)
 end
 
--- The celebration a player does after a good lift. Everyone's is the Default until crates hand out others.
-function CelebrationService.forPlayer(_player: Player): string
-	return CelebrationConfig.Default
+-- The celebration a player does after a good lift: theirs from the spin (the Default until they spin).
+function CelebrationService.forPlayer(player: Player): string
+	return PlayerDataService.getCelebration(player)
 end
 
 -- A computer lifter's: the same rules as players (user 2026-11-11).

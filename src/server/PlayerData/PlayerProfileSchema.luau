@@ -58,9 +58,10 @@ local PlayerProfileSchema = {}
 	titles in the career; version 16: ladder points in the career; version
 	17: ladder points per weight class; version 18: how many times the
 	player has qualified for State; version 19: gear with stats; version 20:
-	the coach's tests for rare suits; version 21: meet entrances).
+	the coach's tests for rare suits; version 21: meet entrances; version 22:
+	the player's celebration).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 21
+PlayerProfileSchema.CURRENT_VERSION = 22
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -316,6 +317,10 @@ export type Inventory = {
 	entrances: { [string]: boolean },
 	-- The entrance used at meets; nil is the Default. Written only by ProfileOperations.setEntrance, with one they own.
 	entrance: string?,
+	-- The celebration they do after a good lift (version 22, GAME_DESIGN §36.4): a CelebrationConfig id; nil is the Default.
+	-- A reroll, not a collection (user 2026-11-11): each spin at the celebration NPC replaces it. Written only by
+	-- ProfileOperations.spinCelebration (with the coins it costs) and adminSetCelebration.
+	celebration: string?,
 }
 
 export type StatPiece = {
@@ -1706,6 +1711,16 @@ migrations[20] = function(data: ProfileData)
 	end
 	if inventory.entrance ~= nil and typeof(inventory.entrance) ~= "string" then
 		inventory.entrance = nil
+	end
+end
+
+--[[
+	Version 21 -> 22: the player's celebration. Nobody has spun yet, so the Default (nil).
+]]
+migrations[21] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) == "table" and inventory.celebration ~= nil and typeof(inventory.celebration) ~= "string" then
+		inventory.celebration = nil
 	end
 end
 

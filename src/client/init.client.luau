@@ -27,6 +27,9 @@ task.spawn(CoinCounter.start)
 -- The Shop's menu (hold E at the Shop's counter). It only asks; the server checks every purchase.
 local ShopMenu = require(UIFolder:WaitForChild("ShopMenu"))
 task.spawn(ShopMenu.start)
+-- The celebration spin screen (hold E on the NPC in the dumbbell corner). It only asks; the server rolls and takes the coins.
+local CelebrationSpinner = require(UIFolder:WaitForChild("CelebrationSpinner"))
+task.spawn(CelebrationSpinner.start)
 
 -- MY GEAR (the GEAR tab): put on and take off owned gear. It only asks; the server checks and dresses.
 local GearMenu = require(UIFolder:WaitForChild("GearMenu"))

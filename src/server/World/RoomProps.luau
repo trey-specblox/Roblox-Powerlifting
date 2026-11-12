@@ -32,6 +32,7 @@ local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):Wait
 local MockMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("MockMeetConfig"))
 local GymRecordsConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("GymRecordsConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("ShopConfig"))
+local CelebrationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CelebrationConfig"))
 local BuildParts = require(script.Parent:WaitForChild("BuildParts"))
 local StyledScreen = require(script.Parent:WaitForChild("StyledScreen"))
 
@@ -1596,10 +1597,20 @@ FURNISH.TrainingZone = function(kit)
 			put(string.format("Rack_%d_High_%d", k + 1, j + 1), "HexDumbbell", (k * 3 + j + 4) % 8 + 1, a, rackD + 0.32, 2.1, "-d")
 		end
 	end
-	-- Four flat benches facing the mirror, a pair of dumbbells beside each.
-	-- The BackRooms_01 flat bench on its old pad block (now hidden), or blocks.
+	-- Three flat benches facing the mirror, a pair of dumbbells beside each.
+	-- The BackRooms_01 flat bench on its old pad block (now hidden), or blocks. The corner one's place (k = 0) is the
+	-- celebration NPC's (user 2026-11-11: "remove this bench and dumbells. and replace it with a npc"): an invisible spot
+	-- CelebrationSpinService stands it on, facing out into the room.
+	local spotA = -33
+	local spot = kit.item("CelebrationSpinnerSpot", spotA - 1, spotA + 1, D - 8.7, D - 6.7, 0.05, 5.5, looks.Glass)
+	spot.Transparency = 1
+	spot.CanCollide = false
+	spot.CanQuery = false
+	spot.CanTouch = false
+	spot:SetAttribute("Facing", back.out)
+	spot:AddTag(CelebrationConfig.Spin.spotTag)
 	local benchProps = propsFor({ "FlatBench" })
-	for k = 0, 3 do
+	for k = 1, 3 do
 		local a, id = -33 + k * 8.5, "Bench_" .. k + 1
 		local padLook = if k % 2 == 0 then looks.Padding else looks.PaddingBlue
 		local pad = kit.block(id, a - 0.7, a + 0.7, D - 10, D - 5.4, 1.55, 1.95, padLook)

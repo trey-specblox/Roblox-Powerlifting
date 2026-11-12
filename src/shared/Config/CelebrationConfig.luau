@@ -304,4 +304,27 @@ for _, celebration in ipairs(CelebrationConfig.List) do
 	CelebrationConfig.byId[celebration.id] = celebration
 end
 
+--[[
+	The celebration spin (user 2026-11-11: "lets make celebrations unlockable ... replace it with a npc ... hold e on it,
+	the celebrations screen pops up, Make it where its like a rollable thing"; GAME_DESIGN §36.4). The player holds E on
+	the placeholder NPC in the gym's dumbbell corner and spins: a REROLL (the user's choice), so the spin's result
+	replaces their one celebration. Each spin costs `price` coins (like a gear crate); the rarity is rolled with the gear
+	crates' odds (GearStatsConfig.Rarities), then one celebration of that rarity at random (never the Default). Landing on
+	the one they already have gives `duplicateRefund` back. The server rolls and decides (CelebrationSpinService);
+	the screen (client CelebrationSpinner) only shows it.
+]]
+CelebrationConfig.Spin = {
+	price = 500,
+	duplicateRefund = 250,
+	-- RoomProps tags the NPC's spot with this; CelebrationSpinService stands the NPC there.
+	spotTag = "CelebrationSpinnerSpot",
+	-- The placeholder NPC (user: "our first npc as a placeholder for now").
+	npcName = "Hype Man",
+	promptText = "Spin celebrations",
+	promptHoldSeconds = 0.5,
+	promptDistanceStuds = 8,
+	-- A spin is refused from further than this from the NPC.
+	maxSpinDistanceStuds = 24,
+}
+
 return CelebrationConfig

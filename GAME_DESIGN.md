@@ -6193,6 +6193,23 @@ in their weight class and stay in it. This reopens the ladder points
 >     for as long as each roar lasts; dust rings at stomps, landings and knee drops; bigger chalk puffs, and a full chalk
 >     cloud on the record jump's clap. White with a dark ink edge so they read in a bright room and the dark arena. Drawn on
 >     each player's own device (not in the viewer's stage, which can't show particles: PLAY ON ME shows them).
+>     **[DECIDED BY THE USER, 2026-11-11] Unlocking celebrations: the celebration spin.** "lets make celebrations unlockable, in
+>     this corner at the dumbell area, remove this bench and dumbells. and replace it with a npc, this will be our first npc as
+>     a placeholder for now, but make it where u can hold e on it, the celebrations screen pops up, Make it where its like a
+>     rollable thing like the video here" (a style-reroll Short from a boxing game). The user's choices: a **reroll** like the
+>     video (each spin REPLACES your one celebration; nothing is collected), **500 coins** a spin (a gear crate's price), the
+>     **gear crates' odds** (Common 60%, Uncommon 25%, Rare 10%, Epic 4%, Legendary 1%; then one celebration of that rarity
+>     at random; never the Default), and landing on **the one you already have gives half back (250 coins)**. The corner flat
+>     bench and its two dumbbells in the dumbbell area are gone; a placeholder NPC, **"Hype Man"** (a plain avatar, never a
+>     real player's), stands there facing the room and now and then shows off one of the celebrations while someone is near.
+>     Hold E on him: the spin screen, laid out like the video: CURRENT CELEBRATION (its name big in its rarity's colour,
+>     its rarity, what happens in it), your own avatar doing it, the odds, the price and your coins, and a big SPIN button
+>     that turns into a green SKIP while the name flips through the celebrations, slowing down until it lands (a tick per
+>     flip, a thud on landing, a bigger hit and a thick rarity-coloured border for Epic and Legendary); your avatar then does
+>     the new one. SEE ALL opens the celebration viewer for every player (without the admin buttons), to see what a spin can
+>     land on. The server checks the coins and the distance and rolls the result; the client only shows it. Your celebration
+>     is saved (schema version 22) and is the one you do after a good lift at State and up. Computer lifters keep the Default.
+>     Built 2026-11-11 (CelebrationConfig.Spin, server CelebrationSpinService, client CelebrationSpinner and CelebrationStage).
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own

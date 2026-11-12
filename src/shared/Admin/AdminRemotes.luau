@@ -13,7 +13,8 @@
 		AdminAction    client -> server  (action: string, value: any) -> (ok, message, view?)
 			On the admin's own account: "ResetSuitTests", "Coins" with a button id from
 			AdminConfig.CoinButtons, "CrateRarity" with a rarity id or nil to turn it off, "GiveSuit"
-			with a suit id, or "ForceDrop" with a suit id or nil to turn it off.
+			with a suit id, "ForceDrop" with a suit id or nil to turn it off, "PlayCelebration" with a
+			CelebrationConfig id (plays it on their character), or "SetCelebration" with one (makes it theirs).
 			On any player in the server (PLAYER STATS, value = { userId = ..., ... }): "SetStat" with
 			`id` (an AdminConfig.StatFields id) and `value` (a number the server clamps), "QualifyState",
 			"RefillDaily", "GiveCoinsTo" with `id` (a coin button id; coins are never an amount), and

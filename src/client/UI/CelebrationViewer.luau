@@ -4,33 +4,32 @@
 	Client / UI
 
 	The celebrations, to click through and quick-watch (user 2026-11-11: "make sure i can click through them to inspect,
-	Give me the ability to quick watch them"). Opened from the admin panel for now (the user: only them for testing);
-	when celebrations come from crates, every player opens it to see what they could unbox.
+	Give me the ability to quick watch them"). Opened from the admin panel (with the admin buttons), and by every player
+	from the spin screen's SEE ALL (CelebrationSpinner), to see what a spin could land on.
 
 		on the left   a copy of your own avatar on a small lit stage, playing the chosen celebration over and over
 		              (a "Walk" one over a walk, as in a meet), with its sounds; 3/4, FRONT or SIDE view; SLOW-MO
 		on the right  every celebration by rarity (CelebrationConfig.List): its name, rarity, length, the real meet it
 		              came from and what happens in it
 		buttons       < PREV, REPLAY, NEXT >, PLAY ON ME (admin: plays it on your real character for everyone, with its
-		              cinematic if it has one; AdminService "PlayCelebration" checks the account), CLOSE
+		              cinematic if it has one; AdminService "PlayCelebration" checks the account), MAKE IT MINE (admin:
+		              makes it your celebration at meets, "SetCelebration"), CLOSE
 
-	Display only: the copy lives in this screen's ViewportFrame; nothing is saved or given.
+	Display only: the copy lives on this screen's stage (CelebrationStage); nothing is saved or given here.
 	PERFORMANCE: one avatar copy and two animation tracks while open; nothing when closed. (Chalk particles don't show in
 	a ViewportFrame: PLAY ON ME shows them.)
 ]]
 
-local ContentProvider = game:GetService("ContentProvider")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local SoundService = game:GetService("SoundService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CelebrationConfig = require(Shared:WaitForChild("Config"):WaitForChild("CelebrationConfig"))
 local GearStatsConfig = require(Shared:WaitForChild("Config"):WaitForChild("GearStatsConfig"))
-local MeetSoundConfig = require(Shared:WaitForChild("Config"):WaitForChild("MeetSoundConfig"))
 local AdminRemotes = require(Shared:WaitForChild("Admin"):WaitForChild("AdminRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local CelebrationStage = require(script.Parent:WaitForChild("CelebrationStage"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
 
@@ -41,24 +40,16 @@ local MARGIN = 24
 local VIEW_SIZE = Vector2.new(560, 470)
 local RIGHT_X = MARGIN + VIEW_SIZE.X + 22
 local RIGHT_WIDTH = PANEL_WIDTH - RIGHT_X - MARGIN
--- Roblox's own R15 walk, for a celebration played over the walk.
-local WALK_ANIMATION_ID = "rbxassetid://507777826"
--- Seconds between one play and the next.
-local REPLAY_GAP = 0.9
-
 -- Where the camera looks from, around the figure (it faces -Z, its right is +X), and at.
 local VIEWS = {
 	ThreeQuarter = Vector3.new(7.5, 4.6, -10.5),
 	Front = Vector3.new(0, 3.8, -13),
 	Side = Vector3.new(13, 3.6, 0),
 }
-local LOOK_AT = Vector3.new(0, 2.5, 0)
 
 type Screen = {
 	gui: ScreenGui,
-	viewport: ViewportFrame,
-	world: WorldModel,
-	camera: Camera,
+	stage: CelebrationStage.Stage,
 	list: ScrollingFrame,
 	rows: { [string]: TextButton },
 	name: TextLabel,
@@ -69,16 +60,16 @@ type Screen = {
 	status: TextLabel,
 	slow: TextButton,
 	viewButtons: { [string]: TextButton },
+	adminButtons: { TextButton },
 }
 local screen: Screen? = nil
-local figure: Model? = nil
-local tracks: { AnimationTrack } = {}
-local sounds: { Sound } = {}
 local index = 1
 local slowMotion = false
 local view = "ThreeQuarter"
-local playToken = 0
 local actionRemote: RemoteFunction? = nil
+-- Opened by the admin panel (with the admin buttons) or from the spin screen (without; back to it on CLOSE).
+local asAdmin = false
+local onClosed: (() -> ())? = nil
 
 local function rarityColour(rarity: string): Color3
 	for _, entry in ipairs(GearStatsConfig.Rarities) do
@@ -103,155 +94,19 @@ local function ordered(): { CelebrationConfig.Celebration }
 end
 local ORDER = ordered()
 
-local function stopPlaying()
-	playToken += 1
-	for _, track in ipairs(tracks) do
-		track:Stop(0)
-		track:Destroy()
-	end
-	table.clear(tracks)
-	for _, sound in ipairs(sounds) do
-		sound:Destroy()
-	end
-	table.clear(sounds)
-end
-
-local function animatorOf(model: Model): Animator?
-	local humanoid = model:FindFirstChildOfClass("Humanoid")
-	if humanoid == nil then
-		return nil
-	end
-	local animator = humanoid:FindFirstChildOfClass("Animator")
-	if animator == nil then
-		local made = Instance.new("Animator")
-		made.Parent = humanoid
-		animator = made
-	end
-	return animator
-end
-
-local function load(animator: Animator, id: string, priority: Enum.AnimationPriority, looped: boolean): AnimationTrack?
-	local animation = Instance.new("Animation")
-	animation.AnimationId = id
-	local ok, track = pcall(function()
-		return animator:LoadAnimation(animation)
-	end)
-	if not ok then
-		return nil
-	end
-	local loaded = track :: AnimationTrack
-	loaded.Priority = priority
-	loaded.Looped = looped
-	return loaded
-end
-
-local lastTake: { [string]: string } = {}
-local function soundFor(name: string): (string?, number)
-	local id, volume = CelebrationConfig.pickSound(name, lastTake[name])
-	if id then
-		lastTake[name] = id
-		return id, volume
-	end
-	local cue = MeetSoundConfig.Cues[name]
-	if cue then
-		return cue.id, cue.volume
-	end
-	return nil, 0
-end
-
 -- Plays the chosen one on the copy, again and again until another is chosen or the viewer closes.
 local function playChosen()
-	stopPlaying()
-	local model = figure
+	local current = screen
 	local celebration = ORDER[index]
-	if model == nil or celebration == nil then
-		return
+	if current and celebration then
+		CelebrationStage.play(current.stage, celebration, if slowMotion then 0.5 else 1)
 	end
-	local animator = animatorOf(model)
-	if animator == nil then
-		return
-	end
-	local speed = if slowMotion then 0.5 else 1
-	local mine = playToken
-	task.spawn(function()
-		while playToken == mine do
-			if celebration.kind == "Walk" then
-				local walk = load(animator, WALK_ANIMATION_ID, Enum.AnimationPriority.Movement, true)
-				if walk then
-					table.insert(tracks, walk)
-					walk:Play(0.1, 1, speed)
-				end
-			end
-			local track = load(animator, celebration.animationId, Enum.AnimationPriority.Action, false)
-			local soundtrack = celebration.soundtrack
-			local sound: Sound? = nil
-			if soundtrack then
-				local made = Instance.new("Sound")
-				made.SoundId = soundtrack
-				made.Volume = CelebrationConfig.SoundtrackVolume
-				made.PlaybackSpeed = speed
-				made.Parent = SoundService
-				table.insert(sounds, made)
-				sound = made
-			end
-			-- Both loaded first, then started together, so the sound lines up with the moves.
-			local loading: { Instance } = {}
-			if sound then
-				table.insert(loading, sound)
-			end
-			local animation = Instance.new("Animation")
-			animation.AnimationId = celebration.animationId
-			table.insert(loading, animation)
-			pcall(function()
-				ContentProvider:PreloadAsync(loading)
-			end)
-			animation:Destroy()
-			if playToken ~= mine then
-				return
-			end
-			if track then
-				table.insert(tracks, track)
-				track:Play(0, 1, speed)
-			end
-			if sound then
-				sound:Play()
-			end
-			for _, event in ipairs(if soundtrack then {} else celebration.events) do
-				local id, volume = soundFor(event.sound or "")
-				if id then
-					local sound = Instance.new("Sound")
-					sound.SoundId = id
-					sound.Volume = volume * 0.8
-					sound.PlaybackSpeed = speed
-					sound.Parent = SoundService
-					table.insert(sounds, sound)
-					task.delay(event.at / speed, function()
-						if playToken == mine and sound.Parent then
-							sound:Play()
-						end
-					end)
-				end
-			end
-			task.wait(celebration.seconds / speed + REPLAY_GAP)
-			if playToken ~= mine then
-				return
-			end
-			for _, old in ipairs(tracks) do
-				old:Stop(0.2)
-			end
-			table.clear(tracks)
-			for _, sound in ipairs(sounds) do
-				sound:Destroy()
-			end
-			table.clear(sounds)
-		end
-	end)
 end
 
 local function placeCamera()
 	local current = screen
 	if current then
-		current.camera.CFrame = CFrame.lookAt(VIEWS[view], LOOK_AT)
+		CelebrationStage.look(current.stage, VIEWS[view])
 		for name, button in pairs(current.viewButtons) do
 			local chosen = name == view
 			button.BackgroundColor3 = if chosen then C.yellow else C.navyDeep
@@ -301,40 +156,6 @@ local function choose(newIndex: number)
 	show()
 end
 
--- A copy of the player's own avatar for the stage: no scripts, nothing that moves by itself, the root held still.
-local function makeFigure(world: WorldModel): Model?
-	local character = Players.LocalPlayer.Character
-	if character == nil then
-		return nil
-	end
-	local was = character.Archivable
-	character.Archivable = true
-	local copy = character:Clone()
-	character.Archivable = was
-	if copy == nil then
-		return nil
-	end
-	for _, item in ipairs(copy:GetDescendants()) do
-		if item:IsA("BaseScript") or item:IsA("Sound") or item:IsA("ForceField") or item:IsA("BillboardGui") then
-			item:Destroy()
-		elseif item:IsA("BasePart") then
-			item.Anchored = false
-			item.CanCollide = false
-		end
-	end
-	local humanoid = copy:FindFirstChildOfClass("Humanoid")
-	local root = copy:FindFirstChild("HumanoidRootPart")
-	if humanoid == nil or root == nil or not root:IsA("BasePart") then
-		copy:Destroy()
-		return nil
-	end
-	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	root.Anchored = true
-	copy:PivotTo(CFrame.new(0, humanoid.HipHeight + root.Size.Y / 2, 0))
-	copy.Parent = world
-	return copy
-end
-
 local function build(): Screen
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CelebrationViewer"
@@ -349,31 +170,7 @@ local function build(): Screen
 	UIStyle.titleTag(holder, "Tag", "CELEBRATIONS", UDim2.fromOffset(-18, -30), UDim2.fromOffset(300, 52), nil, "star")
 
 	-- The stage.
-	local viewport = Instance.new("ViewportFrame")
-	viewport.Name = "Stage"
-	viewport.Position = UDim2.fromOffset(MARGIN, 40)
-	viewport.Size = UDim2.fromOffset(VIEW_SIZE.X, VIEW_SIZE.Y)
-	-- (No UIGradient here: on a ViewportFrame it tints the 3D inside too, which made the stage murky.)
-	viewport.BackgroundColor3 = Color3.fromRGB(38, 48, 88)
-	viewport.BorderSizePixel = 0
-	viewport.Ambient = Color3.fromRGB(205, 205, 215)
-	viewport.LightColor = Color3.fromRGB(255, 252, 245)
-	viewport.LightDirection = Vector3.new(-0.35, -1, 0.55)
-	viewport.Parent = body
-	local world = Instance.new("WorldModel")
-	world.Parent = viewport
-	local floor = Instance.new("Part")
-	floor.Name = "Platform"
-	floor.Anchored = true
-	floor.Size = Vector3.new(12, 0.4, 12)
-	floor.CFrame = CFrame.new(0, -0.2, 0)
-	floor.Color = Color3.fromRGB(46, 40, 38)
-	floor.Material = Enum.Material.Wood
-	floor.Parent = world
-	local camera = Instance.new("Camera")
-	camera.FieldOfView = 38
-	camera.Parent = viewport
-	viewport.CurrentCamera = camera
+	local stage = CelebrationStage.new(body, UDim2.fromOffset(MARGIN, 40), UDim2.fromOffset(VIEW_SIZE.X, VIEW_SIZE.Y))
 
 	-- Under the stage: the counter, the views, slow motion; then prev / replay / next.
 	local underY = 40 + VIEW_SIZE.Y + 10
@@ -468,21 +265,31 @@ local function build(): Screen
 
 	local status = UIStyle.text(body, "Status", UDim2.fromOffset(RIGHT_X, rowY - 34), UDim2.fromOffset(RIGHT_WIDTH, 28),
 		SIZES.small, C.yellow)
-	UIStyle.button(body, "PlayOnMe", "PLAY ON ME", UDim2.fromOffset(RIGHT_X, rowY), UDim2.fromOffset(RIGHT_WIDTH - 150, 46),
+	-- Asks the admin panel's remote; PLAY ON ME closes the viewer to watch, MAKE IT MINE just says it's done.
+	local function askAdmin(action: string, closeAfter: boolean)
+		local celebration = ORDER[index]
+		local remote = actionRemote
+		if celebration == nil or remote == nil then
+			return
+		end
+		local ok, done, message = pcall(function()
+			return remote:InvokeServer(action, celebration.id)
+		end)
+		if ok and done and closeAfter then
+			CelebrationViewer.close()
+		elseif screen then
+			(screen :: Screen).status.Text = if ok and typeof(message) == "string" then message else "The server didn't answer."
+		end
+	end
+	local half = (RIGHT_WIDTH - 150 - 10) / 2
+	local playOnMe = UIStyle.button(body, "PlayOnMe", "PLAY ON ME", UDim2.fromOffset(RIGHT_X, rowY), UDim2.fromOffset(half, 46),
 		"primary", function()
-			local celebration = ORDER[index]
-			local remote = actionRemote
-			if celebration == nil or remote == nil then
-				return
-			end
-			local ok, done, message = pcall(function()
-				return remote:InvokeServer("PlayCelebration", celebration.id)
-			end)
-			if ok and done then
-				CelebrationViewer.close()
-			elseif screen then
-				(screen :: Screen).status.Text = if ok and typeof(message) == "string" then message else "The server didn't answer."
-			end
+			askAdmin("PlayCelebration", true)
+		end)
+	-- (Admin: makes it their own celebration at meets, without spinning.)
+	local makeMine = UIStyle.button(body, "MakeMine", "MAKE IT MINE", UDim2.fromOffset(RIGHT_X + half + 10, rowY), UDim2.fromOffset(half, 46),
+		"outline", function()
+			askAdmin("SetCelebration", false)
 		end)
 	UIStyle.button(body, "Close", "CLOSE", UDim2.new(1, -MARGIN - 140, 0, rowY), UDim2.fromOffset(140, 46), "outline",
 		function()
@@ -491,9 +298,9 @@ local function build(): Screen
 
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	return {
-		gui = gui, viewport = viewport, world = world, camera = camera, list = list, rows = rows, name = name,
+		gui = gui, stage = stage, list = list, rows = rows, name = name,
 		rarity = rarity, facts = facts, about = about, counter = counter, status = status, slow = slow,
-		viewButtons = viewButtons,
+		viewButtons = viewButtons, adminButtons = { playOnMe, makeMine },
 	}
 end
 
@@ -502,34 +309,44 @@ function CelebrationViewer.isOpen(): boolean
 	return current ~= nil and current.gui.Enabled
 end
 
--- Opens the viewer on the first celebration (or where it was left), with a fresh copy of the player's avatar.
-function CelebrationViewer.open()
+--[[
+	Opens the viewer on the first celebration (or where it was left), with a fresh copy of the player's avatar.
+	`admin`: from the admin panel, with PLAY ON ME and MAKE IT MINE (the server checks the account anyway); otherwise
+	(the spin screen's SEE ALL) without them. `whenClosed` runs on CLOSE (back to the spin screen).
+]]
+function CelebrationViewer.open(admin: boolean?, whenClosed: (() -> ())?)
 	if actionRemote == nil then
 		actionRemote = AdminRemotes.waitForClient(ReplicatedStorage).action
 	end
+	asAdmin = admin ~= false
+	onClosed = whenClosed
 	local current = screen or build()
 	screen = current
-	if figure then
-		figure:Destroy()
+	for _, button in ipairs(current.adminButtons) do
+		button.Visible = asAdmin
 	end
-	figure = makeFigure(current.world)
+	local hasFigure = CelebrationStage.setFigure(current.stage)
 	current.gui.Enabled = true
 	placeCamera()
 	show()
-	if figure == nil then
+	if not asAdmin then
+		current.status.Text = "A spin can land on any of these but the Default."
+	end
+	if not hasFigure then
 		current.status.Text = "No character to show yet: open it again once you've spawned."
 	end
 end
 
 function CelebrationViewer.close()
-	stopPlaying()
-	if figure then
-		figure:Destroy()
-		figure = nil
-	end
 	local current = screen
 	if current then
+		CelebrationStage.clear(current.stage)
 		current.gui.Enabled = false
+	end
+	local after = onClosed
+	onClosed = nil
+	if after then
+		task.spawn(after)
 	end
 end
 

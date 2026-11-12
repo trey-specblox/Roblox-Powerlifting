@@ -56,7 +56,9 @@
 ]]
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local CelebrationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CelebrationConfig"))
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
 local ProfileOperations = require(script.Parent.ProfileOperations)
 
@@ -775,6 +777,43 @@ end
 function PlayerDataService.getEntrance(player: Player): string
 	local data = PlayerDataService.getData(player)
 	return if data then ProfileOperations.getEntrance(data) else "Default"
+end
+
+--[[
+	One celebration spin (ProfileOperations.spinCelebration): takes `price` coins, makes `resultId` theirs, and gives
+	`refund` back when it already was. SERVER-ONLY: CelebrationSpinService chose the price, the refund and the roll.
+	Returns the outcome, the balance and the coins given back; nil with no active session.
+]]
+function PlayerDataService.spinCelebration(player: Player, price: number, resultId: string, refund: number)
+	: (ProfileOperations.SpinOutcome?, number?, number)
+	local data = activeData(player, "spinCelebration")
+	if data == nil then
+		return nil, nil, 0
+	end
+	local outcome, balance, given = ProfileOperations.spinCelebration(data, price, resultId, refund)
+	if outcome == "Spun" then
+		print(string.format("[PlayerDataService] %s spun a celebration for %d coins: %s%s, %d left", player.Name, price,
+			resultId, if given > 0 then string.format(" (already theirs: %d back)", given) else "", balance :: number))
+		coinsChanged(player, given - price, balance :: number, "Celebration spin")
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: a celebration spin (%s, %s) refused", player.Name, tostring(price),
+			tostring(resultId)))
+	end
+	return outcome, balance, given
+end
+
+function PlayerDataService.adminSetCelebration(player: Player, id: string): (boolean, string)
+	local data = activeData(player, "adminSetCelebration")
+	if data == nil then
+		return false, "That player's save hasn't loaded."
+	end
+	return ProfileOperations.adminSetCelebration(data, id)
+end
+
+-- The celebration a player does after a good lift (CelebrationConfig id); the Default when their save isn't loaded.
+function PlayerDataService.getCelebration(player: Player): string
+	local data = PlayerDataService.getData(player)
+	return if data then ProfileOperations.getCelebration(data) else CelebrationConfig.Default
 end
 
 -- (Training Energy was retired in schema version 8, GAME_DESIGN 29.8, and the Competition Budget in version 10, 29.9.)

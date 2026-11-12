@@ -268,6 +268,13 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		CelebrationService.play(character, celebration.id, player)
 		return true, "Playing " .. string.upper(celebration.name) .. "."
 	end,
+	-- Makes a celebration (CelebrationConfig id) the admin's own, for free, to test it at a meet without spinning.
+	SetCelebration = function(player: Player, value: any): (boolean, string)
+		if typeof(value) ~= "string" or CelebrationConfig.byId[value] == nil then
+			return false, "That isn't a celebration."
+		end
+		return PlayerDataService.adminSetCelebration(player, value)
+	end,
 }
 
 function AdminService.start()

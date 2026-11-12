@@ -339,7 +339,7 @@ do
 	local data = reconciledV2Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 2)
 
-	check("migrated to version 21", finalVersion == 21 and data.version == 21)
+	check("migrated to version 21", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION)
 	check("Squat preserved at 182.5", near(cnOf(data).Squat, 182.5), tostring(cnOf(data).Squat))
 	check("Bench preserved at 117.5", near(cnOf(data).Bench, 117.5), tostring(cnOf(data).Bench))
 	check("Deadlift preserved at 215.0", near(cnOf(data).Deadlift, 215.0), tostring(cnOf(data).Deadlift))
@@ -605,7 +605,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 1)
 
-	check("reached version 21", finalVersion == 21 and data.version == 21)
+	check("reached version 21", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION)
 	check("Squat 140 preserved across two migrations", near(cnOf(data).Squat, 140.0), tostring(cnOf(data).Squat))
 	check("Bench 95 preserved", near(cnOf(data).Bench, 95.0))
 	check("Deadlift 170 preserved", near(cnOf(data).Deadlift, 170.0))
@@ -721,7 +721,7 @@ do
 	local data = reconciledV3Save(182.5, 117.5, 215.0)
 	local finalVersion = PlayerProfileSchema.migrate(data, 3)
 
-	check("migrated to version 21", finalVersion == 21 and data.version == 21)
+	check("migrated to version 21", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION)
 
 	-- The rule that this whole checkpoint exists to get right.
 	check("Squat Scale is UNPROVEN after migration", scaleOf(data).Squat == 0, tostring(scaleOf(data).Squat))
@@ -1197,7 +1197,7 @@ do
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 4)
 
-	check("migrated 4 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 4 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 
 	--[[
 		NO OFFLINE TRAINING CREDIT. A save that predates the station cannot
@@ -1473,7 +1473,7 @@ do
 	local finalVersion = PlayerProfileSchema.migrate(data, 5)
 	local build = data.builds["83 kg"]
 
-	check("migrated to version 21", finalVersion == 21 and data.version == 21)
+	check("migrated to version 21", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION)
 	check("the build is filed under the bodyweight's class, 83 kg", typeof(build) == "table")
 	check("and it is the only build (no phantom 59 kg)", countBuilds(data) == 1, tostring(countBuilds(data)))
 	check("Squat CN moved exactly", build and build.competitionNumber.Squat == 182.5)
@@ -1658,7 +1658,7 @@ do
 	local build = data.builds["83 kg"]
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 6)
-	check("migrated 6 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 6 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("PullStrength is gone", data.technique.PullStrength == nil)
 	check("the five technique stats are untouched", data.technique.SquatControl == 1550
 		and data.technique.DepthAwareness == 975 and data.technique.StartControl == 525
@@ -1700,7 +1700,7 @@ do
 	data.trainingEnergy = { amount = 61, lastUpdatedUnix = 1700500000 }
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 7)
-	check("migrated 7 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 7 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("Training Energy is gone", data.trainingEnergy == nil)
 	check("the old Competition Budget is gone too (v10)", (data :: any).competitionBudget == nil)
 	check("CN, Scale and technique untouched", data.builds["83 kg"].competitionNumber.Squat == 182.5
@@ -1730,7 +1730,7 @@ do
 	data.career = nil
 	local finalVersion = PlayerProfileSchema.migrate(data, 8)
 	local build = data.builds["83 kg"]
-	check("migrated 8 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 8 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	local allFull = true
 	for _, lift in ipairs(ProgressionConfig.Lifts) do
 		local resource = build.meetAllowance and build.meetAllowance[lift]
@@ -1885,7 +1885,7 @@ do
 	data.career.localWins = 3
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 9)
-	check("migrated 9 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 9 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("the Competition Budget is gone", (data :: any).competitionBudget == nil)
 	check("the meet allowance and the wins are untouched", build.meetAllowance.Squat.amount == 0.75
 		and build.meetAllowance.Squat.lastUpdatedUnix == 1761600000 and data.career.localWins == 3)
@@ -1914,7 +1914,7 @@ do
 	data.version = 10
 
 	local finalVersion = PlayerProfileSchema.migrate(data, 10)
-	check("migrated 10 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 10 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("every lift's official best starts empty", build.officialMeetBest.Squat == PlayerProfileSchema.NO_OFFICIAL_BEST
 		and build.officialMeetBest.Bench == 0 and build.officialMeetBest.Deadlift == 0)
 	check("CN, Scale, best Total, allowance and wins untouched", build.competitionNumber.Squat == 182.5
@@ -1970,7 +1970,7 @@ do
 	(data :: any).wallet = nil
 	data.version = 11
 	local finalVersion = PlayerProfileSchema.migrate(data, 11)
-	check("migrated 11 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 11 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("the wallet starts empty", data.wallet ~= nil and data.wallet.coins == 0 and data.wallet.earnedTotal == 0
 		and data.wallet.spentTotal == 0)
 	check("CN, Scale and wins untouched", data.builds["83 kg"].competitionNumber.Squat == 182.5
@@ -2057,7 +2057,7 @@ do
 	(data :: any).inventory = nil
 	data.version = 12
 	local finalVersion = PlayerProfileSchema.migrate(data, 12)
-	check("migrated 12 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 12 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("the inventory starts empty", data.inventory ~= nil and next(data.inventory.owned) == nil)
 	check("coins and CN untouched", data.wallet.coins == 1000 and data.builds["83 kg"].competitionNumber.Squat == 182.5)
 
@@ -2127,7 +2127,7 @@ do
 	(data :: any).inventory = { owned = { belt_royal = true, wraps_ice = true } }
 	data.version = 13
 	local finalVersion = PlayerProfileSchema.migrate(data, 13)
-	check("migrated 13 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 13 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("the wearing list starts empty", data.inventory.wearing ~= nil and next(data.inventory.wearing) == nil)
 	check("owned items and coins untouched", data.inventory.owned.belt_royal == true and data.inventory.owned.wraps_ice == true
 		and data.wallet.coins == 300)
@@ -2188,7 +2188,7 @@ do
 	data.career = { localWins = 2 } :: any
 	data.version = 14
 	local finalVersion = PlayerProfileSchema.migrate(data, 14)
-	check("migrated 14 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 14 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("titles start empty, Local wins kept", typeof(data.career.titles) == "table" and next(data.career.titles) == nil
 		and data.career.localWins == 2)
 
@@ -2265,7 +2265,7 @@ do
 	data.career = { localWins = 4, titles = { StateThird = 1 } } :: any
 	data.version = 15
 	local finalVersion = PlayerProfileSchema.migrate(data, 15)
-	check("migrated 15 to 19", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 15 to 19", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	local mine = data.career.ladders[CLASS]
 	check("4 Local wins became 12 points in the current class, unstamped", mine ~= nil and mine.points == 12
 		and mine.season == "" and mine.qualified == false, tostring(mine and mine.points))
@@ -2430,7 +2430,7 @@ do
 	inventory.entrance = 5
 	data.version = 20
 	local finalVersion = PlayerProfileSchema.migrate(data, 20)
-	check("migrated 20 to 21", finalVersion == 21 and data.version == 21, tostring(data.version))
+	check("migrated 20 to the current version", finalVersion == PlayerProfileSchema.CURRENT_VERSION and data.version == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("an empty entrance list", typeof(inventory.entrances) == "table" and next(inventory.entrances) == nil)
 	check("a broken equipped entrance is cleared", inventory.entrance == nil)
 	check("the Default is in use", ProfileOperations.getEntrance(data) == "Default")
@@ -2440,6 +2440,40 @@ do
 		and (ProfileOperations.setEntrance(data, "Stomp")) and ProfileOperations.getEntrance(data) == "Stomp")
 	PlayerProfileSchema.migrate(data, 20)
 	check("a re-run keeps what they own", inventory.entrances.Stomp == true and inventory.entrance == "Stomp")
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("56. version 21 to 22: the player's celebration; a spin takes the coins, a duplicate gives some back")
+do
+	local data = newProfile()
+	local inventory = (data :: any).inventory
+	inventory.celebration = 7
+	data.version = 21
+	local finalVersion = PlayerProfileSchema.migrate(data, 21)
+	check("migrated 21 to 22", finalVersion == 22 and data.version == 22, tostring(data.version))
+	check("a broken celebration is cleared", inventory.celebration == nil)
+	check("the Default is theirs", ProfileOperations.getCelebration(data) == "ChalkClapPump")
+	check("no spin without the coins", (ProfileOperations.spinCelebration(data, 500, "SkyPoint", 250)) == "NotEnough"
+		and ProfileOperations.getCelebration(data) == "ChalkClapPump")
+	ProfileOperations.addCoins(data, 1200)
+	local outcome, balance, given = ProfileOperations.spinCelebration(data, 500, "SkyPoint", 250)
+	check("a spin takes the price and makes it theirs", outcome == "Spun" and balance == 700 and given == 0
+		and ProfileOperations.getCelebration(data) == "SkyPoint", string.format("%s %s %s", tostring(outcome), tostring(balance), tostring(given)))
+	outcome, balance, given = ProfileOperations.spinCelebration(data, 500, "SkyPoint", 250)
+	check("landing on it again gives 250 back", outcome == "Spun" and balance == 450 and given == 250, tostring(balance))
+	check("an unknown celebration is refused", (ProfileOperations.spinCelebration(data, 500, "NoSuchOne", 250)) == "Rejected"
+		and ProfileOperations.getCoins(data) == 450)
+	check("a refund over the price is refused", (ProfileOperations.spinCelebration(data, 100, "FistSalute", 200)) == "Rejected")
+	outcome = ProfileOperations.spinCelebration(data, 400, "ChalkClapPump", 250)
+	check("landing on the Default stores nothing", outcome == "Spun" and inventory.celebration == nil
+		and ProfileOperations.getCelebration(data) == "ChalkClapPump")
+	inventory.celebration = "RemovedLater"
+	check("one the game no longer has falls back to the Default", ProfileOperations.getCelebration(data) == "ChalkClapPump")
+	check("the admin can set any", (ProfileOperations.adminSetCelebration(data, "RecordJumpRoar"))
+		and ProfileOperations.getCelebration(data) == "RecordJumpRoar")
+	local reloaded = saveAndReload(data)
+	check("it survives a save and reload", reloaded.inventory.celebration == "RecordJumpRoar")
 end
 
 print("")
