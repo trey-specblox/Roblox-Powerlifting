@@ -15,6 +15,7 @@
 			GIVE A SUIT     each rare suit (no server-wide news)
 			NEXT MEET DROPS the normal chance, or a chosen suit: a real drop at your next meet with a total
 			START A MEET NOW each meet: starts it now with whoever signed up (user 2026-11-08)
+		CELEBRATIONS tab: opens the celebration viewer (client CelebrationViewer, user 2026-11-11)
 		PLAYER STATS page (user 2026-11-08: "fully control anyones stats"), any player in the server:
 			< NAME >        pick the player
 			a box per stat  (AdminConfig.StatFields) showing their value now: type a new one and press
@@ -36,6 +37,7 @@ local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local AdminRemotes = require(Shared:WaitForChild("Admin"):WaitForChild("AdminRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local CelebrationViewer = require(script.Parent:WaitForChild("CelebrationViewer"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
 
@@ -239,14 +241,20 @@ function AdminPanel.start()
 		status.Text = ""
 	end
 	do
-		local position, size = cell(1, 2, 52, 42)
+		local position, size = cell(1, 3, 52, 42)
 		pageButtons.Tools = UIStyle.button(body, "ToolsPageButton", "MY TOOLS", position, size, "outline", function()
 			showPage("Tools")
 		end)
-		position, size = cell(2, 2, 52, 42)
+		position, size = cell(2, 3, 52, 42)
 		pageButtons.Stats = UIStyle.button(body, "StatsPageButton", "PLAYER STATS", position, size, "outline", function()
 			showPage("Stats")
 			refresh()
+		end)
+		-- CELEBRATIONS (user 2026-11-11): the celebration viewer, over the panel (which steps aside).
+		position, size = cell(3, 3, 52, 42)
+		UIStyle.button(body, "CelebrationsButton", "CELEBRATIONS", position, size, "outline", function()
+			holder.Visible = false
+			CelebrationViewer.open()
 		end)
 	end
 

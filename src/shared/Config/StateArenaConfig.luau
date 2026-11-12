@@ -64,8 +64,7 @@ StateArenaConfig.CallerLineAttribute = "CallerLine"
 StateArenaConfig.CallerVoiceId = "1"
 StateArenaConfig.CallerVoiceSpeed = 1
 StateArenaConfig.CallerVoiceVolume = 1
--- A good lift's celebration on the platform, before they walk back to the bench.
-StateArenaConfig.CelebrateSeconds = 3
+-- (A good lift's celebration on the platform: CelebrationConfig, each as long as its own animation.)
 -- A lifter further than this from their rack when their turn comes is put back at once rather than walked.
 StateArenaConfig.BringBackWalkStuds = 60
 

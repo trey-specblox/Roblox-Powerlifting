@@ -86,6 +86,11 @@ StateArenaLights.start()
 local MeetChant = require(MeetFolder:WaitForChild("MeetChant"))
 MeetChant.start()
 
+-- The celebrations' effects for everyone near, and a Legendary one's cinematic on the celebrating player's own screen
+-- (GAME_DESIGN §36.4).
+local CelebrationFx = require(MeetFolder:WaitForChild("CelebrationFx"))
+task.spawn(CelebrationFx.start)
+
 -- The meet's walks (walk-outs, walks back, coaches), drawn smoothly every frame from what the server sends. Visual only.
 local MeetWalkView = require(MeetFolder:WaitForChild("MeetWalkView"))
 MeetWalkView.start()

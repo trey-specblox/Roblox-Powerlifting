@@ -13,7 +13,87 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**THE COACH'S RITUAL CINEMATIC (2026-11-11), TESTED IN STUDIO, NOT COMMITTED** (user: "We dont need lifter introductions. We
+**CELEBRATIONS FROM REAL MEETS (2026-11-11), TESTED IN STUDIO, COMMITTED** (user: "Sounds good, commit"; commit "Add 19 celebrations from real meets...") (newest first: NO VOICES, CLEAN BODY SOUNDS and
+VFX below the first list) (GAME_DESIGN §36.4, "Celebrations from real
+meets"). The user sent 15 meet videos; all were studied frame by frame (six helper agents, muted 1080p frame grids in the
+built-in browser) into `References/Clip Study/`: `Clip Study.md` (index and topic map: coach rituals, before the platform,
+walk-ups, pre-lift rituals, setups and lift mechanics per lift, misses, camera and lighting, big vs light bodies), `Clip notes
+A-F.md` (raw notes, every observation timestamped) and `Celebration Catalogue.md` (71 celebrations CEL-01..71 and 13 coach
+moves, with rarity suggestions). THE reference for future builds, rituals and lift mechanics.
+- Built: `art/scripts/celebration_rig.py` (a new pose engine: every limb solved on its own; exact two-bone legs, knee
+  targets steer kneels, feet never sink, arms solved per key from several natural shapes and blended by angle, named elbow
+  directions; checks for floor contact, target misses, start/end vs standing; labelled preview sheets) and
+  `art/scripts/celebration_animations.py` (19 celebrations, each a catalogue entry adapted to start and end standing at the lift
+  spot). All checked (nothing below the floor; the only misses are reaches past arm length) and looked at from two angles in
+  Blender, then UPLOADED to group 529442797: ids in `src/shared/Config/CelebrationConfig.luau`.
+- Game: `CelebrationConfig` (the list, rarities, events, Legendary cinematics), server `CelebrationService` (plays one on a
+  player or computer lifter, sounds from the body, chalk bursts, tells the owner's screen to run a cinematic; forPlayer /
+  forComputer = the Default until crates), `CelebrationRemotes`, LocalMeetService (State and up: a good lift plays the
+  lifter's celebration, players and computer lifters; StateArenaConfig.CelebrateSeconds removed), AdminService
+  `PlayCelebration`, client `CelebrationViewer` (admin panel's new CELEBRATIONS tab) and `CelebrationCinema` (Legendary shots,
+  key/rim lights, tint, haze), MeetCinema caption shrinks to fit.
+- Studio (place 96814269062063): the viewer opens from the admin panel, plays each on a copy of the avatar (tracks checked
+  playing), PREV/NEXT/list/views/SLOW-MO; PLAY ON ME for Record Jump & Chalk Burst and Leap & Bow ran the cinematic (bars,
+  shots, look, caption) and everything was put back after (camera Custom, FOV 70, no lights/tint/blur, screens back). A
+  State meet: both good squats played the Default on the server. No errors. Fixed in testing: a murky stage (a UIGradient
+  on a ViewportFrame tints the 3D), wrapped rarity tags, a cut-off caption, an over-bright cinematic look, tight shots.
+- SOUNDS (user: "Yes, make them"): 10 ElevenLabs Sound Effects (170 credits, plus 16.5 for word checks: Roar3 read "Let's
+  go!", the grunt blank as usual for a grunt): three roar takes (played at random, never the same twice running), a scream
+  of joy, a short "woo", a "yeah" grunt, a laugh, a jump landing, knees on the platform, sitting down. Prompts in
+  art/sounds/elevenlabs_shouts.json (Celeb_*), cut and levelled by make_lift_shouts.py, uploaded; ids in
+  CelebrationConfig.Sounds. Studio: every event played from the lifter on the server at its moment (record jump: landing,
+  clap, roar 6.07/0.53/0.27 s apart vs 6.05/0.55/0.25 planned); clients now preload the sounds and the Default's animation
+  (as Sound/Animation objects: bare id strings warn "Asset type does not match"). Listening file:
+  D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebListen/Celebration_Sounds_All.wav. NOT judged by ear yet (Claude can't
+  hear). The voices are all male; a female lifter roars with a man's voice for now.
+- [CHANGED BY THE USER] NO VOICES: "We dont need voices for the celebrations, just have the sound affect like knee thumping
+  and stuff, just make them very clear and smooth". Voice events removed (the voice takes stay uploaded, unused, marked NOT
+  USED in the manifest). New art/scripts/make_celebration_sounds.py cleans the body sounds (starts on the hit with a 3 ms
+  fade in, 45 Hz high-pass / 7 kHz low-pass, a real impact's decay: -12 dB within ~0.1 s, smooth fade out, equal peaks):
+  CelebFx_Knees, _Land, _Sit (the raw sit had three bumps and started 0.34 s late; now one bump on time), plus two new
+  takes (34 credits): _FootTap and _Stomp. Uploaded; CelebrationConfig.Sounds now only these; events added through the
+  footwork (prance taps, stomps on wide stances, landings, feet back). Studio: all fired within 0.02 s of plan.
+  Listening file: D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebListen/Celebration_Body_Sounds.wav.
+- VFX (user: "add vfx to the celebrations, Like a movement/wind affect, more chalk, a visible yelling affect"): new client
+  CelebrationFx (Swoosh: wind trails + chalk shed off the hands; Jump: foot trails; Shout: rings + speed lines from the
+  mouth, white with a dark ink twin; Dust / KneeDust: floor ring + dust, chalk off the knees; ChalkPuff / ChalkBurst),
+  built from Roblox Trails/ParticleEmitters and engine textures (checked they load), each effect prepared before it
+  fires, all removed after (checked: 0 pieces left). Every celebration has an `fx` list timed to its moves. The server now
+  sends CelebrationStarted (id, startedAt, figure) to everyone; CelebrationFx draws it (culled past 220 studs) and hands
+  the player's own to CelebrationCinema; the server's old chalk emitters are gone. Studio: shout lines, wind streaks,
+  chalk cloud and dust all seen in screenshots (first attempt was invisible white-on-white in the lobby: fixed with ink
+  twins, blue-grey wind and darker dust); no errors. The viewer's stage can't show particles (PLAY ON ME does).
+- ONE SOUND TRACK PER CELEBRATION (user: "Take all these celebrations, have elevenlabs make sound affects for it. The
+  sound affects are just very off putting", then "Make sure the audio lines up with the animation, send eleven labs the
+  animations"): art/sounds/celebration_tracks.json (19 prompts, each its moves in order, no voice; cues = the animation's
+  moments). First batch (323 credits) came back 1-3 s long and unusable (no duration set; prompt influence default 0.3).
+  Remade with duration_seconds = each celebration's length and prompt_influence 0.7 (283 credits), plus retakes of the
+  default, the salute and the record jump with explicit timestamps (102 + 62 credits; one batch failed free: prompts must
+  be under 450 characters). ElevenLabs' sound effects take text only (no video input exists for sound in this workspace;
+  video-to-music only), so the animation's timing goes in as words and art/scripts/make_celebration_tracks.py edits each
+  take like a foley track: hits paired in order with the cues (dynamic programming), stretches nudged onto them with 30 ms
+  crossfades, nothing cut or repeated, a looser pass for takes that bunched their moves (the record jump packed all of them
+  into its first 4.5 s); best of several takes picked automatically. Uploaded (Track_* ids in CelebrationConfig.soundtrack).
+  Each player's game plays the track (client CelebrationFx) locked to the animation as that screen shows it, not the
+  server clock: measured in Studio on first plays, the track stays within 0.005-0.038 s of the animation (it had been 0.2 s
+  behind, then 0.5 s ahead, while assets loaded); the visual effects follow the same clock; the viewer loads both, then
+  starts them together. Server CelebrationService no longer plays sounds for celebrations with a track (the old body
+  sounds remain the fallback). Listening file: D:/Powerlifting Roblox Extras/Sounds/Celebrations/All_Celebration_Tracks.wav.
+- Not judged by the user yet: how they look, sound and feel.
+- Committed with it (the five never-commit files stay out): art/sounds/elevenlabs_shouts.json (Celeb_* entries), art/scripts/celebration_rig.py, art/scripts/celebration_animations.py, art/animations/Celebrate_*.rbxmx (19),
+  References/Clip Study/ (8 files), src/shared/Config/CelebrationConfig.luau, src/shared/Meet/CelebrationRemotes.luau,
+  src/server/Meet/CelebrationService.luau, src/client/Meet/CelebrationCinema.luau, src/client/Meet/CelebrationFx.luau,
+  src/client/UI/CelebrationViewer.luau, art/scripts/make_celebration_sounds.py, art/scripts/make_celebration_tracks.py,
+  art/sounds/celebration_tracks.json,
+  and changes to LocalMeetService, AdminService, init.server, init.client, AdminPanel, MeetCinema, StateArenaConfig,
+  GAME_DESIGN.md and this file.
+
+**NEW KIT (2026-11-11): fwjelaa cutscene skills**, scanned clean and unpacked to `D:\Powerlifting Roblox Extras\RobloxKits\CutsceneSkills`
+(10 skills: make-cutscene with a CutsceneKit runtime, cinematic scene direction and performance editing, make-anim, R15/R6
+animation directors, Blender cutscene production, make-map). Not used in the game yet. Its Studio installers follow the
+kit-test-place rule (only D:\Robloxkittest.rbxl); results come into the game as files through Rojo.
+
+**THE COACH'S RITUAL CINEMATIC (2026-11-11), TESTED IN STUDIO, COMMITTED as d6cc8bf** (user approved: "Looks good commit"; how it feels in a real play test is still the user's call) (user: "We dont need lifter introductions. We
 can do coach ritual before the walk out", reference https://www.youtube.com/watch?v=dHn-gvJpzPU for its angles and scene
 changes; choices: every turn at State and up, the coach's words as text only, SKIP after the first turn of a meet; GAME_DESIGN
 §36.4). Studied the video with contact sheets (hard cuts, handheld, soft backgrounds: profile close-up with a lower third, over

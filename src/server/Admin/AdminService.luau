@@ -15,6 +15,8 @@
 		  2026-11-08: "fully control anyones stats", to playtest with an alt) changes any
 		  player in the same server: their stats, State ladder, daily training and coins
 		- START A MEET NOW (user 2026-11-08) starts any meet early, with whoever signed up
+		- the CELEBRATIONS viewer's PLAY ON ME (user 2026-11-11) plays one on the admin's own character, so it can
+		  be watched for real, cinematic and all; it changes no save
 		- every use is in the server's log, with whose save it changed
 
 	To add a tool: a new action in `actions` here, and its buttons in client AdminPanel.
@@ -37,6 +39,8 @@ local ShopService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("Sho
 local GearService = require(ServerRoot:WaitForChild("Economy"):WaitForChild("GearService"))
 local ProfileOperations = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("ProfileOperations"))
 local LocalMeetService = require(ServerRoot:WaitForChild("Meet"):WaitForChild("LocalMeetService"))
+local CelebrationService = require(ServerRoot:WaitForChild("Meet"):WaitForChild("CelebrationService"))
+local CelebrationConfig = require(Shared:WaitForChild("Config"):WaitForChild("CelebrationConfig"))
 
 local AdminService = {}
 
@@ -249,6 +253,20 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		end
 		ShopService.setForcedRarity(player, value)
 		return true, "Your crates now give " .. string.upper(value) .. ", until you turn this off or leave."
+	end,
+	-- Plays a celebration (CelebrationConfig id) on the admin's own character, for everyone to see. Saves nothing.
+	PlayCelebration = function(player: Player, value: any): (boolean, string)
+		local celebration = if typeof(value) == "string" then CelebrationConfig.byId[value] else nil
+		if celebration == nil then
+			return false, "That isn't a celebration."
+		end
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if character == nil or humanoid == nil or humanoid.Health <= 0 then
+			return false, "No character to play it on."
+		end
+		CelebrationService.play(character, celebration.id, player)
+		return true, "Playing " .. string.upper(celebration.name) .. "."
 	end,
 }
 

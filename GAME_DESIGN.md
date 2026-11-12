@@ -6110,8 +6110,8 @@ in their weight class and stay in it. This reopens the ladder points
 >     - **[CHANGED BY THE USER, 2026-11-10] Easier to see:** the cube was hard to see (55 studs up, over the racks), so the **two big
 >       side-wall signs show the same moment too**, and the cube **hangs lower** (its screens 43 studs up, was 55) so it sits in view
 >       from the seats (user's pick).
->     - **Built 2026-11-10** (`StateArenaShow`, `StateArenaLights`). Still to come from the list: the coach's ritual,
->       celebration styles (lifter introductions dropped by the user, 2026-11-11).
+>     - **Built 2026-11-10** (`StateArenaShow`, `StateArenaLights`). The rest of the list is built too: the coach's
+>       ritual and the celebrations (2026-11-11); lifter introductions were dropped by the user (2026-11-11).
 >   - **[CHANGED BY THE USER, 2026-11-10] The crowd's chant, NOT the lifter's name:** "i dont think the ai voice could say the names
 >     clearly, and in a good way. So instead ... stomps, claps, the chant can be 'Lift Or lose' 'Squat it up' 'Press it up' 'Lift it
 >     up' 'This all you'" (reference: a game's "sudden death" music, for its feel only: the beat is our own). From a lifter's walk out
@@ -6154,6 +6154,45 @@ in their weight class and stay in it. This reopens the ladder points
 >     stand (Face with the caption, OverCoach with the coach's line, Hands, SendOff: the coach goes round, slaps the back twice
 >     and shouts), then the walk out low behind them and low from in front to one side; black bars, every other screen and the
 >     staff tags hidden meanwhile. It replaces the State walk out's earlier in-front shot.
+>   - **[DECIDED BY THE USER, 2026-11-11] Celebrations from real meets:** the user sent 15 meet videos (IPF Worlds 2026,
+>     Sheffield 2024-26, highlight reels): "pay attention to the camera angles, the coach 'rituals', the lifters before stepping
+>     on the platform, the lifters walking up to the platform, the pre-lift rituals, the celebrations, the setup rituals ... how
+>     everyone sets up and how they move their body with the bar, because when we start working on having actual builds for the
+>     game these are going to be your references". All 15 were studied frame by frame into `References/Clip Study/` (an index,
+>     six notes files and a Celebration Catalogue of 71 celebrations and 13 coach moves). Then: "Make all the celebrations you
+>     want, make sure i can click through them to inspect ... I will most likely make celebrations unlockable through crates.
+>     Make sure there is tons of emphases on these celebrations ... if their is a REALLY dramatic celebration, you can add
+>     cinematic to them like the coach ritual cinematic specially with the lightings". The user's choices: a **viewer screen**
+>     to click through and quick-watch them, **only the admin for now** ("in the future when these celebrations become
+>     unlockable, a player should be able to skim threw them knowing what they could unbox"); until crates exist **one default
+>     for everyone** after a good lift at State and up; **computer lifters follow the same rules** (none lift at State today,
+>     §37, so they keep their cheer at Local and Regional).
+>     **Built 2026-11-11** (CelebrationConfig, CelebrationService, client CelebrationViewer and CelebrationCinema;
+>     art/scripts/celebration_rig.py and celebration_animations.py): 19 celebrations, each a real lifter's, uploaded:
+>     the Default (Chalk Clap & Pump), 3 Common, 3 Uncommon, 3 Rare, 4 Epic and 5 Legendary. Two Common/Uncommon ones play
+>     over the walk back (arms only), as real lifters never stop walking. The **Legendary** ones each have a cinematic on the
+>     lifter's own screen: hard cuts through shots taken from the videos' camera work, the coach ritual's film look, and the
+>     lifter lit for it (a coloured key light, a white rim light, a tint, more haze). The viewer: the admin panel's
+>     CELEBRATIONS tab; a copy of your own avatar on a lit stage plays each over and over (3/4, FRONT, SIDE, SLOW-MO), the
+>     list by rarity, where each came from, and PLAY ON ME (plays it on your real character, cinematic included).
+>     **Sounds (user: "Yes, make them", 2026-11-11), then [CHANGED BY THE USER, 2026-11-11] no voices:** "We dont need
+>     voices for the celebrations, just have the sound affect like knee thumping and stuff, just make them very clear and
+>     smooth". Only the body's sounds: knees hitting the platform, a jump landing, sitting down, light foot taps (hops,
+>     prances, steps) and a firm stomp, plus the chalky clap; each starts right on its hit and dies away like a real impact,
+>     on its moment in the animation, heard from the lifter by whoever is near.
+>     **[CHANGED BY THE USER, 2026-11-11] One sound track per celebration:** "Take all these celebrations, have
+>     elevenlabs make sound affects for it. The sound affects are just very off putting." Then: "Make sure the audio lines
+>     up with the animation, send eleven labs the animations so they can line up properly and match each other." Each
+>     celebration has its own ElevenLabs take, made at its exact length from a prompt of its moves in order (ElevenLabs'
+>     sound effects only take text here: there is no video-in for sound, only for music), then edited so its hits land on
+>     the animation's own frames, and played in step with the animation on every screen (it follows where the animation
+>     actually is, even when it loaded late). The separate body sounds remain only as a fallback.
+>     **[DECIDED BY THE USER, 2026-11-11] Effects:** "add vfx to the celebrations, Like a movement/wind affect, more chalk, a
+>     visible yelling affect, like a shouting visual etc." Wind trails off the hands through fast arm moves (and off the
+>     feet in the air) with chalk shaken off them; the shout made visible as rings and speed lines blasting from the mouth
+>     for as long as each roar lasts; dust rings at stomps, landings and knee drops; bigger chalk puffs, and a full chalk
+>     cloud on the record jump's clap. White with a dark ink edge so they read in a bright room and the dark arena. Drawn on
+>     each player's own device (not in the viewer's stage, which can't show particles: PLAY ON ME shows them).
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own

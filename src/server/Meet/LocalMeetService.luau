@@ -104,6 +104,7 @@ local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimati
 local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
 local CheerConfig = require(ConfigFolder:WaitForChild("CheerConfig"))
 local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
+local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
@@ -127,6 +128,7 @@ local MeetLiveScreens = require(script.Parent:WaitForChild("MeetLiveScreens"))
 local MeetCheering = require(script.Parent:WaitForChild("MeetCheering"))
 local StateArenaShow = require(script.Parent:WaitForChild("StateArenaShow"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
+local CelebrationService = require(script.Parent:WaitForChild("CelebrationService"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
@@ -1391,9 +1393,10 @@ local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
 		for index = #lifter.platform.walkOut, 1, -1 do
 			table.insert(back, lifter.platform.walkOut[index])
 		end
-		-- A computer lifter cheers a good lift before walking off, as players emote (§37.2).
+		-- A computer lifter cheers a good lift before walking off, as players emote (§37.2), unless it has a celebration
+		-- (State and up: CelebrationService).
 		local pause = celebrate
-		if lifter.player == nil and good and lifter.body then
+		if pause == nil and lifter.player == nil and good and lifter.body then
 			pause = function(): number
 				local cheerSeconds = LocalMeetConfig.ComputerLifters.GoodLiftCheerSeconds
 				ComputerLifters.cheer(lifter.body, cheerSeconds)
@@ -1892,13 +1895,15 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		if current.hall.meet ~= current or current.final or not stillLifting(lifter) or lifter.walkToken ~= token then
 			return
 		end
-		-- The State meet: a good lift gets its celebration (their own later, §36.1) before they walk back to the bench.
+		-- State and up: a good lift gets its celebration (CelebrationConfig: everyone's is the Default until crates hand
+		-- out others, user 2026-11-11), players and computer lifters alike, before they walk back to the bench.
 		local player = lifter.player
-		if good and current.hall.state and player then
+		if good and CelebrationConfig.MeetLevels[current.level] then
 			walkBack(lifter, function(): number
-				local track = MeetChalk.play(player.Character, celebrationFor(player))
-				task.delay(StateArenaConfig.CelebrateSeconds, MeetChalk.stop, track)
-				return StateArenaConfig.CelebrateSeconds
+				if player then
+					return CelebrationService.play(player.Character, CelebrationService.forPlayer(player), player)
+				end
+				return CelebrationService.play(lifter.body, CelebrationService.forComputer(lifter.body), nil)
 			end)
 			return
 		end

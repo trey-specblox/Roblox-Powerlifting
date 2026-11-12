@@ -57,6 +57,10 @@ GymRecords.start()
 local GymRecordsWall = require(WorldFolder:WaitForChild("GymRecordsWall"))
 GymRecordsWall.start()
 
+-- The celebrations after a good lift (GAME_DESIGN §36.4): before the meets that play them.
+local CelebrationService = require(MeetFolder:WaitForChild("CelebrationService"))
+CelebrationService.start()
+
 local LocalMeetService = require(MeetFolder:WaitForChild("LocalMeetService"))
 LocalMeetService.start()
 

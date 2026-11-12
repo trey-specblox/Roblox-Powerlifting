@@ -1,5 +1,5 @@
 {
-  "about": "Shouts people yell at a meet, the sounds of chalking up and of opening a gear crate (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment; and the State arena crowd's chants (GAME_DESIGN 36.4, MeetSoundConfig.Chant; the ChantMix_ loops are mixed by art/scripts/make_chant_mix.py). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
+  "about": "Shouts people yell at a meet, the sounds of chalking up of opening a gear crate and of a lifter's celebration (CelebrationConfig.Sounds) (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment; and the State arena crowd's chants (GAME_DESIGN 36.4, MeetSoundConfig.Chant; the ChantMix_ loops are mixed by art/scripts/make_chant_mix.py). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
   "sounds": {
     "LiftShout_1": {
       "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
@@ -679,6 +679,126 @@
       "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
       "ids": {
         "audio": "rbxassetid://94448130535726"
+      }
+    },
+    "Celeb_Roar1": {
+      "about": "A strong powerlifter's triumphant victory roar right after making a huge lift, one man, deep powerful chest voice, \"YEEAAAAAHHH!\", proud and joyful like an athlete celebrating, not scared, dry indoor arena with a little echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://123458672899540"
+      }
+    },
+    "Celeb_Roar2": {
+      "about": "A big strongman athlete's happy celebration roar after a winning lift, one man, deep and loud \"RAAAAHHH!\", fists clenched energy, triumphant and proud, smiling, not angry or scared, indoor arena with light echo, about 1.5 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://125839665862508"
+      }
+    },
+    "Celeb_Roar3": {
+      "about": "A powerlifter's joyful victory yell after a world record, one man, \"LET'S GOOOOO!\" shouted clearly in English, triumphant, proud, happy and loud, not scared, indoor arena with light echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://122033673152836"
+      }
+    },
+    "Celeb_Scream": {
+      "about": "A young athlete's excited happy scream of joy right after winning, one person, \"WOOOOOO!\", big smile in the voice, celebrating like a happy sports fan, not frightened, indoor arena with light echo, about 1.5 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Scream.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://128253693502822"
+      }
+    },
+    "Celeb_Grunt": {
+      "about": "A strong man's short confident grunt of satisfaction after a good lift, one quick low \"YEAH!\" with a fist pump, proud and calm, close to the listener, dry room, half a second (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Grunt.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://81839489817776"
+      }
+    },
+    "Celeb_Laugh": {
+      "about": "An athlete laughing happily in disbelief after a big win while sitting on the floor, one person, warm joyful breathy laugh, ha ha ha, delighted and relieved, close, small echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Laugh.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://134421334607054"
+      }
+    },
+    "Celeb_Cheer": {
+      "about": "A quick happy cheer from one athlete, a short bright \"WOO!\", celebrating with arms up, smiling, energetic, close, small indoor echo, under one second (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Cheer.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://80728459212813"
+      }
+    },
+    "Celeb_Land": {
+      "about": "A heavy athlete in sneakers landing a jump with both feet on a solid wooden competition platform, one firm dull thud with a short creak of the boards, close, dry, no echo, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Land.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://81108779545819"
+      }
+    },
+    "Celeb_Knees": {
+      "about": "A man dropping down onto both knees on a rubber-topped wooden powerlifting platform, two quick dull knee thuds close together, soft and heavy, close, dry, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Knees.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://89084835055024"
+      }
+    },
+    "Celeb_Sit": {
+      "about": "A person sitting down suddenly on a wooden stage floor, one soft dull bump of a body landing on boards, with a little clothing rustle, close, dry, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Sit.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://140639113665774"
+      }
+    },
+    "CelebFx_Knees": {
+      "about": "A man dropping down onto both knees on a rubber-topped wooden powerlifting platform, two quick dull knee thuds close together, soft and heavy, close, dry, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Knees.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://109314144737773"
+      }
+    },
+    "CelebFx_Land": {
+      "about": "A heavy athlete in sneakers landing a jump with both feet on a solid wooden competition platform, one firm dull thud with a short creak of the boards, close, dry, no echo, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Land.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://92250222061931"
+      }
+    },
+    "CelebFx_Sit": {
+      "about": "A person sitting down suddenly on a wooden stage floor, one soft dull bump of a body landing on boards, with a little clothing rustle, close, dry, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Sit.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://102136677463296"
+      }
+    },
+    "CelebFx_FootTap": {
+      "about": "One single light footstep of a sneaker landing on a solid wooden competition platform, a clean soft tap with a little rubber squeak, very short and dry, no echo, no voice, one step only (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_FootTap.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://107912176890186"
+      }
+    },
+    "CelebFx_Stomp": {
+      "about": "One single firm stomp of a heavy athlete's foot planted on a solid wooden competition platform, a clean deep tight thud, very short and dry, no creak, no echo, no voice (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Stomp.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://115953996885187"
       }
     }
   }

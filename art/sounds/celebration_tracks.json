@@ -1,0 +1,359 @@
+{
+  "about": "One sound track per celebration (user 2026-11-11: \"Take all these celebrations, have elevenlabs make sound affects for it. The sound affects are just very off putting.\"). Each celebration gets one ElevenLabs Sound Effects take from its own prompt (its moves in order, no voice), so every sound in it shares one room; art/scripts/make_celebration_tracks.py then finds the take's hits and puts each on its cue (seconds into the celebration, matching its animation in art/scripts/celebration_animations.py), keeping their natural tails. The finished tracks are uploaded; ids in CelebrationConfig (soundtrack). Audio stays outside the repo (D:/Powerlifting Roblox Extras/Sounds/Celebrations).",
+  "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+  "tracks": {
+    "ChalkClapPump": {
+      "seconds": 3.0,
+      "cues": [
+        0.42,
+        1.65,
+        2.0
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. It starts right away with one crisp, loud, chalky hand clap and a soft puff of powder. Then a quiet second. Then at about 1.6 seconds a quick arm whoosh, and at 2 seconds a small sharp fabric snap as a fist pumps once. Then quiet. Close, natural, wooden stage, 3 seconds"
+    },
+    "ExitFistPump": {
+      "seconds": 1.6,
+      "cues": [
+        0.2,
+        0.45
+      ],
+      "prompt": "Sound effects only, no voice, no music: a quick arm swish and a small jersey fabric snap as an athlete pumps a fist once while walking off a wooden stage. Clean, close, natural, about 1.5 seconds"
+    },
+    "FistSalute": {
+      "seconds": 2.4,
+      "cues": [
+        0.1,
+        0.5,
+        1.75
+      ],
+      "prompt": "Sound effects only, no voice, no music: an athlete swings an arm up fast with a whoosh, a tight fabric rustle as the fist shakes, then the arm drops to the side with a soft swish. Clean, close, natural, about 2.5 seconds"
+    },
+    "MilitarySalute": {
+      "seconds": 3.0,
+      "cues": [
+        0.21,
+        0.5,
+        1.9
+      ],
+      "prompt": "Sound effects only, no voice, no music. It starts right away with one crisp sneaker heel stomp to attention on a wooden stage. Then at about half a second a sharp quick hand whoosh snapping up into a salute. Then quiet. Then at about 1.9 seconds the hand drops with a soft fabric swish. Close, natural, 3 seconds"
+    },
+    "WingspanHold": {
+      "seconds": 3.4,
+      "cues": [
+        0.25,
+        2.85
+      ],
+      "prompt": "Sound effects only, no voice, no music: both arms swept out wide to the sides with a broad smooth whoosh and a fabric stretch, a held pause, then the arms dropping with a soft swish. Clean, close, natural, about 3.5 seconds"
+    },
+    "ArmsUpBounce": {
+      "seconds": 2.5,
+      "cues": [
+        0.1,
+        0.75,
+        1.15,
+        1.55,
+        2.05
+      ],
+      "prompt": "Sound effects only, no voice, no music: both arms thrown straight up with a quick whoosh, then three light springy sneaker bounces on a wooden stage, then a soft settling step. Clean, close, natural, about 2.5 seconds"
+    },
+    "SkyPoint": {
+      "seconds": 3.4,
+      "cues": [
+        0.25,
+        3.0
+      ],
+      "prompt": "Sound effects only, no voice, no music: one arm shot straight up to the sky with a clean whoosh and a fabric snap, a pause, then the arm lowering with a soft swish. Clean, close, natural, about 3 seconds"
+    },
+    "ReliefRoar": {
+      "seconds": 4.2,
+      "cues": [
+        0.35,
+        1.9,
+        3.45
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: a heavy athlete sinks into a half squat with a creak of the wooden stage and a sneaker scuff, then both hands come up onto the head with a fabric rustle, then the arms drop with a soft swish. Clean, close, natural, about 4 seconds"
+    },
+    "LightsArmsUp": {
+      "seconds": 3.8,
+      "cues": [
+        0.4,
+        1.45,
+        3.1
+      ],
+      "prompt": "Sound effects only, no voice, no music: two soft hand pats onto the hips, a waiting pause, then both arms shot straight up with a big fast whoosh, then the arms coming down with a soft swish. Clean, close, natural, about 4 seconds"
+    },
+    "SitAndLaugh": {
+      "seconds": 5.2,
+      "cues": [
+        0.7,
+        1.15,
+        1.25,
+        3.55,
+        4.2
+      ],
+      "prompt": "Sound effects only, no voice, no laughing, no music: an athlete crouches with a fabric rustle, sits down on a wooden stage with one soft body bump, a hand pats the floor, a pause, then a hand pushes off the floor with a sneaker scuff and one step as they stand up. Clean, close, natural, about 5 seconds"
+    },
+    "PointAndPrance": {
+      "seconds": 3.6,
+      "cues": [
+        0.55,
+        0.95,
+        1.33,
+        1.55,
+        1.77,
+        1.99,
+        2.21,
+        2.45
+      ],
+      "prompt": "Sound effects only, no voice, no music: one light sneaker hop on a wooden stage, a quick arm whoosh up, then six quick light alternating sneaker steps prancing on the spot, high knees, bouncy rhythm. Clean, close, natural, about 3.5 seconds"
+    },
+    "RackSideRoar": {
+      "seconds": 3.4,
+      "cues": [
+        0.26,
+        0.6,
+        1.05,
+        1.55,
+        2.45
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: a heavy sneaker stomp on a wooden stage into a wide stance, a fast arm whoosh up, a fast arm whoosh down, a deep creak of the boards as the body sinks, then one step back in. Clean, close, natural, about 3.5 seconds"
+    },
+    "CrouchRoarJump": {
+      "seconds": 4.2,
+      "cues": [
+        0.36,
+        1.75,
+        1.88,
+        2.35,
+        3.1
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: a heavy sneaker stomp on a wooden stage, a pause, an arm whoosh, a jump push-off scuff, a solid two-foot landing thud, then a small light hop landing. Clean, close, natural, about 4 seconds"
+    },
+    "WingspanCrunch": {
+      "seconds": 4.2,
+      "cues": [
+        0.85,
+        2.4,
+        2.85
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: both arms flung out wide with a big whoosh, a held pause, then arms swept down and in with a second whoosh and a tight fabric creak as the body squeezes. Clean, close, natural, about 4 seconds"
+    },
+    "DisbeliefPrayer": {
+      "seconds": 9.6,
+      "cues": [
+        1.3,
+        1.75,
+        2.9,
+        4.45,
+        6.3,
+        8.3
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: on a wooden stage, a sneaker step out wide, a quick arm whoosh, a deep squat with a creak of the boards and fabric stretch, a step back up, a pause, both arms thrown up with a big whoosh, a pause, then two hands pressed together softly. Clean, close, natural, about 9 seconds"
+    },
+    "WingspanBiceps": {
+      "seconds": 6.2,
+      "cues": [
+        0.3,
+        0.85,
+        1.05,
+        1.15,
+        2.6,
+        3.95
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: a sneaker step on a wooden stage, a small hop push-off, a landing thud backwards, a big arm whoosh out wide, a step back, a pause, then a tight fabric snap as both arms flex. Clean, close, natural, about 6 seconds"
+    },
+    "LeapAndBow": {
+      "seconds": 5.8,
+      "cues": [
+        0.3,
+        0.55,
+        1.18,
+        1.75,
+        3.75,
+        4.45
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: a crouch scuff on a wooden stage, a jump with a whoosh, a heavy double thud of both knees landing on the platform, two palms slapping the floor softly, a pause, then a foot planted and one step as they stand. Clean, close, natural, about 6 seconds"
+    },
+    "BowAndRise": {
+      "seconds": 6.6,
+      "cues": [
+        1.55,
+        2.05,
+        3.95,
+        4.6,
+        5.1
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music: a heavy double thud of both knees dropping onto a wooden platform, two palms slapping the floor softly, a pause, a sharp double fist whoosh downward, then a foot planted firmly and one step. Clean, close, natural, about 6.5 seconds"
+    },
+    "RecordJumpRoar": {
+      "seconds": 9.2,
+      "cues": [
+        0.4,
+        1.9,
+        3.6,
+        5.25,
+        5.75,
+        5.95,
+        6.45,
+        7.0,
+        7.25
+      ],
+      "prompt": "Sound effects only, no voice, no music, wooden stage. A sneaker step at the start, a step at 2 seconds, soft pats at 3.6 seconds, a small hop landing at 5.2 seconds, a skip step, a jump push-off at 6 seconds, a heavy two-foot landing thud at 6.5 seconds, a huge chalky hand clap with a powder burst at 7 seconds, then a fast arm whoosh. Close, natural, 9 seconds"
+    }
+  },
+  "sounds": {
+    "Track_ChalkClapPump": {
+      "about": "The ChalkClapPump celebration's sound track (see tracks.ChalkClapPump).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_ChalkClapPump.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://130751571992816"
+      }
+    },
+    "Track_ExitFistPump": {
+      "about": "The ExitFistPump celebration's sound track (see tracks.ExitFistPump).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_ExitFistPump.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://100065691077554"
+      }
+    },
+    "Track_FistSalute": {
+      "about": "The FistSalute celebration's sound track (see tracks.FistSalute).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_FistSalute.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://129076185496758"
+      }
+    },
+    "Track_MilitarySalute": {
+      "about": "The MilitarySalute celebration's sound track (see tracks.MilitarySalute).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_MilitarySalute.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://112831292294445"
+      }
+    },
+    "Track_WingspanHold": {
+      "about": "The WingspanHold celebration's sound track (see tracks.WingspanHold).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_WingspanHold.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://70393531422307"
+      }
+    },
+    "Track_ArmsUpBounce": {
+      "about": "The ArmsUpBounce celebration's sound track (see tracks.ArmsUpBounce).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_ArmsUpBounce.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://101557833195011"
+      }
+    },
+    "Track_SkyPoint": {
+      "about": "The SkyPoint celebration's sound track (see tracks.SkyPoint).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_SkyPoint.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://108014192803753"
+      }
+    },
+    "Track_ReliefRoar": {
+      "about": "The ReliefRoar celebration's sound track (see tracks.ReliefRoar).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_ReliefRoar.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://72039361401656"
+      }
+    },
+    "Track_LightsArmsUp": {
+      "about": "The LightsArmsUp celebration's sound track (see tracks.LightsArmsUp).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_LightsArmsUp.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://104407525026280"
+      }
+    },
+    "Track_SitAndLaugh": {
+      "about": "The SitAndLaugh celebration's sound track (see tracks.SitAndLaugh).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_SitAndLaugh.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://124071275481756"
+      }
+    },
+    "Track_PointAndPrance": {
+      "about": "The PointAndPrance celebration's sound track (see tracks.PointAndPrance).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_PointAndPrance.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://126738208009576"
+      }
+    },
+    "Track_RackSideRoar": {
+      "about": "The RackSideRoar celebration's sound track (see tracks.RackSideRoar).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_RackSideRoar.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://128293594914349"
+      }
+    },
+    "Track_CrouchRoarJump": {
+      "about": "The CrouchRoarJump celebration's sound track (see tracks.CrouchRoarJump).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_CrouchRoarJump.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://101654183248134"
+      }
+    },
+    "Track_WingspanCrunch": {
+      "about": "The WingspanCrunch celebration's sound track (see tracks.WingspanCrunch).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_WingspanCrunch.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://140504637248836"
+      }
+    },
+    "Track_DisbeliefPrayer": {
+      "about": "The DisbeliefPrayer celebration's sound track (see tracks.DisbeliefPrayer).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_DisbeliefPrayer.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://115588207298207"
+      }
+    },
+    "Track_WingspanBiceps": {
+      "about": "The WingspanBiceps celebration's sound track (see tracks.WingspanBiceps).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_WingspanBiceps.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://87589154566724"
+      }
+    },
+    "Track_LeapAndBow": {
+      "about": "The LeapAndBow celebration's sound track (see tracks.LeapAndBow).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_LeapAndBow.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://83740584871242"
+      }
+    },
+    "Track_BowAndRise": {
+      "about": "The BowAndRise celebration's sound track (see tracks.BowAndRise).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_BowAndRise.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://103458950942006"
+      }
+    },
+    "Track_RecordJumpRoar": {
+      "about": "The RecordJumpRoar celebration's sound track (see tracks.RecordJumpRoar).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_RecordJumpRoar.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://75363847444209"
+      }
+    }
+  },
+  "settings": "ElevenLabs Sound Effects v2 (eleven_text_to_sound_v2), duration_seconds = the celebration's length, prompt_influence 0.7 (0.8 for the three retakes: ChalkClapPump, MilitarySalute, RecordJumpRoar, best of two takes each, picked by make_celebration_tracks.py)"
+}

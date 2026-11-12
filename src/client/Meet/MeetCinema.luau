@@ -93,13 +93,18 @@ local function build(): Screen
 	captionHolder.BackgroundTransparency = 1
 	captionHolder.AnchorPoint = Vector2.new(0.5, 1)
 	captionHolder.Position = UDim2.new(0.5, 0, 1 - SETTINGS.BarShare, -14)
-	captionHolder.Size = UDim2.fromOffset(520, 78)
+	captionHolder.Size = UDim2.fromOffset(640, 78)
 	captionHolder.Visible = false
 	captionHolder.Parent = gui
 	local captionSmall = UIStyle.text(captionHolder, "Attempt", UDim2.fromOffset(0, 0), UDim2.new(1, 0, 0, 24), 18, C.white,
 		UIStyle.font(Enum.FontWeight.Bold), Enum.TextXAlignment.Center)
 	local captionBig = UIStyle.text(captionHolder, "Weight", UDim2.fromOffset(0, 24), UDim2.new(1, 0, 0, 50), 40, C.yellow,
 		UIStyle.heading(), Enum.TextXAlignment.Center)
+	-- (A long line, a celebration's name, shrinks to fit.)
+	captionBig.TextScaled = true
+	local bigLimit = Instance.new("UITextSizeConstraint")
+	bigLimit.MaxTextSize = 40
+	bigLimit.Parent = captionBig
 	for _, label in ipairs({ captionSmall, captionBig }) do
 		local stroke = Instance.new("UIStroke")
 		stroke.Thickness = 1.5
