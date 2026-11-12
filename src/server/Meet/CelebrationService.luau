@@ -41,6 +41,8 @@ function CelebrationService.start()
 	end
 	started = true
 	startedRemote = CelebrationRemotes.createOnServer(ReplicatedStorage)
+	-- (And the walk-out hype moves' one, which MeetEntrance fires.)
+	CelebrationRemotes.createHypeOnServer(ReplicatedStorage)
 end
 
 -- The celebration a player does after a good lift: theirs from the spin (the Default until they spin).

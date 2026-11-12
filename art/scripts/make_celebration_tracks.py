@@ -18,8 +18,13 @@ import sys
 import numpy as np
 import soundfile as sf
 
-ROOT = pathlib.Path(r"D:\Powerlifting Roblox Extras\Sounds\Celebrations")
-MANIFEST = pathlib.Path(__file__).resolve().parent.parent / "sounds" / "celebration_tracks.json"
+import os
+
+# Another set of tracks (the walk-outs' hype moves, art/sounds/hype_tracks.json) is built the same way with
+# TRACKS_MANIFEST=<manifest> and TRACKS_ROOT=<folder> set.
+ROOT = pathlib.Path(os.environ.get("TRACKS_ROOT", r"D:\Powerlifting Roblox Extras\Sounds\Celebrations"))
+MANIFEST = pathlib.Path(os.environ.get("TRACKS_MANIFEST",
+                                       pathlib.Path(__file__).resolve().parent.parent / "sounds" / "celebration_tracks.json"))
 BLOCK = 0.005           # seconds per level block
 RISE_DB = 5             # a hit: the level jumps this much ...
 RISE_OVER = 0.04        # ... within this long
@@ -47,6 +52,10 @@ def hits(x, rate):
     top = db.max()
     back = max(1, int(RISE_OVER / BLOCK))
     found = []
+    # A take that opens on a hit has no quiet before it to rise from: count it if it is loud right away.
+    start = int(np.argmax(db[:back] >= top - FLOOR_DB)) if (db[:back] >= top - 10).any() else None
+    if start is not None:
+        found.append((start, db[start : start + int(0.06 / BLOCK)].max()))
     for i in range(back, len(db)):
         if db[i] - db[i - back : i].min() >= RISE_DB and db[i] >= top - FLOOR_DB:
             strength = db[i : i + int(0.06 / BLOCK)].max()

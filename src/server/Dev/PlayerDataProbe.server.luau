@@ -2476,6 +2476,23 @@ do
 	check("it survives a save and reload", reloaded.inventory.celebration == "RecordJumpRoar")
 end
 
+--------------------------------------------------------------------------------
+print("")
+print("57. a walk-out spin takes the coins, gives it and puts it on; a duplicate gives some back")
+do
+	local data = newProfile()
+	check("the Default walk-out first", ProfileOperations.getEntrance(data) == "Default")
+	check("no spin without the coins", (ProfileOperations.spinEntrance(data, 500, "WarCry", 250)) == "NotEnough")
+	ProfileOperations.addCoins(data, 1000)
+	local outcome, balance, given = ProfileOperations.spinEntrance(data, 500, "WarCry", 250)
+	check("a spin gives it and puts it on", outcome == "Spun" and balance == 500 and given == 0
+		and ProfileOperations.getEntrance(data) == "WarCry" and ProfileOperations.ownsEntrance(data, "WarCry"))
+	outcome, balance, given = ProfileOperations.spinEntrance(data, 500, "WarCry", 250)
+	check("landing on it again gives 250 back", outcome == "Spun" and balance == 250 and given == 250)
+	check("an unknown walk-out is refused", (ProfileOperations.spinEntrance(data, 100, "NoSuchWalk", 50)) == "Rejected"
+		and ProfileOperations.getCoins(data) == 250)
+end
+
 print("")
 print(string.format("=== %d passed, %d failed ===", passed, failed))
 

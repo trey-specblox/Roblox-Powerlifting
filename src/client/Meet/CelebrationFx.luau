@@ -32,6 +32,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CelebrationConfig = require(Shared:WaitForChild("Config"):WaitForChild("CelebrationConfig"))
+local EntranceConfig = require(Shared:WaitForChild("Config"):WaitForChild("EntranceConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
 
 local CelebrationCinema = require(script.Parent:WaitForChild("CelebrationCinema"))
@@ -348,9 +349,8 @@ end
 	(Studio test 2026-11-11: following the server's clock it ran 0.2 s behind, then 0.5 s ahead, on first plays). Checked
 	again once it plays and nudged back if it drifted. Removed when it ends or another celebration replaces it.
 ]]
-local function playSoundtrack(root: BasePart, celebration: CelebrationConfig.Celebration, clock: () -> number,
+local function playSoundtrack(root: BasePart, id: string?, seconds: number, clock: () -> number,
 	track: AnimationTrack?, alive: () -> boolean)
-	local id = celebration.soundtrack
 	if id == nil then
 		return
 	end
@@ -367,7 +367,7 @@ local function playSoundtrack(root: BasePart, celebration: CelebrationConfig.Cel
 			ContentProvider:PreloadAsync({ sound })
 		end)
 		local at = clock()
-		if not alive() or at >= celebration.seconds or sound.Parent == nil then
+		if not alive() or at >= seconds or sound.Parent == nil then
 			sound:Destroy()
 			return
 		end
@@ -413,7 +413,7 @@ function CelebrationFx.play(id: string, startedAt: number, figure: Model)
 			return Workspace:GetServerTimeNow() - startedAt
 		end
 		-- (The track rings on a little past the moves: it is let finish unless another celebration takes over.)
-		playSoundtrack(root, celebration, clock, track, stillMine)
+		playSoundtrack(root, celebration.soundtrack, celebration.seconds, clock, track, stillMine)
 		local elapsed = clock()
 		for _, effect in ipairs(celebration.fx) do
 			local wait = effect.at - elapsed
@@ -434,8 +434,43 @@ function CelebrationFx.play(id: string, startedAt: number, figure: Model)
 	end)
 end
 
+--[[
+	A walk-out's hype move (EntranceConfig, user 2026-11-11): its own sound track from the lifter, locked to the move as it
+	shows on this screen, like a celebration's. Nothing else to draw.
+]]
+function CelebrationFx.playHype(entranceId: string, startedAt: number, figure: Model)
+	local entrance = EntranceConfig.get(entranceId)
+	local root = part(figure, "HumanoidRootPart")
+	if entrance == nil or entrance.hypeSoundtrack == nil or root == nil or figure.Parent == nil then
+		return
+	end
+	if (Workspace.CurrentCamera.CFrame.Position - root.Position).Magnitude > CULL_STUDS then
+		return
+	end
+	task.spawn(function()
+		local track = trackOf(figure, entrance.hypeAnimationId, 2.5)
+		local function clock(): number
+			if track and track.IsPlaying then
+				return track.TimePosition
+			end
+			return Workspace:GetServerTimeNow() - startedAt
+		end
+		playSoundtrack(root, entrance.hypeSoundtrack, entrance.hypeSeconds, clock, track, function()
+			return figure.Parent ~= nil
+		end)
+	end)
+end
+
 function CelebrationFx.start()
 	CelebrationCinema.start()
+	task.spawn(function()
+		local hype = CelebrationRemotes.waitForHypeClient(ReplicatedStorage)
+		hype.OnClientEvent:Connect(function(id: any, startedAt: any, figure: any)
+			if typeof(id) == "string" and typeof(startedAt) == "number" and typeof(figure) == "Instance" and figure:IsA("Model") then
+				CelebrationFx.playHype(id, startedAt, figure)
+			end
+		end)
+	end)
 	local remote = CelebrationRemotes.waitForClient(ReplicatedStorage)
 	remote.OnClientEvent:Connect(function(id: any, startedAt: any, figure: any)
 		if typeof(id) ~= "string" or typeof(startedAt) ~= "number" or typeof(figure) ~= "Instance" or not figure:IsA("Model") then

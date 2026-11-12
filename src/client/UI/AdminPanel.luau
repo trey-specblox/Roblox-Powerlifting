@@ -435,8 +435,11 @@ function AdminPanel.start()
 	local entranceTitle = UIStyle.text(statsPage, "EntranceTitle", UDim2.fromOffset(MARGIN, entranceY), UDim2.new(1, -2 * MARGIN, 0, 22),
 		SIZES.small, C.muted, UIStyle.font(Enum.FontWeight.Bold))
 	entranceTitle.Text = "MEET ENTRANCE (GIVES IT AND PUTS IT ON)"
+	-- Two rows of five (ten walk-outs since 2026-11-11).
+	local perRow = math.ceil(#EntranceConfig.Order / 2)
 	for index, id in ipairs(EntranceConfig.Order) do
-		local position, size = cell(index, #EntranceConfig.Order, entranceY + 26, 44)
+		local row = math.floor((index - 1) / perRow)
+		local position, size = cell((index - 1) % perRow + 1, perRow, entranceY + 26 + row * 42, 36)
 		UIStyle.button(statsPage, "Entrance_" .. id, EntranceConfig.Entrances[id].name, position, size, "outline", function()
 			ask("GiveEntrance", { userId = targetUserId, id = id })
 		end)

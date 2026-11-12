@@ -10,7 +10,8 @@
 		  from a HumanoidDescription: never a real player's) stands there, idling, and shows off a celebration now and
 		  then while someone is near. Holding E on it opens the client's spin screen (CelebrationSpinner).
 		- GetSpinner answers the player's coins and celebration (read only).
-		- SpinCelebration: one spin. Checked here: not too fast, standing by the NPC; then the roll is the server's
+		- SpinCelebration: one spin, of a celebration or a walk-out (EntranceConfig; user 2026-11-11: "Walk-outs at Hype
+		  Man", same rules: a reroll of the walk-out they use). Checked here: not too fast, standing by the NPC; then the roll is the server's
 		  (the gear crates' rarity odds, then a celebration of that rarity) and PlayerDataService.spinCelebration takes
 		  the coins, makes it theirs and gives the duplicate refund, all in one step. The client only asks.
 
@@ -26,6 +27,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
+local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
@@ -91,24 +93,44 @@ local function viewFor(player: Player): CelebrationRemotes.SpinView?
 	if coins == nil then
 		return nil
 	end
-	return { coins = coins, current = PlayerDataService.getCelebration(player) }
+	return { coins = coins, current = PlayerDataService.getCelebration(player), entrance = PlayerDataService.getEntrance(player) }
 end
 
--- The celebrations of one rarity (never the Default).
-local function ofRarity(rarity: string): { string }
+-- Everything a spin of `kind` can land on: id -> rarity (never a Default).
+local function poolOf(kind: string): { { id: string, rarity: string } }
 	local out = {}
-	for _, celebration in ipairs(CelebrationConfig.List) do
-		if celebration.rarity == rarity then
-			table.insert(out, celebration.id)
+	if kind == "Entrance" then
+		for _, id in ipairs(EntranceConfig.Order) do
+			local entrance = EntranceConfig.Entrances[id]
+			if entrance.rarity ~= "Default" then
+				table.insert(out, { id = id, rarity = entrance.rarity })
+			end
+		end
+	else
+		for _, celebration in ipairs(CelebrationConfig.List) do
+			if celebration.rarity ~= "Default" then
+				table.insert(out, { id = celebration.id, rarity = celebration.rarity })
+			end
+		end
+	end
+	return out
+end
+
+-- The ones of one rarity.
+local function ofRarity(kind: string, rarity: string): { string }
+	local out = {}
+	for _, entry in ipairs(poolOf(kind)) do
+		if entry.rarity == rarity then
+			table.insert(out, entry.id)
 		end
 	end
 	return out
 end
 
 -- The roll: a rarity with the gear crates' odds (or `forced`), then one of its celebrations at random.
-local function roll(forced: string?): string
+local function roll(kind: string, forced: string?): string
 	local rarity: string? = nil
-	if typeof(forced) == "string" and #ofRarity(forced) > 0 then
+	if typeof(forced) == "string" and #ofRarity(kind, forced) > 0 then
 		rarity = forced
 	else
 		local total = 0
@@ -124,19 +146,17 @@ local function roll(forced: string?): string
 			end
 		end
 	end
-	local pool = ofRarity(rarity or "Common")
+	local pool = ofRarity(kind, rarity or "Common")
 	if #pool == 0 then
-		-- (A rarity with no celebrations yet: any one but the Default.)
-		for _, celebration in ipairs(CelebrationConfig.List) do
-			if celebration.id ~= CelebrationConfig.Default then
-				table.insert(pool, celebration.id)
-			end
+		-- (A rarity with none yet: any one but the Default.)
+		for _, entry in ipairs(poolOf(kind)) do
+			table.insert(pool, entry.id)
 		end
 	end
 	return pool[random:NextInteger(1, #pool)]
 end
 
-local function spin(player: Player): (boolean, string, CelebrationRemotes.SpinView?, string?, number)
+local function spin(player: Player, kind: string): (boolean, string, CelebrationRemotes.SpinView?, string?, number)
 	if not nearNpc(player, SPIN.maxSpinDistanceStuds) then
 		return false, "Come back to " .. SPIN.npcName .. " to spin.", nil, nil, 0
 	end
@@ -145,11 +165,12 @@ local function spin(player: Player): (boolean, string, CelebrationRemotes.SpinVi
 	if RunService:IsStudio() then
 		forced = Workspace:GetAttribute("StudioCelebrationRarity")
 	end
-	local resultId = roll(forced)
-	local outcome, _, refund = PlayerDataService.spinCelebration(player, SPIN.price, resultId, SPIN.duplicateRefund)
+	local resultId = roll(kind, forced)
+	local spinOf = if kind == "Entrance" then PlayerDataService.spinEntrance else PlayerDataService.spinCelebration
+	local outcome, _, refund = spinOf(player, SPIN.price, resultId, SPIN.duplicateRefund)
 	local view = viewFor(player)
 	if outcome == "Spun" then
-		return true, CelebrationConfig.byId[resultId].name .. "!", view, resultId, refund
+		return true, "", view, resultId, refund
 	elseif outcome == "NotEnough" then
 		return false, "Not enough coins yet. Earn them at official meets.", view, nil, 0
 	end
@@ -285,11 +306,14 @@ function CelebrationSpinService.start()
 		end
 		return viewFor(player)
 	end
-	remotes.spin.OnServerInvoke = function(player: Player): (boolean, string, CelebrationRemotes.SpinView?, string?, number)
+	remotes.spin.OnServerInvoke = function(player: Player, kind: any): (boolean, string, CelebrationRemotes.SpinView?, string?, number)
+		if typeof(kind) ~= "string" or not CelebrationRemotes.KINDS[kind] then
+			return false, "That isn't something to spin.", nil, nil, 0
+		end
 		if tooFast(player) then
 			return false, "One moment...", nil, nil, 0
 		end
-		return spin(player)
+		return spin(player, kind)
 	end
 	for _, spot in ipairs(CollectionService:GetTagged(SPIN.spotTag)) do
 		task.spawn(buildNpc, spot, remotes)

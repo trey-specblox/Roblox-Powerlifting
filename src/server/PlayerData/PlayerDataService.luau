@@ -802,6 +802,25 @@ function PlayerDataService.spinCelebration(player: Player, price: number, result
 	return outcome, balance, given
 end
 
+-- One walk-out spin (ProfileOperations.spinEntrance). SERVER-ONLY: CelebrationSpinService chose everything.
+function PlayerDataService.spinEntrance(player: Player, price: number, resultId: string, refund: number)
+	: (ProfileOperations.SpinOutcome?, number?, number)
+	local data = activeData(player, "spinEntrance")
+	if data == nil then
+		return nil, nil, 0
+	end
+	local outcome, balance, given = ProfileOperations.spinEntrance(data, price, resultId, refund)
+	if outcome == "Spun" then
+		print(string.format("[PlayerDataService] %s spun a walk-out for %d coins: %s%s, %d left", player.Name, price,
+			resultId, if given > 0 then string.format(" (already theirs: %d back)", given) else "", balance :: number))
+		coinsChanged(player, given - price, balance :: number, "Walk-out spin")
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: a walk-out spin (%s, %s) refused", player.Name, tostring(price),
+			tostring(resultId)))
+	end
+	return outcome, balance, given
+end
+
 function PlayerDataService.adminSetCelebration(player: Player, id: string): (boolean, string)
 	local data = activeData(player, "adminSetCelebration")
 	if data == nil then

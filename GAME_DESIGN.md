@@ -6210,6 +6210,20 @@ in their weight class and stay in it. This reopens the ladder points
 >     land on. The server checks the coins and the distance and rolls the result; the client only shows it. Your celebration
 >     is saved (schema version 22) and is the one you do after a good lift at State and up. Computer lifters keep the Default.
 >     Built 2026-11-11 (CelebrationConfig.Spin, server CelebrationSpinService, client CelebrationSpinner and CelebrationStage).
+>     **[DECIDED BY THE USER, 2026-11-11] Walk-outs at Hype Man too.** The spin screen has two tabs, CELEBRATIONS and
+>     WALK-OUTS. The user's choices: **six new walk-outs** made from the real walk-ups and pre-lift rituals in the user's meet
+>     videos (References/Clip Study), **the same rules** as celebrations (a reroll of the walk-out you use at meets, 500
+>     coins, the gear crates' odds, 250 back on a duplicate), the card shows **your avatar walking up in the style, then its
+>     hype move**, and **ElevenLabs sounds for every hype move**, lined up with each move. Ten walk-outs now, by rarity:
+>     STANDARD (everyone's); Common SWAGGER and ARM UP (one arm straight up for noise; at the bar a clap overhead, arms
+>     flung out); Uncommon HYPE and AIRPLANE (arms out like wings; wings, then up into a V); Rare STOMP and RAISE THE ROOF
+>     (both hands pumping overhead; trap slaps and a hard clap); Epic LIFT THE CROWD (palms-up lifts; two big lifts and a
+>     point at the bar) and SUPER HEAVY (the super-heavyweight's wide rocking walk; thigh slaps, an X arm swing, a chalk
+>     clap overhead); Legendary WAR CRY (a low prowl, arms swung back; a trembling war crouch, then up roaring). The walk
+>     style plays at every meet; the hype move and its sound at State and up (unchanged). Computer lifters pick a random
+>     walk style from all ten. Built 2026-11-11 (EntranceConfig, art/scripts/entrance_animations.py, ProfileOperations
+>     spinEntrance, CelebrationSpinService, client CelebrationSpinner, CelebrationStage.playEntrance, CelebrationFx.playHype;
+>     the sounds in art/sounds/hype_tracks.json).
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own

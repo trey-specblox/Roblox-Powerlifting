@@ -1,0 +1,177 @@
+{
+  "about": "One sound track per walk-out hype move (user 2026-11-11: \"Walk-outs at Hype Man\", then yes to ElevenLabs sounds for the hype moves, \"lined up with each animation\"; standing rule: any audio Claude makes is made with ElevenLabs and lined up with its animation). Each hype move (art/scripts/entrance_animations.py) gets one ElevenLabs Sound Effects take from its own prompt (its moves in order, no voice, as the user asked for the celebrations), then art/scripts/make_celebration_tracks.py (TRACKS_MANIFEST=this file, TRACKS_ROOT=D:/Powerlifting Roblox Extras/Sounds/Hype) puts each of the take's hits on its cue (seconds into the move). The finished tracks are uploaded; ids in EntranceConfig (hypeSoundtrack). Audio files stay outside the repo.",
+  "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+  "settings": "ElevenLabs Sound Effects v2 (eleven_text_to_sound_v2), duration_seconds = the move's length, prompt_influence 0.7, two takes each, the better picked by make_celebration_tracks.py",
+  "tracks": {
+    "Belt": {
+      "seconds": 3.0,
+      "cues": [
+        1.05,
+        1.4,
+        2.0
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. Quiet at first. At 1 second a hard tug on a thick leather lifting belt: a firm leather creak and a buckle clink. At 1.4 seconds a second, harder tug, the same creak and clink. At 2 seconds one loud, crisp, chalky hand clap with a puff of powder. Then quiet. Close and natural, 3 seconds"
+    },
+    "Flex": {
+      "seconds": 3.2,
+      "cues": [
+        0.7,
+        2.2
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. At 0.7 seconds both arms snap up into a flex: a quick double arm whoosh and a tight fabric stretch. A second of quiet tension with a faint fabric strain. At 2.2 seconds the arms shake out loose: three quick soft whooshes and a light shoe scuff on wood. Then quiet. Close and natural, 3.2 seconds"
+    },
+    "ChestSlap": {
+      "seconds": 3.2,
+      "cues": [
+        0.5,
+        0.8,
+        1.25
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. At 0.5 seconds one loud, meaty open-palm slap on a muscular chest. At 0.8 seconds a second chest slap, even harder. At 1.25 seconds the arms swing down and out: a strong whoosh and one heavy boot stomp on the wooden platform. Then a short low rumble of the stage settling, then quiet. Close and natural, 3.2 seconds"
+    },
+    "NeckRoll": {
+      "seconds": 3.0,
+      "cues": [
+        1.9,
+        2.2,
+        2.45
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. First a slow neck roll: soft fabric rustle and one small neck crack at about 0.8 seconds. At 1.9 seconds a crisp chalky hand clap, at 2.2 seconds a second clap, and at 2.45 seconds a sharp arm whoosh as he points forward. Then quiet. Close and natural, 3 seconds"
+    },
+    "OverheadClap": {
+      "seconds": 3.0,
+      "cues": [
+        0.9,
+        1.4
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. At 0.5 seconds both arms swing up fast: a rising whoosh. At 0.9 seconds one huge, loud, chalky hand clap overhead with a big burst of chalk powder puffing out. At 1.4 seconds both arms fling out wide: a strong double whoosh and a little powder settling. Then quiet. Close and natural, 3 seconds"
+    },
+    "WingsV": {
+      "seconds": 3.2,
+      "cues": [
+        0.5,
+        1.6
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. At 0.5 seconds both arms sweep out wide like wings: a broad, smooth whoosh and a fabric snap. A short quiet hold. At 1.6 seconds the arms whip up into a V: a fast rising double whoosh and a firm shoe stomp on the wooden platform. Then quiet. Close and natural, 3.2 seconds"
+    },
+    "TrapSlap": {
+      "seconds": 3.0,
+      "cues": [
+        0.5,
+        0.8,
+        1.4,
+        2.0
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. At 0.5 seconds both hands slap hard on top of the shoulders: a meaty double slap. At 0.8 seconds the same shoulder slap again, harder. At 1.4 seconds one loud, sharp, chalky hand clap. At 2 seconds the arms drop and swing out: a strong whoosh. Then quiet. Close and natural, 3 seconds"
+    },
+    "CrowdLift": {
+      "seconds": 3.2,
+      "cues": [
+        0.75,
+        1.5,
+        2.05
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage lifting the crowd. At 0.75 seconds both arms sweep up from low to high: a big rising whoosh. At 1.5 seconds a second, bigger rising whoosh. At 2.05 seconds a sharp, quick whoosh and a fabric snap as one arm points forward hard. Then quiet. Close and natural, 3.2 seconds"
+    },
+    "ChalkRitual": {
+      "seconds": 3.4,
+      "cues": [
+        0.35,
+        0.6,
+        1.65,
+        2.1
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. At 0.35 seconds a hard slap on both thighs, at 0.6 seconds another thigh slap. At 1.1 seconds the arms swing across the chest: a fast whoosh. At 1.65 seconds one huge chalky clap overhead with a big burst of chalk powder. At 2.1 seconds the arms fling out wide: a strong whoosh. Then quiet. Close, natural, 3.4 seconds"
+    },
+    "WarCrouch": {
+      "seconds": 3.6,
+      "cues": [
+        0.5,
+        1.7
+      ],
+      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. At 0.5 seconds he drops into a low crouch: both shoes scuff and grip the wood, a low creak of the platform, a tense trembling fabric rustle. At 1.7 seconds he explodes up: one huge heavy stomp on the platform with a deep boom, and a big double whoosh as the arms fly up and out. Then the boom fades. Close and natural, 3.6 seconds"
+    }
+  },
+  "sounds": {
+    "Hype_Belt": {
+      "about": "The Belt hype move's sound track (see tracks.Belt).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_Belt.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://132513593834586"
+      }
+    },
+    "Hype_Flex": {
+      "about": "The Flex hype move's sound track (see tracks.Flex).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_Flex.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://131229618807163"
+      }
+    },
+    "Hype_ChestSlap": {
+      "about": "The ChestSlap hype move's sound track (see tracks.ChestSlap).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_ChestSlap.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://132691743560862"
+      }
+    },
+    "Hype_NeckRoll": {
+      "about": "The NeckRoll hype move's sound track (see tracks.NeckRoll).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_NeckRoll.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://93314994803157"
+      }
+    },
+    "Hype_OverheadClap": {
+      "about": "The OverheadClap hype move's sound track (see tracks.OverheadClap).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_OverheadClap.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://138706907614994"
+      }
+    },
+    "Hype_WingsV": {
+      "about": "The WingsV hype move's sound track (see tracks.WingsV).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_WingsV.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://107210658191384"
+      }
+    },
+    "Hype_TrapSlap": {
+      "about": "The TrapSlap hype move's sound track (see tracks.TrapSlap).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_TrapSlap.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://92238157521990"
+      }
+    },
+    "Hype_CrowdLift": {
+      "about": "The CrowdLift hype move's sound track (see tracks.CrowdLift).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_CrowdLift.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://137884153261912"
+      }
+    },
+    "Hype_ChalkRitual": {
+      "about": "The ChalkRitual hype move's sound track (see tracks.ChalkRitual).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_ChalkRitual.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://103499626687975"
+      }
+    },
+    "Hype_WarCrouch": {
+      "about": "The WarCrouch hype move's sound track (see tracks.WarCrouch).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_WarCrouch.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://112103457438818"
+      }
+    }
+  }
+}

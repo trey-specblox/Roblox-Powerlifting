@@ -9,6 +9,21 @@
 #   Hype_Flex        a double biceps flex, held shaking, then shakes the arms out
 #   Hype_ChestSlap   two slaps on the chest, then arms down and out and a roar to the ceiling
 #   Hype_NeckRoll    rolls the neck, two claps, points at the bar
+#
+# Six more, unlocked from the celebration NPC's spin (user 2026-11-11: "Make ~6 new ones" from the real walk-ups in
+# References/Clip Study/Clip Study.md, "Walk-ups" and "Pre-lift rituals"):
+#   Walk_ArmUp         a steady walk with one arm held straight up for noise
+#   Walk_Airplane      arms out like wings, banking side to side
+#   Walk_RaiseRoof     bouncy, both hands pumping overhead ("raise the roof")
+#   Walk_CrowdLift     palms-up lifts toward the crowd every stride ("lift the crowd")
+#   Walk_SuperHeavy    the super-heavyweight walk: a wide base, rocking, arms held off the body, the whole torso turning
+#   Walk_WarCry        a low, leaning prowl with the arms swung back
+#   Hype_OverheadClap  arms up wide, a clap overhead (a chalk puff), head back, arms flung out (the side-of-stage primer)
+#   Hype_WingsV        arms out wide like wings, then up into a V with the head back (the "wings and V")
+#   Hype_TrapSlap      slaps both traps twice, then a hard clap with a dip
+#   Hype_CrowdLift     two big palms-up lifts of the crowd, then points at the bar
+#   Hype_ChalkRitual   thigh slaps, an X arm swing across the chest, a clap overhead, the arms flung out
+#   Hype_WarCrouch     a war crouch with the arms swung back, trembling, then explodes up roaring, arms up and out
 #   Touch_GameFace   arms only, over the last steps of a Local or Regional walk-out: two quick chalky claps, then both
 #                    hands tap the belt (user 2026-11-08: those walk-outs "too bland", but not flashy or long)
 #
@@ -86,8 +101,13 @@ def walk_pose(w, t):
         pose.update(leg(side, root_rot, thigh, flex, w["stance"], w["toes"], foot))
         swing = -w["arm_swing"] * math.sin(TAU * ((ph + offset) % 1.0)) - pitch
         forward = max(0.0, swing + pitch) / max(1.0, w["arm_swing"])
-        pose.update(one_arm(side, {"raise": w["arm_raise"], "swing": swing, "twist": w.get("arm_twist", 0.0),
-                                   "elbow": w["elbow"] + w.get("elbow_pump", 0.0) * forward}))
+        a = {"raise": w["arm_raise"], "swing": swing, "twist": w.get("arm_twist", 0.0),
+             "elbow": w["elbow"] + w.get("elbow_pump", 0.0) * forward}
+        if "arms" in w:
+            # A gesture walk: its own arms (the walk's swing passed in), still held level against the lean.
+            a = w["arms"](side, ph, a)
+            a["swing"] = a["swing"] - pitch
+        pose.update(one_arm(side, a))
     pose["Neck"] = rx(w["neck"] - pitch * 0.6 + w.get("nod", 0.0) * math.sin(2 * TAU * ph))
     pose["Root"] = root_rot
     # Down onto the lower foot's sole: the hips rise and fall with the stride by themselves, and no corner of a foot
@@ -122,6 +142,58 @@ WALKS = {
               "shoulder_turn": 4.0, "arm_swing": 10.0, "arm_raise": 32.0, "arm_twist": 20.0, "elbow": 35.0,
               "neck": -6.0},
 }
+
+
+def _arm_up(side, ph, a):
+    if side == "Right":
+        return {"raise": 150.0 + 4.0 * math.sin(TAU * ph), "swing": 18.0, "twist": 0.0, "elbow": 4.0}
+    return a
+
+
+def _airplane(side, ph, a):
+    tilt = 12.0 * math.sin(TAU * ph)          # the wings bank with the stride: one up as the other goes down
+    return {"raise": 86.0 + (tilt if side == "Left" else -tilt), "swing": 4.0, "twist": 0.0, "elbow": 6.0}
+
+
+def _raise_roof(side, ph, a):
+    push = 0.5 + 0.5 * math.sin(2 * TAU * ph)  # two pushes a stride, both hands together
+    return {"raise": 125.0 + 30.0 * push, "swing": 10.0, "twist": 0.0, "elbow": 35.0 - 25.0 * push}
+
+
+def _crowd_lift(side, ph, a):
+    lift = 0.5 - 0.5 * math.cos(TAU * ph)     # one slow lift a stride, low in front up to overhead
+    return {"raise": 38.0 + 10.0 * lift, "swing": 10.0 + 85.0 * lift, "twist": -20.0, "elbow": 30.0 - 15.0 * lift}
+
+
+def _war_cry(side, ph, a):
+    return {"raise": 20.0, "swing": -34.0 + 0.35 * a["swing"], "twist": 10.0, "elbow": 38.0}
+
+
+WALKS.update({
+    "ArmUp": {"period": 0.8, "thigh": 30.0, "swing_flex": 55.0, "stance_flex": 10.0, "toe_up": 10.0,
+              "stance": 3.0, "toes": 10.0, "torso": 1.0, "sway": 2.0, "hip_turn": 4.0, "shoulder_turn": 5.0,
+              "arm_swing": 26.0, "arm_raise": 10.0, "elbow": 15.0, "elbow_pump": 12.0, "neck": 8.0, "nod": 2.0,
+              "arms": _arm_up},
+    "Airplane": {"period": 0.8, "thigh": 29.0, "swing_flex": 55.0, "stance_flex": 10.0, "toe_up": 10.0,
+                 "stance": 3.0, "toes": 10.0, "torso": 0.0, "sway": 9.0, "hip_turn": 3.0, "shoulder_turn": 3.0,
+                 "arm_swing": 0.0, "arm_raise": 86.0, "elbow": 6.0, "neck": 6.0, "arms": _airplane},
+    "RaiseRoof": {"period": 0.62, "thigh": 27.0, "swing_flex": 72.0, "stance_flex": 18.0, "toe_up": 12.0,
+                  "stance": 2.5, "toes": 8.0, "torso": -3.0, "hip_turn": 4.0, "shoulder_turn": 4.0, "bounce": 0.12,
+                  "arm_swing": 0.0, "arm_raise": 130.0, "elbow": 40.0, "neck": 10.0, "nod": 6.0,
+                  "arms": _raise_roof},
+    "CrowdLift": {"period": 0.78, "thigh": 29.0, "swing_flex": 55.0, "stance_flex": 12.0, "toe_up": 10.0,
+                  "stance": 3.0, "toes": 10.0, "torso": 0.0, "sway": 3.0, "hip_turn": 3.0, "shoulder_turn": 3.0,
+                  "arm_swing": 0.0, "arm_raise": 22.0, "elbow": 28.0, "neck": 10.0, "nod": 3.0,
+                  "arms": _crowd_lift},
+    "SuperHeavy": {"period": 1.1, "thigh": 24.0, "swing_flex": 45.0, "stance_flex": 12.0, "toe_up": 5.0, "stamp": True,
+                   "stance": 9.0, "toes": 18.0, "torso": -4.0, "lean_bob": 1.5, "sway": 10.0, "hip_turn": 2.0,
+                   "shoulder_turn": 12.0, "arm_swing": 8.0, "arm_raise": 38.0, "arm_twist": 25.0, "elbow": 30.0,
+                   "neck": -3.0},
+    "WarCry": {"period": 0.95, "thigh": 30.0, "swing_flex": 50.0, "stance_flex": 22.0, "toe_up": 6.0,
+               "stance": 4.0, "toes": 12.0, "torso": -18.0, "lean_bob": 3.0, "sway": 3.0, "hip_turn": 3.0,
+               "shoulder_turn": 8.0, "arm_swing": 18.0, "arm_raise": 20.0, "elbow": 38.0, "neck": 14.0,
+               "arms": _war_cry},
+})
 for _w in WALKS.values():
     _w["speed"] = round(stride_speed(_w), 2)
 
@@ -274,7 +346,76 @@ NECK_ROLL = Hype(3.0,
                         (2.8, POINT), (3.0, mirror(HANG_HAND))],
                  neck=neck_roll)
 
-HYPES = {"Belt": BELT, "Flex": FLEX_HYPE, "ChestSlap": CHEST_SLAP, "NeckRoll": NECK_ROLL}
+# ---- the six new ones (Clip Study walk-ups and pre-lift rituals)
+OVER = Vector((-0.35, 2.45, -0.05))          # hands together overhead
+HIGH_WIDE = Vector((-1.55, 2.3, -0.3))
+FLING = Vector((-2.55, 1.15, -0.4))        # arms flung out wide, a little up
+WING = Vector((-2.65, 1.0, 0.0))
+V_UP = Vector((-1.55, 2.4, -0.25))
+TRAP = Vector((-0.55, 1.05, -0.5))           # the hand on the top of its own shoulder
+TRAP_OFF = Vector((-1.2, 1.5, -0.6))
+THIGH = Vector((-1.15, -0.75, -0.45))
+CROSS = Vector((0.35, 0.45, -0.9))          # across the chest, past the middle
+LOW_FRONT = Vector((-0.95, -0.45, -0.95))
+HIGH_FRONT = Vector((-1.3, 2.2, -0.85))
+SWUNG_BACK = Vector((-1.3, -0.35, 0.95))
+UP_OUT = Vector((-2.3, 1.8, -0.3))
+
+
+def crouch(depth, neck=0.0):
+    return {"torso": -20.0 * depth, "thigh": 62.0 * depth, "shin": -30.0 * depth, "toes": 12.0, "neck": neck}
+
+
+OVERHEAD_CLAP = Hype(3.0,
+                     [(0.0, STAND), (0.6, dict(STAND, neck=8.0)), (0.95, dip(0.3, 12.0)), (1.2, dict(STAND, neck=24.0)),
+                      (2.0, dict(STAND, neck=22.0)), (2.5, STAND), (3.0, STAND)],
+                     [(0.0, HANG_HAND), (0.55, HIGH_WIDE), (0.9, OVER), (1.05, OVER), (1.4, FLING), (2.1, FLING),
+                      (2.6, HANG_HAND), (3.0, HANG_HAND)],
+                     wobble=lambda t: Vector((shake(t, 1.45, 2.1, 0.05, 10.0), shake(t, 1.45, 2.1, 0.04, 8.0), 0)))
+WINGS_V = Hype(3.2,
+               [(0.0, STAND), (0.5, dict(STAND, neck=4.0)), (1.25, dict(STAND, neck=6.0)), (1.6, dip(0.35, 26.0)),
+                (2.5, dip(0.4, 28.0)), (2.9, STAND), (3.2, STAND)],
+               [(0.0, HANG_HAND), (0.5, WING), (1.25, WING), (1.6, V_UP), (2.5, V_UP), (2.95, HANG_HAND),
+                (3.2, HANG_HAND)],
+               wobble=lambda t: Vector((0, shake(t, 0.55, 1.2, 0.03, 6.0) + shake(t, 1.65, 2.5, 0.05, 10.0), 0)))
+TRAP_SLAP = Hype(3.0,
+                 [(0.0, STAND), (0.35, dict(STAND, neck=-6.0)), (1.0, dict(STAND, neck=-8.0)), (1.4, dip(0.6, -10.0)),
+                  (1.7, dict(STAND, neck=6.0)), (2.4, dict(STAND, neck=10.0)), (3.0, STAND)],
+                 [(0.0, HANG_HAND), (0.35, TRAP_OFF), (0.5, TRAP), (0.65, TRAP_OFF), (0.8, TRAP), (1.15, APART),
+                  (1.4, CLAP), (1.6, CLAP), (2.0, ROAR), (2.5, ROAR), (3.0, HANG_HAND)],
+                 wobble=lambda t: Vector((shake(t, 2.0, 2.5, 0.06, 10.0), 0, 0)))
+CROWD_LIFT = Hype(3.2,
+                  [(0.0, STAND), (0.3, dip(0.4, -4.0)), (0.75, dict(STAND, neck=16.0)), (1.05, dip(0.4, -2.0)),
+                   (1.5, dict(STAND, neck=18.0)), (2.1, dict(STAND, neck=-4.0)), (2.8, dict(STAND, neck=-6.0)),
+                   (3.2, STAND)],
+                  [(0.0, HANG_HAND), (0.3, LOW_FRONT), (0.75, HIGH_FRONT), (1.05, LOW_FRONT), (1.5, HIGH_FRONT),
+                   (1.9, HANG_HAND), (3.2, HANG_HAND)],
+                  right=[(0.0, mirror(HANG_HAND)), (0.3, mirror(LOW_FRONT)), (0.75, mirror(HIGH_FRONT)),
+                         (1.05, mirror(LOW_FRONT)), (1.5, mirror(HIGH_FRONT)), (1.75, mirror(LOW_FRONT)),
+                         (2.05, POINT), (2.7, POINT),
+                         (3.2, mirror(HANG_HAND))])
+CHALK_RITUAL = Hype(3.4,
+                    [(0.0, STAND), (0.35, dip(0.5, -10.0)), (0.6, dip(0.5, -10.0)), (0.9, STAND),
+                     (1.6, dict(STAND, neck=10.0)), (1.8, dict(STAND, neck=22.0)), (2.6, dict(STAND, neck=18.0)),
+                     (3.0, STAND), (3.4, STAND)],
+                    [(0.0, HANG_HAND), (0.35, THIGH), (0.47, LOOSE), (0.6, THIGH), (0.85, FLING), (1.1, CROSS),
+                     (1.35, HIGH_WIDE), (1.65, OVER), (1.8, OVER), (2.1, FLING), (2.6, FLING), (3.1, HANG_HAND),
+                     (3.4, HANG_HAND)],
+                    right=[(0.0, mirror(HANG_HAND)), (0.35, mirror(THIGH)), (0.47, mirror(LOOSE)), (0.6, mirror(THIGH)),
+                           (0.85, mirror(FLING)), (1.1, mirror(CROSS) + Vector((0, -0.25, -0.15))),
+                           (1.35, mirror(HIGH_WIDE)), (1.65, mirror(OVER)), (1.8, mirror(OVER)), (2.1, mirror(FLING)),
+                           (2.6, mirror(FLING)), (3.1, mirror(HANG_HAND)), (3.4, mirror(HANG_HAND))])
+WAR_CROUCH = Hype(3.6,
+                  [(0.0, STAND), (0.5, crouch(0.9, 8.0)), (1.4, crouch(1.0, 10.0)), (1.7, dict(STAND, neck=26.0)),
+                   (2.8, dict(STAND, neck=24.0)), (3.2, STAND), (3.6, STAND)],
+                  [(0.0, HANG_HAND), (0.5, SWUNG_BACK), (1.4, SWUNG_BACK), (1.7, UP_OUT), (2.8, UP_OUT),
+                   (3.25, HANG_HAND), (3.6, HANG_HAND)],
+                  wobble=lambda t: Vector((shake(t, 0.55, 1.4, 0.04, 12.0) + shake(t, 1.75, 2.8, 0.06, 10.0),
+                                           shake(t, 1.75, 2.8, 0.05, 8.0), 0)))
+
+HYPES = {"Belt": BELT, "Flex": FLEX_HYPE, "ChestSlap": CHEST_SLAP, "NeckRoll": NECK_ROLL,
+         "OverheadClap": OVERHEAD_CLAP, "WingsV": WINGS_V, "TrapSlap": TRAP_SLAP, "CrowdLift": CROWD_LIFT,
+         "ChalkRitual": CHALK_RITUAL, "WarCrouch": WAR_CROUCH}
 
 # Touch_GameFace: played over the walk (Action priority) with only the arms keyed, so the legs and hips keep walking;
 # the server times it to end as the walk does. Claps at 0.32 and 0.56 s (EntranceConfig.QuickTouch.clapSeconds).

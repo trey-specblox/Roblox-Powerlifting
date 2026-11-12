@@ -2172,6 +2172,31 @@ function ProfileOperations.spinCelebration(data: ProfileData, price: number, res
 	return "Spun", wallet.coins, given
 end
 
+--[[
+	One walk-out spin (user 2026-11-11: walk-outs from the same spin, same rules): takes `price` coins, gives `resultId`
+	(an EntranceConfig id) and puts it on, and when it already was the one they use gives `refund` back, all in one step.
+	A reroll like celebrations: the walk-out they use is replaced; what they owned before stays owned (the admin panel can
+	still put any owned one back on). SERVER-ONLY, as spinCelebration. Only "Spun" changes anything.
+]]
+function ProfileOperations.spinEntrance(data: ProfileData, price: number, resultId: string, refund: number)
+	: (SpinOutcome, number?, number)
+	local wallet = walletOf(data)
+	local owned = entrancesOf(data)
+	if wallet == nil or owned == nil or not isWholeCoins(price) or not isWholeCoins(refund) or refund > price
+		or typeof(resultId) ~= "string" or EntranceConfig.get(resultId) == nil then
+		return "Rejected", nil, 0
+	end
+	if wallet.coins < price then
+		return "NotEnough", wallet.coins, 0
+	end
+	local given = if ProfileOperations.getEntrance(data) == resultId then refund else 0
+	wallet.coins += given - price
+	wallet.spentTotal += price - given
+	ProfileOperations.grantEntrance(data, resultId)
+	ProfileOperations.setEntrance(data, resultId)
+	return "Spun", wallet.coins, given
+end
+
 -- The admin panel: makes any celebration theirs, for free.
 function ProfileOperations.adminSetCelebration(data: ProfileData, id: string): (boolean, string)
 	local celebration = CelebrationConfig.byId[id]

@@ -13,6 +13,32 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**WALK-OUTS AT HYPE MAN (2026-11-11), TESTED IN STUDIO, COMMITTED** (user: "Commit the working tree changes"; commit "Add walk-out spins at Hype Man...") (GAME_DESIGN §36.4, "Walk-outs at Hype Man
+too"). User's choices: ~6 new walk-outs from the Clip Study, same spin rules, the card shows walk then hype move, ElevenLabs
+sounds for the hype moves.
+- Kits used: the Clip Study's walk-ups and pre-lift rituals (the gestures), the UI kit card (reused), ElevenLabs for sound.
+  The fwjelaa animation kit's method was read but the game's own entrance engine (art/scripts/entrance_animations.py) fits
+  this rig, so it was extended instead.
+- Animations: `entrance_animations.py` got gesture walks (an `arms` override per walk) and six walks + six hype moves
+  (ArmUp/OverheadClap, Airplane/WingsV, RaiseRoof/TrapSlap, CrowdLift/CrowdLift, SuperHeavy/ChalkRitual, WarCry/WarCrouch).
+  Checked: nothing below the floor; hand misses 0.04-0.16 studs (first try missed by up to 1 stud: targets were past this
+  rig's reach, ~2.45 studs overhead; fixed); looked at front-on sheets in art/previews/walkouts (fixed an arm folding over
+  the head, arms covering the face, a clap in front of the face, a shallow crouch, a point crossing the head). UPLOADED.
+- Sounds: art/sounds/hype_tracks.json, 10 prompts (no voice), 2 takes each + 2 retakes = 236 credits (estimate said 636).
+  `make_celebration_tracks.py` now takes TRACKS_MANIFEST / TRACKS_ROOT and counts a hit at the very start of a take; every
+  track paired its hits (TrapSlap 3 of 4, CrowdLift 2 of 3: the misses are soft). Files in D:/Powerlifting Roblox
+  Extras/Sounds/Hype; UPLOADED; ids in EntranceConfig.hypeSoundtrack.
+- Game: EntranceConfig (rarity, description, hypeSoundtrack; 10 walk-outs; Order), ProfileOperations/PlayerDataService
+  `spinEntrance` (no schema change: grants + puts on), CelebrationSpinService spins a `kind`, CelebrationRemotes (KINDS,
+  SpinView.entrance, EntranceHypeStarted), MeetEntrance fires it, CelebrationFx.playHype locks the sound to the move,
+  CelebrationStage.playEntrance (walk up 8 studs, hype move, repeat), CelebrationSpinner tabs, AdminPanel two rows of
+  walk-out buttons, PlayerDataProbe section 57.
+- Studio: the WALK-OUTS tab shows STANDARD walking up then the belt tug, looping; a forced Legendary spin landed WAR CRY
+  (saved, 500 coins); on the card its sound ran within 0.01 s of the move; MeetEntrance.playHype on the real character:
+  the sound followed within 0.03 s; admin buttons fit. No errors. NOT tested: a real State meet walk-out end to end, the
+  new walks on a real platform walk, how the sounds sound (Claude can't hear).
+- Next: a real State meet walk-out end to end; the user listens to D:/Powerlifting Roblox Extras/Sounds/Hype/Hype_Sounds_All.wav.
+
 **THE CELEBRATION SPIN (2026-11-11), TESTED IN STUDIO, COMMITTED** (user: "Alright commit changes look good"; commit "Add the celebration spin...") (GAME_DESIGN §36.4, "Unlocking celebrations").
 The user: replace the corner bench in the dumbbell area with a placeholder NPC; hold E for a "rollable" celebration screen
 like their reference Short. Their choices: a reroll (each spin replaces your one celebration), 500 coins, the gear crates'

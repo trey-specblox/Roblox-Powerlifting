@@ -11,6 +11,11 @@
 			(client CelebrationFx), and the celebrating player's own screen runs its cinematic, if it has one
 			(client CelebrationCinema). Display only.
 
+		EntranceHypeStarted  server -> client  (entranceId: string, startedAt: number, figure: Model)
+			"This figure has just started its walk-out's hype move" (EntranceConfig, at State and up): each player's game
+			plays the move's sound track from the lifter, locked to the move as it shows there (client CelebrationFx).
+			Display only.
+
 	Asking to play one (the admin's viewer) goes through the admin panel's own remote (AdminService "PlayCelebration"),
 	which checks the account.
 
@@ -19,9 +24,9 @@
 		OpenSpinner  server -> one client
 			The player held E on the celebration NPC: open the spin screen.
 		GetSpinner   client -> server  () -> SpinView?
-			Their coins and current celebration. Read only.
-		SpinCelebration  client -> server  () -> (ok, message, view?, resultId?, refund)
-			Asks for one spin. The server checks the coins and that they stand by the NPC, rolls the result itself, takes
+			Their coins, current celebration and current walk-out. Read only.
+		SpinCelebration  client -> server  (kind: "Celebration" | "Entrance") -> (ok, message, view?, resultId?, refund)
+			Asks for one spin of a celebration or a walk-out (EntranceConfig, user 2026-11-11: "Walk-outs at Hype Man"). The server checks the coins and that they stand by the NPC, rolls the result itself, takes
 			the price and makes the result theirs; the client only asks, then shows the reel landing on the result.
 ]]
 
@@ -44,6 +49,23 @@ function CelebrationRemotes.waitForClient(replicatedStorage: Instance): RemoteEv
 	return replicatedStorage:WaitForChild(CelebrationRemotes.STARTED, math.huge) :: RemoteEvent
 end
 
+CelebrationRemotes.HYPE = "EntranceHypeStarted"
+
+function CelebrationRemotes.createHypeOnServer(replicatedStorage: Instance): RemoteEvent
+	local found = replicatedStorage:FindFirstChild(CelebrationRemotes.HYPE)
+	if found and found:IsA("RemoteEvent") then
+		return found
+	end
+	local remote = Instance.new("RemoteEvent")
+	remote.Name = CelebrationRemotes.HYPE
+	remote.Parent = replicatedStorage
+	return remote
+end
+
+function CelebrationRemotes.waitForHypeClient(replicatedStorage: Instance): RemoteEvent
+	return replicatedStorage:WaitForChild(CelebrationRemotes.HYPE, math.huge) :: RemoteEvent
+end
+
 CelebrationRemotes.SPIN_FOLDER = "CelebrationSpinRemotes"
 CelebrationRemotes.OPEN_SPINNER = "OpenSpinner"
 CelebrationRemotes.GET_SPINNER = "GetSpinner"
@@ -51,8 +73,13 @@ CelebrationRemotes.SPIN = "SpinCelebration"
 
 export type SpinView = {
 	coins: number,
+	-- Their celebration (CelebrationConfig id) and walk-out (EntranceConfig id).
 	current: string,
+	entrance: string,
 }
+
+-- What a spin can be for.
+CelebrationRemotes.KINDS = { Celebration = true, Entrance = true } :: { [string]: boolean }
 
 export type SpinRemotes = {
 	open: RemoteEvent,

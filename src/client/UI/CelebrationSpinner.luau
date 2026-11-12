@@ -21,6 +21,9 @@
 		                  price, the odds
 		corners           SEE ALL (every celebration you could land on, CelebrationViewer, then back here), close X
 		                  (walking away closes it too)
+		tabs              CELEBRATIONS | WALK-OUTS (user 2026-11-11: "Walk-outs at Hype Man", same rules): on WALK-OUTS
+		                  the card shows your walk-out (EntranceConfig): your avatar walking up in its style, then its
+		                  hype move with its sound, over and over; SPIN rerolls the walk-out you use at meets
 
 	It only asks and shows: the server checks the coins and rolls the result (CelebrationSpinService), before the reel
 	starts. Sounds: a tick on every flip, a thud on landing (a bigger hit for Epic and Legendary).
@@ -36,6 +39,8 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
+local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
+local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
@@ -97,11 +102,18 @@ type Screen = {
 	coins: TextLabel,
 	spinFill: UIGradient,
 	spinLabel: TextLabel,
+	tabs: { [string]: { fill: UIGradient, label: TextLabel } },
+	seeAll: TextButton,
 }
+
+-- One thing a spin can land on, whichever kind: what the card shows.
+type Item = { id: string, name: string, rarity: string, description: string }
 
 local screen: Screen? = nil
 local remotes: CelebrationRemotes.SpinRemotes? = nil
-local current = CelebrationConfig.Default
+-- The tab open: "Celebration" or "Entrance" (a walk-out); what they have of each.
+local kind = "Celebration"
+local current: { [string]: string } = { Celebration = CelebrationConfig.Default, Entrance = EntranceConfig.DefaultId }
 local coins = 0
 local spinning = false
 local skip = false
@@ -129,13 +141,31 @@ local function rarityRank(rarity: string): number
 	return 0
 end
 
--- What a spin can land on (never the Default).
-local POOL = {}
+-- The card's view of a celebration or a walk-out.
+local function itemOf(of: string, id: string): Item?
+	if of == "Entrance" then
+		local entrance = EntranceConfig.get(id)
+		return if entrance then { id = id, name = entrance.name, rarity = entrance.rarity, description = entrance.description }
+			else nil
+	end
+	local celebration = CelebrationConfig.byId[id]
+	return if celebration then { id = id, name = celebration.name, rarity = celebration.rarity, description = celebration.description }
+		else nil
+end
+
+-- What a spin of each kind can land on (never a Default), for the reel.
+local POOLS: { [string]: { Item } } = { Celebration = {}, Entrance = {} }
 for _, celebration in ipairs(CelebrationConfig.List) do
 	if celebration.rarity ~= "Default" then
-		table.insert(POOL, celebration)
+		table.insert(POOLS.Celebration, itemOf("Celebration", celebration.id) :: Item)
 	end
 end
+for _, id in ipairs(EntranceConfig.Order) do
+	if EntranceConfig.Entrances[id].rarity ~= "Default" then
+		table.insert(POOLS.Entrance, itemOf("Entrance", id) :: Item)
+	end
+end
+local HEADINGS = { Celebration = "CELEBRATION", Entrance = "WALK-OUT" }
 
 -- The biggest text size (up to NAME_MAX) at which a name fits on one line across the card; remembered per name.
 local NAME_MAX, NAME_WIDTH = 72, W - 40
@@ -299,7 +329,7 @@ local function setTheme(s: Screen, colour: Color3, seconds: number)
 end
 
 -- Shows one celebration's name, rarity and description at the top (during the reel too).
-local function showName(celebration: CelebrationConfig.Celebration, withAbout: boolean, themeSeconds: number)
+local function showName(celebration: Item, withAbout: boolean, themeSeconds: number)
 	local s = screen
 	if s == nil then
 		return
@@ -334,16 +364,31 @@ local function setSpinButton()
 	end
 end
 
--- Shows their celebration, with their avatar doing it.
+-- Their avatar doing it: a celebration over and over, or a walk-out (walk up, then the hype move).
+local function perform(s: Screen, id: string)
+	if kind == "Entrance" then
+		local entrance = EntranceConfig.get(id)
+		if entrance then
+			CelebrationStage.playEntrance(s.stage, entrance, LocalMeetConfig.ComputerLifters.WalkSpeed)
+		end
+	else
+		local celebration = CelebrationConfig.byId[id]
+		if celebration then
+			CelebrationStage.play(s.stage, celebration, 1)
+		end
+	end
+end
+
+-- Shows what they have on the open tab, with their avatar doing it.
 local function showCurrent()
 	local s = screen
-	local celebration = CelebrationConfig.byId[current]
-	if s == nil or celebration == nil then
+	local item = itemOf(kind, current[kind])
+	if s == nil or item == nil then
 		return
 	end
-	s.heading.Text = "CURRENT CELEBRATION:"
-	showName(celebration, true, 0)
-	CelebrationStage.play(s.stage, celebration, 1)
+	s.heading.Text = "CURRENT " .. HEADINGS[kind] .. ":"
+	showName(item, true, 0)
+	perform(s, item.id)
 end
 
 local function pop(s: Screen, size: number, seconds: number)
@@ -354,7 +399,7 @@ end
 -- The reel: flips through the celebrations, slowing down, and lands on `resultId` (at once after SKIP).
 local function runReel(resultId: string, refund: number)
 	local s = screen
-	local result = CelebrationConfig.byId[resultId]
+	local result = itemOf(kind, resultId)
 	if s == nil or result == nil then
 		spinning = false
 		setSpinButton()
@@ -368,14 +413,15 @@ local function runReel(resultId: string, refund: number)
 	s.heading.Text = "SPINNING..."
 	s.status.Text = ""
 	raySpeed = 40
-	local last: CelebrationConfig.Celebration? = nil
+	local pool = POOLS[kind]
+	local last: Item? = nil
 	for i = 1, FLIPS - 1 do
 		if skip or reelToken ~= mine then
 			break
 		end
-		local pick = POOL[math.random(1, #POOL)]
-		if pick == last and #POOL > 1 then
-			pick = POOL[(table.find(POOL, pick) :: number) % #POOL + 1]
+		local pick = pool[math.random(1, #pool)]
+		if pick == last and #pool > 1 then
+			pick = pool[(table.find(pool, pick) :: number) % #pool + 1]
 		end
 		last = pick
 		showName(pick, false, 0.05)
@@ -391,8 +437,8 @@ local function runReel(resultId: string, refund: number)
 	-- Landed.
 	spinning = false
 	setSpinButton()
-	current = resultId
-	s.heading.Text = "NEW CELEBRATION:"
+	current[kind] = resultId
+	s.heading.Text = "NEW " .. HEADINGS[kind] .. ":"
 	showName(result, true, 0)
 	local rank = rarityRank(result.rarity)
 	local big = rank >= BIG_FROM
@@ -414,10 +460,11 @@ local function runReel(resultId: string, refund: number)
 		s.status.Text = string.format("You already had it: +%s %s back", CoinConfig.format(refund), CoinConfig.Name)
 	else
 		s.status.TextColor3 = colour:Lerp(WHITE, 0.3)
-		s.status.Text = "Your celebration after good lifts at State"
+		s.status.Text = if kind == "Entrance" then "Your walk-out at every meet (the hype move at State)"
+			else "Your celebration after good lifts at State"
 	end
 	showCoins()
-	CelebrationStage.play(s.stage, result, 1)
+	perform(s, resultId)
 end
 
 local function askSpin()
@@ -438,7 +485,7 @@ local function askSpin()
 	spinning = true
 	s.spinLabel.Text = "..."
 	local ok, done, message, view, resultId, refund = pcall(function()
-		return set.spin:InvokeServer()
+		return set.spin:InvokeServer(kind)
 	end)
 	if ok and typeof(view) == "table" then
 		coins = view.coins
@@ -594,8 +641,19 @@ local function build(): Screen
 	end
 	odds.Text = table.concat(parts, "   ")
 
+	-- The tabs, over the top edge: CELEBRATIONS | WALK-OUTS.
+	local tabs = {}
+	for index, entry in ipairs({ { "Celebration", "CELEBRATIONS" }, { "Entrance", "WALK-OUTS" } }) do
+		local tabKind = entry[1]
+		local _, fill, label = chunkyButton(holder, "Tab_" .. tabKind, entry[2],
+			UDim2.new(0.5, if index == 1 then -146 else 4, 0, -22), UDim2.fromOffset(142, 40), WHITE, WHITE, 19, function()
+				CelebrationSpinner.showTab(tabKind)
+			end)
+		tabs[tabKind] = { fill = fill, label = label }
+	end
+
 	-- The corners: SEE ALL and close.
-	chunkyButton(holder, "SeeAll", "SEE ALL", UDim2.fromOffset(-14, -16), UDim2.fromOffset(118, 44),
+	local seeAll = chunkyButton(holder, "SeeAll", "SEE ALL", UDim2.fromOffset(-14, -16), UDim2.fromOffset(118, 44),
 		Color3.fromRGB(120, 180, 255), Color3.fromRGB(60, 100, 220), 22, function()
 			if spinning then
 				return
@@ -621,6 +679,7 @@ local function build(): Screen
 		gui = gui, holder = holder, scene = scene, glow = glow, core = core, rays = rays, shards = shards, flash = flash,
 		stage = stage, heading = heading, name = name, nameGlow = nameGlow, nameGradient = nameGradient, nameScale = nameScale,
 		rarity = rarity, about = about, status = status, coins = coinsText, spinFill = spinFill, spinLabel = spinLabel,
+		tabs = tabs, seeAll = seeAll,
 	}
 end
 
@@ -656,6 +715,28 @@ local function rootPosition(): Vector3?
 	return if rootPart and rootPart:IsA("BasePart") then rootPart.Position else nil
 end
 
+-- Switches the card to celebrations or walk-outs (not while the reel runs).
+local TAB_ON = { GOLD_TOP, GOLD_BOTTOM }
+local TAB_OFF = { Color3.fromRGB(70, 78, 96), Color3.fromRGB(34, 38, 50) }
+function CelebrationSpinner.showTab(tabKind: string)
+	local s = screen
+	if s == nil or spinning or POOLS[tabKind] == nil then
+		return
+	end
+	kind = tabKind
+	for name, tab in pairs(s.tabs) do
+		local on = name == tabKind
+		local colours = if on then TAB_ON else TAB_OFF
+		tab.fill.Color = ColorSequence.new(colours[1], colours[2])
+		tab.label.TextTransparency = if on then 0 else 0.25
+	end
+	-- (SEE ALL lists the celebrations: only on their tab.)
+	s.seeAll.Visible = tabKind == "Celebration"
+	s.status.TextColor3 = WHITE
+	s.status.Text = string.format("Land on the one you have: %s %s back", CoinConfig.format(SPIN.duplicateRefund), CoinConfig.Name)
+	showCurrent()
+end
+
 function CelebrationSpinner.isOpen(): boolean
 	local s = screen
 	return s ~= nil and s.gui.Enabled
@@ -686,10 +767,11 @@ function CelebrationSpinner.open(back: boolean?)
 	end)
 	if ok and typeof(view) == "table" then
 		coins = view.coins
-		current = if CelebrationConfig.byId[view.current] then view.current else CelebrationConfig.Default
+		current.Celebration = if CelebrationConfig.byId[view.current] then view.current else CelebrationConfig.Default
+		current.Entrance = if EntranceConfig.get(view.entrance) then view.entrance else EntranceConfig.DefaultId
 	end
 	showCoins()
-	showCurrent()
+	CelebrationSpinner.showTab(if back then "Celebration" else kind)
 end
 
 function CelebrationSpinner.close()

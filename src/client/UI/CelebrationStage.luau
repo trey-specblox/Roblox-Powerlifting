@@ -40,6 +40,8 @@ export type Stage = {
 	tracks: { AnimationTrack },
 	sounds: { Sound },
 	idle: AnimationTrack?,
+	-- Where the figure stands (a walk-out walks it up to here).
+	home: CFrame?,
 }
 
 -- Builds the stage (empty: setFigure puts the avatar on it) in `parent`. `bare`: no platform and a see-through background,
@@ -137,10 +139,13 @@ local function clearPlays(stage: Stage)
 	table.clear(stage.sounds)
 end
 
--- Stops what is playing (the idle stance stays).
+-- Stops what is playing (the idle stance stays) and stands the figure back on its spot.
 function CelebrationStage.stop(stage: Stage)
 	stage.token += 1
 	clearPlays(stage)
+	if stage.figure and stage.home then
+		(stage.figure :: Model):PivotTo(stage.home :: CFrame)
+	end
 end
 
 -- A fresh copy of the player's own avatar on the stage: no scripts, nothing that moves by itself, the root held still,
@@ -182,6 +187,7 @@ function CelebrationStage.setFigure(stage: Stage): boolean
 	copy:PivotTo(CFrame.new(0, humanoid.HipHeight + root.Size.Y / 2, 0))
 	copy.Parent = stage.world
 	stage.figure = copy
+	stage.home = copy:GetPivot()
 	local animator = animatorOf(copy)
 	if animator then
 		local idle = load(animator, IDLE_ANIMATION_ID, Enum.AnimationPriority.Idle, true)
@@ -284,6 +290,103 @@ function CelebrationStage.play(stage: Stage, celebration: CelebrationConfig.Cele
 			if once then
 				return
 			end
+		end
+	end)
+end
+
+--[[
+	A walk-out (EntranceConfig entry), over and over: the figure walks toward the camera in its walk style for
+	WALKOUT_STUDS (at the speed the walk is made for, so the feet keep up with the floor), stops, does its hype move with
+	its sound track, then starts again. Roblox's own walk at `defaultSpeed` for one without a walk style.
+]]
+local WALKOUT_STUDS = 8
+local HYPE_GAP = 0.8
+local RunService = game:GetService("RunService")
+function CelebrationStage.playEntrance(stage: Stage, entrance: any, defaultSpeed: number)
+	CelebrationStage.stop(stage)
+	local model = stage.figure
+	if model == nil then
+		return
+	end
+	local animator = animatorOf(model)
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if animator == nil or root == nil or not root:IsA("BasePart") then
+		return
+	end
+	local home = stage.home or model:GetPivot()
+	local mine = stage.token
+	local walkId = entrance.walkAnimationId or WALK_ANIMATION_ID
+	local speed = entrance.walkSpeed or defaultSpeed
+	task.spawn(function()
+		while stage.token == mine do
+			-- Load both moves and the sound first, so nothing starts late.
+			local walk = load(animator, walkId, Enum.AnimationPriority.Movement, true)
+			local hype = load(animator, entrance.hypeAnimationId, Enum.AnimationPriority.Action, false)
+			local sound: Sound? = nil
+			if entrance.hypeSoundtrack then
+				local made = Instance.new("Sound")
+				made.SoundId = entrance.hypeSoundtrack
+				made.Volume = CelebrationConfig.SoundtrackVolume
+				made.Parent = SoundService
+				table.insert(stage.sounds, made)
+				sound = made
+			end
+			local loading: { Instance } = {}
+			for _, id in ipairs({ walkId, entrance.hypeAnimationId }) do
+				local animation = Instance.new("Animation")
+				animation.AnimationId = id
+				table.insert(loading, animation)
+			end
+			if sound then
+				table.insert(loading, sound)
+			end
+			pcall(function()
+				ContentProvider:PreloadAsync(loading)
+			end)
+			if stage.token ~= mine then
+				return
+			end
+			-- The walk: from WALKOUT_STUDS behind the spot up to it, easing in and out.
+			local seconds = WALKOUT_STUDS / speed
+			if walk then
+				table.insert(stage.tracks, walk)
+				walk:Play(0.2)
+			end
+			local started = os.clock()
+			while stage.token == mine do
+				local t = os.clock() - started
+				local u = math.clamp(t / seconds, 0, 1)
+				-- Ease the last fifth only, so the feet keep up with the floor most of the way.
+				local along = if u < 0.8 then u * 0.9 / 0.8 else 0.9 + 0.1 * math.sin((u - 0.8) / 0.2 * math.pi / 2)
+				model:PivotTo(home * CFrame.new(0, 0, WALKOUT_STUDS * (1 - along)))
+				if walk then
+					walk:AdjustSpeed(if u < 0.8 then 1 else math.max(0.35, 1 - (u - 0.8) / 0.2))
+				end
+				if u >= 1 then
+					break
+				end
+				RunService.RenderStepped:Wait()
+			end
+			if stage.token ~= mine then
+				return
+			end
+			model:PivotTo(home)
+			if walk then
+				walk:Stop(0.25)
+			end
+			-- The hype move, its sound started with it.
+			if hype then
+				table.insert(stage.tracks, hype)
+				hype:Play(0.15)
+			end
+			if sound then
+				sound:Play()
+			end
+			task.wait(entrance.hypeSeconds + HYPE_GAP)
+			if stage.token ~= mine then
+				return
+			end
+			clearPlays(stage)
 		end
 	end)
 end

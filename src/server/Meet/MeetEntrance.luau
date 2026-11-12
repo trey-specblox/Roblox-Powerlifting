@@ -16,6 +16,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EntranceConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("EntranceConfig"))
 local MeetWalkPath = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Meet"):WaitForChild("MeetWalkPath"))
+local CelebrationRemotes = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
+local Workspace = game:GetService("Workspace")
 
 local FADE_SECONDS = 0.2
 
@@ -99,6 +101,15 @@ function MeetEntrance.playHype(character: Model?, entrance: EntranceConfig.Entra
 	track.Priority = Enum.AnimationPriority.Action
 	track.Looped = false
 	track:Play(FADE_SECONDS)
+	-- Every player's game plays the move's own sound, in step with it (client CelebrationFx.playHype).
+	if entrance.hypeSoundtrack then
+		for id, known in pairs(EntranceConfig.Entrances) do
+			if known == entrance then
+				CelebrationRemotes.createHypeOnServer(ReplicatedStorage):FireAllClients(id, Workspace:GetServerTimeNow(), character)
+				break
+			end
+		end
+	end
 	task.wait(seconds)
 	track:Stop(FADE_SECONDS)
 	task.delay(FADE_SECONDS + 0.05, function()
