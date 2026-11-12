@@ -6224,6 +6224,77 @@ in their weight class and stay in it. This reopens the ladder points
 >     walk style from all ten. Built 2026-11-11 (EntranceConfig, art/scripts/entrance_animations.py, ProfileOperations
 >     spinEntrance, CelebrationSpinService, client CelebrationSpinner, CelebrationStage.playEntrance, CelebrationFx.playHype;
 >     the sounds in art/sounds/hype_tracks.json).
+>     **[DECIDED BY THE USER, 2026-11-11] SEE ALL for walk-outs, then fail styles and emotes.** SEE ALL opens the list for
+>     the spin screen's open tab (celebrations, walk-outs, fail styles or emotes). Then: "2, then 3": unlockable fail
+>     animations and emotes, also won at Hype Man (two more tabs, FAILS and EMOTES, same price and odds).
+>     - **Fail styles: the failure itself is replaced** (the user's choice over a reaction after the miss): three styles
+>       (the user's pick), each a full set of the six fails (squat, bench, deadlift; two ways each), timed with the bar
+>       and the spotters, **played at every meet** (each about the default's length, so no meet gets slower): BAIL-OUT
+>       (Common: quick escapes, dumps the squat off the back, lets go at once on the bench, drops the deadlift fast),
+>       GRINDER (Uncommon: long shaking grinds that get close, then give out), DRAMATIC (Rare: big collapses and
+>       frustration, floor slaps, head in hands, flopped out on the bench). A reroll like celebrations. Computer lifters
+>       keep the default set. The spin card shows the style's squat and deadlift fails with the game's loaded barbell.
+>     - **Emotes: a wheel on B** (a tab on the left for phones), anywhere outside a lift, a meet's turn or a mock meet;
+>       everyone nearby sees it with its sound; walking ends it. **A collection** (the user's choice): every emote won is
+>       kept; a duplicate gives 250 coins back. **Eight gym emotes** (the user's pick): Wave and Chalk Clap free for
+>       everyone; Belt Tighten and Double Biceps (Common), Trap Slap and Point & Laugh (Uncommon), Catch Your Breath
+>       (Rare), Most Muscular (Epic). Each has its own ElevenLabs sound (no voice), lined up with it.
+>     - With fewer things than rarities (three fail styles, eight emotes), a rolled rarity with none lands on the nearest
+>       one that has some, and each tab's odds line shows those real odds.
+>     Built 2026-11-11 (art/scripts/fail_styles.py and emote_animations.py; StationAnimationConfig.FailStyles,
+>     EmoteConfig; save schema version 23; EmoteService and client EmoteWheel; the spin screen's tabs).
+>     **[DECIDED BY THE USER, 2026-11-11] The walk-out style starts at the banner; celebrations that last the walk back.**
+>     "make the entrance animation start right when you start walking to the platform, so basically right when ur equal
+>     to the banner, make sure you include in celebration list a celebration that continues even when your going back to
+>     the bench".
+>     - **The walk style starts at the banner:** the walk-out style plays from the point where the lifter draws level with
+>       their banner (State: the gantry banner in front of their rack; a local meet: the hall's doorway) all the way to the
+>       bar, not just for the last few studs. The walk-out's time limit grows to match.
+>     - **Two walk-back celebrations** ("WalkLoop"), made from the user's meet videos rewatched for how lifters step off and
+>       walk away (fist pumped high while roaring, arms flung out wide, double thumbs up to the crowd, an open-palm wave):
+>       THANK-YOU WAVE (Rare: an open hand waved up to the crowd, then a hand on the heart and a nod) and CROWD PLEASER (Epic:
+>       two roaring fist pumps, arms flung wide, double thumbs up to the stands). Arms and head only, so the legs keep walking;
+>       they repeat with their sound all the way back and stop when the lifter reaches their spot (never more than 45 s).
+>       Won at Hype Man like every other celebration.
+>     - **Belt sounds are a crisp snap** (user, with a reference Short): any belt adjusting gets a sharp snap or flick, never
+>       a slow leather creak, and every ElevenLabs prompt says plainly that it is powerlifting. The STANDARD walk-out's belt
+>       hype move and the Belt Tighten emote were remade this way.
+>     Built 2026-11-11 (MeetEntrance.styleStudsFrom, the venues' `styleFrom`; CelebrationConfig WalkLoop, CelebrationService
+>     endWalk, CelebrationFx's looped sound; art/scripts/compose_belt_snaps.py).
+>     **[DECIDED BY THE USER, 2026-11-12] Collect them all, with a slot for each attempt.** "I retract my previous
+>     statement. I want people to be able to collect these walk outs, celebrations, and lift fails. In the "emotes" section,
+>     add a Arrow, and a indicator that tells users that they can switch between emotes, Entrances, celebrations etc. And
+>     they can collect them. Give the user 3 slots for each lift. 1st attempt celebration, 2nd attempt celebration 3rd
+>     attempt. Do the same for walk outs, 3 slots, and they are able to collect and swap them out." **This replaces the
+>     reroll above** for celebrations, walk-outs and fail styles (emotes were already a collection):
+>     - **Collections:** everything won at Hype Man is kept. Landing on one you already have (the Default included) gives
+>       the duplicate coins back, as before. Everyone has each kind's Default.
+>     - **Three slots per kind:** 1ST, 2ND and 3RD ATTEMPT, for walk-outs, celebrations and fail styles. A slot is used on
+>       that attempt at every lift (squat, bench and deadlift alike); the same one can sit in several slots. Fail styles
+>       got slots too, so all three kinds work the same way (Claude's reading: the user listed fails as collectable).
+>       Warm-up racks use the 1st-attempt fail style.
+>     - **A new win fills the first slot still on the Default**, so it shows at the next meet without a trip to the wheel;
+>       slots the player filled are never changed by a spin.
+>     - **Swapping is on the emote wheel (B):** gold < and > arrows either side of the wheel and a row of page chips
+>       (EMOTES · WALK-OUTS · CELEBRATIONS · FAILS, the open one gold) with the hint "switch pages · collect them all at
+>       Hype Man". On a slot page: the three slots over the hub, the collection under it (owned lit in their rarity's
+>       colour, the rest dark and LOCKED, "3 / 21 collected"); click a slot, then one you own. WATCH plays them all on
+>       your avatar.
+>     - The server checks every swap (the kind, the slot, that they own it). Saves made before this keep what they had,
+>       in all three slots.
+>     Built 2026-11-12 (LoadoutConfig; save schema version 24; ProfileOperations setLoadoutSlot; the CelebrationSpinRemotes
+>     GetLoadout and SetLoadoutSlot; client EmoteWheel pages).
+>     **[CHANGED BY THE USER, 2026-11-12] Local and Regional get them too, without the cinematics.** "i also retract another
+>     statement, i want local and regionals to have these celebration, fails, entrances etc. but no flashy cinematic, just to
+>     keep local and regionals quick but still a little styleish." This replaces the 2026-11-08 "State and up only" for
+>     these three (the rest of the big presentation, the dark arena, chants, the arena wall, the coach's ritual and its
+>     film-look walk-out shots, stays State only):
+>     - **Walk-outs:** the walk style and now the **hype move** at the bar at every meet (EntranceConfig.HypeMeetLevels); the
+>       quick "game face" claps remain only for a walk-out with no hype move. Adds the hype move's few seconds per attempt.
+>     - **Celebrations:** after every good lift at every meet, players and computer lifters (the Default for them), with
+>       their moves, sound and effects; **the celebration's own camera shots play at State only**
+>       (CelebrationConfig.CinematicMeetLevels; the admin's PLAY ON ME still shows them).
+>     - **Fail styles** already played at every meet.
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own
@@ -6663,6 +6734,8 @@ bar, as at a real meet: one at each end of the bar and one behind the lifter.
 | **Spotters follow** | **Squat:** the side spotters crouch as the bar goes down, hands hovering under the sleeves, and follow it back to the rack (or carry it on a miss). The **back spotter is right behind the lifter**, hands hovering behind their hips. **Bench:** the side spotters bend and crouch with the bar; the back spotter stands behind the head on the rack's deck, hands hovering over the bar. |
 | **No spotters on deadlift** | None on the platform. |
 | **Nothing touches** | No spotter passes through the rack, the bar or the lifter (hats and big heads included): hands hover a gap away. |
+| **Spotters make way for celebrations** (user, 2026-11-11) | "Make sure the spotters cant get in the way of the celebrations." After a good lift, while the lifter steps back to the lift spot and celebrates (or a computer lifter cheers), all three spotters step off to the platform's front corners, past the rack and the bar's ends, and watch; they step back once the lifter has walked off. Their spots stay out of the celebration cinematic's shots and out of the usual camera behind the lifter. |
+| **Spotters make way for entrances too** (user, 2026-11-12) | "i seen this on bench fix it. make sure any spotters or loaders are not in the way of entrances or celebrations" (a spotter filling the State walk-out shot on bench). The spotters are also the loaders. From the moment a lifter walks out until they are set up at the bar (through the walk style and the hype move) the spotters stand aside, then come back for the lift. At State the walk-out's camera rides along the platform's left side, so they go to spots found against every recorded frame of that camera: two just off the platform on the left (between the side referee's chair and the lights), one at the back right corner. Elsewhere they use the celebration spots. They **walk** there and back at a steady pace, round the rack (never through it or the bench) and never across the front middle where the lifter walks in. |
 
 > **Built (2026-11-02): the changes above.**
 >

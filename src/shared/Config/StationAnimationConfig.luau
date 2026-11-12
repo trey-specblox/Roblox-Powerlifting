@@ -116,9 +116,85 @@ StationAnimationConfig.Fails = {
 	},
 } :: { [string]: { Fail } }
 
--- The default fail animation for `lift` failed in part `part` (1 or 2; anything else counts as the nearest).
-function StationAnimationConfig.failFor(lift: string, part: number): Fail?
-	local fails = StationAnimationConfig.Fails[lift]
+--[[
+	THE FAIL STYLES (user 2026-11-11: "Replace the failure itself", three styles, played at every meet): each a full set
+	of the six fails, made by art/scripts/fail_styles.py (Fail_<Style>_<Lift>_<Part>), won at the celebration NPC's spin
+	(CelebrationSpinService, by `rarity`) and saved per player (ProfileOperations.getFailStyle). Same fields as Fails;
+	"Default" is everyone's (the Fails above). Keep these in step with fail_styles.py STYLES.
+]]
+export type FailStyle = { name: string, rarity: string, description: string, fails: { [string]: { Fail } } }
+StationAnimationConfig.FailStyles = {
+	Bailout = {
+		name = "BAIL-OUT",
+		rarity = "Common",
+		description = "Quick escapes: dumps the squat off the back, lets go at once on the bench, drops the deadlift fast.",
+		fails = {
+			Squat = {
+				{ id = "rbxassetid://104699451246353", length = 3.4, release = 0.6, catch = 0.5 },
+				{ id = "rbxassetid://104224688950961", length = 3.4, release = 0.55, catch = 0.45 },
+			},
+			Bench = {
+				{ id = "rbxassetid://119068247255634", length = 3.0, release = 0.7, catch = 0.45 },
+				{ id = "rbxassetid://124963246140386", length = 3.0, release = 0.8, catch = 0.55 },
+			},
+			Deadlift = {
+				{ id = "rbxassetid://91525345354865", length = 3.4, release = 0.9, catch = nil },
+				{ id = "rbxassetid://89404221495583", length = 3.0, release = 0.35, catch = nil },
+			},
+		},
+	},
+	Grinder = {
+		name = "GRINDER",
+		rarity = "Uncommon",
+		description = "Long, shaking grinds that get so close, then give out at the last moment.",
+		fails = {
+			Squat = {
+				{ id = "rbxassetid://90292420083198", length = 5.2, release = 3.6, catch = 3.2 },
+				{ id = "rbxassetid://130852838697366", length = 5.6, release = 3.8, catch = 3.4 },
+			},
+			Bench = {
+				{ id = "rbxassetid://105833668719392", length = 4.6, release = 3.4, catch = 3.1 },
+				{ id = "rbxassetid://83755185682700", length = 4.6, release = 3.3, catch = 2.9 },
+			},
+			Deadlift = {
+				{ id = "rbxassetid://116590810428713", length = 4.8, release = 2.9, catch = nil },
+				{ id = "rbxassetid://80066352596888", length = 3.9, release = 2.7, catch = nil },
+			},
+		},
+	},
+	Dramatic = {
+		name = "DRAMATIC",
+		rarity = "Rare",
+		description = "Big collapses and frustration: floor slaps, head in hands, flopped out on the bench.",
+		fails = {
+			Squat = {
+				{ id = "rbxassetid://138743801019475", length = 5.6, release = 1.3, catch = 0.9 },
+				{ id = "rbxassetid://129516000420910", length = 5.6, release = 2.6, catch = 2.1 },
+			},
+			Bench = {
+				{ id = "rbxassetid://122588216461359", length = 4.6, release = 2.2, catch = 1.5 },
+				{ id = "rbxassetid://133908083326219", length = 4.6, release = 2.8, catch = 2.2 },
+			},
+			Deadlift = {
+				{ id = "rbxassetid://108533985724841", length = 4.8, release = 3.0, catch = nil },
+				{ id = "rbxassetid://103466352260214", length = 3.9, release = 1.45, catch = nil },
+			},
+		},
+	},
+} :: { [string]: FailStyle }
+StationAnimationConfig.FailStyleOrder = { "Default", "Bailout", "Grinder", "Dramatic" }
+-- The default set's own card text (it isn't in FailStyles).
+StationAnimationConfig.DefaultFailStyle = {
+	name = "STANDARD",
+	rarity = "Default",
+	description = "The usual misses: lost on the way down, stuck in the hole, crushed, stalled, won't break the floor.",
+}
+
+-- The fail animation for `lift` failed in part `part` (1 or 2; anything else counts as the nearest), in fail style
+-- `style` (a FailStyles id; the default set for nil, "Default" or an unknown one).
+function StationAnimationConfig.failFor(lift: string, part: number, style: string?): Fail?
+	local chosen = if style then StationAnimationConfig.FailStyles[style] else nil
+	local fails = if chosen then chosen.fails[lift] else StationAnimationConfig.Fails[lift]
 	if fails == nil or #fails == 0 then
 		return nil
 	end

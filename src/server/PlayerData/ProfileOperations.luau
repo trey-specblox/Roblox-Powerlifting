@@ -51,6 +51,8 @@ local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 local AdminConfig = require(ConfigFolder:WaitForChild("AdminConfig"))
 local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
+local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
+local LoadoutConfig = require(ConfigFolder:WaitForChild("LoadoutConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -2063,61 +2065,152 @@ function ProfileOperations.adminRefillDaily(data: ProfileData): (boolean, string
 end
 
 --[[
-	MEET ENTRANCES (schema version 21, GAME_DESIGN §36.4). Everyone has the Default; others are granted (crates later,
-	the admin panel for now) and then can be chosen. An id EntranceConfig doesn't know is never granted or used.
+	WALK-OUTS, CELEBRATIONS AND FAIL STYLES: COLLECTIONS WITH ATTEMPT SLOTS (schema version 24, LoadoutConfig; user
+	2026-11-12: "I want people to be able to collect these walk outs, celebrations, and lift fails ... 3 slots ... 1st
+	attempt celebration, 2nd attempt celebration 3rd attempt"). Everyone has each kind's Default; everything won is kept;
+	three slots per kind say which one they do on their 1st, 2nd and 3rd attempt. An id the configs don't know is never
+	granted, and one in a slot that they don't own (or the game no longer has) counts as the Default.
 ]]
-local function entrancesOf(data: ProfileData): { [string]: boolean }?
+
+local OWNED_FIELD = { Entrance = "entrances", Celebration = "celebrations", Fail = "failStyles" }
+
+local function ownedOf(data: ProfileData, kind: string): { [string]: boolean }?
 	local inventory = (data :: any).inventory
-	if typeof(inventory) ~= "table" then
+	local field = OWNED_FIELD[kind]
+	if typeof(inventory) ~= "table" or field == nil then
 		return nil
 	end
-	if typeof(inventory.entrances) ~= "table" then
-		inventory.entrances = {}
+	if typeof(inventory[field]) ~= "table" then
+		inventory[field] = {}
 	end
-	return inventory.entrances
+	return inventory[field]
 end
 
-function ProfileOperations.ownsEntrance(data: ProfileData, id: string): boolean
-	if id == EntranceConfig.DefaultId then
-		return true
-	end
-	local owned = entrancesOf(data)
-	return EntranceConfig.get(id) ~= nil and owned ~= nil and owned[id] == true
-end
-
--- The entrance they use at meets: the chosen one if they still own it, else the Default.
-function ProfileOperations.getEntrance(data: ProfileData): string
-	local inventory = (data :: any).inventory
-	local id = if typeof(inventory) == "table" then inventory.entrance else nil
-	if typeof(id) == "string" and ProfileOperations.ownsEntrance(data, id) then
-		return id
-	end
-	return EntranceConfig.DefaultId
-end
-
--- Adds an entrance to what they own. False for an unknown id or a save without an inventory.
-function ProfileOperations.grantEntrance(data: ProfileData, id: string): boolean
-	local owned = entrancesOf(data)
-	if owned == nil or typeof(id) ~= "string" or EntranceConfig.get(id) == nil then
+function ProfileOperations.ownsLoadoutItem(data: ProfileData, kind: string, id: string): boolean
+	if not LoadoutConfig.isKind(kind) or not LoadoutConfig.isItem(kind, id) then
 		return false
 	end
-	if id ~= EntranceConfig.DefaultId then
+	if id == LoadoutConfig.defaultOf(kind) then
+		return true
+	end
+	local owned = ownedOf(data, kind)
+	return owned ~= nil and owned[id] == true
+end
+
+-- Adds one to what they own (the Default is everyone's: true, nothing stored). False for an unknown id or kind.
+function ProfileOperations.grantLoadoutItem(data: ProfileData, kind: string, id: string): boolean
+	local owned = ownedOf(data, kind)
+	if owned == nil or not LoadoutConfig.isItem(kind, id) then
+		return false
+	end
+	if id ~= LoadoutConfig.defaultOf(kind) then
 		owned[id] = true
 	end
 	return true
 end
 
--- Chooses the entrance used at meets; only one they own.
+-- Everything of a kind they own (the Default first), in LoadoutConfig.items' order.
+function ProfileOperations.getOwnedLoadout(data: ProfileData, kind: string): { string }
+	local out = {}
+	for _, item in ipairs(LoadoutConfig.items(kind)) do
+		if ProfileOperations.ownsLoadoutItem(data, kind, item.id) then
+			table.insert(out, item.id)
+		end
+	end
+	return out
+end
+
+-- Their three slots of a kind, each one they own (else the Default).
+function ProfileOperations.getLoadoutSlots(data: ProfileData, kind: string): { string }
+	local inventory = (data :: any).inventory
+	local saved = if typeof(inventory) == "table" and typeof(inventory.loadout) == "table" then inventory.loadout[kind] else nil
+	local default = LoadoutConfig.defaultOf(kind)
+	local out = {}
+	for slot = 1, LoadoutConfig.Slots do
+		local id = if typeof(saved) == "table" then saved[slot] else nil
+		out[slot] = if typeof(id) == "string" and ProfileOperations.ownsLoadoutItem(data, kind, id) then id else default
+	end
+	return out
+end
+
+-- The one they do on `attempt` (1, 2 or 3; nil is the 1st).
+function ProfileOperations.getLoadoutFor(data: ProfileData, kind: string, attempt: number?): string
+	return ProfileOperations.getLoadoutSlots(data, kind)[LoadoutConfig.slotFor(attempt)]
+end
+
+-- Writes the slots of a kind (the checked ones from getLoadoutSlots, with `changes` applied).
+local function writeSlots(data: ProfileData, kind: string, changes: { [number]: string })
+	local inventory = (data :: any).inventory
+	if typeof(inventory.loadout) ~= "table" then
+		inventory.loadout = {}
+	end
+	local slots = ProfileOperations.getLoadoutSlots(data, kind)
+	for slot, id in pairs(changes) do
+		slots[slot] = id
+	end
+	inventory.loadout[kind] = slots
+end
+
+-- Puts one they own in a slot (1 to 3). The player's own choice, from the emote wheel's pages.
+function ProfileOperations.setLoadoutSlot(data: ProfileData, kind: string, slot: number, id: string): (boolean, string)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" or not LoadoutConfig.isKind(kind) then
+		return false, "That isn't something with slots."
+	end
+	if typeof(slot) ~= "number" or slot ~= math.floor(slot) or slot < 1 or slot > LoadoutConfig.Slots then
+		return false, "That isn't a slot."
+	end
+	if typeof(id) ~= "string" or not ProfileOperations.ownsLoadoutItem(data, kind, id) then
+		return false, "You don't have that one yet. Win it at Hype Man."
+	end
+	writeSlots(data, kind, { [slot] = id })
+	return true, "Set."
+end
+
+-- Puts one in all three slots (the admin's MAKE IT MINE / GiveEntrance). They must own it.
+local function setAllSlots(data: ProfileData, kind: string, id: string)
+	writeSlots(data, kind, { id, id, id })
+end
+
+-- A newly won one goes in the first slot still on the Default, so it shows up at the next meet without a trip to the
+-- wheel (user 2026-11-12). Slots they have filled themselves are never changed.
+local function fillFirstDefaultSlot(data: ProfileData, kind: string, id: string)
+	local default = LoadoutConfig.defaultOf(kind)
+	if id == default then
+		return
+	end
+	for slot, current in ipairs(ProfileOperations.getLoadoutSlots(data, kind)) do
+		if current == default then
+			writeSlots(data, kind, { [slot] = id })
+			return
+		end
+	end
+end
+
+-- (The walk-out names the rest of the game already uses.)
+function ProfileOperations.ownsEntrance(data: ProfileData, id: string): boolean
+	return ProfileOperations.ownsLoadoutItem(data, "Entrance", id)
+end
+
+-- The walk-out they use on `attempt` (nil: the 1st).
+function ProfileOperations.getEntrance(data: ProfileData, attempt: number?): string
+	return ProfileOperations.getLoadoutFor(data, "Entrance", attempt)
+end
+
+function ProfileOperations.grantEntrance(data: ProfileData, id: string): boolean
+	return ProfileOperations.grantLoadoutItem(data, "Entrance", id)
+end
+
+-- Uses one walk-out they own on all three attempts.
 function ProfileOperations.setEntrance(data: ProfileData, id: string): (boolean, string)
 	if typeof(id) ~= "string" or not ProfileOperations.ownsEntrance(data, id) then
 		return false, "They don't own that entrance."
 	end
-	local inventory = (data :: any).inventory
-	inventory.entrance = if id == EntranceConfig.DefaultId then nil else id
+	setAllSlots(data, "Entrance", id)
 	return true, "Entrance set."
 end
 
--- The admin panel: gives the entrance and puts it on.
+-- The admin panel: gives the entrance and puts it on, for all three attempts.
 function ProfileOperations.adminGiveEntrance(data: ProfileData, id: string): (boolean, string)
 	local entrance = EntranceConfig.get(id)
 	if entrance == nil or not ProfileOperations.grantEntrance(data, id) then
@@ -2127,85 +2220,146 @@ function ProfileOperations.adminGiveEntrance(data: ProfileData, id: string): (bo
 	return true, string.format("Entrance: %s.", entrance.name)
 end
 
---[[
-	THE PLAYER'S CELEBRATION (schema version 22, GAME_DESIGN §36.4). One at a time: a reroll (user 2026-11-11, like a
-	style reroll), so a spin replaces it. An id CelebrationConfig doesn't know is never saved or used.
-]]
-
--- The celebration they do after a good lift: theirs if CelebrationConfig still has it, else the Default.
-function ProfileOperations.getCelebration(data: ProfileData): string
-	local inventory = (data :: any).inventory
-	local id = if typeof(inventory) == "table" then inventory.celebration else nil
-	if typeof(id) == "string" and CelebrationConfig.byId[id] ~= nil then
-		return id
-	end
-	return CelebrationConfig.Default
+-- The celebration they do after a good lift on `attempt` (nil: the 1st).
+function ProfileOperations.getCelebration(data: ProfileData, attempt: number?): string
+	return ProfileOperations.getLoadoutFor(data, "Celebration", attempt)
 end
 
-local function setCelebration(inventory: any, id: string)
-	inventory.celebration = if id == CelebrationConfig.Default then nil else id
+-- Their fail style on `attempt` (nil: the 1st): a FailStyles id or "Default".
+function ProfileOperations.getFailStyle(data: ProfileData, attempt: number?): string
+	return ProfileOperations.getLoadoutFor(data, "Fail", attempt)
 end
 
 export type SpinOutcome = "Spun" | "NotEnough" | "Rejected"
 
+-- Takes `price` coins and gives `given` back in one step (the wallet already checked).
+local function charge(wallet: any, price: number, given: number)
+	wallet.coins += given - price
+	wallet.spentTotal += price - given
+end
+
 --[[
-	One spin: takes `price` coins, makes `resultId` their celebration, and when it was already theirs gives `refund` coins
-	back (user 2026-11-11: a duplicate gives coins back), all in one step. SERVER-ONLY: the price, the refund and the
-	roll are the server's (CelebrationSpinService), never a client's. Returns the outcome, the balance and the coins given
-	back; only "Spun" changes anything.
+	One spin of a kind with slots: takes `price` coins and adds `resultId` to their collection; when they already had it
+	(the Default included) gives `refund` back (user 2026-11-11: a duplicate gives coins back). A new one goes in the
+	first slot still on the Default. All in one step. SERVER-ONLY: the price, the refund and the roll are the server's
+	(CelebrationSpinService), never a client's. Returns the outcome, the balance and the coins given back; only "Spun"
+	changes anything.
 ]]
+local function spinLoadout(data: ProfileData, kind: string, price: number, resultId: string, refund: number)
+	: (SpinOutcome, number?, number)
+	local wallet = walletOf(data)
+	if wallet == nil or ownedOf(data, kind) == nil or not isWholeCoins(price) or not isWholeCoins(refund) or refund > price
+		or typeof(resultId) ~= "string" or not LoadoutConfig.isItem(kind, resultId) then
+		return "Rejected", nil, 0
+	end
+	if wallet.coins < price then
+		return "NotEnough", wallet.coins, 0
+	end
+	local had = ProfileOperations.ownsLoadoutItem(data, kind, resultId)
+	local given = if had then refund else 0
+	charge(wallet, price, given)
+	if not had then
+		ProfileOperations.grantLoadoutItem(data, kind, resultId)
+		fillFirstDefaultSlot(data, kind, resultId)
+	end
+	return "Spun", wallet.coins, given
+end
+
 function ProfileOperations.spinCelebration(data: ProfileData, price: number, resultId: string, refund: number)
 	: (SpinOutcome, number?, number)
-	local wallet = walletOf(data)
-	local inventory = (data :: any).inventory
-	if wallet == nil or typeof(inventory) ~= "table" or not isWholeCoins(price) or not isWholeCoins(refund) or refund > price
-		or typeof(resultId) ~= "string" or CelebrationConfig.byId[resultId] == nil then
-		return "Rejected", nil, 0
+	return spinLoadout(data, "Celebration", price, resultId, refund)
+end
+
+function ProfileOperations.spinEntrance(data: ProfileData, price: number, resultId: string, refund: number)
+	: (SpinOutcome, number?, number)
+	return spinLoadout(data, "Entrance", price, resultId, refund)
+end
+
+function ProfileOperations.spinFailStyle(data: ProfileData, price: number, resultId: string, refund: number)
+	: (SpinOutcome, number?, number)
+	return spinLoadout(data, "Fail", price, resultId, refund)
+end
+
+-- The admin panel: gives any fail style ("Default" too) and uses it on all three attempts.
+function ProfileOperations.adminSetFailStyle(data: ProfileData, id: string): (boolean, string)
+	if not ProfileOperations.grantLoadoutItem(data, "Fail", id) then
+		return false, "That isn't a fail style."
 	end
-	if wallet.coins < price then
-		return "NotEnough", wallet.coins, 0
+	setAllSlots(data, "Fail", id)
+	return true, "Fail style set."
+end
+
+-- The admin panel: gives any celebration, for free, and uses it on all three attempts.
+function ProfileOperations.adminSetCelebration(data: ProfileData, id: string): (boolean, string)
+	local celebration = CelebrationConfig.byId[id]
+	if celebration == nil or not ProfileOperations.grantLoadoutItem(data, "Celebration", id) then
+		return false, "That isn't a celebration."
 	end
-	local given = if ProfileOperations.getCelebration(data) == resultId then refund else 0
-	wallet.coins += given - price
-	wallet.spentTotal += price - given
-	setCelebration(inventory, resultId)
-	return "Spun", wallet.coins, given
+	setAllSlots(data, "Celebration", id)
+	return true, string.format("Celebration: %s.", celebration.name)
 end
 
 --[[
-	One walk-out spin (user 2026-11-11: walk-outs from the same spin, same rules): takes `price` coins, gives `resultId`
-	(an EntranceConfig id) and puts it on, and when it already was the one they use gives `refund` back, all in one step.
-	A reroll like celebrations: the walk-out they use is replaced; what they owned before stays owned (the admin panel can
-	still put any owned one back on). SERVER-ONLY, as spinCelebration. Only "Spun" changes anything.
+	THE EMOTES (schema version 23, user 2026-11-11): a collection (every one won is kept), played from the wheel; no
+	slots. An id EmoteConfig doesn't know is never saved or used. SERVER-ONLY, as the spins above.
 ]]
-function ProfileOperations.spinEntrance(data: ProfileData, price: number, resultId: string, refund: number)
+
+local function emotesOf(data: ProfileData): { [string]: boolean }?
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return nil
+	end
+	if typeof(inventory.emotes) ~= "table" then
+		inventory.emotes = {}
+	end
+	return inventory.emotes
+end
+
+function ProfileOperations.ownsEmote(data: ProfileData, id: string): boolean
+	if EmoteConfig.isFree(id) then
+		return true
+	end
+	local owned = emotesOf(data)
+	return EmoteConfig.byId[id] ~= nil and owned ~= nil and owned[id] == true
+end
+
+-- The emotes they can play (the free ones included), in the wheel's order.
+function ProfileOperations.getEmotes(data: ProfileData): { string }
+	local out = {}
+	for _, emote in ipairs(EmoteConfig.List) do
+		if ProfileOperations.ownsEmote(data, emote.id) then
+			table.insert(out, emote.id)
+		end
+	end
+	return out
+end
+
+function ProfileOperations.spinEmote(data: ProfileData, price: number, resultId: string, refund: number)
 	: (SpinOutcome, number?, number)
 	local wallet = walletOf(data)
-	local owned = entrancesOf(data)
+	local owned = emotesOf(data)
 	if wallet == nil or owned == nil or not isWholeCoins(price) or not isWholeCoins(refund) or refund > price
-		or typeof(resultId) ~= "string" or EntranceConfig.get(resultId) == nil then
+		or typeof(resultId) ~= "string" or EmoteConfig.byId[resultId] == nil or EmoteConfig.isFree(resultId) then
 		return "Rejected", nil, 0
 	end
 	if wallet.coins < price then
 		return "NotEnough", wallet.coins, 0
 	end
-	local given = if ProfileOperations.getEntrance(data) == resultId then refund else 0
-	wallet.coins += given - price
-	wallet.spentTotal += price - given
-	ProfileOperations.grantEntrance(data, resultId)
-	ProfileOperations.setEntrance(data, resultId)
+	local given = if owned[resultId] == true then refund else 0
+	charge(wallet, price, given)
+	owned[resultId] = true
 	return "Spun", wallet.coins, given
 end
 
--- The admin panel: makes any celebration theirs, for free.
-function ProfileOperations.adminSetCelebration(data: ProfileData, id: string): (boolean, string)
-	local celebration = CelebrationConfig.byId[id]
-	local inventory = (data :: any).inventory
-	if celebration == nil or typeof(inventory) ~= "table" then
-		return false, "That isn't a celebration."
+function ProfileOperations.adminGiveEmote(data: ProfileData, id: string): (boolean, string)
+	local owned = emotesOf(data)
+	if owned == nil or EmoteConfig.byId[id] == nil then
+		return false, "That isn't an emote."
 	end
-	setCelebration(inventory, id)
-	return true, string.format("Celebration: %s.", celebration.name)
+	if not EmoteConfig.isFree(id) then
+		owned[id] = true
+	end
+	return true, "Emote given."
 end
 
 return ProfileOperations

@@ -140,6 +140,11 @@ local SPOTTER_REST: { [string]: { [string]: { at: Vector2, look: Vector2 } } } =
 }
 -- The tag the client finds spotters by, and the attributes it reads.
 local SPOTTER_TAG = "MeetSpotter"
+-- On the rack: the server time until which the spotters stand clear of a celebrating lifter (clearSpotters).
+local SPOTTERS_CLEAR_ATTRIBUTE = "SpottersClearUntil"
+-- On the rack: what the spotters make way for ("StateWalkOut", or nil for a celebration), so they pick spots out of
+-- that moment's camera shots.
+local SPOTTERS_MODE_ATTRIBUTE = "SpottersClearMode"
 
 -- Where a lifter waits between attempts: just inside the warm-up room, behind the doorway next to their platform.
 local WAIT_BEHIND_WALL = 5
@@ -179,6 +184,8 @@ export type Platform = {
 	waitSpot: CFrame,
 	-- The walk out from waitSpot (through the doorway, behind the platform to its middle), without either end.
 	walkOut: { Vector3 },
+	-- Where the walk style starts on the way out (user 2026-11-11): the doorway here, the banner at State.
+	styleFrom: Vector3?,
 	-- The competition rack (StationVisuals shows it for the lift: no bench for squat and deadlift).
 	rack: Model?,
 	-- The staff's name tags and the coach's bubble, moved into the lifter's own screen (staffFor).
@@ -664,6 +671,7 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			-- Facing their chalk stand (further from the doorway, along the wall).
 			waitSpot = CFrame.lookAt(waitAt, waitAt - Vector3.xAxis * side),
 			walkOut = walkOut,
+			styleFrom = walkOut[1],
 			rack = gear:FindFirstChild("CompetitionRack") :: Model?,
 			privateTags = {},
 			display = display,
@@ -1154,6 +1162,8 @@ function LocalMeetVenue.standSpotters(platform: Platform, lift: string?)
 	local rest = if lift then SPOTTER_REST[lift] else nil
 	if rack then
 		rack:SetAttribute("SpotterLift", if rest then lift else nil)
+		rack:SetAttribute(SPOTTERS_CLEAR_ATTRIBUTE, nil)
+		rack:SetAttribute(SPOTTERS_MODE_ATTRIBUTE, nil)
 	end
 	for _, spotter in ipairs(platform.spotters) do
 		local role = spotter:GetAttribute("Role")
@@ -1169,6 +1179,37 @@ function LocalMeetVenue.standSpotters(platform: Platform, lift: string?)
 			spotter.Parent = nil
 		end
 	end
+end
+
+--[[
+	The platform's spotters make way (user 2026-11-11: "Make sure the spotters cant get in the way of the celebrations
+	... Make them move farther away"; 2026-11-12: "make sure any spotters or loaders are not in the way of entrances or
+	celebrations"): for the next `seconds` they walk off, round the rack, to spots out of that moment's camera shots
+	(client MeetSpotterAnimator), then come back to their places. `mode` "StateWalkOut": the State walk-out's shots (its
+	own spots); nil: a celebration. A later call extends it; releaseSpotters or setting the spotters for the next lift
+	(standSpotters) ends it.
+]]
+function LocalMeetVenue.clearSpotters(platform: Platform, seconds: number, mode: string?)
+	local rack = platform.rack
+	if rack == nil or not rack.Parent then
+		return
+	end
+	local untilNow = Workspace:GetServerTimeNow() + math.max(0, seconds)
+	local current = rack:GetAttribute(SPOTTERS_CLEAR_ATTRIBUTE)
+	if typeof(current) ~= "number" or current < untilNow then
+		rack:SetAttribute(SPOTTERS_CLEAR_ATTRIBUTE, untilNow)
+	end
+	rack:SetAttribute(SPOTTERS_MODE_ATTRIBUTE, mode)
+end
+
+-- The spotters come back to their places now (the lifter is at the bar: the lift needs them).
+function LocalMeetVenue.releaseSpotters(platform: Platform)
+	local rack = platform.rack
+	if rack == nil then
+		return
+	end
+	rack:SetAttribute(SPOTTERS_CLEAR_ATTRIBUTE, nil)
+	rack:SetAttribute(SPOTTERS_MODE_ATTRIBUTE, nil)
 end
 
 -- The platform's coach, while a meet runs and they have one.

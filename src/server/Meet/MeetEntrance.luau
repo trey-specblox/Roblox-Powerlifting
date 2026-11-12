@@ -47,9 +47,43 @@ function MeetEntrance.hypeSeconds(entrance: EntranceConfig.Entrance?): number
 	return 0
 end
 
+--[[
+	How far the walk style covers on `route` (floor points, start first): from where the walk passes `from` (the
+	platform's banner at State, its doorway at Local and Regional; user 2026-11-11: "make the entrance animation start
+	right when you start walking to the platform, so basically right when ur equal to the banner") to the end, flat.
+	EntranceConfig.StyleWalkStuds when the platform has no such point.
+]]
+function MeetEntrance.styleStudsFrom(route: { Vector3 }, from: Vector3?): number
+	if from == nil or #route < 2 then
+		return EntranceConfig.StyleWalkStuds
+	end
+	local function flat(v: Vector3): Vector3
+		return Vector3.new(v.X, 0, v.Z)
+	end
+	local target = flat(from)
+	-- The point on the route nearest `from`: its segment, and how far along it.
+	local bestIndex, bestAlong, bestGap = 1, 0, math.huge
+	for index = 1, #route - 1 do
+		local a, b = flat(route[index]), flat(route[index + 1])
+		local span = b - a
+		local length = span.Magnitude
+		local along = if length > 1e-3 then math.clamp((target - a):Dot(span / length), 0, length) else 0
+		local gap = ((if length > 1e-3 then a + span / length * along else a) - target).Magnitude
+		if gap < bestGap then
+			bestIndex, bestAlong, bestGap = index, along, gap
+		end
+	end
+	local studs = (flat(route[bestIndex + 1]) - flat(route[bestIndex])).Magnitude - bestAlong
+	for index = bestIndex + 1, #route - 1 do
+		studs += (flat(route[index + 1]) - flat(route[index])).Magnitude
+	end
+	return math.max(1, studs)
+end
+
 -- How long the walk out along `route` (floor points, start first) takes: the usual speed, then the walk style's speed
--- over its last stretch (EntranceConfig.StyleWalkStuds), easing in and out as the walk itself does (MeetWalkPath).
-function MeetEntrance.walkOutSeconds(route: { Vector3 }, styleSpeed: number?, usualSpeed: number): number
+-- over its last `styleStuds` (MeetEntrance.styleStudsFrom; EntranceConfig.StyleWalkStuds when nil), easing in and out
+-- as the walk itself does (MeetWalkPath).
+function MeetEntrance.walkOutSeconds(route: { Vector3 }, styleSpeed: number?, usualSpeed: number, styleStuds: number?): number
 	if #route < 2 then
 		return 0
 	end
@@ -68,7 +102,7 @@ function MeetEntrance.walkOutSeconds(route: { Vector3 }, styleSpeed: number?, us
 		height = 0,
 		usualSpeed = usualSpeed,
 		styleSpeed = styleSpeed,
-		styleStuds = if styleSpeed then EntranceConfig.StyleWalkStuds else nil,
+		styleStuds = if styleSpeed then (styleStuds or EntranceConfig.StyleWalkStuds) else nil,
 	}).duration
 end
 

@@ -548,7 +548,7 @@ def check(clip):
             f"foot miss {clip.worst_foot:.3f}, start off {off(first):.2f}, end off {off(last):.2f}")
 
 
-def export(clip, priority=2, step=1 / 24, only=None):
+def export(clip, priority=2, step=1 / 24, only=None, looped=False):
     """art/animations/Celebrate_<name>.rbxmx (Action priority by default, not looped). `only`: just these parts keyed
     (their parents go in at weight 0 and are left to whatever else plays: an arms-only clip over the walk)."""
     refs = iter(range(1, 1_000_000))
@@ -556,7 +556,7 @@ def export(clip, priority=2, step=1 / 24, only=None):
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">false</bool>'
+           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">{"true" if looped else "false"}</bool>'
            f'<string name="Name">Celebrate_{clip.name}</string><token name="Priority">{priority}</token>'
            f'</Properties>']
     children, parent_of = {}, {}

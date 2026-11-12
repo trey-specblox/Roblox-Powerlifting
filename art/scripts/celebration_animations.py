@@ -257,6 +257,48 @@ clip("SkyPoint", 3.4, [
     K(3.4),
 ], kind="walk", source="CEL-51", rarity="Uncommon", only=RIGHT_ARM_AND_HEAD)
 
+# Two that go on ALL THE WAY BACK to the waiting spot (user 2026-11-11: "a celebration that continues even when your
+# going back to the bench ... Use the videos i sent you again, to see how they step off and go away from the
+# platform"): looped, arms and head only, over the walk back; the server ends them when the lifter arrives.
+# Rewatched 2026-11-11: 9FQM0Z6_s8Q 1:16.8-1:17.3 (walks off toward the camera, right fist pumped high, elbow bent, left
+# arm swinging low, roaring), lNOrz4CVNMY 20:55.2 (walking off, both arms flung out wide, grinning), 20:56.2 (double
+# thumbs up held high to the crowd while walking), 2:36.5-2:39.5 (steps back from the rack, turns, walks off looking up
+# at the crowd, the open belt swinging), and the notes' gracious open-palm wave at 23:30 (Clip notes B).
+WAVE_HIGH = (1.45, 1.75, -0.35)       # (right) an open hand up beside the head
+PUMP_HIGH = (1.3, 1.85, -0.35)        # (right) a fist punched up high, elbow bent
+ELBOW_HIGH = (1.0, 0.3, 0.2)          # (right) that elbow out to the side
+WIDE_WALK = (-2.3, -0.2, -0.3)        # arms flung out wide, a little down
+THUMBS = (-1.7, 1.4, -0.4)            # both forearms up, fists by the head (thumbs up)
+
+# EPIC crowd pleaser: two fist pumps with a roar, arms flung wide, double thumbs up to the stands; round and round
+# until they are back.
+clip("CrowdPleaser", 4.4, [
+    K(0.35, rh=("chest", PUMP_HIGH), re=ELBOW_HIGH, up=14, turn=-16, ease="fast"),
+    K(0.6, rh=("chest", (1.45, 1.45, -0.35)), up=10),
+    K(0.85, rh=("chest", PUMP_HIGH), up=15, ease="fast"),
+    K(1.3, rh=REST, up=6, turn=0),
+    K(1.7, with_=both(WIDE_WALK), up=10, turn=8),
+    K(2.4, with_=both((-2.35, -0.1, -0.25)), up=12, turn=12),
+    K(2.8, with_=both(THUMBS), le=ELBOW_BICEP, re=mx(ELBOW_BICEP), up=12, turn=0, ease="fast"),
+    K(3.5, with_=both((-1.7, 1.48, -0.4)), up=14),
+    K(4.0, with_=rest(), up=0),
+    K(4.4),
+], kind="walkloop", source="Walk-off: 9FQM0Z6_s8Q 1:16.8, lNOrz4CVNMY 20:55", rarity="Epic", only=ARMS_AND_HEAD)
+
+# RARE thank-you wave: an open hand waved up to the crowd, then the hand on the heart with a nod; again and again
+# until they are back.
+clip("ThankYouWave", 3.6, [
+    K(0.4, rh=("chest", WAVE_HIGH), turn=-18, up=8, ease="fast"),
+    K(0.65, rh=("chest", (1.75, 1.7, -0.3))),
+    K(0.9, rh=("chest", (1.2, 1.78, -0.4))),
+    K(1.15, rh=("chest", (1.75, 1.7, -0.3))),
+    K(1.4, rh=("chest", WAVE_HIGH)),
+    K(1.9, rh=("chest", CHEST_HEART), turn=-8, up=-6),
+    K(2.4, rh=("chest", CHEST_HEART), up=2),
+    K(3.0, rh=REST, turn=0, up=0),
+    K(3.6),
+], kind="walkloop", source="Walk-off: lNOrz4CVNMY 23:30", rarity="Rare", only=RIGHT_ARM_AND_HEAD)
+
 # RARE (CEL-34) relief roar, hands locked on the head: a heavyweight's sinking roar, arms down and tense, then both
 # hands onto the crown, face up. Feet planted.
 clip("ReliefRoar", 4.2, [
@@ -498,7 +540,7 @@ if __name__ == "__main__":
         c = CLIPS[name]
         c.solve()
         print("CHECK", R.check(c), META[name]["kind"])
-        print("EXPORTED", R.export(c, only=META[name]["only"]))
+        print("EXPORTED", R.export(c, only=META[name]["only"], looped=META[name]["kind"] == "walkloop"))
         if folder:
             R.preview_sheet(c, folder, view="front")
             R.preview_sheet(c, folder, view="side")

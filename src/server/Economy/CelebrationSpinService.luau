@@ -28,9 +28,13 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
 local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
+local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
+local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
+local ServerStorage = game:GetService("ServerStorage")
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
+local LoadoutConfig = require(ConfigFolder:WaitForChild("LoadoutConfig"))
 
 local ServerFolder = script.Parent.Parent
 local PlayerDataService = require(ServerFolder:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
@@ -51,8 +55,13 @@ local NPC_TOP = Color3.fromRGB(240, 120, 30)
 local NPC_TROUSERS = Color3.fromRGB(35, 35, 40)
 local NPC_HAIR = LocalMeetConfig.ComputerLifters.Hair[1]
 
+-- Swapping slots on the wheel: quicker than spins, still never a flood.
+local MIN_SECONDS_BETWEEN_SLOT_ASKS = 0.15
+local MAX_ID_LENGTH = 64
+
 local started = false
 local lastAsked: { [Player]: number } = {}
+local lastSlotAsk: { [Player]: number } = {}
 local npcs: { Model } = {}
 local random = Random.new()
 
@@ -88,12 +97,31 @@ local function tooFast(player: Player): boolean
 	return false
 end
 
+local function tooFastSlot(player: Player): boolean
+	local now = os.clock()
+	if now - (lastSlotAsk[player] or -math.huge) < MIN_SECONDS_BETWEEN_SLOT_ASKS then
+		return true
+	end
+	lastSlotAsk[player] = now
+	return false
+end
+
 local function viewFor(player: Player): CelebrationRemotes.SpinView?
 	local coins = PlayerDataService.getCoins(player)
 	if coins == nil then
 		return nil
 	end
-	return { coins = coins, current = PlayerDataService.getCelebration(player), entrance = PlayerDataService.getEntrance(player) }
+	local loadout = PlayerDataService.getLoadout(player)
+	local collected = {}
+	for _, kind in ipairs(LoadoutConfig.Kinds) do
+		collected[kind] = if loadout then #loadout.owned[kind] else 1
+	end
+	-- (The card shows the 1st-attempt slot of each kind.)
+	return {
+		coins = coins, current = PlayerDataService.getCelebration(player, 1), entrance = PlayerDataService.getEntrance(player, 1),
+		failStyle = PlayerDataService.getFailStyle(player, 1), emotes = PlayerDataService.getEmotes(player),
+		collected = collected,
+	}
 end
 
 -- Everything a spin of `kind` can land on: id -> rarity (never a Default).
@@ -104,6 +132,16 @@ local function poolOf(kind: string): { { id: string, rarity: string } }
 			local entrance = EntranceConfig.Entrances[id]
 			if entrance.rarity ~= "Default" then
 				table.insert(out, { id = id, rarity = entrance.rarity })
+			end
+		end
+	elseif kind == "Fail" then
+		for id, style in pairs(StationAnimationConfig.FailStyles) do
+			table.insert(out, { id = id, rarity = style.rarity })
+		end
+	elseif kind == "Emote" then
+		for _, emote in ipairs(EmoteConfig.List) do
+			if emote.rarity ~= "Free" then
+				table.insert(out, { id = emote.id, rarity = emote.rarity })
 			end
 		end
 	else
@@ -130,7 +168,8 @@ end
 -- The roll: a rarity with the gear crates' odds (or `forced`), then one of its celebrations at random.
 local function roll(kind: string, forced: string?): string
 	local rarity: string? = nil
-	if typeof(forced) == "string" and #ofRarity(kind, forced) > 0 then
+	if typeof(forced) == "string" then
+		-- (Studio's forced rarity; one this kind has none of lands like a rolled one, below.)
 		rarity = forced
 	else
 		local total = 0
@@ -146,9 +185,17 @@ local function roll(kind: string, forced: string?): string
 			end
 		end
 	end
-	local pool = ofRarity(kind, rarity or "Common")
+	-- A rarity with none of this kind lands on the nearest one that has some (CelebrationConfig.landingRarity; the card
+	-- shows the same odds).
+	local has, order = {}, {}
+	for _, entry in ipairs(poolOf(kind)) do
+		has[entry.rarity] = true
+	end
+	for _, entry in ipairs(GearStatsConfig.Rarities) do
+		table.insert(order, entry.id)
+	end
+	local pool = ofRarity(kind, CelebrationConfig.landingRarity(rarity or "Common", order, has) or "Common")
 	if #pool == 0 then
-		-- (A rarity with none yet: any one but the Default.)
 		for _, entry in ipairs(poolOf(kind)) do
 			table.insert(pool, entry.id)
 		end
@@ -166,7 +213,10 @@ local function spin(player: Player, kind: string): (boolean, string, Celebration
 		forced = Workspace:GetAttribute("StudioCelebrationRarity")
 	end
 	local resultId = roll(kind, forced)
-	local spinOf = if kind == "Entrance" then PlayerDataService.spinEntrance else PlayerDataService.spinCelebration
+	local spinOf = if kind == "Entrance" then PlayerDataService.spinEntrance
+		elseif kind == "Fail" then PlayerDataService.spinFailStyle
+		elseif kind == "Emote" then PlayerDataService.spinEmote
+		else PlayerDataService.spinCelebration
 	local outcome, _, refund = spinOf(player, SPIN.price, resultId, SPIN.duplicateRefund)
 	local view = viewFor(player)
 	if outcome == "Spun" then
@@ -294,11 +344,59 @@ local function buildNpc(spot: Instance, remotes: CelebrationRemotes.SpinRemotes)
 	end)
 end
 
+--[[
+	A light barbell for the spin card's fail styles (client CelebrationStage.playFail): the game's Blender barbell's shaft,
+	sleeves, collars and two plates a side (the template has its plates on one side only: they are mirrored), copied once
+	into ReplicatedStorage (the templates live in ServerStorage).
+]]
+local PREVIEW_BARBELL = "SpinPreviewBarbell"
+local function shareBarbell()
+	if ReplicatedStorage:FindFirstChild(PREVIEW_BARBELL) then
+		return
+	end
+	local templates = ServerStorage:FindFirstChild("BarbellTemplates")
+	local template = templates and templates:FindFirstChild("Barbell_01")
+	if template == nil or not template:IsA("Model") then
+		warn("[CelebrationSpinService] no barbell template: the spin card's fails play without a bar")
+		return
+	end
+	local pivot = template:GetPivot()
+	local model = Instance.new("Model")
+	model.Name = PREVIEW_BARBELL
+	local function copy(name: string, mirrored: boolean)
+		local part = template:FindFirstChild(name)
+		if part == nil or not part:IsA("BasePart") then
+			return
+		end
+		local made = part:Clone()
+		local rel = pivot:ToObjectSpace(part.CFrame)
+		if mirrored then
+			rel = CFrame.new(-rel.X, rel.Y, rel.Z) * CFrame.Angles(0, math.pi, 0)
+		end
+		made.CFrame = rel
+		made.Anchored = true
+		made.CanCollide = false
+		made.CanQuery = false
+		made.CanTouch = false
+		made.Parent = model
+	end
+	for _, name in ipairs({ "Bar_Shaft", "Bar_Sleeves" }) do
+		copy(name, false)
+	end
+	for _, name in ipairs({ "Plate_25", "Plate_20", "Collar_Lock" }) do
+		copy(name, false)
+		copy(name, true)
+	end
+	model.WorldPivot = CFrame.new()
+	model.Parent = ReplicatedStorage
+end
+
 function CelebrationSpinService.start()
 	if started then
 		return
 	end
 	started = true
+	task.spawn(shareBarbell)
 	local remotes = CelebrationRemotes.createSpinOnServer(ReplicatedStorage)
 	remotes.get.OnServerInvoke = function(player: Player): CelebrationRemotes.SpinView?
 		if tooFast(player) then
@@ -315,6 +413,24 @@ function CelebrationSpinService.start()
 		end
 		return spin(player, kind)
 	end
+	-- The emote wheel's pages: what they own and their attempt slots (LoadoutConfig). Read anywhere.
+	remotes.loadout.OnServerInvoke = function(player: Player): any
+		if tooFastSlot(player) then
+			return nil
+		end
+		return PlayerDataService.getLoadout(player)
+	end
+	-- "Put this one in this slot": the kind, the slot and that they own it are all checked (ProfileOperations).
+	remotes.setSlot.OnServerInvoke = function(player: Player, kind: any, slot: any, id: any): (boolean, string, any)
+		if not LoadoutConfig.isKind(kind) or typeof(slot) ~= "number" or typeof(id) ~= "string" or #id > MAX_ID_LENGTH then
+			return false, "That can't go in a slot.", nil
+		end
+		if tooFastSlot(player) then
+			return false, "One moment...", nil
+		end
+		local ok, message = PlayerDataService.setLoadoutSlot(player, kind, slot, id)
+		return ok, message, PlayerDataService.getLoadout(player)
+	end
 	for _, spot in ipairs(CollectionService:GetTagged(SPIN.spotTag)) do
 		task.spawn(buildNpc, spot, remotes)
 	end
@@ -323,6 +439,7 @@ function CelebrationSpinService.start()
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		lastAsked[player] = nil
+		lastSlotAsk[player] = nil
 	end)
 end
 

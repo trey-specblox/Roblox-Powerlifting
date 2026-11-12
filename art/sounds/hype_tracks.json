@@ -10,7 +10,7 @@
         1.4,
         2.0
       ],
-      "prompt": "Sound effects only, no voice, no breathing, no music. A powerlifter on a wooden stage. Quiet at first. At 1 second a hard tug on a thick leather lifting belt: a firm leather creak and a buckle clink. At 1.4 seconds a second, harder tug, the same creak and clink. At 2 seconds one loud, crisp, chalky hand clap with a puff of powder. Then quiet. Close and natural, 3 seconds"
+      "prompt": "Powerlifting sound effects only, no voice, no music. A powerlifter at a powerlifting meet adjusts his thick lever powerlifting belt before a lift. 1.05 seconds: one sharp, crisp SNAP of the belt being flicked tight, like a whip crack on leather. 1.4 seconds: a second sharp belt SNAP. 2.0 seconds: one loud, crisp, chalky hand clap. Then quiet. 3 seconds"
     },
     "Flex": {
       "seconds": 3.2,
@@ -98,7 +98,7 @@
       "file": "D:/Powerlifting Roblox Extras/Sounds/Hype/Track_Belt.wav",
       "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
       "ids": {
-        "audio": "rbxassetid://132513593834586"
+        "audio": "rbxassetid://102810729209176"
       }
     },
     "Hype_Flex": {

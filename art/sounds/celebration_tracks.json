@@ -199,6 +199,26 @@
         7.25
       ],
       "prompt": "Sound effects only, no voice, no music, wooden stage. A sneaker step at the start, a step at 2 seconds, soft pats at 3.6 seconds, a small hop landing at 5.2 seconds, a skip step, a jump push-off at 6 seconds, a heavy two-foot landing thud at 6.5 seconds, a huge chalky hand clap with a powder burst at 7 seconds, then a fast arm whoosh. Close, natural, 9 seconds"
+    },
+    "CrowdPleaser": {
+      "seconds": 4.4,
+      "loop": true,
+      "cues": [
+        0.35,
+        0.85,
+        1.7,
+        2.8
+      ],
+      "prompt": "Sound effects only, no voice, no footsteps, no music. A powerlifter celebrating as he walks off. Quiet at the very start. 0.35 seconds: a sharp arm whoosh as a fist punches up. 0.85 seconds: a second sharp fist-punch whoosh. 1.7 seconds: a broad whoosh as both arms swing out wide. 2.8 seconds: a quick double whoosh as both arms go up. Then quiet until the end. Each sound short and clearly separate. Close and dry, 4.4 seconds"
+    },
+    "ThankYouWave": {
+      "seconds": 3.6,
+      "loop": true,
+      "cues": [
+        0.4,
+        1.9
+      ],
+      "prompt": "Sound effects only, no voice, no footsteps, no music. A powerlifter waving to the crowd as he walks off. Quiet at the very start. 0.4 seconds: a soft arm whoosh as a hand goes up, then four gentle fabric swishes of a waving hand. 1.9 seconds: one soft, warm pat of a flat hand on a chest over a singlet. Then quiet until the end. Close and dry, 3.6 seconds"
     }
   },
   "sounds": {
@@ -352,6 +372,22 @@
       "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
       "ids": {
         "audio": "rbxassetid://75363847444209"
+      }
+    },
+    "Track_CrowdPleaser": {
+      "about": "The CrowdPleaser celebration's looping sound track (see tracks.CrowdPleaser; loops with its animation all the way back).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_CrowdPleaser.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://102629709943437"
+      }
+    },
+    "Track_ThankYouWave": {
+      "about": "The ThankYouWave celebration's looping sound track (see tracks.ThankYouWave; loops with its animation all the way back).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Celebrations/Track_ThankYouWave.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://115133666349196"
       }
     }
   },

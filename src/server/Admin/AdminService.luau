@@ -265,7 +265,7 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		if character == nil or humanoid == nil or humanoid.Health <= 0 then
 			return false, "No character to play it on."
 		end
-		CelebrationService.play(character, celebration.id, player)
+		CelebrationService.play(character, celebration.id, player, true)
 		return true, "Playing " .. string.upper(celebration.name) .. "."
 	end,
 	-- Makes a celebration (CelebrationConfig id) the admin's own, for free, to test it at a meet without spinning.

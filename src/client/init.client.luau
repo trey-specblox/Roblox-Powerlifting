@@ -30,6 +30,9 @@ task.spawn(ShopMenu.start)
 -- The celebration spin screen (hold E on the NPC in the dumbbell corner). It only asks; the server rolls and takes the coins.
 local CelebrationSpinner = require(UIFolder:WaitForChild("CelebrationSpinner"))
 task.spawn(CelebrationSpinner.start)
+-- The emote wheel (B, or the EMOTES tab): it only asks; the server plays the emote.
+local EmoteWheel = require(UIFolder:WaitForChild("EmoteWheel"))
+task.spawn(EmoteWheel.start)
 
 -- MY GEAR (the GEAR tab): put on and take off owned gear. It only asks; the server checks and dresses.
 local GearMenu = require(UIFolder:WaitForChild("GearMenu"))

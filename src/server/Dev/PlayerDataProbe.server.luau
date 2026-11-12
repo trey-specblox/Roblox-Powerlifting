@@ -364,7 +364,7 @@ do
 	check("Squat still 300 after three passes", near(cnOf(data).Squat, 300.0), tostring(cnOf(data).Squat))
 	check("Bench still 200", near(cnOf(data).Bench, 200.0))
 	check("Deadlift still 350", near(cnOf(data).Deadlift, 350.0))
-	check("version still 21", data.version == 21)
+	check("version still the current one", data.version == PlayerProfileSchema.CURRENT_VERSION)
 	check(
 		"part-used meet allowance was not silently refilled",
 		buildOf(data).meetAllowance.Squat.amount == 1.25,
@@ -2439,60 +2439,150 @@ do
 	check("a granted one can be used", ProfileOperations.grantEntrance(data, "Stomp")
 		and (ProfileOperations.setEntrance(data, "Stomp")) and ProfileOperations.getEntrance(data) == "Stomp")
 	PlayerProfileSchema.migrate(data, 20)
-	check("a re-run keeps what they own", inventory.entrances.Stomp == true and inventory.entrance == "Stomp")
+	check("a re-run keeps what they own", inventory.entrances.Stomp == true and ProfileOperations.getEntrance(data) == "Stomp")
 end
 
 --------------------------------------------------------------------------------
 print("")
-print("56. version 21 to 22: the player's celebration; a spin takes the coins, a duplicate gives some back")
+print("56. version 21 to 22: the player's celebration; a spin adds to the collection, a duplicate gives some back")
 do
 	local data = newProfile()
 	local inventory = (data :: any).inventory
 	inventory.celebration = 7
 	data.version = 21
 	local finalVersion = PlayerProfileSchema.migrate(data, 21)
-	check("migrated 21 to 22", finalVersion == 22 and data.version == 22, tostring(data.version))
+	check("migrated 21 to the current version", finalVersion == PlayerProfileSchema.CURRENT_VERSION, tostring(data.version))
 	check("a broken celebration is cleared", inventory.celebration == nil)
 	check("the Default is theirs", ProfileOperations.getCelebration(data) == "ChalkClapPump")
 	check("no spin without the coins", (ProfileOperations.spinCelebration(data, 500, "SkyPoint", 250)) == "NotEnough"
 		and ProfileOperations.getCelebration(data) == "ChalkClapPump")
 	ProfileOperations.addCoins(data, 1200)
 	local outcome, balance, given = ProfileOperations.spinCelebration(data, 500, "SkyPoint", 250)
-	check("a spin takes the price and makes it theirs", outcome == "Spun" and balance == 700 and given == 0
-		and ProfileOperations.getCelebration(data) == "SkyPoint", string.format("%s %s %s", tostring(outcome), tostring(balance), tostring(given)))
+	check("a spin takes the price, keeps it and puts it in the 1st-attempt slot", outcome == "Spun" and balance == 700
+		and given == 0 and ProfileOperations.getCelebration(data, 1) == "SkyPoint"
+		and ProfileOperations.getCelebration(data, 2) == "ChalkClapPump",
+		string.format("%s %s %s", tostring(outcome), tostring(balance), tostring(given)))
 	outcome, balance, given = ProfileOperations.spinCelebration(data, 500, "SkyPoint", 250)
 	check("landing on it again gives 250 back", outcome == "Spun" and balance == 450 and given == 250, tostring(balance))
 	check("an unknown celebration is refused", (ProfileOperations.spinCelebration(data, 500, "NoSuchOne", 250)) == "Rejected"
 		and ProfileOperations.getCoins(data) == 450)
 	check("a refund over the price is refused", (ProfileOperations.spinCelebration(data, 100, "FistSalute", 200)) == "Rejected")
-	outcome = ProfileOperations.spinCelebration(data, 400, "ChalkClapPump", 250)
-	check("landing on the Default stores nothing", outcome == "Spun" and inventory.celebration == nil
-		and ProfileOperations.getCelebration(data) == "ChalkClapPump")
-	inventory.celebration = "RemovedLater"
-	check("one the game no longer has falls back to the Default", ProfileOperations.getCelebration(data) == "ChalkClapPump")
-	check("the admin can set any", (ProfileOperations.adminSetCelebration(data, "RecordJumpRoar"))
-		and ProfileOperations.getCelebration(data) == "RecordJumpRoar")
+	outcome, balance, given = ProfileOperations.spinCelebration(data, 400, "ChalkClapPump", 250)
+	check("landing on the Default gives coins back and changes no slot", outcome == "Spun" and given == 250 and balance == 300
+		and ProfileOperations.getCelebration(data, 1) == "SkyPoint")
+	outcome, balance = ProfileOperations.spinCelebration(data, 300, "FistSalute", 250)
+	check("the next new one fills the next slot still on the Default", outcome == "Spun" and balance == 0
+		and ProfileOperations.getCelebration(data, 2) == "FistSalute" and ProfileOperations.getCelebration(data, 3) == "ChalkClapPump")
+	check("the admin can give any, on all three attempts", (ProfileOperations.adminSetCelebration(data, "RecordJumpRoar"))
+		and ProfileOperations.getCelebration(data, 1) == "RecordJumpRoar" and ProfileOperations.getCelebration(data, 3) == "RecordJumpRoar"
+		and ProfileOperations.ownsLoadoutItem(data, "Celebration", "SkyPoint"))
 	local reloaded = saveAndReload(data)
-	check("it survives a save and reload", reloaded.inventory.celebration == "RecordJumpRoar")
+	check("it survives a save and reload", reloaded.inventory.loadout.Celebration[2] == "RecordJumpRoar"
+		and reloaded.inventory.celebrations.SkyPoint == true)
 end
 
 --------------------------------------------------------------------------------
 print("")
-print("57. a walk-out spin takes the coins, gives it and puts it on; a duplicate gives some back")
+print("57. a walk-out spin keeps it and fills the first Default slot; a duplicate gives some back")
 do
 	local data = newProfile()
 	check("the Default walk-out first", ProfileOperations.getEntrance(data) == "Default")
 	check("no spin without the coins", (ProfileOperations.spinEntrance(data, 500, "WarCry", 250)) == "NotEnough")
 	ProfileOperations.addCoins(data, 1000)
 	local outcome, balance, given = ProfileOperations.spinEntrance(data, 500, "WarCry", 250)
-	check("a spin gives it and puts it on", outcome == "Spun" and balance == 500 and given == 0
+	check("a spin keeps it and puts it on the 1st attempt", outcome == "Spun" and balance == 500 and given == 0
 		and ProfileOperations.getEntrance(data) == "WarCry" and ProfileOperations.ownsEntrance(data, "WarCry"))
+	check("the 2nd and 3rd attempts keep the Default", ProfileOperations.getEntrance(data, 2) == "Default"
+		and ProfileOperations.getEntrance(data, 3) == "Default")
 	outcome, balance, given = ProfileOperations.spinEntrance(data, 500, "WarCry", 250)
 	check("landing on it again gives 250 back", outcome == "Spun" and balance == 250 and given == 250)
 	check("an unknown walk-out is refused", (ProfileOperations.spinEntrance(data, 100, "NoSuchWalk", 50)) == "Rejected"
 		and ProfileOperations.getCoins(data) == 250)
 end
 
+--------------------------------------------------------------------------------
+print("")
+print("58. version 22 to 23: the fail style and the emotes (both collections now)")
+do
+	local data = newProfile()
+	local inventory = (data :: any).inventory
+	inventory.failStyle = 3
+	inventory.emotes = nil
+	data.version = 22
+	check("migrated 22 to the current version", PlayerProfileSchema.migrate(data, 22) == PlayerProfileSchema.CURRENT_VERSION
+		and data.version == PlayerProfileSchema.CURRENT_VERSION)
+	check("the default fails and an empty emote list", ProfileOperations.getFailStyle(data) == "Default"
+		and inventory.failStyle == nil and typeof(inventory.emotes) == "table" and next(inventory.emotes) == nil)
+	check("the free emotes only", table.concat(ProfileOperations.getEmotes(data), ",") == "Wave,ChalkClap")
+	ProfileOperations.addCoins(data, 2000)
+	local outcome, balance, given = ProfileOperations.spinFailStyle(data, 500, "Grinder", 250)
+	check("a fail style spin keeps it and puts it on the 1st attempt", outcome == "Spun" and balance == 1500 and given == 0
+		and ProfileOperations.getFailStyle(data) == "Grinder")
+	outcome, balance, given = ProfileOperations.spinEmote(data, 500, "MostMuscular", 250)
+	check("an emote spin keeps it", outcome == "Spun" and balance == 1000 and given == 0
+		and ProfileOperations.ownsEmote(data, "MostMuscular"))
+	outcome, balance, given = ProfileOperations.spinEmote(data, 500, "MostMuscular", 250)
+	check("a duplicate emote gives 250 back and keeps one", outcome == "Spun" and balance == 750 and given == 250)
+	check("a free emote is never a spin result", (ProfileOperations.spinEmote(data, 500, "Wave", 250)) == "Rejected")
+	check("an unknown fail style is refused", (ProfileOperations.spinFailStyle(data, 500, "Nope", 250)) == "Rejected")
+	local reloaded = saveAndReload(data)
+	check("both survive a save and reload", reloaded.inventory.failStyles.Grinder == true
+		and reloaded.inventory.loadout.Fail[1] == "Grinder" and reloaded.inventory.emotes.MostMuscular == true)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("59. version 23 to 24: walk-outs, celebrations and fail styles kept, with a slot for each attempt")
+do
+	local data = newProfile()
+	local inventory = (data :: any).inventory
+	inventory.entrances = { WarCry = true }
+	inventory.entrance = "WarCry"
+	inventory.celebration = "SkyPoint"
+	inventory.failStyle = "Dramatic"
+	inventory.celebrations = nil
+	inventory.failStyles = nil
+	inventory.loadout = nil
+	data.version = 23
+	check("migrated 23 to 24", PlayerProfileSchema.migrate(data, 23) == 24 and data.version == 24)
+	check("the old single fields are cleared", inventory.entrance == nil and inventory.celebration == nil
+		and inventory.failStyle == nil)
+	check("what they had is theirs to keep", ProfileOperations.ownsLoadoutItem(data, "Celebration", "SkyPoint")
+		and ProfileOperations.ownsLoadoutItem(data, "Fail", "Dramatic") and ProfileOperations.ownsEntrance(data, "WarCry"))
+	local function allThree(): boolean
+		for attempt = 1, 3 do
+			if ProfileOperations.getCelebration(data, attempt) ~= "SkyPoint" or ProfileOperations.getEntrance(data, attempt) ~= "WarCry"
+				or ProfileOperations.getFailStyle(data, attempt) ~= "Dramatic" then
+				return false
+			end
+		end
+		return true
+	end
+	check("and does it on all three attempts, as before", allThree())
+	PlayerProfileSchema.migrate(data, 23)
+	check("a re-run changes nothing", allThree())
+	check("can't put one they don't own in a slot", (ProfileOperations.setLoadoutSlot(data, "Celebration", 2, "FistSalute")) == false
+		and ProfileOperations.getCelebration(data, 2) == "SkyPoint")
+	check("a slot must be 1, 2 or 3", (ProfileOperations.setLoadoutSlot(data, "Celebration", 4, "SkyPoint")) == false
+		and (ProfileOperations.setLoadoutSlot(data, "Celebration", 1.5, "SkyPoint")) == false
+		and (ProfileOperations.setLoadoutSlot(data, "Celebration", 0 / 0, "SkyPoint")) == false)
+	check("emotes have no slots", (ProfileOperations.setLoadoutSlot(data, "Emote", 1, "Wave")) == false)
+	check("the Default can always go in a slot", (ProfileOperations.setLoadoutSlot(data, "Celebration", 2, "ChalkClapPump"))
+		and ProfileOperations.getCelebration(data, 2) == "ChalkClapPump" and ProfileOperations.getCelebration(data, 1) == "SkyPoint")
+	ProfileOperations.grantLoadoutItem(data, "Celebration", "FistSalute")
+	check("a different one on each attempt", (ProfileOperations.setLoadoutSlot(data, "Celebration", 3, "FistSalute"))
+		and table.concat(ProfileOperations.getLoadoutSlots(data, "Celebration"), ",") == "SkyPoint,ChalkClapPump,FistSalute")
+	check("an attempt past the 3rd uses the 3rd", ProfileOperations.getCelebration(data, 4) == "FistSalute")
+	check("the owned list starts with the Default", ProfileOperations.getOwnedLoadout(data, "Celebration")[1] == "ChalkClapPump"
+		and #ProfileOperations.getOwnedLoadout(data, "Celebration") == 3)
+	local reloaded = saveAndReload(data)
+	check("slots survive a save and reload", reloaded.inventory.loadout.Celebration[3] == "FistSalute"
+		and reloaded.inventory.loadout.Entrance[2] == "WarCry")
+	inventory.loadout.Celebration[1] = "RemovedLater"
+	check("one the game no longer has counts as the Default", ProfileOperations.getCelebration(data, 1) == "ChalkClapPump")
+end
+
+--------------------------------------------------------------------------------
 print("")
 print(string.format("=== %d passed, %d failed ===", passed, failed))
 

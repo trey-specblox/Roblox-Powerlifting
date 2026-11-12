@@ -132,9 +132,18 @@ def build(name, track, raw):
                 out[lo:hi] += (piece * ramp)[lo - place: hi - place]
         report = ", ".join(f"{cue:.2f}s<-{at / rate:.2f}s" for cue, at in pairs)
     out = out[:length]
-    out *= 10 ** (PEAK_DB / 20) / max(np.abs(out).max(), 1e-9)
-    fo = int(0.08 * rate)
-    out[-fo:] *= np.linspace(1, 0, fo)
+    if track.get("loop"):
+        # A looping track ("WalkLoop" celebrations): exactly one round long, whatever rings past the round's end wrapped
+        # onto its start, so the loop has no seam and no fade.
+        period = int(rate * track["seconds"])
+        tail = out[period:]
+        out = out[:period].copy()
+        out[: len(tail)] += tail
+        out *= 10 ** (PEAK_DB / 20) / max(np.abs(out).max(), 1e-9)
+    else:
+        out *= 10 ** (PEAK_DB / 20) / max(np.abs(out).max(), 1e-9)
+        fo = int(0.08 * rate)
+        out[-fo:] *= np.linspace(1, 0, fo)
     path = ROOT / f"Track_{name}.wav"
     sf.write(path, out, rate, subtype="PCM_16")
     return path, (f"{name}: take {len(x) / rate:.1f} s, {len(found)} hits, {len(pairs)} of {len(track['cues'])} cues "

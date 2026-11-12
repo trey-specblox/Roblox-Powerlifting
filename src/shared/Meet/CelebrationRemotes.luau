@@ -5,11 +5,11 @@
 
 	The celebrations' one remote (same pattern as MockMeetRemotes: the server makes it in code, the client waits):
 
-		CelebrationStarted  server -> client  (celebrationId: string, startedAt: number, figure: Model)
+		CelebrationStarted  server -> client  (celebrationId: string, startedAt: number, figure: Model, cinematic: boolean)
 			"This figure (a player's character or a computer lifter) has just started this celebration"
 			(Workspace:GetServerTimeNow() when it started), sent to everyone: each player's game draws its effects
-			(client CelebrationFx), and the celebrating player's own screen runs its cinematic, if it has one
-			(client CelebrationCinema). Display only.
+			(client CelebrationFx), and when `cinematic` (State; user 2026-11-12: none at Local and Regional) the
+			celebrating player's own screen runs its cinematic, if it has one (client CelebrationCinema). Display only.
 
 		EntranceHypeStarted  server -> client  (entranceId: string, startedAt: number, figure: Model)
 			"This figure has just started its walk-out's hype move" (EntranceConfig, at State and up): each player's game
@@ -25,9 +25,17 @@
 			The player held E on the celebration NPC: open the spin screen.
 		GetSpinner   client -> server  () -> SpinView?
 			Their coins, current celebration and current walk-out. Read only.
-		SpinCelebration  client -> server  (kind: "Celebration" | "Entrance") -> (ok, message, view?, resultId?, refund)
+		SpinCelebration  client -> server  (kind: "Celebration" | "Entrance" | "Fail" | "Emote") -> (ok, message, view?, resultId?, refund)
 			Asks for one spin of a celebration or a walk-out (EntranceConfig, user 2026-11-11: "Walk-outs at Hype Man"). The server checks the coins and that they stand by the NPC, rolls the result itself, takes
 			the price and makes the result theirs; the client only asks, then shows the reel landing on the result.
+
+	Collections and attempt slots (LoadoutConfig, user 2026-11-12), for the emote wheel's pages (client EmoteWheel), in
+	the same folder. Usable anywhere (not only by the NPC):
+
+		GetLoadout   client -> server  () -> LoadoutView?
+			Per kind: every one they own and their three slots; and their emotes. Read only.
+		SetLoadoutSlot  client -> server  (kind: string, slot: number, id: string) -> (ok, message, LoadoutView?)
+			"Put this one in my 1st / 2nd / 3rd attempt slot." The server checks the kind, the slot and that they own it.
 ]]
 
 local CelebrationRemotes = {}
@@ -76,15 +84,32 @@ export type SpinView = {
 	-- Their celebration (CelebrationConfig id) and walk-out (EntranceConfig id).
 	current: string,
 	entrance: string,
+	-- Their fail style (StationAnimationConfig.FailStyles id or "Default") and the emotes they have (EmoteConfig ids).
+	failStyle: string,
+	emotes: { string },
+	-- How many of each slotted kind they own, the Default included ("Celebration", "Entrance", "Fail").
+	collected: { [string]: number },
 }
 
+-- What the wheel's pages show (server PlayerDataService.getLoadout).
+export type LoadoutView = {
+	owned: { [string]: { string } },
+	slots: { [string]: { string } },
+	emotes: { string },
+}
+
+CelebrationRemotes.GET_LOADOUT = "GetLoadout"
+CelebrationRemotes.SET_LOADOUT_SLOT = "SetLoadoutSlot"
+
 -- What a spin can be for.
-CelebrationRemotes.KINDS = { Celebration = true, Entrance = true } :: { [string]: boolean }
+CelebrationRemotes.KINDS = { Celebration = true, Entrance = true, Fail = true, Emote = true } :: { [string]: boolean }
 
 export type SpinRemotes = {
 	open: RemoteEvent,
 	get: RemoteFunction,
 	spin: RemoteFunction,
+	loadout: RemoteFunction,
+	setSlot: RemoteFunction,
 }
 
 function CelebrationRemotes.createSpinOnServer(replicatedStorage: Instance): SpinRemotes
@@ -109,6 +134,8 @@ function CelebrationRemotes.createSpinOnServer(replicatedStorage: Instance): Spi
 		open = make(CelebrationRemotes.OPEN_SPINNER, "RemoteEvent") :: RemoteEvent,
 		get = make(CelebrationRemotes.GET_SPINNER, "RemoteFunction") :: RemoteFunction,
 		spin = make(CelebrationRemotes.SPIN, "RemoteFunction") :: RemoteFunction,
+		loadout = make(CelebrationRemotes.GET_LOADOUT, "RemoteFunction") :: RemoteFunction,
+		setSlot = make(CelebrationRemotes.SET_LOADOUT_SLOT, "RemoteFunction") :: RemoteFunction,
 	}
 end
 
@@ -119,6 +146,8 @@ function CelebrationRemotes.waitForSpinClient(replicatedStorage: Instance): Spin
 		open = folder:WaitForChild(CelebrationRemotes.OPEN_SPINNER) :: RemoteEvent,
 		get = folder:WaitForChild(CelebrationRemotes.GET_SPINNER) :: RemoteFunction,
 		spin = folder:WaitForChild(CelebrationRemotes.SPIN) :: RemoteFunction,
+		loadout = folder:WaitForChild(CelebrationRemotes.GET_LOADOUT) :: RemoteFunction,
+		setSlot = folder:WaitForChild(CelebrationRemotes.SET_LOADOUT_SLOT) :: RemoteFunction,
 	}
 end
 

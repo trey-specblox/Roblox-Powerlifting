@@ -47,9 +47,9 @@ EntranceConfig.Entrances = {
 		walkSpeed = nil,
 		hypeAnimationId = "rbxassetid://89625871512191",
 		hypeSeconds = 3.0,
-		hypeSoundtrack = "rbxassetid://132513593834586",
+		hypeSoundtrack = "rbxassetid://102810729209176",
 		rarity = "Default",
-		description = "The usual walk out, then a belt tug and a clap. Everyone starts with it.",
+		description = "The usual walk out, then two snaps of the belt and a clap. Everyone starts with it.",
 	},
 	Swagger = {
 		name = "SWAGGER",
@@ -154,10 +154,13 @@ EntranceConfig.Order = {
 -- would add over 10 seconds to every attempt. [Claude's number, 2026-11-08]
 EntranceConfig.StyleWalkStuds = 16
 
--- Meets where the hype move plays (the walk style plays at every meet): State and up (user 2026-11-08), so Local meets,
--- with 8 platforms at once, don't get longer. Keyed by the meet's level name, as CheerConfig.MeetLevels.
-EntranceConfig.HypeMeetLevels = { State = true } :: { [string]: boolean }
+-- Meets where the hype move plays (the walk style plays at every meet): every meet (user 2026-11-12: Local and Regional
+-- get the entrances too, "no flashy cinematic, just to keep local and regionals quick but still a little styleish"; it was
+-- State only, user 2026-11-08). The coach's ritual and its film-look walk-out shots stay State only. Keyed by the meet's
+-- level name, as CheerConfig.MeetLevels.
+EntranceConfig.HypeMeetLevels = { Local = true, Regional = true, State = true } :: { [string]: boolean }
 
+-- (Now only for a walk-out with no hype move, at a meet without them; every meet has them since 2026-11-12.)
 -- Local and Regional meets, where no hype move plays: everyone's quick "game face" over the last steps of the walk out
 -- (user 2026-11-08: those walk-outs "too bland, and not smooth", but not flashy or long). Two chalky claps, then both hands
 -- tap the belt, arms only, so the legs keep walking; timed to end as the walk does, so it adds no time. `clapSeconds`: the

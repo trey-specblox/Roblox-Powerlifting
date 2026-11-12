@@ -32,6 +32,10 @@ local started = false
 local startedRemote: RemoteEvent? = nil
 -- The track playing on each figure, so a new one replaces it.
 local playing: { [Model]: AnimationTrack } = {}
+-- The figures doing a "WalkLoop" one (until they are back: endWalk).
+local looping: { [Model]: boolean } = {}
+-- A looping one never runs longer than this, whatever happens to the walk.
+local LOOP_LIMIT_SECONDS = 45
 -- The take each sound last played, so the next is a different one.
 local lastTake: { [string]: string } = {}
 
@@ -45,9 +49,10 @@ function CelebrationService.start()
 	CelebrationRemotes.createHypeOnServer(ReplicatedStorage)
 end
 
--- The celebration a player does after a good lift: theirs from the spin (the Default until they spin).
-function CelebrationService.forPlayer(player: Player): string
-	return PlayerDataService.getCelebration(player)
+-- The celebration a player does after a good lift on `attempt` (1 to 3): the one in that attempt's slot (LoadoutConfig,
+-- user 2026-11-12; the Default until they win others at Hype Man).
+function CelebrationService.forPlayer(player: Player, attempt: number?): string
+	return PlayerDataService.getCelebration(player, attempt)
 end
 
 -- A computer lifter's: the same rules as players (user 2026-11-11).
@@ -103,7 +108,9 @@ end
 	Standing one, 0 for a Walk one (it plays over the walk). `_owner`: the player whose character it is (kept for later:
 	their screen knows it by the figure). An unknown id or a figure that can't animate: nothing happens, 0.
 ]]
-function CelebrationService.play(figure: Model?, id: string, _owner: Player?): number
+-- `cinematic`: the celebrating player's screen runs its camera shots, if it has any (State, CelebrationConfig
+-- .CinematicMeetLevels; the admin's PLAY ON ME). Otherwise just the moves, sound and effects.
+function CelebrationService.play(figure: Model?, id: string, _owner: Player?, cinematic: boolean?): number
 	local celebration = CelebrationConfig.byId[id]
 	if figure == nil or celebration == nil or not figure.Parent then
 		return 0
@@ -127,13 +134,16 @@ function CelebrationService.play(figure: Model?, id: string, _owner: Player?): n
 	end
 	local track = loaded :: AnimationTrack
 	track.Priority = Enum.AnimationPriority.Action
-	track.Looped = false
+	local loops = celebration.kind == "WalkLoop"
+	track.Looped = loops
 	track:Play(FADE_IN)
 	playing[figure] = track
-	local stopAt = celebration.seconds - FADE_OUT
+	looping[figure] = loops or nil
+	local stopAt = if loops then LOOP_LIMIT_SECONDS else celebration.seconds - FADE_OUT
 	task.delay(math.max(0, stopAt), function()
 		if playing[figure] == track then
 			playing[figure] = nil
+			looping[figure] = nil
 			track:Stop(FADE_OUT)
 		end
 	end)
@@ -152,9 +162,19 @@ function CelebrationService.play(figure: Model?, id: string, _owner: Player?): n
 	end
 	local remote = startedRemote
 	if remote then
-		remote:FireAllClients(id, Workspace:GetServerTimeNow(), figure)
+		remote:FireAllClients(id, Workspace:GetServerTimeNow(), figure, cinematic == true)
 	end
-	return if celebration.kind == "Walk" then 0 else celebration.seconds
+	return if celebration.kind == "Walk" or loops then 0 else celebration.seconds
+end
+
+-- The walk back is over: a looping ("WalkLoop") celebration on this figure ends here; any other is left alone.
+function CelebrationService.endWalk(figure: Model?)
+	local track = figure and playing[figure]
+	if figure and track and looping[figure] then
+		playing[figure] = nil
+		looping[figure] = nil
+		track:Stop(0.4)
+	end
 end
 
 -- Ends any celebration on this figure now (the lifter was called up, left...).

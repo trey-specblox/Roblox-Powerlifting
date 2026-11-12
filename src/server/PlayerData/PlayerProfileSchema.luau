@@ -59,9 +59,11 @@ local PlayerProfileSchema = {}
 	17: ladder points per weight class; version 18: how many times the
 	player has qualified for State; version 19: gear with stats; version 20:
 	the coach's tests for rare suits; version 21: meet entrances; version 22:
-	the player's celebration).
+	the player's celebration; version 23: the fail style and the emotes won;
+	version 24: walk-outs, celebrations and fail styles collected, with a slot
+	for each attempt).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 22
+PlayerProfileSchema.CURRENT_VERSION = 24
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -312,15 +314,26 @@ export type Inventory = {
 	suitTests: { [string]: { passed: boolean?, nextTryAt: number? } },
 	-- A test running now: the piece on loan for it, and what was worn before. Cleared on the next load if the server went down.
 	suitTrial: { pieceId: string, slot: string, before: string?, beforeItem: string? }?,
-	-- Meet entrances (version 21, GAME_DESIGN §36.4): entrance id (EntranceConfig) -> true. The Default is everyone's and
-	-- never stored. Written only by ProfileOperations.grantEntrance (crates later; the admin panel for now).
+	-- Meet entrances (walk-outs; version 21, GAME_DESIGN §36.4): entrance id (EntranceConfig) -> true. The Default is
+	-- everyone's and never stored. Written only by ProfileOperations.grantEntrance and the spins.
 	entrances: { [string]: boolean },
-	-- The entrance used at meets; nil is the Default. Written only by ProfileOperations.setEntrance, with one they own.
+	-- (Versions 21 to 23 kept ONE walk-out, celebration and fail style in `entrance`, `celebration` and `failStyle`; a
+	-- reroll. Version 24 moves each into the collections and slots below and clears them, user 2026-11-12.)
 	entrance: string?,
-	-- The celebration they do after a good lift (version 22, GAME_DESIGN §36.4): a CelebrationConfig id; nil is the Default.
-	-- A reroll, not a collection (user 2026-11-11): each spin at the celebration NPC replaces it. Written only by
-	-- ProfileOperations.spinCelebration (with the coins it costs) and adminSetCelebration.
 	celebration: string?,
+	failStyle: string?,
+	-- The celebrations and fail styles they have won (version 24, user 2026-11-12: "collect these walk outs,
+	-- celebrations, and lift fails"): CelebrationConfig / StationAnimationConfig.FailStyles id -> true. Defaults are
+	-- everyone's and never needed here. Only ever added to, by ProfileOperations.grantLoadoutItem (the spins, the admin).
+	celebrations: { [string]: boolean },
+	failStyles: { [string]: boolean },
+	-- What they do on each attempt (version 24, LoadoutConfig): kind ("Entrance", "Celebration", "Fail") -> three ids,
+	-- for the 1st, 2nd and 3rd attempt. A missing kind or slot is the Default. Written only by
+	-- ProfileOperations.setLoadoutSlot (with one they own) and when a spin fills a slot still on the Default.
+	loadout: { [string]: { string } },
+	-- The emotes they have won (version 23): EmoteConfig id -> true. Free ones are everyone's and never stored. A
+	-- collection: only ever added to. Written only by ProfileOperations.spinEmote and adminGiveEmote.
+	emotes: { [string]: boolean },
 }
 
 export type StatPiece = {
@@ -585,6 +598,10 @@ local template: ProfileData = {
 		nextPieceId = 1,
 		suitTests = {},
 		entrances = {},
+		emotes = {},
+		celebrations = {},
+		failStyles = {},
+		loadout = {},
 	},
 
 	bodyweight = {
@@ -1721,6 +1738,55 @@ migrations[21] = function(data: ProfileData)
 	local inventory = (data :: any).inventory
 	if typeof(inventory) == "table" and inventory.celebration ~= nil and typeof(inventory.celebration) ~= "string" then
 		inventory.celebration = nil
+	end
+end
+
+--[[
+	Version 22 -> 23: the fail style and the emotes. Nobody has either yet: the default fails, an empty list.
+]]
+migrations[22] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return
+	end
+	if inventory.failStyle ~= nil and typeof(inventory.failStyle) ~= "string" then
+		inventory.failStyle = nil
+	end
+	if typeof(inventory.emotes) ~= "table" then
+		inventory.emotes = {}
+	end
+end
+
+--[[
+	Version 23 -> 24: collections and attempt slots (user 2026-11-12). The one walk-out, celebration and fail style they
+	had becomes theirs to keep and goes in all three slots, so nothing they do at a meet changes; the old fields are
+	cleared. Ids are copied as they are: reads check them against the configs (an unknown one counts as the Default).
+	Safe to run twice: a second run finds the old fields empty and the slots already made.
+]]
+migrations[23] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return
+	end
+	for _, name in ipairs({ "entrances", "celebrations", "failStyles", "emotes", "loadout" }) do
+		if typeof(inventory[name]) ~= "table" then
+			inventory[name] = {}
+		end
+	end
+	local moves = {
+		{ old = "entrance", owned = "entrances", kind = "Entrance" },
+		{ old = "celebration", owned = "celebrations", kind = "Celebration" },
+		{ old = "failStyle", owned = "failStyles", kind = "Fail" },
+	}
+	for _, move in ipairs(moves) do
+		local id = inventory[move.old]
+		if typeof(id) == "string" and id ~= "" then
+			inventory[move.owned][id] = true
+			if typeof(inventory.loadout[move.kind]) ~= "table" then
+				inventory.loadout[move.kind] = { id, id, id }
+			end
+		end
+		inventory[move.old] = nil
 	end
 end
 

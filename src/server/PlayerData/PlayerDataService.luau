@@ -59,6 +59,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CelebrationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CelebrationConfig"))
+local LoadoutConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("LoadoutConfig"))
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
 local ProfileOperations = require(script.Parent.ProfileOperations)
 
@@ -773,10 +774,42 @@ function PlayerDataService.adminGiveEntrance(player: Player, id: string): (boole
 	return ProfileOperations.adminGiveEntrance(data, id)
 end
 
--- The entrance a player uses at meets (EntranceConfig id); the Default when their save isn't loaded.
-function PlayerDataService.getEntrance(player: Player): string
+-- The entrance (walk-out) a player uses at meets on `attempt` (1 to 3, nil the 1st; EntranceConfig id); the Default
+-- when their save isn't loaded.
+function PlayerDataService.getEntrance(player: Player, attempt: number?): string
 	local data = PlayerDataService.getData(player)
-	return if data then ProfileOperations.getEntrance(data) else "Default"
+	return if data then ProfileOperations.getEntrance(data, attempt) else "Default"
+end
+
+export type LoadoutView = {
+	-- Per kind ("Entrance", "Celebration", "Fail"): every one they own (the Default first) and their three slots.
+	owned: { [string]: { string } },
+	slots: { [string]: { string } },
+	-- The emotes they can play (free ones included).
+	emotes: { string },
+}
+
+-- Everything for the emote wheel's pages (LoadoutConfig); nil when their save isn't loaded. Read only.
+function PlayerDataService.getLoadout(player: Player): LoadoutView?
+	local data = PlayerDataService.getData(player)
+	if data == nil then
+		return nil
+	end
+	local view: LoadoutView = { owned = {}, slots = {}, emotes = ProfileOperations.getEmotes(data) }
+	for _, kind in ipairs(LoadoutConfig.Kinds) do
+		view.owned[kind] = ProfileOperations.getOwnedLoadout(data, kind)
+		view.slots[kind] = ProfileOperations.getLoadoutSlots(data, kind)
+	end
+	return view
+end
+
+-- Puts one they own in one of their attempt slots (ProfileOperations.setLoadoutSlot checks everything).
+function PlayerDataService.setLoadoutSlot(player: Player, kind: string, slot: number, id: string): (boolean, string)
+	local data = activeData(player, "setLoadoutSlot")
+	if data == nil then
+		return false, "Your save hasn't loaded yet."
+	end
+	return ProfileOperations.setLoadoutSlot(data, kind, slot, id)
 end
 
 --[[
@@ -821,6 +854,58 @@ function PlayerDataService.spinEntrance(player: Player, price: number, resultId:
 	return outcome, balance, given
 end
 
+-- One fail-style or emote spin (ProfileOperations.spinFailStyle / spinEmote). SERVER-ONLY: CelebrationSpinService chose
+-- everything. `what` names it in the log and the coin message.
+local function spinWith(player: Player, what: string, spinOf: any, price: number, resultId: string, refund: number)
+	: (ProfileOperations.SpinOutcome?, number?, number)
+	local data = activeData(player, "spin " .. what)
+	if data == nil then
+		return nil, nil, 0
+	end
+	local outcome, balance, given = spinOf(data, price, resultId, refund)
+	if outcome == "Spun" then
+		print(string.format("[PlayerDataService] %s spun %s %s for %d coins: %s%s, %d left", player.Name,
+			if what == "Emote" then "an" else "a", string.lower(what),
+			price, resultId, if given > 0 then string.format(" (already theirs: %d back)", given) else "", balance :: number))
+		coinsChanged(player, given - price, balance :: number, what .. " spin")
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: a %s spin (%s, %s) refused", player.Name, string.lower(what),
+			tostring(price), tostring(resultId)))
+	end
+	return outcome, balance, given
+end
+
+function PlayerDataService.spinFailStyle(player: Player, price: number, resultId: string, refund: number)
+	: (ProfileOperations.SpinOutcome?, number?, number)
+	return spinWith(player, "Fail style", ProfileOperations.spinFailStyle, price, resultId, refund)
+end
+
+function PlayerDataService.spinEmote(player: Player, price: number, resultId: string, refund: number)
+	: (ProfileOperations.SpinOutcome?, number?, number)
+	return spinWith(player, "Emote", ProfileOperations.spinEmote, price, resultId, refund)
+end
+
+-- A player's fail style on `attempt` (1 to 3, nil the 1st; StationAnimationConfig.FailStyles id or "Default");
+-- "Default" when their save isn't loaded.
+function PlayerDataService.getFailStyle(player: Player, attempt: number?): string
+	local data = PlayerDataService.getData(player)
+	return if data then ProfileOperations.getFailStyle(data, attempt) else "Default"
+end
+
+-- The emotes a player can play (free ones included); just the free ones when their save isn't loaded.
+function PlayerDataService.getEmotes(player: Player): { string }
+	local data = PlayerDataService.getData(player)
+	if data then
+		return ProfileOperations.getEmotes(data)
+	end
+	return { "Wave", "ChalkClap" }
+end
+
+function PlayerDataService.ownsEmote(player: Player, id: string): boolean
+	local data = PlayerDataService.getData(player)
+	return data ~= nil and ProfileOperations.ownsEmote(data, id)
+end
+
 function PlayerDataService.adminSetCelebration(player: Player, id: string): (boolean, string)
 	local data = activeData(player, "adminSetCelebration")
 	if data == nil then
@@ -829,10 +914,11 @@ function PlayerDataService.adminSetCelebration(player: Player, id: string): (boo
 	return ProfileOperations.adminSetCelebration(data, id)
 end
 
--- The celebration a player does after a good lift (CelebrationConfig id); the Default when their save isn't loaded.
-function PlayerDataService.getCelebration(player: Player): string
+-- The celebration a player does after a good lift on `attempt` (1 to 3, nil the 1st; CelebrationConfig id); the Default
+-- when their save isn't loaded.
+function PlayerDataService.getCelebration(player: Player, attempt: number?): string
 	local data = PlayerDataService.getData(player)
-	return if data then ProfileOperations.getCelebration(data) else CelebrationConfig.Default
+	return if data then ProfileOperations.getCelebration(data, attempt) else CelebrationConfig.Default
 end
 
 -- (Training Energy was retired in schema version 8, GAME_DESIGN 29.8, and the Competition Budget in version 10, 29.9.)

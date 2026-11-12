@@ -13,6 +13,119 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**SPOTTERS CLEAR OF ENTRANCES; LOCAL/REGIONAL GET HYPE MOVES AND CELEBRATIONS (2026-11-12), CHECKED BY THE USER, COMMITTED**
+(GAME_DESIGN §37.5 table "Spotters make way for entrances too"; §36.4 "Local and Regional get them too").
+- User (screenshot: a spotter filling the State bench walk-out shot): "make sure any spotters or loaders are not in the way
+  of entrances or celebrations". The spotters are the loaders. Server: LocalMeetService clears them for the whole walk-out
+  (`clearSpotters(platform, walkOutSeconds, "StateWalkOut" at State)`) and `setUpLift` calls the new
+  `LocalMeetVenue.releaseSpotters`; the rack's new `SpottersClearMode` says which spots to use.
+- Client `MeetSpotterAnimator`: ENTRANCE_SPOTS (Left (-11, 0.6), Back (-11, 3.4) off the platform; Right (7.2, 7.0)),
+  picked against 175 recorded frames of the State walk-out camera (none in frame nearer than the lifter, even 2.78:1);
+  they WALK at 8 studs/s along `routeBetween` (round the rack box x ±5.3 z -3.8..2.6, never across the front middle),
+  stepping down to the floor (`groundAt`). Celebrations still use CLEAR_SPOTS, now walked the same way.
+- Local and Regional (user: "i want local and regionals to have these celebration, fails, entrances etc. but no flashy
+  cinematic"): EntranceConfig.HypeMeetLevels and CelebrationConfig.MeetLevels now every level; the new
+  CelebrationConfig.CinematicMeetLevels (State) gates the celebration's camera shots, sent as a 4th arg of
+  CelebrationStarted (admin PLAY ON ME still shows them). Computer lifters now celebrate (Default) at Local too.
+- TESTED in Studio (State meet): squat walk-out live, spotters at their spots in 1.3 s, never in the shot or in the rack
+  (log of 45 frames); screenshot of the side shot with no spotter in it; bench routes checked with a Heartbeat copy of the
+  animator (the client had stopped rendering): out in 1.75 s, back onto the deck from behind, no errors. A missing
+  STEP_RATE/STEP_SECONDS (deleted by an edit) was caught by this test and fixed.
+- NOT YET SEEN: a live bench walk-out on screen; a celebration with the new walking; a Local or Regional meet with hype
+  moves and celebrations (no cinematic); the extra seconds per Local attempt.
+
+**COLLECTIONS AND ATTEMPT SLOTS (2026-11-12), TESTED IN STUDIO, CHECKED BY THE USER, COMMITTED** (GAME_DESIGN §36.4, "Collect them all,
+with a slot for each attempt"). User: collect walk-outs, celebrations and lift fails; 3 slots (1st/2nd/3rd attempt) for
+celebrations and walk-outs; an arrow and indicator on the emote wheel to switch pages. Replaces the reroll.
+- Shared `LoadoutConfig` (kinds, pages, slot names, defaults, item lists). Save schema **version 24**: `inventory.celebrations`,
+  `inventory.failStyles` (owned), `inventory.loadout[kind] = {1st, 2nd, 3rd}`; the old single `entrance` / `celebration` /
+  `failStyle` move into owned + all three slots and are cleared (migrations[23]).
+- `ProfileOperations`: ownsLoadoutItem, grantLoadoutItem, getOwnedLoadout, getLoadoutSlots, getLoadoutFor, setLoadoutSlot;
+  the spins add to the collection (duplicate = owned already) and fill the first slot still on the Default; getEntrance /
+  getCelebration / getFailStyle take an attempt. Admin MAKE IT MINE / GiveEntrance / adminSetFailStyle fill all three.
+- Remotes in CelebrationSpinRemotes: `GetLoadout`, `SetLoadoutSlot` (kind, slot, id; checked server-side, rate-limited).
+- Meets: LocalMeetService passes the attempt number to the walk-out (entranceOf), fail (failAnimationFor) and celebration
+  (CelebrationService.forPlayer). Warm-ups use slot 1.
+- Client `EmoteWheel`: page chips + gold arrows + hint; slot pages with the 3 slots, the collection grid and WATCH; now
+  shrinks to fit small screens (its pop-in UIScale had been overriding fitToScreen). `CelebrationSpinner` headings count
+  the collection ("YOUR CELEBRATIONS: 4 / 21").
+- PlayerDataProbe tests 56-58 rewritten, 59 added; the stale "version still 21" check now reads the current version.
+- TESTED in Studio: all 584 probe checks pass; real spins at Hype Man added to the collection and filled slots 1-3 in order;
+  the remotes refused an unowned one, slot 7 and a bad kind; clicking the 3rd slot then a celebration swapped it (server
+  agreed); screenshots of the EMOTES and CELEBRATIONS pages; no script errors.
+- NOT YET SEEN: a real meet using a different walk-out / celebration / fail per attempt (code passes the attempt number,
+  not watched); the WALK-OUTS and FAILS pages and WATCH on screen; phone layout.
+- Known clash, not changed: B is also the dev lift tester's +2.5% key (client Dev LiftAttemptDebugTrigger).
+
+**SPOTTERS MAKE WAY FOR CELEBRATIONS (2026-11-11), TESTED IN STUDIO, COMMITTED** (GAME_DESIGN §37.5 table, "Spotters
+make way for celebrations"). User: "Make sure the spotters cant get in the way of the celebrations. maby change the camera
+angles, or Make them move farther away." Chosen: move them (the cameras are unchanged).
+- Server: `LocalMeetVenue.clearSpotters(platform, seconds)` sets the rack's `SpottersClearUntil` (server time; standSpotters
+  clears it); LocalMeetService walkBack calls it when a lifter steps back to the lift spot to celebrate or cheer (6 s), and
+  again when it starts (its length + 3 s, so a walk-back celebration's lifter is off the platform first).
+- Client `MeetSpotterAnimator`: `clearPose` puts them at rack-local Left (-7.2, 3.0), Right (7.2, 3.0), Back (-7.2, 0.6)
+  for squat or (-3.8, 4.6) off the bench deck, facing the lift spot, gliding there and back at the slower STEP_RATE.
+- Studio (a Regional hall meet with computer lifters): squat cheer, all three reached their spots within 2 s and were back
+  in place afterwards; bench, the deck spotter stepped back and aside, touching no rack upright on the way. The test window
+  wasn't drawing frames (RenderStepped 0), so the check used a temporary Heartbeat copy of the animator inside the play
+  session (gone at Stop). NOT seen: how it looks on screen, a State meet with a player's celebration.
+
+**WALK STYLE FROM THE BANNER, WALK-BACK CELEBRATIONS, BELT SNAPS (2026-11-11), PARTLY TESTED IN STUDIO, COMMITTED**
+(GAME_DESIGN §36.4, "The walk-out style starts at the banner..."). Sits on top of the uncommitted SEE ALL / fail styles /
+emotes work below.
+- Kits used: the Clip Study videos rewatched for stepping off (9FQM0Z6_s8Q 1:16.8, lNOrz4CVNMY 20:55-20:56 and 2:36-2:39,
+  Clip notes B 23:30), ElevenLabs for every new sound.
+- Banner start: `MeetEntrance.styleStudsFrom(route, from)` (the walk's length left from the point nearest the banner;
+  falls back to EntranceConfig.StyleWalkStuds 16), `walkOutSeconds(..., styleStuds)`; platforms get `styleFrom`
+  (LocalMeetVenue: the doorway; StateArenaVenue: the gantry banner); LocalMeetService passes it and lengthens the limit.
+- Walk-back celebrations: CelebrationConfig kind "WalkLoop", THANK-YOU WAVE (Rare) and CROWD PLEASER (Epic) in
+  art/scripts/celebration_animations.py (exported looped; `celebration_rig.export(..., looped=)`), UPLOADED; loop tracks
+  in art/sounds/celebration_tracks.json (make_celebration_tracks.py `"loop": true`: one round exactly, tail wrapped)
+  UPLOADED; CelebrationService loops them (45 s cap) and `endWalk` stops them when LocalMeetService's walk back reaches
+  home; client CelebrationFx keeps a looped Sound in step with the track and re-fires effects each round; the viewer and
+  spin card play them like a walk.
+- Belt snaps: user's rule (memory belt-snap-and-sound-context). 4 ElevenLabs takes with powerlifting prompts; the Belt
+  takes bunched every snap into the first 0.6 s, so `art/scripts/compose_belt_snaps.py` places single snaps from the takes
+  on the cues (Belt 1.05/1.4 + clap 2.0; Belt Tighten 0.7/1.1 + a lighter lever flick 1.7). New ids in
+  EntranceConfig.Default.hypeSoundtrack and EmoteConfig BeltTighten; old leather takes kept in
+  Raw/candidates/replaced_leather. Listening file: D:/Powerlifting Roblox Extras/Sounds/Belt_Snaps_Listen.wav.
+- Studio: banner maths on a State-shaped route (style 21.0 of 27.5 studs; SUPER HEAVY limit 6.8 -> 8.2 s); CROWD
+  PLEASER via the admin viewer looped (anim 3.62 -> 0.52 s, sound 3.61 -> 0.51 s over the wrap) and kept its arms
+  going while walking; both belt sounds load (3.00 s, 2.60 s); scripts match disk by checksum; no errors. NOT tested: a
+  real State meet walk-out from the banner, `endWalk` at the spot in a real meet, how the belt snaps sound.
+- Next: the user plays a State meet with a walk-back celebration and listens to the belt snaps; commit when approved.
+
+**SEE ALL WALK-OUTS, FAIL STYLES AND EMOTES (2026-11-11), TESTED IN STUDIO, COMMITTED** (GAME_DESIGN §36.4, "SEE ALL
+for walk-outs, then fail styles and emotes"). User: "2, then 3"; choices: replace the failure itself, 3 styles, every meet;
+emote wheel on B; emotes collected; 8 gym emotes; won at Hype Man.
+- Kits used: the Clip Study (misses, rituals, gym moves), the UI kit's techniques for the wheel and tabs (shine, outlined
+  text, glow), ElevenLabs for every emote sound; the fwjelaa animation method read (the game's own fail and celebration
+  engines fit this rig, so they were extended).
+- SEE ALL: CelebrationViewer lists celebrations, walk-outs, fail styles or emotes (the spin screen's open tab), walk-outs
+  walking up then their hype move, fail styles with a loaded bar.
+- Fail styles: `art/scripts/fail_styles.py` (3 styles x 6 fails on fail_animations.py's helpers, bench keys with free
+  arms; lowest points match the approved defaults; front/top preview sheets in art/previews/failstyles) UPLOADED; ids,
+  lengths, releases and catches in StationAnimationConfig.FailStyles; `failFor(lift, part, style)`; LocalMeetService
+  failAnimationFor and LocalMeetWarmUp use the player's style (computer lifters the default).
+- Emotes: `art/scripts/emote_animations.py` (8 on celebration_rig.py) UPLOADED; EmoteConfig; sounds art/sounds/emote_tracks.json
+  (8 x 2 takes + 4 retakes = 194 credits; Chalk Clap and Trap Slap's last clap assembled from takes' own claps by
+  art/scripts/compose_emote_claps.py since ElevenLabs gave one clap per take) UPLOADED; server `World/EmoteService`
+  (owned, not lifting/meet/mock/anchored/seated/at a station, rate limit; walking ends it), shared EmoteRemotes, client
+  `UI/EmoteWheel` (B or the EMOTES tab under GEAR), sound locked to the animation (CelebrationFx.playLockedSound).
+- Save: schema **v23** (`inventory.failStyle`, `inventory.emotes`), ProfileOperations getFailStyle/spinFailStyle/
+  adminSetFailStyle/ownsEmote/getEmotes/spinEmote/adminGiveEmote, PlayerDataService wrappers, PlayerDataProbe section 58.
+- Spin: kinds Fail and Emote, `CelebrationConfig.landingRarity` (a rarity with none lands on the nearest that has some,
+  the server roll and each tab's odds line both), the preview barbell shared from the server, four tabs, SEE ALL beside SPIN.
+- Studio: SEE ALL walk-outs (10, WAR CRY walking, CLOSE back to the tab); FAILS tab (STANDARD squat with the bar, odds
+  60/25/15); spins saved BAIL-OUT, then DRAMATIC from a forced Legendary (fallback right); EMOTES tab won DOUBLE BICEPS
+  (card flexing, odds to Epic 5%); B opened the wheel (free + owned lit, 5 locked); DOUBLE BICEPS played on the character,
+  sound within 0.03 s; locked and unknown emotes refused; SEE ALL fail styles with the bar; save loaded v23; no errors.
+  Fixed in testing: a Luau line starting with "(" (ambiguous syntax broke the client), the Studio forced rarity skipping
+  the fallback, tiny tab labels, "spun a emote". NOT tested: a real meet miss in a fail style, walking to cancel an emote,
+  phones, how the emote sounds sound (listening file D:/Powerlifting Roblox Extras/Sounds/Emotes/Emote_Sounds_All.wav).
+  B also triggers the Studio-only dev lift panel's +2.5% (Studio only).
+- Next: the user plays it; commit when they approve.
+
 **WALK-OUTS AT HYPE MAN (2026-11-11), TESTED IN STUDIO, COMMITTED** (user: "Commit the working tree changes"; commit "Add walk-out spins at Hype Man...") (GAME_DESIGN §36.4, "Walk-outs at Hype Man
 too"). User's choices: ~6 new walk-outs from the Clip Study, same spin rules, the card shows walk then hype move, ElevenLabs
 sounds for the hype moves.

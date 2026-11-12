@@ -218,7 +218,7 @@ function CelebrationStage.play(stage: Stage, celebration: CelebrationConfig.Cele
 	local mine = stage.token
 	task.spawn(function()
 		while stage.token == mine do
-			if celebration.kind == "Walk" then
+			if celebration.kind == "Walk" or celebration.kind == "WalkLoop" then
 				local walk = load(animator, WALK_ANIMATION_ID, Enum.AnimationPriority.Movement, true)
 				if walk then
 					table.insert(stage.tracks, walk)
@@ -259,7 +259,7 @@ function CelebrationStage.play(stage: Stage, celebration: CelebrationConfig.Cele
 			if sound then
 				sound:Play()
 			end
-			for _, event in ipairs(if soundtrack then {} else celebration.events) do
+			for _, event in ipairs(if soundtrack then {} else (celebration.events or {})) do
 				local id, eventVolume = soundFor(event.sound or "")
 				if id then
 					local made = Instance.new("Sound")
@@ -387,6 +387,92 @@ function CelebrationStage.playEntrance(stage: Stage, entrance: any, defaultSpeed
 				return
 			end
 			clearPlays(stage)
+		end
+	end)
+end
+
+--[[
+	A fail style (StationAnimationConfig): the figure does its squat and deadlift fails in turn, a loaded bar
+	(ReplicatedStorage.SpinPreviewBarbell, the game's barbell) in its hands until each fail's release: then the bar is
+	taken away (the squat: the spotters) or set down on the floor (the deadlift). `fails`: { { lift, Fail } } in order.
+	The bench fails aren't shown (there is no bench on the stage).
+]]
+function CelebrationStage.playFail(stage: Stage, fails: { { any } })
+	CelebrationStage.stop(stage)
+	local model = stage.figure
+	if model == nil then
+		return
+	end
+	local animator = animatorOf(model)
+	local leftHand = model:FindFirstChild("LeftHand")
+	local rightHand = model:FindFirstChild("RightHand")
+	if animator == nil or leftHand == nil or rightHand == nil or not leftHand:IsA("BasePart") or not rightHand:IsA("BasePart") then
+		return
+	end
+	local template = ReplicatedStorage:FindFirstChild("SpinPreviewBarbell")
+	local mine = stage.token
+	task.spawn(function()
+		local index = 0
+		while stage.token == mine do
+			index = index % #fails + 1
+			local lift, fail = fails[index][1], fails[index][2]
+			local track = load(animator, fail.id, Enum.AnimationPriority.Action, false)
+			local animation = Instance.new("Animation")
+			animation.AnimationId = fail.id
+			pcall(function()
+				ContentProvider:PreloadAsync({ animation })
+			end)
+			if stage.token ~= mine or track == nil then
+				return
+			end
+			local bar: Model? = nil
+			if template and template:IsA("Model") then
+				local made = template:Clone()
+				made.Parent = stage.world
+				bar = made
+			end
+			table.insert(stage.tracks, track)
+			track:Play(0.1)
+			local started = os.clock()
+			local floorY = 0
+			while stage.token == mine do
+				local t = os.clock() - started
+				if t >= fail.length then
+					break
+				end
+				local held = bar
+				if held then
+					if t < fail.release then
+						-- Held: across the hands, the middle between them.
+						local l, r = (leftHand :: BasePart).Position, (rightHand :: BasePart).Position
+						local across = r - l
+						if across.Magnitude > 0.1 then
+							local x = across.Unit
+							local up = Vector3.yAxis - x * x:Dot(Vector3.yAxis)
+							held:PivotTo(CFrame.fromMatrix((l + r) / 2, x, up.Unit))
+						end
+					elseif lift == "Deadlift" then
+						-- Set down: the plates on the floor where it was.
+						local at = held:GetPivot()
+						if at.Position.Y > floorY + 1.02 then
+							held:PivotTo(at - Vector3.new(0, math.min(at.Position.Y - (floorY + 1), 0.25), 0))
+						end
+					else
+						-- The spotters take it.
+						held:Destroy()
+						bar = nil
+					end
+				end
+				RunService.RenderStepped:Wait()
+			end
+			if bar then
+				bar:Destroy()
+			end
+			if stage.token ~= mine then
+				return
+			end
+			track:Stop(0.25)
+			task.wait(0.9)
 		end
 	end)
 end

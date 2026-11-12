@@ -984,6 +984,10 @@ local WALK_OUT_TIMEOUT_SECONDS = 12
 local WALK_BACK_TIMEOUT_SECONDS = 20
 -- After a good lift's finish, how long the lifter stays before racking the bar and walking off.
 local LEAVE_AFTER_FINISH_SECONDS = 0.8
+-- The spotters stand clear of a celebrating lifter (LocalMeetVenue.clearSpotters): long enough for the step back to
+-- the lift spot (renewed when the celebration starts), and this long after it, while the lifter walks off.
+local SPOTTERS_CLEAR_TO_SPOT_SECONDS = 6
+local SPOTTERS_CLEAR_AFTER_SECONDS = 3
 -- After the referee's start command, a beat before the lift starts.
 local COMMAND_BEAT_SECONDS = 0.6
 -- Room in a round for the setup at the bar (MeetLiftAnimation: up to about 7 s, the bench's) and the start command.
@@ -1262,6 +1266,8 @@ end
 
 -- Sets the lifter up on the platform for `lift` (§37.5): the pose and the lift's animation at its setup stage.
 local function setUpLift(lifter: Lifter, lift: string)
+	-- (The spotters, aside for the walk-out, come back for the lift.)
+	LocalMeetVenue.releaseSpotters(lifter.platform)
 	MeetLiftAnimation.stop(lifter.liftAnim)
 	local character, rack = characterOf(lifter), lifter.platform.rack
 	lifter.liftAnim = if character and rack then MeetLiftAnimation.begin(character, rack, lift) else nil
@@ -1294,12 +1300,14 @@ end
 
 --[[
 	The fail animation a lifter plays for missing `lift` in part `part` (1 or 2:
-	its first or second minigame; GAME_DESIGN §37.5 "The fail animations"). The
-	default for now; the user's future unboxable fail animations plug in here,
-	like themeFor and celebrationFor.
+	its first or second minigame; GAME_DESIGN §37.5 "The fail animations"): a
+	player's own fail style in this attempt's slot (`attemptNumber`; won at Hype
+	Man, LoadoutConfig, user 2026-11-12); a computer lifter's is the default set.
 ]]
-local function failAnimationFor(_lifter: Lifter, lift: string, part: number): StationAnimationConfig.Fail?
-	return StationAnimationConfig.failFor(lift, part)
+local function failAnimationFor(lifter: Lifter, lift: string, part: number, attemptNumber: number): StationAnimationConfig.Fail?
+	local player = lifter.player
+	local style = if player then PlayerDataService.getFailStyle(player, attemptNumber) else nil
+	return StationAnimationConfig.failFor(lift, part, style)
 end
 
 --[[
@@ -1310,9 +1318,10 @@ end
 	its weight (`weightKg`). Returns the seconds until a missed bar lands or is
 	caught (0 after a good lift).
 ]]
-local function finishLift(lifter: Lifter, lift: string, good: boolean, failedPart: number, weightKg: number): number
+local function finishLift(lifter: Lifter, lift: string, good: boolean, failedPart: number, weightKg: number,
+	attemptNumber: number): number
 	lifter.livePhase = nil
-	local fail = if good then nil else failAnimationFor(lifter, lift, failedPart)
+	local fail = if good then nil else failAnimationFor(lifter, lift, failedPart, attemptNumber)
 	local seconds = MeetLiftAnimation.finish(lifter.liftAnim, good, fail)
 	local commands = LocalMeetConfig.RefereeCommands[lift]
 	local handle = lifter.liftAnim
@@ -1376,6 +1385,8 @@ local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
 		endLift(lifter)
 		local function home()
 			lifter.outOnPlatform = false
+			-- A celebration that lasts the whole walk back stops now they're back (user 2026-11-11).
+			CelebrationService.endWalk(characterOf(lifter))
 		end
 		local character = characterOf(lifter)
 		local spot = lifter.platform.liftSpot
@@ -1405,8 +1416,12 @@ local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
 		end
 		if pause then
 			local thePause = pause
+			-- The spotters make way (user 2026-11-11): from now, while the lifter steps back to the lift spot, through
+			-- the celebration, until they have walked off the platform.
+			LocalMeetVenue.clearSpotters(lifter.platform, SPOTTERS_CLEAR_TO_SPOT_SECONDS)
 			walkLifter(lifter, {}, spot, true, function()
 				local seconds = thePause()
+				LocalMeetVenue.clearSpotters(lifter.platform, seconds + SPOTTERS_CLEAR_AFTER_SECONDS)
 				local token = lifter.walkToken
 				task.delay(seconds, function()
 					if lifter.walkToken == token and stillLifting(lifter) then
@@ -1840,7 +1855,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	end
 	table.insert(lifter.lifts[lift].history, { weightKg = weightKg, result = result })
 	lifter.lastResult, lifter.lastKg = result, weightKg
-	local barLandsIn = finishLift(lifter, lift, good, failedPart, weightKg)
+	local barLandsIn = finishLift(lifter, lift, good, failedPart, weightKg, attemptNumber)
 	-- A lift over the normal limit counts for the total and the place, and pays coins at the end of the meet, but sets
 	-- no best or record (§37.5).
 	local overLimit = AttemptChoice.isOverLimit(lifter.competitionNumber[lift], weightKg)
@@ -1895,13 +1910,16 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		if current.hall.meet ~= current or current.final or not stillLifting(lifter) or lifter.walkToken ~= token then
 			return
 		end
-		-- State and up: a good lift gets its celebration (CelebrationConfig: everyone's is the Default until crates hand
-		-- out others, user 2026-11-11), players and computer lifters alike, before they walk back to the bench.
+		-- A good lift gets its celebration (CelebrationConfig.MeetLevels: every meet since user 2026-11-12), players and
+		-- computer lifters alike, before they walk back to the bench; its camera shots at State only (no flashy cinematic
+		-- at Local and Regional, to keep them quick).
 		local player = lifter.player
 		if good and CelebrationConfig.MeetLevels[current.level] then
+			local cinematic = CelebrationConfig.CinematicMeetLevels[current.level] == true
 			walkBack(lifter, function(): number
 				if player then
-					return CelebrationService.play(player.Character, CelebrationService.forPlayer(player), player)
+					return CelebrationService.play(player.Character, CelebrationService.forPlayer(player, attemptNumber), player,
+						cinematic)
 				end
 				return CelebrationService.play(lifter.body, CelebrationService.forComputer(lifter.body), nil)
 			end)
@@ -2135,13 +2153,13 @@ local function coachLineFor(current: Meet, lifter: Lifter, race: MockMeetRemotes
 end
 
 --[[
-	A lifter's entrance (GAME_DESIGN §36.4, user 2026-11-08): a player's own from their save (the Default until crates hand out
-	others), a computer lifter's walk style picked at random once per meet.
+	A lifter's entrance (GAME_DESIGN §36.4, user 2026-11-08): a player's own walk-out in this attempt's slot
+	(`attemptNumber`, LoadoutConfig, user 2026-11-12), a computer lifter's walk style picked at random once per meet.
 ]]
-local function entranceOf(lifter: Lifter): EntranceConfig.Entrance?
+local function entranceOf(lifter: Lifter, attemptNumber: number): EntranceConfig.Entrance?
 	local player = lifter.player
 	if player then
-		return EntranceConfig.get(PlayerDataService.getEntrance(player))
+		return EntranceConfig.get(PlayerDataService.getEntrance(player, attemptNumber))
 	end
 	if lifter.entranceId == nil then
 		lifter.entranceId = MeetEntrance.randomComputerId()
@@ -2358,7 +2376,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				local final = approach or lifter.platform.liftSpot
 				-- Their entrance (§36.4): their walk style out to the bar, then at State and up their hype move there; at
 				-- Local and Regional the quick clap and belt tap over the last steps instead (user 2026-11-08), no longer.
-				local entrance = entranceOf(lifter)
+				local entrance = entranceOf(lifter, attemptNumber)
 				local walkId, walkSpeed = MeetEntrance.walkOf(entrance)
 				local hype = if EntranceConfig.HypeMeetLevels[current.level] then entrance else nil
 				local touch = if hype == nil then EntranceConfig.QuickTouch else nil
@@ -2368,8 +2386,14 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 					table.insert(route, point)
 				end
 				table.insert(route, final.Position)
+				-- The walk style from the banner (State) or the doorway (Local, Regional) all the way to the bar.
+				local styleStuds = MeetEntrance.styleStudsFrom(route, lifter.platform.styleFrom)
 				lifter.walkOutSeconds = math.max(WALK_OUT_TIMEOUT_SECONDS, MeetEntrance.walkOutSeconds(route, walkSpeed,
-					LocalMeetConfig.ComputerLifters.WalkSpeed) + MeetEntrance.hypeSeconds(hype) + 3)
+					LocalMeetConfig.ComputerLifters.WalkSpeed, styleStuds) + MeetEntrance.hypeSeconds(hype) + 3)
+				-- The spotters stand aside for the entrance (user 2026-11-12: "make sure any spotters or loaders are not
+				-- in the way of entrances"), out of the walk-out's shots, until the lifter is set up at the bar.
+				LocalMeetVenue.clearSpotters(lifter.platform, lifter.walkOutSeconds,
+					if current.hall.state then "StateWalkOut" else nil)
 				walkLifter(lifter, lifter.platform.walkOut, final, true, function()
 					local token = lifter.walkToken
 					MeetEntrance.playHype(characterOf(lifter), hype)
@@ -2380,7 +2404,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				end, {
 					animationId = walkId,
 					speed = walkSpeed,
-					styleStuds = EntranceConfig.StyleWalkStuds,
+					styleStuds = styleStuds,
 					touchAnimationId = if touch and touch.animationId ~= "" then touch.animationId else nil,
 					touchSeconds = if touch then touch.seconds else nil,
 					onTouch = if touch then function()

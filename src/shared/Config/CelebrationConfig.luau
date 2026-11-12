@@ -8,7 +8,8 @@
 	number) and animated in Blender (art/scripts/celebration_animations.py), uploaded under the game's group.
 
 	For now (user's choice, 2026-11-11):
-		- every lifter, players and computer lifters, does the Default after a good lift at State and up (MeetLevels);
+		- every lifter, players and computer lifters, does their celebration after a good lift at every meet (MeetLevels;
+		  State only until 2026-11-12), its camera shots at State only (CinematicMeetLevels);
 		- the rest are seen in the admin's celebration viewer; later they are unlocked from crates (by `rarity`), and
 		  every player can browse them all there, to see what they could unbox.
 
@@ -19,6 +20,9 @@
 		seconds            how long it lasts
 		kind               "Standing": on the spot, then the lifter walks back
 		                   "Walk": arms and head only, played over the walk back (real lifters never stop walking)
+		                   "WalkLoop": arms and head only, looped over the WHOLE walk back, until the lifter is back at
+		                   their waiting spot (user 2026-11-11: "a celebration that continues even when your going back
+		                   to the bench"); `seconds` is one round; its sound track loops with it
 		source             its entry in the catalogue
 		soundtrack         its own sound track (user 2026-11-11: "Take all these celebrations, have elevenlabs make sound
 		                   affects for it"): one ElevenLabs take made for its moves, lined up with its animation
@@ -56,8 +60,12 @@ export type Celebration = {
 	cinematic: Cinematic?,
 }
 
--- Where a good lift gets a celebration (the user: the big presentation is for State and up, GAME_DESIGN §36.4).
-CelebrationConfig.MeetLevels = { State = true } :: { [string]: boolean }
+-- Where a good lift gets a celebration: every meet (user 2026-11-12: "i want local and regionals to have these
+-- celebration, fails, entrances etc. but no flashy cinematic, just to keep local and regionals quick but still a little
+-- styleish"; before, State only).
+CelebrationConfig.MeetLevels = { Local = true, Regional = true, State = true } :: { [string]: boolean }
+-- Where a celebration's own camera shots (`cinematic`, client CelebrationCinema) play on the lifter's screen: State only.
+CelebrationConfig.CinematicMeetLevels = { State = true } :: { [string]: boolean }
 
 -- Everyone's, until crates hand out the others.
 CelebrationConfig.Default = "ChalkClapPump"
@@ -297,6 +305,24 @@ CelebrationConfig.List = {
 			look = { tint = Color3.fromRGB(255, 225, 245), key = Color3.fromRGB(255, 120, 200), haze = 0.3 },
 		},
 	},
+	-- All the way back (user 2026-11-11), from the user's videos rewatched for how lifters step off and walk away
+	-- (art/scripts/celebration_animations.py notes the moments).
+	{
+		id = "ThankYouWave", name = "Thank-You Wave", rarity = "Rare", seconds = 3.6, kind = "WalkLoop",
+		animationId = "rbxassetid://134338402606763", source = "Walk-off: lNOrz4CVNMY 23:30",
+		soundtrack = "rbxassetid://115133666349196",
+		description = "All the way back to your spot: an open hand waved up to the crowd, then a hand on the heart and a nod.",
+		events = {},
+		fx = {},
+	},
+	{
+		id = "CrowdPleaser", name = "Crowd Pleaser", rarity = "Epic", seconds = 4.4, kind = "WalkLoop",
+		animationId = "rbxassetid://100705289483893", source = "Walk-off: 9FQM0Z6_s8Q 1:16.8, lNOrz4CVNMY 20:55",
+		soundtrack = "rbxassetid://102629709943437",
+		description = "All the way back to your spot: two roaring fist pumps, arms flung wide, then double thumbs up to the stands. Again and again.",
+		events = {},
+		fx = { fx(0.35, "Swoosh", 0.3), fx(0.85, "Swoosh", 0.3), fx(1.7, "Swoosh", 0.5), fx(2.8, "Swoosh", 0.4) },
+	},
 } :: { Celebration }
 
 CelebrationConfig.byId = {} :: { [string]: Celebration }
@@ -326,5 +352,29 @@ CelebrationConfig.Spin = {
 	-- A spin is refused from further than this from the NPC.
 	maxSpinDistanceStuds = 24,
 }
+
+--[[
+	Where a rolled rarity lands when the thing being spun has none of that rarity (three fail styles, eight emotes): the
+	nearest lower rarity that has some, else the nearest higher one. `rarities` lists the crate rarities lowest first
+	(GearStatsConfig.Rarities' ids); `has` says which ones the pool has. The server's roll and the card's odds both use
+	it, so the odds shown are the odds you get.
+]]
+function CelebrationConfig.landingRarity(rolled: string, rarities: { string }, has: { [string]: boolean }): string?
+	local at = table.find(rarities, rolled)
+	if at == nil then
+		return nil
+	end
+	for i = at, 1, -1 do
+		if has[rarities[i]] then
+			return rarities[i]
+		end
+	end
+	for i = at + 1, #rarities do
+		if has[rarities[i]] then
+			return rarities[i]
+		end
+	end
+	return nil
+end
 
 return CelebrationConfig

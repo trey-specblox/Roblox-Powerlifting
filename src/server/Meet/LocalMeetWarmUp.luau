@@ -272,7 +272,8 @@ function LocalMeetWarmUp.new(racks: { LocalMeetVenue.WarmUpRack }, remotes: Loca
 			local good = verdict == "GoodLift"
 			use.livePhase = nil
 			use.last = { lift = lift, weightKg = kg, good = good }
-			local fail = if good then nil else StationAnimationConfig.failFor(lift, failedPart)
+			-- (Their own fail style, as on the platform.)
+			local fail = if good then nil else StationAnimationConfig.failFor(lift, failedPart, PlayerDataService.getFailStyle(player))
 			local seconds = MeetLiftAnimation.finish(use.anim, good, fail)
 			local barCue = MeetSoundConfig.endOfLiftCue(lift, good, failedPart, kg)
 			if fail then

@@ -412,6 +412,60 @@ function CelebrationFx.play(id: string, startedAt: number, figure: Model)
 			end
 			return Workspace:GetServerTimeNow() - startedAt
 		end
+		if celebration.kind == "WalkLoop" then
+			-- All the way back (user 2026-11-11): its sound loops in step with the looping animation, and its effects come
+			-- round again each time, until the animation stops (the server ends it when the lifter is back).
+			local period = celebration.seconds
+			local sound: Sound? = nil
+			if celebration.soundtrack then
+				local made = Instance.new("Sound")
+				made.Name = "CelebrationSoundtrack"
+				made.SoundId = celebration.soundtrack
+				made.Volume = CelebrationConfig.SoundtrackVolume
+				made.Looped = true
+				made.RollOffMode = Enum.RollOffMode.InverseTapered
+				made.RollOffMinDistance = CelebrationConfig.SoundNear
+				made.RollOffMaxDistance = CelebrationConfig.SoundFar
+				made.Parent = root
+				pcall(function()
+					ContentProvider:PreloadAsync({ made })
+				end)
+				made.TimePosition = clock() % period
+				made:Play()
+				sound = made
+			end
+			-- (A looped track's clock starts again from 0 each round: a jump back means a new round.)
+			local lastAt = math.huge
+			while alive() and track and track.IsPlaying do
+				local at = track.TimePosition % period
+				if sound and math.abs(sound.TimePosition - at) > 0.06 and math.abs(sound.TimePosition - at) < period - 0.06 then
+					sound.TimePosition = at
+				end
+				local newRound = at < lastAt - period / 2
+				lastAt = at
+				if newRound then
+					for _, effect in ipairs(celebration.fx) do
+						local wait = effect.at - at
+						if wait > -0.05 then
+							task.delay(math.max(0, wait), function()
+								if alive() and track.IsPlaying then
+									fire(kit, effect, alive)
+								end
+							end)
+						end
+					end
+				end
+				task.wait(0.1)
+			end
+			if sound then
+				sound:Destroy()
+			end
+			if running[figure] == token then
+				running[figure] = nil
+			end
+			cleanUp(kit)
+			return
+		end
 		-- (The track rings on a little past the moves: it is let finish unless another celebration takes over.)
 		playSoundtrack(root, celebration.soundtrack, celebration.seconds, clock, track, stillMine)
 		local elapsed = clock()
@@ -440,22 +494,37 @@ end
 ]]
 function CelebrationFx.playHype(entranceId: string, startedAt: number, figure: Model)
 	local entrance = EntranceConfig.get(entranceId)
+	if entrance and entrance.hypeSoundtrack then
+		CelebrationFx.playLockedSound(figure, entrance.hypeAnimationId, entrance.hypeSoundtrack, entrance.hypeSeconds, startedAt)
+	end
+end
+
+--[[
+	A sound track from `figure`, locked to its animation `animationId` as it shows on this screen (the server's clock
+	`startedAt` only if it never shows up), like a celebration's. `stopWithTrack`: the sound ends when the animation does
+	(an emote cancelled by walking away). Used for walk-out hype moves and emotes (client EmoteWheel).
+]]
+function CelebrationFx.playLockedSound(figure: Model, animationId: string, soundtrack: string, seconds: number,
+	startedAt: number, stopWithTrack: boolean?)
 	local root = part(figure, "HumanoidRootPart")
-	if entrance == nil or entrance.hypeSoundtrack == nil or root == nil or figure.Parent == nil then
+	if root == nil or figure.Parent == nil then
 		return
 	end
 	if (Workspace.CurrentCamera.CFrame.Position - root.Position).Magnitude > CULL_STUDS then
 		return
 	end
 	task.spawn(function()
-		local track = trackOf(figure, entrance.hypeAnimationId, 2.5)
+		local track = trackOf(figure, animationId, 2.5)
 		local function clock(): number
 			if track and track.IsPlaying then
 				return track.TimePosition
 			end
 			return Workspace:GetServerTimeNow() - startedAt
 		end
-		playSoundtrack(root, entrance.hypeSoundtrack, entrance.hypeSeconds, clock, track, function()
+		playSoundtrack(root, soundtrack, seconds, clock, track, function()
+			if stopWithTrack and track and not track.IsPlaying then
+				return false
+			end
 			return figure.Parent ~= nil
 		end)
 	end)
@@ -472,12 +541,13 @@ function CelebrationFx.start()
 		end)
 	end)
 	local remote = CelebrationRemotes.waitForClient(ReplicatedStorage)
-	remote.OnClientEvent:Connect(function(id: any, startedAt: any, figure: any)
+	remote.OnClientEvent:Connect(function(id: any, startedAt: any, figure: any, cinematic: any)
 		if typeof(id) ~= "string" or typeof(startedAt) ~= "number" or typeof(figure) ~= "Instance" or not figure:IsA("Model") then
 			return
 		end
 		CelebrationFx.play(id, startedAt, figure)
-		if figure == Players.LocalPlayer.Character then
+		-- (The camera shots only where the server says: State, not Local or Regional, user 2026-11-12.)
+		if cinematic == true and figure == Players.LocalPlayer.Character then
 			CelebrationCinema.play(id, startedAt)
 		end
 	end)

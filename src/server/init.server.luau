@@ -96,6 +96,9 @@ ShopService.start()
 -- The celebration spin at the NPC in the dumbbell corner (the server rolls and takes the coins).
 local CelebrationSpinService = require(script:WaitForChild("Economy"):WaitForChild("CelebrationSpinService"))
 CelebrationSpinService.start()
+-- Emotes from the wheel (B): the server checks each is theirs and that they aren't lifting or in a meet.
+local EmoteService = require(script:WaitForChild("World"):WaitForChild("EmoteService"))
+EmoteService.start()
 
 -- Wearing the gear: MY GEAR's choices are saved, and every R15 character is dressed in them.
 local GearService = require(script:WaitForChild("Economy"):WaitForChild("GearService"))

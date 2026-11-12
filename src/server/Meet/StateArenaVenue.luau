@@ -704,6 +704,8 @@ function StateArenaVenue.build(): (Venue?, string?)
 				frame * Vector3.new(lifterLine, 0, WALK_LINE_Z),
 				frame * Vector3.new(x, 0, WALK_LINE_Z),
 			},
+			-- The walk style starts as they draw level with their banner (user 2026-11-11).
+			styleFrom = frame * Vector3.new(lifterLine, 0, GANTRY_BEHIND),
 			rack = gear:FindFirstChild("CompetitionRack") :: Model?,
 			privateTags = {},
 			display = display,

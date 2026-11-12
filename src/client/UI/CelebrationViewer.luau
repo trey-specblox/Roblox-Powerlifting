@@ -15,6 +15,10 @@
 		              cinematic if it has one; AdminService "PlayCelebration" checks the account), MAKE IT MINE (admin:
 		              makes it your celebration at meets, "SetCelebration"), CLOSE
 
+	It also lists the walk-outs (EntranceConfig; user 2026-11-11: "SEE ALL for walk-outs"), opened from the spin screen's
+	WALK-OUTS tab: each one walks up to the camera in its style, then does its hype move with its sound, over and over
+	(no SLOW-MO and no admin buttons there).
+
 	Display only: the copy lives on this screen's stage (CelebrationStage); nothing is saved or given here.
 	PERFORMANCE: one avatar copy and two animation tracks while open; nothing when closed. (Chalk particles don't show in
 	a ViewportFrame: PLAY ON ME shows them.)
@@ -25,6 +29,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CelebrationConfig = require(Shared:WaitForChild("Config"):WaitForChild("CelebrationConfig"))
+local EntranceConfig = require(Shared:WaitForChild("Config"):WaitForChild("EntranceConfig"))
+local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
+local StationAnimationConfig = require(Shared:WaitForChild("Config"):WaitForChild("StationAnimationConfig"))
+local EmoteConfig = require(Shared:WaitForChild("Config"):WaitForChild("EmoteConfig"))
 local GearStatsConfig = require(Shared:WaitForChild("Config"):WaitForChild("GearStatsConfig"))
 local AdminRemotes = require(Shared:WaitForChild("Admin"):WaitForChild("AdminRemotes"))
 
@@ -49,6 +57,7 @@ local VIEWS = {
 
 type Screen = {
 	gui: ScreenGui,
+	title: TextLabel,
 	stage: CelebrationStage.Stage,
 	list: ScrollingFrame,
 	rows: { [string]: TextButton },
@@ -64,6 +73,10 @@ type Screen = {
 }
 local screen: Screen? = nil
 local index = 1
+-- What the list shows: "Celebration" or "Entrance" (walk-outs); where each was left.
+local kind = "Celebration"
+local lastIndex: { [string]: number } = { Celebration = 1, Entrance = 1, Fail = 1, Emote = 1 }
+local TITLES = { Celebration = "CELEBRATIONS", Entrance = "WALK-OUTS", Fail = "FAIL STYLES", Emote = "EMOTES" }
 local slowMotion = false
 local view = "ThreeQuarter"
 local actionRemote: RemoteFunction? = nil
@@ -80,26 +93,93 @@ local function rarityColour(rarity: string): Color3
 	return C.white
 end
 
--- The list in rarity order (the config's own order within each).
-local function ordered(): { CelebrationConfig.Celebration }
-	local out = {}
+-- One row of the list, whichever kind: what the right side shows, and the thing itself to play.
+type Item = {
+	id: string,
+	name: string,
+	rarity: string,
+	description: string,
+	facts: string,
+	celebration: CelebrationConfig.Celebration?,
+	entrance: EntranceConfig.Entrance?,
+	failStyle: string?,
+	emote: EmoteConfig.Emote?,
+}
+
+-- Each list in rarity order (the config's own order within each).
+local function ordered(): { [string]: { Item } }
+	local lists: { [string]: { Item } } = { Celebration = {}, Entrance = {}, Fail = {}, Emote = {} }
 	for _, rarity in ipairs(CelebrationConfig.RarityOrder) do
 		for _, celebration in ipairs(CelebrationConfig.List) do
 			if celebration.rarity == rarity then
-				table.insert(out, celebration)
+				local kindText = if celebration.kind == "WalkLoop" then "all the way back to your spot"
+					elseif celebration.kind == "Walk" then "played over the walk back" else "on the platform"
+				local cinematic = if celebration.cinematic then "  ·  HAS A CINEMATIC (PLAY ON ME)" else ""
+				table.insert(lists.Celebration, {
+					id = celebration.id, name = celebration.name, rarity = celebration.rarity,
+					description = celebration.description, celebration = celebration,
+					facts = string.format("%.1f s  ·  %s  ·  from a real meet (%s)%s", celebration.seconds, kindText,
+						celebration.source, cinematic),
+				})
+			end
+		end
+		for _, id in ipairs(EntranceConfig.Order) do
+			local entrance = EntranceConfig.Entrances[id]
+			if entrance.rarity == rarity then
+				table.insert(lists.Entrance, {
+					id = id, name = entrance.name, rarity = entrance.rarity, description = entrance.description,
+					entrance = entrance,
+					facts = string.format("The walk style at every meet  ·  then the %.1f s hype move at the bar", entrance.hypeSeconds),
+				})
+			end
+		end
+		for _, id in ipairs(StationAnimationConfig.FailStyleOrder) do
+			local style = if id == "Default" then StationAnimationConfig.DefaultFailStyle else StationAnimationConfig.FailStyles[id]
+			if style and style.rarity == rarity then
+				table.insert(lists.Fail, {
+					id = id, name = style.name, rarity = style.rarity, description = style.description, failStyle = id,
+					facts = "Every missed lift at every meet  ·  shown here: the squat and the deadlift",
+				})
+			end
+		end
+		for _, emote in ipairs(EmoteConfig.List) do
+			local shown = if emote.rarity == "Free" then "Default" else emote.rarity
+			if shown == rarity then
+				table.insert(lists.Emote, {
+					id = emote.id, name = emote.name, rarity = shown, description = emote.description, emote = emote,
+					facts = string.format("%.1f s  ·  on the emote wheel (B)%s", emote.seconds,
+						if emote.rarity == "Free" then "  ·  everyone has it" else ""),
+				})
 			end
 		end
 	end
-	return out
+	return lists
 end
-local ORDER = ordered()
+local LISTS = ordered()
+local ORDER = LISTS.Celebration
 
 -- Plays the chosen one on the copy, again and again until another is chosen or the viewer closes.
 local function playChosen()
 	local current = screen
-	local celebration = ORDER[index]
-	if current and celebration then
-		CelebrationStage.play(current.stage, celebration, if slowMotion then 0.5 else 1)
+	local item = ORDER[index]
+	if current == nil or item == nil then
+		return
+	end
+	if item.failStyle then
+		local fails = {}
+		for _, pick in ipairs({ { "Squat", 2 }, { "Deadlift", 2 }, { "Squat", 1 }, { "Deadlift", 1 } }) do
+			local fail = StationAnimationConfig.failFor(pick[1], pick[2], if item.failStyle == "Default" then nil else item.failStyle)
+			if fail and fail.id ~= "" then
+				table.insert(fails, { pick[1], fail })
+			end
+		end
+		CelebrationStage.playFail(current.stage, fails)
+	elseif item.emote then
+		CelebrationStage.play(current.stage, item.emote :: any, if slowMotion then 0.5 else 1)
+	elseif item.entrance then
+		CelebrationStage.playEntrance(current.stage, item.entrance, LocalMeetConfig.ComputerLifters.WalkSpeed)
+	elseif item.celebration then
+		CelebrationStage.play(current.stage, item.celebration, if slowMotion then 0.5 else 1)
 	end
 end
 
@@ -125,10 +205,7 @@ local function show()
 	current.name.Text = string.upper(celebration.name)
 	current.rarity.Text = if celebration.rarity == "Default" then "DEFAULT  ·  EVERYONE'S" else string.upper(celebration.rarity)
 	current.rarity.TextColor3 = colour
-	local kindText = if celebration.kind == "Walk" then "played over the walk back" else "on the platform"
-	local cinematic = if celebration.cinematic then "  ·  HAS A CINEMATIC (PLAY ON ME)" else ""
-	current.facts.Text = string.format("%.1f s  ·  %s  ·  from a real meet (%s)%s", celebration.seconds, kindText,
-		celebration.source, cinematic)
+	current.facts.Text = celebration.facts
 	current.about.Text = celebration.description
 	current.counter.Text = string.format("%d / %d", index, #ORDER)
 	-- Keep the chosen row in view.
@@ -153,7 +230,50 @@ end
 
 local function choose(newIndex: number)
 	index = ((newIndex - 1) % #ORDER) + 1
+	lastIndex[kind] = index
 	show()
+end
+
+-- (Re)makes the list's rows for the current kind.
+local function fillList(list: ScrollingFrame, rows: { [string]: TextButton })
+	for _, row in pairs(rows) do
+		row:Destroy()
+	end
+	table.clear(rows)
+	list.CanvasSize = UDim2.fromOffset(0, #ORDER * 38)
+	list.CanvasPosition = Vector2.zero
+	for i, celebration in ipairs(ORDER) do
+		local row = Instance.new("TextButton")
+		row.Name = celebration.id
+		row.Position = UDim2.fromOffset(0, (i - 1) * 38)
+		row.Size = UDim2.new(1, -12, 0, 32)
+		row.BackgroundColor3 = C.navyDeep
+		row.BorderSizePixel = 0
+		row.AutoButtonColor = true
+		row.Text = ""
+		row.Parent = list
+		UIStyle.stroke(row, C.white, 1, 0.7)
+		local chip = Instance.new("Frame")
+		chip.Name = "Rarity"
+		chip.Position = UDim2.fromOffset(0, 0)
+		chip.Size = UDim2.new(0, 6, 1, 0)
+		chip.BorderSizePixel = 0
+		chip.BackgroundColor3 = rarityColour(celebration.rarity)
+		chip.Parent = row
+		local label = UIStyle.text(row, "Name", UDim2.fromOffset(14, 0), UDim2.new(1, -130, 1, 0), SIZES.small, C.white,
+			UIStyle.font(Enum.FontWeight.Bold))
+		label.Text = string.upper(celebration.name)
+		label.TextYAlignment = Enum.TextYAlignment.Center
+		local tag = UIStyle.text(row, "Tag", UDim2.new(1, -122, 0, 0), UDim2.new(0, 114, 1, 0), SIZES.small,
+			rarityColour(celebration.rarity), UIStyle.font(Enum.FontWeight.Bold), Enum.TextXAlignment.Right)
+		tag.Text = string.upper(celebration.rarity)
+		tag.TextYAlignment = Enum.TextYAlignment.Center
+		tag.TextWrapped = false
+		row.Activated:Connect(function()
+			choose(i)
+		end)
+		rows[celebration.id] = row
+	end
 end
 
 local function build(): Screen
@@ -167,7 +287,7 @@ local function build(): Screen
 
 	local holder, body = UIStyle.panel(gui, "Panel", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
-	UIStyle.titleTag(holder, "Tag", "CELEBRATIONS", UDim2.fromOffset(-18, -30), UDim2.fromOffset(300, 52), nil, "star")
+	local title = UIStyle.titleTag(holder, "Tag", "CELEBRATIONS", UDim2.fromOffset(-18, -30), UDim2.fromOffset(300, 52), nil, "star")
 
 	-- The stage.
 	local stage = CelebrationStage.new(body, UDim2.fromOffset(MARGIN, 40), UDim2.fromOffset(VIEW_SIZE.X, VIEW_SIZE.Y))
@@ -214,41 +334,9 @@ local function build(): Screen
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = 6
 	list.ScrollBarImageColor3 = C.yellow
-	list.CanvasSize = UDim2.fromOffset(0, #ORDER * 38)
 	list.Parent = body
 	local rows: { [string]: TextButton } = {}
-	for i, celebration in ipairs(ORDER) do
-		local row = Instance.new("TextButton")
-		row.Name = celebration.id
-		row.Position = UDim2.fromOffset(0, (i - 1) * 38)
-		row.Size = UDim2.new(1, -12, 0, 32)
-		row.BackgroundColor3 = C.navyDeep
-		row.BorderSizePixel = 0
-		row.AutoButtonColor = true
-		row.Text = ""
-		row.Parent = list
-		UIStyle.stroke(row, C.white, 1, 0.7)
-		local chip = Instance.new("Frame")
-		chip.Name = "Rarity"
-		chip.Position = UDim2.fromOffset(0, 0)
-		chip.Size = UDim2.new(0, 6, 1, 0)
-		chip.BorderSizePixel = 0
-		chip.BackgroundColor3 = rarityColour(celebration.rarity)
-		chip.Parent = row
-		local label = UIStyle.text(row, "Name", UDim2.fromOffset(14, 0), UDim2.new(1, -130, 1, 0), SIZES.small, C.white,
-			UIStyle.font(Enum.FontWeight.Bold))
-		label.Text = string.upper(celebration.name)
-		label.TextYAlignment = Enum.TextYAlignment.Center
-		local tag = UIStyle.text(row, "Tag", UDim2.new(1, -122, 0, 0), UDim2.new(0, 114, 1, 0), SIZES.small,
-			rarityColour(celebration.rarity), UIStyle.font(Enum.FontWeight.Bold), Enum.TextXAlignment.Right)
-		tag.Text = string.upper(celebration.rarity)
-		tag.TextYAlignment = Enum.TextYAlignment.Center
-		tag.TextWrapped = false
-		row.Activated:Connect(function()
-			choose(i)
-		end)
-		rows[celebration.id] = row
-	end
+	fillList(list, rows)
 
 	local infoY = 40 + 270 + 14
 	local name = UIStyle.text(body, "Name", UDim2.fromOffset(RIGHT_X, infoY), UDim2.fromOffset(RIGHT_WIDTH, 34),
@@ -298,7 +386,7 @@ local function build(): Screen
 
 	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 	return {
-		gui = gui, stage = stage, list = list, rows = rows, name = name,
+		gui = gui, title = title, stage = stage, list = list, rows = rows, name = name,
 		rarity = rarity, facts = facts, about = about, counter = counter, status = status, slow = slow,
 		viewButtons = viewButtons, adminButtons = { playOnMe, makeMine },
 	}
@@ -312,19 +400,30 @@ end
 --[[
 	Opens the viewer on the first celebration (or where it was left), with a fresh copy of the player's avatar.
 	`admin`: from the admin panel, with PLAY ON ME and MAKE IT MINE (the server checks the account anyway); otherwise
-	(the spin screen's SEE ALL) without them. `whenClosed` runs on CLOSE (back to the spin screen).
+	(the spin screen's SEE ALL) without them. `whenClosed` runs on CLOSE (back to the spin screen). `listKind`:
+	"Entrance" lists the walk-outs (the spin screen's WALK-OUTS tab); otherwise the celebrations.
 ]]
-function CelebrationViewer.open(admin: boolean?, whenClosed: (() -> ())?)
+function CelebrationViewer.open(admin: boolean?, whenClosed: (() -> ())?, listKind: string?)
 	if actionRemote == nil then
 		actionRemote = AdminRemotes.waitForClient(ReplicatedStorage).action
 	end
 	asAdmin = admin ~= false
 	onClosed = whenClosed
+	local wanted = if listKind and LISTS[listKind] then listKind else "Celebration"
 	local current = screen or build()
 	screen = current
-	for _, button in ipairs(current.adminButtons) do
-		button.Visible = asAdmin
+	if wanted ~= kind then
+		kind = wanted
+		ORDER = LISTS[kind]
+		fillList(current.list, current.rows)
 	end
+	index = math.clamp(lastIndex[kind], 1, #ORDER)
+	current.title.Text = TITLES[kind]
+	-- (The admin buttons and SLOW-MO are for celebrations.)
+	for _, button in ipairs(current.adminButtons) do
+		button.Visible = asAdmin and kind == "Celebration"
+	end
+	current.slow.Visible = kind == "Celebration" or kind == "Emote"
 	local hasFigure = CelebrationStage.setFigure(current.stage)
 	current.gui.Enabled = true
 	placeCamera()

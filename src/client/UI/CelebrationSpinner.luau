@@ -19,11 +19,19 @@
 		bottom            YOUR COINS bar, a big glossy SPIN button (a green SKIP while the reel runs: the name, colour and
 		                  glow flip through the celebrations, slowing down, and land on what the server rolled), the spin
 		                  price, the odds
-		corners           SEE ALL (every celebration you could land on, CelebrationViewer, then back here), close X
+		corners           SEE ALL (everything the open tab's spin could land on, CelebrationViewer, then back here), close X
 		                  (walking away closes it too)
 		tabs              CELEBRATIONS | WALK-OUTS (user 2026-11-11: "Walk-outs at Hype Man", same rules): on WALK-OUTS
 		                  the card shows your walk-out (EntranceConfig): your avatar walking up in its style, then its
-		                  hype move with its sound, over and over; SPIN rerolls the walk-out you use at meets
+		                  hype move with its sound, over and over
+		                  FAILS and EMOTES too (user 2026-11-11): FAILS shows your fail style (the avatar fails a squat
+		                  and a deadlift with a loaded bar); EMOTES shows the ones you have. The odds line shows each
+		                  tab's real odds (a rarity with none of that kind lands on the nearest one that has some,
+		                  CelebrationConfig.landingRarity)
+		collections       every tab is a collection (user 2026-11-12, LoadoutConfig): a spin adds one, a duplicate gives
+		                  coins back; the heading counts how many you have. The card shows your 1st-attempt one; a new
+		                  win goes in the first attempt slot still on the Default, and the emote wheel's pages (B, then
+		                  its arrows) swap what is in each slot
 
 	It only asks and shows: the server checks the coins and rolls the result (CelebrationSpinService), before the reel
 	starts. Sounds: a tick on every flip, a thud on landing (a bigger hit for Epic and Legendary).
@@ -41,8 +49,11 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
 local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
+local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
+local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
+local LoadoutConfig = require(ConfigFolder:WaitForChild("LoadoutConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
@@ -104,6 +115,7 @@ type Screen = {
 	spinLabel: TextLabel,
 	tabs: { [string]: { fill: UIGradient, label: TextLabel } },
 	seeAll: TextButton,
+	odds: TextLabel,
 }
 
 -- One thing a spin can land on, whichever kind: what the card shows.
@@ -113,7 +125,17 @@ local screen: Screen? = nil
 local remotes: CelebrationRemotes.SpinRemotes? = nil
 -- The tab open: "Celebration" or "Entrance" (a walk-out); what they have of each.
 local kind = "Celebration"
-local current: { [string]: string } = { Celebration = CelebrationConfig.Default, Entrance = EntranceConfig.DefaultId }
+local current: { [string]: string } = {
+	Celebration = CelebrationConfig.Default, Entrance = EntranceConfig.DefaultId, Fail = "Default", Emote = "Wave",
+}
+-- The emotes they have (a collection), in the wheel's order.
+local emotesOwned: { string } = { "Wave", "ChalkClap" }
+-- How many of each slotted kind they have (the Default included), and how many there are.
+local collected: { [string]: number } = { Celebration = 1, Entrance = 1, Fail = 1 }
+local totals: { [string]: number } = {}
+for _, slotted in ipairs(LoadoutConfig.Kinds) do
+	totals[slotted] = #LoadoutConfig.items(slotted)
+end
 local coins = 0
 local spinning = false
 local skip = false
@@ -141,8 +163,16 @@ local function rarityRank(rarity: string): number
 	return 0
 end
 
--- The card's view of a celebration or a walk-out.
+-- The card's view of a celebration, a walk-out, a fail style or an emote.
 local function itemOf(of: string, id: string): Item?
+	if of == "Fail" then
+		local style = if id == "Default" then StationAnimationConfig.DefaultFailStyle else StationAnimationConfig.FailStyles[id]
+		return if style then { id = id, name = style.name, rarity = style.rarity, description = style.description } else nil
+	elseif of == "Emote" then
+		local emote = EmoteConfig.byId[id]
+		return if emote then { id = id, name = emote.name, rarity = if emote.rarity == "Free" then "Default" else emote.rarity,
+			description = emote.description } else nil
+	end
 	if of == "Entrance" then
 		local entrance = EntranceConfig.get(id)
 		return if entrance then { id = id, name = entrance.name, rarity = entrance.rarity, description = entrance.description }
@@ -154,7 +184,17 @@ local function itemOf(of: string, id: string): Item?
 end
 
 -- What a spin of each kind can land on (never a Default), for the reel.
-local POOLS: { [string]: { Item } } = { Celebration = {}, Entrance = {} }
+local POOLS: { [string]: { Item } } = { Celebration = {}, Entrance = {}, Fail = {}, Emote = {} }
+for _, id in ipairs(StationAnimationConfig.FailStyleOrder) do
+	if id ~= "Default" then
+		table.insert(POOLS.Fail, itemOf("Fail", id) :: Item)
+	end
+end
+for _, emote in ipairs(EmoteConfig.List) do
+	if emote.rarity ~= "Free" then
+		table.insert(POOLS.Emote, itemOf("Emote", emote.id) :: Item)
+	end
+end
 for _, celebration in ipairs(CelebrationConfig.List) do
 	if celebration.rarity ~= "Default" then
 		table.insert(POOLS.Celebration, itemOf("Celebration", celebration.id) :: Item)
@@ -165,7 +205,48 @@ for _, id in ipairs(EntranceConfig.Order) do
 		table.insert(POOLS.Entrance, itemOf("Entrance", id) :: Item)
 	end
 end
-local HEADINGS = { Celebration = "CELEBRATION", Entrance = "WALK-OUT" }
+local HEADINGS = { Celebration = "CELEBRATION", Entrance = "WALK-OUT", Fail = "FAIL STYLE", Emote = "EMOTE" }
+local PLURALS = { Celebration = "CELEBRATIONS", Entrance = "WALK-OUTS", Fail = "FAIL STYLES" }
+
+-- Each rarity's real chance on a tab (CelebrationConfig.landingRarity), as rich text in the rarities' colours.
+local function oddsText(of: string): string
+	local has, order = {}, {}
+	for _, item in ipairs(POOLS[of]) do
+		has[item.rarity] = true
+	end
+	for _, entry in ipairs(GearStatsConfig.Rarities) do
+		table.insert(order, entry.id)
+	end
+	local chance: { [string]: number } = {}
+	for _, entry in ipairs(GearStatsConfig.Rarities) do
+		local landed = CelebrationConfig.landingRarity(entry.id, order, has)
+		if landed then
+			chance[landed] = (chance[landed] or 0) + entry.odds
+		end
+	end
+	local parts = {}
+	for _, entry in ipairs(GearStatsConfig.Rarities) do
+		local odds = chance[entry.id]
+		if odds then
+			local colour = entry.colour
+			table.insert(parts, string.format('<font color="rgb(%d,%d,%d)">%s %d%%</font>', math.round(colour.R * 255),
+				math.round(colour.G * 255), math.round(colour.B * 255), string.upper(entry.id), math.round(odds * 100)))
+		end
+	end
+	return table.concat(parts, "   ")
+end
+
+-- A fail style's fails for the card: the squat's and the deadlift's, both parts, in turn.
+local function cardFails(style: string): { { any } }
+	local out = {}
+	for _, pick in ipairs({ { "Squat", 2 }, { "Deadlift", 2 }, { "Squat", 1 }, { "Deadlift", 1 } }) do
+		local fail = StationAnimationConfig.failFor(pick[1], pick[2], if style == "Default" then nil else style)
+		if fail and fail.id ~= "" then
+			table.insert(out, { pick[1], fail })
+		end
+	end
+	return out
+end
 
 -- The biggest text size (up to NAME_MAX) at which a name fits on one line across the card; remembered per name.
 local NAME_MAX, NAME_WIDTH = 72, W - 40
@@ -366,7 +447,17 @@ end
 
 -- Their avatar doing it: a celebration over and over, or a walk-out (walk up, then the hype move).
 local function perform(s: Screen, id: string)
-	if kind == "Entrance" then
+	if kind == "Fail" then
+		local fails = cardFails(id)
+		if #fails > 0 then
+			CelebrationStage.playFail(s.stage, fails)
+		end
+	elseif kind == "Emote" then
+		local emote = EmoteConfig.byId[id]
+		if emote then
+			CelebrationStage.play(s.stage, emote :: any, 1)
+		end
+	elseif kind == "Entrance" then
 		local entrance = EntranceConfig.get(id)
 		if entrance then
 			CelebrationStage.playEntrance(s.stage, entrance, LocalMeetConfig.ComputerLifters.WalkSpeed)
@@ -386,7 +477,8 @@ local function showCurrent()
 	if s == nil or item == nil then
 		return
 	end
-	s.heading.Text = "CURRENT " .. HEADINGS[kind] .. ":"
+	s.heading.Text = if kind == "Emote" then string.format("YOUR EMOTES: %d / %d", #emotesOwned, #EmoteConfig.List)
+		else string.format("YOUR %s: %d / %d", PLURALS[kind], collected[kind] or 1, totals[kind] or 1)
 	showName(item, true, 0)
 	perform(s, item.id)
 end
@@ -438,6 +530,11 @@ local function runReel(resultId: string, refund: number)
 	spinning = false
 	setSpinButton()
 	current[kind] = resultId
+	if kind == "Emote" and not table.find(emotesOwned, resultId) then
+		table.insert(emotesOwned, resultId)
+	elseif kind ~= "Emote" and refund == 0 then
+		collected[kind] = (collected[kind] or 1) + 1
+	end
 	s.heading.Text = "NEW " .. HEADINGS[kind] .. ":"
 	showName(result, true, 0)
 	local rank = rarityRank(result.rarity)
@@ -460,8 +557,8 @@ local function runReel(resultId: string, refund: number)
 		s.status.Text = string.format("You already had it: +%s %s back", CoinConfig.format(refund), CoinConfig.Name)
 	else
 		s.status.TextColor3 = colour:Lerp(WHITE, 0.3)
-		s.status.Text = if kind == "Entrance" then "Your walk-out at every meet (the hype move at State)"
-			else "Your celebration after good lifts at State"
+		s.status.Text = if kind == "Emote" then "Yours to keep: press B for the emote wheel"
+			else "Yours to keep: pick your attempts on the wheel (B, then the arrows)"
 	end
 	showCoins()
 	perform(s, resultId)
@@ -623,7 +720,7 @@ local function build(): Screen
 	make("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(0.6, 1), Parent = barShine })
 	local coinsText = words(bar, "Coins", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 24, TITLE_FONT, 2.5)
 
-	local _, spinFill, spinLabel = chunkyButton(scene, "Spin", "SPIN", UDim2.new(0.5, -200, 0, H - 158), UDim2.fromOffset(400, 92),
+	local _, spinFill, spinLabel = chunkyButton(scene, "Spin", "SPIN", UDim2.new(0.5, -200, 0, H - 158), UDim2.fromOffset(292, 92),
 		GOLD_TOP, GOLD_BOTTOM, 60, function()
 			task.spawn(askSpin)
 		end)
@@ -640,20 +737,41 @@ local function build(): Screen
 			math.round(colour.G * 255), math.round(colour.B * 255), string.upper(entry.id), math.round(entry.odds * 100)))
 	end
 	odds.Text = table.concat(parts, "   ")
+	-- (Each tab's own odds replace these, oddsText.)
 
 	-- The tabs, over the top edge: CELEBRATIONS | WALK-OUTS.
 	local tabs = {}
-	for index, entry in ipairs({ { "Celebration", "CELEBRATIONS" }, { "Entrance", "WALK-OUTS" } }) do
+	local TABS = { { "Celebration", "CELEBRATIONS" }, { "Entrance", "WALK-OUTS" }, { "Fail", "FAILS" }, { "Emote", "EMOTES" } }
+	-- Each tab as wide as its word needs, so every label is the same size.
+	local widths, tabGap = { 132, 108, 76, 92 }, 6
+	local total = tabGap * (#TABS - 1)
+	for _, width in ipairs(widths) do
+		total += width
+	end
+	local x = -total / 2 - 18
+	for index, entry in ipairs(TABS) do
 		local tabKind = entry[1]
+		local tabWidth = widths[index]
+		local left = x
+		x += tabWidth + tabGap
 		local _, fill, label = chunkyButton(holder, "Tab_" .. tabKind, entry[2],
-			UDim2.new(0.5, if index == 1 then -146 else 4, 0, -22), UDim2.fromOffset(142, 40), WHITE, WHITE, 19, function()
+			UDim2.new(0.5, left, 0, -22), UDim2.fromOffset(tabWidth, 40), WHITE, WHITE,
+			16, function()
 				CelebrationSpinner.showTab(tabKind)
 			end)
+		label.TextScaled = true
+		local fit = Instance.new("UITextSizeConstraint")
+		fit.MaxTextSize = 16
+		fit.Parent = label
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 6), UDim.new(0, 6)
+		pad.PaddingTop, pad.PaddingBottom = UDim.new(0, 8), UDim.new(0, 8)
+		pad.Parent = label
 		tabs[tabKind] = { fill = fill, label = label }
 	end
 
 	-- The corners: SEE ALL and close.
-	local seeAll = chunkyButton(holder, "SeeAll", "SEE ALL", UDim2.fromOffset(-14, -16), UDim2.fromOffset(118, 44),
+	local seeAll = chunkyButton(scene, "SeeAll", "SEE ALL", UDim2.new(0.5, 100, 0, H - 158), UDim2.fromOffset(100, 92),
 		Color3.fromRGB(120, 180, 255), Color3.fromRGB(60, 100, 220), 22, function()
 			if spinning then
 				return
@@ -661,7 +779,7 @@ local function build(): Screen
 			CelebrationSpinner.close()
 			CelebrationViewer.open(false, function()
 				CelebrationSpinner.open(true)
-			end)
+			end, kind)
 		end)
 	chunkyButton(holder, "Close", "X", UDim2.new(1, -36, 0, -16), UDim2.fromOffset(52, 52),
 		Color3.fromRGB(255, 110, 100), Color3.fromRGB(200, 40, 50), 30, function()
@@ -679,7 +797,7 @@ local function build(): Screen
 		gui = gui, holder = holder, scene = scene, glow = glow, core = core, rays = rays, shards = shards, flash = flash,
 		stage = stage, heading = heading, name = name, nameGlow = nameGlow, nameGradient = nameGradient, nameScale = nameScale,
 		rarity = rarity, about = about, status = status, coins = coinsText, spinFill = spinFill, spinLabel = spinLabel,
-		tabs = tabs, seeAll = seeAll,
+		tabs = tabs, seeAll = seeAll, odds = odds,
 	}
 end
 
@@ -730,10 +848,9 @@ function CelebrationSpinner.showTab(tabKind: string)
 		tab.fill.Color = ColorSequence.new(colours[1], colours[2])
 		tab.label.TextTransparency = if on then 0 else 0.25
 	end
-	-- (SEE ALL lists the celebrations: only on their tab.)
-	s.seeAll.Visible = tabKind == "Celebration"
+	s.odds.Text = oddsText(tabKind)
 	s.status.TextColor3 = WHITE
-	s.status.Text = string.format("Land on the one you have: %s %s back", CoinConfig.format(SPIN.duplicateRefund), CoinConfig.Name)
+	s.status.Text = string.format("Land on one you have: %s %s back", CoinConfig.format(SPIN.duplicateRefund), CoinConfig.Name)
 	showCurrent()
 end
 
@@ -769,9 +886,21 @@ function CelebrationSpinner.open(back: boolean?)
 		coins = view.coins
 		current.Celebration = if CelebrationConfig.byId[view.current] then view.current else CelebrationConfig.Default
 		current.Entrance = if EntranceConfig.get(view.entrance) then view.entrance else EntranceConfig.DefaultId
+		current.Fail = if typeof(view.failStyle) == "string" and itemOf("Fail", view.failStyle) then view.failStyle else "Default"
+		if typeof(view.collected) == "table" then
+			for _, slotted in ipairs(LoadoutConfig.Kinds) do
+				local count = view.collected[slotted]
+				collected[slotted] = if typeof(count) == "number" then count else 1
+			end
+		end
+		if typeof(view.emotes) == "table" and #view.emotes > 0 then
+			emotesOwned = view.emotes
+			-- The card shows the newest one they have (the last in the wheel's order).
+			current.Emote = view.emotes[#view.emotes]
+		end
 	end
 	showCoins()
-	CelebrationSpinner.showTab(if back then "Celebration" else kind)
+	CelebrationSpinner.showTab(kind)
 end
 
 function CelebrationSpinner.close()
