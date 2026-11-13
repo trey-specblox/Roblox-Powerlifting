@@ -1,5 +1,7 @@
 # Body Study (2026-11-12)
 
+> Second pass (stages side by side, current-body diagnosis, standards): [[CHARACTER_ART_DIRECTION]].
+
 The user's references for the game's bodies, studied by Claude: 3 Medal clips of a Roblox gym game (frames in
 `D:\Powerlifting Roblox Extras\References\BodyClips\`, outside the repo), 12 screenshots of the same game, and the
 YouTube video "I Became The BIGGEST PLAYER in Roblox Gym Universe" (q7czzkreS_0, sampled every 1-2 minutes, muted).

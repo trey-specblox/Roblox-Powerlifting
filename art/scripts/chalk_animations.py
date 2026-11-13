@@ -31,7 +31,9 @@ TALK_SECONDS = 4.0
 CLAPS = (4.4, 4.77)
 SLAPS = (4.85, 5.15)
 
-HANG_HAND = Vector((-1.5, -0.85, 0.0))
+# Hand targets are in the root part's frame, written for the block rig and moved onto the taller rig (user 2026-11-12,
+# lifter_heights.py): heights on the body through S.up_body, the hanging hand one arm's length (S.reach) below the shoulder.
+HANG_HAND = Vector((-1.5, S.up_body(0.763) - S.reach(1.488) - 0.125, 0.0))
 STAND = {"torso": 0.0, "thigh": 0.0, "shin": 0.0, "toes": S.SQUAT_TOES_OUT, "neck": 0.0}
 LEAN = {"torso": -20.0, "thigh": 12.0, "shin": -4.5, "toes": S.SQUAT_TOES_OUT, "neck": -4.0}
 LOOK_AT_HANDS = {"torso": -3.0, "thigh": 2.0, "shin": -1.0, "toes": S.SQUAT_TOES_OUT, "neck": -8.0}
@@ -101,10 +103,10 @@ class Clip:
 
 
 # ---------------------------------------------------------------- the lifter
-BOWL_HAND = Vector((-0.55, -0.12, -STAND_AHEAD + 0.3))
-CHEST_HAND = Vector((-0.5, 0.35, -1.05))
-APART_HAND = Vector((-1.05, 0.42, -1.1))
-LOW_HAND = Vector((-0.55, 0.0, -1.0))
+BOWL_HAND = Vector((-0.55, 2.88 - S.HRP_STAND_Y, -STAND_AHEAD + 0.3))     # the bowl stays where it is (2.88 up)
+CHEST_HAND = Vector((-0.5, S.up_body(0.35), -1.05))
+APART_HAND = Vector((-1.05, S.up_body(0.42), -1.1))
+LOW_HAND = Vector((-0.55, S.up_body(0.0), -1.0))
 LIFTER_HANDS = [
     (0.0, HANG_HAND), (0.5, HANG_HAND), (1.1, BOWL_HAND), (2.3, BOWL_HAND), (2.9, CHEST_HAND), (4.0, CHEST_HAND),
     (4.2, APART_HAND), (CLAPS[0], CHEST_HAND), (4.6, APART_HAND), (CLAPS[1], CHEST_HAND), (5.1, LOW_HAND),
@@ -130,7 +132,7 @@ def lifter_hands(t):
 
 
 # ---------------------------------------------------------------- the coach, behind the lifter (squat)
-ON_BACK = Vector((-0.62, 0.35, -(COACH_BEHIND - 0.7)))
+ON_BACK = Vector((-0.62, S.up_body(0.35), -(COACH_BEHIND - 0.7)))
 OFF_BACK = ON_BACK + Vector((0, 0.1, 0.3))
 COACH_BACK_HANDS = [
     (0.0, HANG_HAND), (0.3, HANG_HAND), (0.9, ON_BACK), (4.55, ON_BACK), (4.72, OFF_BACK), (SLAPS[0], ON_BACK),
@@ -153,10 +155,10 @@ def coach_back_hands(t):
 
 
 # ---------------------------------------------------------------- the coach, in front of the lifter, talking
-HOLD = Vector((-0.62, -0.2, -1.05))
-TALK_LOW = Vector((-0.78, -0.1, -1.0))
-TALK_HIGH = Vector((-0.7, 0.36, -1.2))
-TALK_MID = Vector((-0.76, 0.14, -1.1))
+HOLD = Vector((-0.62, S.up_body(-0.2), -1.05))
+TALK_LOW = Vector((-0.78, S.up_body(-0.1), -1.0))
+TALK_HIGH = Vector((-0.7, S.up_body(0.36), -1.2))
+TALK_MID = Vector((-0.76, S.up_body(0.14), -1.1))
 TALK_HAND = [(0.0, TALK_LOW), (1.0, TALK_HIGH), (1.5, TALK_MID), (2.2, TALK_HIGH), (3.2, TALK_LOW), (TALK_SECONDS, TALK_LOW)]
 
 
@@ -196,7 +198,7 @@ def export(clip):
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">true</bool>'
+           f'<float name="AuthoredHipHeight">{S.AUTHORED_HIP_HEIGHT:g}</float><bool name="Loop">true</bool>'
            f'<string name="Name">Chalk_{clip.name}</string><token name="Priority">2</token>'
            f'</Properties>']
     children = {}

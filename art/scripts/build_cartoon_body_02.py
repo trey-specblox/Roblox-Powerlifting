@@ -8,6 +8,8 @@
 # Run inside Blender:  exec(open(r"D:\Powerlifting Roblox\art\scripts\build_cartoon_body_02.py").read())
 import math
 
+import os
+
 import bmesh
 import bpy
 from mathutils import Euler, Matrix, Vector
@@ -18,6 +20,13 @@ TRIANGLES = 12000      # per body, after decimating
 SPACING = 4.4          # studs between the builds in the line-up
 
 SKIN = (0.95, 0.76, 0.60, 1)
+
+# The taller bodies (user 2026-11-12): every shape below is written on the block skeleton's heights and remapped by
+# lifter_heights.py when it is built (legs x1.23, torso and arms x1.15).
+_HEIGHTS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals()
+                             else r"D:\Powerlifting Roblox\art\scripts", "lifter_heights.py")
+HEIGHTS = {"__name__": "lifter_heights"}
+exec(open(_HEIGHTS_PATH).read(), HEIGHTS)
 
 
 # A shape: (centre, radii, options). Options: "mirror" (add the -X twin), "rot" (degrees x, y, z), "taper" (the
@@ -147,9 +156,18 @@ def add_shape(bm, centre, radii, rot, taper, flip, boxy=1.0):
 SOFTEN = {"CartoonSkinny": 12, "CartoonHeavy": 12, "CartoonMuscular": 4}
 
 
+def taller(centre, radii):
+    """A shape written for the block skeleton's heights, moved and stretched to the taller bodies (lifter_heights.py)."""
+    H = HEIGHTS
+    c, r = Vector(centre), Vector(radii)
+    stretch = H["span"](c.z - r.z, c.z + r.z)
+    return Vector((c.x, c.y, H["z"](c.z))), Vector((r.x, r.y, r.z * stretch))
+
+
 def build_body(name, shapes, x, coll):
     bm = bmesh.new()
     for centre, radii, mirror, rot, taper, boxy in shapes:
+        centre, radii = taller(centre, radii)
         add_shape(bm, centre, radii, rot, taper, False, boxy)
         if mirror:
             add_shape(bm, centre, radii, rot, taper, True, boxy)

@@ -41,10 +41,11 @@ E = _load("entrance_animations")
 S = E.S
 rx, ry, rz, T = S.rx, S.ry, S.rz, S.T
 FACE = S.FACE_RACK                 # facing the rack (+Z rack-local)
-STAND_Y = S.HRP_STAND_Y            # root part height standing (block rig)
-ANKLE_Y = 0.2517                   # ankle joint above the floor with the sole flat
-THIGH = 0.4208 + 0.4011            # hip joint to knee joint
-SHIN = 0.379 + 0.5472              # knee joint to ankle joint
+STAND_Y = S.HRP_STAND_Y            # root part height standing (3.4 taller, 3.0 block)
+ANKLE_Y = 0.2517                   # ankle joint above the floor with the sole flat (the feet keep their size)
+# The leg's bones from the rig (taller rig, user 2026-11-12: x1.2286; block 0.822 and 0.926).
+THIGH = S.JOINTS["LeftHip"][3][1] - S.JOINTS["LeftKnee"][2][1]      # hip joint to knee joint
+SHIN = S.JOINTS["LeftKnee"][3][1] - S.JOINTS["LeftAnkle"][2][1]     # knee joint to ankle joint
 STEP = 0.025                       # solving step (s); export samples every 0.05
 I4 = Matrix.Identity(4)
 C0_ROOT = T(S.JOINTS["Root"][2])
@@ -53,8 +54,10 @@ HANG = {"raise": 4.0, "swing": 0.0, "twist": 0.0, "elbow": 8.0}
 # The rack (StationLayout ComboRack_01, rack-local): bar rests, the bench, the deadlift bar.
 # The squat J-cups at the shoulder blades (user 2026-11-08; build_combo_rack_01.py hole 3.975): just under the 3.75
 # where the bar rides on the back standing, so a slight knee bend gets under it and standing up lifts it off.
-BAR_SQUAT = Vector((0, 3.665, -0.28))
-BAR_BENCH = Vector((0, 3.14, -0.28))
+# The taller lifters (2026-11-12) get the squat J-cups 0.70 higher (4.365) and the bench J-cups 0.175 higher (3.315);
+# the pad and the floor bar stay where they are.
+BAR_SQUAT = Vector((0, S.BAR_REST_SQUAT_Y, -0.28))
+BAR_BENCH = Vector((0, S.BAR_REST_BENCH_Y, -0.28))
 PAD_TOP, PAD_END_Z = 1.2, -3.4
 DL_BAR = Vector((0, 1.0, -4.2))
 # Where each setup starts (the walk's end, MeetLiftAnimation.approachFor) and ends (the lift's spot).
@@ -136,7 +139,7 @@ def leg_ik(pose, lt, side, ankle, foot_rot, knee_dir):
     """Hip, knee and ankle transforms that put `side`'s ankle joint on `ankle` (world), the foot turned `foot_rot`
     (world rotation) and the knee bending toward `knee_dir`. Too far to reach: as near as a straight leg gets."""
     sx = -1 if side == "Left" else 1
-    hip = lt @ Vector((sx * 0.5, -0.2, 0))
+    hip = lt @ Vector(S.JOINTS[side + "Hip"][2])
     d = ankle - hip
     reach = min(d.length, THIGH + SHIN - 1e-4)
     u = d.normalized()
@@ -314,9 +317,13 @@ SQ_UNDER = _under_root()
 # The duck under the bar at shoulder-blade height (user 2026-11-08: no crouch to the floor; searched for the least
 # overlap of the big block head with the bar, the knees bending a quarter at most): a small dip, the head ducks
 # forward and down under the bar as they step under it, then they rise into it. About 0.08 is left, for a moment.
-SQ_DUCK = {"grip_z": -1.05, "t1": 1.458, "y1": 2.824, "lean1": 0.0, "neck1": 10.0,
-           "t2": 1.759, "y2": 2.653, "z2": -0.563, "lean2": -22.0, "neck2": -25.5,
-           "t3": 2.285, "y3": 2.813, "lean3": -22.0}
+# The root heights were tuned on the block rig (standing 3.0, bar 3.665). On the taller rig the shoulders, the head and
+# the J-cups are all 0.70 higher and the head sits 0.30 higher on the root, so the same dips below standing (0.176,
+# 0.347, 0.187) duck the head under the bar the same way: DUCK_DIP keeps them as dips (user 2026-11-12).
+DUCK_DIP = (3.0 - 2.824, 3.0 - 2.653, 3.0 - 2.813)
+SQ_DUCK = {"grip_z": -1.05, "t1": 1.458, "y1": STAND_Y - DUCK_DIP[0], "lean1": 0.0, "neck1": 10.0,
+           "t2": 1.759, "y2": STAND_Y - DUCK_DIP[1], "z2": -0.563, "lean2": -22.0, "neck2": -25.5,
+           "t3": 2.285, "y3": STAND_Y - DUCK_DIP[2], "lean3": -22.0}
 SQ_UNDER_AT = 2.6
 
 
@@ -397,10 +404,14 @@ BENCH_ANKLES = {"Left": _wb["LeftFoot"] @ Vector(S.JOINTS["LeftAnkle"][3]),
 BENCH_FOOT_ROT = {s: _wb[s + "Foot"].to_3x3().to_4x4() for s in ("Left", "Right")}
 BENCH_KNEE = {s: (_wb[s + "LowerLeg"] @ Vector(S.JOINTS[s + "Knee"][3])) for s in ("Left", "Right")}
 # The hips: where they sit on the bench's end and stay as the lifter lies back (root part 1.2 above them).
-HIP_SIT = Vector((0, S.BENCH_ROOT_HEIGHT, -3.28))
+# On the taller rig the head is further from the hips (BENCH_HEAD_UP 1.886, 1.586 on the block rig), so they sit
+# SIT_BACK (that 0.30) further toward the bench's end, to lie back with the head passing under the bar as before and
+# slide up into place by the same 0.19 (bar into the head 0.13, 0.17 on the block rig). They sit right at the pad's end.
+SIT_BACK = S.BENCH_HEAD_UP - 1.586
+HIP_SIT = Vector((0, S.BENCH_ROOT_HEIGHT, -3.28 - SIT_BACK))
 # Lying down from there leaves the head short of the bar (so it passes under it); then they slide up into place.
 LIE_SLIDE = FINAL["Bench"].to_translation().z - (HIP_SIT.z + 1.2)
-SIT_FEET_Z = HIP_SIT.z - 0.95
+SIT_FEET_Z = HIP_SIT.z - 0.95 * S.LEG_SCALE      # about a thigh's length in front (longer on the taller rig)
 
 
 def _lying_root(angle):
@@ -476,7 +487,7 @@ def _bench_body(t):
     for side, sign in (("Left", 1), ("Right", -1)):
         hang = hand_world(ut, side, HANG)[0]
         sx = -1 if side == "Left" else 1
-        thigh = lt @ Vector((sx * 0.5, -0.2, 0))
+        thigh = lt @ Vector(S.JOINTS[side + "Hip"][2])
         knee_pt = thigh + (feet[side][0] - thigh) * 0.25
         on_thigh = knee_pt + Vector((0, 0.62, 0)) + left_dir * (0.2 * sign)
         beside = hang
@@ -620,7 +631,10 @@ def previews(folder):
             inst.instance_type = "COLLECTION"
             inst.instance_collection = groups[key]
             if key == "JCups" and name == "Bench":
-                inst.matrix_world = Matrix.Translation((0, 0, -0.35))
+                inst.matrix_world = Matrix.Translation((0, 0, -0.35 + (BAR_BENCH.y - 3.14)))
+            elif key == "JCups":
+                # (the taller lifters' squat cups sit higher than in the .blend, as the game moves them)
+                inst.matrix_world = Matrix.Translation((0, 0, BAR_SQUAT.y - 3.665))
             scene.collection.objects.link(inst)
         with bpy.data.libraries.load(os.path.join(S.ROOT_DIR, "art", "blender", "Barbell_01.blend"), link=True) as (src, dst):
             dst.objects = list(src.objects)
@@ -659,7 +673,7 @@ def previews(folder):
         # From the lifter's right, a little behind: Blender (x, y, z) = rack-local (-x, z, y).
         centre_z, offset, width = {"Squat": (-0.8, (15.0, -5.0, 4.0), 10.0), "Bench": (-2.4, (15.0, -4.0, 6.0), 12.0),
                                    "Deadlift": (-4.4, (13.0, -7.0, 4.0), 12.0)}[name]
-        target = Vector((0.0, centre_z, 2.2 if name != "Bench" else 1.8))
+        target = Vector((0.0, centre_z, 2.2 + 2 * (STAND_Y - 3.0) if name != "Bench" else 1.8))
         if os.environ.get("SETUP_VIEW") == "side":
             # Straight from the lifter's right (for checking where the body goes past the bar).
             offset = (18.0, 0.0, 0.6)

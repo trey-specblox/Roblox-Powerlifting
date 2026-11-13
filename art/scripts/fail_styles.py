@@ -46,15 +46,18 @@ def hips(neck=-22.0):
 def head_hands(neck=18.0):
     """Standing, both hands on top of the head, looking up: frustration."""
     s = stand(neck=neck)
-    return F.planted(dict(s, arm=arms_to(s, Vector((-0.55, 2.0, 0.15)), {"raise": 120.0, "swing": 20.0, "twist": -30.0,
-                                                                          "elbow": 120.0}), neck=neck))
+    # On top of the head: 0.414 above the head's centre (2.3 on the taller rig, user 2026-11-12; 2.0 on the block rig).
+    top = Vector((-0.55, S.BENCH_HEAD_UP + 0.414, 0.15))
+    return F.planted(dict(s, arm=arms_to(s, top, {"raise": 120.0, "swing": 20.0, "twist": -30.0, "elbow": 120.0}),
+                          neck=neck))
 
 
 def bent_over(neck=10.0):
     """Bent over, hands on the knees, catching a breath."""
     p = {"torso": -42.0, "thigh": 18.0, "shin": -14.0, "toes": S.SQUAT_TOES_OUT, "arm": HANG, "neck": neck}
     p = F.planted(p)
-    p["arm"] = arms_to(p, Vector((-0.75, -1.35, -0.75)), {"raise": 10.0, "swing": 40.0, "twist": 0.0, "elbow": 10.0})
+    p["arm"] = arms_to(p, Vector((-0.75, S.up_body(-1.35), -0.75)), {"raise": 10.0, "swing": 40.0, "twist": 0.0,
+                                                                     "elbow": 10.0})
     return F.planted(p)
 
 
@@ -287,7 +290,7 @@ def export(style, name):
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">false</bool>'
+           f'<float name="AuthoredHipHeight">{S.AUTHORED_HIP_HEIGHT:g}</float><bool name="Loop">false</bool>'
            f'<string name="Name">{clip}</string><token name="Priority">2</token>'
            f'</Properties>']
     children = {}

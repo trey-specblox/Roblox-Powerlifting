@@ -54,7 +54,7 @@ def main():
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">true</bool>'
+           f'<float name="AuthoredHipHeight">{S.AUTHORED_HIP_HEIGHT:g}</float><bool name="Loop">true</bool>'
            f'<string name="Name">{NAME}</string><token name="Priority">{MOVEMENT}</token>'
            f'</Properties>']
     for i in range(int(round(LENGTH / STEP)) + 1):

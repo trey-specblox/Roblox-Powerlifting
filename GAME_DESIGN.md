@@ -7042,8 +7042,19 @@ Claude's four suggestions accepted (user: "I agree with one ... two as well ... 
 
 ### 38.2 Builds
 
-- **Five builds to start:** skinny, skinny-fat, average, muscular, big and buff. Each is resized
-  to the lifter's bodyweight.
+- ~~Five builds to start: skinny, skinny-fat, average, muscular, big and buff.~~ **Changed
+  2026-11-13 (user's pick, CHARACTER_ART_DIRECTION.md §5 and §11): six sculpted bodies**,
+  Skinny, Skinny-fat, Fat, Fit, Muscular, Big and buff ("average" is Fit's smallest step), all
+  reshaped copies of **one shared base mesh** (clothes, gear and later builds stay cheap to fit),
+  with small per-part width/depth steps between them. Each is resized to the lifter's bodyweight.
+- **Two separate axes (user's pick, 2026-11-13):** muscle level from PP (Low under 0.35, Mid
+  0.35-0.70, High from 0.70; the top looks held for PP 0.95-1.10+) and fat from bodyweight over
+  that muscle level's lean weight (about 66 / 83 / 105 kg). Until Bulk / Maintain / Cut (§38.3)
+  exists, bodyweight only moves through the admin panel, so the fat axis mostly shows on
+  computer lifters. The exact thresholds are tuned when the bodies are built (art doc §5).
+- **Height in the torso (user's pick, 2026-11-13):** the R15 block rig's leg length (HipHeight
+  2.0), the torso about x1.35 and the arms x1.2 of the block rig; the player's own head at its
+  normal size.
 - Roblox can't morph a body gradually, so the look changes in steps. **For later polish (user):
   more than five set builds**, so players don't all share the same five.
 - Style: **one smooth body, no gaps at the joints** (user's pick over chunky pieces), made in

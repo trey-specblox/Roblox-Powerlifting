@@ -28,6 +28,11 @@ export type Layout = {
 	-- J-cup offset from where they are modelled (the squat hole) to the bench hole,
 	-- used for bench, deadlift and a free rack. Squat uses the modelled hole.
 	benchJCupDrop: number,
+	-- For the taller cartoon bodies (GAME_DESIGN §38.7, user 2026-11-12: everyone taller), the J-cups set higher, as a
+	-- taller lifter sets them: squat (from the modelled hole) and bench (instead of benchJCupDrop). Used while the
+	-- cartoon bodies are on (LifterBodyService.enabled); the block bodies keep the heights above.
+	tallSquatJCupRaise: number,
+	tallBenchJCupDrop: number,
 	-- Bar centre resting in the J-cups as modelled (squat height).
 	barRest: Vector3,
 	-- Z of the bar on the floor for deadlift (its height comes from the plates).
@@ -53,6 +58,10 @@ local LAYOUTS: { [string]: Layout } = {
 		-- the height of their shoulder blades", was the 3.80 hole and bar 3.49); bench uses the 3.45 hole (bar
 		-- 3.14: just under its 3.25 lockout lying on the bench). The posts' holes are 0.175 apart.
 		benchJCupDrop = -0.525,
+		-- 4 holes up (bar 4.365: just under the taller back's 4.41 bar-on-back height, art/scripts/lifter_heights.py),
+		-- and the bench 1 hole up (bar 3.315: the longer arms lock out 0.23 higher).
+		tallSquatJCupRaise = 0.70,
+		tallBenchJCupDrop = -0.35,
 		-- J-cup seat at z 3.595 + bar shaft radius 0.07; seat centre 0.28 in front of the posts
 		barRest = Vector3.new(0, 3.665, -0.28),
 		-- the rack's clearance check keeps the floor 4.2 studs in front of the posts free

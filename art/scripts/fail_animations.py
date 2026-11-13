@@ -90,7 +90,7 @@ def sq(u, torso_add=0.0, arm=None, neck=None):
     """A squat key at depth u (0 standing, 1 the bottom; more is deeper), the bar on the back."""
     torso = S.blend(*S.SQUAT_TORSO, u) + torso_add
     return planted({"torso": torso, "thigh": S.blend(*S.SQUAT_THIGH, u), "shin": S.blend(*S.SQUAT_SHIN, u),
-                    "toes": S.SQUAT_TOES_OUT, "arm": dict(arm or S.SQUAT_ARM),
+                    "toes": S.SQUAT_TOES_OUT, "arm": dict(arm or S.squat_arm()),
                     "neck": -torso * 0.55 if neck is None else neck})
 
 def grounded(p, joint, height, ankle_z=None, joint_z=None):
@@ -128,7 +128,7 @@ def standing_body_pose(p):
 
 def hands_on_hips(p):
     """Arm angles that rest the hands on the hips for a standing key."""
-    a, _ = S.solve_arms(standing_body_pose(p), Vector((-1.2, -0.75, -0.05)),
+    a, _ = S.solve_arms(standing_body_pose(p), Vector((-1.2, S.up_body(-0.75), -0.05)),
                         {"raise": 30.0, "swing": -10.0, "twist": -60.0, "elbow": 95.0})
     return a
 
@@ -143,14 +143,15 @@ def _squat_1_keys():
     free = {"raise": 10.0, "swing": 55.0, "twist": 0.0, "elbow": 25.0}
     # On hands and knees, stumbled forward: knees on the floor ahead of where the feet were.
     kneel = {"torso": -62.0, "thigh": 12.0, "shin": -97.0, "stance": 8.0, "toes": 10.0, "arm": HANG, "neck": 12.0}
-    knee_z = _STAND_ANKLE_Z - 0.9
+    # (Lengths along the legs and arms follow the taller rig, user 2026-11-12: S.LEG_SCALE, S.up_floor, S.reach.)
+    knee_z = _STAND_ANKLE_Z - 0.9 * S.LEG_SCALE
     kneel = grounded(kneel, "Knee", 0.55, joint_z=knee_z)
     # Halfway down: knees bent, falling forward onto them (keeps the legs out of the floor on the way).
     falling = {"torso": -70.0, "thigh": 45.0, "shin": -70.0, "stance": 10.0, "toes": 15.0,
                "arm": {"raise": 10.0, "swing": 75.0, "twist": 0.0, "elbow": 10.0}, "neck": 20.0}
-    falling = grounded(falling, "Knee", 0.95, joint_z=knee_z + 0.2)
+    falling = grounded(falling, "Knee", S.up_floor(0.95), joint_z=knee_z + 0.2)
     # Hands flat on the floor well in front of the knees.
-    target = Vector((-1.3, -S.HRP_STAND_Y + 0.15, knee_z - 1.6))
+    target = Vector((-1.3, -S.HRP_STAND_Y + 0.15, knee_z - S.reach(1.6)))
     kneel["arm"], _ = S.solve_arms(_body(kneel, kneel["root"]), target,
                                    {"raise": 12.0, "swing": 60.0, "twist": 0.0, "elbow": 6.0})
     kneel_down = dict(kneel, neck=-8.0)
@@ -406,7 +407,7 @@ def export(name):
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">false</bool>'
+           f'<float name="AuthoredHipHeight">{S.AUTHORED_HIP_HEIGHT:g}</float><bool name="Loop">false</bool>'
            f'<string name="Name">Fail_{name}</string><token name="Priority">2</token>'
            f'</Properties>']
     children = {}

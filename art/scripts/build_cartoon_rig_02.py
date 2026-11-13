@@ -27,9 +27,9 @@ EXPORTS = os.path.join(ROOT, "art", "exports")
 COLLECTION = "CartoonRig"
 
 BODY_TRIANGLES = 5200      # per body before the hands (the preview bodies were 12,000)
-HAND_TRIANGLES = 900       # per hand
+HAND_TRIANGLES = 1400      # per hand (build_cartoon_hands_03.py makes them at this already)
 MAX_INFLUENCES = 4
-NECK_Y = 4.0               # the block rig's neck: the player's full-size head sits here
+NECK_Y = 4.0               # the block rig's neck (remapped to the taller bodies below: 4.70)
 SKIN = (0.95, 0.76, 0.60, 1)
 
 
@@ -41,17 +41,33 @@ def load(path, **flags):
 
 
 B = load(os.path.join(SCRIPTS, "build_cartoon_body_02.py"))
-H = load(os.path.join(SCRIPTS, "build_cartoon_hands_02.py"))
+# The taller bodies (user 2026-11-12, lifter_heights.py): every block-skeleton height below goes through Z().
+Z = B["HEIGHTS"]["z"]
+NECK_Y = Z(NECK_Y)
+HIP_HEIGHT = B["HEIGHTS"]["HIP_HEIGHT"]
+# Third-pass hands (2026-11-12): smooth fused shells with clear knuckles, a wrist ball on the joint (no wrist ridge).
+H = load(os.path.join(SCRIPTS, "build_cartoon_hands_03.py"))
 S = B["S"]
+# The forearm is cut here (above the bulge its rounded end made at the wrist: the "wrist ridge") and capped with a
+# smooth end; the hand's wrist ball turns inside it. The wrist joint is at 2.275.
+FOREARM_CUT_Z = 2.37      # (block height; remapped where it's used)
+FOREARM_CAP_DEPTH = 0.06
+FOREARM_TAPER = 0.3        # the last stretch of the forearm narrows to TAPER_X / TAPER_Y of its width at the cut
+TAPER_X, TAPER_Y = 0.8, 0.88
+# The swap hands (celebrations, §38.7) that aren't on the body: one rigid mesh per shape and side.
+SWAP_SHAPES = ("Open", "Point", "ThumbsUp", "Fist")
+# The body's own hands (user 2026-11-12, after a play test): OPEN by default; they close (the Fist swap) only to grip:
+# the bar, the belt, the chalk bowl, a fist pump. HandShapeConfig places the swaps from the open hand.
+DEFAULT_HAND = "Open"
 
 # Foot: a rounded foot under each ankle, as the references' plain feet (sneakers go over it, §38.6).
 FOOT = S((0.50, -0.10, 0.15), (0.26, 0.42, 0.15))
 
 # build: (shapes, arm line x, arm radius (for the shoulder pivot), hand size)
 BUILDS = {
-    "Skinny": (B["skinny"](), B["SKINNY_ARMS"], 0.222, 0.88),
-    "Heavy": (B["heavy"](), B["HEAVY_ARMS"], 0.36, 1.05),
-    "Muscular": (B["muscular"](), 1.5, 0.5, 1.18),
+    "Skinny": (B["skinny"](), B["SKINNY_ARMS"], 0.222, 0.95),
+    "Heavy": (B["heavy"](), B["HEAVY_ARMS"], 0.36, 1.15),
+    "Muscular": (B["muscular"](), 1.5, 0.5, 1.28),
 }
 
 
@@ -72,14 +88,14 @@ def collection():
 def joints(arm_x, arm_r):
     """R15 joint positions, Blender space (front -Y, the character's left at +X), studs."""
     pivot = arm_x - arm_r
-    j = {"LowerTorso": Vector((0, 0, 2.0)), "UpperTorso": Vector((0, 0, 2.4))}
+    j = {"LowerTorso": Vector((0, 0, Z(2.0))), "UpperTorso": Vector((0, 0, Z(2.4)))}
     for side, sx in (("Left", 1), ("Right", -1)):
-        j[side + "UpperArm"] = Vector((sx * pivot, 0, 3.763))
-        j[side + "LowerArm"] = Vector((sx * arm_x, 0, 3.035))
-        j[side + "Hand"] = Vector((sx * arm_x, 0, 2.275))
-        j[side + "UpperLeg"] = Vector((sx * 0.5, 0, 2.0))
-        j[side + "LowerLeg"] = Vector((sx * 0.5, 0, 1.178))
-        j[side + "Foot"] = Vector((sx * 0.5, 0, 0.252))
+        j[side + "UpperArm"] = Vector((sx * pivot, 0, Z(3.763)))
+        j[side + "LowerArm"] = Vector((sx * arm_x, 0, Z(3.035)))
+        j[side + "Hand"] = Vector((sx * arm_x, 0, Z(2.275)))
+        j[side + "UpperLeg"] = Vector((sx * 0.5, 0, Z(2.0)))
+        j[side + "LowerLeg"] = Vector((sx * 0.5, 0, Z(1.178)))
+        j[side + "Foot"] = Vector((sx * 0.5, 0, Z(0.252)))
     return j
 
 
@@ -123,7 +139,7 @@ def make_rig(name, j, coll):
     root.head, root.tail = Vector((0, 0, 0)), Vector((0, 0, 0.25))
     root.use_deform = False
     hrn = eb.new("HumanoidRootNode")
-    hrn.head, hrn.tail = Vector((0, 0, 3.0)), Vector((0, 0, 3.25))
+    hrn.head, hrn.tail = Vector((0, 0, HIP_HEIGHT + 1.0)), Vector((0, 0, HIP_HEIGHT + 1.25))
     hrn.parent = root
     hrn.use_deform = False
     order = ["LowerTorso", "UpperTorso"] + [s + p for s in ("Left", "Right") for p in
@@ -161,21 +177,111 @@ def weight(body, rig):
     log(body.name, "unweighted vertices fixed:", missing)
 
 
+def unfold(body):
+    """Smooths away folds the thinning can leave (a face turned over on its neighbour shows as a dark slash: the heavy
+    build's upper-back crease, 2026-11-12). Returns how many folded edges it found."""
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    folded = [e for e in bm.edges if len(e.link_faces) == 2 and e.calc_face_angle() > 2.0]
+    if folded:
+        around = set()
+        for e in folded:
+            for v in e.verts:
+                around.add(v)
+                around.update(o for le in v.link_edges for o in le.verts)
+        for _ in range(4):
+            bmesh.ops.smooth_vert(bm, verts=list(around), factor=0.7, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    bm.to_mesh(body.data)
+    bm.free()
+    return len(folded)
+
+
+def group_weight(dvert, index):
+    return dvert.get(index, 0.0) if index is not None else 0.0
+
+
+def cut_forearms(body, rig):
+    """Cuts each forearm off just above the bulge of its rounded end (the wrist ridge) and caps it with a smooth end,
+    rigid with the forearm (the hand's wrist ball turns inside it). Runs after weighting."""
+    groups = {g.name: g.index for g in body.vertex_groups}
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    deform = bm.verts.layers.deform.active
+    for side in ("Left", "Right"):
+        arm, hand = groups.get(side + "LowerArm"), groups.get(side + "Hand")
+        def on_arm(v):
+            d = v[deform]
+            total = sum(d.values()) or 1.0
+            return (group_weight(d, arm) + group_weight(d, hand)) / total > 0.5
+        faces = [f for f in bm.faces if all(on_arm(v) for v in f.verts)]
+        if not faces:
+            continue
+        edges = list({e for f in faces for e in f.edges})
+        verts = list({v for f in faces for v in f.verts})
+        bmesh.ops.bisect_plane(bm, geom=faces + edges + verts, plane_co=Vector((0, 0, Z(FOREARM_CUT_Z))),
+                               plane_no=Vector((0, 0, 1)), clear_inner=True)
+        # Below the cut on this arm only (the bisect keeps arm pieces not joined to the faces it was given).
+        loose = [v for v in bm.verts if v.co.z < Z(FOREARM_CUT_Z) - 1e-4 and on_arm(v)]
+        bmesh.ops.delete(bm, geom=loose, context="VERTS")
+        rim = [e for e in bm.edges if e.is_boundary and abs((e.verts[0].co.z + e.verts[1].co.z) / 2 - Z(FOREARM_CUT_Z)) < 0.01
+               and all(on_arm(v) for v in e.verts)]
+        if not rim:
+            continue
+        made = bmesh.ops.holes_fill(bm, edges=rim, sides=0)["faces"]
+        poked = bmesh.ops.poke(bm, faces=made)
+        centres = poked["verts"]
+        for c in centres:
+            c.co.z -= FOREARM_CAP_DEPTH
+        # The forearm tapers into the wrist over its last stretch (the references: forearm thick at the elbow,
+        # narrowing to the wrist), so the end isn't a wide cut tube; then the rim is rounded off.
+        rim_verts = {v for c in centres for e in c.link_edges for v in e.verts} - set(centres)
+        axis = sum((v.co for v in rim_verts), Vector()) / max(1, len(rim_verts))
+        for v in bm.verts:
+            if v.co.z < Z(FOREARM_CUT_Z) + FOREARM_TAPER and on_arm(v):
+                u = min(1.0, (Z(FOREARM_CUT_Z) + FOREARM_TAPER - v.co.z) / FOREARM_TAPER)
+                u = u * u * (3 - 2 * u)
+                v.co.x = axis.x + (v.co.x - axis.x) * (1 - (1 - TAPER_X) * u)
+                v.co.y = axis.y + (v.co.y - axis.y) * (1 - (1 - TAPER_Y) * u)
+        ring = {o for c in centres for e in c.link_edges for o in e.verts}
+        near = {o for v in ring for e in v.link_edges for o in e.verts}
+        for _ in range(2):
+            bmesh.ops.smooth_vert(bm, verts=list(near - set(centres)), factor=0.5, use_axis_x=True, use_axis_y=True,
+                                  use_axis_z=True)
+        # The end is rigid with the forearm: everything near it follows the LowerArm only.
+        for v in bm.verts:
+            if v.co.z < Z(FOREARM_CUT_Z) + 0.12 and on_arm(v):
+                d = v[deform]
+                for k in list(d.keys()):
+                    del d[k]
+                d[arm] = 1.0
+    bm.to_mesh(body.data)
+    bm.free()
+
+
+def hand_space(side, size):
+    """Hand space (build_cartoon_hands_03.py) to the hand bone's own space: left turned -90 degrees, right mirrored
+    and turned +90 (palm facing the body, thumb forward), scaled to the build, the wrist ball centred on the joint."""
+    sx = 1 if side == "Left" else -1
+    return Matrix.Translation(Vector((0, 0, 0.06 * size))) @ Matrix.Rotation(math.radians(-90 * sx), 4, "Z") \
+        @ Matrix.Diagonal((size * sx, size, size, 1.0))
+
+
 def add_hands(body, rig, j, arm_x, size, coll):
-    """The Fist on each hand bone: palm facing the body, thumb forward, weighted fully to the hand."""
+    """The DEFAULT_HAND (open) on each hand bone: palm facing the body, thumb forward, weighted fully to the hand. The
+    body itself keeps no weight on the hand bones, so the hand part is exactly that hand (a swap replaces it whole)."""
+    for side in ("Left", "Right"):
+        hand_group, arm_group = body.vertex_groups.get(side + "Hand"), body.vertex_groups.get(side + "LowerArm")
+        if hand_group and arm_group:
+            for v in body.data.vertices:
+                w = next((g.weight for g in v.groups if g.group == hand_group.index), 0.0)
+                if w > 0:
+                    arm_group.add([v.index], w, "ADD")
+                    hand_group.remove([v.index])
     hands = []
     for side, sx in (("Left", 1), ("Right", -1)):
-        hand = H["make_hand"]("Fist", coll)
+        hand = H["make_hand"](DEFAULT_HAND, coll)
         hand.name = body.name + "_" + side + "Hand"
-        dec = hand.modifiers.new("Fewer", "DECIMATE")
-        dec.ratio = min(1.0, HAND_TRIANGLES / max(1, sum(len(p.vertices) - 2 for p in hand.data.polygons)))
-        bpy.context.view_layer.objects.active = hand
-        bpy.ops.object.select_all(action="DESELECT")
-        hand.select_set(True)
-        bpy.ops.object.modifier_apply(modifier=dec.name)
-        # Left: turn -90 degrees; right: mirror, then turn +90 (hand space: palm -Y, thumb +X).
-        m = Matrix.Translation(j[side + "Hand"] + Vector((0, 0, 0.06))) @ Matrix.Rotation(math.radians(-90 * sx), 4, "Z") \
-            @ Matrix.Diagonal((size * sx, size, size, 1.0))
+        m = Matrix.Translation(j[side + "Hand"]) @ hand_space(side, size)
         hand.data.transform(m)
         if sx < 0:
             hand.data.flip_normals()
@@ -232,7 +338,7 @@ def split_parts(body, rig, parts, coll, name):
         # Cutting triangles can leave a zero-area face or a stray edge; the GLB exporter warns about those.
         o.data.validate(verbose=False, clean_customdata=False)
         o.name = name + "_" + part
-        o.data.name = part        # the GLB node keeps the mesh object's name; renamed to the part on export below
+        o.data.name = name + "_" + part   # unique per build; the GLB gets plain part names on export below
         o.data.materials.clear()
         o.data.materials.append(skin)
         out[part] = o
@@ -259,6 +365,7 @@ def export(name, rig, parts):
     # Name each mesh object exactly as its R15 part for the GLB, then put the line-up names back.
     for part, o in parts.items():
         o.name = part
+        o.data.name = part
     bpy.ops.object.select_all(action="DESELECT")
     rig.select_set(True)
     for o in parts.values():
@@ -269,12 +376,13 @@ def export(name, rig, parts):
                               export_skins=True, export_animations=False, export_morph=False)
     for part, o in parts.items():
         o.name = name + "_" + part
+        o.data.name = name + "_" + part
     upper = parts["UpperTorso"]
     vs = [v.co for v in upper.data.vertices]
     centre = Vector(((min(v.x for v in vs) + max(v.x for v in vs)) / 2, (min(v.y for v in vs) + max(v.y for v in vs)) / 2,
                      (min(v.z for v in vs) + max(v.z for v in vs)) / 2))
     info = {"build": name, "joints": {b.name: rbx(b.head_local) for b in rig.data.bones},
-            "neckMark": rbx(Vector((0, 0, NECK_Y)) - centre), "hipHeight": 2.0,
+            "neckMark": rbx(Vector((0, 0, NECK_Y)) - centre), "hipHeight": HIP_HEIGHT,
             "triangles": sum(sum(len(p.vertices) - 2 for p in o.data.polygons) for o in parts.values())}
     with open(os.path.join(EXPORTS, "CartoonBody_%s_joints.json" % name), "w") as f:
         f.write(json.dumps(info, indent=1))
@@ -289,9 +397,11 @@ def build_one(name, spacing_x, coll):
     for c in list(body.users_collection):
         c.objects.unlink(body)
     coll.objects.link(body)
+    log(name, "folds smoothed:", unfold(body))
     j = joints(arm_x, arm_r)
     rig, order = make_rig(name, j, coll)
     weight(body, rig)
+    cut_forearms(body, rig)
     add_hands(body, rig, j, arm_x, hand, coll)
     parts = split_parts(body, rig, order, coll, name)
     point_bones_up(rig)
@@ -300,9 +410,47 @@ def build_one(name, spacing_x, coll):
     return rig, parts, info
 
 
+def export_swap_hands(coll, results):
+    """The swap hands as rigid meshes, at a build size of 1, in the hand bone's space (Roblox recentres each mesh), in
+    one GLB: <Shape>_<Side>. Their centres and sizes (Roblox axes) go into CartoonHands_03.json, with each build's hand
+    size, so the game can put a shape exactly where the body's fist is: offset = size * (centre - Fist centre)."""
+    made, info = [], {"shapes": {}, "builds": {}}
+    for shape in SWAP_SHAPES:
+        for side in ("Left", "Right"):
+            o = H["make_hand"](shape, coll, name="%s_%s" % (shape, side))
+            o.data.name = o.name
+            o.data.transform(hand_space(side, 1.0))
+            if side == "Right":
+                o.data.flip_normals()
+            o.data.validate(verbose=False, clean_customdata=False)
+            vs = [v.co for v in o.data.vertices]
+            lo = Vector((min(v.x for v in vs), min(v.y for v in vs), min(v.z for v in vs)))
+            hi = Vector((max(v.x for v in vs), max(v.y for v in vs), max(v.z for v in vs)))
+            centre, extent = (lo + hi) / 2, hi - lo
+            info["shapes"][o.name] = {"centre": rbx(centre), "size": [round(extent.x, 4), round(extent.z, 4),
+                                                                      round(extent.y, 4)],
+                                      "triangles": sum(len(p.vertices) - 2 for p in o.data.polygons)}
+            made.append(o)
+    for name, (_rig, parts, _info) in results.items():
+        info["builds"][name] = {"handSize": BUILDS[name][3]}
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in made:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = made[0]
+    path = os.path.join(EXPORTS, "CartoonHands_03.glb")
+    bpy.ops.export_scene.gltf(filepath=path, use_selection=True, export_format="GLB", export_yup=True,
+                              export_skins=False, export_animations=False, export_morph=False)
+    with open(os.path.join(EXPORTS, "CartoonHands_03.json"), "w") as f:
+        f.write(json.dumps(info, indent=1))
+    for i, o in enumerate(made):
+        o.location = (-4.0 - (i // 2) * 0.8, -1.5 + (i % 2) * 0.8, 2.3)
+    log("exported", path, len(made), "swap hands")
+
+
 coll = collection()
 RESULTS = {}
 for i, name in enumerate(BUILDS):
     RESULTS[name] = build_one(name, i * 4.4, coll)
+export_swap_hands(coll, RESULTS)
 bpy.ops.wm.save_as_mainfile(filepath=OUT_BLEND)
 log({n: r[2]["triangles"] for n, r in RESULTS.items()})

@@ -55,11 +55,69 @@ JOINTS = {
     "RightKnee": ("RightUpperLeg", "RightLowerLeg", (0, -0.4009, 0), (0, 0.3792, 0)),
     "RightAnkle": ("RightLowerLeg", "RightFoot", (0, -0.5472, 0), (0, 0.1019, 0)),
 }
+# ---------------------------------------------------------------- taller (user 2026-11-12)
+# The cartoon lifters are taller than the block rig (lifter_heights.py: legs x1.2286, torso and arms x1.15; head, hands
+# and feet unchanged; hips 2.0 -> 2.4). Every animation is re-made on this rig: each joint offset along a part's length
+# is stretched by that part's factor. BLOCK_JOINTS keeps the measured block rig (the live game's bodies until the
+# cartoon bodies go live).
+_LH = {"__name__": "lifter_heights"}
+exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals()
+                       else os.path.join(ROOT_DIR, "art", "scripts"), "lifter_heights.py")).read(), _LH)
+BLOCK_JOINTS = dict(JOINTS)
+BLOCK_SIZES = dict(SIZES)
+_STRETCH = {"HumanoidRootPart": 1.0, "LowerTorso": _LH["TORSO"], "UpperTorso": _LH["TORSO"], "Head": 1.0,
+            "UpperArm": _LH["ARM"], "LowerArm": _LH["ARM"], "Hand": 1.0,
+            "UpperLeg": _LH["LEG"], "LowerLeg": _LH["LEG"], "Foot": 1.0}
+
+
+def _stretch_of(part):
+    return _STRETCH.get(part.replace("Left", "").replace("Right", ""), 1.0)
+
+
+TALLER = os.environ.get("LIFTER_RIG", "taller") != "block"
+if TALLER:
+    JOINTS = {name: (parent, child, (c0[0], c0[1] * _stretch_of(parent), c0[2]), (c1[0], c1[1] * _stretch_of(child), c1[2]))
+              for name, (parent, child, c0, c1) in BLOCK_JOINTS.items()}
+    SIZES = {part: (x, y * _stretch_of(part), zz) for part, (x, y, zz) in BLOCK_SIZES.items()}
+
 CHILD_JOINT = {child: name for name, (parent, child, c0, c1) in JOINTS.items()}
 ORDER = ["LowerTorso", "UpperTorso", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand",
          "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
          "RightUpperLeg", "RightLowerLeg", "RightFoot"]
-HRP_STAND_Y = 3.0          # HipHeight 2 + half the root part
+HRP_STAND_Y = _LH["HRP_STAND_Y"] if TALLER else 3.0          # HipHeight (2.4 taller, 2 block) + half the root part
+# Roblox scales an animation's root translation by Humanoid.HipHeight / AuthoredHipHeight, so every exporter writes the
+# hip height of the rig it was made on (2.4 taller, 2 block; ClothesConfig.HipHeight).
+AUTHORED_HIP_HEIGHT = _LH["HIP_HEIGHT"] if TALLER else 2.0
+LEG_SCALE = _LH["LEG"] if TALLER else 1.0                    # lengths along the legs (a step, a crouch, a jump)
+TORSO_SCALE = _LH["TORSO"] if TALLER else 1.0                # lengths along the torso and arms
+
+
+def _straight_arm_reach(joints):
+    """Shoulder joint to the hand's centre with the arm straight (the joints sit 0.5 to the side of the arm's line)."""
+    down = (joints["LeftShoulder"][3][1] - joints["LeftElbow"][2][1] + joints["LeftElbow"][3][1]
+            - joints["LeftWrist"][2][1] + joints["LeftWrist"][3][1])
+    return math.hypot(down, joints["LeftShoulder"][3][0])
+
+
+# How much further a straight arm reaches (1.127 taller: the hands and the shoulder's side offset are not stretched).
+# Hand targets held out at arm's length are moved out from the shoulder by this, so they stay just within reach.
+ARM_REACH_SCALE = _straight_arm_reach(JOINTS) / _straight_arm_reach(BLOCK_JOINTS)
+
+
+def up_floor(height_from_floor):
+    """A height above the floor on the BLOCK rig's body (a knee, the hips) to the same place on this rig's body."""
+    return _LH["z"](height_from_floor) if TALLER else height_from_floor
+
+
+def up_body(y_from_block_root):
+    """A height written relative to the BLOCK rig's standing root (3.0 above the floor) on the body (a shoulder, the
+    chest), moved to the same place on this rig's body."""
+    return (_LH["z"](y_from_block_root + 3.0) - HRP_STAND_Y) if TALLER else y_from_block_root
+
+
+def reach(length):
+    """A distance along the arms (straight-arm reach) on this rig."""
+    return length * (_LH["ARM"] if TALLER else 1.0)
 
 def rx(deg):
     return Matrix.Rotation(math.radians(deg), 4, "X")
@@ -133,6 +191,32 @@ SQUAT_STANCE_OUT, SQUAT_TOES_OUT = 11.0, 25.0
 # the elbows below and behind it: shoulder raise / swing / twist and a hinge
 # elbow (see arm()).
 SQUAT_ARM = {"raise": 8.0, "swing": 0.0, "twist": 98.0, "elbow": 136.0}
+# On the taller rig the arms are re-solved (squat_arm()) to put the hands at the same place on the upper back: the
+# block rig's hand (x 1.55) at the bar's height on the back, a little behind the torso's centre.
+SQUAT_HAND = Vector((-1.55, up_body(0.65), 0.3))
+_SQUAT_ARM = None
+
+
+SQUAT_ARM_RESOLVE = False   # (re-solving folded the longer arms to the elbow's limit: the approved angles look right)
+
+
+def squat_arm():
+    global _SQUAT_ARM
+    if not TALLER or not SQUAT_ARM_RESOLVE:
+        return SQUAT_ARM
+    if _SQUAT_ARM is None:
+        body = {"Root": rx(0.0), "Neck": rx(0.0)}
+        body.update(legs(0.0, 0.0, 0.0, SQUAT_STANCE_OUT, SQUAT_TOES_OUT))
+
+        def behind(w, a):
+            elbow = joint_point(w, "LeftElbow")
+            hand = w["LeftHand"].to_translation()
+            # elbows below and behind the bar, and as close as it can stay to the approved block pose (user review
+            # 2026-10-19): left free, the solver folded the elbow to its limit and turned the arm in.
+            return (max(0.0, elbow.y - hand.y + 0.4) + max(0.0, hand.z - elbow.z)
+                    + 0.004 * sum(abs(a[k] - SQUAT_ARM[k]) for k in ARM_KEYS))
+        _SQUAT_ARM = solve_arms(body, SQUAT_HAND, SQUAT_ARM, behind, 5.0)[0]
+    return _SQUAT_ARM
 
 def squat_depth(t):
     a, b, c, d = SQUAT_PHASES
@@ -221,7 +305,7 @@ def squat_pose(t):
     def build(stance_out):
         pose = {"Root": rx(torso), "Neck": rx(-torso * 0.55)}   # neck: eyes roughly level
         pose.update(legs(torso, thigh, shin, stance_out, SQUAT_TOES_OUT))
-        pose.update(arms(SQUAT_ARM))
+        pose.update(arms(squat_arm()))
         return pose
 
     # Keep the feet planted: as the turned-out knees bend, open the legs a little
@@ -245,15 +329,15 @@ BENCH_PHASES = (0.6, 2.0, 2.2, 3.0)
 BENCH_ROOT_HEIGHT = 1.7            # pad top 1.2 + half the root part's depth
 # Left hand centre in the root's frame (the right hand mirrors). Wide competition
 # grip, hands well outside the shoulders (user review 2026-10-19: was 1.5).
-BENCH_LOCKOUT = Vector((-1.9, 0.75, -1.52))    # over the shoulders, arms straight
+BENCH_LOCKOUT = Vector((-1.9, up_body(0.75), reach(-1.52)))    # over the shoulders, arms straight
 # Where the left elbow sits at lockout: shoulder level, turned out (the touch and
 # lockout must be on the same arm "branch" or the arm would flip mid-rep).
-BENCH_ELBOW_AT_LOCKOUT = Vector((-1.6, 0.74, -0.66))
-BENCH_CHEST = Vector((-1.9, 0.3, -0.6))        # touching mid-chest
+BENCH_ELBOW_AT_LOCKOUT = Vector((-1.6, up_body(0.74), reach(-0.66)))
+BENCH_CHEST = Vector((-1.9, up_body(0.3), -0.6))        # touching mid-chest
 # Where the left elbow goes at the touch: flared out, about level with the chest
 # and the torso's mid-plane (not hanging toward the floor), so it does not look
 # like the bar was dropped (user review 2026-10-19).
-BENCH_ELBOW_AT_CHEST = Vector((-1.86, 0.74, 0.02))
+BENCH_ELBOW_AT_CHEST = Vector((-1.86, up_body(0.74), 0.02))
 # Legs: feet planted wide on the floor, knees out; shins tilt slightly down the body.
 BENCH_STANCE_OUT, BENCH_TOES_OUT, BENCH_LEG_TWIST, BENCH_SHIN = 38.0, 20.0, 0.0, -80.0
 BENCH_ANKLE_Z = BENCH_ROOT_HEIGHT - 0.252      # ankle 0.252 above the floor
@@ -353,7 +437,7 @@ DEADLIFT_LENGTH = 6.0
 # lower, let go, stand up, rest. The bar is in the hands from grip to release.
 DEADLIFT_PHASES = (0.5, 1.5, 1.8, 2.9, 3.3, 4.2, 4.4, 5.2)
 DEADLIFT_BAR_HELD = (1.6, 4.3)
-DEADLIFT_BAR = Vector((-1.5, -2.0, -0.6))      # left hand centre on the floor bar
+DEADLIFT_BAR = Vector((-1.5, 1.0 - HRP_STAND_Y, -0.6))      # left hand centre on the floor bar (its centre 1.0 up)
 DEADLIFT_TOES_OUT = 10.0
 
 def _deadlift_body(torso, thigh, shin, swing=None):
@@ -466,7 +550,7 @@ def export(name):
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">true</bool>'
+           f'<float name="AuthoredHipHeight">{AUTHORED_HIP_HEIGHT:g}</float><bool name="Loop">true</bool>'
            f'<string name="Name">Station_{name}</string><token name="Priority">2</token>'
            f'</Properties>']
     children = {}
@@ -557,13 +641,17 @@ def preview(name, base, shift=Matrix.Identity(4)):
 # Where StationPoses puts the root part (rack-local, Roblox), and where the bar
 # rests when not held (StationVisuals / StationLayout). Keep in step with those.
 FACE_RACK = Matrix.Rotation(math.pi, 4, "Y")
-BENCH_HEAD_UP = 1.586              # head centre above the root on this rig
+BENCH_HEAD_UP = forward_kinematics(Matrix.Identity(4), {})["Head"].to_translation().y   # head centre above the root
+                                                                                       # (1.886 taller, 1.586 block)
 PREVIEW_BASES = {
     "Squat": T((0, HRP_STAND_Y, -1.0)) @ FACE_RACK,
     "Bench": T((0, BENCH_ROOT_HEIGHT, -0.3 - BENCH_HEAD_UP)) @ rx(90),
     "Deadlift": T((0, HRP_STAND_Y, -4.8)) @ FACE_RACK,
 }
-PREVIEW_BAR_REST = {"Squat": (0, 3.665, -0.28), "Bench": (0, 3.14, -0.28), "Deadlift": (0, 1.0, -4.2)}
+# The taller lifters' J-cups (game code, 2026-11-12): the squat cups 0.70 higher, the bench cups 0.175 higher.
+BAR_REST_SQUAT_Y = 4.365 if TALLER else 3.665
+BAR_REST_BENCH_Y = 3.315 if TALLER else 3.14
+PREVIEW_BAR_REST = {"Squat": (0, BAR_REST_SQUAT_Y, -0.28), "Bench": (0, BAR_REST_BENCH_Y, -0.28), "Deadlift": (0, 1.0, -4.2)}
 DISPLAY_LOAD = ("Plate_25", "Plate_25", "Collar_Lock")   # TrainingStationConfig + collar
 
 STATION_SPACING = 12.0             # Blender X between the preview stations

@@ -33,19 +33,28 @@ local Workspace = game:GetService("Workspace")
 
 local StationAnimationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("StationAnimationConfig"))
 local ClothesConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("ClothesConfig"))
+-- The cartoon bodies' open hands close while they hold the bar (GAME_DESIGN §38.7).
+local HandShapeAnimator = require(script.Parent.Parent:WaitForChild("Meet"):WaitForChild("HandShapeAnimator"))
 
--- On a cartoon body (GAME_DESIGN §38.7) the squat bar sits back on the body's thicker upper back instead of in it.
-local function squatBarShift(character: Model, lift: string): Vector3
-	if lift ~= "Squat" then
-		return Vector3.zero
+--[[
+	Where the held bar goes on a cartoon body (GAME_DESIGN §38.7), from `handsMid`, where the hands hold it. The lift
+	animations were made for the thinner block body: the squat bar rests on the build's upper back (at the hands'
+	height and across), neither inside it nor floating above it; the bench bar comes down to the chest but never into
+	it. The deadlift keeps the hands.
+]]
+local function barSpot(character: Model, lift: string, handsMid: Vector3): Vector3
+	if lift ~= "Squat" and lift ~= "Bench" then
+		return handsMid
 	end
 	local build = character:GetAttribute("LifterBodyBuild")
 	local body = if typeof(build) == "string" then ClothesConfig.Bodies[build] else nil
 	local upper = character:FindFirstChild("UpperTorso")
 	if body == nil or upper == nil or not upper:IsA("BasePart") then
-		return Vector3.zero
+		return handsMid
 	end
-	return upper.CFrame:VectorToWorldSpace(Vector3.new(0, 0, body.squatBarBack))
+	local inTorso = upper.CFrame:PointToObjectSpace(handsMid)
+	local z = if lift == "Squat" then body.squatBarRest else math.min(inTorso.Z, -body.benchBarClear)
+	return upper.CFrame:PointToWorldSpace(Vector3.new(inTorso.X, inTorso.Y, z))
 end
 
 local StationPoseAnimator = {}
@@ -254,7 +263,7 @@ local function followHands(character: Model, rack: Instance?, lift: string, acti
 	local leftHand = character:FindFirstChild("LeftHand")
 	local rightHand = character:FindFirstChild("RightHand")
 	if held and leftHand and leftHand:IsA("BasePart") and rightHand and rightHand:IsA("BasePart") then
-		local mid = (leftHand.Position + rightHand.Position) / 2 + squatBarShift(character, lift)
+		local mid = barSpot(character, lift, (leftHand.Position + rightHand.Position) / 2)
 		local inHands = CFrame.new(mid) * rack:GetPivot().Rotation
 		if state.wasHeld == false and state.shown then
 			state.grabFrom, state.grabAt = state.shown, os.clock()
@@ -274,6 +283,7 @@ local function followHands(character: Model, rack: Instance?, lift: string, acti
 		end
 	end
 	state.wasHeld = held
+	HandShapeAnimator.setGrip(character, held == true)
 	state.moved = true
 	active[barbell] = true
 end

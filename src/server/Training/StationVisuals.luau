@@ -37,6 +37,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local TrainingStationConfig = require(Shared:WaitForChild("Config"):WaitForChild("TrainingStationConfig"))
 local BarLoad = require(Shared:WaitForChild("Training"):WaitForChild("BarLoad"))
 local StationLayout = require(script.Parent.StationLayout)
+local LifterBodyService = require(script.Parent.Parent:WaitForChild("Economy"):WaitForChild("LifterBodyService"))
 
 local StationVisuals = {}
 
@@ -324,7 +325,10 @@ function StationVisuals.show(rack: Instance, lift: string?, noRackForDeadlift: b
 		end
 	end
 
-	local raise = if lift == "Squat" then 0 else layout.benchJCupDrop
+	-- The taller cartoon bodies set the J-cups higher (StationLayout tall*).
+	local tall = LifterBodyService.enabled()
+	local raise = if lift == "Squat" then (if tall then layout.tallSquatJCupRaise else 0)
+		else (if tall then layout.tallBenchJCupDrop else layout.benchJCupDrop)
 	-- Up along the rack's own vertical (its StandPoint pivot), so a turned rack works too.
 	local up = rack:GetPivot().UpVector
 	for _, name in ipairs(layout.jCupParts) do

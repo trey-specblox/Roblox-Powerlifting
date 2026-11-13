@@ -7,7 +7,8 @@
 # sampled moment, the body is built from the keyed angles and each arm and leg is SOLVED onto its keyed target.
 #
 # Space ("floor space"): Roblox's, +Y up, the character starts facing -Z, its Left is -X; the floor is y = 0 and the
-# HumanoidRootPart sits at (0, 3, 0) as it does standing (HipHeight 2). Angles are degrees.
+# HumanoidRootPart sits at (0, S.HRP_STAND_Y, 0) as it does standing: 3.4 on the taller rig (HipHeight 2.4, user
+# 2026-11-12), 3.0 on the block rig (HipHeight 2). Angles are degrees.
 #
 # Channels (all optional; the defaults are standing still, arms hanging):
 #   pos                (x, y, z) the hips' offset from standing (y < 0 crouches, > 0 jumps)
@@ -54,7 +55,8 @@ STAND_TOES = 12.0                  # standing toes-out, as the hype moves
 KNEE_ON_FLOOR = 0.5                # the knee joint's height with the shin flat on the floor (half the leg's depth)
 _STAND_WORLD = S.forward_kinematics(HRP_M, {})
 STAND_ANKLE = {side: _STAND_WORLD[side + "Foot"] @ _C1V[side + "Ankle"] for side in ("Left", "Right")}
-HANG_HAND = Vector((-1.5, -0.85, 0.0))      # left hand hanging, from the root part's centre (entrance_animations)
+# The left hand hanging, from the root part's centre (entrance_animations): an arm's length below the shoulder.
+HANG_HAND = Vector((-1.5, S.up_body(0.763) - S.reach(1.488) - 0.125, 0.0))
 START_ARM = {"raise": 4.0, "swing": 0.0, "twist": 0.0, "elbow": 8.0}
 START_LEG = {"flex": 0.0, "out": 0.0, "turn": STAND_TOES, "bend": 0.0}
 SIDES = (("Left", -1), ("Right", 1))
@@ -556,7 +558,7 @@ def export(clip, priority=2, step=1 / 24, only=None, looped=False):
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">{"true" if looped else "false"}</bool>'
+           f'<float name="AuthoredHipHeight">{S.AUTHORED_HIP_HEIGHT:g}</float><bool name="Loop">{"true" if looped else "false"}</bool>'
            f'<string name="Name">Celebrate_{clip.name}</string><token name="Priority">{priority}</token>'
            f'</Properties>']
     children, parent_of = {}, {}

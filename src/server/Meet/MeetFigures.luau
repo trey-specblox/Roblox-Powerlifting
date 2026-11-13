@@ -35,6 +35,9 @@ local WorldFolder = ServerFolder:WaitForChild("World")
 local BuildParts = require(WorldFolder:WaitForChild("BuildParts"))
 local RoomProps = require(WorldFolder:WaitForChild("RoomProps"))
 local StyledScreen = require(WorldFolder:WaitForChild("StyledScreen"))
+local LifterBodyService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("LifterBodyService"))
+local ClothesConfig = require(Shared:WaitForChild("Config"):WaitForChild("ClothesConfig"))
+local LifterBuild = require(Shared:WaitForChild("Economy"):WaitForChild("LifterBuild"))
 
 local MeetFigures = {}
 
@@ -133,6 +136,13 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 		return nil
 	end
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	-- The cartoon body (§38.1: staff get the same bodies; open hands when talking or relaxed, user 2026-11-12), in
+	-- their outfit's colours: a tee, joggers, dark sneakers.
+	LifterBodyService.prepareFigure(figure, LifterBuild.BuildRules.Spotter, {
+		Shirt = { item = "Tee", colour = outfit.top },
+		Bottom = { item = "Joggers", colour = outfit.trousers },
+		Shoes = { item = "Sneakers", colour = Color3.fromRGB(34, 34, 38) },
+	})
 	for _, part in ipairs(figure:GetDescendants()) do
 		if part:IsA("BasePart") then
 			part.CanCollide = false
@@ -306,6 +316,8 @@ end
 	a ghost like the staff. Returns the figure, or nil. Each player's screen
 	then moves and poses it with the bar (client MeetSpotterAnimator).
 ]]
+-- (defined further down)
+local labelTee: (Model, BasePart, string) -> ()
 local SPOTTER_TEE = Color3.fromRGB(196, 32, 38)
 local SPOTTER_BLACK = Color3.fromRGB(20, 20, 22)
 -- Each body part's colour: the tee's short sleeves, the shorts, the shoes; skin elsewhere.
@@ -367,6 +379,43 @@ local function printTee(torso: BasePart, face: Enum.NormalId)
 	label.Parent = gui
 end
 
+--[[
+	"CENTRAL" on a cartoon spotter's tee, front and back: a thin clear card just off the shirt (the tee is a curved
+	mesh, so the print can't go on a part face), welded to the torso. Its distance from the chest's centre line comes
+	from the build's bar clearances (ClothesConfig: chest and back plus the bar's 0.07 radius; the shirt is in them).
+]]
+function labelTee(figure: Model, torso: BasePart, build: string)
+	local body = ClothesConfig.Bodies[build]
+	if body == nil then
+		return
+	end
+	for _, side in ipairs({ { face = Enum.NormalId.Front, z = -(body.benchBarClear - 0.05) },
+		{ face = Enum.NormalId.Back, z = body.squatBarRest - 0.05 } }) do
+		local card = Instance.new("Part")
+		card.Name = "TeeLabel_" .. side.face.Name
+		card.Size = Vector3.new(1.0, 0.3, 0.02)
+		card.Transparency = 1
+		card.CanCollide = false
+		card.CanQuery = false
+		card.CanTouch = false
+		card.CastShadow = false
+		card.Massless = true
+		card.CFrame = torso.CFrame * CFrame.new(0, 0.2, side.z)
+		card.Parent = figure
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = torso
+		weld.Part1 = card
+		weld.Parent = card
+		printTee(card, side.face)
+		local gui = card:FindFirstChildOfClass("SurfaceGui")
+		local label = gui and gui:FindFirstChildOfClass("TextLabel")
+		if label then
+			label.Position = UDim2.fromScale(0.5, 0.5)
+			label.Size = UDim2.fromScale(1, 1)
+		end
+	end
+end
+
 function MeetFigures.buildSpotter(parent: Instance, skin: Color3, at: Vector3, watching: Vector3): Model?
 	local description = Instance.new("HumanoidDescription")
 	description.HeadColor = skin
@@ -391,6 +440,14 @@ function MeetFigures.buildSpotter(parent: Instance, skin: Color3, at: Vector3, w
 		return nil
 	end
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	-- The cartoon body (§38.1: spotters an average build; with three builds, LifterBuild.BuildRules.Spotter), in the
+	-- red tee, black shorts and black shoes.
+	local build = LifterBuild.BuildRules.Spotter
+	local cartoon = LifterBodyService.prepareFigure(figure, build, {
+		Shirt = { item = "Tee", colour = SPOTTER_TEE },
+		Bottom = { item = "Shorts", colour = SPOTTER_BLACK },
+		Shoes = { item = "Sneakers", colour = SPOTTER_BLACK },
+	})
 	-- Part colours set directly (a BodyColors would paint the limbs one colour each again).
 	local bodyColours = figure:FindFirstChildOfClass("BodyColors")
 	if bodyColours then
@@ -401,17 +458,19 @@ function MeetFigures.buildSpotter(parent: Instance, skin: Color3, at: Vector3, w
 			part.CanCollide = false
 			part.CanQuery = false
 			part.CastShadow = false
-			if part ~= root then
+			if part ~= root and not cartoon then
 				part.Color = SPOTTER_PARTS[part.Name] or skin
 			end
 		end
 	end
 	local torso = figure:FindFirstChild("UpperTorso")
-	if torso and torso:IsA("BasePart") then
+	if cartoon and torso and torso:IsA("BasePart") then
+		labelTee(figure, torso, build)
+	elseif torso and torso:IsA("BasePart") then
 		printTee(torso, Enum.NormalId.Front)
 		printTee(torso, Enum.NormalId.Back)
 	end
-	for _, name in ipairs(SPOTTER_COVERS) do
+	for _, name in ipairs(if cartoon then {} else SPOTTER_COVERS) do
 		local part = figure:FindFirstChild(name)
 		if part and part:IsA("BasePart") then
 			coverPart(figure, part, SPOTTER_PARTS[name] or skin)

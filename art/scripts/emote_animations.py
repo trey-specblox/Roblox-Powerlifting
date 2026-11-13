@@ -27,6 +27,9 @@ R = C.R
 K, both, rest, mx, foot, stand_feet = C.K, C.both, C.rest, C.mx, C.foot, C.stand_feet
 CLAP, CLAP_APART, BICEP, ELBOW_BICEP, FIST_LOW = C.CLAP, C.CLAP_APART, C.BICEP, C.ELBOW_BICEP, C.FIST_LOW
 AY = C.AY
+# The taller rig (user 2026-11-12): the numbers are written on the block rig and moved onto this one with the
+# celebrations' helpers (B on the body, O held out, F reaching forward, P a crouch, L a step; celebration_animations).
+B, O, F, P, L, TOR, LEG = C.B, C.O, C.F, C.P, C.L, C.TOR, C.LEG
 
 EMOTES = {}
 
@@ -35,22 +38,22 @@ def emote(name, length, keys, layers=()):
     EMOTES[name] = R.Clip("Emote" + name, length, keys, layers)
 
 
-WAVE_HIGH = (1.45, 1.75, -0.35)       # (right) hand up beside the head, open
-BELT = (-0.62, -0.95, -0.78)          # hands on the front of the belt
-BELT_TUG = (-0.66, -1.1, -0.72)
-TRAP = (-0.62, 0.86, -0.12)           # a hand on top of its own shoulder
-TRAP_OFF = (-1.0, 1.2, -0.45)
-BELLY = (-0.42, -0.45, -0.98)
-POINT = (0.8, 0.62, -1.55)           # (right) pointing straight ahead, as far as the arm reaches
-POINT_PREP = (1.1, 0.5, -1.2)
-CRAB = (-0.42, -0.95, -0.95)          # fists nearly touching in front of the hips
+WAVE_HIGH = B((1.45, 1.75, -0.35))       # (right) hand up beside the head, open
+BELT = B((-0.62, -0.95, -0.78))          # hands on the front of the belt
+BELT_TUG = B((-0.66, -1.1, -0.72))
+TRAP = B((-0.62, 0.86, -0.12))           # a hand on top of its own shoulder
+TRAP_OFF = O((-1.0, 1.2, -0.45))
+BELLY = B((-0.42, -0.45, -0.98))
+POINT = F((0.8, 0.62, -1.55))           # (right) pointing straight ahead, as far as the arm reaches
+POINT_PREP = F((1.1, 0.5, -1.2))
+CRAB = B((-0.42, -0.95, -0.95))          # fists nearly touching in front of the hips
 
 emote("Wave", 2.4, [
     K(0.35, rh=("chest", WAVE_HIGH), up=6, ease="fast"),
-    K(0.6, rh=("chest", (1.75, 1.7, -0.3))),
-    K(0.85, rh=("chest", (1.2, 1.78, -0.4))),
-    K(1.1, rh=("chest", (1.75, 1.7, -0.3))),
-    K(1.35, rh=("chest", (1.2, 1.78, -0.4))),
+    K(0.6, rh=("chest", B((1.75, 1.7, -0.3)))),
+    K(0.85, rh=("chest", B((1.2, 1.78, -0.4)))),
+    K(1.1, rh=("chest", B((1.75, 1.7, -0.3)))),
+    K(1.35, rh=("chest", B((1.2, 1.78, -0.4)))),
     K(1.6, rh=("chest", WAVE_HIGH)),
     K(2.0, rh=C.REST, up=0),
     K(2.4),
@@ -61,27 +64,27 @@ emote("ChalkClap", 2.0, [
     K(0.35, with_=both(CLAP), up=-8, ease="fast"),
     K(0.5, with_=both(CLAP_APART), up=-4),
     K(0.65, with_=both(CLAP), up=-8, ease="fast"),
-    K(0.85, with_=both((-0.55, 0.3, -1.02))),
-    K(1.0, with_=both((-0.45, 0.22, -1.05))),
-    K(1.15, with_=both((-0.55, 0.3, -1.02))),
+    K(0.85, with_=both(B((-0.55, 0.3, -1.02)))),
+    K(1.0, with_=both(B((-0.45, 0.22, -1.05)))),
+    K(1.15, with_=both(B((-0.55, 0.3, -1.02)))),
     K(1.6, with_=rest(), up=0),
     K(2.0),
 ])
 
 emote("BeltTighten", 2.6, [
     K(0.4, with_=both(BELT), up=-14),
-    K(0.7, with_=both(BELT_TUG), pos=(0, -0.12, 0), up=-16, ease="fast"),
+    K(0.7, with_=both(BELT_TUG), pos=P(0, -0.12, 0), up=-16, ease="fast"),
     K(0.85, with_=both(BELT), pos=(0, 0, 0), up=-12),
-    K(1.1, with_=both(BELT_TUG), pos=(0, -0.14, 0), up=-16, ease="fast"),
+    K(1.1, with_=both(BELT_TUG), pos=P(0, -0.14, 0), up=-16, ease="fast"),
     K(1.3, with_=both(BELT), pos=(0, 0, 0), up=-6),
-    K(1.55, with_=both((-0.9, -0.6, -0.9)), up=4),
+    K(1.55, with_=both(B((-0.9, -0.6, -0.9))), up=4),
     K(1.7, with_=both(BELT), up=2, ease="fast"),
     K(2.2, with_=rest(), up=0),
     K(2.6),
 ])
 
 emote("DoubleBiceps", 3.0, [
-    K(0.45, with_=both(BICEP), le=ELBOW_BICEP, re=mx(ELBOW_BICEP), cbend=-8, up=8, pos=(0, -0.05, 0), ease="fast"),
+    K(0.45, with_=both(BICEP), le=ELBOW_BICEP, re=mx(ELBOW_BICEP), cbend=-8, up=8, pos=P(0, -0.05, 0), ease="fast"),
     K(2.2, with_=both(BICEP), cbend=-10, up=10),
     K(2.6, with_=rest(), cbend=0, up=0, pos=(0, 0, 0)),
     K(3.0),
@@ -94,7 +97,7 @@ emote("TrapSlap", 2.6, [
     K(0.7, with_=both(TRAP), up=-6, ease="fast"),
     K(0.95, with_=both(CLAP_APART), up=0),
     K(1.15, with_=both(CLAP), cbend=-6, up=10, ease="fast"),
-    K(1.55, with_=both((-1.6, -0.1, -0.7)), cbend=-10, up=14),
+    K(1.55, with_=both(B((-1.6, -0.1, -0.7))), cbend=-10, up=14),
     K(2.1, with_=rest(), cbend=0, up=0),
     K(2.6),
 ], layers=[C.tremble(1.2, 1.6, amp=0.04, hz=9.0, chest=1.2)])
@@ -103,28 +106,31 @@ emote("PointLaugh", 3.0, [
     K(0.25, rh=("chest", POINT_PREP), up=2),
     K(0.45, rh=("chest", POINT), turn=-6, up=4, ease="fast"),
     K(1.1, rh=("chest", POINT), turn=-6, up=4),
-    K(1.4, rh=("chest", BELLY), lh=("chest", (-0.9, -0.2, -0.85)), turn=0, up=10, lean=-4),
-    K(2.4, rh=("chest", BELLY), lh=("chest", (-0.9, -0.2, -0.85)), up=12, lean=-6),
+    K(1.4, rh=("chest", BELLY), lh=("chest", B((-0.9, -0.2, -0.85))), turn=0, up=10, lean=-4),
+    K(2.4, rh=("chest", BELLY), lh=("chest", B((-0.9, -0.2, -0.85))), up=12, lean=-6),
     K(2.75, with_=rest(), up=0, lean=0),
     K(3.0),
 ], layers=[C.bounce(1.45, 2.4, height=0.04, hz=3.6, chest=2.5)])
 
-_seat = {"pos": (0, -1.27, 0.55), "lean": -12, "lf": (-0.62, AY, -0.62, 28, 0), "rf": (0.62, AY, -0.62, 28, 0)}
-_knees = both((-0.8, -0.55, -1.25))
+# Sat on the floor as the celebrations' SitAndLaugh (C.SEAT_Y, C.from_seat): the feet a leg's stretch out from the hips;
+# the forearms on the knees, which sit further forward by however much longer the thigh is.
+_seat = {"pos": (0, C.SEAT_Y, C.SEAT_Z), "lean": -12, "lf": (-0.62, AY, C.from_seat(-0.62, LEG), 28, 0),
+         "rf": (0.62, AY, C.from_seat(-0.62, LEG), 28, 0)}
+_knees = both(B((-0.8, -0.55, -1.25 - (R.THIGH - 0.822))))
 emote("SitBreath", 5.0, [
-    K(0.6, pos=(0, -0.75, 0.25), lean=22, up=-8, with_=both((-0.9, -1.3, 0.2))),
+    K(0.6, pos=P(0, -0.75, 0.25), lean=22, up=-8, with_=both(B((-0.9, -1.3, 0.2)))),
     K(1.15, with_=[_seat, _knees], up=-12),
     K(3.4, with_=[_seat, _knees], up=-14),
-    K(3.9, pos=(0, -1.0, 0.25), lean=26, with_=[both((-0.9, -0.9, -1.0)), {"lf": foot("Left", z=-0.15),
+    K(3.9, pos=P(0, -1.0, 0.25), lean=26, with_=[both(B((-0.9, -0.9, -1.0))), {"lf": foot("Left", z=-0.15),
                                                                            "rf": foot("Right", z=-0.2)}], up=-5),
-    K(4.4, pos=(0, -0.3, 0.05), lean=10, with_=[rest(), stand_feet()], up=0),
+    K(4.4, pos=P(0, -0.3, 0.05), lean=10, with_=[rest(), stand_feet()], up=0),
     K(4.75, pos=(0, 0, 0), lean=0),
     K(5.0),
 ], layers=[C.bounce(1.3, 3.4, height=0.02, hz=1.2, chest=3.0)])
 
 emote("MostMuscular", 3.2, [
-    K(0.5, with_=both(CRAB), lean=14, cbend=10, up=-14, pos=(0, -0.12, 0), ease="fast"),
-    K(2.3, with_=both(CRAB), lean=16, cbend=12, up=-16, pos=(0, -0.14, 0)),
+    K(0.5, with_=both(CRAB), lean=14, cbend=10, up=-14, pos=P(0, -0.12, 0), ease="fast"),
+    K(2.3, with_=both(CRAB), lean=16, cbend=12, up=-16, pos=P(0, -0.14, 0)),
     K(2.7, with_=rest(), lean=0, cbend=0, up=0, pos=(0, 0, 0)),
     K(3.2),
 ], layers=[C.tremble(0.6, 2.3, amp=0.05, hz=9.0, chest=1.5)])

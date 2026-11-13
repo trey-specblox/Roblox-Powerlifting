@@ -148,6 +148,7 @@ At the end of every completed development checkpoint, update DEVELOPMENT_STATUS.
 - `D:\Powerlifting Roblox` is the user's active Obsidian vault. Obsidian edits these same files, so re-read a document before relying on it.
 - GAME_DESIGN.md is the authoritative source for approved gameplay mechanics. Update it when the user approves a new or changed gameplay decision. Never silently reinterpret or replace an approved decision.
 - DEVELOPMENT_STATUS.md tracks implementation progress and next steps. Update it at checkpoint completion and session handoff.
+- CHARACTER_ART_DIRECTION.md holds the lifter-body art and modeling standards (anatomy, physique categories, Roblox body decisions, quality checklist). Read it before any body, hand, head or physique work; it marks what is APPROVED vs EXPERIMENTAL.
 - Verify Git status before claiming anything is committed.
 - Do not create duplicate design documents, and do not synchronize, copy or link folders unless the user asks.
 

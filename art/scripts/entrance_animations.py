@@ -50,7 +50,9 @@ S = F.S
 rx, ry, rz, T = S.rx, S.ry, S.rz, S.T
 TAU = 2 * math.pi
 STAND_ANKLE_Y = S.STAND_ANKLES[0].y
-LEG_LENGTH = 1.75          # hip joint to ankle joint on this rig (studs)
+# Hip joint to ankle joint on this rig (studs): 1.75 on the block rig, ~2.15 on the taller one (user 2026-11-12). It sets
+# each walk's speed, so EntranceConfig's speeds must match the CHECK lines.
+LEG_LENGTH = (S.JOINTS["LeftHip"][3][1] - S.JOINTS["LeftKnee"][2][1]) + (S.JOINTS["LeftKnee"][3][1] - S.JOINTS["LeftAnkle"][2][1])
 
 
 # ---------------------------------------------------------------- walks
@@ -199,7 +201,31 @@ for _w in WALKS.values():
 
 
 # ---------------------------------------------------------------- hype moves (standing on the spot, hands solved)
-HANG_HAND = Vector((-1.5, -0.85, 0.0))
+# Hand targets (the root part's frame) are written for the block rig and moved onto the taller rig (user 2026-11-12,
+# lifter_heights.py): on_body keeps a hand on the body (only its height follows the body); held_out moves a hand held
+# out at arm's length (to the side or overhead) out from the shoulder by how much further the arm reaches; reach_out
+# stretches an arm reaching forward or back (its x kept). The hanging hand is an arm's length below the shoulder.
+HANG_HAND = Vector((-1.5, S.up_body(0.763) - S.reach(1.488) - 0.125, 0.0))
+SHOULDER = Vector((-1.0, 0.763, 0.0))         # the left shoulder joint on the block rig (root frame)
+SHOULDER_NOW = Vector((-1.0, S.up_body(0.763), 0.0))
+K = S.ARM_REACH_SCALE
+
+
+def on_body(x, y, z):
+    return Vector((x, S.up_body(y), z))
+
+
+def held_out(x, y, z, keep_x=False):
+    v = SHOULDER_NOW + (Vector((-abs(x), y, z)) - SHOULDER) * K
+    return Vector((x if keep_x else math.copysign(abs(v.x), x), v.y, v.z))
+
+
+def reach_out(x, y, z):
+    # (Height on the body, the forward reach x1.15: the shoulder-relative held_out rule made Hype_CrowdLift's arms
+    # lag behind its fast high-to-low swing, worst hand miss 0.78.)
+    return Vector((x, S.up_body(y), S.reach(z)))
+
+
 STAND = {"torso": 0.0, "thigh": 0.0, "shin": 0.0, "toes": 12.0, "neck": 0.0}
 SOLVE_STEPS = (4, 2, 1, 0.5, 0.25)
 START_ARM = {"raise": 4.0, "swing": 0.0, "twist": 0.0, "elbow": 8.0}
@@ -287,11 +313,11 @@ def dip(depth, neck=0.0, torso=0.0):
 
 
 # Hype_Belt: hands to the belt's sides, slide to the front, two hard tugs with a dip, a clap, hands down.
-BELT_SIDE = Vector((-1.12, -0.5, -0.62))
-BELT_FRONT = Vector((-0.55, -0.55, -0.98))
-BELT_TUG = Vector((-0.6, -0.68, -0.94))
-CLAP = Vector((-0.5, 0.35, -1.05))
-APART = Vector((-1.05, 0.42, -1.1))
+BELT_SIDE = on_body(-1.12, -0.5, -0.62)
+BELT_FRONT = on_body(-0.55, -0.55, -0.98)
+BELT_TUG = on_body(-0.6, -0.68, -0.94)
+CLAP = on_body(-0.5, 0.35, -1.05)
+APART = on_body(-1.05, 0.42, -1.1)
 BELT = Hype(3.0,
             [(0.0, STAND), (0.35, dict(STAND, neck=-14.0)), (0.9, dict(STAND, neck=-16.0)), (1.05, dip(0.6, -18.0)),
              (1.2, dict(STAND, neck=-14.0)), (1.4, dip(0.7, -18.0)), (1.6, dict(STAND, neck=-4.0)),
@@ -301,9 +327,9 @@ BELT = Hype(3.0,
              (3.0, HANG_HAND)])
 
 # Hype_Flex: arms up into a double biceps, held and shaking, a small lean, then shakes the arms out.
-FLEX = Vector((-1.78, 1.72, -0.15))
-FLEX_IN = Vector((-1.7, 1.55, -0.35))
-LOOSE = Vector((-1.6, -0.7, -0.25))
+FLEX = held_out(-1.78, 1.72, -0.15)
+FLEX_IN = held_out(-1.7, 1.55, -0.35)
+LOOSE = on_body(-1.6, -0.7, -0.25)
 FLEX_HYPE = Hype(3.2,
                  [(0.0, STAND), (0.5, dict(STAND, neck=6.0)), (0.7, dip(0.35, 4.0)), (1.8, dip(0.4, 2.0)),
                   (2.2, STAND), (3.2, STAND)],
@@ -313,9 +339,9 @@ FLEX_HYPE = Hype(3.2,
                  Vector((0.12 * F.tremble(t, 2.15, 2.9, 1.0, 5.0), 0.1 * F.tremble(t, 2.15, 2.9, 1.0, 5.0), 0)))
 
 # Hype_ChestSlap: hands back wide, two slaps on the chest, then arms down and out and a roar up at the ceiling.
-CHEST = Vector((-0.48, 0.42, -0.98))
-WIDE = Vector((-1.45, 0.45, -0.95))
-ROAR = Vector((-1.95, -0.35, -0.55))
+CHEST = on_body(-0.48, 0.42, -0.98)
+WIDE = held_out(-1.45, 0.45, -0.95)
+ROAR = held_out(-1.95, -0.35, -0.55)
 CHEST_SLAP = Hype(3.2,
                   [(0.0, STAND), (0.4, dict(STAND, neck=-4.0)), (0.95, dict(STAND, neck=-6.0)),
                    (1.25, dip(0.5, 22.0, 2.0)), (2.4, dip(0.55, 26.0, 2.0)), (2.9, STAND), (3.2, STAND)],
@@ -324,7 +350,7 @@ CHEST_SLAP = Hype(3.2,
                   wobble=lambda t: Vector((shake(t, 1.3, 2.4, 0.06, 10.0), shake(t, 1.3, 2.4, 0.04, 8.0), 0)))
 
 # Hype_NeckRoll: rolls the neck round, two claps, then points the right hand at the bar.
-POINT = Vector((0.6, 0.85, -1.72))
+POINT = reach_out(0.6, 0.85, -1.72)
 
 
 def neck_roll(t):
@@ -347,19 +373,19 @@ NECK_ROLL = Hype(3.0,
                  neck=neck_roll)
 
 # ---- the six new ones (Clip Study walk-ups and pre-lift rituals)
-OVER = Vector((-0.35, 2.45, -0.05))          # hands together overhead
-HIGH_WIDE = Vector((-1.55, 2.3, -0.3))
-FLING = Vector((-2.55, 1.15, -0.4))        # arms flung out wide, a little up
-WING = Vector((-2.65, 1.0, 0.0))
-V_UP = Vector((-1.55, 2.4, -0.25))
-TRAP = Vector((-0.55, 1.05, -0.5))           # the hand on the top of its own shoulder
-TRAP_OFF = Vector((-1.2, 1.5, -0.6))
-THIGH = Vector((-1.15, -0.75, -0.45))
-CROSS = Vector((0.35, 0.45, -0.9))          # across the chest, past the middle
-LOW_FRONT = Vector((-0.95, -0.45, -0.95))
-HIGH_FRONT = Vector((-1.3, 2.2, -0.85))
-SWUNG_BACK = Vector((-1.3, -0.35, 0.95))
-UP_OUT = Vector((-2.3, 1.8, -0.3))
+OVER = held_out(-0.35, 2.45, -0.05, keep_x=True)     # hands together overhead
+HIGH_WIDE = held_out(-1.55, 2.3, -0.3)
+FLING = held_out(-2.55, 1.15, -0.4)        # arms flung out wide, a little up
+WING = held_out(-2.65, 1.0, 0.0)
+V_UP = held_out(-1.55, 2.4, -0.25)
+TRAP = on_body(-0.55, 1.05, -0.5)           # the hand on the top of its own shoulder
+TRAP_OFF = held_out(-1.2, 1.5, -0.6)
+THIGH = on_body(-1.15, -0.75, -0.45)
+CROSS = on_body(0.35, 0.45, -0.9)          # across the chest, past the middle
+LOW_FRONT = reach_out(-0.95, -0.45, -0.95)
+HIGH_FRONT = reach_out(-1.3, 2.2, -0.85)
+SWUNG_BACK = reach_out(-1.3, -0.35, 0.95)
+UP_OUT = held_out(-2.3, 1.8, -0.3)
 
 
 def crouch(depth, neck=0.0):
@@ -419,7 +445,7 @@ HYPES = {"Belt": BELT, "Flex": FLEX_HYPE, "ChestSlap": CHEST_SLAP, "NeckRoll": N
 
 # Touch_GameFace: played over the walk (Action priority) with only the arms keyed, so the legs and hips keep walking;
 # the server times it to end as the walk does. Claps at 0.32 and 0.56 s (EntranceConfig.QuickTouch.clapSeconds).
-NEAR = Vector((-0.82, 0.4, -1.08))
+NEAR = on_body(-0.82, 0.4, -1.08)
 GAME_FACE = Hype(1.5,
                  [(0.0, STAND), (1.5, STAND)],
                  [(0.0, HANG_HAND), (0.2, APART), (0.32, CLAP), (0.44, NEAR), (0.56, CLAP), (0.78, BELT_FRONT),
@@ -449,7 +475,7 @@ def export(name, length, pose, looped, priority, step, only=None):
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">2</float><bool name="Loop">{"true" if looped else "false"}</bool>'
+           f'<float name="AuthoredHipHeight">{S.AUTHORED_HIP_HEIGHT:g}</float><bool name="Loop">{"true" if looped else "false"}</bool>'
            f'<string name="Name">{name}</string><token name="Priority">{priority}</token>'
            f'</Properties>']
     children, parent_of = {}, {}
@@ -643,7 +669,7 @@ def sheet(folder, title, pose, length, count, turn, cam_offset, along):
         objs = _figure(bpy, f"F{i}", COLOURS[0])
         _place(objs, pose(t), along * (i * spacing), turn)
     far = along * ((count - 1) * spacing)
-    centre = far / 2 + Vector((0, 0, 2.6))
+    centre = far / 2 + Vector((0, 0, 2.6 + (S.HRP_STAND_Y - 3.0)))      # (the taller rig: framed 0.4 higher)
     _camera(bpy, scene, centre + cam_offset, centre, count * spacing + 1)
     scene.render.resolution_x, scene.render.resolution_y = 1800, 380
     scene.render.filepath = os.path.join(folder, f"{title}.png")
@@ -659,7 +685,7 @@ def walk_video(folder):
     frames = int(seconds * 30)
     lanes = list(WALKS.items())
     for lane, (name, w) in enumerate(lanes):
-        objs = _figure(bpy, name, COLOURS[lane])
+        objs = _figure(bpy, name, COLOURS[lane % len(COLOURS)])
         x = lane * 4.0
         for f in range(0, frames + 1):
             t = f / 30
@@ -679,11 +705,11 @@ def hype_video(folder):
     scene = _scene_setup(bpy)
     frames = int(3.4 * 30)
     for lane, (name, h) in enumerate(HYPES.items()):
-        objs = _figure(bpy, name, COLOURS[lane])
+        objs = _figure(bpy, name, COLOURS[lane % len(COLOURS)])
         for f in range(0, frames + 1):
             _place(objs, h.pose(min(h.length, f / 30)), Vector((lane * 4.5, 0, 0)), frame=f + 1)
     _floor_lines(bpy, -2.5, 3 * 4.5 + 2.5, -3, 3, 6.0)
-    centre = Vector((3 * 4.5 / 2, 0, 2.6))
+    centre = Vector((3 * 4.5 / 2, 0, 2.6 + (S.HRP_STAND_Y - 3.0)))
     _camera(bpy, scene, centre + Vector((-6.0, -22.0, 4.0)), centre, 21)
     scene.frame_start, scene.frame_end = 1, frames
     scene.render.resolution_x, scene.render.resolution_y = 960, 400

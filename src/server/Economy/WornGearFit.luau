@@ -243,4 +243,82 @@ function WornGearFit.previewModel(name: string, list: { Piece }, oneLeg: boolean
 	return model
 end
 
+--[[
+	The worn gear on a CARTOON body (GAME_DESIGN §38.7): `model` is the build's gear model (WornGearConfig.CartoonAssetIds)
+	of skinned pieces "<Worn>_<ColourKey>__<Part>", shaped over that build and bending with it like the clothes; `rest`
+	is each body part's resting place in the same frame (LifterBodyService.restFor). Each worn item's pieces go on in its
+	ShopConfig colours, welded to their body parts. Rebuilds the WornGear folder; returns how many pieces it made.
+]]
+function WornGearFit.dressCartoon(character: Model, worn: { [string]: string }, model: Instance,
+	rest: { [string]: CFrame }): number
+	local old = character:FindFirstChild(WornGearConfig.FolderName)
+	if old then
+		old:Destroy()
+	end
+	if next(worn) == nil then
+		return 0
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = WornGearConfig.FolderName
+	local made = 0
+	for _, slot in ipairs(WornGearConfig.Slots) do
+		local itemId = worn[slot.id]
+		local item = if itemId then ShopConfig.find(itemId) else nil
+		if item == nil or not WornGearConfig.fits(slot, item) then
+			continue
+		end
+		local wornName = item.worn or slot.worn
+		for _, piece in ipairs(model:GetChildren()) do
+			local name, colourKey, partName = string.match(piece.Name, "^(%a+)_(%a+)__(.+)$")
+			if name ~= wornName or not piece:IsA("MeshPart") then
+				continue
+			end
+			local bodyPart = character:FindFirstChild(partName :: string)
+			local at = rest[partName :: string]
+			if bodyPart == nil or not bodyPart:IsA("BasePart") or at == nil then
+				continue
+			end
+			local isLogo = WornGearConfig.LogoKeys[colourKey :: string] == true
+			if (isLogo or WornGearConfig.LabelKeys[colourKey :: string]) and WornGearConfig.LogoImageId == 0 then
+				continue -- no logo uploaded yet: no patch and no empty label box
+			end
+			local copy = piece:Clone() :: MeshPart
+			for _, d in ipairs(copy:GetChildren()) do
+				d:Destroy()
+			end
+			copy.Name = string.format("%s_%s__%s", item.id, colourKey :: string, partName :: string)
+			copy.Color = item.colours[colourKey :: string] or WornGearConfig.FallbackColour
+			copy.Material = WornGearConfig.Materials[colourKey :: string] or Enum.Material.Fabric
+			if item.rough and WornGearConfig.RoughKeys[colourKey :: string] then
+				copy.MaterialVariant = WornGearConfig.RoughVariant
+			end
+			copy.Anchored = false
+			copy.CanCollide = false
+			copy.CanTouch = false
+			copy.CanQuery = false
+			copy.Massless = true
+			copy.CastShadow = false
+			copy.CFrame = bodyPart.CFrame * at:ToObjectSpace(piece.CFrame)
+			if isLogo then
+				-- the patch itself is invisible; the CENTRAL logo goes on it tinted in the item's colour for this key
+				copy.Transparency = 1
+				local decal = Instance.new("Decal")
+				decal.Name = "Logo"
+				decal.Texture = "rbxassetid://" .. tostring(WornGearConfig.LogoImageId)
+				decal.Color3 = item.colours[colourKey :: string] or Color3.new(1, 1, 1)
+				decal.Face = WornGearConfig.logoFace(wornName :: string, partName :: string)
+				decal.Parent = copy
+			end
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = bodyPart
+			weld.Part1 = copy
+			weld.Parent = copy
+			copy.Parent = folder
+			made += 1
+		end
+	end
+	folder.Parent = character
+	return made
+end
+
 return WornGearFit

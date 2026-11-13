@@ -57,6 +57,9 @@ local forcedDrops: { [Player]: string } = {}
 -- MockMeetService's way into a suit test (set when it starts; it needs this module, so not the other way round).
 local testStarter: ((Player, string) -> (boolean, string))? = nil
 
+-- (defined further down)
+local cartoonGear: (string) -> Instance?
+
 local function log(message: string, ...: any)
 	print("[GearService] " .. string.format(message, ...))
 end
@@ -106,6 +109,33 @@ local function loadPieces(): WornGearFit.Pieces?
 	return pieces
 end
 
+-- One build's refitted gear model (WornGearConfig.CartoonAssetIds), loaded once; nil when not uploaded or not loaded.
+local cartoonModels: { [string]: Instance } = {}
+local cartoonTried: { [string]: boolean } = {}
+function cartoonGear(build: string): Instance?
+	if cartoonModels[build] or cartoonTried[build] then
+		return cartoonModels[build]
+	end
+	cartoonTried[build] = true
+	local id = WornGearConfig.CartoonAssetIds[build]
+	if id == nil or id == 0 then
+		return nil
+	end
+	local ok, loaded = pcall(function()
+		return game:GetService("InsertService"):LoadAsset(id)
+	end)
+	local model = ok and loaded and (loaded :: Instance):FindFirstChildWhichIsA("Model")
+	if model then
+		model.Name = "CartoonGear_" .. build
+		model.Parent = game:GetService("ServerStorage")
+		cartoonModels[build] = model
+		log("%s gear loaded", build)
+	else
+		warn("[GearService] the " .. build .. " gear did not load: " .. tostring(loaded))
+	end
+	return cartoonModels[build]
+end
+
 -- Holds the arms forward while a bench shirt is worn, on any R15 body. Every lift and machine animation takes over by itself.
 local function holdArms(character: Model, wearing: boolean)
 	local track = armTracks[character]
@@ -146,8 +176,21 @@ local function dress(player: Player)
 		return
 	end
 	local worn = if PlayerDataService.getGearOn(player) == false then {} else saved
-	local loaded = if next(worn) then loadPieces() else nil
-	local made = WornGearFit.dress(character, worn, loaded or {})
+	local made
+	local build = character:GetAttribute("LifterBodyBuild")
+	if LifterBodyService.hasBody(character) and typeof(build) == "string" then
+		-- A cartoon body wears its build's refitted gear (the block-body pieces float off it).
+		local model = if next(worn) then cartoonGear(build) else nil
+		local rest = LifterBodyService.restFor(build)
+		if model and rest then
+			made = WornGearFit.dressCartoon(character, worn, model, rest)
+		else
+			made = WornGearFit.dress(character, {}, {})
+		end
+	else
+		local loaded = if next(worn) then loadPieces() else nil
+		made = WornGearFit.dress(character, worn, loaded or {})
+	end
 	holdArms(character, worn.BenchShirt ~= nil)
 	LifterBodyService.dressOutfit(player, character, worn)
 	if made > 0 then

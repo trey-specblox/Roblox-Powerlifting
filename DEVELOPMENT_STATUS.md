@@ -13,6 +13,64 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**CARTOON GEAR v3, IN PROGRESS (2026-11-12, session "gear rebuild"), NOT COMMITTED, NOTHING UPLOADED** (approved plan,
+memory gear-fitting-architecture; user: "do all of the phases"; v02 kept for reference).
+- PHASE 1 TOOLS, DONE: `art/scripts/gear_fit_03.py` (a library): Body(build) = the skin in rig space + search trees per
+  region; smoothed OUTLINE rings (rays to the skin, convex loop round the hits, valleys filled up/down) = body_outlines();
+  landmarks found on the skin (crotch, armpit, shoulder top); transfer_weights (nearest skin, hands left out); split_parts
+  ("<Build>_<Worn>_<Key>__<Part>", skinned); read_anim/pose_rig pose a rig with the REAL .rbxmx animations as Roblox does
+  (checked: feet stay at 0.253 in the squat, deadlift wrists on the floor bar) = the v02 posed-check bug fixed (every
+  number in rig space); clearance() at rest + 10 poses (squat/bench/deadlift bottoms, squat setup, two walks, arms up,
+  double biceps, crouch roar), split into CLIP (inside its own part's skin) and FOLD (inside a part folded onto it);
+  shots()/contact_sheet() = same camera/light, front/back/left/right x 3 builds, back faces hidden.
+  Pictures art/previews/Gear03_Phase1_Outlines.png (blue touches, red bridges a groove), Gear03_Phase1_Bodies.png.
+- PHASE 2 BELT, DONE (sent to the user): `art/scripts/build_cartoon_gear_03.py` build_belt: a stiff ring round a common
+  axis, a straight lean line per angle as close as it can sit outside the outline (0.02), constant 0.55 x 0.12 profile
+  with rounded bulging edges, lining on the inner face/edges, stitch dashes in two channels, CENTRAL patch on the back
+  (UV-mapped to art/logos/CentralGearLogo_03.png: white/black/red/gold rows, NOT uploaded), steel lever (plate, arm,
+  pull tab, hinge pin, rivets); all weighted to LowerTorso (rigid). 1,036 tris (plan said 600). Winding clean. Clearance:
+  0 clips at rest except Skinny hands brushing the belt sides (0.036); squat/deadlift bottoms: thighs tuck up to 0.27
+  under the bottom edge (fold), ribs up to 0.09 over the top edge (fold). Pictures Gear03_Phase2_Belt.png,
+  Gear03_Phase2_Belt_DeadliftBottom.png.
+- PHASES 3-5, BUILT AND CHECKED IN BLENDER (pictures sent): build_cartoon_gear_03.py now builds every item from master
+  patterns: torso_garment (singlet, squat suit, deadlift suit, tank, shorts, joggers: front/back/side panels, straps as
+  front-to-back arcs over the skin, scoop neck, armholes, legs joined by a crotch gusset, rolled hems, raised white
+  bands/cuffs, drawstrings), shirt_garment (bench shirt, tee, long sleeve: set-in sleeves joined along an armpit seam, the
+  yoke made of arcs over the shoulders and traps, a round neck hole sized from each build's own neck), knee sleeves (one
+  tube, diagonal stripe + CENTRAL as thin overlays on the finished sleeve), knee wraps and wrist wraps (wound turns lapping
+  like shingles, strap-end tab / tail, CENTRAL on the wrist), sneakers (shell + white sole). Every piece: points pushed
+  out of the skin, hems folded in short of the skin, the body's exact weights (smoothing made fabric lag), then
+  gear_fit_03.pose_relief = room ONLY where a check pose pushes skin through (vertex test + skin-through-face test, at most
+  0.05, smoothed) - not a general inflate. Shading kept smooth across the body-part cuts (a "gearNormal" point attribute).
+- CLEARANCE (gear_fit_03.clearance, all items x 3 builds x rest + 9 poses): at REST and WALKING every item has 0 clips
+  and 0 skin-through (except Sneakers: the foot touches the shell from inside in 35-80 spots; Skinny tee/long sleeve 5
+  tiny spots). Lift poses: remaining dips are in folds (behind the knee, the hip crease at the squat/deadlift bottom, the
+  elbow when the bar is on the back): up to 0.05-0.2 deep where the cartoon body's own skin crumples (glutes); flagged for
+  the body redesign. Belt: thighs tuck under it at the bottoms. Full numbers: the side-session note
+  gear-v03-clearance.md.
+- EXPORTED: art/exports/CartoonGear03_<Build>.glb (gear, ~11,000 tris, 107-111 pieces) and CartoonClothes03_<Build>.glb
+  (clothes, ~8,200 tris, 50 pieces), no images inside; art/blender/CartoonGear_03.blend (bodies + gear + clothes).
+  check_models.py: CHECK PASSED (529 meshes). v02 files kept; the v02 gear/clothes entries (never uploaded) removed from
+  materials.json, v03 entries + image CentralGearLogo_03 (art/logos/CentralGearLogo_03_White.png) added WITHOUT ids.
+- TRIANGLES per item (plan in brackets): belt 1,036 (600), singlet 1,560 (1,200), suits ~1,590, bench shirt 1,504, knee
+  sleeves 1,224 (800), knee wraps 1,696, wrist wraps 880 (600), tee 1,568, long sleeve 1,736, tank ~1,180, shorts 1,176,
+  joggers 1,704, sneakers 872. Full gear (singlet + belt + sleeves + wraps) ~4,700 vs the 3,200 planned: can be trimmed
+  (fewer columns/rows) if the Studio audit asks for it.
+- GAME CODE (not tested in Studio): WornGearConfig.LogoImageId (0) / LogoKeys / LabelKeys / LogoFaces / logoFace();
+  WornGearFit.dressCartoon leaves logo + label pieces off while LogoImageId is 0 (never an empty box), else makes the patch
+  invisible and puts the CENTRAL logo on it as a Decal tinted with the item's colour. rojo build OK, fwjelaa check clean.
+- BLOCKED ON THE USER: uploads (11 waiting: hands, 3 bodies, 3 gear, 3 clothes, the logo image), then ids into
+  WornGearConfig.CartoonAssetIds / LogoImageId / ClothesConfig, then phase 7 Studio test (Studio id
+  8aa62979-5da4-4077-9478-27e46e9acac4: equip/unequip per build, lifts, walk, celebrations, logo decal faces, PerformanceAudit).
+- User decision (relayed 2026-11-13): the "test stretch" is DROPPED from the queue (new, clearly directed body tests come
+  later); the redesign may change the body set and head/height proportions, so the fitter stays general: every height
+  now comes from the body itself (gear_fit_03 landmarks incl. neckRim; shorts/joggers/sneaker ends from knee/ankle), the
+  only fixed size left is HEAD_HALF 0.6 (Roblox head at HeadScale 1) in build_cartoon_gear_03.py. Re-run, re-exported,
+  CHECK PASSED again; rest/walk clearance unchanged.
+- Seen in passing (body, not gear; for the redesign session): the squat/deadlift bottoms crumple the glutes/hip crease.
+- Known rough edges: Muscular bench shirt/tee neckline rises around the huge traps; knee sleeves read a little boxy on the
+  Heavy build; the logo decal's face direction per piece needs checking in Studio.
+
 **BODY TYPES: CARTOON BODIES IN STUDIO (2026-11-12), COMMITTED** (GAME_DESIGN §38, approved by the user). Last commit a1596dc
 (collections, spotters, Local/Regional hype moves).
 - MPFB 2.0.18 (MakeHuman for Blender; GPL code, CC0 bodies), downloaded with the user's OK from extensions.blender.org,
@@ -157,8 +215,44 @@ CURRENT MILESTONE block).
     - Trade-off: on the heavy build the fists are up to 0.5 in front of the bar; from behind it reads fine. The proper
       fix later is per-build squat animations (the animation scripts are procedural: put the bar target on each
       build's back).
-  - NOT YET: a meet lift on a platform (same bar code); celebrations and the hand swaps; the clothes and gear remade for
-    the new bodies; build chosen by progress; the heavy back crease and wrist ridge.
+  - **SESSION 2026-11-12 (b), IN PROGRESS, NOT COMMITTED** (task: meet lift, hand swaps, clothes/gear refit, build from
+    progress, crease/ridge):
+    - MEET LIFT TESTED IN STUDIO, all 3 builds (driven through MeetLiftAnimation on Hall_1 Gear_1 by a test harness, the
+      same calls LocalMeetService makes; tools/studio/MeetLift_BodyTest.luau). Found: the fixed squatBarBack offset left
+      the muscular bar FLOATING 0.26 above the back in the meet pose (arms differ per build). FIX: ClothesConfig
+      squatBarRest (UpperTorso-local Z where the bar centre rests: 0.44 / 0.80 / 0.60) and benchBarClear (the bench bar
+      never closer than 0.39 / 0.54 / 0.53 in front of the chest centre; the heavy bar sank 0.16 into the chest).
+      StationPoseAnimator.barSpot. After: squat gap 0.01 (all), bench gap 0.01-0.03, deadlift plates 0.016-0.043 above
+      the floor. Pictures art/previews/Meet*_*.jpg.
+    - BLENDER, NOT UPLOADED: build_cartoon_hands_03.py (fused fine-voxel hands, knuckle bumps, wrist ball on the joint,
+      1,400 tris each, 10% bigger); build_cartoon_rig_02.py now unfolds thinning folds (heavy back crease gone), cuts and
+      tapers the forearm end (wrist ridge gone), keeps the hand part = the fist only, exports CartoonHands_03.glb/.json
+      (Open/Point/ThumbsUp/Fist x Left/Right, rigid). Bodies ~7,900-8,000 tris. build_cartoon_clothes_02.py: Tee,
+      LongSleeve, Tank, Shorts, Joggers, Sneakers per build, white cuffs/waistband/drawstrings/soles as <Item>White /
+      SneakersSole pieces, CartoonClothes_<Build>.glb. check_models: CHECK PASSED on both .blend files.
+    - USER PLAY TEST (relayed 2026-11-12): gear floats off the bodies; hands always fists; stats didn't change the
+      body; everyone too short/stubby. User: "finish ... then Re-make animations, then test stretch, then continue".
+      - Stats: the Studio test attribute workspace.LifterBodyBuild was left at "Heavy" by Claude (it overrides stats);
+        CLEAR IT in Edit mode. The build comes from stats on spawn (src/shared/Economy/LifterBuild.luau: Muscular at
+        average PP >= 0.40, else Heavy above 83 kg, else Skinny; Claude's thresholds). Computer lifters by their
+        numbers, spotters/staff "Heavy" (LifterBuild.BuildRules), all via LifterBodyService.prepareFigure.
+      - TALLER (art/scripts/lifter_heights.py, one source): legs x1.2286 (hips 2.0 -> 2.4), torso and arms x1.15
+        (neck 4.70), head/hands/feet same; ~5.9 studs. Bodies, clothes rebuilt (CHECK PASSED). station_animations.py
+        JOINTS stretched (LIFTER_RIG=block for the old rig); Squat/Bench/Deadlift re-exported and checked (feet 0.000,
+        deadlift hands 0.002 from the floor bar, bench hands on the chest). The other 81 animations being re-made.
+        ClothesConfig.HipHeight 2.4 + new neckMarks. StationLayout tall J-cups: squat +0.70 (bar 4.365), bench +0.175,
+        only while LifterBodyService.enabled() (live block bodies keep the old heights).
+      - OPEN HANDS by default (rig DEFAULT_HAND "Open"); HandShapeConfig swaps Fist/Point/ThumbsUp from the open hand,
+        timelines re-authored (fists for pumps/roars/flexes, Point for Sky Point/Prance/Point&Laugh/Shhh, thumbs up for
+        Crowd Pleaser); HandShapeAnimator.setGrip closes the hands while StationPoseAnimator holds the bar.
+      - GEAR REFIT: art/scripts/build_cartoon_gear_02.py (singlet, suits, bench shirt, chunky lever belt, seamless knee
+        sleeves, knee wraps, wrist wraps over the wrist; CENTRAL logos; layers shirt 0.04 < bench shirt 0.055 <
+        singlet 0.07 < belt 0.17), CartoonGear_<Build>.glb, CHECK PASSED. WornGearFit.dressCartoon + GearService branch
+        + WornGearConfig.CartoonAssetIds. Bar rests +0.03 for the singlet. Staff (coach etc.) get cartoon bodies too.
+      - BLOCKED: uploads need the user's explicit OK in chat (the auto-mode classifier refused the first one). 10
+        models are in materials.json without ids (hands, 3 bodies, 3 clothes, 3 gear); then ~85 animations and the Shhh
+        sound. NOT TESTED IN STUDIO YET (needs the uploads). The live game still uses block bodies + old animation ids:
+        do not publish taller animation ids until the cartoon bodies go live with them.
   - The old worn gear still shows as the block-body models stretched onto the new body (step 4 refits it). The new
     body is on in Studio for everyone now, so lifts in Studio look wrong until step 3 (the animations).
 - NOT DONE: a real BodyService (swap on every spawn, players and computer lifters); shorts and shoes (bare skin now;

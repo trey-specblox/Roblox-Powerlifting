@@ -28,32 +28,46 @@ export type Body = {
 	assetId: number,
 	-- The Neck mark in the body's UpperTorso, where the player's head sits (art/exports/CartoonBody_<Build>_joints.json).
 	neckMark: Vector3,
-	-- How far the squat bar sits back from the hands, in the UpperTorso's own space (+Z is the back): the squat
-	-- animation was made for the thinner block body, so on these backs the bar would sink in (measured 2026-11-12: the
-	-- back reaches 0.36 / 0.70 / 0.49 behind the chest's centre at the bar's height; the bar's centre sits at 0.24).
-	squatBarBack: number,
+	-- Where the squat bar's centre rests, in the UpperTorso's own space (+Z is the back): on the upper back, whatever
+	-- the hands do. The squat animation was made for the thinner block body, and each build's arms hang differently, so
+	-- following the hands left the bar inside the back (gym) or floating above it (meet, muscular). Measured on the
+	-- Blender meshes 2026-11-12: the back reaches 0.36 / 0.74 / 0.53 behind the chest's centre at the bar's height;
+	-- plus the bar's radius 0.07, plus 0.07 for the shirt and the singlet over it (build_cartoon_gear_02.py layers: shirt 0.04, singlet 0.07).
+	squatBarRest: number,
+	-- The bench bar comes down to the chest but never into it: its centre stays at least this far in front of the
+	-- UpperTorso's centre (-Z). Measured on the Blender meshes at each build's touch height 2026-11-12: the chest
+	-- front is 0.31 / 0.46 / 0.45 in front; plus the bar's radius 0.07 (the heavy bar sank 0.16 into the chest), plus
+	-- 0.07 for the shirt and singlet.
+	benchBarClear: number,
+	-- This build's clothes (art/scripts/build_cartoon_clothes_02.py, materials.json "CartoonClothes02_<Build>"); 0 = not
+	-- uploaded yet.
+	clothesAssetId: number,
 }
 
--- The cartoon bodies (materials.json "CartoonBody_<Build>"). All on the block rig's heights: HipHeight 2.
+-- The cartoon bodies (materials.json "CartoonBody_<Build>"). All on the taller rig's heights: HipHeight 2.4.
 ClothesConfig.Bodies = {
-	Skinny = { assetId = 129935421578716, neckMark = Vector3.new(0, 0.7292, -0.0051), squatBarBack = 0.16 },
-	Heavy = { assetId = 86964380216834, neckMark = Vector3.new(0, 0.8895, 0.1499), squatBarBack = 0.50 },
-	Muscular = { assetId = 92735685532150, neckMark = Vector3.new(0, 0.6273, 0.0218), squatBarBack = 0.30 },
+	Skinny = { assetId = 129935421578716, neckMark = Vector3.new(0, 0.843, -0.0055), squatBarRest = 0.51,
+		benchBarClear = 0.46, clothesAssetId = 0 },
+	Heavy = { assetId = 86964380216834, neckMark = Vector3.new(0, 0.9778, 0.1493), squatBarRest = 0.87,
+		benchBarClear = 0.61, clothesAssetId = 0 },
+	Muscular = { assetId = 92735685532150, neckMark = Vector3.new(0, 0.7484, 0.0221), squatBarRest = 0.67,
+		benchBarClear = 0.60, clothesAssetId = 0 },
 } :: { [string]: Body }
 ClothesConfig.DefaultBuild = "Skinny"
 ClothesConfig.StudioBuildAttribute = "LifterBodyBuild"
 
-ClothesConfig.ClothesAssetId = 122615782726867
--- The clothes pieces fit the dropped realistic body: hidden until remade for the cartoon bodies.
-ClothesConfig.ClothesShown = false
+-- The clothes are remade for the cartoon bodies (one model per build, Bodies[build].clothesAssetId); shown once uploaded.
+-- (The realistic body's clothes, 122615782726867, are no longer used.)
+ClothesConfig.ClothesShown = true
 
 -- On in the live game only once the bodies are tested with the lifts in Studio.
 ClothesConfig.LiveEnabled = false
 ClothesConfig.StudioEnabled = true
 ClothesConfig.StudioAttribute = "LifterBody"
 
--- The block rig's Root joint height above the floor, and the player's head at its own size.
-ClothesConfig.HipHeight = 2.0
+-- The Root joint's height above the floor (the taller bodies, user 2026-11-12, art/scripts/lifter_heights.py: hips 2.0 ->
+-- 2.4; every animation re-made on that rig), and the player's head at its own size.
+ClothesConfig.HipHeight = 2.4
 ClothesConfig.HeadScale = 1.0
 
 -- Folder in the character holding the clothes (rebuilt whenever the outfit or the gear toggle changes).
@@ -73,12 +87,15 @@ export type Item = {
 	fixed: { [string]: Color3 }?,
 }
 
+local WHITE = Color3.fromRGB(238, 238, 234)
+
 ClothesConfig.Items = {
-	{ id = "Tee", kind = "Shirt", label = "T-SHIRT", free = true },
-	{ id = "LongSleeve", kind = "Shirt", label = "LONG SLEEVE", free = true },
+	-- The thick white cuffs, the doubled white waistband and its drawstrings stay white (References/Body Study.md).
+	{ id = "Tee", kind = "Shirt", label = "T-SHIRT", free = true, fixed = { TeeWhite = WHITE } },
+	{ id = "LongSleeve", kind = "Shirt", label = "LONG SLEEVE", free = true, fixed = { LongSleeveWhite = WHITE } },
 	{ id = "Tank", kind = "Shirt", label = "TANK TOP", free = true },
-	{ id = "Shorts", kind = "Bottom", label = "SHORTS", free = true },
-	{ id = "Joggers", kind = "Bottom", label = "JOGGERS", free = true },
+	{ id = "Shorts", kind = "Bottom", label = "SHORTS", free = true, fixed = { ShortsWhite = WHITE } },
+	{ id = "Joggers", kind = "Bottom", label = "JOGGERS", free = true, fixed = { JoggersWhite = WHITE } },
 	{ id = "Sneakers", kind = "Shoes", label = "SNEAKERS", free = true,
 		fixed = { SneakersSole = Color3.fromRGB(236, 234, 228) } },
 } :: { Item }

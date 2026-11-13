@@ -1,1038 +1,1113 @@
 {
-  "about": "CC0 materials used in the Starter Gym, uploaded as images owned by group 529442797 with art/scripts/upload_group_images.py. preparedFolder is where the Roblox Maps kit's prep step left the 1024 px maps (outside the repo; re-made from the source if lost).",
-  "materials": {
-    "SBar_DarkWoodFloor": {
-      "source": "ambientcg:WoodFloor064",
-      "url": "https://ambientcg.com/view?id=WoodFloor064",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_WoodFloor064",
-      "ids": {
-        "color": "rbxassetid://116853125392813",
-        "normal": "rbxassetid://131023733106403",
-        "roughness": "rbxassetid://99877885379174"
-      }
-    },
-    "SBar_CreamWallTiles": {
-      "source": "polyhaven:long_white_tiles",
-      "url": "https://polyhaven.com/a/long_white_tiles",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_long_white_tiles",
-      "ids": {
-        "color": "rbxassetid://87087652044414",
-        "normal": "rbxassetid://78705441173025",
-        "roughness": "rbxassetid://136168219104020"
-      }
-    },
-    "SBar_BlackMarble": {
-      "source": "ambientcg:Marble006",
-      "url": "https://ambientcg.com/view?id=Marble006",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Marble006",
-      "ids": {
-        "color": "rbxassetid://134658265297491",
-        "normal": "rbxassetid://81687991928406",
-        "roughness": "rbxassetid://85154963086209"
-      }
-    },
-    "SBar_DarkPlanks": {
-      "source": "ambientcg:Planks037A",
-      "url": "https://ambientcg.com/view?id=Planks037A",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Planks037A",
-      "ids": {
-        "color": "rbxassetid://78285911641083",
-        "normal": "rbxassetid://77687587802341",
-        "roughness": "rbxassetid://134955031392788"
-      }
-    },
-    "Lockers_DarkGridTiles": {
-      "source": "ambientcg:Tiles108",
-      "url": "https://ambientcg.com/view?id=Tiles108",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles108",
-      "ids": {
-        "color": "rbxassetid://82594454999235",
-        "normal": "rbxassetid://101853108914550",
-        "roughness": "rbxassetid://74507281506922"
-      }
-    },
-    "Lockers_OakSlats": {
-      "source": "polyhaven:oak_veneer_02",
-      "url": "https://polyhaven.com/a/oak_veneer_02",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_oak_veneer_02",
-      "ids": {
-        "color": "rbxassetid://89603927198995",
-        "normal": "rbxassetid://128274853236069",
-        "roughness": "rbxassetid://87590195110822"
-      }
-    },
-    "Lockers_GreenPennyTiles": {
-      "source": "ambientcg:Tiles126",
-      "url": "https://ambientcg.com/view?id=Tiles126",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles126",
-      "ids": {
-        "color": "rbxassetid://87108536379404",
-        "normal": "rbxassetid://85589153419592",
-        "roughness": "rbxassetid://110819419280798"
-      }
-    },
-    "Cafe_Herringbone": {
-      "source": "polyhaven:herringbone_parquet",
-      "url": "https://polyhaven.com/a/herringbone_parquet",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_herringbone_parquet",
-      "ids": {
-        "color": "rbxassetid://117332819213723",
-        "normal": "rbxassetid://90927464344679",
-        "roughness": "rbxassetid://131534083397873"
-      }
-    },
-    "Cafe_RedBrick": {
-      "source": "polyhaven:red_brick_03",
-      "url": "https://polyhaven.com/a/red_brick_03",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_red_brick_03",
-      "ids": {
-        "color": "rbxassetid://117468038485514",
-        "normal": "rbxassetid://102691661534276",
-        "roughness": "rbxassetid://86141807694480"
-      }
-    },
-    "Cafe_GreenTiles": {
-      "source": "ambientcg:Tiles032",
-      "url": "https://ambientcg.com/view?id=Tiles032",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles032",
-      "ids": {
-        "color": "rbxassetid://124067811087466",
-        "normal": "rbxassetid://91163032168998",
-        "roughness": "rbxassetid://105784961345502"
-      }
-    },
-    "Cafe_WhiteMarble": {
-      "source": "ambientcg:Marble021",
-      "url": "https://ambientcg.com/view?id=Marble021",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Marble021",
-      "ids": {
-        "color": "rbxassetid://112174899086953",
-        "normal": "rbxassetid://98757688022461",
-        "roughness": "rbxassetid://79859733110735"
-      }
-    },
-    "Staff_Laminate": {
-      "source": "polyhaven:laminate_floor_03",
-      "url": "https://polyhaven.com/a/laminate_floor_03",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_laminate_floor_03",
-      "ids": {
-        "color": "rbxassetid://71311120498653",
-        "normal": "rbxassetid://104370922500764",
-        "roughness": "rbxassetid://74679013768559"
-      }
-    },
-    "Staff_WoodWorktop": {
-      "source": "ambientcg:Wood049",
-      "url": "https://ambientcg.com/view?id=Wood049",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Wood049",
-      "ids": {
-        "color": "rbxassetid://121763820794578",
-        "normal": "rbxassetid://111180060671694",
-        "roughness": "rbxassetid://104817297102607"
-      }
-    },
-    "Staff_Cork": {
-      "source": "ambientcg:Cork002",
-      "url": "https://ambientcg.com/view?id=Cork002",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Cork002",
-      "ids": {
-        "color": "rbxassetid://116250822379910",
-        "normal": "rbxassetid://138250345893095",
-        "roughness": "rbxassetid://108333057618621"
-      }
-    },
-    "Showers_BlueMosaic": {
-      "source": "ambientcg:Tiles035",
-      "url": "https://ambientcg.com/view?id=Tiles035",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Tiles035",
-      "ids": {
-        "color": "rbxassetid://79063036119056",
-        "normal": "rbxassetid://118506027233058",
-        "roughness": "rbxassetid://136996293743606"
-      }
-    },
-    "Showers_MarbleBrick": {
-      "source": "ambientcg:Tiles010",
-      "url": "https://ambientcg.com/view?id=Tiles010",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Tiles010",
-      "ids": {
-        "color": "rbxassetid://113634510763149",
-        "normal": "rbxassetid://88969744448400",
-        "roughness": "rbxassetid://92946355183459"
-      }
-    },
-    "Showers_Terrazzo": {
-      "source": "ambientcg:Terrazzo018",
-      "url": "https://ambientcg.com/view?id=Terrazzo018",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Terrazzo018",
-      "ids": {
-        "color": "rbxassetid://120098259872294",
-        "normal": "rbxassetid://93489427314386",
-        "roughness": "rbxassetid://123968892636231"
-      }
-    },
-    "Recovery_Rubber": {
-      "source": "ambientcg:Rubber004",
-      "url": "https://ambientcg.com/view?id=Rubber004",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Rubber004",
-      "ids": {
-        "color": "rbxassetid://72558321603795",
-        "normal": "rbxassetid://110859541932271",
-        "roughness": "rbxassetid://94838493037491"
-      }
-    },
-    "Recovery_MicroCement": {
-      "source": "ambientcg:Concrete048",
-      "url": "https://ambientcg.com/view?id=Concrete048",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Concrete048",
-      "ids": {
-        "color": "rbxassetid://79376788124469",
-        "normal": "rbxassetid://134234346592830",
-        "roughness": "rbxassetid://111992267111245"
-      }
-    },
-    "Massage_LightWood": {
-      "source": "ambientcg:WoodFloor051",
-      "url": "https://ambientcg.com/view?id=WoodFloor051",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_WoodFloor051",
-      "ids": {
-        "color": "rbxassetid://72532828654279",
-        "normal": "rbxassetid://79403708872298",
-        "roughness": "rbxassetid://118527570413370"
-      }
-    },
-    "Massage_StoneWall": {
-      "source": "polyhaven:japanese_stone_wall",
-      "url": "https://polyhaven.com/a/japanese_stone_wall",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_japanese_stone_wall",
-      "ids": {
-        "color": "rbxassetid://124186023288911",
-        "normal": "rbxassetid://78046982833492",
-        "roughness": "rbxassetid://112502857619364"
-      }
-    },
-    "Massage_Limewash": {
-      "source": "polyhaven:painted_plaster_wall",
-      "url": "https://polyhaven.com/a/painted_plaster_wall",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_painted_plaster_wall",
-      "ids": {
-        "color": "rbxassetid://105884708597781",
-        "normal": "rbxassetid://80941039028506",
-        "roughness": "rbxassetid://128584025842739"
-      }
-    },
-    "Strongman_Timber": {
-      "source": "polyhaven:weathered_brown_planks",
-      "url": "https://polyhaven.com/a/weathered_brown_planks",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_weathered_brown_planks",
-      "ids": {
-        "color": "rbxassetid://115601618684425",
-        "normal": "rbxassetid://89422451719522",
-        "roughness": "rbxassetid://118545744197354"
-      }
-    },
-    "Strongman_SteelPlates": {
-      "source": "ambientcg:MetalPlates013",
-      "url": "https://ambientcg.com/view?id=MetalPlates013",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_MetalPlates013",
-      "ids": {
-        "color": "rbxassetid://109321439128150",
-        "normal": "rbxassetid://86451185616305",
-        "roughness": "rbxassetid://130651176889490"
-      }
-    },
-    "Dumbbells_DiamondPlate": {
-      "source": "ambientcg:DiamondPlate008A",
-      "url": "https://ambientcg.com/view?id=DiamondPlate008A",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_DiamondPlate008A",
-      "ids": {
-        "color": "rbxassetid://103167934441698",
-        "normal": "rbxassetid://84895998611329",
-        "roughness": "rbxassetid://101546373474764"
-      }
-    },
-    "Cardio_Track": {
-      "source": "polyhaven:rubberized_track",
-      "url": "https://polyhaven.com/a/rubberized_track",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_rubberized_track",
-      "ids": {
-        "color": "rbxassetid://115211432323838",
-        "normal": "rbxassetid://97991264023733",
-        "roughness": "rbxassetid://135222975761483"
-      }
-    },
-    "Shed_CorrugatedSteel": {
-      "source": "ambientcg:CorrugatedSteel005",
-      "url": "https://ambientcg.com/view?id=CorrugatedSteel005",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/shed_CorrugatedSteel005",
-      "ids": {
-        "color": "rbxassetid://78063520458469",
-        "normal": "rbxassetid://108554226634224",
-        "roughness": "rbxassetid://110330213785139"
-      }
-    },
-    "Shed_Shutter": {
-      "source": "polyhaven:painted_metal_shutter",
-      "url": "https://polyhaven.com/a/painted_metal_shutter",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/shed_painted_metal_shutter",
-      "ids": {
-        "color": "rbxassetid://121529721433172",
-        "normal": "rbxassetid://119842376730446",
-        "roughness": "rbxassetid://75579880290713"
-      }
-    },
-    "Office_Walnut": {
-      "source": "polyhaven:walnut_veneer_02",
-      "url": "https://polyhaven.com/a/walnut_veneer_02",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_walnut_veneer_02",
-      "ids": {
-        "color": "rbxassetid://94298329377256",
-        "normal": "rbxassetid://120418570645120",
-        "roughness": "rbxassetid://128706919134224"
-      }
-    },
-    "Machines_SteelPanels": {
-      "source": "ambientcg:MetalPlates001",
-      "url": "https://ambientcg.com/a/MetalPlates001",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_MetalPlates001",
-      "ids": {
-        "color": "rbxassetid://120663242806268",
-        "normal": "rbxassetid://77095484702474",
-        "roughness": "rbxassetid://122670398560555"
-      }
-    },
-    "Index_Tiles": {
-      "source": "ambientcg:Tiles107",
-      "url": "https://ambientcg.com/a/Tiles107",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Tiles107",
-      "ids": {
-        "color": "rbxassetid://84345694547823",
-        "normal": "rbxassetid://125733647653307",
-        "roughness": "rbxassetid://72505428069044"
-      }
-    },
-    "Storage_Corrugated": {
-      "source": "ambientcg:CorrugatedSteel006A",
-      "url": "https://ambientcg.com/a/CorrugatedSteel006A",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_CorrugatedSteel006A",
-      "ids": {
-        "color": "rbxassetid://95672327931285",
-        "normal": "rbxassetid://90858943002731",
-        "roughness": "rbxassetid://108191610762847"
-      }
-    },
-    "Classroom_Chalkboard": {
-      "source": "ambientcg:Plaster001",
-      "url": "https://ambientcg.com/a/Plaster001",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Plaster001",
-      "ids": {
-        "color": "rbxassetid://112307825250984",
-        "normal": "rbxassetid://127097939765707",
-        "roughness": "rbxassetid://103438640351702"
-      }
-    },
-    "Media_Foam": {
-      "source": "ambientcg:AcousticFoam003",
-      "url": "https://ambientcg.com/a/AcousticFoam003",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_AcousticFoam003_light",
-      "ids": {
-        "color": "rbxassetid://122357090322313",
-        "normal": "rbxassetid://75000682808290",
-        "roughness": "rbxassetid://128022995157349"
-      },
-      "note": "colour map lightened (autocontrast to 150-245 grey) so Roblox tints show"
-    },
-    "Media_Felt": {
-      "source": "ambientcg:Fabric030",
-      "url": "https://ambientcg.com/a/Fabric030",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_Fabric030",
-      "ids": {
-        "color": "rbxassetid://116386534932599",
-        "normal": "rbxassetid://81250484802635",
-        "roughness": "rbxassetid://123834114511186"
-      }
-    },
-    "Coaches_Panels": {
-      "source": "polyhaven:white_planks_clean",
-      "url": "https://polyhaven.com/a/white_planks_clean",
-      "license": "CC0 1.0",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_white_planks_clean",
-      "ids": {
-        "color": "rbxassetid://97890308702102",
-        "normal": "rbxassetid://125195452589850",
-        "roughness": "rbxassetid://130902670264775"
-      }
-    },
-    "Suit_RoughCanvas": {
-      "source": "own work: art/scripts/make_suit_canvas.py",
-      "license": "own work",
-      "maps": [
-        "color",
-        "normal",
-        "roughness"
-      ],
-      "preparedFolder": "D:/Powerlifting Roblox Extras/Textures/SuitCanvas",
-      "ids": {
-        "color": "rbxassetid://77913741997628",
-        "normal": "rbxassetid://126714973613895",
-        "roughness": "rbxassetid://72577262654714"
-      },
-      "supersedes": "first uploads, 24 threads, too chunky (2026-11-06; unused): rbxassetid://118532157043903, rbxassetid://136367156901250, rbxassetid://99850782363642"
-    }
+ "about": "CC0 materials used in the Starter Gym, uploaded as images owned by group 529442797 with art/scripts/upload_group_images.py. preparedFolder is where the Roblox Maps kit's prep step left the 1024 px maps (outside the repo; re-made from the source if lost).",
+ "materials": {
+  "SBar_DarkWoodFloor": {
+   "source": "ambientcg:WoodFloor064",
+   "url": "https://ambientcg.com/view?id=WoodFloor064",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_WoodFloor064",
+   "ids": {
+    "color": "rbxassetid://116853125392813",
+    "normal": "rbxassetid://131023733106403",
+    "roughness": "rbxassetid://99877885379174"
+   }
   },
-  "models": {
-    "SBarProps_01": {
-      "about": "Supplement bar products (CENTRAL), shaker and bar stool. Made by art/scripts/build_sbar_props_01.py (art/blender/SBarProps_01.blend).",
-      "file": "art/exports/SBarProps_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://82461187336012"
-      },
-      "supersedes": "rbxassetid://126463004640141 (lathed pieces and the stool's foot ring were inside out, so Roblox showed see-through gaps: the stool base looked as if it clipped through the floor; unused)"
-    },
-    "SBarPlant_01": {
-      "about": "Potted plant. Poly Haven potted_plant_02, simplified by art/scripts/prep_sbar_plant.py.",
-      "source": "polyhaven:potted_plant_02",
-      "url": "https://polyhaven.com/a/potted_plant_02",
-      "license": "CC0 1.0",
-      "file": "art/exports/SBarPlant_01.glb",
-      "ids": {
-        "model": "rbxassetid://72818612497691"
-      }
-    },
-    "ShopGear_01": {
-      "about": "The Shop's powerlifting gear (knee sleeve, wrist wraps, lever belt, singlet and tee on mannequins; CENTRAL badges). Made by art/scripts/build_shop_gear_01.py (art/blender/ShopGear_01.blend). The game loads art/roblox/ShopGear_01.rbxmx (from an Import 3D of art/exports/ShopGear_01.fbx); this upload supplies the corrected meshes of KneeSleeve_Body, WristWrap_Body, MannequinSinglet_Form and MannequinTee_Form, which were inside out in that import.",
-      "file": "art/exports/ShopGear_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://124788342666123"
-      }
-    },
-    "RoomProps_02": {
-      "about": "Lockers, Cafe and Staff Room props (CENTRAL labels). Made by art/scripts/build_room_props_02.py (art/blender/RoomProps_02.blend).",
-      "file": "art/exports/RoomProps_02.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://95409978233696"
-      },
-      "supersedes": "rbxassetid://93719454817045 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
-    },
-    "RoomProps_03": {
-      "about": "Showers, Recovery and Massage props (CENTRAL labels). Made by art/scripts/build_room_props_03.py (art/blender/RoomProps_03.blend).",
-      "file": "art/exports/RoomProps_03.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://95190345614206"
-      },
-      "supersedes": "rbxassetid://109192629566668 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
-    },
-    "RoomProps_04": {
-      "about": "Themed room front props, batch 1: atlas stone and stand, strongman log, chain, hex dumbbell, dumbbell rack, competition plate, planter, wall uplight (CENTRAL labels). Made by art/scripts/build_room_props_04.py (art/blender/RoomProps_04.blend).",
-      "file": "art/exports/RoomProps_04.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://103672329284661"
-      },
-      "supersedes": "rbxassetid://91749281309773 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
-    },
-    "RoomProps_05": {
-      "about": "Strongman Yard props: tractor tyre, sandbag, yoke, farmer's walk handle (CENTRAL labels; loaded with RoomProps_04's CompPlate in the game). Made by art/scripts/build_room_props_05.py (art/blender/RoomProps_05.blend).",
-      "file": "art/exports/RoomProps_05.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://125479986784261"
-      },
-      "supersedes": "rbxassetid://102621394697271 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused) and rbxassetid://126419721956699 (first upload: the tyre's rubber body was inside out, so Roblox showed see-through gaps in it; unused)"
-    },
-    "RoomProps_06": {
-      "about": "Themed room fronts batch 2a props: weight stack (Machines), wall sconce (Office), wooden crate, pallet and flat bumper plate (Storage), medal (Index); CENTRAL labels. Made by art/scripts/build_room_props_06.py (art/blender/RoomProps_06.blend).",
-      "file": "art/exports/RoomProps_06.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://71767379502226"
-      },
-      "supersedes": "rbxassetid://89330038688157 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
-    },
-    "RoomProps_07": {
-      "about": "Themed room fronts batch 2b props: studio mic, ON AIR lamp, headphones (Media Room), resistance band, foam roller (MobilityRoller), roller rack (Warm-up & Mobility), clipboard (Coaches); CENTRAL labels. Made by art/scripts/build_room_props_07.py (art/blender/RoomProps_07.blend).",
-      "file": "art/exports/RoomProps_07.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://122130943505239"
-      },
-      "supersedes": "rbxassetid://111460003222169 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused) and rbxassetid://84544752881394 (roller named FoamRoller, clashed with RoomProps_03) and rbxassetid://127268303557491 (thin hoop bands); both unused"
-    },
-    "RoomProps_08": {
-      "about": "The open dumbbell & machine zone's machines: tricep pulldown station, lat pulldown, seated cable row, leg extension / leg curl (CENTRAL labels). Made by art/scripts/build_room_props_08.py (art/blender/RoomProps_08.blend).",
-      "file": "art/exports/RoomProps_08.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://122294195016059"
-      },
-      "supersedes": "rbxassetid://83964902060436 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
-    },
-    "RoomProps_09": {
-      "about": "The Cardio room's machines: treadmill, exercise bike, rowing machine, ski erg (CENTRAL labels; moving pieces for the hop-on animations). Made by art/scripts/build_room_props_09.py (art/blender/RoomProps_09.blend).",
-      "file": "art/exports/RoomProps_09.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://77291688307242"
-      },
-      "supersedes": "rbxassetid://118823401986051 (first upload: its exercise bike was sized for real people, so Roblox avatars' feet could not reach the pedals; unused)"
-    },
-    "CardioTV_01": {
-      "about": "The Cardio room's wall TV: slim bezel with a CENTRAL chin and power light, glossy screen (the game draws the CARDIO ZONE sign and the rhythm round on it), steel wall mount, soundbar with grille, yellow trim and end caps. Made by art/scripts/build_cardio_tv_01.py (art/blender/CardioTV_01.blend).",
-      "file": "art/exports/CardioTV_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://127520535803138"
-      }
-    },
-    "MockMeet_01": {
-      "about": "The Mock Meet's furniture: the check-in desk (MeetDesk), the private room's competition platform (MeetPlatform), wait bench (MeetBench), attempt board frame (MeetBoard) and side-wall banner (MeetBanner). The game draws its screens on MeetDesk_MonitorScreen, MeetBoard_Screen and MeetBanner_Cloth. Made by art/scripts/build_mock_meet_01.py (art/blender/MockMeet_01.blend).",
-      "file": "art/exports/MockMeet_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://104295814087547"
-      }
-    },
-    "Furniture_01": {
-      "about": "Shared low-detail furniture: office chair, desk (stretched to each desk), monitor with keyboard (Workstation), shelving frames with 3 or 4 boards (ShelfThree, ShelfFour; stretched to each shelf), storage box and a row of books. Made by art/scripts/build_furniture_01.py (art/blender/Furniture_01.blend).",
-      "file": "art/exports/Furniture_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://80843208048332"
-      }
-    },
-    "Lights_01": {
-      "about": "The gym's light fittings: the rack hall's hanging LED bar (LightBar, stretched), the ceiling light panel (CeilingPanel, stretched), the Strongman Shed's dome lamp (HighBayLamp), the stage spotlight (StageLight), the Shop's track spotlight (TrackSpot) and track (TrackRail). Made by art/scripts/build_lights_01.py (art/blender/Lights_01.blend).",
-      "file": "art/exports/Lights_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://110775352617639"
-      }
-    },
-    "Doors_01": {
-      "about": "The doors' pieces and the hall-front name plaques: swing-door leaves (DoorLeaf, DoorLeafGlazed; stretched and coloured per door), pull handles (DoorHandle), the name plaque (NamePlaque), the sliding doors' panel frame (SlideDoorFrame) and sensor (DoorSensor), the sign over a swing door (DoorSign). Made by art/scripts/build_doors_01.py (art/blender/Doors_01.blend).",
-      "file": "art/exports/Doors_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://138346322157297"
-      }
-    },
-    "Reception_01": {
-      "about": "The lobby's furniture: the reception desk round the game's picture front (ReceptionDesk), the card reader on its ledge (CardReader), the ceiling light strips (LightStrip; stretched), the entrance turnstiles and their arms (Turnstile, TurnstileArm), railing posts and rails (RailPost, RailRun; stretched), the merch wall (MerchWall) and the outside sign's lamps (FloodLamp). Made by art/scripts/build_reception_01.py (art/blender/Reception_01.blend).",
-      "file": "art/exports/Reception_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://78320327648297"
-      }
-    },
-    "CafeShop_01": {
-      "about": "The Cafe, Supplement Bar and Shop furniture: a stretched bar counter (CounterUnit) and wall shelf (WallShelf), a till (Till), round and high tables (RoundTable, HighTable), the cafe window bar (WindowBar), the bar blender (Blender), drinks fridge (DrinksFridge) and serving counter (SBarCounter), the shop slatwall (Slatwall), podium (Podium), folded tee stack (TeeStack), tee table (DisplayTable) and counter top (ShopCounterTop). Made by art/scripts/build_cafe_shop_01.py (art/blender/CafeShop_01.blend).",
-      "file": "art/exports/CafeShop_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://135516072435746"
-      }
-    },
-    "Spa_01": {
-      "about": "The spa wing pieces no earlier model covers: the sauna's benches (SaunaBench; stretched), duckboard (Duckboard; stretched for the shower stalls too), heater (SaunaHeater), wall lamp (SaunaLamp), bucket (SaunaBucket) and thermometer (Thermometer), the shower screen (ShowerScreen), the recovery wall ladder (WallLadder), plunge step (PlungeStep) and stretching mat (FloorMat). Made by art/scripts/build_spa_01.py (art/blender/Spa_01.blend).",
-      "file": "art/exports/Spa_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://72413560307802"
-      }
-    },
-    "BackRooms_01": {
-      "about": "The Staff Room, Lockers, Office, Coach room, Storage, Training Zone and Strongman Shed pieces no earlier model covers: a stretched cabinet run (KitchenUnit), the rota board (CorkBoard), a clothes rail (HangRail), a coat hook (CoatHook), a filing cabinet (FilingCabinet), a wall clock (WallClock), a whiteboard frame (WhiteboardFrame), a laptop (Laptop), a bumper plate lying flat (FlatPlate), the bar holder with bars (BarStand), the flat bench (FlatBench), the chalk stand (ChalkStand) and the strongman rig (StrongmanRig). Made by art/scripts/build_back_rooms_01.py (art/blender/BackRooms_01.blend).",
-      "file": "art/exports/BackRooms_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://106359740301632"
-      }
-    },
-    "Fronts_01": {
-      "about": "The themed room fronts' details no earlier model covers: a barbell lying and standing (Barbell, BarbellUpright; each bar painted its colour), the Mock Meet front's wall bar rack (WallBarRack) and upright rack (GunRack), the judges' lights (JudgesLights), a chalk stick or marker (Stick), a duster (Duster), an acoustic foam tile (FoamTile) and the Office window blinds (Blinds). Made by art/scripts/build_fronts_01.py (art/blender/Fronts_01.blend).",
-      "file": "art/exports/Fronts_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://82188043511002"
-      }
-    },
-    "Steel_01": {
-      "about": "The gym's structural steel: an I-beam (SteelBeam; the hall roof's rafters, tie beams and ridge beam, the balcony columns, the stair stringers, the Strongman Shed's trusses and ridge beam) and a round handrail (Handrail; the balcony and stair handrails), stretched to every piece. Made by art/scripts/build_steel_01.py (art/blender/Steel_01.blend).",
-      "file": "art/exports/Steel_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://139793685980962"
-      }
-    },
-    "LocalMeet_01": {
-      "about": "The Local meet venue's new models: the referees' light box with three separate lamps (RefLights; the game lights RefLights_Lamp1..3 white or red), a section of tiered seating (Bleachers), the 1-2-3 awards podium (AwardPodium), a warm-up plate tree (PlateTree) and the venue's entrance building outside the gym with a pitched gable roof and an entrance porch (MeetHall; the game writes LOCAL MEET on MeetHall_SignScreen). Made by art/scripts/build_local_meet_01.py (art/blender/LocalMeet_01.blend).",
-      "file": "art/exports/LocalMeet_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://96498344946081"
-      }
-    },
-    "LocalMeet_02": {
-      "about": "The redesigned Local meet venue's new models: a metal crowd barricade with a CENTRAL banner (Barricade), a referee's chair (RefChair), a platform number sign on a post (PlatformSign; the game writes PLATFORM 1..8 on PlatformSign_Screen) and the awards stage backdrop on truss towers (AwardsBackdrop; the game writes LOCAL CENTRAL MEET on AwardsBackdrop_Title). Made by art/scripts/build_local_meet_02.py (art/blender/LocalMeet_02.blend).",
-      "file": "art/exports/LocalMeet_02.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://71979666360161"
-      }
-    },
-    "Crowd_01": {
-      "about": "Fake spectators for the Local meet's stands: two sections of blocky seated figures (CrowdA, CrowdB), one piece per colour so the game can colour each section differently. Made by art/scripts/build_crowd_01.py (art/blender/Crowd_01.blend).",
-      "file": "art/exports/Crowd_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://73272782464755"
-      }
-    },
-    "WornGear_01": {
-      "about": "The Shop's gear as worn on an R15 body (money system step 5): a lever belt round the waist (WornLeverBelt), knee sleeves in two halves on the thigh and shin (WornKneeSleeve), wrist wraps (WornWristWrap) and a one-piece singlet in pieces on the chest, hips and thighs (WornSinglet). Names are Worn<Item>_<ShopConfig colour key>[_<Segment>]; limb pieces are built on the right limb and used on both. Made by art/scripts/build_worn_gear_01.py (art/blender/WornGear_01.blend). Reworked 2026-10-31 (user's reference photos): chunky belt, seamless knee sleeves, wraps covering the wrist. 2026-11-06: added the rare suits, rough and 3D from the user's photos (WornSquatSuit, WornDeadliftSuit, WornBenchShirt) and knee wraps (WornKneeWrap), built with art/scripts/worn_rough.py and exported by art/scripts/export_worn_gear.py.",
-      "file": "art/exports/WornGear_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://130216457283907"
-      },
-      "supersedes": "rbxassetid://115016229826377 (before the rare suits and knee wraps, 2026-11-06; unused); rbxassetid://124628901641945 (rework without the knee fix: the sleeve halves opened a gap whenever the knee bent, even in idle poses; replaced 2026-10-31); rbxassetid://75664723615342 (first version: belt too flat, knee sleeve halves showed a gap, wraps too small)"
-    },
-    "Trophy_01": {
-      "about": "The trophy the top 3 hold on the awards podium at a Regional or State meet (GAME_DESIGN \u00a735.8): a two-handled cup on a stem (Trophy_Metal, coloured gold, silver or bronze by the game, with CENTRAL on the base's front) on a black base (Trophy_Base). Made by art/scripts/build_trophy_01.py (art/blender/Trophy_01.blend).",
-      "file": "art/exports/Trophy_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://96903806374655"
-      }
-    },
-    "StateArena_01": {
-      "about": "The State Championship arena (GAME_DESIGN 36): a 15-degree slice of the seating bowl (StandWedge) and of the lattice dome (DomeWedge), each placed 24 times round the floor; the round floor and mat (ArenaFloor); the centre-hung video cube (CentreCube); the screen gantry over each rack (RackGantry; the game draws the live minigame on RackGantry_Screen); judges' tables, TV camera tripods, STATE CHAMPS banners, the CENTRAL flag, the end name signs (NameSign; the game writes on NameSign_Screen); the CENTRAL backdrop inside each gantry (GantryBanner); and the domed entrance building outside the gym (ArenaEntrance; the game writes on ArenaEntrance_SignScreen). Made by art/scripts/build_state_arena_01.py (art/blender/StateArena_01.blend).",
-      "file": "art/exports/StateArena_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://120696869428785"
-      },
-      "supersedes": "rbxassetid://107253247735603 (yellow screen-frame backs and the number panel, 2026-11-01; unused); rbxassetid://108120033847582 (before the gantry banners were added, 2026-11-01; unused)"
-    },
-    "LocalMeet_03": {
-      "about": "The chalk stand each lifter chalks up at in the Local meet's warm-up room (MeetChalkStand), from the user's photos: black square post and cross-shaped foot, stainless bowl with chalk blocks and powder, CENTRAL on the post. Made by art/scripts/build_local_meet_03.py (art/blender/LocalMeet_03.blend).",
-      "file": "art/exports/LocalMeet_03.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://103112945740574"
-      }
-    },
-    "GearCrate_01": {
-      "about": "The CENTRAL gear crates that drop and pop open before the crate reel (GearCrate): one road case, recoloured and relabelled per crate by the game, with big CENTRAL BELTS, WRAPS, SINGLETS or SLEEVES lettering, a swinging lid and latches, on a lifting platform with two bumper plates. Made by art/scripts/build_gear_crate_01.py (art/blender/GearCrate_01.blend).",
-      "file": "art/exports/GearCrate_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://101716180690166"
-      },
-      "supersedes": "rbxassetid://70433507633305 (four crates, before KNEE WRAPS, 2026-11-06; unused)"
-    },
-    "WeighBooth_01": {
-      "about": "The State arena's weigh-in booth, by the sign-up desk between meets (WeighBooth): navy walls, a half-drawn shower curtain on rings, a WEIGH-IN sign and a floor scale with a read-out. One mesh reused. Made by art/scripts/build_weigh_booth_01.py (art/blender/WeighBooth_01.blend).",
-      "file": "art/exports/WeighBooth_01.glb",
-      "license": "own work",
-      "ids": {
-        "model": "rbxassetid://106669210036999"
-      }
-    },
-    "LifterBody_01": {
-      "about": "The lifter body, Average build, on the realistic R15 skeleton (GAME_DESIGN \u00a738.5): 14 skinned body parts, no head. Made by art/scripts/build_lifter_body_01.py from MPFB (MakeHuman, CC0 output) in art/blender/LifterBody_01.blend. CHECK PASSED, 8,998 triangles.",
-      "file": "art/exports/LifterBody_01.glb",
-      "license": "own work (MPFB/MakeHuman output is CC0)",
-      "supersedes": "rbxassetid://138617159277013 (first upload: exported facing +Y, and Roblox's importer turns a GLB half round, so the body faced backwards; unused)",
-      "ids": {
-        "model": "rbxassetid://102214076264098"
-      }
-    },
-    "Clothes_01": {
-      "about": "Plain basic clothes for the lifter body (GAME_DESIGN \u00a738.6): Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers (+ SneakersSole), skinned to the LifterBody_01 skeleton, one mesh per R15 part named <Item>__<Part>. Made by art/scripts/build_clothes_01.py (art/blender/Clothes_01.blend). CHECK PASSED, 13,716 triangles.",
-      "file": "art/exports/Clothes_01.glb",
-      "license": "own work (shaped from MPFB/MakeHuman output, CC0)",
-      "ids": {
-        "model": "rbxassetid://122615782726867"
-      }
-    },
-    "CartoonBody_Skinny": {
-      "about": "Cartoon lifter body, Skinny build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
-      "file": "art/exports/CartoonBody_Skinny.glb",
-      "license": "own work",
-      "supersedes": "rbxassetid://129133191533052 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
-      "ids": {
-        "model": "rbxassetid://129935421578716"
-      }
-    },
-    "CartoonBody_Heavy": {
-      "about": "Cartoon lifter body, Heavy build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
-      "file": "art/exports/CartoonBody_Heavy.glb",
-      "license": "own work",
-      "supersedes": "rbxassetid://71182274432851 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
-      "ids": {
-        "model": "rbxassetid://86964380216834"
-      }
-    },
-    "CartoonBody_Muscular": {
-      "about": "Cartoon lifter body, Muscular build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
-      "file": "art/exports/CartoonBody_Muscular.glb",
-      "license": "own work",
-      "supersedes": "rbxassetid://140000230648162 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
-      "ids": {
-        "model": "rbxassetid://92735685532150"
-      }
-    }
+  "SBar_CreamWallTiles": {
+   "source": "polyhaven:long_white_tiles",
+   "url": "https://polyhaven.com/a/long_white_tiles",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_long_white_tiles",
+   "ids": {
+    "color": "rbxassetid://87087652044414",
+    "normal": "rbxassetid://78705441173025",
+    "roughness": "rbxassetid://136168219104020"
+   }
   },
-  "images": {
-    "Chalk_Lesson": {
-      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
-      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Lesson.png",
-      "license": "own work",
-      "ids": {
-        "image": "rbxassetid://82768532927795"
-      }
-    },
-    "Chalk_Squat": {
-      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
-      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Squat.png",
-      "license": "own work",
-      "ids": {
-        "image": "rbxassetid://105865566921970"
-      }
-    },
-    "Chalk_Bench": {
-      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
-      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Bench.png",
-      "license": "own work",
-      "ids": {
-        "image": "rbxassetid://109475773438357"
-      }
-    },
-    "Chalk_Deadlift": {
-      "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
-      "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Deadlift.png",
-      "license": "own work",
-      "ids": {
-        "image": "rbxassetid://78602138170847"
-      }
-    },
-    "Cutscene_Bubble": {
-      "about": "The coach's cutscene: a black speech tab with a white edge, for an answer. Drawn by art/scripts/make_cutscene_art.py.",
-      "file": "art/ui/Cutscene_Bubble.png",
-      "license": "own work",
-      "ids": {
-        "image": "rbxassetid://111472851400982"
-      }
-    },
-    "Cutscene_Panel": {
-      "about": "The coach's cutscene: a see-through dark panel down the left of the screen, its edge cut into yellow and white shards, for the portrait to stand on. Drawn by art/scripts/make_cutscene_art.py.",
-      "file": "art/ui/Cutscene_Panel.png",
-      "license": "own work",
-      "ids": {
-        "image": "rbxassetid://101738144418251"
-      }
-    }
+  "SBar_BlackMarble": {
+   "source": "ambientcg:Marble006",
+   "url": "https://ambientcg.com/view?id=Marble006",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Marble006",
+   "ids": {
+    "color": "rbxassetid://134658265297491",
+    "normal": "rbxassetid://81687991928406",
+    "roughness": "rbxassetid://85154963086209"
+   }
   },
-  "sounds": {
-    "ChantBeat": {
-      "about": "The State arena crowd's first chant beat: stomp, stomp, clap, 116 BPM, a seamless 4-bar loop. Own work, made from scratch by art/scripts/make_chant_beat.py. No longer played on its own: the game plays the ChantMix_ loops (art/scripts/make_chant_mix.py), which reuse this script's crowd at 144 BPM",
-      "file": "art/sounds/ChantBeat.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://75581947336971"
-      }
-    },
-    "Rhythm_Kick": {
-      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
-      "file": "art/sounds/Rhythm_Kick.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://85088925719114"
-      }
-    },
-    "Rhythm_Snare": {
-      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
-      "file": "art/sounds/Rhythm_Snare.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://99723722634680"
-      }
-    },
-    "Rhythm_Hat": {
-      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
-      "file": "art/sounds/Rhythm_Hat.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://139986629908272"
-      }
-    },
-    "Rhythm_Hit": {
-      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
-      "file": "art/sounds/Rhythm_Hit.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://111016778868160"
-      }
-    },
-    "Rhythm_Miss": {
-      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
-      "file": "art/sounds/Rhythm_Miss.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://127344920469973"
-      }
-    },
-    "Rhythm_Count": {
-      "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
-      "file": "art/sounds/Rhythm_Count.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://105244845446461"
-      }
-    },
-    "Awards_Theme": {
-      "about": "The Local meet awards' default winner's theme song (16 s fanfare and a held chord), own work, made by art/scripts/make_awards_sounds.py",
-      "file": "art/sounds/Awards_Theme.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://116724943474598"
-      }
-    },
-    "Awards_Cheer": {
-      "about": "The Local meet awards' crowd cheer (applause, roar, whistles), own work, made by art/scripts/make_awards_sounds.py",
-      "file": "art/sounds/Awards_Cheer.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://74322878777614"
-      }
-    },
-    "Crate_Tick": {
-      "about": "The crate reel's tick, own work, made by art/scripts/make_crate_tick.py",
-      "file": "art/sounds/Crate_Tick.wav",
-      "license": "own work",
-      "ids": {
-        "audio": "rbxassetid://77524292668778"
-      }
-    }
+  "SBar_DarkPlanks": {
+   "source": "ambientcg:Planks037A",
+   "url": "https://ambientcg.com/view?id=Planks037A",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Planks037A",
+   "ids": {
+    "color": "rbxassetid://78285911641083",
+    "normal": "rbxassetid://77687587802341",
+    "roughness": "rbxassetid://134955031392788"
+   }
+  },
+  "Lockers_DarkGridTiles": {
+   "source": "ambientcg:Tiles108",
+   "url": "https://ambientcg.com/view?id=Tiles108",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles108",
+   "ids": {
+    "color": "rbxassetid://82594454999235",
+    "normal": "rbxassetid://101853108914550",
+    "roughness": "rbxassetid://74507281506922"
+   }
+  },
+  "Lockers_OakSlats": {
+   "source": "polyhaven:oak_veneer_02",
+   "url": "https://polyhaven.com/a/oak_veneer_02",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_oak_veneer_02",
+   "ids": {
+    "color": "rbxassetid://89603927198995",
+    "normal": "rbxassetid://128274853236069",
+    "roughness": "rbxassetid://87590195110822"
+   }
+  },
+  "Lockers_GreenPennyTiles": {
+   "source": "ambientcg:Tiles126",
+   "url": "https://ambientcg.com/view?id=Tiles126",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles126",
+   "ids": {
+    "color": "rbxassetid://87108536379404",
+    "normal": "rbxassetid://85589153419592",
+    "roughness": "rbxassetid://110819419280798"
+   }
+  },
+  "Cafe_Herringbone": {
+   "source": "polyhaven:herringbone_parquet",
+   "url": "https://polyhaven.com/a/herringbone_parquet",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_herringbone_parquet",
+   "ids": {
+    "color": "rbxassetid://117332819213723",
+    "normal": "rbxassetid://90927464344679",
+    "roughness": "rbxassetid://131534083397873"
+   }
+  },
+  "Cafe_RedBrick": {
+   "source": "polyhaven:red_brick_03",
+   "url": "https://polyhaven.com/a/red_brick_03",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_red_brick_03",
+   "ids": {
+    "color": "rbxassetid://117468038485514",
+    "normal": "rbxassetid://102691661534276",
+    "roughness": "rbxassetid://86141807694480"
+   }
+  },
+  "Cafe_GreenTiles": {
+   "source": "ambientcg:Tiles032",
+   "url": "https://ambientcg.com/view?id=Tiles032",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Tiles032",
+   "ids": {
+    "color": "rbxassetid://124067811087466",
+    "normal": "rbxassetid://91163032168998",
+    "roughness": "rbxassetid://105784961345502"
+   }
+  },
+  "Cafe_WhiteMarble": {
+   "source": "ambientcg:Marble021",
+   "url": "https://ambientcg.com/view?id=Marble021",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Marble021",
+   "ids": {
+    "color": "rbxassetid://112174899086953",
+    "normal": "rbxassetid://98757688022461",
+    "roughness": "rbxassetid://79859733110735"
+   }
+  },
+  "Staff_Laminate": {
+   "source": "polyhaven:laminate_floor_03",
+   "url": "https://polyhaven.com/a/laminate_floor_03",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_laminate_floor_03",
+   "ids": {
+    "color": "rbxassetid://71311120498653",
+    "normal": "rbxassetid://104370922500764",
+    "roughness": "rbxassetid://74679013768559"
+   }
+  },
+  "Staff_WoodWorktop": {
+   "source": "ambientcg:Wood049",
+   "url": "https://ambientcg.com/view?id=Wood049",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Wood049",
+   "ids": {
+    "color": "rbxassetid://121763820794578",
+    "normal": "rbxassetid://111180060671694",
+    "roughness": "rbxassetid://104817297102607"
+   }
+  },
+  "Staff_Cork": {
+   "source": "ambientcg:Cork002",
+   "url": "https://ambientcg.com/view?id=Cork002",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms2_Cork002",
+   "ids": {
+    "color": "rbxassetid://116250822379910",
+    "normal": "rbxassetid://138250345893095",
+    "roughness": "rbxassetid://108333057618621"
+   }
+  },
+  "Showers_BlueMosaic": {
+   "source": "ambientcg:Tiles035",
+   "url": "https://ambientcg.com/view?id=Tiles035",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Tiles035",
+   "ids": {
+    "color": "rbxassetid://79063036119056",
+    "normal": "rbxassetid://118506027233058",
+    "roughness": "rbxassetid://136996293743606"
+   }
+  },
+  "Showers_MarbleBrick": {
+   "source": "ambientcg:Tiles010",
+   "url": "https://ambientcg.com/view?id=Tiles010",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Tiles010",
+   "ids": {
+    "color": "rbxassetid://113634510763149",
+    "normal": "rbxassetid://88969744448400",
+    "roughness": "rbxassetid://92946355183459"
+   }
+  },
+  "Showers_Terrazzo": {
+   "source": "ambientcg:Terrazzo018",
+   "url": "https://ambientcg.com/view?id=Terrazzo018",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Terrazzo018",
+   "ids": {
+    "color": "rbxassetid://120098259872294",
+    "normal": "rbxassetid://93489427314386",
+    "roughness": "rbxassetid://123968892636231"
+   }
+  },
+  "Recovery_Rubber": {
+   "source": "ambientcg:Rubber004",
+   "url": "https://ambientcg.com/view?id=Rubber004",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Rubber004",
+   "ids": {
+    "color": "rbxassetid://72558321603795",
+    "normal": "rbxassetid://110859541932271",
+    "roughness": "rbxassetid://94838493037491"
+   }
+  },
+  "Recovery_MicroCement": {
+   "source": "ambientcg:Concrete048",
+   "url": "https://ambientcg.com/view?id=Concrete048",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Concrete048",
+   "ids": {
+    "color": "rbxassetid://79376788124469",
+    "normal": "rbxassetid://134234346592830",
+    "roughness": "rbxassetid://111992267111245"
+   }
+  },
+  "Massage_LightWood": {
+   "source": "ambientcg:WoodFloor051",
+   "url": "https://ambientcg.com/view?id=WoodFloor051",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_WoodFloor051",
+   "ids": {
+    "color": "rbxassetid://72532828654279",
+    "normal": "rbxassetid://79403708872298",
+    "roughness": "rbxassetid://118527570413370"
+   }
+  },
+  "Massage_StoneWall": {
+   "source": "polyhaven:japanese_stone_wall",
+   "url": "https://polyhaven.com/a/japanese_stone_wall",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_japanese_stone_wall",
+   "ids": {
+    "color": "rbxassetid://124186023288911",
+    "normal": "rbxassetid://78046982833492",
+    "roughness": "rbxassetid://112502857619364"
+   }
+  },
+  "Massage_Limewash": {
+   "source": "polyhaven:painted_plaster_wall",
+   "url": "https://polyhaven.com/a/painted_plaster_wall",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_painted_plaster_wall",
+   "ids": {
+    "color": "rbxassetid://105884708597781",
+    "normal": "rbxassetid://80941039028506",
+    "roughness": "rbxassetid://128584025842739"
+   }
+  },
+  "Strongman_Timber": {
+   "source": "polyhaven:weathered_brown_planks",
+   "url": "https://polyhaven.com/a/weathered_brown_planks",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_weathered_brown_planks",
+   "ids": {
+    "color": "rbxassetid://115601618684425",
+    "normal": "rbxassetid://89422451719522",
+    "roughness": "rbxassetid://118545744197354"
+   }
+  },
+  "Strongman_SteelPlates": {
+   "source": "ambientcg:MetalPlates013",
+   "url": "https://ambientcg.com/view?id=MetalPlates013",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_MetalPlates013",
+   "ids": {
+    "color": "rbxassetid://109321439128150",
+    "normal": "rbxassetid://86451185616305",
+    "roughness": "rbxassetid://130651176889490"
+   }
+  },
+  "Dumbbells_DiamondPlate": {
+   "source": "ambientcg:DiamondPlate008A",
+   "url": "https://ambientcg.com/view?id=DiamondPlate008A",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_DiamondPlate008A",
+   "ids": {
+    "color": "rbxassetid://103167934441698",
+    "normal": "rbxassetid://84895998611329",
+    "roughness": "rbxassetid://101546373474764"
+   }
+  },
+  "Cardio_Track": {
+   "source": "polyhaven:rubberized_track",
+   "url": "https://polyhaven.com/a/rubberized_track",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts1_rubberized_track",
+   "ids": {
+    "color": "rbxassetid://115211432323838",
+    "normal": "rbxassetid://97991264023733",
+    "roughness": "rbxassetid://135222975761483"
+   }
+  },
+  "Shed_CorrugatedSteel": {
+   "source": "ambientcg:CorrugatedSteel005",
+   "url": "https://ambientcg.com/view?id=CorrugatedSteel005",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/shed_CorrugatedSteel005",
+   "ids": {
+    "color": "rbxassetid://78063520458469",
+    "normal": "rbxassetid://108554226634224",
+    "roughness": "rbxassetid://110330213785139"
+   }
+  },
+  "Shed_Shutter": {
+   "source": "polyhaven:painted_metal_shutter",
+   "url": "https://polyhaven.com/a/painted_metal_shutter",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/shed_painted_metal_shutter",
+   "ids": {
+    "color": "rbxassetid://121529721433172",
+    "normal": "rbxassetid://119842376730446",
+    "roughness": "rbxassetid://75579880290713"
+   }
+  },
+  "Office_Walnut": {
+   "source": "polyhaven:walnut_veneer_02",
+   "url": "https://polyhaven.com/a/walnut_veneer_02",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_walnut_veneer_02",
+   "ids": {
+    "color": "rbxassetid://94298329377256",
+    "normal": "rbxassetid://120418570645120",
+    "roughness": "rbxassetid://128706919134224"
+   }
+  },
+  "Machines_SteelPanels": {
+   "source": "ambientcg:MetalPlates001",
+   "url": "https://ambientcg.com/a/MetalPlates001",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_MetalPlates001",
+   "ids": {
+    "color": "rbxassetid://120663242806268",
+    "normal": "rbxassetid://77095484702474",
+    "roughness": "rbxassetid://122670398560555"
+   }
+  },
+  "Index_Tiles": {
+   "source": "ambientcg:Tiles107",
+   "url": "https://ambientcg.com/a/Tiles107",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/sbar_Tiles107",
+   "ids": {
+    "color": "rbxassetid://84345694547823",
+    "normal": "rbxassetid://125733647653307",
+    "roughness": "rbxassetid://72505428069044"
+   }
+  },
+  "Storage_Corrugated": {
+   "source": "ambientcg:CorrugatedSteel006A",
+   "url": "https://ambientcg.com/a/CorrugatedSteel006A",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_CorrugatedSteel006A",
+   "ids": {
+    "color": "rbxassetid://95672327931285",
+    "normal": "rbxassetid://90858943002731",
+    "roughness": "rbxassetid://108191610762847"
+   }
+  },
+  "Classroom_Chalkboard": {
+   "source": "ambientcg:Plaster001",
+   "url": "https://ambientcg.com/a/Plaster001",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/rooms3_Plaster001",
+   "ids": {
+    "color": "rbxassetid://112307825250984",
+    "normal": "rbxassetid://127097939765707",
+    "roughness": "rbxassetid://103438640351702"
+   }
+  },
+  "Media_Foam": {
+   "source": "ambientcg:AcousticFoam003",
+   "url": "https://ambientcg.com/a/AcousticFoam003",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_AcousticFoam003_light",
+   "ids": {
+    "color": "rbxassetid://122357090322313",
+    "normal": "rbxassetid://75000682808290",
+    "roughness": "rbxassetid://128022995157349"
+   },
+   "note": "colour map lightened (autocontrast to 150-245 grey) so Roblox tints show"
+  },
+  "Media_Felt": {
+   "source": "ambientcg:Fabric030",
+   "url": "https://ambientcg.com/a/Fabric030",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_Fabric030",
+   "ids": {
+    "color": "rbxassetid://116386534932599",
+    "normal": "rbxassetid://81250484802635",
+    "roughness": "rbxassetid://123834114511186"
+   }
+  },
+  "Coaches_Panels": {
+   "source": "polyhaven:white_planks_clean",
+   "url": "https://polyhaven.com/a/white_planks_clean",
+   "license": "CC0 1.0",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_white_planks_clean",
+   "ids": {
+    "color": "rbxassetid://97890308702102",
+    "normal": "rbxassetid://125195452589850",
+    "roughness": "rbxassetid://130902670264775"
+   }
+  },
+  "Suit_RoughCanvas": {
+   "source": "own work: art/scripts/make_suit_canvas.py",
+   "license": "own work",
+   "maps": [
+    "color",
+    "normal",
+    "roughness"
+   ],
+   "preparedFolder": "D:/Powerlifting Roblox Extras/Textures/SuitCanvas",
+   "ids": {
+    "color": "rbxassetid://77913741997628",
+    "normal": "rbxassetid://126714973613895",
+    "roughness": "rbxassetid://72577262654714"
+   },
+   "supersedes": "first uploads, 24 threads, too chunky (2026-11-06; unused): rbxassetid://118532157043903, rbxassetid://136367156901250, rbxassetid://99850782363642"
   }
+ },
+ "models": {
+  "SBarProps_01": {
+   "about": "Supplement bar products (CENTRAL), shaker and bar stool. Made by art/scripts/build_sbar_props_01.py (art/blender/SBarProps_01.blend).",
+   "file": "art/exports/SBarProps_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://82461187336012"
+   },
+   "supersedes": "rbxassetid://126463004640141 (lathed pieces and the stool's foot ring were inside out, so Roblox showed see-through gaps: the stool base looked as if it clipped through the floor; unused)"
+  },
+  "SBarPlant_01": {
+   "about": "Potted plant. Poly Haven potted_plant_02, simplified by art/scripts/prep_sbar_plant.py.",
+   "source": "polyhaven:potted_plant_02",
+   "url": "https://polyhaven.com/a/potted_plant_02",
+   "license": "CC0 1.0",
+   "file": "art/exports/SBarPlant_01.glb",
+   "ids": {
+    "model": "rbxassetid://72818612497691"
+   }
+  },
+  "ShopGear_01": {
+   "about": "The Shop's powerlifting gear (knee sleeve, wrist wraps, lever belt, singlet and tee on mannequins; CENTRAL badges). Made by art/scripts/build_shop_gear_01.py (art/blender/ShopGear_01.blend). The game loads art/roblox/ShopGear_01.rbxmx (from an Import 3D of art/exports/ShopGear_01.fbx); this upload supplies the corrected meshes of KneeSleeve_Body, WristWrap_Body, MannequinSinglet_Form and MannequinTee_Form, which were inside out in that import.",
+   "file": "art/exports/ShopGear_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://124788342666123"
+   }
+  },
+  "RoomProps_02": {
+   "about": "Lockers, Cafe and Staff Room props (CENTRAL labels). Made by art/scripts/build_room_props_02.py (art/blender/RoomProps_02.blend).",
+   "file": "art/exports/RoomProps_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://95409978233696"
+   },
+   "supersedes": "rbxassetid://93719454817045 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
+  },
+  "RoomProps_03": {
+   "about": "Showers, Recovery and Massage props (CENTRAL labels). Made by art/scripts/build_room_props_03.py (art/blender/RoomProps_03.blend).",
+   "file": "art/exports/RoomProps_03.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://95190345614206"
+   },
+   "supersedes": "rbxassetid://109192629566668 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
+  },
+  "RoomProps_04": {
+   "about": "Themed room front props, batch 1: atlas stone and stand, strongman log, chain, hex dumbbell, dumbbell rack, competition plate, planter, wall uplight (CENTRAL labels). Made by art/scripts/build_room_props_04.py (art/blender/RoomProps_04.blend).",
+   "file": "art/exports/RoomProps_04.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://103672329284661"
+   },
+   "supersedes": "rbxassetid://91749281309773 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
+  },
+  "RoomProps_05": {
+   "about": "Strongman Yard props: tractor tyre, sandbag, yoke, farmer's walk handle (CENTRAL labels; loaded with RoomProps_04's CompPlate in the game). Made by art/scripts/build_room_props_05.py (art/blender/RoomProps_05.blend).",
+   "file": "art/exports/RoomProps_05.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://125479986784261"
+   },
+   "supersedes": "rbxassetid://102621394697271 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused) and rbxassetid://126419721956699 (first upload: the tyre's rubber body was inside out, so Roblox showed see-through gaps in it; unused)"
+  },
+  "RoomProps_06": {
+   "about": "Themed room fronts batch 2a props: weight stack (Machines), wall sconce (Office), wooden crate, pallet and flat bumper plate (Storage), medal (Index); CENTRAL labels. Made by art/scripts/build_room_props_06.py (art/blender/RoomProps_06.blend).",
+   "file": "art/exports/RoomProps_06.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://71767379502226"
+   },
+   "supersedes": "rbxassetid://89330038688157 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
+  },
+  "RoomProps_07": {
+   "about": "Themed room fronts batch 2b props: studio mic, ON AIR lamp, headphones (Media Room), resistance band, foam roller (MobilityRoller), roller rack (Warm-up & Mobility), clipboard (Coaches); CENTRAL labels. Made by art/scripts/build_room_props_07.py (art/blender/RoomProps_07.blend).",
+   "file": "art/exports/RoomProps_07.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://122130943505239"
+   },
+   "supersedes": "rbxassetid://111460003222169 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused) and rbxassetid://84544752881394 (roller named FoamRoller, clashed with RoomProps_03) and rbxassetid://127268303557491 (thin hoop bands); both unused"
+  },
+  "RoomProps_08": {
+   "about": "The open dumbbell & machine zone's machines: tricep pulldown station, lat pulldown, seated cable row, leg extension / leg curl (CENTRAL labels). Made by art/scripts/build_room_props_08.py (art/blender/RoomProps_08.blend).",
+   "file": "art/exports/RoomProps_08.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://122294195016059"
+   },
+   "supersedes": "rbxassetid://83964902060436 (lathed and ring-shaped pieces (prop_helpers lathe_z/torus) were inside out, so Roblox showed see-through gaps in them; unused)"
+  },
+  "RoomProps_09": {
+   "about": "The Cardio room's machines: treadmill, exercise bike, rowing machine, ski erg (CENTRAL labels; moving pieces for the hop-on animations). Made by art/scripts/build_room_props_09.py (art/blender/RoomProps_09.blend).",
+   "file": "art/exports/RoomProps_09.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://77291688307242"
+   },
+   "supersedes": "rbxassetid://118823401986051 (first upload: its exercise bike was sized for real people, so Roblox avatars' feet could not reach the pedals; unused)"
+  },
+  "CardioTV_01": {
+   "about": "The Cardio room's wall TV: slim bezel with a CENTRAL chin and power light, glossy screen (the game draws the CARDIO ZONE sign and the rhythm round on it), steel wall mount, soundbar with grille, yellow trim and end caps. Made by art/scripts/build_cardio_tv_01.py (art/blender/CardioTV_01.blend).",
+   "file": "art/exports/CardioTV_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://127520535803138"
+   }
+  },
+  "MockMeet_01": {
+   "about": "The Mock Meet's furniture: the check-in desk (MeetDesk), the private room's competition platform (MeetPlatform), wait bench (MeetBench), attempt board frame (MeetBoard) and side-wall banner (MeetBanner). The game draws its screens on MeetDesk_MonitorScreen, MeetBoard_Screen and MeetBanner_Cloth. Made by art/scripts/build_mock_meet_01.py (art/blender/MockMeet_01.blend).",
+   "file": "art/exports/MockMeet_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://104295814087547"
+   }
+  },
+  "Furniture_01": {
+   "about": "Shared low-detail furniture: office chair, desk (stretched to each desk), monitor with keyboard (Workstation), shelving frames with 3 or 4 boards (ShelfThree, ShelfFour; stretched to each shelf), storage box and a row of books. Made by art/scripts/build_furniture_01.py (art/blender/Furniture_01.blend).",
+   "file": "art/exports/Furniture_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://80843208048332"
+   }
+  },
+  "Lights_01": {
+   "about": "The gym's light fittings: the rack hall's hanging LED bar (LightBar, stretched), the ceiling light panel (CeilingPanel, stretched), the Strongman Shed's dome lamp (HighBayLamp), the stage spotlight (StageLight), the Shop's track spotlight (TrackSpot) and track (TrackRail). Made by art/scripts/build_lights_01.py (art/blender/Lights_01.blend).",
+   "file": "art/exports/Lights_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://110775352617639"
+   }
+  },
+  "Doors_01": {
+   "about": "The doors' pieces and the hall-front name plaques: swing-door leaves (DoorLeaf, DoorLeafGlazed; stretched and coloured per door), pull handles (DoorHandle), the name plaque (NamePlaque), the sliding doors' panel frame (SlideDoorFrame) and sensor (DoorSensor), the sign over a swing door (DoorSign). Made by art/scripts/build_doors_01.py (art/blender/Doors_01.blend).",
+   "file": "art/exports/Doors_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://138346322157297"
+   }
+  },
+  "Reception_01": {
+   "about": "The lobby's furniture: the reception desk round the game's picture front (ReceptionDesk), the card reader on its ledge (CardReader), the ceiling light strips (LightStrip; stretched), the entrance turnstiles and their arms (Turnstile, TurnstileArm), railing posts and rails (RailPost, RailRun; stretched), the merch wall (MerchWall) and the outside sign's lamps (FloodLamp). Made by art/scripts/build_reception_01.py (art/blender/Reception_01.blend).",
+   "file": "art/exports/Reception_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://78320327648297"
+   }
+  },
+  "CafeShop_01": {
+   "about": "The Cafe, Supplement Bar and Shop furniture: a stretched bar counter (CounterUnit) and wall shelf (WallShelf), a till (Till), round and high tables (RoundTable, HighTable), the cafe window bar (WindowBar), the bar blender (Blender), drinks fridge (DrinksFridge) and serving counter (SBarCounter), the shop slatwall (Slatwall), podium (Podium), folded tee stack (TeeStack), tee table (DisplayTable) and counter top (ShopCounterTop). Made by art/scripts/build_cafe_shop_01.py (art/blender/CafeShop_01.blend).",
+   "file": "art/exports/CafeShop_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://135516072435746"
+   }
+  },
+  "Spa_01": {
+   "about": "The spa wing pieces no earlier model covers: the sauna's benches (SaunaBench; stretched), duckboard (Duckboard; stretched for the shower stalls too), heater (SaunaHeater), wall lamp (SaunaLamp), bucket (SaunaBucket) and thermometer (Thermometer), the shower screen (ShowerScreen), the recovery wall ladder (WallLadder), plunge step (PlungeStep) and stretching mat (FloorMat). Made by art/scripts/build_spa_01.py (art/blender/Spa_01.blend).",
+   "file": "art/exports/Spa_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://72413560307802"
+   }
+  },
+  "BackRooms_01": {
+   "about": "The Staff Room, Lockers, Office, Coach room, Storage, Training Zone and Strongman Shed pieces no earlier model covers: a stretched cabinet run (KitchenUnit), the rota board (CorkBoard), a clothes rail (HangRail), a coat hook (CoatHook), a filing cabinet (FilingCabinet), a wall clock (WallClock), a whiteboard frame (WhiteboardFrame), a laptop (Laptop), a bumper plate lying flat (FlatPlate), the bar holder with bars (BarStand), the flat bench (FlatBench), the chalk stand (ChalkStand) and the strongman rig (StrongmanRig). Made by art/scripts/build_back_rooms_01.py (art/blender/BackRooms_01.blend).",
+   "file": "art/exports/BackRooms_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://106359740301632"
+   }
+  },
+  "Fronts_01": {
+   "about": "The themed room fronts' details no earlier model covers: a barbell lying and standing (Barbell, BarbellUpright; each bar painted its colour), the Mock Meet front's wall bar rack (WallBarRack) and upright rack (GunRack), the judges' lights (JudgesLights), a chalk stick or marker (Stick), a duster (Duster), an acoustic foam tile (FoamTile) and the Office window blinds (Blinds). Made by art/scripts/build_fronts_01.py (art/blender/Fronts_01.blend).",
+   "file": "art/exports/Fronts_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://82188043511002"
+   }
+  },
+  "Steel_01": {
+   "about": "The gym's structural steel: an I-beam (SteelBeam; the hall roof's rafters, tie beams and ridge beam, the balcony columns, the stair stringers, the Strongman Shed's trusses and ridge beam) and a round handrail (Handrail; the balcony and stair handrails), stretched to every piece. Made by art/scripts/build_steel_01.py (art/blender/Steel_01.blend).",
+   "file": "art/exports/Steel_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://139793685980962"
+   }
+  },
+  "LocalMeet_01": {
+   "about": "The Local meet venue's new models: the referees' light box with three separate lamps (RefLights; the game lights RefLights_Lamp1..3 white or red), a section of tiered seating (Bleachers), the 1-2-3 awards podium (AwardPodium), a warm-up plate tree (PlateTree) and the venue's entrance building outside the gym with a pitched gable roof and an entrance porch (MeetHall; the game writes LOCAL MEET on MeetHall_SignScreen). Made by art/scripts/build_local_meet_01.py (art/blender/LocalMeet_01.blend).",
+   "file": "art/exports/LocalMeet_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://96498344946081"
+   }
+  },
+  "LocalMeet_02": {
+   "about": "The redesigned Local meet venue's new models: a metal crowd barricade with a CENTRAL banner (Barricade), a referee's chair (RefChair), a platform number sign on a post (PlatformSign; the game writes PLATFORM 1..8 on PlatformSign_Screen) and the awards stage backdrop on truss towers (AwardsBackdrop; the game writes LOCAL CENTRAL MEET on AwardsBackdrop_Title). Made by art/scripts/build_local_meet_02.py (art/blender/LocalMeet_02.blend).",
+   "file": "art/exports/LocalMeet_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://71979666360161"
+   }
+  },
+  "Crowd_01": {
+   "about": "Fake spectators for the Local meet's stands: two sections of blocky seated figures (CrowdA, CrowdB), one piece per colour so the game can colour each section differently. Made by art/scripts/build_crowd_01.py (art/blender/Crowd_01.blend).",
+   "file": "art/exports/Crowd_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://73272782464755"
+   }
+  },
+  "WornGear_01": {
+   "about": "The Shop's gear as worn on an R15 body (money system step 5): a lever belt round the waist (WornLeverBelt), knee sleeves in two halves on the thigh and shin (WornKneeSleeve), wrist wraps (WornWristWrap) and a one-piece singlet in pieces on the chest, hips and thighs (WornSinglet). Names are Worn<Item>_<ShopConfig colour key>[_<Segment>]; limb pieces are built on the right limb and used on both. Made by art/scripts/build_worn_gear_01.py (art/blender/WornGear_01.blend). Reworked 2026-10-31 (user's reference photos): chunky belt, seamless knee sleeves, wraps covering the wrist. 2026-11-06: added the rare suits, rough and 3D from the user's photos (WornSquatSuit, WornDeadliftSuit, WornBenchShirt) and knee wraps (WornKneeWrap), built with art/scripts/worn_rough.py and exported by art/scripts/export_worn_gear.py.",
+   "file": "art/exports/WornGear_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://130216457283907"
+   },
+   "supersedes": "rbxassetid://115016229826377 (before the rare suits and knee wraps, 2026-11-06; unused); rbxassetid://124628901641945 (rework without the knee fix: the sleeve halves opened a gap whenever the knee bent, even in idle poses; replaced 2026-10-31); rbxassetid://75664723615342 (first version: belt too flat, knee sleeve halves showed a gap, wraps too small)"
+  },
+  "Trophy_01": {
+   "about": "The trophy the top 3 hold on the awards podium at a Regional or State meet (GAME_DESIGN §35.8): a two-handled cup on a stem (Trophy_Metal, coloured gold, silver or bronze by the game, with CENTRAL on the base's front) on a black base (Trophy_Base). Made by art/scripts/build_trophy_01.py (art/blender/Trophy_01.blend).",
+   "file": "art/exports/Trophy_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://96903806374655"
+   }
+  },
+  "StateArena_01": {
+   "about": "The State Championship arena (GAME_DESIGN 36): a 15-degree slice of the seating bowl (StandWedge) and of the lattice dome (DomeWedge), each placed 24 times round the floor; the round floor and mat (ArenaFloor); the centre-hung video cube (CentreCube); the screen gantry over each rack (RackGantry; the game draws the live minigame on RackGantry_Screen); judges' tables, TV camera tripods, STATE CHAMPS banners, the CENTRAL flag, the end name signs (NameSign; the game writes on NameSign_Screen); the CENTRAL backdrop inside each gantry (GantryBanner); and the domed entrance building outside the gym (ArenaEntrance; the game writes on ArenaEntrance_SignScreen). Made by art/scripts/build_state_arena_01.py (art/blender/StateArena_01.blend).",
+   "file": "art/exports/StateArena_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://120696869428785"
+   },
+   "supersedes": "rbxassetid://107253247735603 (yellow screen-frame backs and the number panel, 2026-11-01; unused); rbxassetid://108120033847582 (before the gantry banners were added, 2026-11-01; unused)"
+  },
+  "LocalMeet_03": {
+   "about": "The chalk stand each lifter chalks up at in the Local meet's warm-up room (MeetChalkStand), from the user's photos: black square post and cross-shaped foot, stainless bowl with chalk blocks and powder, CENTRAL on the post. Made by art/scripts/build_local_meet_03.py (art/blender/LocalMeet_03.blend).",
+   "file": "art/exports/LocalMeet_03.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://103112945740574"
+   }
+  },
+  "GearCrate_01": {
+   "about": "The CENTRAL gear crates that drop and pop open before the crate reel (GearCrate): one road case, recoloured and relabelled per crate by the game, with big CENTRAL BELTS, WRAPS, SINGLETS or SLEEVES lettering, a swinging lid and latches, on a lifting platform with two bumper plates. Made by art/scripts/build_gear_crate_01.py (art/blender/GearCrate_01.blend).",
+   "file": "art/exports/GearCrate_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://101716180690166"
+   },
+   "supersedes": "rbxassetid://70433507633305 (four crates, before KNEE WRAPS, 2026-11-06; unused)"
+  },
+  "WeighBooth_01": {
+   "about": "The State arena's weigh-in booth, by the sign-up desk between meets (WeighBooth): navy walls, a half-drawn shower curtain on rings, a WEIGH-IN sign and a floor scale with a read-out. One mesh reused. Made by art/scripts/build_weigh_booth_01.py (art/blender/WeighBooth_01.blend).",
+   "file": "art/exports/WeighBooth_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://106669210036999"
+   }
+  },
+  "LifterBody_01": {
+   "about": "The lifter body, Average build, on the realistic R15 skeleton (GAME_DESIGN §38.5): 14 skinned body parts, no head. Made by art/scripts/build_lifter_body_01.py from MPFB (MakeHuman, CC0 output) in art/blender/LifterBody_01.blend. CHECK PASSED, 8,998 triangles.",
+   "file": "art/exports/LifterBody_01.glb",
+   "license": "own work (MPFB/MakeHuman output is CC0)",
+   "supersedes": "rbxassetid://138617159277013 (first upload: exported facing +Y, and Roblox's importer turns a GLB half round, so the body faced backwards; unused)",
+   "ids": {
+    "model": "rbxassetid://102214076264098"
+   }
+  },
+  "Clothes_01": {
+   "about": "Plain basic clothes for the lifter body (GAME_DESIGN §38.6): Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers (+ SneakersSole), skinned to the LifterBody_01 skeleton, one mesh per R15 part named <Item>__<Part>. Made by art/scripts/build_clothes_01.py (art/blender/Clothes_01.blend). CHECK PASSED, 13,716 triangles.",
+   "file": "art/exports/Clothes_01.glb",
+   "license": "own work (shaped from MPFB/MakeHuman output, CC0)",
+   "ids": {
+    "model": "rbxassetid://122615782726867"
+   }
+  },
+  "CartoonBody_Skinny": {
+   "about": "Cartoon lifter body, Skinny build (GAME_DESIGN §38.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+   "file": "art/exports/CartoonBody_Skinny.glb",
+   "license": "own work",
+   "supersedes": "rbxassetid://129133191533052 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
+   "ids": {
+    "model": "rbxassetid://129935421578716"
+   }
+  },
+  "CartoonBody_Heavy": {
+   "about": "Cartoon lifter body, Heavy build (GAME_DESIGN §38.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+   "file": "art/exports/CartoonBody_Heavy.glb",
+   "license": "own work",
+   "supersedes": "rbxassetid://71182274432851 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
+   "ids": {
+    "model": "rbxassetid://86964380216834"
+   }
+  },
+  "CartoonBody_Muscular": {
+   "about": "Cartoon lifter body, Muscular build (GAME_DESIGN §38.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+   "file": "art/exports/CartoonBody_Muscular.glb",
+   "license": "own work",
+   "supersedes": "rbxassetid://140000230648162 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
+   "ids": {
+    "model": "rbxassetid://92735685532150"
+   }
+  },
+  "CartoonHands_03": {
+   "about": "Hand-shape swaps for the cartoon bodies (GAME_DESIGN §38.7, HandShapeConfig): Open, Point, ThumbsUp, Fist x Left/Right, rigid, at hand size 1 in the hand bone's space. Made by art/scripts/build_cartoon_rig_02.py from build_cartoon_hands_03.py. CHECK PASSED, ~1,400 triangles each.",
+   "file": "art/exports/CartoonHands_03.glb",
+   "license": "own work",
+   "ids": {}
+  },
+  "CartoonBody03_Skinny": {
+   "about": "Cartoon lifter body, Skinny build, TALLER (user 2026-11-12, art/scripts/lifter_heights.py: hips 2.4, neck 4.70), OPEN hands by default, the heavy back crease and wrist ridge fixed. 14 skinned R15 parts, no head. art/scripts/build_cartoon_rig_02.py. CHECK PASSED, ~8,000 triangles.",
+   "file": "art/exports/CartoonBody_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_Skinny (shorter, fist hands)",
+   "ids": {}
+  },
+  "CartoonBody03_Heavy": {
+   "about": "Cartoon lifter body, Heavy build, TALLER (user 2026-11-12, art/scripts/lifter_heights.py: hips 2.4, neck 4.70), OPEN hands by default, the heavy back crease and wrist ridge fixed. 14 skinned R15 parts, no head. art/scripts/build_cartoon_rig_02.py. CHECK PASSED, ~8,000 triangles.",
+   "file": "art/exports/CartoonBody_Heavy.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_Heavy (shorter, fist hands)",
+   "ids": {}
+  },
+  "CartoonBody03_Muscular": {
+   "about": "Cartoon lifter body, Muscular build, TALLER (user 2026-11-12, art/scripts/lifter_heights.py: hips 2.4, neck 4.70), OPEN hands by default, the heavy back crease and wrist ridge fixed. 14 skinned R15 parts, no head. art/scripts/build_cartoon_rig_02.py. CHECK PASSED, ~8,000 triangles.",
+   "file": "art/exports/CartoonBody_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_Muscular (shorter, fist hands)",
+   "ids": {}
+  },
+  "CartoonGear03_Skinny": {
+   "about": "Worn lifting gear v3 for the Skinny cartoon body: one master per item fitted to the build (singlet, squat and deadlift suits, bench shirt, rigid lever belt, knee sleeves, knee wraps, wrist wraps; CENTRAL logo patches), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_03.py + gear_fit_03.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear03_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear02_Skinny (rejected, never uploaded)",
+   "ids": {}
+  },
+  "CartoonClothes03_Skinny": {
+   "about": "Everyday clothes v3 for the Skinny cartoon body (Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistband/drawstrings/soles as *White / SneakersSole), the same fitted masters as the gear, skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_03.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes03_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes02_Skinny (skin copies, never uploaded)",
+   "ids": {}
+  },
+  "CartoonGear03_Heavy": {
+   "about": "Worn lifting gear v3 for the Heavy cartoon body: one master per item fitted to the build (singlet, squat and deadlift suits, bench shirt, rigid lever belt, knee sleeves, knee wraps, wrist wraps; CENTRAL logo patches), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_03.py + gear_fit_03.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear03_Heavy.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear02_Heavy (rejected, never uploaded)",
+   "ids": {}
+  },
+  "CartoonClothes03_Heavy": {
+   "about": "Everyday clothes v3 for the Heavy cartoon body (Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistband/drawstrings/soles as *White / SneakersSole), the same fitted masters as the gear, skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_03.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes03_Heavy.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes02_Heavy (skin copies, never uploaded)",
+   "ids": {}
+  },
+  "CartoonGear03_Muscular": {
+   "about": "Worn lifting gear v3 for the Muscular cartoon body: one master per item fitted to the build (singlet, squat and deadlift suits, bench shirt, rigid lever belt, knee sleeves, knee wraps, wrist wraps; CENTRAL logo patches), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_03.py + gear_fit_03.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear03_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear02_Muscular (rejected, never uploaded)",
+   "ids": {}
+  },
+  "CartoonClothes03_Muscular": {
+   "about": "Everyday clothes v3 for the Muscular cartoon body (Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistband/drawstrings/soles as *White / SneakersSole), the same fitted masters as the gear, skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_03.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes03_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes02_Muscular (skin copies, never uploaded)",
+   "ids": {}
+  }
+ },
+ "images": {
+  "Chalk_Lesson": {
+   "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+   "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Lesson.png",
+   "license": "own work",
+   "ids": {
+    "image": "rbxassetid://82768532927795"
+   }
+  },
+  "Chalk_Squat": {
+   "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+   "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Squat.png",
+   "license": "own work",
+   "ids": {
+    "image": "rbxassetid://105865566921970"
+   }
+  },
+  "Chalk_Bench": {
+   "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+   "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Bench.png",
+   "license": "own work",
+   "ids": {
+    "image": "rbxassetid://109475773438357"
+   }
+  },
+  "Chalk_Deadlift": {
+   "about": "Classroom front chalk drawing (transparent PNG), drawn by art/scripts/draw_chalk_lessons.py",
+   "file": "~/Downloads/RobloxKits/Roblox-Maps-by-fwjelaa/Roblox-Maps-by-fwjelaa/cache/textures/fronts2_chalk/Chalk_Deadlift.png",
+   "license": "own work",
+   "ids": {
+    "image": "rbxassetid://78602138170847"
+   }
+  },
+  "Cutscene_Bubble": {
+   "about": "The coach's cutscene: a black speech tab with a white edge, for an answer. Drawn by art/scripts/make_cutscene_art.py.",
+   "file": "art/ui/Cutscene_Bubble.png",
+   "license": "own work",
+   "ids": {
+    "image": "rbxassetid://111472851400982"
+   }
+  },
+  "Cutscene_Panel": {
+   "about": "The coach's cutscene: a see-through dark panel down the left of the screen, its edge cut into yellow and white shards, for the portrait to stand on. Drawn by art/scripts/make_cutscene_art.py.",
+   "file": "art/ui/Cutscene_Panel.png",
+   "license": "own work",
+   "ids": {
+    "image": "rbxassetid://101738144418251"
+   }
+  },
+  "CentralGearLogo_03": {
+   "about": "The CENTRAL gear logo: white letters and an underline on clear (1024 x 256), put on the cartoon gear's logo patches as a Decal tinted per item (WornGearConfig.LogoImageId). Drawn with PIL (Arial Black) by Claude.",
+   "file": "art/logos/CentralGearLogo_03_White.png",
+   "license": "own work",
+   "ids": {}
+  }
+ },
+ "sounds": {
+  "ChantBeat": {
+   "about": "The State arena crowd's first chant beat: stomp, stomp, clap, 116 BPM, a seamless 4-bar loop. Own work, made from scratch by art/scripts/make_chant_beat.py. No longer played on its own: the game plays the ChantMix_ loops (art/scripts/make_chant_mix.py), which reuse this script's crowd at 144 BPM",
+   "file": "art/sounds/ChantBeat.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://75581947336971"
+   }
+  },
+  "Rhythm_Kick": {
+   "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+   "file": "art/sounds/Rhythm_Kick.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://85088925719114"
+   }
+  },
+  "Rhythm_Snare": {
+   "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+   "file": "art/sounds/Rhythm_Snare.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://99723722634680"
+   }
+  },
+  "Rhythm_Hat": {
+   "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+   "file": "art/sounds/Rhythm_Hat.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://139986629908272"
+   }
+  },
+  "Rhythm_Hit": {
+   "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+   "file": "art/sounds/Rhythm_Hit.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://111016778868160"
+   }
+  },
+  "Rhythm_Miss": {
+   "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+   "file": "art/sounds/Rhythm_Miss.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://127344920469973"
+   }
+  },
+  "Rhythm_Count": {
+   "about": "Treadmill rhythm game sound, own work, made by art/scripts/make_rhythm_sounds.py",
+   "file": "art/sounds/Rhythm_Count.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://105244845446461"
+   }
+  },
+  "Awards_Theme": {
+   "about": "The Local meet awards' default winner's theme song (16 s fanfare and a held chord), own work, made by art/scripts/make_awards_sounds.py",
+   "file": "art/sounds/Awards_Theme.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://116724943474598"
+   }
+  },
+  "Awards_Cheer": {
+   "about": "The Local meet awards' crowd cheer (applause, roar, whistles), own work, made by art/scripts/make_awards_sounds.py",
+   "file": "art/sounds/Awards_Cheer.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://74322878777614"
+   }
+  },
+  "Crate_Tick": {
+   "about": "The crate reel's tick, own work, made by art/scripts/make_crate_tick.py",
+   "file": "art/sounds/Crate_Tick.wav",
+   "license": "own work",
+   "ids": {
+    "audio": "rbxassetid://77524292668778"
+   }
+  }
+ }
 }

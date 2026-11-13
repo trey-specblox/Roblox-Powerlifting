@@ -16,7 +16,7 @@
 	- RequiresNeck is off during the swap (replacing the torso breaks the neck for a moment, which would kill them)
 	- HipHeight is the new legs' (ClothesConfig.HipHeight)
 
-	Clothes: each piece of ClothesConfig.ClothesAssetId ("<Item>__<Part>") is welded on its body part where it sat on the
+	Clothes: each piece of the build's clothes model (ClothesConfig.Bodies[build].clothesAssetId, "<Item>__<Part>") is welded on its body part where it sat on the
 	body in Blender, and bends with the body (it is skinned to the same skeleton). Looks only: no mass, collision,
 	touch or query.
 ]]
@@ -30,7 +30,9 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ClothesConfig = require(Shared:WaitForChild("Config"):WaitForChild("ClothesConfig"))
+local HandShapeConfig = require(Shared:WaitForChild("Config"):WaitForChild("HandShapeConfig"))
 local ClothesRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("ClothesRemotes"))
+local LifterBuild = require(Shared:WaitForChild("Economy"):WaitForChild("LifterBuild"))
 
 local PlayerDataService = require(script.Parent.Parent:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
 
@@ -63,10 +65,17 @@ type Templates = {
 local templates: { [string]: Templates } = {}
 local loadFailed: { [string]: boolean } = {}
 local loading: { [string]: boolean } = {}
-local clothesModel: Model? = nil
-local clothesTried = false
+-- One clothes model per build (the pieces are shaped over that build's body), and the hand shapes.
+local clothesModels: { [string]: Model } = {}
+local clothesTried: { [string]: boolean } = {}
+local handsModel: Model? = nil
+local handsTried = false
 local redress: ((Player) -> ())? = nil
 local lastAsked: { [Player]: number } = {}
+
+-- (defined further down)
+local swapBody: (Model, string, string) -> boolean
+local dress: (Model, string, (string) -> (ClothesConfig.Item?, Color3?)) -> Folder?
 
 local function log(message: string, ...: any)
 	print("[LifterBodyService] " .. string.format(message, ...))
@@ -107,16 +116,30 @@ local function templatesFolder(): Folder
 	return made
 end
 
--- Which build a character gets: from the lifter's progress later (§38.1); for now the default, or in Studio the
--- workspace attribute ClothesConfig.StudioBuildAttribute.
-function LifterBodyService.buildFor(_player: Player): string
+-- Which build a player's character gets (§38.1, LifterBuild): their bodyweight and their active class's Competition
+-- Numbers. In Studio the workspace attribute ClothesConfig.StudioBuildAttribute picks one for a test.
+function LifterBodyService.buildFor(player: Player): string
 	if RunService:IsStudio() then
 		local picked = Workspace:GetAttribute(ClothesConfig.StudioBuildAttribute)
 		if typeof(picked) == "string" and ClothesConfig.Bodies[picked] then
 			return picked
 		end
 	end
-	return ClothesConfig.DefaultBuild
+	local data = PlayerDataService.getData(player)
+	local bodyweight = data and (data :: any).bodyweight
+	local kg = if typeof(bodyweight) == "table" then bodyweight.currentKg else nil
+	if typeof(kg) ~= "number" then
+		return ClothesConfig.DefaultBuild
+	end
+	local numbers: { [string]: number } = {}
+	for _, lift in ipairs({ "Squat", "Bench", "Deadlift" }) do
+		local cn = PlayerDataService.getCompetitionNumber(player, lift)
+		if cn then
+			numbers[lift] = cn
+		end
+	end
+	local build = LifterBuild.forNumbers(kg, numbers)
+	return if ClothesConfig.Bodies[build] then build else ClothesConfig.DefaultBuild
 end
 
 -- One build's body model, loaded once into ServerStorage. Nil when it can't load (characters keep their bodies).
@@ -163,18 +186,87 @@ local function getTemplates(build: string): Templates?
 	return templates[build]
 end
 
--- The clothes model (only while ClothesConfig.ClothesShown).
-local function getClothes(): Model?
-	if clothesModel or clothesTried or not ClothesConfig.ClothesShown then
-		return clothesModel
+-- `build`'s clothes model (only while ClothesConfig.ClothesShown).
+local function getClothes(build: string): Model?
+	local spec = ClothesConfig.Bodies[build]
+	if clothesModels[build] or clothesTried[build] or not ClothesConfig.ClothesShown or spec == nil
+		or spec.clothesAssetId == 0 then
+		return clothesModels[build]
 	end
-	clothesTried = true
-	clothesModel = loadModel(ClothesConfig.ClothesAssetId)
-	if clothesModel then
-		clothesModel.Name = "Clothes"
-		clothesModel.Parent = templatesFolder()
+	clothesTried[build] = true
+	local model = loadModel(spec.clothesAssetId)
+	if model then
+		model.Name = "Clothes_" .. build
+		model.Parent = templatesFolder()
+		clothesModels[build] = model
 	end
-	return clothesModel
+	return model
+end
+
+-- The hand shapes model (HandShapeConfig), once.
+local function getHands(): Model?
+	if handsModel or handsTried or HandShapeConfig.AssetId == 0 then
+		return handsModel
+	end
+	handsTried = true
+	handsModel = loadModel(HandShapeConfig.AssetId)
+	if handsModel then
+		handsModel.Name = "HandShapes"
+		handsModel.Parent = templatesFolder()
+	end
+	return handsModel
+end
+
+--[[
+	Puts the hidden hand shapes on the body (HandShapeConfig): each one welded where the fist is, sized to the build,
+	the skin's colour. Every client's HandShapeAnimator shows one in place of the fist while a celebration needs it.
+]]
+local function addHandShapes(character: Model, build: string, skin: Color3)
+	local hands = getHands()
+	local old = character:FindFirstChild(HandShapeConfig.FolderName)
+	if old then
+		old:Destroy()
+	end
+	if hands == nil then
+		return
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = HandShapeConfig.FolderName
+	local scale = HandShapeConfig.HandSize[build] or 1
+	for _, side in ipairs({ "Left", "Right" }) do
+		local hand = character:FindFirstChild(side .. "Hand")
+		if hand == nil or not hand:IsA("BasePart") then
+			continue
+		end
+		for _, shape in ipairs(HandShapeConfig.Shapes) do
+			local template = hands:FindFirstChild(shape .. "_" .. side, true)
+			if template == nil or not template:IsA("MeshPart") then
+				continue
+			end
+			local part = template:Clone()
+			for _, d in ipairs(part:GetChildren()) do
+				d:Destroy()
+			end
+			part.Size = template.Size * scale
+			part.Color = skin
+			part.Transparency = 1
+			part.Anchored = false
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.CastShadow = false
+			part.Massless = true
+			local offset = CFrame.new(HandShapeConfig.offset(build, shape, side))
+			part.CFrame = hand.CFrame * offset
+			local weld = Instance.new("Weld")
+			weld.Part0 = hand
+			weld.Part1 = part
+			weld.C0 = offset
+			weld.Parent = part
+			part.Parent = folder
+		end
+	end
+	folder.Parent = character
 end
 
 local function place(mark: Attachment, position: Vector3)
@@ -183,6 +275,12 @@ local function place(mark: Attachment, position: Vector3)
 	if original and original:IsA("Vector3Value") then
 		original.Value = position
 	end
+end
+
+-- Each body part's resting place for `build` (the frame its clothes and gear models share), or nil.
+function LifterBodyService.restFor(build: string): { [string]: CFrame }?
+	local t = getTemplates(build)
+	return if t then t.rest else nil
 end
 
 -- Whether this character has the lifter body.
@@ -201,7 +299,37 @@ function LifterBodyService.prepare(player: Player, character: Model): boolean
 	if not LifterBodyService.enabled() then
 		return false
 	end
-	local build = LifterBodyService.buildFor(player)
+	return swapBody(character, LifterBodyService.buildFor(player), player.Name)
+end
+
+--[[
+	A computer lifter's or a spotter's figure (§38.1: they get the same bodies): the `build` body, its skin from its
+	head, dressed in `outfit` (kind -> { item = ClothesConfig item id, colour = Color3 }). Returns whether it has it.
+	(Their singlets come with the computer lifters' random gear, GAME_DESIGN §38.4 step 4; a tank top stands in.)
+]]
+function LifterBodyService.prepareFigure(figure: Model, build: string, outfit: { [string]: { item: string, colour: Color3 } }): boolean
+	if not LifterBodyService.enabled() then
+		return false
+	end
+	if not LifterBodyService.hasBody(figure) and not swapBody(figure, build, figure.Name) then
+		return false
+	end
+	local folder = dress(figure, build, function(kind)
+		local choice = outfit[kind]
+		return if choice then ClothesConfig.item(choice.item) else nil, if choice then choice.colour else nil
+	end)
+	if folder then
+		for _, part in ipairs(folder:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CastShadow = false
+			end
+		end
+	end
+	return true
+end
+
+-- The body swap itself (see prepare). `label` names the character in warnings.
+function swapBody(character: Model, build: string, label: string): boolean
 	local t = getTemplates(build)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local head = character:FindFirstChild("Head")
@@ -228,7 +356,7 @@ function LifterBodyService.prepare(player: Player, character: Model): boolean
 		local template = t.body:FindFirstChild(partName)
 		local joint = t.joints[jointName]
 		if old == nil or not old:IsA("BasePart") or template == nil or joint == nil then
-			warn("[LifterBodyService] missing " .. partName .. " for " .. player.Name)
+			warn("[LifterBodyService] missing " .. partName .. " for " .. label)
 			continue
 		end
 		local new = template:Clone() :: MeshPart
@@ -276,6 +404,7 @@ function LifterBodyService.prepare(player: Player, character: Model): boolean
 		headScale.Value = ClothesConfig.HeadScale
 	end
 	humanoid.HipHeight = ClothesConfig.HipHeight
+	addHandShapes(character, build, skin)
 	character:SetAttribute(ClothesConfig.BodyAttribute, true)
 	character:SetAttribute(ClothesConfig.BodyAttribute .. "Build", build)
 	return true
@@ -294,20 +423,40 @@ function LifterBodyService.dressOutfit(player: Player, character: Model, worn: {
 		return
 	end
 	local build = character:GetAttribute(ClothesConfig.BodyAttribute .. "Build")
-	local t = if typeof(build) == "string" then getTemplates(build) else nil
-	local clothes = getClothes()
 	local outfit = PlayerDataService.getOutfit(player)
-	if t == nil or clothes == nil or outfit == nil then
+	if typeof(build) ~= "string" or outfit == nil then
 		return
 	end
 	local gearOn = PlayerDataService.getGearOn(player) ~= false
+	dress(character, build, function(kind)
+		local choice = outfit[kind]
+		local colour = choice and ClothesConfig.colour(choice.colour)
+		if choice == nil or colour == nil or (kind == "Bottom" and gearOn and worn.Singlet ~= nil) then
+			return nil, nil
+		end
+		return ClothesConfig.item(choice.item), colour.colour
+	end)
+end
+
+--[[
+	Puts clothes on a character with the lifter body: for each kind, `pick(kind)` says the item and its colour (nil =
+	none). Returns the new folder, or nil.
+]]
+function dress(character: Model, build: string, pick: (string) -> (ClothesConfig.Item?, Color3?)): Folder?
+	local old = character:FindFirstChild(ClothesConfig.FolderName)
+	if old then
+		old:Destroy()
+	end
+	local t = getTemplates(build)
+	local clothes = getClothes(build)
+	if t == nil or clothes == nil then
+		return nil
+	end
 	local folder = Instance.new("Folder")
 	folder.Name = ClothesConfig.FolderName
 	for _, kind in ipairs(ClothesConfig.Kinds) do
-		local choice = outfit[kind]
-		local item = ClothesConfig.item(choice.item)
-		local colour = ClothesConfig.colour(choice.colour)
-		if item == nil or colour == nil or (kind == "Bottom" and gearOn and worn.Singlet ~= nil) then
+		local item, colour = pick(kind)
+		if item == nil or colour == nil then
 			continue
 		end
 		for _, piece in ipairs(clothes:GetChildren()) do
@@ -328,7 +477,7 @@ function LifterBodyService.dressOutfit(player: Player, character: Model, worn: {
 			for _, d in ipairs(copy:GetChildren()) do
 				d:Destroy()
 			end
-			copy.Color = fixed or colour.colour
+			copy.Color = fixed or colour
 			copy.Anchored = false
 			copy.CanCollide = false
 			copy.CanQuery = false
@@ -343,6 +492,7 @@ function LifterBodyService.dressOutfit(player: Player, character: Model, worn: {
 		end
 	end
 	folder.Parent = character
+	return folder
 end
 
 local function viewFor(player: Player): ClothesRemotes.ClothesView?

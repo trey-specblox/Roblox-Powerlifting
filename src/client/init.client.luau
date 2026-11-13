@@ -97,6 +97,10 @@ MeetChant.start()
 local CelebrationFx = require(MeetFolder:WaitForChild("CelebrationFx"))
 task.spawn(CelebrationFx.start)
 
+-- Hand-shape swaps on the cartoon bodies during celebrations and emotes (GAME_DESIGN §38.7). Visual only.
+local HandShapeAnimator = require(MeetFolder:WaitForChild("HandShapeAnimator"))
+HandShapeAnimator.start()
+
 -- The meet's walks (walk-outs, walks back, coaches), drawn smoothly every frame from what the server sends. Visual only.
 local MeetWalkView = require(MeetFolder:WaitForChild("MeetWalkView"))
 MeetWalkView.start()
