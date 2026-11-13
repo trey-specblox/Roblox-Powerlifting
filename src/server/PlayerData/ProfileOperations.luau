@@ -53,6 +53,7 @@ local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
 local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
 local LoadoutConfig = require(ConfigFolder:WaitForChild("LoadoutConfig"))
+local ClothesConfig = require(ConfigFolder:WaitForChild("ClothesConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -2360,6 +2361,88 @@ function ProfileOperations.adminGiveEmote(data: ProfileData, id: string): (boole
 		owned[id] = true
 	end
 	return true, "Emote given."
+end
+
+--------------------------------------------------------------------------------
+-- Clothes and the gear toggle (version 25, ClothesConfig, GAME_DESIGN §38.6)
+--------------------------------------------------------------------------------
+
+local function inventoryTable(data: ProfileData): any
+	local inventory = (data :: any).inventory
+	return if typeof(inventory) == "table" then inventory else nil
+end
+
+-- Whether they may wear this item: free ones are everyone's; the rest must be in `clothes`.
+function ProfileOperations.ownsClothing(data: ProfileData, itemId: string): boolean
+	local item = ClothesConfig.item(itemId)
+	if item == nil then
+		return false
+	end
+	if item.free then
+		return true
+	end
+	local inventory = inventoryTable(data)
+	return inventory ~= nil and typeof(inventory.clothes) == "table" and inventory.clothes[itemId] == true
+end
+
+-- What they wear, every kind filled in: a missing, unknown or no-longer-owned choice reads as the default.
+function ProfileOperations.getOutfit(data: ProfileData): { [string]: ClothesConfig.Choice }
+	local inventory = inventoryTable(data)
+	local saved = if inventory and typeof(inventory.outfit) == "table" then inventory.outfit else {}
+	local outfit: { [string]: ClothesConfig.Choice } = {}
+	for _, kind in ipairs(ClothesConfig.Kinds) do
+		local choice = saved[kind]
+		local default = ClothesConfig.Default[kind]
+		local item = if typeof(choice) == "table" then ClothesConfig.item(choice.item) else nil
+		local colour = if typeof(choice) == "table" then ClothesConfig.colour(choice.colour) else nil
+		if item and item.kind == kind and ProfileOperations.ownsClothing(data, item.id) then
+			outfit[kind] = { item = item.id, colour = if colour then colour.id else default.colour }
+		else
+			outfit[kind] = { item = default.item, colour = if colour then colour.id else default.colour }
+		end
+	end
+	return outfit
+end
+
+-- Puts on one piece in one colour. Checks the kind, that the item is that kind and theirs, and the colour.
+function ProfileOperations.setOutfitPiece(data: ProfileData, kind: string, itemId: string, colourId: string): (boolean, string)
+	local inventory = inventoryTable(data)
+	if inventory == nil then
+		return false, "The save has no inventory."
+	end
+	if not ClothesConfig.isKind(kind) then
+		return false, "That isn't clothing."
+	end
+	local item = ClothesConfig.item(itemId)
+	if item == nil or item.kind ~= kind then
+		return false, "That doesn't go there."
+	end
+	if not ProfileOperations.ownsClothing(data, item.id) then
+		return false, "You don't own that yet."
+	end
+	if ClothesConfig.colour(colourId) == nil then
+		return false, "Unknown colour."
+	end
+	if typeof(inventory.outfit) ~= "table" then
+		inventory.outfit = {}
+	end
+	inventory.outfit[kind] = { item = item.id, colour = colourId }
+	return true, item.label .. " on."
+end
+
+-- The gear toggle; true when the save has none (version 25 starts it on).
+function ProfileOperations.getGearOn(data: ProfileData): boolean
+	local inventory = inventoryTable(data)
+	return not (inventory and inventory.gearOn == false)
+end
+
+function ProfileOperations.setGearOn(data: ProfileData, on: boolean): boolean
+	local inventory = inventoryTable(data)
+	if inventory == nil or typeof(on) ~= "boolean" then
+		return false
+	end
+	inventory.gearOn = on
+	return true
 end
 
 return ProfileOperations

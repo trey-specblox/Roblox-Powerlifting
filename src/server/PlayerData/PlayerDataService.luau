@@ -803,6 +803,32 @@ function PlayerDataService.getLoadout(player: Player): LoadoutView?
 	return view
 end
 
+-- What they wear over the lifter body, every kind filled in (ProfileOperations.getOutfit), or nil before the data loads.
+function PlayerDataService.getOutfit(player: Player): { [string]: { item: string, colour: string } }?
+	local data = activeData(player, "getOutfit")
+	return if data then ProfileOperations.getOutfit(data) else nil
+end
+
+-- Puts on one piece of clothing (ProfileOperations.setOutfitPiece checks the kind, the item, ownership and colour).
+function PlayerDataService.setOutfitPiece(player: Player, kind: string, itemId: string, colourId: string): (boolean, string)
+	local data = activeData(player, "setOutfitPiece")
+	if data == nil then
+		return false, "Your save hasn't loaded yet."
+	end
+	return ProfileOperations.setOutfitPiece(data, kind, itemId, colourId)
+end
+
+-- The gear toggle (true = gear on), or nil before the data loads.
+function PlayerDataService.getGearOn(player: Player): boolean?
+	local data = activeData(player, "getGearOn")
+	return if data then ProfileOperations.getGearOn(data) else nil
+end
+
+function PlayerDataService.setGearOn(player: Player, on: boolean): boolean
+	local data = activeData(player, "setGearOn")
+	return data ~= nil and ProfileOperations.setGearOn(data, on)
+end
+
 -- Puts one they own in one of their attempt slots (ProfileOperations.setLoadoutSlot checks everything).
 function PlayerDataService.setLoadoutSlot(player: Player, kind: string, slot: number, id: string): (boolean, string)
 	local data = activeData(player, "setLoadoutSlot")

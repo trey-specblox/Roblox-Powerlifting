@@ -857,6 +857,50 @@
       "ids": {
         "model": "rbxassetid://106669210036999"
       }
+    },
+    "LifterBody_01": {
+      "about": "The lifter body, Average build, on the realistic R15 skeleton (GAME_DESIGN \u00a738.5): 14 skinned body parts, no head. Made by art/scripts/build_lifter_body_01.py from MPFB (MakeHuman, CC0 output) in art/blender/LifterBody_01.blend. CHECK PASSED, 8,998 triangles.",
+      "file": "art/exports/LifterBody_01.glb",
+      "license": "own work (MPFB/MakeHuman output is CC0)",
+      "supersedes": "rbxassetid://138617159277013 (first upload: exported facing +Y, and Roblox's importer turns a GLB half round, so the body faced backwards; unused)",
+      "ids": {
+        "model": "rbxassetid://102214076264098"
+      }
+    },
+    "Clothes_01": {
+      "about": "Plain basic clothes for the lifter body (GAME_DESIGN \u00a738.6): Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers (+ SneakersSole), skinned to the LifterBody_01 skeleton, one mesh per R15 part named <Item>__<Part>. Made by art/scripts/build_clothes_01.py (art/blender/Clothes_01.blend). CHECK PASSED, 13,716 triangles.",
+      "file": "art/exports/Clothes_01.glb",
+      "license": "own work (shaped from MPFB/MakeHuman output, CC0)",
+      "ids": {
+        "model": "rbxassetid://122615782726867"
+      }
+    },
+    "CartoonBody_Skinny": {
+      "about": "Cartoon lifter body, Skinny build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+      "file": "art/exports/CartoonBody_Skinny.glb",
+      "license": "own work",
+      "supersedes": "rbxassetid://129133191533052 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
+      "ids": {
+        "model": "rbxassetid://129935421578716"
+      }
+    },
+    "CartoonBody_Heavy": {
+      "about": "Cartoon lifter body, Heavy build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+      "file": "art/exports/CartoonBody_Heavy.glb",
+      "license": "own work",
+      "supersedes": "rbxassetid://71182274432851 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
+      "ids": {
+        "model": "rbxassetid://86964380216834"
+      }
+    },
+    "CartoonBody_Muscular": {
+      "about": "Cartoon lifter body, Muscular build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+      "file": "art/exports/CartoonBody_Muscular.glb",
+      "license": "own work",
+      "supersedes": "rbxassetid://140000230648162 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
+      "ids": {
+        "model": "rbxassetid://92735685532150"
+      }
     }
   },
   "images": {

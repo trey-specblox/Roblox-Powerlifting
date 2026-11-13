@@ -2544,7 +2544,8 @@ do
 	inventory.failStyles = nil
 	inventory.loadout = nil
 	data.version = 23
-	check("migrated 23 to 24", PlayerProfileSchema.migrate(data, 23) == 24 and data.version == 24)
+	check("migrated 23 to the current version", PlayerProfileSchema.migrate(data, 23) == PlayerProfileSchema.CURRENT_VERSION
+		and data.version == PlayerProfileSchema.CURRENT_VERSION)
 	check("the old single fields are cleared", inventory.entrance == nil and inventory.celebration == nil
 		and inventory.failStyle == nil)
 	check("what they had is theirs to keep", ProfileOperations.ownsLoadoutItem(data, "Celebration", "SkyPoint")
@@ -2580,6 +2581,40 @@ do
 		and reloaded.inventory.loadout.Entrance[2] == "WarCry")
 	inventory.loadout.Celebration[1] = "RemovedLater"
 	check("one the game no longer has counts as the Default", ProfileOperations.getCelebration(data, 1) == "ChalkClapPump")
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("60. version 24 to 25: clothes and the gear toggle")
+do
+	local data = newProfile()
+	local inventory = (data :: any).inventory
+	inventory.outfit = nil
+	inventory.clothes = nil
+	inventory.gearOn = nil
+	data.version = 24
+	check("migrated 24 to 25", PlayerProfileSchema.migrate(data, 24) == 25 and data.version == 25)
+	check("gear stays on for everyone, nothing owned, the default outfit", inventory.gearOn == true
+		and typeof(inventory.clothes) == "table" and typeof(inventory.outfit) == "table"
+		and ProfileOperations.getGearOn(data) == true)
+	local outfit = ProfileOperations.getOutfit(data)
+	check("the default outfit", outfit.Shirt.item == "Tee" and outfit.Bottom.item == "Shorts" and outfit.Shoes.item == "Sneakers")
+	check("a long sleeve in navy", (ProfileOperations.setOutfitPiece(data, "Shirt", "LongSleeve", "Navy"))
+		and ProfileOperations.getOutfit(data).Shirt.item == "LongSleeve" and ProfileOperations.getOutfit(data).Shirt.colour == "Navy")
+	check("joggers can't go on as a shirt", (ProfileOperations.setOutfitPiece(data, "Shirt", "Joggers", "Red")) == false
+		and ProfileOperations.getOutfit(data).Shirt.item == "LongSleeve")
+	check("an unknown item, colour or kind is refused", (ProfileOperations.setOutfitPiece(data, "Shirt", "Cape", "Red")) == false
+		and (ProfileOperations.setOutfitPiece(data, "Shirt", "Tee", "Plaid")) == false
+		and (ProfileOperations.setOutfitPiece(data, "Hat", "Tee", "Red")) == false)
+	check("the gear toggle", ProfileOperations.setGearOn(data, false) and ProfileOperations.getGearOn(data) == false
+		and ProfileOperations.setGearOn(data, "yes" :: any) == false and ProfileOperations.getGearOn(data) == false)
+	inventory.outfit.Bottom = { item = "Ballgown", colour = "Red" }
+	check("a removed item reads as the default, keeping its colour", ProfileOperations.getOutfit(data).Bottom.item == "Shorts"
+		and ProfileOperations.getOutfit(data).Bottom.colour == "Red")
+	local reloaded = saveAndReload(data)
+	check("it survives a save and reload", reloaded.inventory.outfit.Shirt.colour == "Navy" and reloaded.inventory.gearOn == false)
+	PlayerProfileSchema.migrate(reloaded, 24)
+	check("a re-run changes nothing", reloaded.inventory.gearOn == false and reloaded.inventory.outfit.Shirt.item == "LongSleeve")
 end
 
 --------------------------------------------------------------------------------

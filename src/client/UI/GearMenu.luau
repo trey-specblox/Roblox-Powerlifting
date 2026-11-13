@@ -12,6 +12,10 @@
 	The rare suits go in these rows too: a squat or deadlift suit under SINGLET, a bench shirt in its own row, and knee wraps
 	under KNEE SLEEVES.
 
+	Two pages (GAME_DESIGN §38.6, user 2026-11-12): GEAR (the slots, above) and CLOTHES (a shirt, a bottom and shoes,
+	each in any colour; ClothesRemotes), and the GEAR ON / GEAR OFF toggle at the top: gear on wears the slots and, with
+	a singlet or suit, takes the shorts/pants off; the shirt stays under it.
+
 	Gear with stats from crates (GAME_DESIGN §35.12) comes first in each row, best
 	first, edged in its rarity's colour, with its stats and SCRAP (press twice). The
 	status line adds up what the worn pieces give on each lift.
@@ -31,6 +35,8 @@ local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
 local EconomyFolder = Shared:WaitForChild("Economy")
 local GearRemotes = require(EconomyFolder:WaitForChild("GearRemotes"))
 local GearStats = require(EconomyFolder:WaitForChild("GearStats"))
+local ClothesRemotes = require(EconomyFolder:WaitForChild("ClothesRemotes"))
+local ClothesConfig = require(ConfigFolder:WaitForChild("ClothesConfig"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local MenuKeys = require(script.Parent:WaitForChild("MenuKeys"))
@@ -391,6 +397,163 @@ function GearMenu.start()
 		list.CanvasSize = UDim2.fromOffset(0, y)
 	end
 
+	-- ---------------------------------------------------------------- CLOTHES page and the gear toggle
+	local clothesRemotes = ClothesRemotes.waitForClient(ReplicatedStorage)
+	local clothesView: ClothesRemotes.ClothesView? = nil
+	local page = "GEAR"
+
+	local clothesList = Instance.new("ScrollingFrame")
+	clothesList.Name = "Clothes"
+	clothesList.Position = list.Position
+	clothesList.Size = list.Size
+	clothesList.BackgroundTransparency = 1
+	clothesList.BorderSizePixel = 0
+	clothesList.ScrollBarThickness = 6
+	clothesList.ScrollBarImageColor3 = C.yellow
+	clothesList.ScrollingDirection = Enum.ScrollingDirection.Y
+	clothesList.Visible = false
+	clothesList.Parent = body
+
+	local function chip(parent: Instance, name: string, text: string, position: UDim2, size: UDim2): TextButton
+		local button = Instance.new("TextButton")
+		button.Name = name
+		button.Position = position
+		button.Size = size
+		button.BorderSizePixel = 0
+		button.FontFace = UIStyle.heading()
+		button.TextSize = SIZES.small
+		button.Text = text
+		button.Parent = parent
+		return button
+	end
+
+	local function paint(button: TextButton, on: boolean)
+		button.BackgroundColor3 = if on then C.yellow else C.navyDeep
+		button.TextColor3 = if on then C.ink else C.white
+		local stroke = button:FindFirstChildOfClass("UIStroke") or UIStyle.stroke(button, C.white, 1, 0.5)
+		stroke.Transparency = if on then 1 else 0.5
+	end
+
+	-- GEAR / CLOTHES page chips and the toggle, above the list.
+	-- (Right of the MY GEAR title tag, which hangs over the panel's top-left corner.)
+	local gearChip = chip(body, "PageGear", "GEAR", UDim2.fromOffset(250, 2), UDim2.fromOffset(110, 26))
+	local clothesChip = chip(body, "PageClothes", "CLOTHES", UDim2.fromOffset(368, 2), UDim2.fromOffset(130, 26))
+	local gearToggle = chip(body, "GearToggle", "GEAR: ON", UDim2.new(1, -210, 0, 2), UDim2.fromOffset(190, 26))
+
+	local refreshClothes: () -> ()
+
+	local function showPage(name: string)
+		page = name
+		list.Visible = name == "GEAR"
+		clothesList.Visible = name == "CLOTHES"
+		paint(gearChip, name == "GEAR")
+		paint(clothesChip, name == "CLOTHES")
+	end
+	gearChip.Activated:Connect(function()
+		showPage("GEAR")
+		status.TextColor3, status.Text = C.muted, hint()
+	end)
+	clothesChip.Activated:Connect(function()
+		showPage("CLOTHES")
+		status.TextColor3 = C.muted
+		status.Text = if clothesView and not clothesView.lifterBody then "Clothes show on the new lifter body (coming soon)."
+			else "Pick a piece, then a colour."
+	end)
+
+	-- Asks the server (ClothesRemotes) and shows its answer.
+	local function askClothes(remote: RemoteFunction, ...: any)
+		if asking then
+			return
+		end
+		asking = true
+		status.TextColor3, status.Text = C.muted, "Changing..."
+		local args = table.pack(...)
+		local ok, done, message, newView = pcall(function()
+			return remote:InvokeServer(table.unpack(args, 1, args.n))
+		end)
+		asking = false
+		if ok then
+			status.TextColor3 = if done then C.yellow else C.red
+			status.Text = if typeof(message) == "string" then message else ""
+			if newView then
+				clothesView = newView
+				refreshClothes()
+			end
+		else
+			status.TextColor3, status.Text = C.red, "That didn't go through. Try again."
+		end
+	end
+
+	gearToggle.Activated:Connect(function()
+		local on = not (clothesView and clothesView.gearOn)
+		task.spawn(askClothes, clothesRemotes.gear, on)
+	end)
+
+	local SWATCH, SWATCH_GAP = 30, 8
+	local ITEM_W, ITEM_H = 150, 30
+	refreshClothes = function()
+		local current = clothesView
+		gearToggle.Text = if current and current.gearOn then "GEAR: ON" else "GEAR: OFF"
+		paint(gearToggle, current ~= nil and current.gearOn)
+		for _, child in ipairs(clothesList:GetChildren()) do
+			if child:IsA("GuiObject") then
+				child:Destroy()
+			end
+		end
+		if current == nil then
+			return
+		end
+		local owned: { [string]: boolean } = {}
+		for _, id in ipairs(current.owned) do
+			owned[id] = true
+		end
+		local y = 0
+		for _, kind in ipairs(ClothesConfig.Kinds) do
+			local choice = current.outfit[kind]
+			local row = Instance.new("Frame")
+			row.Name = "Row_" .. kind
+			row.BackgroundTransparency = 1
+			row.Position = UDim2.fromOffset(4, y)
+			row.Size = UDim2.new(1, -12, 0, 30 + ITEM_H + 10 + SWATCH + 22)
+			row.Parent = clothesList
+			UIStyle.sectionHead(row, "Head", ClothesConfig.KindLabels[kind], UDim2.fromOffset(0, 2), 230, nil, "bar")
+			local x = 0
+			for _, item in ipairs(ClothesConfig.itemsOf(kind)) do
+				if owned[item.id] then
+					local button = chip(row, "Item_" .. item.id, item.label, UDim2.fromOffset(x, 32), UDim2.fromOffset(ITEM_W, ITEM_H))
+					paint(button, choice and choice.item == item.id)
+					button.Activated:Connect(function()
+						task.spawn(askClothes, clothesRemotes.set, kind, item.id, if choice then choice.colour else "Black")
+					end)
+					x += ITEM_W + 8
+				end
+			end
+			for index, colour in ipairs(ClothesConfig.Colours) do
+				local swatch = Instance.new("TextButton")
+				swatch.Name = "Colour_" .. colour.id
+				swatch.Text = ""
+				swatch.AutoButtonColor = true
+				swatch.BorderSizePixel = 0
+				swatch.BackgroundColor3 = colour.colour
+				swatch.Position = UDim2.fromOffset((index - 1) * (SWATCH + SWATCH_GAP) + 2, 32 + ITEM_H + 10)
+				swatch.Size = UDim2.fromOffset(SWATCH, SWATCH)
+				swatch.Parent = row
+				local corner = Instance.new("UICorner")
+				corner.CornerRadius = UDim.new(1, 0)
+				corner.Parent = swatch
+				local picked = choice ~= nil and choice.colour == colour.id
+				UIStyle.stroke(swatch, if picked then C.yellow else C.white, if picked then 3 else 1, if picked then 0 else 0.6)
+				swatch.Activated:Connect(function()
+					task.spawn(askClothes, clothesRemotes.set, kind, if choice then choice.item else ClothesConfig.Default[kind].item,
+						colour.id)
+				end)
+			end
+			y += row.Size.Y.Offset
+		end
+		clothesList.CanvasSize = UDim2.fromOffset(0, y)
+	end
+	showPage("GEAR")
+
 	UIStyle.exitButton(holder, "Back", "BACK", UDim2.new(1, -150, 1, 20), function()
 		holder.Visible = false
 	end)
@@ -401,10 +564,17 @@ function GearMenu.start()
 		local ok, newView = pcall(function()
 			return remotes.get:InvokeServer()
 		end)
+		local clothesOk, newClothes = pcall(function()
+			return clothesRemotes.get:InvokeServer()
+		end)
+		if clothesOk and newClothes then
+			clothesView = newClothes
+			refreshClothes()
+		end
 		if ok and newView then
 			view = newView
 			refresh()
-			status.Text = hint()
+			status.Text = if page == "GEAR" then hint() else "Pick a piece, then a colour."
 		else
 			status.TextColor3, status.Text = C.red, "Your gear didn't load. Close and try again."
 		end

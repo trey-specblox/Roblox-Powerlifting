@@ -13,6 +13,158 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**BODY TYPES: CARTOON BODIES IN STUDIO (2026-11-12), COMMITTED** (GAME_DESIGN §38, approved by the user). Last commit a1596dc
+(collections, spotters, Local/Regional hype moves).
+- MPFB 2.0.18 (MakeHuman for Blender; GPL code, CC0 bodies), downloaded with the user's OK from extensions.blender.org,
+  sha256 checked, scanned clean (no network imports; subprocess only opens a folder), installed in Blender 5.4.
+  Download and unzip in `D:\Powerlifting Roblox Extras\RobloxKits\MPFB\` (outside the repo).
+- `art/blender/LifterBody_01.blend`: an MPFB average male (macros gender 1, the rest 0.5) with its game_engine rig,
+  next to the R15 block rig built from station_animations.py's SIZES/JOINTS. Picture: art/previews/BodyCompare_R15_vs_Real.png.
+- **BLOCKER, the user's call:** at the same neck height, a real body is about half as wide as the R15 block skeleton
+  and its hips sit about 0.5 studs higher. Fitting it to today's skeleton means a cartoon-wide, short-legged body. A
+  realistic skeleton means remaking the 84 animations with the same scripts (new joint table), re-uploading them, and
+  retuning the bar and rack heights in code. Claude recommends the realistic skeleton. Asked the user.
+- User asked to see Option 1: in the same .blend, `Option1Body` (the MPFB body posed onto the R15 joints: hips 2.0,
+  shoulder pivots ±1, arms hanging at ±1.5, girths ×1.3–1.75), `Option2Body` (real proportions, arms down), and the
+  same with a 70% head; yellow stand-in Roblox heads. Pictures: art/previews/BodyOptions_1_vs_2.png, BodyOption1_Closeup.png.
+- **User picked Option 2, the realistic skeleton** (GAME_DESIGN §38.5). Step 1 built:
+  `art/scripts/build_lifter_body_01.py` (run inside Blender with MPFB) makes the Average body: head cut off and the neck
+  capped, arms and legs posed straight down and made the rest, scaled to the Neck joint at 4.35 studs (2.7531
+  studs/m), MPFB weights merged into the 15 R15 parts (max 4), decimated to 8,998 triangles, split into 14 skinned
+  meshes (custom normals keep the cuts smooth). New R15 skeleton: Root bone at the floor, HumanoidRootNode at y 3.529
+  (HipHeight about 2.53), every bone pointing +Z so the GLB has NO joint rotations (pointing +Y left -90° on Root).
+  Outputs: art/blender/LifterBody_01.blend, art/exports/LifterBody_01.glb (355 KB), art/exports/LifterBody_01_joints.json
+  (the new joint table + part sizes, Roblox space). check_models.py: CHECK PASSED (heaviest UpperTorso 1,458).
+  Re-ran from scratch: identical. Poses tried in Blender (deep squat, bar hold): bends without tearing.
+  Preview (backface culling on): art/previews/LifterBody_01_Average.png.
+- UPLOADED with the user's OK ("Yes, upload it"): **rbxassetid://102214076264098** (art/materials/materials.json
+  "LifterBody_01"). The first upload (138617159277013, unused) faced backwards: Roblox's importer turns a GLB half
+  round, so the build now exports facing -Y in Blender and lands facing -Z with the left at -X (checked in Studio).
+  The importer makes 14 skinned MeshParts joined by Motor6Ds with NO rotations (C0/C1 pure offsets), plus a RootPart.
+- TESTED IN STUDIO (play session, temporary, `tools/studio/LifterBody01_SwapTest.luau` on the server): the 14 parts
+  swapped onto the player's R15 character (this place uses AnimationConstraint joints), joint marks moved, head at 70%,
+  HipHeight 2.529: HRP 3.529 above the floor, feet on the floor (toe tips 0.03 down), head on the neck, hat kept, no
+  death, no errors; Roblox's run animation plays on it (screenshot mid-stride). Gotchas: RequiresNeck=false while
+  swapping (else it dies and respawns with the old body); set each mark's hidden OriginalPosition too (automatic
+  scaling puts marks back there). Screenshots: art/previews/LifterBody_01_InStudio_Standing.jpg, _Running.jpg.
+- **CLOTHES AND GEAR TOGGLE (user 2026-11-12, GAME_DESIGN §38.6)**: plain basic clothes now (stores later
+  downstairs); a gear toggle that puts on all gear, takes the shorts/pants off, keeps the shirt under the singlet.
+  - Studio test: a skinned copy of the torso/arm, welded on as an extra part, BENT WITH THE BODY (raised arm, bent
+    elbow) -> every clothing and gear piece can be its own skinned mesh (art/previews/ClothingShellTest_ArmRaised.jpg).
+  - `art/scripts/build_clothes_01.py` (uses build_lifter_body_01.base_body, refactored for it): Tee, LongSleeve, Tank,
+    Shorts, Joggers shaped over the body (offset from the skin: bottoms 0.032, shirts 0.05 over the waistband, gear to
+    go further out), flat-plane hems, 0.02 inward hem, split per R15 part as "<Item>__<Part>"; Sneakers lofted
+    (upper + white "SneakersSole") on the foot bone. art/blender/Clothes_01.blend, art/exports/Clothes_01.glb (506 KB).
+    CHECK PASSED, 24 meshes, 13,716 triangles (an outfit is about 5,600 on top of the body's 9,000). Previews:
+    art/previews/Clothes_01_*.png. UPLOADED (user: "Yes, upload them"): **rbxassetid://122615782726867**
+    (materials.json "Clothes_01"). The importer gives 24 skinned MeshParts at their rest places (RootPart at the
+    origin, the same frame as the body's), so each piece goes on its body part at rest^-1 * piece.
+  - **THE SYSTEM, built and TESTED IN STUDIO (2026-11-12), COMMITTED:**
+    - `src/shared/Config/ClothesConfig.luau`: body/clothes asset ids, LiveEnabled = false / StudioEnabled = true (workspace
+      attribute "LifterBody" overrides in Studio), HipHeight 2.529, HeadScale 0.7, NeckMark; items (Tee, LongSleeve,
+      Tank, Shorts, Joggers, Sneakers + fixed white sole, all free), 17 colours, the default outfit (grey tee, black
+      shorts, white sneakers).
+    - Save **schema v25** (migrations[24]): `inventory.outfit` (kind -> {item, colour}), `inventory.clothes` (owned, for
+      the stores), `inventory.gearOn` (starts TRUE so nobody's gear vanishes). ProfileOperations ownsClothing /
+      getOutfit / setOutfitPiece / getGearOn / setGearOn; PlayerDataService wrappers.
+    - `src/shared/Economy/ClothesRemotes.luau` (GetClothes, SetClothing, SetGearOn; checked server-side, 0.25 s limit).
+    - `src/server/Economy/LifterBodyService.luau`: prepare (the body swap, once per character, after the avatar has
+      loaded) and dressOutfit (the "Outfit" folder; with gear on AND a singlet/suit worn the bottom comes off, the
+      shirt stays). GearService runs both in its one pipeline: prepare -> worn gear (none when gearOn is false) ->
+      clothes; LifterBodyService.setRedress(dress) so the clothes remotes redress everything.
+    - `src/client/UI/GearMenu.luau`: GEAR / CLOTHES page chips, the GEAR: ON/OFF toggle, the CLOTHES page (item
+      chips + colour swatches per kind).
+    - Tests: on spawn the body + default outfit went on by itself (HipHeight 2.529, head 0.84); the remotes changed the
+      shirt and bottom and refused joggers-as-shirt and an unknown colour; with a crate singlet + belt, gear ON wore
+      15 worn pieces and took the joggers off (long sleeve kept, visible round the singlet: screenshot), OFF put the
+      joggers back and removed the gear, ON again repeated it; PlayerDataProbe 594 passed, 0 failed (test 60 new);
+      the CLOTHES page on screen (art/previews/ClothesMenu_InStudio.jpg). Fixed after the screenshot, NOT re-seen:
+      the page chips moved right of the MY GEAR title tag (it covered them).
+    - Rojo missed the last edits of 3 files saved while the user was in Play; a touch did nothing, appending and
+      deleting a line resynced them (checksums then matched).
+  - **STYLE QUESTION (user 2026-11-12, after the clothes):** "I want models something like this ... I feel like current
+    models are just too sloppy", with screenshots of a chunky cartoon gym game. Claude made an original example,
+    `art/scripts/build_stylised_body_test.py` (metaball "inflated" muscles, on the ORIGINAL R15 block skeleton, full-size
+    head): a Muscular and a Heavy build, in art/blender/StylisedBody_Test.blend with the realistic body for comparison.
+    Pictures: art/previews/StyleTest_*.png. On the block skeleton the 84 animations would keep working. Waiting for the
+    user's pick: cartoon on the old skeleton, or keep the realistic body.
+  - **SECOND CARTOON EXAMPLE (2026-11-12)**: the user sent 3 Medal clips, 14 screenshots and a YouTube progression
+    video ("study how the body changes"); downloaded with OK to D:\Powerlifting Roblox Extras\References\BodyClips\
+    (frames via Blender's video decoder; the built-in browser can't decode Medal's H.264). Notes:
+    References/Body Study.md (proportions, muscle details, how heads sit, hands, how the body grows: per-muscle-group
+    stats, steady log-like growth, reset). `art/scripts/build_cartoon_body_02.py`: each muscle its own smooth shape,
+    voxel-fused into one surface with clean creases, on the ORIGINAL block skeleton; Skinny / Heavy / Muscular with
+    tee + shorts preview colours and thick white cuffs. `art/scripts/build_cartoon_hands_02.py`: hand-shape swaps
+    Fist, Open, Point (also "shhh"), ThumbsUp. art/blender/CartoonBody_Test02.blend; pictures art/previews/Cartoon02_*.png.
+    Rough: hands first pass, skinny shoulders look like a bar, cuffs/colour edges are preview fills, ~12k triangles
+    per body + 2.5k per hand (too heavy: must come down). Waiting for the user's pick.
+    User: "The model style itself looks good" but the non-buff shoulders weren't level / not like a normal person.
+    Fixed in the script: shoulders() gives Skinny and Heavy a trapezius sloping DOWN from the head, a deltoid cap
+    tucked over the arm (upper arm top lowered), a filler under the slope, and more smoothing for non-buff builds
+    (SOFTEN: 12 vs the muscular 4); a filler between the heavy chest. Pictures art/previews/Cartoon02_ShouldersFixed_*.png.
+    User: still "popped out of place. Level it with the body." Cause: the narrow torso sat far inside where the skeleton
+    hangs the arms (x 1.42-1.47), so the shoulder had to reach out. Now upper_body(): the chest/back block (boxy,
+    rounded corners) is as wide as the arms' inner edge, the arms hang flush with their tops level with it (arm_top
+    3.86), and a low filler closes the armpit crease (`boxy` option added to the shapes). Pictures
+    art/previews/Cartoon02_ShouldersLevel_*.png. Small left-overs: a slight ledge at the armpit and a tiny notch at the
+    upper back centre on the skinny build.
+    User: "The bodies are too wide." Now the arms come IN instead (the skeleton only fixes the shoulder pivot at x 1,
+    not where the arm's shape hangs): SKINNY_ARMS 1.0, HEAVY_ARMS 1.34 (muscular stays 1.5); thinner skinny limbs, a
+    single flat chest plate, narrower stomach/waist/hips; cuffs, colours and the waistband follow each build's arms.
+    Skinny shoulders now about 2x the head's width. Pictures art/previews/Cartoon02_Narrower_*.png. Untested: the old
+    animations with arms hanging closer in (arm swing near the torso could clip; check in Studio).
+  - **APPROVED BY THE USER ("Yes, looks good"), GAME_DESIGN §38.7: the cartoon style on the block skeleton replaces
+    the realistic body.** Next: turn the example into game bodies (see the plan in §38.7 and the next action).
+  - **GAME-READY BODIES (user "Yes, start"), NOT UPLOADED:** `art/scripts/build_cartoon_rig_02.py` (loads
+    build_cartoon_body_02 / build_cartoon_hands_02 as libraries via CARTOON_AS_LIBRARY): per build, the fused body + a
+    foot shape, 5,200 triangles, R15 skeleton on the block heights (hips 2.0, waist 2.4, neck 4.0, knee 1.178, ankle
+    0.252) with the arm joints on each build's arm line (shoulder pivot at the arm's inner top: Skinny 0.78, Heavy 0.98,
+    Muscular 1.0; elbow/wrist at x 1.0 / 1.34 / 1.5), Blender automatic weights (max 4, none missing), Fist hands on the
+    hand bones (900 triangles each, palms in, thumbs forward), split into 14 parts, bones +Z, validate(). Outputs
+    art/blender/CartoonBodies_02.blend, art/exports/CartoonBody_{Skinny,Heavy,Muscular}.glb + _joints.json (neckMark,
+    hipHeight 2.0). check_models: CHECK PASSED, 42 meshes, ~7,000 triangles per body. The bar follows the hands
+    (StationPoseAnimator.followHands), so the skinny's narrower grip still holds it. Rest-pose preview:
+    art/previews/CartoonBodies02_GameReady.png. Known flaws: a dark crease on the heavy build's upper back, a small
+    ridge at the wrists. Blender hand-posing tests were unreliable (my pose maths); the real test is Studio.
+  - **UPLOADED (user "Yes, upload them") AND TESTED IN STUDIO (2026-11-12), COMMITTED.** Skinny
+    rbxassetid://129935421578716, Heavy 86964380216834, Muscular 92735685532150 (materials.json "CartoonBody_*"). The
+    first uploads (129133191533052 / 71182274432851 / 140000230648162, unused) came in as "LeftFoot.001" etc. with every
+    part joined straight to the root: the .blend still held the realistic body's parts, so names collided; cleared,
+    re-exported. The importer turns the R15 bones INTO the parts (Motor6D chain, only Root/HumanoidRootNode stay as
+    Bones), and the parts are skinned to each other by name, so ReplaceBodyPartR15 keeps the smooth bending.
+  - ClothesConfig now: Bodies {Skinny, Heavy, Muscular} with assetId + neckMark, DefaultBuild "Skinny", Studio
+    workspace attribute LifterBodyBuild picks one, HipHeight 2.0, HeadScale 1.0, ClothesShown false (the realistic
+    clothes don't fit). LifterBodyService loads one template per build (getTemplates(build), buildFor(player)), sets
+    character attribute LifterBodyBuild; the clothes model loads only while ClothesShown.
+  - Tests in Studio: each build went on by itself at spawn (no death), feet on the floor (0.01), HRP 3.0, full-size head
+    on the neck; Roblox's idle/run play; the real Squat animation (132820904488036) at its deepest (1.9 s) on Skinny and
+    Heavy bends smoothly; Deadlift (91506920973531) at its lowest (1.6 s) on Skinny: hands 1.04 above the floor, 1.88
+    apart. No errors. Screenshots art/previews/Cartoon_InStudio_*.jpg.
+  - **REAL LIFTS WITH THE BAR (user "Test a real lift"), TESTED IN STUDIO, COMMITTED.** Driven by
+    StationPoses.update(GymRack_05, player, lift) on the server (the client's StationPoseAnimator plays the rep and
+    moves the rack's bar with the hands, as in training; meets use the same followHands).
+    - Skinny squat: the bar stays in the hands through the rep (<= 0.04 apart while moving). Skinny deadlift (bar held
+      1.6-4.3 s): 20 kg plates' bottom 0.043 above the floor at the lowest, bar-hands 0.001, grip 1.88 wide; the
+      shorter skinny arm is NOT a problem. Skinny bench: held 60/60 samples, bar down to 0.45 in front of the chest
+      centre (just touching). Muscular bench: 0.56 in front (touching, maybe a slight sink; the bench frame blocked
+      the camera).
+    - FOUND: the squat bar sank into every cartoon back (the bar's centre sits 0.24 behind the chest centre; the backs
+      reach 0.36 / 0.70 / 0.49 behind it at that height, measured on the Blender meshes; raising the bar doesn't help;
+      the old block body also had it 0.26 in, hidden by the flat block). FIX: ClothesConfig.Bodies[build].squatBarBack
+      (Skinny 0.16, Heavy 0.50, Muscular 0.30) and StationPoseAnimator.squatBarShift moves the squat bar back along
+      the UpperTorso's back while it follows the hands. Seen after: the bar rests across the muscular and heavy upper
+      backs behind the head. Pictures art/previews/RealSquat_*.jpg, RealBench_Skinny.jpg.
+    - Trade-off: on the heavy build the fists are up to 0.5 in front of the bar; from behind it reads fine. The proper
+      fix later is per-build squat animations (the animation scripts are procedural: put the bar target on each
+      build's back).
+  - NOT YET: a meet lift on a platform (same bar code); celebrations and the hand swaps; the clothes and gear remade for
+    the new bodies; build chosen by progress; the heavy back crease and wrist ridge.
+  - The old worn gear still shows as the block-body models stretched onto the new body (step 4 refits it). The new
+    body is on in Studio for everyone now, so lifts in Studio look wrong until step 3 (the animations).
+- NOT DONE: a real BodyService (swap on every spawn, players and computer lifters); shorts and shoes (bare skin now;
+  the player's Roblox shirts/pants and body accessories are removed because they can't fit); the 84 animations on the
+  new joint table; lift and rack heights; worn gear refit; women's bodies (asked, not decided).
+
 **SPOTTERS CLEAR OF ENTRANCES; LOCAL/REGIONAL GET HYPE MOVES AND CELEBRATIONS (2026-11-12), CHECKED BY THE USER, COMMITTED**
 (GAME_DESIGN §37.5 table "Spotters make way for entrances too"; §36.4 "Local and Regional get them too").
 - User (screenshot: a spotter filling the State bench walk-out shot): "make sure any spotters or loaders are not in the way

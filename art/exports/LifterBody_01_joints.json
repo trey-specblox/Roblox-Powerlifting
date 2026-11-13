@@ -1,0 +1,276 @@
+{
+ "note": "LifterBody_01 (Average), Roblox space (+Y up, front -Z, left -X), studs, standing rest pose. Bone positions = R15 joint positions (Root bone at the floor; HumanoidRootNode = the HumanoidRootPart's centre). Built by art/scripts/build_lifter_body_01.py.",
+ "neckY": 4.35,
+ "headScale": 0.7,
+ "joints": {
+  "Root": [
+   -0.0,
+   0.0,
+   0.0
+  ],
+  "HumanoidRootNode": [
+   -0.0,
+   3.5287,
+   0.0205
+  ],
+  "LowerTorso": [
+   -0.0,
+   2.5287,
+   0.0205
+  ],
+  "UpperTorso": [
+   -0.0,
+   2.9747,
+   0.0538
+  ],
+  "LeftUpperArm": [
+   -0.5129,
+   3.7967,
+   -0.049
+  ],
+  "LeftLowerArm": [
+   -0.5612,
+   3.1052,
+   -0.049
+  ],
+  "LeftHand": [
+   -0.6123,
+   2.3717,
+   -0.049
+  ],
+  "RightUpperArm": [
+   0.5129,
+   3.7967,
+   -0.049
+  ],
+  "RightLowerArm": [
+   0.5612,
+   3.1052,
+   -0.049
+  ],
+  "RightHand": [
+   0.6123,
+   2.3717,
+   -0.049
+  ],
+  "LeftUpperLeg": [
+   -0.2988,
+   2.5287,
+   0.0205
+  ],
+  "LeftLowerLeg": [
+   -0.2988,
+   1.3789,
+   0.0205
+  ],
+  "LeftFoot": [
+   -0.2988,
+   0.1798,
+   0.0444
+  ],
+  "RightUpperLeg": [
+   0.2988,
+   2.5287,
+   0.0205
+  ],
+  "RightLowerLeg": [
+   0.2988,
+   1.3789,
+   0.0205
+  ],
+  "RightFoot": [
+   0.2988,
+   0.1798,
+   0.0444
+  ]
+ },
+ "parts": {
+  "LeftFoot": {
+   "center": [
+    -0.299,
+    0.1331,
+    -0.1398
+   ],
+   "size": [
+    0.2637,
+    0.3131,
+    0.7111
+   ],
+   "triangles": 972
+  },
+  "UpperTorso": {
+   "center": [
+    -0.0154,
+    3.5925,
+    -0.0791
+   ],
+   "size": [
+    1.1681,
+    1.487,
+    0.6478
+   ],
+   "triangles": 1458
+  },
+  "RightUpperArm": {
+   "center": [
+    0.5271,
+    3.4918,
+    -0.0516
+   ],
+   "size": [
+    0.2815,
+    1.0128,
+    0.418
+   ],
+   "triangles": 388
+  },
+  "RightHand": {
+   "center": [
+    0.5718,
+    2.1211,
+    -0.0355
+   ],
+   "size": [
+    0.2047,
+    0.6006,
+    0.4172
+   ],
+   "triangles": 1078
+  },
+  "RightLowerArm": {
+   "center": [
+    0.565,
+    2.7692,
+    -0.0777
+   ],
+   "size": [
+    0.2354,
+    0.9049,
+    0.2462
+   ],
+   "triangles": 261
+  },
+  "LowerTorso": {
+   "center": [
+    0.0045,
+    2.6543,
+    -0.0473
+   ],
+   "size": [
+    0.8748,
+    0.8557,
+    0.646
+   ],
+   "triangles": 587
+  },
+  "RightUpperLeg": {
+   "center": [
+    0.2544,
+    1.8939,
+    -0.0302
+   ],
+   "size": [
+    0.4794,
+    1.4218,
+    0.5614
+   ],
+   "triangles": 454
+  },
+  "RightLowerLeg": {
+   "center": [
+    0.3189,
+    0.8312,
+    0.0871
+   ],
+   "size": [
+    0.343,
+    1.3107,
+    0.3622
+   ],
+   "triangles": 329
+  },
+  "RightFoot": {
+   "center": [
+    0.299,
+    0.1331,
+    -0.1398
+   ],
+   "size": [
+    0.2637,
+    0.3131,
+    0.7111
+   ],
+   "triangles": 973
+  },
+  "LeftUpperArm": {
+   "center": [
+    -0.5271,
+    3.487,
+    -0.0516
+   ],
+   "size": [
+    0.2815,
+    1.0032,
+    0.418
+   ],
+   "triangles": 382
+  },
+  "LeftHand": {
+   "center": [
+    -0.5718,
+    2.1231,
+    -0.0355
+   ],
+   "size": [
+    0.2047,
+    0.6047,
+    0.4172
+   ],
+   "triangles": 1080
+  },
+  "LeftLowerArm": {
+   "center": [
+    -0.565,
+    2.7656,
+    -0.0777
+   ],
+   "size": [
+    0.2354,
+    0.9121,
+    0.2462
+   ],
+   "triangles": 259
+  },
+  "LeftUpperLeg": {
+   "center": [
+    -0.2543,
+    1.9451,
+    -0.0216
+   ],
+   "size": [
+    0.4796,
+    1.4144,
+    0.5785
+   ],
+   "triangles": 453
+  },
+  "LeftLowerLeg": {
+   "center": [
+    -0.3228,
+    0.8343,
+    0.0873
+   ],
+   "size": [
+    0.3351,
+    1.324,
+    0.3618
+   ],
+   "triangles": 324
+  }
+ },
+ "neckJoint": [
+  0.0,
+  4.35,
+  0.0371
+ ]
+}

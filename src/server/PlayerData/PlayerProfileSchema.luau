@@ -63,7 +63,7 @@ local PlayerProfileSchema = {}
 	version 24: walk-outs, celebrations and fail styles collected, with a slot
 	for each attempt).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 24
+PlayerProfileSchema.CURRENT_VERSION = 25
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -334,6 +334,15 @@ export type Inventory = {
 	-- The emotes they have won (version 23): EmoteConfig id -> true. Free ones are everyone's and never stored. A
 	-- collection: only ever added to. Written only by ProfileOperations.spinEmote and adminGiveEmote.
 	emotes: { [string]: boolean },
+	-- What they wear over the lifter body (version 25, ClothesConfig, user 2026-11-12): kind ("Shirt", "Bottom",
+	-- "Shoes") -> { item, colour }. A missing or unknown one reads as ClothesConfig.Default's. Written only by
+	-- ProfileOperations.setOutfitPiece.
+	outfit: { [string]: { item: string, colour: string } },
+	-- Clothes they own that aren't free (for the clothing stores to come): ClothesConfig item id -> true.
+	clothes: { [string]: boolean },
+	-- The gear toggle (version 25): true wears the gear slots (`wearing`), false the outfit alone. Starts true, so
+	-- everyone keeps seeing the gear they had on. Written only by ProfileOperations.setGearOn.
+	gearOn: boolean,
 }
 
 export type StatPiece = {
@@ -602,6 +611,9 @@ local template: ProfileData = {
 		celebrations = {},
 		failStyles = {},
 		loadout = {},
+		outfit = {},
+		clothes = {},
+		gearOn = true,
 	},
 
 	bodyweight = {
@@ -1787,6 +1799,26 @@ migrations[23] = function(data: ProfileData)
 			end
 		end
 		inventory[move.old] = nil
+	end
+end
+
+--[[
+	Version 24 -> 25: clothes and the gear toggle (user 2026-11-12, GAME_DESIGN §38.6). An empty outfit (the defaults),
+	no owned clothes, and the gear toggle ON, so nobody's gear disappears. Safe to run twice: nothing set is replaced.
+]]
+migrations[24] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return
+	end
+	if typeof(inventory.outfit) ~= "table" then
+		inventory.outfit = {}
+	end
+	if typeof(inventory.clothes) ~= "table" then
+		inventory.clothes = {}
+	end
+	if typeof(inventory.gearOn) ~= "boolean" then
+		inventory.gearOn = true
 	end
 end
 

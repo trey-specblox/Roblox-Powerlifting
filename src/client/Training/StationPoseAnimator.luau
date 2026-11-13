@@ -32,6 +32,21 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local StationAnimationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("StationAnimationConfig"))
+local ClothesConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("ClothesConfig"))
+
+-- On a cartoon body (GAME_DESIGN §38.7) the squat bar sits back on the body's thicker upper back instead of in it.
+local function squatBarShift(character: Model, lift: string): Vector3
+	if lift ~= "Squat" then
+		return Vector3.zero
+	end
+	local build = character:GetAttribute("LifterBodyBuild")
+	local body = if typeof(build) == "string" then ClothesConfig.Bodies[build] else nil
+	local upper = character:FindFirstChild("UpperTorso")
+	if body == nil or upper == nil or not upper:IsA("BasePart") then
+		return Vector3.zero
+	end
+	return upper.CFrame:VectorToWorldSpace(Vector3.new(0, 0, body.squatBarBack))
+end
 
 local StationPoseAnimator = {}
 
@@ -239,7 +254,7 @@ local function followHands(character: Model, rack: Instance?, lift: string, acti
 	local leftHand = character:FindFirstChild("LeftHand")
 	local rightHand = character:FindFirstChild("RightHand")
 	if held and leftHand and leftHand:IsA("BasePart") and rightHand and rightHand:IsA("BasePart") then
-		local mid = (leftHand.Position + rightHand.Position) / 2
+		local mid = (leftHand.Position + rightHand.Position) / 2 + squatBarShift(character, lift)
 		local inHands = CFrame.new(mid) * rack:GetPivot().Rotation
 		if state.wasHeld == false and state.shown then
 			state.grabFrom, state.grabAt = state.shown, os.clock()

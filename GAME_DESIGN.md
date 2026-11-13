@@ -7013,3 +7013,127 @@ attempt**, as above. Today everyone lifts at once, so nobody waits long enough t
 - **Lift animations for computer lifters** (they only stand on the
   platform while the lights decide; §37.5 builds them).
 - Whether the timer gets shorter when only one player is waiting.
+
+## 38. Body types: bodies that show the lifter's progress (user, 2026-11-12)
+
+**[APPROVED by the user, 2026-11-12, after Claude's review]** The user's idea, with
+Claude's four suggestions accepted (user: "I agree with one ... two as well ... 3, I agree").
+
+### 38.1 What decides the look
+
+- **Players get the game's lifter body.** Their own head, face, hair, skin colour and hats
+  stay; the body below the head is the game's. Computer lifters and spotters get the same
+  bodies (the spotters an average build, §37.2 note).
+- **Size comes from bodyweight.** A lifter always looks like their weight class: a 59 kg lifter
+  looks like a 59 kg lifter however strong.
+- **Muscle comes from closeness to the class's Progression Reference table** (§29.2b): how
+  close the active build's three Competition Numbers are to that class's references (PP, §29.2).
+  Far away looks skinny (light) or fat (heavy); close looks muscular, and big and buff in the
+  heavy classes. A 53 kg starter is measured against the 59 kg references, so starts skinny.
+- **Technique stats do not change the body** (Claude's suggestion, accepted). They count in
+  every class, so they would make a lifter look fully built the moment they moved up. Technique
+  is skill, not muscle.
+- **Worked through the frozen build rules (§29.11):** moving 59 -> 66 kg keeps the kilos, so PP
+  falls about 6%: a little softer, a little more belly, not suddenly fat. A 120 kg lifter with
+  half the 59 kg numbers sits near 34% of the 120 kg references: really fat. Cutting back
+  restores that class's saved build, and its body with it.
+- The body is **looks only**. It never changes strength (§29.11: muscle decides bodyweight and
+  size only).
+
+### 38.2 Builds
+
+- **Five builds to start:** skinny, skinny-fat, average, muscular, big and buff. Each is resized
+  to the lifter's bodyweight.
+- Roblox can't morph a body gradually, so the look changes in steps. **For later polish (user):
+  more than five set builds**, so players don't all share the same five.
+- Style: **one smooth body, no gaps at the joints** (user's pick over chunky pieces), made in
+  Blender and uploaded.
+
+### 38.3 Gaining and losing weight (approved, not designed in detail yet)
+
+- Today only the admin panel changes bodyweight. **A Bulk / Maintain / Cut setting** on the stats
+  screen (the save already has `bodyweight.targetKg`) moves the weight **a little each time the
+  lifter trains** (user: "Keeps it fairly easy weight changes as you train"). No food system
+  (Claude's suggestion, accepted). Food could come later as an optional speed-up.
+- **Being heavier never adds strength at once** (accepted). The heavy "buff" is the faster
+  gains a heavier class already gives (§29.3's Hill curve: further from the reference, faster
+  gains), so bulking, grabbing strength and cutting back can't be abused (§29.11).
+- Amounts per session: to be designed and approved before building.
+
+### 38.4 Order
+
+1. The bodies and the look formula (looks only), starting with one average body tested on a
+   player and a computer lifter: gear fit, the bar in the hands, the head clear of the squat bar.
+2. The other four builds.
+3. Bulk / Maintain / Cut (§38.3).
+4. Random gear on computer lifters (user approved, 2026-11-12), fitted to the new bodies.
+
+### 38.5 The realistic skeleton (user, 2026-11-12, picked from pictures)
+
+Claude showed a real body drawn inside the game's R15 block skeleton: at the same neck height
+the block body is about twice as wide, with legs about 0.5 studs shorter. Two options were shown
+as pictures (art/previews/BodyOptions_1_vs_2.png). **The user picked Option 2, "realistic"**:
+bodies keep real human proportions on a new skeleton, instead of being bent onto the block
+skeleton (Option 1, rejected: wide shoulders, low wide hips, short legs).
+
+What it means:
+- **One new skeleton for everyone** (players, computer lifters, spotters, the coach). The same
+  15 R15 part names, so Roblox's own walk/run/jump still play.
+- **Overall height stays about 5.2 studs**, as today, so doors, cameras and the gym still fit.
+- **The player's own head is shrunk to about 70%** (Claude's suggestion, from the same
+  picture), so it doesn't look like a bobblehead on a real body. To be judged in the first test.
+- **All 84 animations are remade** by the existing scripts with the new joint table, then
+  re-uploaded. The bar, rack and bench heights in the code are retuned to the new body. Worn
+  gear is refitted.
+- Done in steps, keeping the game playable: (1) the skeleton and the average body, tested on a
+  player in Studio with Roblox's own walk; (2) the animations and lift heights; (3) the five
+  builds and the look formula (§38.1); (4) Bulk / Maintain / Cut; (5) computer lifters' gear.
+
+### 38.6 Clothes and the gear toggle (user, 2026-11-12)
+
+User: "build the basic cloths, lift animations, and Fit the gear. in the future i will remove a few downstairs
+rooms to replace with, clothing stores. So for now just make a bunch of plain basic cloths, shorts, shoes, shirts.
+a Player will be able to toggle on and off, lifting gear. So if they have pants on they can click toggle gear on,
+and their singlet (removing pants showing legs), belts, wraps, all of that will be put on, For squat suits, and
+singlets. The shirt shall be slightly showing through the empty space of the singlet/squat suit."
+
+- **Basic clothes, plain, free for now:** shirts, shorts and pants, shoes, each in many colours (no logo boxes, so
+  no CENTRAL label needed). **Clothing stores come later**, in a few downstairs rooms the user will clear; the save
+  keeps a list of owned clothes ready for them.
+- **An outfit:** one shirt, one bottom (shorts or pants), one pair of shoes.
+- **The gear toggle** (a button in the gear menu): **gear ON** puts on everything in the gear slots (singlet or
+  squat/deadlift suit, bench shirt, belt, knee sleeves or wraps, wrist wraps) and **takes the shorts/pants off, so
+  the legs show**. **The shirt stays on under the singlet or suit**, showing through its open sides, neckline and
+  arm holes. Shoes stay on. **Gear OFF** is the outfit alone.
+- **How it's built (Claude, tested 2026-11-12):** each piece of clothing and gear is its own Blender mesh, shaped
+  over the new body and bending with it exactly like the skin (a test piece followed a raised arm and bent elbow
+  in Studio). Colours come from the part colour, so one mesh serves every colour.
+- **Claude's default, for the user to confirm:** at a meet, gear goes on automatically for the walk-out (real meets
+  require a singlet), and goes back to the player's choice after.
+- Order: (1) clothes in Blender, upload; (2) the body on every spawn, the outfit, the toggle, the save; (3) the lift
+  animations on the new skeleton; (4) the worn gear remade to fit the new body. Until (3) is done the new body stays
+  switched off in the live game (Studio only), so lifting keeps working.
+
+### 38.7 The cartoon style replaces the realistic body (user, 2026-11-12, approved from pictures)
+
+**[CHANGED BY THE USER, 2026-11-12]** After seeing the realistic body and its clothes, the user said the models were
+"too sloppy" and sent screenshots, 3 Medal clips and a YouTube video of a chunky cartoon Roblox gym game as
+references (studied in References/Body Study.md; references only, our bodies are our own). Claude built examples;
+after two shoulder fixes the user approved: **"Yes, looks good."** This replaces §38.5's realistic skeleton.
+
+- **The game's original Roblox block skeleton stays.** The full-size Roblox head sits into the body with no neck; every
+  existing animation keeps working.
+- **Style:** every muscle its own smooth, rounded shape, fused into one surface with clean creases where they meet
+  (`art/scripts/build_cartoon_body_02.py`). Heavy bodies are smooth and round with a low belly; skinny bodies are
+  slim with level shoulders.
+- **Width tells the build:** a skinny body is narrow with its arms hanging close to its sides (shoulders about twice
+  the head's width); heavy is wider; muscular is widest, its arms where the block arms hang. The skeleton only fixes
+  the shoulder's pivot, not where the arm's shape hangs.
+- **Hand-shape swaps** (user's pick): real fingers, as separate shapes a celebration switches to: Fist, Open, Point
+  (also "shhh"), ThumbsUp (`art/scripts/build_cartoon_hands_02.py`).
+- **Still stands from §38.1-38.4:** the build comes from closeness to the class's Progression Reference table, size
+  from bodyweight, technique never changes the body, Bulk / Maintain / Cut, gear toggle and clothes (§38.6).
+- **From the progression video (Claude's suggestion, not decided yet):** each lift grows its own muscles (squat:
+  thighs and glutes; bench: chest, shoulders, triceps; deadlift: back, traps, forearms), growing a little at a time.
+- **Dropped:** the realistic MPFB body (LifterBody_01), its realistic clothes shapes and the 70% head. The clothes
+  system's code (outfit, gear toggle, save v25, menu) stays and is fitted to the new bodies.

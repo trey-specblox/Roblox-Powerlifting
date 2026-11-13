@@ -39,6 +39,7 @@ local GearStats = require(EconomyFolder:WaitForChild("GearStats"))
 local PlayerDataFolder = script.Parent.Parent:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local WornGearFit = require(script.Parent:WaitForChild("WornGearFit"))
+local LifterBodyService = require(script.Parent:WaitForChild("LifterBodyService"))
 
 local GearService = {}
 
@@ -133,16 +134,22 @@ local function holdArms(character: Model, wearing: boolean)
 	end
 end
 
--- Rebuilds the character's worn gear from the save. Safe to call any time.
+--[[
+	Rebuilds the character's worn gear and clothes from the save. Safe to call any time. With the gear toggle off
+	(GAME_DESIGN §38.6) no gear is worn; the clothes (LifterBodyService, on the lifter body only) go on after the gear,
+	which decides whether the shorts/pants come off.
+]]
 local function dress(player: Player)
 	local character = player.Character
-	local worn = PlayerDataService.getWorn(player)
-	if character == nil or worn == nil then
+	local saved = PlayerDataService.getWorn(player)
+	if character == nil or saved == nil then
 		return
 	end
+	local worn = if PlayerDataService.getGearOn(player) == false then {} else saved
 	local loaded = if next(worn) then loadPieces() else nil
 	local made = WornGearFit.dress(character, worn, loaded or {})
 	holdArms(character, worn.BenchShirt ~= nil)
+	LifterBodyService.dressOutfit(player, character, worn)
 	if made > 0 then
 		log("%s dressed: %d pieces", player.Name, made)
 	end
@@ -340,6 +347,8 @@ local function onCharacter(player: Player, character: Model)
 			connection:Disconnect()
 		end
 		if player.Character == character then
+			-- The lifter body first (once per character): the gear and clothes are fitted to whichever body it has.
+			LifterBodyService.prepare(player, character)
 			dress(player)
 			refitOnResize(player, character)
 		end
@@ -353,6 +362,8 @@ function GearService.start()
 	started = true
 	local remotes = GearRemotes.createOnServer(ReplicatedStorage)
 	remotesSet = remotes
+	LifterBodyService.setRedress(dress)
+	LifterBodyService.start()
 	remotes.get.OnServerInvoke = function(player: Player): GearRemotes.GearView?
 		if tooFast(player) then
 			return nil
