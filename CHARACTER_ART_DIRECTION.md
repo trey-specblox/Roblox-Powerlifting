@@ -754,6 +754,63 @@ committed, no game code changed.
 - **Check:** check_models.py CHECK PASSED, 0 folds, the pose check, front/back/side/three-quarter pictures with
   backface culling, then the user's look.
 
+**Phase 2 results (2026-11-13) [EXPERIMENTAL, waiting for the user's look].** Headless Blender only; nothing uploaded,
+exported or committed; no game file changed.
+- **Rebuilt with arms x1.5 (2026-11-13, user's pick "1. Arms x1.5", see `References/Character Animation Quality.md`
+  §2.1):** elbow 3.287, wrist 2.148 (were 3.51 / 2.59); legs, torso, shoulder 4.38 and hands unchanged. Set in
+  `build_cartoon_body_05.py` (`S` = the heights the shapes are written on, `L` = the built skeleton; `body_spec` stretches
+  the arm shapes along the arm, muscles lengthened with their bone, same thickness); `build_cartoon_body_04.py` left as
+  it was. Shoulder zone kept at the measured place (shoulder - 0.57). Now 2,114 points / 2,112 quads, body 4,224 + hands
+  1,200 = **5,424 triangles**; 0 folds / 0 inside-out on all six; CHECK PASSED on both files (32,544 / 60,840 tris).
+  Tee test, skin points through: squat bar hold 0-1, arms up 0, bench 0-2, double biceps 0-9, overhead clap 28-128
+  (about as before). The figures below are the x1.2-arm build's where they differ; its two .blend files are kept in
+  `D:\ClaudeScratch\bodies05_armsx12`. Pose pictures still use the committed block-rig animations (made for short
+  arms: the deadlift fists now go into the floor until Phase 1's re-made set is used).
+- **Grip hand (2026-11-13, for the deadlift, later every lift; user: the fingers must be "actually wrapped around
+  grabbing it"):** `build_cartoon_hands_04.py` shape "Grip": a bar hole along hand-space X at `GRIP_C` (0, -0.197,
+  -0.40), radius 0.062 (0.075 studs at Fit's 1.22; one mesh scaled per build). Fingers run from the knuckles under the
+  bar, up its far side and curl back over the top; the thumb closes the other way across the index and middle fingers.
+  600 triangles. In `CartoonBodies_05_Rigged.blend` as `<Build>_Grip<Side>` in "SwapHands05" (hidden like the others),
+  each with a `grip_point` property (rest, rig space: where the bar's centre goes; game code should use it instead of
+  the hand centre). CHECK PASSED (138 meshes). Pictures: `Bodies05_Close_Grip.png` (with a bar), `Bodies05_Close_HandShapes.png`.
+- **Files (new):** `art/scripts/build_cartoon_body_05.py` -> `art/blender/CartoonBodies_05.blend` (the six bodies +
+  open hands; stand-in heads in "Preview"); `art/scripts/build_cartoon_hands_04.py` (the hands);
+  `art/scripts/build_cartoon_rig_05.py` -> `art/blender/CartoonBodies_05_Rigged.blend` (`<Build>Rig` + the 14 parts
+  `<Build>_<Part>`, the layout `build_cartoon_gear_04.py` reads; swap hands in "SwapHands05");
+  `art/scripts/check_bodies_05.py` (pictures + shoulder measure, read-only). Build names in objects: Skinny, SkinnyFat,
+  Fat, Fit, Muscular, BigBuff. Prototype 04 files untouched.
+- **One shared base mesh:** the Fit field meshed with OpenVDB and remeshed into even, mirror-symmetric quads
+  (QuadriFlow): 2,062 points, 2,060 quads, closed, one piece. Every build (Fit too) is that mesh reshaped onto its own
+  distance field (points carried along with their body part by rays from the bone axes, snapped onto the surface,
+  evened out along it). **Same point count, order and faces on all six**; weights and the R15 part split are shared by
+  point, so every part also has one topology across builds.
+- **The six:** Skinny, Fat (the prototype's Heavy) and Muscular keep the prototype's shapes (Muscular's grooves
+  widened for the even mesh, the delt/pec line moved off the armpit: §10.1 issue 3); Skinny-fat (skinny frame, soft low
+  belly and handles, flat chest), Fit (the base: athletic V, round delts, faint abs) and Big and buff (widest: traps up
+  the head, deep thick chest, thick firm waist, no ab lines) are new. Side silhouettes differ per build.
+- **Shoulders:** the torso/arm split spread over a wide strip of skin (`build_cartoon_rig_05.spread_shoulders`). Tested
+  with the gear session's v4 tee (`make_tee`, in memory, its `hold_shoulder` off) and `gear_fit_03.clearance` on all
+  six, skin points through the tee: squat bar hold, arms up, bench 0 on five builds (Big and buff 2-5, at most 0.055
+  deep; Fit's bench 3, 0.009 deep); double biceps 0-5 (the §10.3 tear). Automatic weights tore in the squat bar hold
+  (Fit 5, Fat 17); a zone-based tuning (torso only under the armpit, a short ramp) tore in every raise (23-58) and was
+  dropped. **Left:** arms crossed overhead (OverheadClap) still pokes through (21-121 points): the one-joint R15
+  shoulder; candidates are the in-game hand contact fix (it changes how far the arms cross) or more tee room there
+  (Phase 3).
+- **Hands:** one distance field per hand (palm, knuckles, fingers with hard creases between them, thumb), 600
+  triangles each, 0 folds: Open in the body, Fist / Point / ThumbsUp as swaps; sizes Skinny 1.05, Skinny-fat 1.12,
+  Fit 1.22, Fat 1.30, Muscular 1.50, Big and buff 1.58.
+- **Budget:** body 4,120 + two hands 1,200 = **5,320 triangles per body** (was 7,600).
+- **Checks:** check_models.py CHECK PASSED on both files (CartoonBodies_05 18 meshes; _Rigged 126 meshes); 0 folds
+  and 0 inside-out faces on all six; posed with the committed block-rig animations (Phase 1's set not ready) in squat
+  bottom, bench, deadlift, squat bar hold, arms up, overhead clap, double biceps, crouch roar, chest slap, walk.
+- **Pictures:** `art/previews/Bodies05_Lineup_{Front,Back,Side,Threequarter}.png`, `Bodies05_Silhouette_{Front,Side}.png`,
+  `Bodies05_Close_{HeadShoulders,Hands,HandShapes}.png`, `Bodies05_Pose_*.png` (+ `_ShoulderClose`/`_ShoulderBack` for the
+  raises). Backface culling on, the same stand-in head.
+- **Known:** the R15 parts now keep the whole body's smooth normals (no shading line at the cuts); chest-slap hands
+  still sink into the wide chests (needs the per-build hand contact, Phase 4); the in-between steps (§5.5) are code
+  (Phase 4), not built here; for Phase 3, `build_cartoon_gear_04.py` must read `build_cartoon_body_05.body_spec` and the
+  six names, and its `hold_shoulder` should go (the tee then copies the body's spread weights, as tested).
+
 ### Phase 3: clothes and gear on every body (v04 pipeline)
 - Run `build_cartoon_gear_04.py` on all six bodies: tee and under-tee, singlet, belt, knee sleeves, wrist wraps,
   sneakers (built). Still to build the v04 way: long sleeve, tank, shorts, joggers, squat suit, deadlift suit, bench
