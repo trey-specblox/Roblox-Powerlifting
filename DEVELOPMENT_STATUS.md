@@ -13,6 +13,72 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**CARTOON GEAR v5 = GEAR REFIT TO THE SIX PRODUCTION BODIES (2026-11-14, Phase 3 of CHARACTER_ART_DIRECTION §11),
+BUILT, LOOK APPROVED BY THE USER 2026-11-14 ("Looks right", on Gear05_BeforeAfter / MeetGear / OtherOutfits / Pose
+sheets), then thinned + new wrist wraps, also approved. COMMITTED 2026-11-14 (the commit after 1992169: the two
+scripts, CartoonGear_05.blend, this file; previews not committed). NOT EXPORTED, NOTHING UPLOADED, NO STUDIO CHANGE.**
+- Task (user via the phase-1 session: "Yes start step 1"): refit all gear and clothes onto CartoonBodies_05 (Skinny,
+  SkinnyFat, Fat, Fit, Muscular, BigBuff; torso skeleton, arms x1.5), clearance + check_models, before/after pictures.
+- Look kept = the APPROVED v4 look (§10.3: singlet over a black tee, piped edges, torso-held straps, belt at the navel,
+  thin snug knee sleeves). `art/scripts/build_cartoon_gear_05.py` (NEW) uses build_cartoon_gear_04.py (and v03 +
+  gear_fit_03) as an unchanged library, points it at build_cartoon_body_05.body_spec / L and the six names, hold_shoulder
+  off (Phase 2's spread shoulder weights are copied instead). Items, all six builds (829 pieces, game naming):
+  Tee, TeeUnder, WornSinglet, WornLeverBelt, WornKneeSleeve, WornWristWrap, Sneakers (v4 builders); LongSleeve and
+  WornBenchShirt (v4 tee shell: sleeves to the wrist / above the elbow; bench shirt thick, sleeves its Shoulder key,
+  back logo); WornSquatSuit / WornDeadliftSuit (v4 singlet top, legs to 34% / 24% of crotch->knee, Body/Panel/Trim; same
+  top as the singlet so the under-tee fits all three); Tank, Shorts, Joggers, WornKneeWrap (v03 builders).
+  Writes `art/blender/CartoonGear_05.blend` (bodies + gear). `run: blender -b art/blender/CartoonBodies_05_Rigged.blend
+  --python art/scripts/build_cartoon_gear_05.py` (TEMP on D:, ~40 min for six).
+- Bugs found in the v4 library and fixed in v5 (v4 file untouched): (1) its mesher caches the temp .vdb by name, so the
+  long sleeve / bench shirt / suits / tank silently got the tee's or singlet's shape -> unique names; (2) faces turned
+  outward only as a whole -> per face by the field (Skinny-fat knee sleeves had 219/445 faces inside-out = see-through
+  holes; singlets/tees 20-40 each, part of v4's "crinkles"); (3) under-tee cut by face centre left see-through teeth in
+  the singlet's neckline -> cut only faces whose every corner is covered, 0.15 from the singlet's edge (0.07 opened gaps
+  on the back in the bench pose).
+- `art/scripts/check_gear_05.py` (NEW, read-only): clearance (gear_fit_03, re-made animations art/animations) and the
+  pictures. **check_models.py CHECK PASSED (967 meshes).** Clearance, meet gear, all six: Rest and Walk 0 clips / 0
+  skin-through for belt, under-tee, knee sleeves; singlet Walk 9 points <= 0.054; lift poses leave hidden folds (squat
+  bottom: singlet 145 / knee sleeves 253 points through at the hip and knee creases, <= 0.2) and singlet straps under
+  raised shoulder skin (bench 32, double biceps 27 points through). Full report: shared notes gear-v05-clearance.txt.
+- Pictures (art/previews, not committed): Gear05_BeforeAfter.png, Gear05_MeetGear.png, Gear05_{SquatSuit,DeadliftSuit,
+  BenchShirt,TeeShorts,LongSleeveJoggers,TankShorts}.png (rows = the six builds, front/back/left/right),
+  Gear05_OtherOutfits_Front.png, Gear05_Pose_{SquatBottom,BenchChest,DeadliftBottom}.png (grip hands).
+- **Triangles (per build, about):** meet gear = under-tee 1,000-1,280 + singlet 2,600 + belt 868 + knee sleeves 1,170 +
+  wraps 672 + sneakers 760 = **~7,100** (same as the approved v4; Phase 3 budget ~5,000 NOT met yet); suits ~2,650,
+  bench shirt ~2,170, tee ~1,620, long sleeve ~2,000, tank ~1,150, shorts 1,176, joggers 1,704, knee wraps 1,696.
+- Open / rough: wrist wraps report 105 points inside the forearm skin at rest on all six (up to 0.085 deep; nothing seen
+  in the pictures; check a close-up); Big-and-buff's strap tops crumple over its traps; tank is the v03 builder (the
+  singlet-shell tank crumpled; GEAR05_TANK=shell keeps it); sneaker shells touch the foot from inside in walks.
+- **THINNED 2026-11-14 (user: "Yes, thin it"), NOT YET LOOKED AT BY THE USER:** meet gear now **5,007-5,161 triangles
+  per lifter** on all six (was ~7,100; Phase 3 budget ~5,000): shells' insides cut harder and edge points halved once
+  more (MEET_TRIS / EDGE_THIN in build_cartoon_gear_05.py; GEAR05_THIN=0 rebuilds the unthinned set; the approved
+  unthinned file is backed up at D:\ClaudeScratch\gear05\CartoonGear_05_unthinned.blend), belt 18 segments (756),
+  wraps 10 round (552); suits thinned with the singlet (~1,750). Under-tee ~680-820, singlet ~1,690-1,810, knee sleeves
+  ~730, sneakers ~500. Wrist wraps MOVED: the close-up showed v4's placement (0.17 below the wrist joint = mid-palm on
+  these hands) flaring the lowest turn over the hand like a skirt with skin between turns; now span (0.05, 0.21) from
+  the base of the hand, the CENTRAL text on the top turn (narrower band than v4). CHECK PASSED (805 pieces). Clearance:
+  Rest/Walk still clean (singlet 1-3 points <= 0.094); wraps 168 inner points inside the forearm at rest, 4 tiny
+  skin-through (hidden lips); squat-bottom folds a little higher than before thinning (singlet 225 points through at the
+  hip crease). Pictures: art/previews/Gear05_Thinning_BeforeAfter.png, Gear05_WristWraps_BeforeAfter.png, the Gear05_*
+  sheets re-rendered from the thinned file.
+- **WRIST WRAPS REBUILT 2026-11-14 (user, on the thinned set: "for the wrist wraps im seeing a lot of phasing through
+  the body, and the body phasing through it")**: causes = the v03 wound wrap was rigid with the forearm and reached
+  onto the palm (the hand swung through it whenever the wrist bent), its turns were rings round a smoothed outline (the
+  hand's base bulged out through it, inner lips inside the arm), and check_gear_05 had left the hands OUT of the wrap
+  test (fixed: hands are in it now). New `build_wrist_wraps_05`: a thick shell over the REAL forearm + hand skin (per
+  part signed distance; one shared distance had cut into the hand), three turns stepping out 0.01 each, ends gripping,
+  red stripe on the middle turn, CENTRAL on the top turn, no tail flap, from 0.03 below the wrist joint to 0.28 above,
+  held by the forearm only (the hand's share made the deadlift twist crumple it; half hand-share cut deeper - tried,
+  dropped). Clearance, hands included, all six: Rest / bench / arms up 0 inside + 0 through (Skinny 1-7 brushes <=
+  0.012); deadlift 8-21 points touching the hand (<= 0.07), 0 through; **squat set-up 66-114 points inside the hand
+  (<= 0.15): the animation bends the wrist back ~90 deg holding the bar, the back of the hand cuts into the wrap's lower
+  edge - needs the squat set-up's wrist straightened (animation work), not fixable in the wrap.** Wraps 586-683
+  triangles; meet gear now 5,060-5,226. CHECK PASSED (943 meshes). Picture art/previews/Gear05_WristWraps_BeforeAfter.png.
+- **APPROVED 2026-11-14:** the user approved the thinned set with the new wrist wraps ("Looks right", on
+  Gear05_WristWraps_BeforeAfter.png + Gear05_MeetGear.png).
+- NEXT (each with the user's OK): pass the squat set-up wrist bend to the animation work, export GLBs, ClothesConfig keys for
+  TeeUnder/LongSleeve/Tank, uploads, Studio test (Phase 4).
+
 **CARTOON GEAR v3, IN PROGRESS (2026-11-12, session "gear rebuild"), NOT COMMITTED, NOTHING UPLOADED** (approved plan,
 memory gear-fitting-architecture; user: "do all of the phases"; v02 kept for reference).
 - PHASE 1 TOOLS, DONE: `art/scripts/gear_fit_03.py` (a library): Body(build) = the skin in rig space + search trees per
