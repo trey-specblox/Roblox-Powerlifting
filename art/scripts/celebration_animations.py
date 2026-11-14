@@ -30,7 +30,8 @@ AY, AZ = ANKLE.y, ANKLE.z
 # ---------------------------------------------------------------- the taller rig (user 2026-11-12)
 # The numbers below were written on the block rig. The cartoon lifters are taller (lifter_heights.py: legs x1.2286,
 # torso and arms x1.15; head, hands and feet unchanged), so they are moved onto this rig as they are read:
-#   B(v)   a hand on or near the body (chest frame): only its height stretches with the torso (the body is no wider)
+#   B(v)   a hand on or near the body (chest frame): only its height stretches with the torso (the body is no wider);
+#          on the torso rig (arms x1.2, torso x1.35) a low hand rises just enough to stay within the arm's reach
 #   O(v)   an arm held out or up at arm's length: moved out from the shoulder by how much further the arm reaches
 #   F(v)   an arm reaching straight forward: the same, its x kept
 #   H(v)   at the head (the face, the crown): the head is not stretched, it just sits higher on the chest
@@ -45,7 +46,20 @@ _SHOULDER_NOW = R.S.JOINTS["LeftShoulder"][2]
 
 
 def B(v):
-    return (v[0], v[1] * TOR, v[2])
+    # (on the torso rig a hand low on the body stays within the arm's reach: S.within_arm, chest frame)
+    return tuple(R.S.within_arm(v, (v[0], v[1] * TOR, v[2]), _SHOULDER, _SHOULDER_NOW))
+
+
+_CHEST_UP = R.S.forward_kinematics(R.S.Matrix.Identity(4), {})["UpperTorso"].to_translation().y   # chest centre
+
+
+def BELT_B(v, belt_ref):
+    """A hand on the belt (chest frame, block numbers; the move's own belt key at belt_ref): on the torso rig at the new
+    bodies' navel belt (S.on_belt's rule), else B(v)."""
+    if R.S.RIG != "torso":
+        return B(v)
+    y = (R.S.BELT_NAVEL_Y - _CHEST_UP) + (v[1] - belt_ref) * TOR
+    return tuple(R.S.within_arm(v, (v[0], y, v[2]), _SHOULDER, _SHOULDER_NOW))
 
 
 def O(v, keep_x=False):
@@ -401,7 +415,7 @@ def from_seat(z, scale):
 
 _seat = {"pos": (0, SEAT_Y, SEAT_Z), "lean": -28, "lf": (-0.62, AY, from_seat(-0.62, LEG), 28, 0),
          "rf": (0.18, AY, from_seat(-0.78, LEG), 8, 0)}
-_hand_back = ("floor", (1.05, 0.32, from_seat(1.05, TOR)))
+_hand_back = ("floor", (1.05, 0.32, from_seat(1.05, R.S.ARM_SCALE)))   # (an arm's stretch: the arm factor)
 clip("SitAndLaugh", 5.2, [
     K(0.6, pos=P(0, -0.75, 0.25), lean=22, up=-8, with_=both(B((-0.9, -1.3, 0.2)))),
     K(1.15, with_=_seat, lh=("chest", B((-0.95, -0.75, -1.05))), rh=_hand_back, up=30, turn=-12),

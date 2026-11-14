@@ -149,6 +149,7 @@ At the end of every completed development checkpoint, update DEVELOPMENT_STATUS.
 - GAME_DESIGN.md is the authoritative source for approved gameplay mechanics. Update it when the user approves a new or changed gameplay decision. Never silently reinterpret or replace an approved decision.
 - DEVELOPMENT_STATUS.md tracks implementation progress and next steps. Update it at checkpoint completion and session handoff.
 - CHARACTER_ART_DIRECTION.md holds the lifter-body art and modeling standards (anatomy, physique categories, Roblox body decisions, quality checklist). Read it before any body, hand, head or physique work; it marks what is APPROVED vs EXPERIMENTAL.
+- `References/Character Animation Quality.md` holds the animation, rigging and equipment-contact quality standards (lift technique, bar and hand contact, per-body corrections, known root causes). Read it before changing any animation, rig or hand target, and check every animation with `art/scripts/anim_qa.py` (all three builds, front/side/back/three-quarter, before/after) before showing it to the user.
 - Verify Git status before claiming anything is committed.
 - Do not create duplicate design documents, and do not synchronize, copy or link folders unless the user asks.
 

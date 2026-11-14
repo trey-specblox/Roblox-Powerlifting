@@ -16,6 +16,7 @@
 # checks each, writes art/animations/Emote_<Name>.rbxmx, and with a folder renders front preview sheets. Publish with
 # art/scripts/upload_animations.py; ids go in src/shared/Config/EmoteConfig.luau.
 import importlib.util
+from mathutils import Vector
 import os
 import sys
 
@@ -39,8 +40,8 @@ def emote(name, length, keys, layers=()):
 
 
 WAVE_HIGH = B((1.45, 1.75, -0.35))       # (right) hand up beside the head, open
-BELT = B((-0.62, -0.95, -0.78))          # hands on the front of the belt
-BELT_TUG = B((-0.66, -1.1, -0.72))
+BELT = C.BELT_B((-0.62, -0.95, -0.78), -0.95)          # hands on the front of the belt (torso rig: the navel belt)
+BELT_TUG = C.BELT_B((-0.66, -1.1, -0.72), -0.95)
 TRAP = B((-0.62, 0.86, -0.12))           # a hand on top of its own shoulder
 TRAP_OFF = O((-1.0, 1.2, -0.45))
 BELLY = B((-0.42, -0.45, -0.98))
@@ -90,17 +91,42 @@ emote("DoubleBiceps", 3.0, [
     K(3.0),
 ], layers=[C.tremble(0.55, 2.15, amp=0.04, hz=8.0, chest=1.0)])
 
-emote("TrapSlap", 2.6, [
-    K(0.25, with_=both(TRAP_OFF), up=-4),
-    K(0.4, with_=both(TRAP), up=-6, ease="fast"),
-    K(0.55, with_=both(TRAP_OFF), up=-4),
-    K(0.7, with_=both(TRAP), up=-6, ease="fast"),
+if R.S.RIG == "torso":
+    # (torso rig, 2026-11-13) ALTERNATING CROSS-BODY trap slaps: with the x1.5 arms a hand can't fold onto the top of its
+    # own shoulder (it stopped by the head: "touching the face cheek instead of the trap", user), so each hand slaps the
+    # OTHER trap in turn, the free hand guarding at the chest; the palm lands flat on top of the trap (palms below).
+    TRAP_WIND = O((-1.45, 1.3, -0.3))           # a hand cocked up and out beside the head
+    TRAP_GUARD = B((-0.85, -0.25, -0.7))        # the free hand low and out at the side of the belly (clear of the slap)
+    TRAP_CROSS = B((0.7, 0.86, -0.1))           # the LEFT hand on top of the RIGHT trap
+    _trap_keys = [
+        K(0.25, with_=both(TRAP_WIND, C.mx(TRAP_GUARD)), up=-4),
+        K(0.4, with_=both(TRAP_CROSS, C.mx(TRAP_GUARD)), up=-6, ease="fast"),
+        K(0.55, with_=both(TRAP_GUARD, C.mx(TRAP_WIND)), up=-4),
+        K(0.7, with_=both(TRAP_GUARD, C.mx(TRAP_CROSS)), up=-6, ease="fast"),
+    ]
+else:
+    _trap_keys = [
+        K(0.25, with_=both(TRAP_OFF), up=-4),
+        K(0.4, with_=both(TRAP), up=-6, ease="fast"),
+        K(0.55, with_=both(TRAP_OFF), up=-4),
+        K(0.7, with_=both(TRAP), up=-6, ease="fast"),
+    ]
+emote("TrapSlap", 2.6, _trap_keys + [
     K(0.95, with_=both(CLAP_APART), up=0),
     K(1.15, with_=both(CLAP), cbend=-6, up=10, ease="fast"),
     K(1.55, with_=both(B((-1.6, -0.1, -0.7))), cbend=-10, up=14),
     K(2.1, with_=rest(), cbend=0, up=0),
     K(2.6),
 ], layers=[C.tremble(1.2, 1.6, amp=0.04, hz=9.0, chest=1.2)])
+if R.S.RIG == "torso":
+    # the palm flat on top of the OTHER trap, out toward the shoulder, fingers back over it; each hand in its turn
+    EMOTES["TrapSlap"].palms = {
+        "Left": {"spot": Vector((0.95, 1.55, 0.05)), "fingers": Vector((0.45, -0.3, 1.0)), "below": 0.15,
+                 "facing": Vector((0.0, 1.0, 0.0)),
+                 "weight": [(0.0, 0.0), (0.26, 0.0), (0.4, 1.0), (0.47, 1.0), (0.58, 0.0), (2.6, 0.0)]},
+        "Right": {"spot": Vector((-0.95, 1.55, 0.05)), "fingers": Vector((-0.45, -0.3, 1.0)), "below": 0.15,
+                  "facing": Vector((0.0, 1.0, 0.0)),
+                  "weight": [(0.0, 0.0), (0.56, 0.0), (0.7, 1.0), (0.77, 1.0), (0.9, 0.0), (2.6, 0.0)]}}
 
 emote("PointLaugh", 3.0, [
     K(0.25, rh=("chest", POINT_PREP), up=2),

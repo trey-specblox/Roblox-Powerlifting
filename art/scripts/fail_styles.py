@@ -56,7 +56,7 @@ def bent_over(neck=10.0):
     """Bent over, hands on the knees, catching a breath."""
     p = {"torso": -42.0, "thigh": 18.0, "shin": -14.0, "toes": S.SQUAT_TOES_OUT, "arm": HANG, "neck": neck}
     p = F.planted(p)
-    p["arm"] = arms_to(p, Vector((-0.75, S.up_body(-1.35), -0.75)), {"raise": 10.0, "swing": 40.0, "twist": 0.0,
+    p["arm"] = arms_to(p, S.hand_on_body(-0.75, -1.35, -0.75), {"raise": 10.0, "swing": 40.0, "twist": 0.0,
                                                                      "elbow": 10.0})
     return F.planted(p)
 

@@ -32,7 +32,8 @@ CLAPS = (4.4, 4.77)
 SLAPS = (4.85, 5.15)
 
 # Hand targets are in the root part's frame, written for the block rig and moved onto the taller rig (user 2026-11-12,
-# lifter_heights.py): heights on the body through S.up_body, the hanging hand one arm's length (S.reach) below the shoulder.
+# lifter_heights.py): heights on the body through S.hand_on_body (S.up_body kept within the arm's reach), the hanging
+# hand one arm's length (S.reach) below the shoulder.
 HANG_HAND = Vector((-1.5, S.up_body(0.763) - S.reach(1.488) - 0.125, 0.0))
 STAND = {"torso": 0.0, "thigh": 0.0, "shin": 0.0, "toes": S.SQUAT_TOES_OUT, "neck": 0.0}
 LEAN = {"torso": -20.0, "thigh": 12.0, "shin": -4.5, "toes": S.SQUAT_TOES_OUT, "neck": -4.0}
@@ -75,8 +76,10 @@ class Clip:
     """One animation: `body(t)` gives a planted body, `hands(t)` both hands' centres in the root part's frame (the
     right hand given as its own true position). Each arm is solved on its own, so the hands can move differently."""
 
-    def __init__(self, name, length, body, hands):
+    def __init__(self, name, length, body, hands, contact=False):
         self.name, self.length, self.body, self.hands = name, length, body, hands
+        self.contact = contact and S.RIG == "torso"     # (hands stop at the skin: S.contact_out)
+        self.clear_of_builds = ()                       # (torso rig) builds whose skin the hands keep clear of
         self.cache = {}
         self.left, self.right = dict(START_ARM), dict(START_ARM)
         self.worst = 0.0
@@ -88,8 +91,36 @@ class Clip:
         p = self.body(t)
         body = F._body(p, p["root"])
         left, right = self.hands(t)
-        a_left, miss_left = S.solve_arms(body, left, self.left, preference, 5.0, SOLVE_STEPS)
-        a_right, miss_right = S.solve_arms(body, mirror(right), self.right, preference, 5.0, SOLVE_STEPS)
+        if self.contact:
+            frames = S.forward_kinematics(Matrix.Identity(4), body)
+            left, right = S.contact_out(left, frames), S.contact_out(right, frames)
+        if self.clear_of_builds and S.RIG == "torso":
+            # hands that must NOT touch the body (holding, talking): kept a hand's half-thickness plus a gap in front of
+            # the deepest bodies' skin, so they clear every build (slimmer builds hold them a little further out)
+            frames = S.forward_kinematics(Matrix.Identity(4), body)
+            for build in self.clear_of_builds:
+                left = S.contact_out(left, frames, depth=S.HAND_HALF + 0.12, build=build)
+                right = S.contact_out(right, frames, depth=S.HAND_HALF + 0.12, build=build)
+        pref = preference
+        if self.clear_of_builds and S.RIG == "torso":
+            builds = self.clear_of_builds
+
+            def pref(w, a, builds=builds):
+                # (torso rig) the upper arm, elbow and forearm kept off the bigger builds' skin while the hand reaches
+                # its spot, so the arm angles out round the body instead of through it; the hand follows the arm
+                c = preference(w, a)
+                sh, el, wr = (S.joint_point(w, j) for j in ("LeftShoulder", "LeftElbow", "LeftWrist"))
+                for q in (el, el.lerp(wr, 0.33), el.lerp(wr, 0.66)):     # (elbow and forearm: the upper arm always meets
+                    #  the thick shoulder near the joint)
+                    for build in builds:
+                        near = S._skin_near(q, w, build)
+                        if near is not None:
+                            c += 6.0 * max(0.0, 0.10 - near[0])
+                return c
+        reach_weight = 25.0 if (self.clear_of_builds and S.RIG == "torso") else 5.0   # (reaching the spot first; the
+        # clearance then only chooses HOW the arm gets there: the elbow swung out round the body)
+        a_left, miss_left = S.solve_arms(body, left, self.left, pref, reach_weight, SOLVE_STEPS)
+        a_right, miss_right = S.solve_arms(body, mirror(right), self.right, pref, reach_weight, SOLVE_STEPS)
         self.left, self.right = a_left, a_right
         pose = dict(body)
         from_left, from_right = S.arms(a_left), S.arms(a_right)
@@ -104,9 +135,9 @@ class Clip:
 
 # ---------------------------------------------------------------- the lifter
 BOWL_HAND = Vector((-0.55, 2.88 - S.HRP_STAND_Y, -STAND_AHEAD + 0.3))     # the bowl stays where it is (2.88 up)
-CHEST_HAND = Vector((-0.5, S.up_body(0.35), -1.05))
-APART_HAND = Vector((-1.05, S.up_body(0.42), -1.1))
-LOW_HAND = Vector((-0.55, S.up_body(0.0), -1.0))
+CHEST_HAND = S.hand_on_body(-0.5, 0.35, -1.05)
+APART_HAND = S.hand_on_body(-1.05, 0.42, -1.1)
+LOW_HAND = S.hand_on_body(-0.55, 0.0, -1.0)
 LIFTER_HANDS = [
     (0.0, HANG_HAND), (0.5, HANG_HAND), (1.1, BOWL_HAND), (2.3, BOWL_HAND), (2.9, CHEST_HAND), (4.0, CHEST_HAND),
     (4.2, APART_HAND), (CLAPS[0], CHEST_HAND), (4.6, APART_HAND), (CLAPS[1], CHEST_HAND), (5.1, LOW_HAND),
@@ -132,7 +163,7 @@ def lifter_hands(t):
 
 
 # ---------------------------------------------------------------- the coach, behind the lifter (squat)
-ON_BACK = Vector((-0.62, S.up_body(0.35), -(COACH_BEHIND - 0.7)))
+ON_BACK = S.hand_on_body(-0.62, 0.35, -(COACH_BEHIND - 0.7))
 OFF_BACK = ON_BACK + Vector((0, 0.1, 0.3))
 COACH_BACK_HANDS = [
     (0.0, HANG_HAND), (0.3, HANG_HAND), (0.9, ON_BACK), (4.55, ON_BACK), (4.72, OFF_BACK), (SLAPS[0], ON_BACK),
@@ -155,10 +186,10 @@ def coach_back_hands(t):
 
 
 # ---------------------------------------------------------------- the coach, in front of the lifter, talking
-HOLD = Vector((-0.62, S.up_body(-0.2), -1.05))
-TALK_LOW = Vector((-0.78, S.up_body(-0.1), -1.0))
-TALK_HIGH = Vector((-0.7, S.up_body(0.36), -1.2))
-TALK_MID = Vector((-0.76, S.up_body(0.14), -1.1))
+HOLD = S.hand_on_body(-0.62, -0.2, -1.05)
+TALK_LOW = S.hand_on_body(-0.78, -0.1, -1.0)
+TALK_HIGH = S.hand_on_body(-0.7, 0.36, -1.2)
+TALK_MID = S.hand_on_body(-0.76, 0.14, -1.1)
 TALK_HAND = [(0.0, TALK_LOW), (1.0, TALK_HIGH), (1.5, TALK_MID), (2.2, TALK_HIGH), (3.2, TALK_LOW), (TALK_SECONDS, TALK_LOW)]
 
 
@@ -173,11 +204,68 @@ def coach_talk_hands(t):
     return HOLD, mirror(hand_at(TALK_HAND, t))
 
 
+if S.RIG == "torso":
+    # (torso rig, 2026-11-13, the user's flagged move) the chalk-up on the approved clap method of Hype_NeckRoll
+    # (entrance_animations.Hype): the old one-pose-at-a-time solve swung the arms up into an X in front of the face
+    # (upper arm 0.4 into the head) coming up from the bowl, the "together" hands were a full stud apart, and the
+    # hands went down through the Fat belly (0.46). Now: solved in time order from the start, arms kept out of the
+    # twisted raised-backwards shape (natural), palms really together for the rub and the claps, turned palm to palm
+    # with the fingers forward and up, palms down in the bowl, and the hands swing down to the side on the arm's arc.
+    # Same timing, same claps (LocalMeetConfig.Chalk).
+    _espec = importlib.util.spec_from_file_location("entrance_animations", os.path.join(_HERE, "entrance_animations.py"))
+    E = importlib.util.module_from_spec(_espec)
+    _espec.loader.exec_module(E)
+    RUB_HAND = Vector((-0.2, CHEST_HAND.y, CHEST_HAND.z - 0.2))         # palms meet (E.NR_CLAP)
+    CLAP_APART = Vector((APART_HAND.x, APART_HAND.y, APART_HAND.z - 0.1))
+    # after the last clap the hands part out to the sides, then drop on the arm's arc round the shoulder (straight
+    # down from the clap they went through the Fat belly)
+    PART_HAND = Vector((APART_HAND.x - 0.3, APART_HAND.y - 0.4, APART_HAND.z + 0.05))   # out wide and forward
+    TO_BOWL = E.arc_mid(HANG_HAND, BOWL_HAND)                           # (forward round the shoulder, clear of the belly)
+    DOWN_ARC = E.arc_mid(PART_HAND, HANG_HAND)
+    LIFTER_HANDS = [
+        (0.0, HANG_HAND), (0.5, HANG_HAND), (0.8, TO_BOWL), (1.1, BOWL_HAND), (2.3, BOWL_HAND), (2.9, RUB_HAND),
+        (4.0, RUB_HAND),
+        (4.2, CLAP_APART), (CLAPS[0], RUB_HAND), (4.6, CLAP_APART), (CLAPS[1], RUB_HAND), (5.0, PART_HAND),
+        (5.4, DOWN_ARC), (5.8, HANG_HAND), (LOOP_SECONDS, HANG_HAND),
+    ]
+
+    class _LifterHype(E.Hype):
+        def _targets(self, t):
+            return lifter_hands(t)
+
+    class HypeClip:
+        """A chalk clip on the Hype solver (export() and preview() only need name, length, pose and worst)."""
+
+        def __init__(self, name, hype):
+            self.name, self.length, self.hype = name, hype.length, hype
+
+        @property
+        def worst(self):
+            return self.hype.worst
+
+        def pose(self, t):
+            return self.hype.pose(t)
+
+    _lifter = _LifterHype(LOOP_SECONDS, LIFTER_BODY, [(0.0, HANG_HAND), (LOOP_SECONDS, HANG_HAND)])
+    _lifter.natural = True
+    _lifter.keep = 0.01      # (the elbows had swung round the shoulder-hand line frame to frame in the claps)
+    _lifter.hands = [
+        # in the bowl: palms down, fingers forward
+        {"palm": Vector((0.0, -1.0, 0.0)), "fingers": Vector((0.0, 0.0, -1.0)),
+         "weight": [(0.0, 0.0), (0.8, 0.0), (1.1, 1.0), (2.3, 1.0), (2.62, 0.0), (LOOP_SECONDS, 0.0)]},
+        # the rub and the claps: palm to palm, fingers forward and a little up
+        {"palm": Vector((1.0, 0.0, 0.0)), "fingers": Vector((0.0, 0.45, -1.0)),
+         "weight": [(0.0, 0.0), (2.62, 0.0), (2.9, 1.0), (CLAPS[1] + 0.05, 1.0), (5.15, 0.0), (LOOP_SECONDS, 0.0)]},
+    ]
+
 CLIPS = {
-    "Lifter": Clip("Lifter", LOOP_SECONDS, lifter_body, lifter_hands),
+    "Lifter": HypeClip("Lifter", _lifter) if S.RIG == "torso" else Clip("Lifter", LOOP_SECONDS, lifter_body, lifter_hands),
     "Coach_Back": Clip("Coach_Back", LOOP_SECONDS, coach_back_body, coach_back_hands),
     "Coach_Talk": Clip("Coach_Talk", TALK_SECONDS, coach_talk_body, coach_talk_hands),
 }
+# (torso rig, 2026-11-13, the user's flagged move) the coach's clipboard hand and talking hand stay in front of the body
+# instead of sinking into the bigger bellies and chests (Fat 0.35 deep): clear of the deepest builds
+CLIPS["Coach_Talk"].clear_of_builds = ("Fat",)
 
 
 # ---------------------------------------------------------------- export

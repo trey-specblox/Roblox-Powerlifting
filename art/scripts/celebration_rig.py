@@ -370,8 +370,12 @@ class Clip:
 
     STEP = 1 / 30          # solve and write every 1/30 s
 
-    def __init__(self, name, length, keys, layers=(), title="", notes=""):
+    def __init__(self, name, length, keys, layers=(), title="", notes="", contact=False):
         self.name, self.length, self.layers, self.title, self.notes = name, length, list(layers), title, notes
+        self.contact = contact and S.RIG == "torso"     # (hands stop at the skin: S.contact_out)
+        # palms (torso rig): authored body contact, set after creation: {"spot": left hand's spot (root frame; the
+        # right mirrors), "fingers": left fingers' direction, "weight": [(t, 0..1)], "below": elbow under the hand}
+        self.palms = None
         self.tracks = {}
         for t, values in keys:
             ease = values.get("ease", "smooth")
@@ -444,6 +448,10 @@ class Clip:
                     solved.append(dict(spec[1]))
                     continue
                 target = resolve_hand(spec, upper)
+                if self.contact:
+                    to_root = HRP_M.inverted()
+                    target = HRP_M @ S.contact_out(to_root @ target, {"UpperTorso": to_root @ upper,
+                                                                      "LowerTorso": to_root @ lower})
                 firm = s + "e" in self.tracks
                 elbow_dir = ch[s + "e"] if firm else auto_elbow(upper, side, target)
                 warm = self._arm_cache.get((s, index))
@@ -489,6 +497,40 @@ class Clip:
             pose[side + "Ankle"] = (ll.to_3x3().inverted() @ want.to_3x3()).to_4x4()
         return pose, out_prev
 
+    @staticmethod
+    def _weight(keys, t):
+        if t <= keys[0][0]:
+            return keys[0][1]
+        if t >= keys[-1][0]:
+            return keys[-1][1]
+        for (t0, a), (t1, b) in zip(keys, keys[1:]):
+            if t0 <= t <= t1:
+                u = (t - t0) / (t1 - t0)
+                return a + (b - a) * u * u * (3 - 2 * u)
+        return 0.0
+
+    def _palms_at(self, t, pose):
+        """palms: one dict for both hands (the right mirrored), or {"Left": {...}, "Right": {...}} (each its own true
+        spot, fingers and weight: hands that do different things, like alternating slaps)."""
+        starts = getattr(self, "_palm_starts", None) or {s: {"raise": 40.0, "swing": 60.0, "twist": 0.0, "elbow": 110.0}
+                                                         for s in ("Left", "Right")}
+        for side in ("Left", "Right"):
+            if "Left" in self.palms:
+                spec = self.palms.get(side)
+                if not spec:
+                    continue
+                spot, fingers = Vector(spec["spot"]), Vector(spec["fingers"])
+            else:
+                spec = self.palms
+                spot, fingers = Vector(spec["spot"]), Vector(spec["fingers"])
+                if side == "Right":
+                    spot, fingers = Vector((-spot.x, spot.y, spot.z)), Vector((-fingers.x, fingers.y, fingers.z))
+            w = self._weight(spec["weight"], t)
+            pose, starts[side] = S.palm_contact(pose, side, spot, fingers, w, starts[side], spec.get("below", 0.25),
+                                                spec.get("facing"))
+        self._palm_starts = starts
+        return pose
+
     def solve(self):
         prev = {"larm": dict(START_ARM), "rarm": dict(START_ARM), "lleg": None, "rleg": None}
         self._arm_cache = {}
@@ -497,6 +539,8 @@ class Clip:
         for i in range(n + 1):
             t = min(self.length, i * self.STEP)
             pose, prev = self._solve_at(t, prev)
+            if self.palms and S.RIG == "torso":
+                pose = self._palms_at(t, pose)
             self._table.append((t, pose))
         return self
 

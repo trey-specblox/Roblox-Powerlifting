@@ -41,7 +41,7 @@ E = _load("entrance_animations")
 S = E.S
 rx, ry, rz, T = S.rx, S.ry, S.rz, S.T
 FACE = S.FACE_RACK                 # facing the rack (+Z rack-local)
-STAND_Y = S.HRP_STAND_Y            # root part height standing (3.4 taller, 3.0 block)
+STAND_Y = S.HRP_STAND_Y            # root part height standing (3.0 torso, 3.4 taller, 3.0 block)
 ANKLE_Y = 0.2517                   # ankle joint above the floor with the sole flat (the feet keep their size)
 # The leg's bones from the rig (taller rig, user 2026-11-12: x1.2286; block 0.822 and 0.926).
 THIGH = S.JOINTS["LeftHip"][3][1] - S.JOINTS["LeftKnee"][2][1]      # hip joint to knee joint
@@ -254,6 +254,15 @@ class Setup:
                 leg_ik(pose, lt, side, ankle, rot, knee)
             for side in ("Left", "Right"):
                 target = targets.get(side)
+                if isinstance(target, tuple) and target[0] == "lock":
+                    # (torso rig) the hand locked onto the bar by its whole frame (S.lock_hand): Grip hole on the bar
+                    _tag, point, rot = target
+                    a, tfs, miss = S.lock_hand(ut, side, point, rot, arms_now[side], Vector((0, -1, 0)),
+                                               root.to_3x3() @ Vector((0, 0, 1)))
+                    self.worst = max(self.worst, miss)
+                    arms_now[side] = dict(a)
+                    pose.update(tfs)
+                    continue
                 if target is None:
                     a = HANG
                 elif isinstance(target, dict):
@@ -292,14 +301,21 @@ class Setup:
         bar = self.bars[max(0, min(len(self.bars) - 1, int(round(t / STEP))))]
         if bar is None or not bar[1]:
             return (bar[0] if bar else None), False
-        return S.hands_mid(self.world(t)), True
+        w = self.world(t)
+        if S.RIG == "torso":                         # (the bar sits in the Grip holes, not between the hand centres)
+            return (S.grip_point(w, "Left") + S.grip_point(w, "Right")) / 2, True
+        return S.hands_mid(w), True
 
 
 # ---------------------------------------------------------------- squat
-SQ = {"grip": 1.55, "toes": S.SQUAT_TOES_OUT}
-# The bar on the upper back, in the upper torso's frame (where the rep's hands hold it).
+SQ = {"grip": S.SQUAT_GRIP_X if S.RIG == "torso" else 1.55, "toes": S.SQUAT_TOES_OUT}
+# The bar on the upper back, in the upper torso's frame (where the rep's hands hold it; torso rig: the placed bar,
+# S.SQUAT_BAR_REST, that the hands lock onto).
 _w0 = S.forward_kinematics(T((0, STAND_Y, 0)), S.squat_pose(0.0))
-BACK_BAR = _w0["UpperTorso"].inverted() @ S.hands_mid(_w0)
+if S.RIG == "torso":
+    BACK_BAR = S.forward_kinematics(T((0, STAND_Y, 0)), {})["UpperTorso"].inverted() @ S.SQUAT_BAR_REST
+else:
+    BACK_BAR = _w0["UpperTorso"].inverted() @ S.hands_mid(_w0)
 SQ_STANCE = [_w0[f] @ Vector(S.JOINTS[j][3]) for f, j in (("LeftFoot", "LeftAnkle"), ("RightFoot", "RightAnkle"))]
 SQ_UNDER_LEAN = -8.0
 SQ_UNRACK, SQ_LENGTH = 3.1, 6.7
@@ -320,7 +336,11 @@ SQ_UNDER = _under_root()
 # The root heights were tuned on the block rig (standing 3.0, bar 3.665). On the taller rig the shoulders, the head and
 # the J-cups are all 0.70 higher and the head sits 0.30 higher on the root, so the same dips below standing (0.176,
 # 0.347, 0.187) duck the head under the bar the same way: DUCK_DIP keeps them as dips (user 2026-11-12).
-DUCK_DIP = (3.0 - 2.824, 3.0 - 2.653, 3.0 - 2.813)
+# The torso rig (2026-11-13): the neck is as high as on the taller rig (4.70) but the squat cups are a hole lower (4.19),
+# so the bar is 0.175 lower against the head than on the block rig: each dip goes 0.175 deeper (DUCK_EXTRA, 0 on the
+# block and taller rigs) to duck the head under it the same way.
+DUCK_EXTRA = max(0.0, (S.up_floor(4.0) - BAR_SQUAT.y) - (4.0 - 3.665))
+DUCK_DIP = tuple(d + DUCK_EXTRA for d in (3.0 - 2.824, 3.0 - 2.653, 3.0 - 2.813))
 SQ_DUCK = {"grip_z": -1.05, "t1": 1.458, "y1": STAND_Y - DUCK_DIP[0], "lean1": 0.0, "neck1": 10.0,
            "t2": 1.759, "y2": STAND_Y - DUCK_DIP[1], "z2": -0.563, "lean2": -22.0, "neck2": -25.5,
            "t3": 2.285, "y3": STAND_Y - DUCK_DIP[2], "lean3": -22.0}
@@ -379,6 +399,25 @@ def _squat_body(t):
     grip = Vector((SQ["grip"], 0, 0))
     targets = {}
     reach = smooth((t - 0.45) / 0.75)
+    if S.RIG == "torso":
+        # (torso rig) both hands LOCK onto the bar (S.lock_hand): in the J-cups the hand keeps the turn it will have
+        # on the back once under it (the bar doesn't turn), then rides the back with the torso
+        for side, sign in (("Left", 1), ("Right", -1)):
+            if reach <= 0:
+                targets[side] = None
+                continue
+            if held:
+                point, rot = ut @ (BACK_BAR + grip * sign * -1), ut.to_3x3() @ _sq_hand_torso(side)
+            else:
+                point, rot = bar + grip * sign, _sq_hand_rack(side)
+            if reach < 1:
+                hang_centre, hang_upper = hand_world(ut, side, HANG)
+                hang_rot = hang_upper.to_3x3() @ arm_tf(side, HANG)[1].to_3x3()          # (the hanging hand's turn)
+                hang_grip = hang_centre + hang_rot @ (S.grip_from_wrist(side) + Vector(S.JOINTS[side + "Wrist"][3]))
+                point = hang_grip.lerp(point, reach)
+                rot = hang_rot.to_quaternion().slerp(rot.to_quaternion(), reach).to_matrix()
+            targets[side] = ("lock", point, rot)
+        return root, pose, feet, targets, (bar, held)
     for side, sign in (("Left", 1), ("Right", -1)):
         on_bar = bar + grip * sign
         if reach <= 0:
@@ -389,6 +428,18 @@ def _squat_body(t):
         else:
             targets[side] = on_bar
     return root, pose, feet, targets, (bar, held)
+
+
+def _sq_hand_torso(side):
+    """(torso rig) the hand's turn on the back, in the upper torso's frame (the rep's: palms forward, fingers over)."""
+    return S.hand_frame(side, S.SQUAT_PALM, S.SQUAT_FINGERS)
+
+
+def _sq_hand_rack(side):
+    """... and in the rack's frame while the bar is in the J-cups: the same turn as once under the bar (SQ_UNDER)."""
+    probe = T(SQ_UNDER) @ FACE
+    _, ut = upper_frames(probe, {"Root": rx(SQ_UNDER_LEAN)})
+    return ut.to_3x3() @ _sq_hand_torso(side)
 
 
 SQUAT = Setup("Squat", SQ_LENGTH, _squat_body)
@@ -523,15 +574,21 @@ def _deadlift_body(t):
     u = smooth((t - 1.4) / 1.0)
     torso, thigh, shin = (lerp(0.0, DL_BOTTOM[i], u) for i in range(3))
     tall = 4.0 * math.sin(math.pi * max(0.0, min(1.0, (t - 0.95) / 0.6)))
-    body = S._deadlift_body(torso + tall, thigh, shin)
+    # (torso rig) the two foot-setting steps also step in under the bar (S.deadlift_forward), the body following
+    # half a step at a time, so the set-up starts where the walk-in ends and the feet never slide
+    fwd = S.deadlift_forward()
+    stepped = {s: smooth((t - (0.2 if s == "Left" else 0.55)) / 0.3) for s in ("Left", "Right")}
+    body = S._deadlift_body(torso + tall, thigh, shin, forward=fwd * (stepped["Left"] + stepped["Right"]) / 2)
     pose = {k: v for k, v in body.items() if k in ("Root", "Neck", "Waist")}
     pose["Neck"] = pose.get("Neck", I4) @ rx(keyed([(0.0, -10.0), (0.9, -14.0), (1.2, 8.0), (1.6, 0.0)], t))
     root = final
     feet = {}
+    planted = S._deadlift_body(torso + tall, thigh, shin, forward=0.0)
     for side in ("Left", "Right"):
         sx = -1 if side == "Left" else 1
-        w = S.forward_kinematics(root, body)
+        w = S.forward_kinematics(root, planted)
         ankle = w[side + "Foot"] @ Vector(S.JOINTS[side + "Ankle"][3])
+        ankle = ankle + root.to_3x3() @ Vector((0, 0, -fwd * stepped[side]))
         toes_now = keyed([(0.2 if side == "Left" else 0.55, 0.0), (0.5 if side == "Left" else 0.85, S.DEADLIFT_TOES_OUT)], t)
         step_u = (t - (0.2 if side == "Left" else 0.55)) / 0.3
         pitch = 5.0 * math.sin(math.pi * step_u) if 0 < step_u < 1 else 0.0
@@ -546,8 +603,25 @@ def _deadlift_body(t):
         grip = DL_BAR + Vector((1.5 * sign, 0, 0))
         hang = hand_world(ut, side, hanging)[0]
         v = smooth((t - (at - 0.45)) / 0.45)
+        if S.RIG == "torso":
+            # (torso rig) the MIXED GRIP: the hand turns as it reaches (left palm forward, right palm back) and goes
+            # where the bar lands in its fingers (S.grip_point), not with its centre on the bar
+            grip = grip - _dl_grip_offsets()[side]
+            pose.update({side + "Wrist": S.mixed_grip_wrists(max(0.0, v))[side + "Wrist"]})
         targets[side] = dict(hanging) if v <= 0 else hang.lerp(grip, v)
     return root, pose, feet, targets, (DL_BAR, False)
+
+
+_DL_GRIP = {}
+
+
+def _dl_grip_offsets():
+    """Grip hole minus hand centre (rack-local) for each hand in the rep's starting pose (the set position)."""
+    if not _DL_GRIP:
+        w = S.forward_kinematics(FINAL["Deadlift"], REP_POSE["Deadlift"](REP_AT["Deadlift"]))
+        for side in ("Left", "Right"):
+            _DL_GRIP[side] = S.grip_point(w, side) - w[side + "Hand"].to_translation()
+    return _DL_GRIP
 
 
 DEADLIFT = Setup("Deadlift", DL_LENGTH, _deadlift_body, blend_s=0.5)

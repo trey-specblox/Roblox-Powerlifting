@@ -67,6 +67,8 @@ def _body(p, root=None):
     pose = {"Root": (S.T(root) if root is not None else Matrix.Identity(4)) @ S.rx(torso), "Neck": S.rx(p["neck"])}
     pose.update(S.legs(torso, p["thigh"], p["shin"], p["stance"], p["toes"]))
     pose.update(S.arms(p["arm"]))
+    if S.RIG == "torso" and p.get("sqgrip"):
+        pose.update(S.squat_wrists(p["sqgrip"]))      # (torso rig: the hands turned onto the bar, easing off as they let go)
     return pose
 
 def _with_stance(p):
@@ -91,7 +93,7 @@ def sq(u, torso_add=0.0, arm=None, neck=None):
     torso = S.blend(*S.SQUAT_TORSO, u) + torso_add
     return planted({"torso": torso, "thigh": S.blend(*S.SQUAT_THIGH, u), "shin": S.blend(*S.SQUAT_SHIN, u),
                     "toes": S.SQUAT_TOES_OUT, "arm": dict(arm or S.squat_arm()),
-                    "neck": -torso * 0.55 if neck is None else neck})
+                    "neck": -torso * 0.55 if neck is None else neck, "sqgrip": 0.0 if arm else 1.0})
 
 def grounded(p, joint, height, ankle_z=None, joint_z=None):
     """A floor key: the root offset that puts `joint` `height` above the floor and either the
@@ -128,7 +130,7 @@ def standing_body_pose(p):
 
 def hands_on_hips(p):
     """Arm angles that rest the hands on the hips for a standing key."""
-    a, _ = S.solve_arms(standing_body_pose(p), Vector((-1.2, S.up_body(-0.75), -0.05)),
+    a, _ = S.solve_arms(standing_body_pose(p), S.hand_on_body(-1.2, -0.75, -0.05),
                         {"raise": 30.0, "swing": -10.0, "twist": -60.0, "elbow": 95.0})
     return a
 
@@ -270,7 +272,8 @@ def dl(u, torso_add=0.0, thigh_add=0.0, shin_add=0.0, held=True, arm=None, neck=
     top = S.DEADLIFT_LOCKOUT if held else (0.0, 0.0, 0.0)
     torso, thigh, shin = (S.blend(top[i], bottom[i], u) for i in range(3))
     return {"mode": "deadlift", "torso": torso + torso_add, "thigh": thigh + thigh_add, "shin": shin + shin_add,
-            "held": held, "arm": arm, "neck": -(torso + torso_add) * 0.45 if neck is None else neck}
+            "held": held, "arm": arm, "neck": -(torso + torso_add) * 0.45 if neck is None else neck,
+            "grip": 1.0 if held else 0.0}
 
 def build_deadlift(p):
     if p["held"]:
@@ -279,6 +282,9 @@ def build_deadlift(p):
         pose = S._deadlift_body(p["torso"], p["thigh"], p["shin"])
         if p["arm"] is not None:
             pose.update(S.arms(p["arm"]))
+        if S.RIG == "torso" and p.get("grip"):
+            # (torso rig) the hands untwist out of the mixed grip while letting go, instead of snapping back
+            pose.update(S.mixed_grip_wrists(p["grip"]))
     pose["Neck"] = S.rx(p["neck"])
     return pose
 
@@ -338,12 +344,18 @@ def _sample(keys, t, shake):
         return S.plant_feet(build_standing(p, None))
     return build_standing(p, p["root"])
 
+GRIP_KEYS = ("grip", "sqgrip")      # (torso rig) how far the hands are turned onto the bar: a key without one has let go
+
+
 def lerp_params(a, b, u):
     out = dict(a)
+    for k in GRIP_KEYS:
+        if k in b and k not in a:
+            out[k] = lerp(0.0, b[k], u)
     for k, v in a.items():
         if k in ("mode", "held"):
             continue
-        w = b.get(k, v)
+        w = b.get(k, 0.0 if k in GRIP_KEYS else v)
         if v is None or w is None:
             out[k] = v if u < 0.5 else w
         else:

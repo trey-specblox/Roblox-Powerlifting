@@ -23,7 +23,7 @@ import math, os
 from mathutils import Matrix, Vector
 
 ROOT_DIR = r"D:\Powerlifting Roblox"
-OUT_DIR = os.path.join(ROOT_DIR, "art", "animations")
+OUT_DIR = os.environ.get("ANIM_OUT_DIR") or os.path.join(ROOT_DIR, "art", "animations")   # (env: a scratch folder)
 FPS = 30
 SAMPLE_STEP = 0.1          # seconds between written keyframes
 
@@ -55,11 +55,13 @@ JOINTS = {
     "RightKnee": ("RightUpperLeg", "RightLowerLeg", (0, -0.4009, 0), (0, 0.3792, 0)),
     "RightAnkle": ("RightLowerLeg", "RightFoot", (0, -0.5472, 0), (0, 0.1019, 0)),
 }
-# ---------------------------------------------------------------- taller (user 2026-11-12)
-# The cartoon lifters are taller than the block rig (lifter_heights.py: legs x1.2286, torso and arms x1.15; head, hands
-# and feet unchanged; hips 2.0 -> 2.4). Every animation is re-made on this rig: each joint offset along a part's length
-# is stretched by that part's factor. BLOCK_JOINTS keeps the measured block rig (the live game's bodies until the
-# cartoon bodies go live).
+# ---------------------------------------------------------------- the cartoon rig (lifter_heights.py)
+# The cartoon lifters are taller than the block rig. lifter_heights.py holds the skeleton tables, chosen with the
+# environment variable LIFTER_RIG: "torso" (DEFAULT, approved 2026-11-13: legs x1.0, torso x1.35, arms x1.2, HipHeight
+# 2.0), "taller" (2026-11-12: legs x1.2286, torso and arms x1.15, HipHeight 2.4) or "block" (the measured block rig).
+# Head, hands and feet are never stretched. Every animation is re-made on the chosen rig: each joint offset along a
+# part's length is stretched by that part's factor. BLOCK_JOINTS keeps the measured block rig (the live game's bodies
+# until the cartoon bodies go live).
 _LH = {"__name__": "lifter_heights"}
 exec(open(os.path.join(os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals()
                        else os.path.join(ROOT_DIR, "art", "scripts"), "lifter_heights.py")).read(), _LH)
@@ -74,7 +76,8 @@ def _stretch_of(part):
     return _STRETCH.get(part.replace("Left", "").replace("Right", ""), 1.0)
 
 
-TALLER = os.environ.get("LIFTER_RIG", "taller") != "block"
+RIG = _LH["RIG"]                   # "torso" (default), "taller" or "block"
+TALLER = RIG != "block"            # (any stretched cartoon rig, not only the "taller" table)
 if TALLER:
     JOINTS = {name: (parent, child, (c0[0], c0[1] * _stretch_of(parent), c0[2]), (c1[0], c1[1] * _stretch_of(child), c1[2]))
               for name, (parent, child, c0, c1) in BLOCK_JOINTS.items()}
@@ -84,12 +87,13 @@ CHILD_JOINT = {child: name for name, (parent, child, c0, c1) in JOINTS.items()}
 ORDER = ["LowerTorso", "UpperTorso", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand",
          "RightUpperArm", "RightLowerArm", "RightHand", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot",
          "RightUpperLeg", "RightLowerLeg", "RightFoot"]
-HRP_STAND_Y = _LH["HRP_STAND_Y"] if TALLER else 3.0          # HipHeight (2.4 taller, 2 block) + half the root part
+HRP_STAND_Y = _LH["HRP_STAND_Y"] if TALLER else 3.0          # HipHeight (2.0 torso, 2.4 taller, 2 block) + half the root part
 # Roblox scales an animation's root translation by Humanoid.HipHeight / AuthoredHipHeight, so every exporter writes the
-# hip height of the rig it was made on (2.4 taller, 2 block; ClothesConfig.HipHeight).
+# hip height of the rig it was made on (2.0 torso, 2.4 taller, 2 block; ClothesConfig.HipHeight).
 AUTHORED_HIP_HEIGHT = _LH["HIP_HEIGHT"] if TALLER else 2.0
 LEG_SCALE = _LH["LEG"] if TALLER else 1.0                    # lengths along the legs (a step, a crouch, a jump)
-TORSO_SCALE = _LH["TORSO"] if TALLER else 1.0                # lengths along the torso and arms
+TORSO_SCALE = _LH["TORSO"] if TALLER else 1.0                # lengths along the torso
+ARM_SCALE = _LH["ARM"] if TALLER else 1.0                    # lengths along the arms (x1.2 torso, x1.15 taller)
 
 
 def _straight_arm_reach(joints):
@@ -99,7 +103,8 @@ def _straight_arm_reach(joints):
     return math.hypot(down, joints["LeftShoulder"][3][0])
 
 
-# How much further a straight arm reaches (1.127 taller: the hands and the shoulder's side offset are not stretched).
+# How much further a straight arm reaches (1.170 torso, 1.127 taller: the hands and the shoulder's side offset are not
+# stretched).
 # Hand targets held out at arm's length are moved out from the shoulder by this, so they stay just within reach.
 ARM_REACH_SCALE = _straight_arm_reach(JOINTS) / _straight_arm_reach(BLOCK_JOINTS)
 
@@ -117,7 +122,55 @@ def up_body(y_from_block_root):
 
 def reach(length):
     """A distance along the arms (straight-arm reach) on this rig."""
-    return length * (_LH["ARM"] if TALLER else 1.0)
+    return length * ARM_SCALE
+
+
+BLOCK_SHOULDER = Vector((-1.0, 0.763, 0.0))            # the left shoulder joint, block rig, root part's frame
+
+
+def within_arm(target_block, target_now, shoulder_block=BLOCK_SHOULDER, shoulder_now=None):
+    """A hand ON THE BODY (the belt, the hips, a thigh, the chest): target_now is the block rig's target_block moved
+    with the body (up_body). On the torso rig the arms grow less than the torso (x1.2 vs x1.35), so a hand low on the
+    body can end up out of reach (the arm locks straight and the hand misses). Then the point rises toward the
+    shoulder just enough that the arm reaches it no straighter than on the block rig (its distance from the shoulder
+    grows only by ARM_REACH_SCALE): the same bend of the arm, a little higher on the body. Anywhere the arm reaches,
+    and on rigs whose arms grow with the torso (taller, block), target_now is kept. Distances are from the nearer
+    shoulder (|x|), so it works for either hand. Same frame for all four points."""
+    if not TALLER or ARM_SCALE >= TORSO_SCALE:
+        return target_now
+    if shoulder_now is None:
+        shoulder_now = Vector((shoulder_block[0], up_body(shoulder_block[1]), shoulder_block[2]))
+
+    def offset(t, s):
+        return Vector((abs(t[0]) - abs(s[0]), t[1] - s[1], t[2] - s[2]))
+    allowed = offset(target_block, shoulder_block).length * ARM_REACH_SCALE
+    if offset(target_now, shoulder_now).length <= allowed:
+        return target_now
+    o = offset(target_now, shoulder_now)
+    rise = math.sqrt(max(0.0, allowed * allowed - o.x * o.x - o.z * o.z))
+    y = shoulder_now[1] - rise if target_now[1] < shoulder_now[1] else shoulder_now[1] + rise
+    return type(target_now)((target_now[0], y, target_now[2]))
+
+
+# The belt on the new bodies (gear v4, approved 2026-11-13): round the navel, a third of the way from the hips to the
+# shoulder joint (2.79 above the floor on the torso rig), in the root part's frame. The block rig's belt hands were
+# written lower (2.25-2.45, its waist), so moved with the body they would land below the belt.
+BELT_NAVEL_Y = (_LH["NEW_HIPS"] + (_LH["z"](3.763) - _LH["NEW_HIPS"]) / 3.0) - HRP_STAND_Y
+
+
+def on_belt(x, y, z, belt_ref):
+    """A hand on the lifter's belt, written on the block rig (root part's frame) for a move whose own belt key is at
+    belt_ref. On the torso rig the hand goes to the navel belt (BELT_NAVEL_Y), keeping its offset from belt_ref
+    (stretched with the torso: a tug a little lower), within the arm's reach. Other rigs: hand_on_body, as before."""
+    if RIG != "torso":
+        return hand_on_body(x, y, z)
+    return within_arm(Vector((x, y, z)), Vector((x, BELT_NAVEL_Y + (y - belt_ref) * TORSO_SCALE, z)))
+
+
+def hand_on_body(x, y, z):
+    """A hand target on the body, written on the block rig in the root part's frame: its height follows the body
+    (up_body), kept within the arm's reach (within_arm)."""
+    return within_arm(Vector((x, y, z)), Vector((x, up_body(y), z)))
 
 def rx(deg):
     return Matrix.Rotation(math.radians(deg), 4, "X")
@@ -202,6 +255,9 @@ SQUAT_ARM_RESOLVE = False   # (re-solving folded the longer arms to the elbow's 
 
 def squat_arm():
     global _SQUAT_ARM
+    if RIG == "torso":
+        squat_lock_arms()                  # (torso rig: the arms that lock the hands onto the placed bar, mirrored)
+        return dict(_SQUAT_LOCK["Left_angles"])
     if not TALLER or not SQUAT_ARM_RESOLVE:
         return SQUAT_ARM
     if _SQUAT_ARM is None:
@@ -297,6 +353,316 @@ def _left_ankle_x(pose):
     w = forward_kinematics(T((0, HRP_STAND_Y, 0)), pose)
     return (w["LeftFoot"] @ Vector(JOINTS["LeftAnkle"][3])).x
 
+# ---------------------------------------------------------------- hands LOCKED onto a bar (torso rig)
+# A hand that holds a bar is placed by its whole frame, not its centre: the bar in the Grip swap's hole (GRIP_POINT),
+# the palm and fingers turned the way a lifter's are. lock_hand() solves the arm (shoulder raise/swing/twist, elbow)
+# so the wrist lands where that frame needs it, then turns the wrist to match exactly (References/Character Animation
+# Quality.md: one shared animation; the game's per-build hand IK does the same per body).
+
+def hand_frame(side, palm, fingers):
+    """The hand part's rotation with its palm facing `palm` and its fingers pointing `fingers` (the hand hangs palm-in
+    at rest: palm +X on the left hand, -X on the right; fingers -Y; the thumb and the Grip hole's axis -Z)."""
+    p, f = Vector(palm).normalized(), Vector(fingers).normalized()
+    x = p if side == "Left" else -p
+    y = -f
+    z = x.cross(y)
+    return Matrix((x, y, z)).transposed()
+
+
+def grip_from_wrist(side):
+    """The Grip hole's centre from the wrist joint, in the hand part's frame."""
+    return Vector((GRIP_POINT.x if side == "Left" else -GRIP_POINT.x, GRIP_POINT.y - JOINTS[side + "Wrist"][3][1], 0.0))
+
+
+def _arm_tf(side, a):
+    s = 1 if side == "Left" else -1
+    return rz(-s * a["raise"]) @ rx(a["swing"]) @ ry(s * a["twist"]), rx(a["elbow"])
+
+
+def hand_centre_from_wrist(side):
+    """The hand part's centre from the wrist joint, in the hand's frame (for lock_hand's `offset`)."""
+    return Vector((0.0, -JOINTS[side + "Wrist"][3][1], 0.0))
+
+
+def lock_hand(ut, side, point, rot, start, down=Vector((0, -1, 0)), back=Vector((0, 0, 1)), below=0.45, offset=None,
+              clear_of=None, clearance=0.18, clear_upper=False, clear_build=None, keep=0.0005, first_step=16):
+    """Arm angles + wrist turn putting `side`'s Grip hole on `point` with the hand turned `rot` (both in the frame `ut`
+    is given in; ut = the UpperTorso part's frame). The elbow prefers to sit `below` under the bar and toward `back`.
+    clear_of: posed part frames ({part: frame}, same frame as `ut`): the elbow and the forearm then keep `clearance`
+    off that body's skin (the middle build's, _skin_near), so they never dig into the ribs or belly (user 2026-11-13,
+    the chest slap's elbows "digging and phasing through the character's body"); back=None drops the elbow-behind wish.
+    Returns (arm angles, {joint: Transform} for Shoulder, Elbow, Wrist, miss)."""
+    _, _, c0s, c1s = JOINTS[side + "Shoulder"]
+    _, _, c0e, c1e = JOINTS[side + "Elbow"]
+    c0w = Vector(JOINTS[side + "Wrist"][2])
+    wrist_goal = point - rot @ (grip_from_wrist(side) if offset is None else offset)
+
+    def fk(a):
+        sh, el = _arm_tf(side, a)
+        upper = ut @ T(c0s) @ sh @ T(c1s).inverted()
+        lower = upper @ T(c0e) @ el @ T(c1e).inverted()
+        return upper, lower
+
+    def cost(a):
+        if not (-5 <= a["elbow"] <= 150):
+            return 1e9
+        upper, lower = fk(a)
+        wrist = lower @ c0w
+        turn = (lower.to_3x3().transposed() @ rot).to_quaternion().angle
+        elbow = upper @ Vector(c0e)
+        c = 20.0 * (wrist - wrist_goal).length
+        c += 0.15 * turn + 2.0 * max(0.0, turn - math.radians(60))       # wrists near straight
+        c += 0.5 * max(0.0, (elbow - point).dot(-down) + below)            # elbow under the bar
+        if back is not None:
+            c += 0.3 * max(0.0, -(elbow - point).dot(back) - 0.1)          # and not in front of it
+        if clear_of is not None:                                            # upper arm, elbow, forearm clear of it
+            shoulder = upper @ Vector(c1s)
+            for q in ([shoulder.lerp(elbow, 0.7)] if clear_upper else []) + [elbow.lerp(wrist, k) for k in (0.0, 0.33, 0.66)]:
+                near = _skin_near(q, clear_of, clear_build or CONTACT_BUILD)
+                if near is not None:
+                    c += 8.0 * max(0.0, clearance - near[0])
+        c += keep * sum(abs(a[k] - start[k]) for k in ARM_KEYS)    # (keep: stay near `start`, the last frame;
+        #  higher stops the elbow swinging round the shoulder-hand line from frame to frame, Chalk_Lifter 2026-11-13)
+        return c
+    a, best = dict(start), cost(start)
+    for step in [s for s in (16, 8, 4, 2, 1, 0.5, 0.25) if s <= first_step]:   # (first_step < 16: no hops to another
+        improved = True                                                          #  arm shape far from `start`)
+        while improved:
+            improved = False
+            for k in ARM_KEYS:
+                for d in (step, -step):
+                    b = dict(a)
+                    b[k] += d
+                    c = cost(b)
+                    if c < best - 1e-7:
+                        a, best, improved = b, c, True
+    upper, lower = fk(a)
+    sh, el = _arm_tf(side, a)
+    wr = (lower.to_3x3().transposed() @ rot).to_4x4()
+    return a, {side + "Shoulder": sh, side + "Elbow": el, side + "Wrist": wr}, ((lower @ c0w) - wrist_goal).length
+
+
+# ---------------------------------------------------------------- hands STOP AT THE SKIN (torso rig)
+# References/Character Animation Quality.md: a hand aimed at the body (a chest slap, a trap slap, hands on the belly)
+# stops at its skin instead of sinking in. Body-contact targets were written on the thin block rig; the production
+# bodies are much deeper (chest, belly, traps), so a target moved over sinks in. contact_out() pushes a hand-centre
+# target out along the skin's normal until the hand's centre is a hand's half-thickness off the skin, on the middle
+# build (Fit; art/data/body_surface_05.json, export_body_surface.py), following the posed torso. Other builds: the
+# game's per-build hand correction (anim_qa.py "@ik" previews it). Targets clear of the body are left alone.
+import json as _json
+from mathutils.kdtree import KDTree as _KDTree
+
+BODY_SURFACE = os.path.join(ROOT_DIR, "art", "data", "body_surface_05.json")
+CONTACT_BUILD = "Fit"
+HAND_HALF = 0.135 * 1.22 + 0.03          # hand centre to the skin when the hand lies on it (palm or back), Fit's hand
+_SURFACE = {}
+
+
+def _surface(build=CONTACT_BUILD):
+    """{part: (KDTree of rest points relative to the root part, [(point, normal)])} for a build."""
+    if build not in _SURFACE:
+        data = _json.load(open(BODY_SURFACE))["builds"][build]
+        parts = {}
+        for part, rows in data.items():
+            pts = [(Vector((r[0], r[1] - HRP_STAND_Y, r[2])), Vector(r[3:6])) for r in rows]
+            tree = _KDTree(len(pts))
+            for i, (p, _n) in enumerate(pts):
+                tree.insert(p, i)
+            tree.balance()
+            parts[part] = (tree, pts)
+        _SURFACE[build] = parts
+    return _SURFACE[build]
+
+
+_REST_FRAMES = None
+
+
+def contact_out(target, posed, rest=None, depth=HAND_HALF, build=CONTACT_BUILD):
+    """(Three passes of contact_out_once: each nearest skin point's plane is only a local guess.)"""
+    for _ in range(3):
+        moved = contact_out_once(target, posed, rest, depth, build)
+        if (moved - target).length < 1e-4:
+            break
+        target = moved
+    return target
+
+
+def contact_out_once(target, posed, rest=None, depth=HAND_HALF, build=CONTACT_BUILD):
+    """`target` (a hand centre, in the frame `posed` is in: {part: part frame}, the root part at the origin) moved out
+    of the posed body's skin to `depth` off it. rest: the same parts' frames at rest (default: this rig standing with
+    the root part at the origin)."""
+    global _REST_FRAMES
+    if rest is None:
+        if _REST_FRAMES is None:
+            _REST_FRAMES = forward_kinematics(Matrix.Identity(4), {})
+        rest = _REST_FRAMES
+    worst = None
+    for part, (tree, pts) in _surface(build).items():
+        if part not in posed or part not in rest:
+            continue
+        m = posed[part] @ rest[part].inverted()
+        local = m.inverted() @ target
+        co, i, dist = tree.find(local)
+        if co is None or dist > 1.2:
+            continue
+        p, n = pts[i]
+        s = (local - p).dot(n)
+        if s < depth and (worst is None or s - depth < worst[0]):
+            worst = (s - depth, m, local, n)
+    if worst is None:
+        return target
+    short, m, local, n = worst
+    return m @ (local - n * short)
+
+
+def _skin_near(point, frames, build=CONTACT_BUILD, facing=None):
+    """The posed skin nearest `point` (root part's frame): (signed distance, skin point, outward normal) or None.
+    facing: only skin whose outward normal points that way (within ~65 degrees), e.g. up for the top of a trap."""
+    global _REST_FRAMES
+    if _REST_FRAMES is None:
+        _REST_FRAMES = forward_kinematics(Matrix.Identity(4), {})
+    best = None
+    for part, (tree, pts) in _surface(build).items():
+        if part not in frames:
+            continue
+        m = frames[part] @ _REST_FRAMES[part].inverted()
+        local = m.inverted() @ point
+        if facing is None:
+            co, i, dist = tree.find(local)
+        else:
+            want = (m.to_3x3().inverted() @ Vector(facing)).normalized()
+            hits = [h for h in tree.find_n(local, 60) if pts[h[1]][1].dot(want) > 0.42]
+            co, i, dist = hits[0] if hits else (None, None, None)
+        if co is None or dist > 1.5:
+            continue
+        p, n = pts[i]
+        s = (local - p).dot(n)
+        if best is None or (facing is not None and dist < best[3]) or (facing is None and s < best[0]):
+            best = (s, m @ p, (m.to_3x3() @ n).normalized(), dist)
+    return best[:3] if best else None
+
+
+CONTACT_PULL = 0.12      # a hand this close beyond resting on the skin is drawn onto it (a slap that falls short)
+CONTACT_TURN = 0.30      # within this, the hand turns toward lying flat on the skin (fully at the skin)
+
+
+def contact_pass(pose, build=CONTACT_BUILD, depth=HAND_HALF):
+    """(torso rig) The hands of a finished pose made to LIE on the body where they meet it: a hand that sinks in, or
+    falls just short, is put a hand's half-thickness off the skin, turned palm-to-skin (fingers carrying on along the
+    arm's line, laid onto the skin), easing in as it nears; the shoulder and elbow move by the least that does it and
+    the wrist takes the turn. Hands clear of the body are untouched. (References/Character Animation Quality.md)"""
+    out = dict(pose)
+    for side in ("Left", "Right"):
+        frames = forward_kinematics(Matrix.Identity(4), out)
+        centre = frames[side + "Hand"].to_translation()
+        near = _skin_near(centre, frames, build)
+        if near is None:
+            continue
+        s, skin, n = near
+        if s > depth + CONTACT_TURN:
+            continue
+        w = 1.0 - smooth((s - depth) / CONTACT_TURN) if s > depth else 1.0
+        move = (depth - s) if s < depth else ((depth - s) if s < depth + CONTACT_PULL else 0.0)
+        goal = centre + n * move * (1.0 if s < depth else w)
+        free = frames[side + "Hand"].to_3x3()
+        fingers = free @ Vector((0, -1, 0))
+        along = fingers - n * fingers.dot(n)
+        if along.length < 1e-4:
+            continue
+        rot = free.to_quaternion().slerp(hand_frame(side, -n, along).to_quaternion(), w).to_matrix()
+        sh0, el0 = out.get(side + "Shoulder", Matrix.Identity(4)), out.get(side + "Elbow", Matrix.Identity(4))
+
+        def apply(q):
+            p = dict(out)
+            p[side + "Shoulder"] = sh0 @ rx(q[0]) @ ry(q[1]) @ rz(q[2])
+            p[side + "Elbow"] = el0 @ rx(q[3])
+            f = forward_kinematics(Matrix.Identity(4), p)
+            lower = f[side + "LowerArm"].to_3x3()
+            p[side + "Wrist"] = (lower.transposed() @ rot).to_4x4()
+            c0 = Vector(JOINTS[side + "Wrist"][2])
+            wrist = f[side + "LowerArm"] @ c0
+            return p, wrist + rot @ Vector((0, -JOINTS[side + "Wrist"][3][1], 0))
+
+        def cost(q):
+            return 20.0 * (apply(q)[1] - goal).length + 0.002 * sum(abs(v) for v in q)
+        q, best = [0.0, 0.0, 0.0, 0.0], cost([0.0, 0.0, 0.0, 0.0])
+        for step in (8, 4, 2, 1, 0.5, 0.25):
+            improved = True
+            while improved:
+                improved = False
+                for i in range(4):
+                    for d in (step, -step):
+                        r = list(q)
+                        r[i] += d
+                        c = cost(r)
+                        if c < best - 1e-7:
+                            q, best, improved = r, c, True
+        out = apply(q)[0]
+    return out
+
+
+def palm_contact(pose, side, spot, fingers, w, start, below=0.25, facing=None):
+    """(torso rig) AUTHORED body contact on a finished pose (approved method, ChestSlap 2026-11-13): `side`'s hand
+    goes, `w` of the way, to lie flat on the posed middle build's skin at `spot` (root part's frame), palm to the
+    skin, fingers along `fingers` laid onto it, the elbow and arm kept off the body; the wrist takes the turn.
+    start: arm angles to solve from (the last answer). Returns (pose, arm angles)."""
+    if w <= 0:
+        return pose, start
+    frames = forward_kinematics(Matrix.Identity(4), pose)
+    near = _skin_near(Vector(spot), frames, facing=facing)
+    if near is None:
+        return pose, start
+    _s, skin, n = near
+    on_skin = skin + n * HAND_HALF
+    hand = frames[side + "Hand"]
+    target = hand.to_translation().lerp(on_skin, w)
+    f = Vector(fingers)
+    along = f - n * f.dot(n)
+    rot = hand.to_3x3().to_quaternion().slerp(hand_frame(side, -n, along).to_quaternion(), w).to_matrix()
+    a, tfs, _miss = lock_hand(frames["UpperTorso"], side, target, rot, start, back=None, below=below,
+                              offset=hand_centre_from_wrist(side), clear_of=frames, clear_upper=True)
+    out = dict(pose)
+    out.update(tfs)
+    return out, a
+
+
+# ---- The squat's bar and hands on the torso rig (2026-11-13; GAME_DESIGN §37.5 / user 2026-11-08: the bar across the
+# upper back and shoulder blades, below the neck, wide grip outside the shoulders, elbows back and down). The block-rig
+# arm angles (SQUAT_ARM, approved 2026-10-19) on the x1.5 arms put the hands, and so the bar the game draws between
+# them, high near the neck with the elbows flared. Now the BAR is placed (on the middle build's back: Fit, at
+# shoulder-blade height) and the hands lock onto it: palms forward, fingers over the bar, thumbs in. Each body's own
+# back depth and shoulder width (Skinny back 0.39 ... Big and buff 0.72; delts 1.23 ... 2.03) is the game's per-build
+# hand IK (anim_qa.py QA_BUILD_IK previews it).
+SQUAT_BAR_REST = Vector((0.0, 4.30, 0.556 + 0.07 + 0.01))   # standing, from the floor (Roblox; +Z = behind): Fit's back
+SQUAT_GRIP_X = 1.95                                         # each hand's Grip hole out from the centre
+SQUAT_PALM, SQUAT_FINGERS = Vector((0.0, 0.3, -1.0)), Vector((0.0, 1.0, 0.3))   # palms forward, fingers up over the bar
+_SQUAT_LOCK = None
+
+
+def squat_lock_arms():
+    """{joint: Transform} of both arms holding the bar on the back (torso rig), in the torso's frame: solved once."""
+    global _SQUAT_LOCK
+    if _SQUAT_LOCK is None:
+        world = forward_kinematics(T((0, HRP_STAND_Y, 0)), {})        # standing: rest positions = SQUAT_BAR_REST's frame
+        ut = world["UpperTorso"]
+        _SQUAT_LOCK = {}
+        for side, s in (("Left", -1), ("Right", 1)):
+            point = SQUAT_BAR_REST + Vector((s * SQUAT_GRIP_X, 0, 0))
+            start = {"raise": 60.0, "swing": 20.0, "twist": 60.0, "elbow": 110.0}
+            a, tfs, miss = lock_hand(ut, side, point, hand_frame(side, SQUAT_PALM, SQUAT_FINGERS), start)
+            _SQUAT_LOCK.update(tfs)
+            _SQUAT_LOCK[side + "_miss"] = miss
+            _SQUAT_LOCK[side + "_angles"] = a
+    return {k: v for k, v in _SQUAT_LOCK.items() if not (k.endswith("_miss") or k.endswith("_angles"))}
+
+
+def squat_wrists(g):
+    """(torso rig) the hands' turn on the squat bar, g of the way from relaxed (0) to holding it (1)."""
+    lock = squat_lock_arms()
+    q0 = Matrix.Identity(4).to_quaternion()
+    return {j: q0.slerp(lock[j].to_quaternion(), g).to_matrix().to_4x4() for j in ("LeftWrist", "RightWrist")}
+
+
 def squat_pose(t):
     u = squat_depth(t)
     torso = blend(*SQUAT_TORSO, u)
@@ -305,7 +671,7 @@ def squat_pose(t):
     def build(stance_out):
         pose = {"Root": rx(torso), "Neck": rx(-torso * 0.55)}   # neck: eyes roughly level
         pose.update(legs(torso, thigh, shin, stance_out, SQUAT_TOES_OUT))
-        pose.update(arms(squat_arm()))
+        pose.update(squat_lock_arms() if RIG == "torso" else arms(squat_arm()))
         return pose
 
     # Keep the feet planted: as the turned-out knees bend, open the legs a little
@@ -440,29 +806,190 @@ DEADLIFT_BAR_HELD = (1.6, 4.3)
 DEADLIFT_BAR = Vector((-1.5, 1.0 - HRP_STAND_Y, -0.6))      # left hand centre on the floor bar (its centre 1.0 up)
 DEADLIFT_TOES_OUT = 10.0
 
-def _deadlift_body(torso, thigh, shin, swing=None):
-    """swing: arms' forward angle relative to the torso; default hangs them straight down."""
+def _deadlift_body(torso, thigh, shin, swing=None, forward=None, grip=0.0, swing_right=None):
+    """swing: arms' forward angle relative to the torso; default hangs them straight down.
+    forward: how far the whole lifter stands closer to the bar than the root part (torso rig: deadlift_forward()).
+    grip (torso rig, 0..1): how far the hands have turned into the MIXED GRIP; swing_right: the right arm's own swing
+    (a mixed grip puts the two hands on opposite sides of the bar, so the arms differ by a few degrees)."""
     pose = {"Root": rx(torso), "Neck": rx(-torso * 0.45)}
     pose.update(legs(torso, thigh, shin, 0.0, DEADLIFT_TOES_OUT))
     pose.update(arms({"raise": 0.0, "swing": -torso if swing is None else swing, "twist": 0.0, "elbow": 0.0}))
-    return plant_feet(pose)
+    if swing_right is not None:
+        pose["RightShoulder"] = rx(swing_right)
+    if grip:
+        pose.update(mixed_grip_wrists(grip))
+    pose = plant_feet(pose)
+    f = deadlift_forward() if forward is None else forward
+    if f:
+        pose["Root"] = T((0, 0, -f)) @ pose["Root"]
+    return pose
+
+
+# ---- The deadlift's MIXED GRIP (torso rig; user 2026-11-13: "make sure one hand is facing forward other is back ...
+# the fingers are actually wrapped around grabbing it"). The hands hang palm-in; a quarter turn of each wrist (the
+# same turn, the hands being mirrored) turns the LEFT palm forward (under-hand, thumb out) and the RIGHT palm back
+# (over-hand, thumb in). The bar then sits in the fingers (the "Grip" hand swap's hole, build_cartoon_hands_04.py:
+# hand space (0, -0.197, -0.40)), not at the hand's centre: GRIP_POINT is that hole in the hand part's own frame (palm
+# side +X on the left hand, -X on the right; down -Y), at the middle build's hand size (Fit, 1.22). Each build's own
+# hand size moves it by up to ~0.1 (Skinny 1.05 ... Big and buff 1.58): the game's per-build hand IK takes that up.
+GRIP_HAND_SIZE = 1.22
+GRIP_POINT = Vector((0.135 * GRIP_HAND_SIZE + 0.07, -(0.34 * GRIP_HAND_SIZE - 0.125), 0.0))
+
+
+def mixed_grip_wrists(g):
+    return {"LeftWrist": ry(90.0 * g), "RightWrist": ry(90.0 * g)}
+
+
+def grip_point(w, side):
+    """Where this hand holds the bar (torso rig: the Grip hole; other rigs: the hand's centre), root part's frame."""
+    if RIG != "torso":
+        return w[side + "Hand"].to_translation()
+    return w[side + "Hand"] @ Vector((GRIP_POINT.x if side == "Left" else -GRIP_POINT.x, GRIP_POINT.y, 0.0))
+
+
+DEADLIFT_BAR_RIGHT = Vector((-DEADLIFT_BAR.x, DEADLIFT_BAR.y, DEADLIFT_BAR.z))
+
+
+def _right_swing_onto(torso, thigh, shin, swing, fwd, target_z=None, grip=1.0):
+    """The right arm's swing that puts its grip on the bar (target_z: only on that bar path line, by bisection)."""
+    def body(s):
+        return forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, swing, fwd, grip, s))
+    if target_z is not None:
+        lo, hi = -torso - 60.0, -torso + 80.0
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            if grip_point(body(mid), "Right").z > target_z:
+                lo = mid
+            else:
+                hi = mid
+        return (lo + hi) / 2
+    miss = lambda s: (grip_point(body(s), "Right") - DEADLIFT_BAR_RIGHT).length
+    s = min(range(-60, 121, 4), key=miss) + 0.0
+    for step in (2, 1, 0.5, 0.25, 0.1, 0.05):
+        s = min((s - step, s, s + step), key=miss)
+    return s
+
+
+# ---- The torso rig's deadlift set-up (2026-11-13, References/Character Animation Quality.md "Deadlift").
+# The block rig's solve (arms hanging straight down onto the bar, hips above the knees) on the torso rig (torso x1.35,
+# arms x1.2, block legs) leaned the SHINS BACKWARD (knees 0.49 behind the ankles), sat the hips 1.23 behind the feet and
+# left the bar 0.48 ahead of the midfoot: the "sitting back, hips out" set-up. Measured: with this torso, these arms
+# and these legs no pose has upright shins, hips above the knees AND the shoulders just over the bar (the arms were too
+# short for the torso; the user then chose arms x1.5, lifter_heights.py). This solve asks for real technique - the
+# bar against the shins over the midfoot, shins angled slightly forward, hips above the knees, straight arms, the
+# shoulders just over the bar - and gets as close as the skeleton allows. With arms x1.5 and the bar held in the
+# fingers (the mixed grip below): shins upright, the bar 0.25 ahead of the midfoot (the thick cartoon shins never let
+# it sit exactly over it), hips 0.44 above the knees (at most 0.45: higher reads as a stiff-legged pull), back 31
+# degrees, arms near vertical (left 9 back, right 1), shoulders 0.20 over the bar. (Without the midfoot rule the shins
+# lean forward and the bar ends up over the toes, 0.52 ahead: it read as a squat, 2026-11-13 comparison.)
+# deadlift_forward() (0.23) moves the whole lifter that much closer to the bar than the root part (the game's floor bar
+# stays 0.6 in front of the root part; no game change).
+DEADLIFT_SHIN_CLEARANCE = 0.36    # the thickest shin's front (Fat 0.25, CartoonBodies_05) + bar radius 0.07 + a hair
+DEADLIFT_MIDFOOT = 0.12            # half way from heel to toe, ahead of the ankle (all six CartoonBodies_05 feet)
+DEADLIFT_BAR_OVER_FOOT = 0.25      # the bar at most this far ahead of the midfoot (thick cartoon shins: never exactly over it)
+DEADLIFT_WANT = {"shin_lean": 0.15, "hip_above_knee": 0.3, "shoulder_ahead": 0.15}
+DEADLIFT_HIPS_HIGHEST = 0.45       # hips above the knees by at most this (higher reads as a stiff-legged deadlift)
+_DL_FIT = None
+
+
+def _dl_numbers(w):
+    """Set-up numbers of a posed body (root part's frame; the lifter faces -Z)."""
+    ank, knee, hip = joint_point(w, "LeftAnkle"), joint_point(w, "LeftKnee"), joint_point(w, "LeftHip")
+    bar_y = DEADLIFT_BAR.y
+    u = (bar_y - ank.y) / max(1e-6, knee.y - ank.y)
+    shin_z = ank.z + (knee.z - ank.z) * u                       # the shin's line at the bar's height
+    top = w["LeftUpperArm"] @ Vector((0, JOINTS["LeftShoulder"][3][1], 0))     # top of the upper arm
+    return {"shin_lean": ank.z - knee.z, "hip_above_knee": hip.y - knee.y,
+            "bar_gap": (shin_z - DEADLIFT_SHIN_CLEARANCE) - DEADLIFT_BAR.z,    # + = the bar clear of the shin
+            "shoulder_ahead": DEADLIFT_BAR.z - top.z, "bar_ahead_of_midfoot": (ank.z - DEADLIFT_BAR.z) - DEADLIFT_MIDFOOT}
+
+
+def _solve_deadlift_torso():
+    """(torso, thigh, shin, swing, forward) of the torso rig's set-up: the hands on the bar (straight arms), the bar
+    against the shins, then as close to DEADLIFT_WANT as the body allows (upright shins first)."""
+    def complete(torso, thigh, shin):
+        # forward: the bar exactly against the shins (bar_gap 0); swing: the straight arm closest to the bar
+        w0 = forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, None, 0.0))
+        fwd = _dl_numbers(w0)["bar_gap"]                 # (the body moving forward closes the gap one for one)
+        miss = lambda s: (grip_point(forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, s, fwd, 1.0)),
+                                     "Left") - DEADLIFT_BAR).length
+        s = min(range(-60, 121, 4), key=miss) + 0.0
+        for step in (2, 1, 0.5, 0.25, 0.1, 0.05):
+            s = min((s - step, s, s + step), key=miss)
+        return [torso, thigh, shin, s, fwd]
+
+    def cost(v):
+        full = complete(*v)
+        w = forward_kinematics(Matrix.Identity(4), _deadlift_body(*full, 1.0))
+        n = _dl_numbers(w)
+        c = 20 * (grip_point(w, "Left") - DEADLIFT_BAR).length
+        c += 3 * abs(n["shin_lean"] - DEADLIFT_WANT["shin_lean"])
+        c += 5 * max(0.0, DEADLIFT_WANT["hip_above_knee"] - n["hip_above_knee"])
+        c += 3 * max(0.0, n["hip_above_knee"] - DEADLIFT_HIPS_HIGHEST)       # (not a stiff-legged pull either)
+        c += 2 * abs(n["shoulder_ahead"] - DEADLIFT_WANT["shoulder_ahead"])
+        c += 6 * max(0.0, n["bar_ahead_of_midfoot"] - DEADLIFT_BAR_OVER_FOOT)
+        return c
+    # the hand-on-bar term couples all three angles, so single-angle steps stall: steps along every direction of the
+    # 3 angles (26), from a few starts; the best wins
+    moves = [(a, b, c) for a in (-1, 0, 1) for b in (-1, 0, 1) for c in (-1, 0, 1) if (a, b, c) != (0, 0, 0)]
+    found = []
+    for start in ([-60.0, 68.0, -5.0], [-45.0, 60.0, -15.0], [-35.0, 70.0, -20.0], [-52.0, 55.0, -10.0]):
+        v, best = start, cost(start)
+        for step in (8, 4, 2, 1, 0.5, 0.25, 0.1):
+            improved = True
+            while improved:
+                improved = False
+                for m in moves:
+                    w = [v[i] + m[i] * step for i in range(3)]
+                    c = cost(w)
+                    if c < best - 1e-7:
+                        v, best, improved = w, c, True
+        found.append((best, v))
+    best, v = min(found)
+    full = complete(*v)
+    full.append(_right_swing_onto(full[0], full[1], full[2], full[3], full[4]))     # [5]: the right arm (mixed grip)
+    return full, best
+
+
+def _dl_fit():
+    global _DL_FIT
+    if _DL_FIT is None:
+        _DL_FIT = _solve_deadlift_torso()[0]
+    return _DL_FIT
+
+
+def deadlift_forward():
+    """How far the lifter stands closer to the floor bar than the root part (torso rig only; 0 elsewhere)."""
+    return _dl_fit()[4] if RIG == "torso" else 0.0
 
 def _deadlift_on_bar_path(torso, thigh, shin):
     """While the bar is held: straight arms swung just enough to keep the hands (the
     bar) on a vertical path DEADLIFT_BAR.z in front of the feet, so the bar slides up
     the front of the shins and thighs instead of passing through them (bisection)."""
     lo, hi = -torso - 5.0, -torso + 80.0          # more swing = hands further forward (-z)
+    grip = 0.0
+    if RIG == "torso":
+        lo = -torso - 60.0                        # (torso rig: the arms slant back onto the bar at the bottom)
+        grip = 1.0                                # (and hold it in the mixed grip, by the Grip hole)
     for _ in range(40):
         mid = (lo + hi) / 2
-        w = forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, mid))
-        if w["LeftHand"].to_translation().z > DEADLIFT_BAR.z:
+        w = forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, mid, None, grip))
+        if grip_point(w, "Left").z > DEADLIFT_BAR.z:
             lo = mid
         else:
             hi = mid
-    return _deadlift_body(torso, thigh, shin, (lo + hi) / 2)
+    left = (lo + hi) / 2
+    if RIG != "torso":
+        return _deadlift_body(torso, thigh, shin, left)
+    right = _right_swing_onto(torso, thigh, shin, left, None, DEADLIFT_BAR.z)
+    return _deadlift_body(torso, thigh, shin, left, None, 1.0, right)
 
 def _solve_deadlift_bottom():
-    """Hip hinge that puts the straight-armed hands on the floor bar, hips above the knees."""
+    """Hip hinge that puts the straight-armed hands on the floor bar, hips above the knees. (torso rig: the set-up
+    above; returns its (torso, thigh, shin))"""
+    if RIG == "torso":
+        return list(_dl_fit()[:3]), 0.0
+
     def cost(v):
         torso, thigh, shin = v
         w = forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin))
@@ -521,7 +1048,16 @@ def deadlift_pose(t):
     held = deadlift_bar_held(t)
     top = DEADLIFT_LOCKOUT if held else (0.0, 0.0, 0.0)
     torso, thigh, shin = (blend(top[i], _DEADLIFT[i], u) for i in range(3))
-    return _deadlift_on_bar_path(torso, thigh, shin) if held else _deadlift_body(torso, thigh, shin)
+    if held:
+        return _deadlift_on_bar_path(torso, thigh, shin)
+    if RIG == "torso" and u > 0:
+        # (torso rig) the arms reach for the bar on the way down (and leave it on the way up): at the bottom they hang
+        # slanted onto the bar, not straight down
+        reach = _dl_fit()[3] + (_DEADLIFT[0] - torso)            # the bottom's slant, kept as the torso turns
+        reach_right = _dl_fit()[5] + (_DEADLIFT[0] - torso)
+        g = smooth(u)                                             # (the hands turn into the mixed grip as they reach)
+        return _deadlift_body(torso, thigh, shin, blend(-torso, reach, g), None, g, blend(-torso, reach_right, g))
+    return _deadlift_body(torso, thigh, shin)
 
 def deadlift_bar_held(t):
     return DEADLIFT_BAR_HELD[0] <= t < DEADLIFT_BAR_HELD[1]
@@ -648,9 +1184,15 @@ PREVIEW_BASES = {
     "Bench": T((0, BENCH_ROOT_HEIGHT, -0.3 - BENCH_HEAD_UP)) @ rx(90),
     "Deadlift": T((0, HRP_STAND_Y, -4.8)) @ FACE_RACK,
 }
-# The taller lifters' J-cups (game code, 2026-11-12): the squat cups 0.70 higher, the bench cups 0.175 higher.
-BAR_REST_SQUAT_Y = 4.365 if TALLER else 3.665
-BAR_REST_BENCH_Y = 3.315 if TALLER else 3.14
+# Where the cartoon lifters' J-cups hold the bar (the rack's holes are 0.175 apart; game code: StationLayout).
+#   taller (2026-11-12): the squat cups 0.70 higher (4 holes, bar 4.365), the bench cups 0.175 higher (3.315).
+#   torso (2026-11-13): the squat cups 0.525 higher (3 holes, bar 4.19): the bar on this rig's back stands at 4.31,
+#     so 4.365 would sit above it (they could only lift it on tiptoe); 4.19 is just under it, a slight knee bend
+#     (user 2026-11-08: "the height of their shoulder blades"; the block rig's bar was 0.05 under its back, 3.715).
+#     The bench cups stay 1 hole up (3.315, just under the longer arms' lockout, 3.47).
+#   StationLayout's tallSquatJCupRaise is still 0.70 (taller): the torso bodies need 0.525 (Phase 4, game code).
+BAR_REST_SQUAT_Y = {"torso": 4.19, "taller": 4.365}.get(RIG, 3.665)
+BAR_REST_BENCH_Y = {"torso": 3.315, "taller": 3.315}.get(RIG, 3.14)
 PREVIEW_BAR_REST = {"Squat": (0, BAR_REST_SQUAT_Y, -0.28), "Bench": (0, BAR_REST_BENCH_Y, -0.28), "Deadlift": (0, 1.0, -4.2)}
 DISPLAY_LOAD = ("Plate_25", "Plate_25", "Collar_Lock")   # TrainingStationConfig + collar
 

@@ -212,7 +212,7 @@ K = S.ARM_REACH_SCALE
 
 
 def on_body(x, y, z):
-    return Vector((x, S.up_body(y), z))
+    return S.hand_on_body(x, y, z)          # (kept within the arm's reach on the torso rig: S.within_arm)
 
 
 def held_out(x, y, z, keep_x=False):
@@ -223,7 +223,7 @@ def held_out(x, y, z, keep_x=False):
 def reach_out(x, y, z):
     # (Height on the body, the forward reach x1.15: the shoulder-relative held_out rule made Hype_CrowdLift's arms
     # lag behind its fast high-to-low swing, worst hand miss 0.78.)
-    return Vector((x, S.up_body(y), S.reach(z)))
+    return S.within_arm(Vector((x, y, z)), Vector((x, S.up_body(y), S.reach(z))))
 
 
 STAND = {"torso": 0.0, "thigh": 0.0, "shin": 0.0, "toes": 12.0, "neck": 0.0}
@@ -262,9 +262,20 @@ class Hype:
 
     STEP = 0.025
 
-    def __init__(self, length, body, left, right=None, neck=None, wobble=None):
+    def __init__(self, length, body, left, right=None, neck=None, wobble=None, contact=False, palms=None):
         self.length, self.body, self.left_keys, self.right_keys = length, body, left, right
         self.neck, self.wobble = neck, wobble
+        self.contact = contact and S.RIG == "torso"     # (hands stop at the skin: S.contact_out)
+        # palms (torso rig): authored CONTACT, the hand flat on the body (References/Character Animation Quality.md):
+        # {"spot": the left hand's spot near the body (root frame; the right mirrors), "fingers": the left fingers'
+        # direction laid onto the skin, "weight": [(t, 0..1)] how far into the contact}. At weight > 0 the hand goes
+        # to the posed middle build's skin there (a hand's half-thickness off it) turned palm-to-skin, the arm and
+        # wrist solved exactly (S.lock_hand), easing in and out with the weight.
+        self.palms = palms if S.RIG == "torso" else None
+        # hands (torso rig): the hands' TURN without skin contact (claps: palms facing each other), set after
+        # creation: {"palm": left palm direction, "fingers": left fingers direction (root frame; the right mirrors),
+        # "weight": [(t, 0..1)]}; the arm and wrist are solved for it (S.lock_hand), elbows kept off the body
+        self.hands = None
         self.table, self.worst = None, 0.0
 
     def _targets(self, t):
@@ -277,15 +288,127 @@ class Hype:
         """The arms solved once, in time order from the start, every STEP: each solve starts from the one before, so
         the arms never flip to another way of reaching the same spot, and every caller gets the same answer."""
         a_left, a_right = dict(START_ARM), dict(START_ARM)
-        self.table = []
+        self.table, self.wrists = [], []
+        I3 = Matrix.Identity(3)
         for i in range(int(math.ceil(self.length / self.STEP)) + 1):
             t = min(self.length, i * self.STEP)
             p = body_at(self.body, t)
             body = F._body(p, p["root"])
             left, right = self._targets(t)
-            a_left, _ = S.solve_arms(body, left, a_left, preference, 5.0, SOLVE_STEPS)
-            a_right, _ = S.solve_arms(body, mirror(right), a_right, preference, 5.0, SOLVE_STEPS)
+            if self.contact:
+                frames = S.forward_kinematics(Matrix.Identity(4), body)
+                left, right = S.contact_out(left, frames), S.contact_out(right, frames)
+            a_left = self._solve_one(body, left, a_left)
+            a_right = self._solve_one(body, mirror(right), a_right)
+            wrist = {"Left": I3.to_quaternion(), "Right": I3.to_quaternion()}
+            w = self._palm_weight(t)
+            if w > 0:
+                a_left, a_right, wrist = self._palm_solve(body, left, right, a_left, a_right, w)
+            if self.hands and S.RIG == "torso":
+                specs = self.hands if isinstance(self.hands, list) else [self.hands]
+                ws = {sd: max([(self._track(sp["weight"], t), sp) for sp in specs if sd in sp.get("sides", ("Left", "Right"))]
+                              or [(0.0, None)], key=lambda x: x[0]) for sd in ("Left", "Right")}
+                if ws["Left"][0] > 0 or ws["Right"][0] > 0:
+                    a_left, a_right, wrist = self._turn_solve(body, left, right, a_left, a_right, ws, wrist)
             self.table.append((dict(a_left), dict(a_right)))
+            self.wrists.append(wrist)
+
+    @staticmethod
+    def _track(keys, t):
+        a, b, u = F.at(keys, t)
+        return a + (b - a) * u
+
+    def _turn_solve(self, body, left, right, a_left, a_right, ws, wrist_now):
+        """The hands turned toward their spec's palm/fingers by its weight, kept on their targets (claps, a point).
+        ws: {side: (weight, spec)}; a spec for both sides gives the left's directions (the right mirrors), a spec for
+        one side gives that side's own true directions."""
+        frames = S.forward_kinematics(Matrix.Identity(4), body)
+        ut = frames["UpperTorso"]
+        out, wrists = {"Left": a_left, "Right": a_right}, dict(wrist_now)
+        for side, target, start in (("Left", left, a_left), ("Right", right, a_right)):
+            w, spec = ws[side]
+            if w <= 0:
+                continue
+            palm, fingers = Vector(spec["palm"]), Vector(spec["fingers"])
+            if side == "Right" and len(spec.get("sides", ("Left", "Right"))) == 2:
+                palm, fingers = mirror(palm), mirror(fingers)
+            fingers = fingers - palm.normalized() * fingers.dot(palm.normalized())
+            sh, el = S._arm_tf(side, start)
+            c0s, c1s = S.JOINTS[side + "Shoulder"][2], S.JOINTS[side + "Shoulder"][3]
+            c0e, c1e = S.JOINTS[side + "Elbow"][2], S.JOINTS[side + "Elbow"][3]
+            lower = ut @ S.T(c0s) @ sh @ S.T(c1s).inverted() @ S.T(c0e) @ el @ S.T(c1e).inverted()
+            rot = lower.to_3x3().to_quaternion().slerp(S.hand_frame(side, palm, fingers).to_quaternion(), w).to_matrix()
+            if spec.get("wrist_only"):
+                # the arm keeps its own (natural) reach; only the hand turns at the wrist (a point: the forearm
+                # turns the palm down, the arm stays straight out)
+                wrists[side] = (lower.to_3x3().transposed() @ rot).to_quaternion()
+                continue
+            a, tfs, _miss = S.lock_hand(ut, side, target, rot, start, back=None, below=0.2,
+                                        offset=S.hand_centre_from_wrist(side), clear_of=frames,
+                                        **({"keep": self.keep, "first_step": 4} if self.keep else {}))
+            out[side], wrists[side] = a, tfs[side + "Wrist"].to_quaternion()
+        return out["Left"], out["Right"], wrists
+
+    def _palm_weight(self, t):
+        if not self.palms:
+            return 0.0
+        a, b, u = F.at(self.palms["weight"], t)
+        return a + (b - a) * u
+
+    def _palm_solve(self, body, left, right, a_left, a_right, w):
+        frames = S.forward_kinematics(Matrix.Identity(4), body)
+        ut = frames["UpperTorso"]
+        out = {}
+        wrists = {}
+        for side, free, start in (("Left", left, a_left), ("Right", right, a_right)):
+            spot = Vector(self.palms["spot"]) if side == "Left" else mirror(Vector(self.palms["spot"]))
+            fingers = Vector(self.palms["fingers"]) if side == "Left" else mirror(Vector(self.palms["fingers"]))
+            near = S._skin_near(spot, frames)
+            if near is None:
+                out[side], wrists[side] = start, Matrix.Identity(3).to_quaternion()
+                continue
+            _s, skin, n = near
+            on_skin = skin + n * S.HAND_HALF
+            along = fingers - n * fingers.dot(n)
+            target = free.lerp(on_skin, w)
+            sh, el = S._arm_tf(side, start)
+            c0s, c1s = S.JOINTS[side + "Shoulder"][2], S.JOINTS[side + "Shoulder"][3]
+            c0e, c1e = S.JOINTS[side + "Elbow"][2], S.JOINTS[side + "Elbow"][3]
+            lower = ut @ S.T(c0s) @ sh @ S.T(c1s).inverted() @ S.T(c0e) @ el @ S.T(c1e).inverted()
+            free_rot = lower.to_3x3()
+            rot = free_rot.to_quaternion().slerp(S.hand_frame(side, -n, along).to_quaternion(), w).to_matrix()
+            a, tfs, _miss = S.lock_hand(ut, side, target, rot, start, back=None, below=self.palms.get("below", 0.25),
+                                        offset=S.hand_centre_from_wrist(side), clear_of=frames)
+            out[side] = a
+            wrists[side] = tfs[side + "Wrist"].to_quaternion()
+        return out["Left"], out["Right"], wrists
+
+    # A solve that misses by more than ~0.25 got stuck (torso rig 2026-11-13: Hype_CrowdLift's fast swing from overhead
+    # to behind the hips left the arm reaching out sideways for two frames, a 1.3 miss): only then it is tried again
+    # from fresh starts and the best kept. (Never happens on the taller rig: its worst miss is 0.155.)
+    RETRY_COST = 5.0 * 0.25 + 0.6
+    RETRY_STARTS = [{"raise": r, "swing": s, "twist": 0.0, "elbow": e}
+                    for r in (10.0, 60.0) for s in (-60.0, 0.0, 60.0, 120.0) for e in (30.0, 110.0)]
+
+    keep = None          # (torso rig) hand turns: S.lock_hand's pull toward the arm's natural solve, small search
+    #                      steps only (None: lock_hand's defaults)
+    natural = False      # (torso rig) True: arms keep away from the twisted "raised backwards" shape (raise < -12)
+
+    def _pref(self, w, a):
+        c = preference(w, a)
+        if self.natural:
+            c += 0.02 * max(0.0, -a["raise"] - 12.0)
+        return c
+
+    def _solve_one(self, body, target, start):
+        pref = self._pref if self.natural else preference
+        a, cost = S.solve_arms(body, target, start, pref, 5.0, SOLVE_STEPS)
+        if cost > self.RETRY_COST:
+            for fresh in self.RETRY_STARTS:
+                b, c = S.solve_arms(body, target, fresh, pref, 5.0)
+                if c < cost:
+                    a, cost = b, c
+        return a
 
     def pose(self, t):
         if self.table is None:
@@ -299,6 +422,10 @@ class Hype:
         (l0, r0), (l1, r1) = self.table[i], self.table[i + 1]
         pose.update(one_arm("Left", F.lerp(l0, l1, u)))
         pose.update(one_arm("Right", F.lerp(r0, r1, u)))
+        if self.palms or self.hands:
+            w0, w1 = self.wrists[i], self.wrists[i + 1]
+            for side in ("Left", "Right"):
+                pose[side + "Wrist"] = w0[side].slerp(w1[side], u).to_matrix().to_4x4()
         if self.neck:
             pose["Neck"] = pose["Neck"] @ self.neck(t)
         left, right = self._targets(t)
@@ -313,9 +440,10 @@ def dip(depth, neck=0.0, torso=0.0):
 
 
 # Hype_Belt: hands to the belt's sides, slide to the front, two hard tugs with a dip, a clap, hands down.
-BELT_SIDE = on_body(-1.12, -0.5, -0.62)
-BELT_FRONT = on_body(-0.55, -0.55, -0.98)
-BELT_TUG = on_body(-0.6, -0.68, -0.94)
+# (on the torso rig the hands go to the navel belt of the new bodies: S.on_belt, this move's belt front at -0.55)
+BELT_SIDE = S.on_belt(-1.12, -0.5, -0.62, -0.55)
+BELT_FRONT = S.on_belt(-0.55, -0.55, -0.98, -0.55)
+BELT_TUG = S.on_belt(-0.6, -0.68, -0.94, -0.55)
 CLAP = on_body(-0.5, 0.35, -1.05)
 APART = on_body(-1.05, 0.42, -1.1)
 BELT = Hype(3.0,
@@ -347,7 +475,15 @@ CHEST_SLAP = Hype(3.2,
                    (1.25, dip(0.5, 22.0, 2.0)), (2.4, dip(0.55, 26.0, 2.0)), (2.9, STAND), (3.2, STAND)],
                   [(0.0, HANG_HAND), (0.35, WIDE), (0.5, CHEST), (0.65, WIDE), (0.8, CHEST), (1.25, ROAR),
                    (2.4, ROAR), (2.9, HANG_HAND), (3.2, HANG_HAND)],
-                  wobble=lambda t: Vector((shake(t, 1.3, 2.4, 0.06, 10.0), shake(t, 1.3, 2.4, 0.04, 8.0), 0)))
+                  wobble=lambda t: Vector((shake(t, 1.3, 2.4, 0.06, 10.0), shake(t, 1.3, 2.4, 0.04, 8.0), 0)),
+                  # (torso rig, 2026-11-13) the slaps land FLAT on the chest from the side: palm on the pec, fingers
+                  # pointing in toward the breastbone (a little up), the forearm carrying on in line, elbows out
+                  # (each hand on its own pec, out at x 0.66, so the inward fingertips stop short of the middle; the
+                  # biggest hands' fingertips (Muscular, Big and buff) still meet: their per-build fit, Phase 4)
+                  palms={"spot": Vector((-0.66, CHEST.y, CHEST.z)), "fingers": Vector((1.0, 0.35, 0.0)), "below": 0.05,
+                         # (the palms stay turned to the chest between the two slaps, as people do; in over 0.2 s)
+                         "weight": [(0.0, 0.0), (0.28, 0.0), (0.5, 1.0), (0.58, 1.0), (0.66, 0.65), (0.8, 1.0),
+                                    (0.88, 1.0), (1.12, 0.0), (3.2, 0.0)]})
 
 # Hype_NeckRoll: rolls the neck round, two claps, then points the right hand at the bar.
 POINT = reach_out(0.6, 0.85, -1.72)
@@ -362,15 +498,49 @@ def neck_roll(t):
     return rz(16.0 * edge * math.sin(angle)) @ rx(14.0 * edge * (math.cos(angle) - 1) * 0.5 - 6.0 * edge)
 
 
-NECK_ROLL = Hype(3.0,
-                 [(0.0, STAND), (1.5, STAND), (1.7, dict(STAND, neck=-4.0)), (2.3, dict(STAND, neck=-2.0)),
-                  (2.5, dict(STAND, neck=-8.0)), (3.0, STAND)],
-                 [(0.0, HANG_HAND), (1.5, HANG_HAND), (1.75, APART), (1.9, CLAP), (2.05, APART), (2.2, CLAP),
-                  (2.45, HANG_HAND), (3.0, HANG_HAND)],
-                 right=[(0.0, mirror(HANG_HAND)), (1.5, mirror(HANG_HAND)), (1.75, mirror(APART)),
-                        (1.9, mirror(CLAP)), (2.05, mirror(APART)), (2.2, mirror(CLAP)), (2.45, POINT),
-                        (2.8, POINT), (3.0, mirror(HANG_HAND))],
-                 neck=neck_roll)
+if S.RIG == "torso":
+    # (torso rig, 2026-11-13, the user's flagged move) the claps really MEET (the block body's clap left the hands a
+    # full stud apart: palms together now, a little further out in front of the chest), the arms start up for them a
+    # little earlier, and the pointing arm swings straight down over 0.4 s in its natural shape (a 0.2 s drop from a twisted
+    # pointing shape made it flip back and forth)
+    NR_CLAP = Vector((-0.2, CLAP.y, CLAP.z - 0.2))       # (palms meet: room for the biggest hands' fingers)
+    # the point: straight out from the shoulder at shoulder height, a little outside it, elbow soft
+    # (aimed a little beyond the reach: the arm goes fully straight that way instead of bending to land short)
+    NR_POINT = mirror(SHOULDER_NOW) + Vector((0.15, 0.0, -1.12 * (S.reach(1.488) + 0.125)))
+    NR_APART = Vector((APART.x, APART.y, APART.z - 0.1))
+    # half way down the pointing arm's swing, ON its arc (a straight line from the point to the hang cuts inside the
+    # arm's reach and made the elbow bend and straighten in a snap)
+    _sh_r = mirror(SHOULDER_NOW)
+    _from, _to = NR_POINT - _sh_r, mirror(HANG_HAND) - _sh_r
+    NR_ARC = _sh_r + (_from.normalized() + _to.normalized()).normalized() * (_from.length + _to.length) / 2
+    NECK_ROLL = Hype(3.0,
+                     [(0.0, STAND), (1.5, STAND), (1.7, dict(STAND, neck=-4.0)), (2.3, dict(STAND, neck=-2.0)),
+                      (2.5, dict(STAND, neck=-8.0)), (3.0, STAND)],
+                     [(0.0, HANG_HAND), (1.35, HANG_HAND), (1.72, NR_APART), (1.9, NR_CLAP), (2.05, NR_APART),
+                      (2.2, NR_CLAP), (2.36, NR_APART), (2.62, HANG_HAND), (3.0, HANG_HAND)],
+                     right=[(0.0, mirror(HANG_HAND)), (1.35, mirror(HANG_HAND)), (1.72, mirror(NR_APART)),
+                            (1.9, mirror(NR_CLAP)), (2.05, mirror(NR_APART)), (2.2, mirror(NR_CLAP)), (2.45, NR_POINT),
+                            (2.6, NR_POINT), (2.8, NR_ARC), (3.0, mirror(HANG_HAND))],
+                     neck=neck_roll)
+    # the point at the bar with the arm's natural shape (it had twisted "raised backwards" and snapped back coming down)
+    NECK_ROLL.natural = True
+    # the claps: palms facing each other, fingers forward and a little up
+    NECK_ROLL.hands = [
+        {"palm": Vector((1.0, 0.0, 0.0)), "fingers": Vector((0.0, 0.45, -1.0)),
+         "weight": [(0.0, 0.0), (1.45, 0.0), (1.8, 1.0), (2.25, 1.0), (2.36, 0.0), (3.0, 0.0)]},
+        # the pointing hand: palm down, knuckles up, the finger straight ahead along the arm (the Point swap)
+        {"sides": ("Right",), "palm": Vector((0.0, -1.0, 0.0)), "fingers": Vector((0.0, 0.0, -1.0)), "wrist_only": True,
+         "weight": [(0.0, 0.0), (2.36, 0.0), (2.48, 1.0), (2.62, 1.0), (2.88, 0.0), (3.0, 0.0)]}]
+else:
+    NECK_ROLL = Hype(3.0,
+                     [(0.0, STAND), (1.5, STAND), (1.7, dict(STAND, neck=-4.0)), (2.3, dict(STAND, neck=-2.0)),
+                      (2.5, dict(STAND, neck=-8.0)), (3.0, STAND)],
+                     [(0.0, HANG_HAND), (1.5, HANG_HAND), (1.75, APART), (1.9, CLAP), (2.05, APART), (2.2, CLAP),
+                      (2.45, HANG_HAND), (3.0, HANG_HAND)],
+                     right=[(0.0, mirror(HANG_HAND)), (1.5, mirror(HANG_HAND)), (1.75, mirror(APART)),
+                            (1.9, mirror(CLAP)), (2.05, mirror(APART)), (2.2, mirror(CLAP)), (2.45, POINT),
+                            (2.8, POINT), (3.0, mirror(HANG_HAND))],
+                     neck=neck_roll)
 
 # ---- the six new ones (Clip Study walk-ups and pre-lift rituals)
 OVER = held_out(-0.35, 2.45, -0.05, keep_x=True)     # hands together overhead
@@ -431,11 +601,36 @@ CHALK_RITUAL = Hype(3.4,
                            (0.85, mirror(FLING)), (1.1, mirror(CROSS) + Vector((0, -0.25, -0.15))),
                            (1.35, mirror(HIGH_WIDE)), (1.65, mirror(OVER)), (1.8, mirror(OVER)), (2.1, mirror(FLING)),
                            (2.6, mirror(FLING)), (3.1, mirror(HANG_HAND)), (3.4, mirror(HANG_HAND))])
+def arc_mid(a, b, shoulder=SHOULDER_NOW):
+    """Half way between two hand spots ON the arm's arc round the shoulder (a straight line between them cuts inside
+    the arm's reach: the elbow folds and snaps open on the way). Left-hand spots, root frame."""
+    u, v = a - shoulder, b - shoulder
+    d = u.normalized() + v.normalized()
+    if d.length < 1e-4:                       # (straight opposite: go round by the side)
+        d = Vector((-1.0, 0.0, 0.0))
+    return shoulder + d.normalized() * (u.length + v.length) / 2
+
+
+if S.RIG == "torso":
+    # (torso rig, 2026-11-13, the user's flagged move) each big arm swing goes round the shoulder on the arm's arc: the
+    # explosion from swung back to up-and-out and the lowering snapped (~1,800 degrees a second) along straight lines
+    # that cut inside the arms' reach
+    # the arms-up spot pulled just inside the reach (beyond it every arm shape lands about as close, and the solver
+    # jumped between them as the arms started down); the lowering's arc point likewise
+    _reach = S.reach(1.488) + 0.125
+    WC_UP_OUT = SHOULDER_NOW + (UP_OUT - SHOULDER_NOW).normalized() * min((UP_OUT - SHOULDER_NOW).length, 0.97 * _reach)
+    WC_START = arc_mid(HANG_HAND, SWUNG_BACK)
+    WC_UP = arc_mid(SWUNG_BACK, WC_UP_OUT)
+    WC_DOWN = SHOULDER_NOW + (arc_mid(WC_UP_OUT, HANG_HAND) - SHOULDER_NOW).normalized() * 0.97 * _reach
+    _wc_hands = [(0.0, HANG_HAND), (0.25, WC_START), (0.5, SWUNG_BACK), (1.4, SWUNG_BACK), (1.55, WC_UP),
+                 (1.7, WC_UP_OUT), (2.8, WC_UP_OUT), (3.02, WC_DOWN), (3.25, HANG_HAND), (3.6, HANG_HAND)]
+else:
+    _wc_hands = [(0.0, HANG_HAND), (0.5, SWUNG_BACK), (1.4, SWUNG_BACK), (1.7, UP_OUT), (2.8, UP_OUT),
+                 (3.25, HANG_HAND), (3.6, HANG_HAND)]
 WAR_CROUCH = Hype(3.6,
                   [(0.0, STAND), (0.5, crouch(0.9, 8.0)), (1.4, crouch(1.0, 10.0)), (1.7, dict(STAND, neck=26.0)),
                    (2.8, dict(STAND, neck=24.0)), (3.2, STAND), (3.6, STAND)],
-                  [(0.0, HANG_HAND), (0.5, SWUNG_BACK), (1.4, SWUNG_BACK), (1.7, UP_OUT), (2.8, UP_OUT),
-                   (3.25, HANG_HAND), (3.6, HANG_HAND)],
+                  _wc_hands,
                   wobble=lambda t: Vector((shake(t, 0.55, 1.4, 0.04, 12.0) + shake(t, 1.75, 2.8, 0.06, 10.0),
                                            shake(t, 1.75, 2.8, 0.05, 8.0), 0)))
 

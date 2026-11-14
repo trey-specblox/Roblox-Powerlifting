@@ -694,6 +694,54 @@ commit (item 6).
 - **Check:** Blender pose check of every station rep and the hardest moment of each animation on all bodies; the
   keyframe-time diff against the originals must stay identical.
 
+**Phase 1 results (2026-11-13) [DONE, waiting for the user's look].** Headless Blender only; nothing uploaded, nothing
+committed, no game code changed.
+- `lifter_heights.py`: three tables chosen with `LIFTER_RIG`: **torso** (default: hips/HipHeight 2.0, torso x1.35,
+  arms x1.2 with their own `ARM` factor), **taller** (2.4, x1.15) and **block**. The old v02 body/rig/clothes scripts read
+  this file too: rebuild those only with `LIFTER_RIG=taller`. (`build_cartoon_rig_04.py` and `check_gear_04_poses.py`
+  only borrow rig_02 helpers that don't use the table: unaffected.)
+- All 84 animations re-made into `art/animations/` from their own scripts: **keyframe times identical to the committed
+  set in all 84 files**; AuthoredHipHeight 2.4 -> 2; names, priorities, loops, markers unchanged. The taller-leg set is
+  in commit 1481684. The scripts were proven unchanged for the old rigs: `LIFTER_RIG=taller` rebuilds the committed
+  taller set (83 files byte-identical, Setup_Squat within 0.000002) and `block` rebuilds the original block fails exactly.
+- Script changes (all keep taller/block output as it was):
+  - `within_arm` / `hand_on_body` (station_animations.py): a hand ON the body is moved with the torso, but if the
+    shorter arms can't reach it, it rises just enough to keep the block rig's arm bend. Used by the entrance, chalk,
+    fail and celebration/emote (`B()`) hand targets. Without it the hips/belt/fists-low moves locked the arms straight.
+  - **Belt hands go to the new bodies' navel belt** (`on_belt`, `BELT_B`: 2.79 up, a third of hips -> shoulder): the
+    block rig's belt keys were at its waist (2.25-2.45). Emote_BeltTighten miss 0.17 -> 0.002.
+  - **Squat J-cups for the torso bodies: 4.19 (3 holes up, +0.525)**, not the taller rig's 4.365: this rig's bar on
+    the back stands at 4.31, so 4.365 would sit above it. The squat walk-in's duck dips go 0.175 deeper to match.
+    Bench cups stay 3.315 (lockout now 3.47). **Phase 4: StationLayout `tallSquatJCupRaise` 0.70 -> 0.525.**
+  - The hype moves' arm solver retries from fresh starts when a solve misses by > 0.25 (Hype_CrowdLift had stuck for
+    two frames: miss 1.25 -> 0.15).
+  - Entrance walk speeds drop back to the block-leg numbers (Swagger 4.48 studs/s etc.): they already match
+    EntranceConfig's `walkSpeed` values, so nothing changes in the game.
+- Hand misses (the scripts' own checks) are at the taller set's level; small increases left in WingspanBiceps,
+  PointLaugh, MostMuscular, Hype_Flex, Hype_WarCrouch, Setup_Bench (each <= 0.1 more). SitAndLaugh, LeapAndBow and
+  BowAndRise keep their old large misses (as before).
+- **Pose check** (`art/scripts/check_torso_anim_poses.py`, read-only on CartoonBodies_04_Rigged.blend, the game's fists,
+  bar and bench drawn): `art/previews/TorsoAnim_{Stations,Celebrations,Emotes_Chalk_Shirt,Entrances,Fails}.png`,
+  97 moments x 3 builds. No foot below the floor anywhere. Hands cross into the torso only in: TrapSlap (hand on its
+  own shoulder), SitAndLaugh, and on the **Heavy** belly in BeltTighten, MostMuscular, Coach_Talk, WingspanBiceps,
+  WingspanCrunch: the per-build contact fix of Phase 4.
+- **Open for the user / later phases:**
+  1. The squat bar sits **0.08-0.15 into the upper back** on all three prototype bodies (their traps are thicker than
+     the block box the approved arm angles were set on). Suggest fixing it once the Phase 2 bodies exist (the back
+     changes again), with a per-body bar depth next to `squatBarRest`, or moving the hands back ~0.15 for all.
+  2. Hype_CrowdLift: a one-frame catch-up at the top of the first overhead lift (0.69 in 0.025 s; taller's fastest
+     step 0.52). Small; worth a look in Studio.
+  3. The lower-leg PREVIEW box dips 0.06 into the floor at the deadlift fail's bottom (block-box artefact; the real
+     calves don't).
+  4. Fail_*_Bench pictures show the bench fails upright (drawn in the root's frame, not on the bench).
+- **User review 2026-11-13: NOT accepted** (clipping, chicken-wing deadlift arms, hips sitting back, bar into the
+  back). Diagnosis and standards: `References/Character Animation Quality.md`. Measured root causes: the torso table's
+  arms (x1.2) are too short for its torso (x1.35): no correct deadlift set-up exists on it (arms x1.5 make one); the
+  animations use one shoulder width but the six bodies have six (hands land up to 0.6 apart); shared bar contact on
+  different body depths. **APPROVED 2026-11-13: arms x1.5** (user: "1."): torso table arms x1.5 (elbow 3.287, wrist
+  2.148; hands at hip height), deadlift solver fixed (torso rig only), all 84 animations re-made (times identical).
+  The Phase 2 bodies need the longer arms too (TORSO_TALL E/WR in build_cartoon_body_04.py; Phase 2 session).
+
 ### Phase 2: production bodies
 - Six bodies built from the prototype's distance-field method on the shared base (if approved in Phase 0), the
   anatomy checklist in §4, the small in-between steps in §5.5 as per-part width/depth scales in code.
