@@ -236,7 +236,7 @@ def make_body(build, spec, W, bones, faces_part, coll, i):
     return rig
 
 
-SWAP_SHAPES = ("Fist", "Point", "ThumbsUp", "Grip")
+SWAP_SHAPES = ("Fist", "Point", "ThumbsUp", "Grip", "SquatGrip")    # (SquatGrip 2026-11-14: add_squat_grip_05.py)
 
 
 def grip_point(side, spec):
@@ -264,6 +264,10 @@ def swap_hands(build, spec, rig, coll, H):
             o.hide_render = True
             if shape == "Grip":
                 o["grip_point"] = list(grip_point(side, spec))         # in the rig's own space
+            elif shape == "SquatGrip":                                  # (the bar in the palm heel: HEEL_C)
+                sx = 1 if side == "Left" else -1
+                m = Matrix.Translation(Vector((sx * spec["arm_x"], 0, L["WR"]))) @ B["hand_space"](side, spec["hand"])
+                o["grip_point"] = list(m @ Vector(HL["HEEL_C"]))
             made.append(o)
     return made
 

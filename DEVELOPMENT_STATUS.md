@@ -76,7 +76,20 @@ scripts, CartoonGear_05.blend, this file; previews not committed). NOT EXPORTED,
   triangles; meet gear now 5,060-5,226. CHECK PASSED (943 meshes). Picture art/previews/Gear05_WristWraps_BeforeAfter.png.
 - **APPROVED 2026-11-14:** the user approved the thinned set with the new wrist wraps ("Looks right", on
   Gear05_WristWraps_BeforeAfter.png + Gear05_MeetGear.png).
-- NEXT (each with the user's OK): pass the squat set-up wrist bend to the animation work, export GLBs, ClothesConfig keys for
+- 2026-11-14: the squat set-up wrist bend was passed to the animation session ("Phase 1: torso-tall skeleton and
+  animations") at the user's request. That session's answer (user-approved, installed, not committed): new SquatGrip
+  hand (bar in the palm heel), wrist bend now ~59 deg in the hold / 65 at the set-up's worst; a straight wrist is not
+  possible with the approved elbows-back hold and arms x1.5, so the wrap is reshaped instead.
+- **WAITING FOR THE USER'S OK (2026-11-14): wrist wraps tilted for the ~60 deg squat wrist.** build_cartoon_gear_05.py
+  now measures every keyframe of the squat hold, set-up (from 1.2 s, hand on the bar) and 8 fails with the SquatGrip
+  hand, and bench/deadlift with the Grip hand, in the forearm's own frame, and tilts the whole wrap (lower edge up on
+  the front where the hand bends, top following 0.85, rise capped at 70% of the wrap's height). check_gear_05.py has a
+  new wrist test with the game's grip hands (mode "wrists"; also in "clearance"). Wrap points inside the hand, hold:
+  Skinny 0 / Skinny-fat 1 / Fat 3 / Fit 1 (all <= 0.009), Muscular 28 (0.046, was 74 / 0.165), Big and buff 26 (0.065,
+  was 87 / 0.174); set-up worst frame similar; Big and buff bench 13 (0.083, was 0, hidden on the palm side). Wraps
+  644-701 triangles, CHECK PASSED. Built to scratch only (D:\ClaudeScratch\gear05\heel_final.blend, wraps alone);
+  CartoonGear_05.blend NOT rebuilt yet. Picture art/previews/Gear05_WristWraps_SquatGrip_BeforeAfter.png.
+- NEXT (each with the user's OK): rebuild CartoonGear_05.blend with the tilted wraps, export GLBs, ClothesConfig keys for
   TeeUnder/LongSleeve/Tank, uploads, Studio test (Phase 4).
 
 **CARTOON GEAR v3, IN PROGRESS (2026-11-12, session "gear rebuild"), NOT COMMITTED, NOTHING UPLOADED** (approved plan,

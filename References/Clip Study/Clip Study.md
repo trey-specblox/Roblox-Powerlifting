@@ -1,5 +1,10 @@
 # Clip Study
 
+> **Superseded for depth by [[Meet Study]] (2026-11-14):** the same 15 videos plus the full Avancus Houston 2026
+> broadcast, the SBD Sheffield 2026 playlist and the user's fail/record videos were re-watched EVERY SECOND (1 frame
+> per second, close-ups on every lift and celebration). Use [[Meet Study]] and [[Meet Celebration Catalogue]] first;
+> this older 3-second study stays for its CEL-01..71 numbering, which the built celebrations use.
+
 The game's reference study of real powerlifting meets.
 
 On **2026-11-11**, six helpers (batches A-F) watched **15 YouTube videos** of real meets from start to end: IPF Worlds 2026, IPF Junior Worlds 2026, Sheffield 2024-2026 and US record shows. They studied them frame by frame: overview grids every 3 s, then 0.25-1 s close-ups. **The study was muted, so no sound was heard.** Every sound note is inferred from open mouths, claps and contact. Batches B, C and D read some auto-captions (commentary) for context.

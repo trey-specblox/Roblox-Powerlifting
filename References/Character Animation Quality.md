@@ -201,6 +201,170 @@ brace, then unrack.
   the user rejected (2026-11-08), so the accepted trade-off stays; the real heads may change it. The arms swing fast
   there (about 850 degrees a second for a moment) as the body passes under the bar. The squat fails' old floor sink
   is still there (Dramatic_Squat_1 now 0.52, was 0.41; others unchanged 0.05-0.20).
+- **Found 2026-11-14 (gear session, gear v5 wrist wraps): the squat wrists bend far too much**, so the wraps cut into
+  the hand (66-114 points, up to 0.15 deep). Measured in the installed files (hand's long axis vs the forearm):
+  Station_Squat and the squat fails 80 degrees for the whole bar hold, Setup_Squat up to 149 (walk-in / duck-under).
+  A real wrist bends back about 70 at most; under the bar lifters keep it near straight (that is what wraps are for).
+  Cause, measured (what-if search, `D:\ClaudeScratch\squat_wrist_search.py`): with the bar THROUGH the Grip hole the
+  hand can only turn round the bar, so a straight wrist needs the forearm square to the bar, and then the forearm plus
+  the hand to the hole (~1.5) is longer than the elbow can be from the bar (~1.32 at most with arms x1.5): no
+  straight-wrist shape exists. Turning the hand so the bar crosses the palm on a slant (~40-60 degrees) gets the bend
+  to 13-15 degrees, but then the bar cuts through the Grip hand's curled fingers. Real low-bar squatters use a
+  thumbless grip: the bar in the HEEL of the palm, fingers over it, wrist straight. Options for the user: a squat
+  hand shape with the bar at the palm heel (straight wrist), the bar on a slant through the Grip hand (fingers clip),
+  or the bar a little lower on the back. Not changed yet.
+  **Correction, same day:** the "no straight-wrist shape exists" above came from a search with ONE starting arm
+  shape. With many starts: turning the hand round the bar (SQUAT_TURN 60, was 17: the bar rests in the palm, the
+  hand under it) and keeping the straightest-wrist solve gives 27 degrees with the current Grip hand, the elbows
+  DOWN (0.9 under the bar) but slightly in front of it, forearms near upright (the old "elbows back" is what forced
+  80). Palm-heel bar (wrist to bar 0.10-0.15 instead of 0.415) gives 11-12 with the same elbows.
+  Built (scratch `D:\ClaudeScratch\sqfinal2\out`, NOT installed, user chose "Bar in palm heel" before this):
+  station hold + 8 fails 27 degrees, wraps 7-35 points in the hand (was 63-103); Setup_Squat planned by a beam search
+  over arm shapes and hand roll round the bar (`Setup._squat_hand_plan`; `lock_hand` gained `bend_weight`), wrists
+  under ~45 except ~0.25 s in the reach (~70) and ~0.25 s mid-duck (~95, the bar passing over the head); at the
+  set-up's hardest frame the wraps still cut in (51-93 points, was 97-125). Pictures `art/previews/SquatWristQA_*`.
+  **REJECTED by the user (2026-11-14, "TERRIBLE"):** (1) the grip is too wide, against the plates; real lifters
+  grip a little outside the shoulders, and only the big builds (105 kg+) go near the plates; (2) the ELBOWS POINTED
+  FORWARD, against the approved "elbows back and down"; (3) the set-up got worse: the elbows rose level with the
+  head, and in the duck the hand faced the opposite way to the walk with the shoulders and elbows through the bar.
+  The scripts were put back to the approved version (rejected copy kept in
+  `D:\ClaudeScratch\backup_squatwrist_rejected`). Lesson: never trade an approved look for a better number; check
+  every approved rule in the pictures. Measured afterwards (`D:\ClaudeScratch\squat_real_search.py`), with the elbows
+  at or behind the bar and 0.35+ under it, the straightest possible wrist is ~64 degrees with the Grip hand and ~43
+  with a palm-heel bar (grip x 1.45-1.95 barely matters). A straight wrist with the elbows back does not exist with
+  arms x1.5.
+- **Squat, palm-heel grip (2026-11-14, user "Yes, do the plan"; APPROVED "Yes install it", installed: the 10 squat
+  files):**
+  - New "SquatGrip" swap hand (`build_cartoon_hands_04.py` HEEL_C (0, -0.197, -0.19): bar in the heel of the palm,
+    fingers hooked over it, thumb beside the index), 600 triangles, added to every build of
+    CartoonBodies_05_Rigged.blend by `add_squat_grip_05.py` (rig script knows it too); check_models CHECK PASSED.
+  - Grip narrower: Fit 1.67 (outer delt + 0.12; was 1.95). Per build (game IK): delt + 0.12, wide (+0.32) only Fat and
+    Big and buff.
+  - Hold: the hand's turn chosen with the arm so the elbows sit where the approved hold has them (0.72 under,
+    +0.23 behind the bar; `SQUAT_ELBOW_BEHIND` 0.20): wrist 59 degrees (was 80) in the hold and all 8 fails.
+  - Set-up: same approved motion; each frame also tries a start nudged toward the hold (no stuck shapes): worst wrist
+    65 (was 149), fastest moment 703 deg/s (was 819).
+  - Wraps (gear v5, measured with the Grip hand mesh, the palm block is the same): still 57-103 points in the hand in
+    the hold: the gear session reshapes the wrap's lower edge for ~60 degrees.
+  - Pictures `art/previews/SquatHeelQA_*` (before row = the old hand and animation).
+
+### 4.1d Celebrations from the Meet Study (2026-11-14, user: "Men's top celebrations")
+- **First one: MC-010 "HeadClampRoar"** (Legendary; Meet Celebration Catalogue, a -120 kg man's world-record
+  deadlift), waiting for the user's look, NOT installed. 7.0 s, feet planted (every build): up out of the bend,
+  double-biceps roar, arms V head back, hands clamped on the head screaming, crouched "gorilla" roar with fists low,
+  arms-flared roar. Fists via the game's hand swaps (HandShapeConfig spans: both hands Fist 0.85-2.45 and 4.5-6.2 (4.35 put fists on while the hands were still on the head),
+  Phase 4 code). Hand miss 0.004, no foot slide, fastest ~960 deg/s (the arm throws).
+- **Authoring rules learned on it** (celebration_rig): a channel interpolates between ITS OWN keys, so every hold must
+  re-state its hands, elbows and wrists or the hand keeps sliding toward the next pose (the first try's head clamp
+  slid for 1.8 s); on arms x1.5 the old BICEP target is reached with a straight arm (reads as a V): a double biceps
+  needs the fist placed one upper-arm out from the shoulder and ~0.95 up; hands on the head need the wrist bent
+  (lw/rw ~70) or the fingers point up beside the head. Contact with the head is approximate (0.28-0.37 into the
+  stand-in head at the clamp): players' real heads differ in size, so exact contact needs head IK in the game.
+- **Batch 2** (user "Yes, keep going" on HeadClampRoar; waiting for the user's look, NOT installed): GorillaRoar
+  (MC-020, Epic, feet planted), HammerFistRoar (MC-008, Epic), HopSkyPunch (MC-018, Epic, light/middle), FistsBesideHead
+  (MC-064, Uncommon, an NPC signature), SkyPointChalkYes (MC-034, Rare, chalk burst event). Rules added: a raised arm
+  is held a little OUT from the head (SKY_CLEAR; straight up the upper arm sank into the head on the big builds); fists
+  in front of the body sit forward of Fat's belly; feet stay planted (a quick step to a wide stance slid the feet).
+  Leftover body contact 0.1-0.27 on Fat/Muscular at some beats = per-build hand fit (game IK). MC-054 (wings) = the
+  built WingspanHold; MC-017 (belt held up) needs a belt prop in the celebration system (not built).
+- **Found:** two built celebrations come from MISSED lifts (the 0.25 s study): CEL-04 LeapAndBow and CEL-34
+  ReliefRoar; they belong with the fail reactions (user to decide). Large hand misses on built ones were mostly a
+  checker fault (celebration_rig counted blend ends with zero weight; fixed, every existing export byte-identical);
+  two real floor-hand misses remain: SitAndLaugh 0.76, BowAndRise 0.81 (user to decide).
+- **Batch 3** (user "Yes, keep going" on batch 2; waiting for the user's look, NOT installed; builds in
+  D:\ClaudeScratch\celebH\out, pictures art/previews/CelebQA_{HunchedDance,ChalkClapRightHere,VStrutRoar,
+  BackRollLegsUp}_*.png): HunchedDance (MC-022, Epic, loopable dance on a 0.5 s beat), ChalkClapRightHere (MC-004,
+  Legendary, chalk burst + "right here" point), VStrutRoar (MC-011, Epic, high-V hip sway, half-squat roars),
+  BackRollLegsUp (MC-013, Legendary, 8.4 s: sits back, rolls onto the back with both legs up, hands on the face,
+  hands and knees, kneeling scream, claps). QA on Skinny/Fat/Muscular: hand miss <=0.002, lowest -0.02, foot slide
+  <=0.16 (BackRoll sitting up at 4.1, the rest <=0.03), fastest 770-964 deg/s, arm_in_body <=0.39 (Fat, chest/belly
+  beats). Rules added: lying on the back, the knees need a pole target (lk/rk) pointing up, or a knee bends toward
+  the toes and flips as the legs swing over; a kneeling torso this long only reaches the floor folded like the bow
+  (bow_down); a clap held at y 0.6 (chin) lifts the elbows to head height, so claps sit at chest height (y ~0.2);
+  per-joint speed read straight from an rbxmx shows false ~360 deg/frame jumps (q vs -q): trust anim_qa's pop.
+- **Batch 4** (user "Yes, keep going" on batch 3; the top 15 are all built except MC-017, which needs a belt prop, so
+  these come from the catalogue's next wave, solo and prop-free; waiting for the user's look, NOT installed; builds in
+  D:\ClaudeScratch\celebI\out, pictures art/previews/CelebQA_{OneKneeFistPumps,CrucifixTears,SkyFingerArmsCrossed,
+  Gunslinger}_*.png, rendered with the game's hand swaps via QA_SHAPES): OneKneeFistPumps (MC-016, Epic, new
+  `one_knee()` pose: right knee down, left shin upright), CrucifixTears (MC-021, Epic, forearm over the face, sobbing
+  shoulders; ends head down, no coach), SkyFingerArmsCrossed (MC-031, Rare), Gunslinger (MC-051, Epic). Hand shapes
+  (HandShapeConfig, Phase 4): OneKnee both Fist 0.3-5.0; Crucifix both Fist 0.2-0.95; SkyFinger right Point 0.3-1.7,
+  both Fist 2.5-6.3; Gunslinger left Point 0.6-1.95, right Point 0.6-3.55, both Fist 3.6-4.45. QA: hand miss
+  <=0.09, foot slide 0.13 only while rising off the knee, fastest 750-1035 deg/s (the fist pumps), arm_in_body <=0.32.
+  Rules added: on arms x1.5 a folded-arms pose overshoots (the forearm is longer than the chest is wide; the hands
+  stick out past the body), and the wrist only pitches (rx @ ry), so a hand cannot lie flat on the opposite shoulder:
+  crossed arms are built as an X with fists at the opposite shoulders and the elbows low; arms that cross in front
+  of the body go out in front of the belly first (Fat 0.52 -> 0.29).
+- **User notes on batch 4 (2026-11-14):** crucifix palms must face FORWARD and angle slightly UP; the fists-by-the-head
+  should be a real double biceps with straighter arms. Fixed: wrist roll lw=(0, 120) / rw=(0, -120) on the T arms
+  (found with QA_FOCUS close-ups: roll 0 = palm back/thumb down, +90 = palm forward/thumb up, +120 = forward and a
+  little up; the wrist "pitch" does not turn the palm); `_DB_OPEN` = upper arm level (1.09), elbow ~90 deg, forearm
+  straight up (fist 0.85 out, 1.44 up from the shoulder), where `_DB_FIST` (HeadClampRoar) folds tighter.
+- **Batch 5** (user "Yes, keep going" after the palm/biceps fixes; waiting for the user's look, NOT installed; builds
+  in D:\ClaudeScratch\celebJ\out, pictures art/previews/CelebQA_{AreYouNotEntertained,LongVHold,StageEdgeDoubleBiceps,
+  FistsChestCeilingRoar,LightsArmsWideHeadHands}_*.png): AreYouNotEntertained (MC-025, Epic: fist up, chest slap with
+  a chalk puff, still palms-up spread with a slow turn), LongVHold (MC-030, Rare: the super-heavy V held ~3.5 s),
+  StageEdgeDoubleBiceps (MC-035, Epic: standing part only, the bench leg kick needs the bench; uses `_DB_OPEN`),
+  FistsChestCeilingRoar (MC-024, Rare), LightsArmsWideHeadHands (MC-049, Uncommon). Skipped as already built: MC-066
+  = FistSalute (CEL-60), MC-101 = ExitFistPump (CEL-59), MC-036's wingspan = WingspanHold (CEL-46). Hand shapes for
+  Phase 4 are in each clip's comment. QA: hand miss <=0.08, no foot slide, fastest <=836 deg/s, arm_in_body <=0.36
+  (the slap's hand on the chest and the hands on the head: contact). Rules: palms up on a held-out arm = wrist roll
+  175 (`_PALMS_UP`); a raised right arm uses `_SKY_WIDE_R` (SKY_CLEAR grazes Muscular's head); a free hand must be
+  re-stated (lh=REST) on every key until its next pose or it drifts toward that pose (the slap's left arm floated out).
+- **REJECTED (user 2026-11-14), batch 5 slap and hands-on-head:** "elbows are going inside the body ... a unrealistic,
+  bad way ... physically impossible to go backwards with your elbows like that", and asked why the standards keep being
+  forgotten. Honest cause: the rules were stored (§3.2, the ChestSlap rejection) but not re-read, and a 0.35
+  arm_in_body was explained away as "contact". What was done:
+  - **§5.0 standing-rules gate** written; memory `animation-quality-gate`.
+  - **anim_qa.py:** new `elbow_back`, `elbow_back_raised` (hand above the shoulder), `elbow_hyper` (forearm folding
+    toward the back of the upper arm), and a PASS/FAIL line against FAIL_LIMITS, calibrated on approved moves
+    (hanging arms put the elbows ~0.55 behind; the approved entrance ChestSlap pops 1250 deg/s and sits 0.20-0.25 into
+    the big builds).
+  - **Two solver bugs found in celebration_rig.py** (the real reason for elbows swinging behind the body):
+    (1) a key was first solved early in the move, with the elbow hint still blending from the default "down and
+    back", and kept that elbow-behind solution for good (two identical keys of a hold ended 0.91 vs 0.40 behind):
+    keys are now solved with the elbow and wrist the clip gives AT THE KEY'S TIME; (2) between keys the shoulder's
+    raise/swing/twist were blended number by number, so two near-identical arms numbered far apart (swing -195 vs
+    +165) swung the long way round: the shoulder now blends as a rotation (quaternion slerp, `_blend_arm`, exact round
+    trip 2e-7). Every clip re-exported with this rig changes; the installed ones are untouched until re-exported.
+  - **Hands on the head rebuilt:** the old target was BEHIND the head and below its top (head top measured at 2.27 in
+    the chest frame; the hand target is the WRIST and the cartoon hands are ~1 stud long): now the wrists at the sides
+    just under the crown (`_HEAD_CLAMP` 0.88 out), elbows out and up (`_ELBOW_HEAD_SIDE`), wrist (70, -90/+90) so the
+    hands drape over the top. Slap: hand flat on its own pec from the side, elbow out at chest height (as the approved
+    entrance ChestSlap).
+  - **Result:** all 19 new celebrations PASS (builds `D:\ClaudeScratch\celebK\out`).
+- **The 22 INSTALLED celebrations checked (user "Yes, check them", 2026-11-14):** only MilitarySalute, Shhh and
+  WingspanHold pass; rebuilt with the fixed rig, FistSalute passes too (the rest need their poses fixed). Faults
+  (`D:\ClaudeScratch\celebL\summary_installed_keep.txt`; pictures art/previews/CelebQA_Installed_*_Before.png):
+  - hands on the head with the elbows thrown back 0.88-1.11 (the old HEAD_TOP/ELBOW_HEAD hold): DisbeliefPrayer,
+    RecordJumpRoar, ReliefRoar; raised-hand elbows behind: CrowdPleaser, ThankYouWave, LeapAndBow;
+  - a raised arm through the head (upper_in_head 0.15-0.28): SkyPoint, LightsArmsUp, ArmsUpBounce, RecordJumpRoar;
+  - arm snaps 1,500-2,800 deg/s (approved max 1,250): RecordJumpRoar 2,800, DisbeliefPrayer 1,960, BowAndRise 1,650,
+    PointAndPrance 1,570, ArmsUpBounce 1,530;
+  - arms into the body beyond the limits: ThankYouWave (Fat 0.75), BowAndRise, CrouchRoarJump, SitAndLaugh,
+    WingspanBiceps, WingspanCrunch, ChalkClapPump, ExitFistPump, RackSideRoar;
+  - feet sliding 0.11-0.13: RackSideRoar, SitAndLaugh, WingspanBiceps; floor-hand misses SitAndLaugh, BowAndRise.
+  Fixing them changes uploaded animations (new uploads and ids in CelebrationConfig).
+- **INSTALLED (user "Yes, install them", 2026-11-14):** the 19 fixed + 19 new celebrations copied from
+  `D:\ClaudeScratch\celebM\out` into art/animations (checksums match; MilitarySalute, Shhh, WingspanHold untouched;
+  41 Celebrate_ files now). Backup of the previous 22: `D:\ClaudeScratch\backup_celebrations_2026-11-14`. NOT uploaded:
+  CelebrationConfig still points at the OLD uploads; the 19 new ones have no entries, ids, hand-shape spans or
+  soundtracks yet; retimed beats (DisbeliefPrayer roar 2.05, RecordJumpRoar sky pumps 7.3/7.55/7.8 and clap 8.15,
+  PointAndPrance, BowAndRise) need their soundtracks re-lined (make_celebration_tracks.py) after upload.
+- **The 19 failing installed ones FIXED in scratch (user "Yes, fix them all", 2026-11-14):** all PASS
+  (builds `D:\ClaudeScratch\celebM\out`; before/after pictures art/previews/CelebQA_Installed_*_BeforeAfter.png).
+  MilitarySalute, Shhh and WingspanHold passed as installed and are left as they are. Shared fixes: HEAD_TOP = the wrist
+  at the side of the head (0.88 out, 2.3 up) with wrists HEAD_W (100, -/+90) so the hands fold onto the crown, ELBOW_HEAD
+  out and up (never back); SKY out from the head (-1.55); CLAP palms meeting (-0.56); CHEST_HEART on the chest surface
+  (-1.0) with ELBOW_HEART out-down-forward; PUMP_DOWN in front of the deltoid (-0.85); ELBOW_HIGH a touch forward;
+  DB_OPEN_OLD for WingspanBiceps' double biceps. Per clip: snaps slowed (RecordJumpRoar's sky pumps, ArmsUpBounce,
+  PointAndPrance's prance 0.25 s a step and an in-front step before the arms go up, BowAndRise's kneel, DisbeliefPrayer's
+  roar); hands routed round the outside of the body between poses (ThankYouWave, SitAndLaugh, BowAndRise); fists and
+  hands forward of thighs, hips and bellies; feet lifted when they step (RackSideRoar's hop out, SitAndLaugh,
+  WingspanBiceps); BowAndRise kneels leaning forward so the hands reach the floor (miss 0.81 -> 0.14); SitAndLaugh gets
+  up pushing off the knee (the floor behind was out of reach: miss 0.76 -> 0.21) with the propped hand out to the side;
+  RecordJumpRoar's bent-over head hold is a shallower fold (25 deg) with the hands on the head (folded 46 deg the draped
+  hands stuck up in the air). Rule learned: hands leaving the head go up and forward first, or curled fingers dig in.
 
 ### 4.1c Body-contact moves: entrances, celebrations, emotes, chalk (2026-11-13; ChestSlap APPROVED)
 - **Measuring fixed first:** the old "hand in the body" number (nearest-normal test) read ~0.6 on every move, even
@@ -327,6 +491,26 @@ brace, then unrack.
 ---
 
 ## 5. Validation (do this before showing an animation to the user)
+
+### 5.0 The user's standing rules: re-read before EVERY animation, check every picture against them
+(Written 2026-11-14 after the user asked why the same faults keep coming back: "i feel like im telling you to follow
+my standards of quality, and you keep saying you will but you never remember." The rules were stored; they were not
+re-read or applied. This list is the gate.)
+1. **Joints only bend the way a body can.** Elbows bend FORWARD (forearm toward the biceps), never backward; an elbow
+   never points behind the body. Hands on the head: elbows out to the sides, level or a little forward, never back
+   behind the head. Chest slap: the elbow out to the side at chest height, the forearm coming across, never tucked
+   behind or into the ribs. Knees bend toward the toes unless deliberately poled (lying, kneeling). (2026-11-14)
+2. **Nothing passes through the body.** No hand, forearm, elbow or upper arm inside the torso, head or legs; a
+   slap or grab TOUCHES the surface (ChestSlap rejection 2026-11-13: "elbows digging and phasing through").
+3. **A QA number over its limit is a FAIL and gets fixed, never explained away** ("it's contact", "it's per-build
+   fit"). anim_qa.py prints PASS/FAIL against FAIL_LIMITS (arm_in_body 0.15, upper_in_head 0.12, elbow_back 0.45,
+   elbow_hyper 10 deg, foot_slide 0.1, pop 1100 deg/s). Raise a limit only for a stated, wanted reason in the notes.
+4. **Real lifters, real meets.** Copy the studied video (References/Meet Study); squat: elbows back and down, grip
+   just outside the shoulders (wide only 105 kg+), the approved duck-under; never trade an approved look for a metric.
+5. **Hands as the video shows them:** palms facing where the lifter's palms face (crucifix: forward, slightly up;
+   spread: up), fists/points via the game's hand swaps, shown in the QA pictures (QA_SHAPES).
+6. **Poses as the user described them:** double biceps = upper arms out level, forearms straight up (`_DB_OPEN`).
+7. Look at all three builds in front, side and three-quarter before sending; zoom (QA_FOCUS) on hands and elbows.
 
 Tool: `art/scripts/anim_qa.py` (read-only, headless Blender):
 

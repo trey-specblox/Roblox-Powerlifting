@@ -29,7 +29,7 @@ import importlib.util
 import math
 import os
 
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
 
 _HERE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else r"D:\Powerlifting Roblox\art\scripts"
 _spec = importlib.util.spec_from_file_location("station_animations", os.path.join(_HERE, "station_animations.py"))
@@ -157,6 +157,22 @@ def _shoulder(side, a):
     if side == "Left":
         return rz(-a["raise"]) @ rx(a["swing"]) @ ry(a["twist"])
     return rz(a["raise"]) @ rx(a["swing"]) @ ry(-a["twist"])
+
+
+def _blend_arm(side, a, b, u):
+    """Blend two arm solutions: the shoulder as a ROTATION (the shortest turn), the elbow linearly. (2026-11-14: the
+    number-by-number blend of raise/swing/twist swung the arm the long way round, elbows behind the body, between keys
+    whose solutions were near each other but numbered far apart; user: "physically impossible to go backwards".)"""
+    near = _lerp(a, b, u)
+    qa, qb = _shoulder(side, a).to_quaternion(), _shoulder(side, b).to_quaternion()
+    q = qa.slerp(qb, u)
+    sg = 1.0 if side == "Left" else -1.0
+    compat = Euler((math.radians(near["swing"]), math.radians(sg * near["twist"]), math.radians(-sg * near["raise"])),
+                   "YXZ")
+    e = q.to_matrix().to_euler("YXZ", compat)        # (exact round trip, checked: 2e-7)
+    out = dict(near)
+    out["swing"], out["twist"], out["raise"] = math.degrees(e.x), sg * math.degrees(e.y), -sg * math.degrees(e.z)
+    return out
 
 
 def _hip(side, g):
@@ -443,7 +459,10 @@ class Clip:
                 ia, ib, u = blends[s + "h"]
                 ends = [(ia, track.keys[ia][1]), (ib, track.keys[ib][1])]
             solved = []
-            for index, spec in ends:
+            # (the miss is measured only for the end actually shown: at a blend's start the first, at its end the
+            #  second; the other end's target, with ~0 weight, was being counted too, 2026-11-14)
+            shown = 0 if u < 0.02 else (len(ends) - 1 if u > 0.98 else None)
+            for end_i, (index, spec) in enumerate(ends):
                 if spec[0] == "angles":
                     solved.append(dict(spec[1]))
                     continue
@@ -453,25 +472,40 @@ class Clip:
                     target = HRP_M @ S.contact_out(to_root @ target, {"UpperTorso": to_root @ upper,
                                                                       "LowerTorso": to_root @ lower})
                 firm = s + "e" in self.tracks
-                elbow_dir = ch[s + "e"] if firm else auto_elbow(upper, side, target)
+                # The key is solved with the elbow and wrist the clip gives AT THE KEY'S TIME, not the values still
+                # blending in at this frame (2026-11-14: a key first solved early, while the elbow was still blending
+                # from the default "down and back", kept an elbow-behind solution for good; user: "physically
+                # impossible to go backwards").
+                key_t = track.keys[index][0] if (track is not None and index is not None) else t
+                if firm:
+                    ea, eb, eu = self.tracks[s + "e"].at(key_t)
+                    elbow_dir = _lerp(ea, eb, eu)
+                else:
+                    elbow_dir = auto_elbow(upper, side, target)
+                key_wrist = wrist
+                if s + "w" in self.tracks:
+                    wa, wb, wu = self.tracks[s + "w"].at(key_t)
+                    key_wrist = _lerp(wa, wb, wu)
                 warm = self._arm_cache.get((s, index))
                 if warm is None:
                     # First time this key is solved: from several natural arm shapes, keep the best (the least
                     # twisted), so keys blend into each other without the arm swinging through odd shapes.
                     best = None
                     for start in [prev[s + "arm"], *ARM_STARTS]:
-                        candidate = solve_arm(upper, side, target, elbow_dir, start, wrist, firm)
+                        candidate = solve_arm(upper, side, target, elbow_dir, start, key_wrist, firm)
                         if best is None or candidate[1] < best[1]:
                             best = candidate
                     angles = best[0]
                 else:
-                    angles, _ = solve_arm(upper, side, target, elbow_dir, warm, wrist, firm)
+                    angles, _ = solve_arm(upper, side, target, elbow_dir, warm, key_wrist, firm)
                 self._arm_cache[(s, index)] = angles
-                if u < 0.02 or u > 0.98:
+                if shown == end_i:
                     hand = _hand_at(upper, side, angles, wrist)
                     self.worst_hand = max(self.worst_hand, (hand - target).length)
+                    if (hand - target).length > 0.3 and __import__("os").environ.get("CELEB_DEBUG"):
+                        print(f"MISS {self.name} t {t:.2f} {side} {(hand - target).length:.2f} spec {spec}")
                 solved.append(angles)
-            angles = solved[0] if len(solved) == 1 else _lerp(solved[0], solved[1], u)
+            angles = solved[0] if len(solved) == 1 else _blend_arm(side, solved[0], solved[1], u)
             extra = ch.get(s + "h_add")
             if extra is not None and extra.length > 1e-5:
                 angles = _reach(upper, side, _hand_at(upper, side, angles, wrist) + extra, angles, wrist, 12)

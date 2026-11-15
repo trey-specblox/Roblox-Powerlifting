@@ -370,6 +370,157 @@ WRAP_GRIP = 0.012              # both ends pulled in this much (they grip there:
 WRAP_THICK = 0.026             # the wrap's thickness: its inside ~0.024 off the skin
 MEET_TRIS["WristWraps"] = 220
 EDGE_THIN["WristWraps"] = 1
+# 2026-11-14 (the animation session; plan approved by the user): the squat now holds the bar in the heel of the palm
+# (the "SquatGrip" swap hand) with the elbows back and down as approved; with arms x1.5 that leaves the wrist bent back
+# ~60 degrees for the whole bar hold (65 at the set-up's hardest frame), and the base of the hand swung up through the
+# front of the wrap (up to 0.14 above the wrist joint, about a quarter of the way round: 35-110 wrap points inside the
+# hand). The lower edge now RISES there, just enough to clear the posed hands: every keyframe of the squat hold, set-up
+# and fails with the SquatGrip hand, and the bench and deadlift with the Grip hand, measured in the forearm's own frame
+# (the wrap moves with the forearm, so there the hand is a fixed obstacle). The turns and the stripe follow the raised
+# edge and the top rises by WRAP_TOP_FOLLOW of the lift: the wrap is tilted, wound on a slant, not notched. Capped at
+# WRAP_LIFT_CAP of its height: the biggest hands (Muscular, Big and buff) need more than the whole wrap, so there the
+# base of the hand still covers a little of its lower front in the squat.
+# (animation, hand shape, from, to seconds): "Open" = the body's own hand. The squat set-up reaches for the bar from
+# 0.45 s to 1.2 s (setup_animations.py) with the open hand, then holds it in the SquatGrip hand.
+WRAP_HAND_POSES = tuple((a, "SquatGrip", 0.0, 99.0) for a in (
+    "Station_Squat", "Fail_Squat_1", "Fail_Squat_2", "Fail_Bailout_Squat_1", "Fail_Bailout_Squat_2",
+    "Fail_Dramatic_Squat_1", "Fail_Dramatic_Squat_2", "Fail_Grinder_Squat_1", "Fail_Grinder_Squat_2")) + \
+    (("Setup_Squat", "SquatGrip", 1.2, 99.0), ("Station_Bench", "Grip", 0.0, 99.0),
+     ("Station_Deadlift", "Grip", 0.0, 99.0))
+# (Left out: the set-up's reach, 0.45-1.2 s, the open hand swinging up to the bar: it touched the wrap's lower edge
+# all the way round for that half second, and clearing it shrank the whole wrap.)
+WRAP_CLEAR = 0.012             # room kept between any posed hand and the wrap
+WRAP_EDGE_GAP = 0.02           # the edge sits this much above the highest wrap point the hand would reach
+# Tried (pictures 2026-11-14): one local rise (half-width 50-150) read as a deep U-notch on the front, several made
+# chevrons and a zig-zag stripe; a half-height rise left the hand over the wrap. A rise of half-width 180 with the top
+# following it is the whole wrap TILTED (a plane through a tube): it reads as a wrap wound on a slant.
+WRAP_LIFT_WIDTH = 180.0        # degrees round the arm: the narrowest half-width of the rise
+WRAP_LIFT_MAX_WIDTH = 180.0    # ... and the widest
+WRAP_LIFT_CAP = 0.7            # the rise never takes more than this share of the wrap's height
+WRAP_TOP_FOLLOW = 0.85         # the top edge rises by this share of the lower edge's rise
+WRAP_LIFT_BINS = 72
+if os.environ.get("GEAR05_WRAP_KNOBS"):          # trials: "cap,top_follow,min_width,max_width"
+    WRAP_LIFT_CAP, WRAP_TOP_FOLLOW, WRAP_LIFT_WIDTH, WRAP_LIFT_MAX_WIDTH = \
+        [float(x) for x in os.environ["GEAR05_WRAP_KNOBS"].split(",")]
+
+
+def wrap_hand_obstacles(body):
+    """{1 (left) / -1 (right): [(lo, hi, BVHTree, label)]}: each distinct posed swap hand of WRAP_HAND_POSES, carried
+    into the forearm's REST frame (rig space). Repeated poses (the long hold) are kept once."""
+    from mathutils import Vector
+    from mathutils.bvhtree import BVHTree
+    rig = body.rig
+    to_rig = rig.matrix_world.inverted()
+    out = {1: [], -1: []}
+    seen = {1: set(), -1: set()}
+    try:
+        for anim, shape, t0, t1 in WRAP_HAND_POSES:
+            if not os.path.exists(os.path.join(F["ANIMS"], anim + ".rbxmx")):
+                log(body.build, "wrap obstacles: no", anim)
+                continue
+            for t, data in F["read_anim"](anim):
+                if not t0 <= t < t1:
+                    continue
+                F["pose_rig"](rig, data)
+                for side, sx in (("Left", 1), ("Right", -1)):
+                    name = "%s_%sHand" % (body.build, side) if shape == "Open" else "%s_%s%s" % (body.build, shape, side)
+                    hand = bpy.data.objects.get(name)
+                    assert hand is not None, name + " missing (add_squat_grip_05.py)"
+                    fa = rig.pose.bones[side + "LowerArm"]
+                    # (the open hand is skinned: its drawn points; the swap hands ride their bone)
+                    pts, faces = F["evaluated_points"](hand, rig)
+                    m = fa.bone.matrix_local @ fa.matrix.inverted()
+                    hb = rig.pose.bones[side + "Hand"]
+                    rel = m @ hb.matrix
+                    key = (shape,) + tuple(round(rel[r][c], 2) for r in range(3) for c in range(4))
+                    if key in seen[sx]:
+                        continue
+                    seen[sx].add(key)
+                    pts = [m @ p for p in pts]
+                    lo = Vector([min(p[i] for p in pts) for i in range(3)])
+                    hi = Vector([max(p[i] for p in pts) for i in range(3)])
+                    out[sx].append((lo, hi, BVHTree.FromPolygons(pts, faces), "%s@%.2f" % (anim, t)))
+    finally:
+        F["rest_rig"](rig)
+    return out
+
+
+def wrap_lift(body, skin, z_lo, z_hi, centre):
+    """{sx: (lift per angle bin, worst label)}: how far the lower edge must rise at each angle round the arm (angle 0 =
+    the arm's outer side, measured in the forearm's own x / z axes, mirrored on the right) so that no posed hand
+    comes within WRAP_CLEAR of where the wrap lies (its inside to its outermost turn)."""
+    from mathutils import Vector
+    obst = wrap_hand_obstacles(body)
+    ang = np.radians(np.arange(WRAP_LIFT_BINS) * 360.0 / WRAP_LIFT_BINS)
+    zs = np.arange(z_lo, z_hi + 1e-6, 0.01)
+    out = {}
+    for sx in (1, -1):
+        cx, cy = centre[sx]
+        A, Z = np.meshgrid(ang, zs, indexing="ij")
+        D = np.stack([sx * np.cos(A).ravel(), np.sin(A).ravel(), np.zeros(A.size)], axis=1)
+        C = np.stack([np.full(A.size, cx), np.full(A.size, cy), Z.ravel()], axis=1)
+        flagged = np.zeros(A.size, dtype=bool)
+        worst = np.full(A.size, "", dtype=object)
+        bounds = [z_lo + (z_hi - z_lo) * k / WRAP_TURNS for k in range(1, WRAP_TURNS)]
+        turn_out = WRAP_OUT + WRAP_STEP * sum((Z.ravel() > b).astype(float) for b in bounds)   # each turn's outside
+        for off in (WRAP_OUT - WRAP_THICK, turn_out - WRAP_THICK / 2, turn_out):
+            lo, hi = np.zeros(A.size), np.full(A.size, 0.9)
+            for _ in range(14):                       # where the skin is `off` away, out along each ray
+                mid = (lo + hi) / 2
+                inside = skin((C + D * mid[:, None]).astype(np.float32)) < off
+                lo, hi = np.where(inside, mid, lo), np.where(inside, hi, mid)
+            X = C + D * hi[:, None]
+            for i, p in enumerate(X):
+                if flagged[i]:
+                    continue
+                q = Vector(p.tolist())
+                for blo, bhi, tree, label in obst[sx]:
+                    if any(q[k] < blo[k] - 0.05 or q[k] > bhi[k] + 0.05 for k in range(3)):
+                        continue
+                    loc, nrm, _i, d = tree.find_nearest(q)
+                    if loc is not None and (d if (q - loc).dot(nrm) >= 0 else -d) < WRAP_CLEAR:
+                        flagged[i], worst[i] = True, label
+                        break
+        need = np.full(WRAP_LIFT_BINS, -9.0)
+        need_by = [""] * WRAP_LIFT_BINS
+        who = ""
+        Zf = Z.ravel()
+        for i in np.nonzero(flagged)[0]:
+            b = i // len(zs)
+            if Zf[i] > need[b]:
+                need[b] = Zf[i]
+                need_by[b] = worst[i]
+                if Zf[i] >= need.max():
+                    who = worst[i]
+        if os.environ.get("GEAR05_WRAP_DEBUG"):
+            for b in range(WRAP_LIFT_BINS):
+                if need[b] > -9:
+                    log(body.build, "WrapNeed", sx, int(b * 360 / WRAP_LIFT_BINS), "%.3f" % (need[b] - z_lo), need_by[b])
+        raw = np.where(need > -9, np.maximum(0.0, need + WRAP_EDGE_GAP - z_lo), 0.0)
+        raw = np.minimum(raw, WRAP_LIFT_CAP * (z_hi - z_lo))
+        deg = np.arange(WRAP_LIFT_BINS) * 360.0 / WRAP_LIFT_BINS
+        # ONE smooth rise (several overlapping ones made chevrons and a zig-zag stripe): as high as the highest need,
+        # centred and as narrow as still covers every angle's need (WRAP_LIFT_WIDTH..WRAP_LIFT_MAX_WIDTH half-width)
+        lift = np.zeros(WRAP_LIFT_BINS)
+        if raw.max() > 0:
+            amp = raw.max()
+            best = None
+            for w in np.arange(WRAP_LIFT_WIDTH, WRAP_LIFT_MAX_WIDTH + 1e-6, 5.0):
+                for c in deg:
+                    dd = np.abs((deg - c + 180.0) % 360.0 - 180.0)
+                    bump = amp * np.where(dd < w, 0.5 * (1 + np.cos(np.pi * dd / w)), 0.0)
+                    short = np.maximum(0.0, raw - bump).max()
+                    if best is None or short < best[0] - 1e-9:
+                        best = (short, bump)
+                if best[0] <= 1e-9:
+                    break
+            lift = best[1]
+            if best[0] > 0:
+                log(body.build, "WristWraps", "edge rise short of the need by up to %.3f" % best[0])
+        out[sx] = (lift, who)
+        log(body.build, "WristWraps", "left" if sx > 0 else "right", "edge rise up to %.3f at %d deg (%s); %d hand "
+            "poses" % (lift.max(), int(deg[int(np.argmax(lift))]), who, len(obst[sx])))
+    return out
 
 
 def build_wrist_wraps_05(body, coll):
@@ -397,30 +548,72 @@ def build_wrist_wraps_05(body, coll):
             out[i] = best
         return out
 
+    # the raised edge (WRAP_HAND_POSES): angle round each forearm's axis (vertical at rest, through the wrist joint)
+    centre = {sx: (body.joints[side + "Hand"].x, body.joints[side + "Hand"].y)
+              for side, sx in (("Left", 1), ("Right", -1))}
+    lifts = wrap_lift(body, skin, z_lo, z_hi, centre)
+    bins_deg = np.arange(WRAP_LIFT_BINS) * 360.0 / WRAP_LIFT_BINS
+
+    def lift_at(X):
+        out = np.zeros(len(X))
+        for sx in (1, -1):
+            sel = (X[:, 0] > 0) if sx > 0 else (X[:, 0] <= 0)
+            if sel.any():
+                cx, cy = centre[sx]
+                a = np.degrees(np.arctan2(X[sel, 1] - cy, sx * (X[sel, 0] - cx))) % 360.0
+                out[sel] = np.interp(a, bins_deg, lifts[sx][0], period=360.0)
+        return out
+
+    def edges(X):
+        lf = lift_at(X)
+        return z_lo + lf, z_hi + WRAP_TOP_FOLLOW * lf
+
+    def u_of(X):
+        """Height along the wrap as if it were level: z_lo at its (raised) lower edge, z_hi at its top."""
+        lo, hi = edges(X)
+        return z_lo + (X[:, 2] - lo) * (z_hi - z_lo) / (hi - lo)
+
+    def z_of(X, u):
+        lo, hi = edges(X)
+        return lo + (u - z_lo) * (hi - lo) / (z_hi - z_lo)
+
     def fn(X):
-        z = X[:, 2]
+        z = u_of(X)
         off = WRAP_OUT + sum(WRAP_STEP * smooth(b - 0.006, b + 0.006, z) for b in bounds)
         ends = np.maximum(1.0 - smooth(z_lo, z_lo + 0.03, z), smooth(z_hi - 0.03, z_hi, z))
         return skin(X) - (off - WRAP_GRIP * ends)
+    top = z_hi + WRAP_TOP_FOLLOW * max(lifts[1][0].max(), lifts[-1][0].max())
     sides = []
     for side, sx in (("Left", 1), ("Right", -1)):
         jx = body.joints[side + "Hand"].x
         s = W["iso_mesh"]("%s_WristWrap%s" % (body.build, side), fn, (jx - 0.6, -0.6, z_lo - 0.08),
-                          (jx + 0.6, 0.6, z_hi + 0.08), coll)
+                          (jx + 0.6, 0.6, top + 0.08), coll)
         sides.append(s)
     o = join_into(sides[0], sides[1:])
     o.name = body.build + "_WornWristWrap"
     W["apply_mod"](o, "SMOOTH", factor=0.5, iterations=3)
     W["apply_mod"](o, "DECIMATE", ratio=min(1.0, 3000 / max(1, tris(o))), use_symmetry=False)
-    keep = lambda X: (X[:, 2] >= z_lo) & (X[:, 2] <= z_hi)
-    rules = [(lambda X: X[:, 2] < z_lo + 0.1, lambda X: X[:, 2] - z_lo),
-             (lambda X: X[:, 2] > z_hi - 0.1, lambda X: X[:, 2] - z_hi)]
+    keep = lambda X: (u_of(X) >= z_lo) & (u_of(X) <= z_hi)
+    rules = [(lambda X: u_of(X) < z_lo + 0.1, lambda X: X[:, 2] - edges(X)[0]),
+             (lambda X: u_of(X) > z_hi - 0.1, lambda X: X[:, 2] - edges(X)[1])]
     with Thin("WristWraps"):
         W["cut_shell"](o, fn, keep, rules, 360)
     mid = (bounds[0] + bounds[1]) / 2 if len(bounds) > 1 else (z_lo + z_hi) / 2
     st_lo, st_hi = mid - 0.018, mid + 0.018
+    # the stripe's two lines follow the slant: cut flat in the level heights, then put back
+    me = o.data
+    P = np.array([v.co[:] for v in me.vertices], dtype=np.float64)
+    U_ = u_of(P)
+    for v, uu in zip(me.vertices, U_):
+        v.co.z = uu
     W["bisect"](o, [((0, 0, st_lo), (0, 0, 1)), ((0, 0, st_hi), (0, 0, 1))])
-    W["face_keys"](o, lambda C: np.where((C[:, 2] > st_lo) & (C[:, 2] < st_hi), "Stripes", "Body"))
+    me = o.data
+    P = np.array([v.co[:] for v in me.vertices], dtype=np.float64)
+    Zr = z_of(P, P[:, 2])
+    for v, zz in zip(me.vertices, Zr):
+        v.co.z = zz
+    me.update()
+    W["face_keys"](o, lambda C: np.where((u_of(C) > st_lo) & (u_of(C) < st_hi), "Stripes", "Body"))
     F["push_clear"](o, body, WRAP_THICK + 0.008, region="All")
     # held by the forearm: with the hand's share the bottom turn twisted and crumpled when the hand turned palm-in at
     # the wrist (the deadlift grip); it now ends just under the joint, and pose_relief makes room where the hand
@@ -442,7 +635,12 @@ def build_wrist_wraps_05(body, coll):
             t = (z - wr.z) / max(1e-6, el.z - wr.z)
             return wr + (el - wr) * t
         outer = 0.0 if sx > 0 else math.pi
-        path = [(outer + 1.0 * (t - 0.5), z_t) for t in [i / 8 for i in range(9)]]
+        path = []
+        for t in [i / 8 for i in range(9)]:
+            a = outer + 1.0 * (t - 0.5)
+            cx, cy = centre[sx]
+            Xa = np.array([[cx + math.cos(a), cy + math.sin(a), z_t]])
+            path.append((a, float(z_of(Xa, np.array([z_t]))[0])))     # the top turn's middle, on the slant
         target = [p for k, p in pieces.items()]
         tx = V["limb_overlay"](body, coll, target, axis, path, 0.06, 0.010, body.build + "_WristText" + side,
                                uv=(u0, u1, v_top - 0.25, v_top))

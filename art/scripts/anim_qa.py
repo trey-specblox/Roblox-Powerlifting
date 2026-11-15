@@ -11,6 +11,9 @@
 #       bar_in_body   deepest point of the bar shaft inside the body (hands excluded)
 #       hand_to_bar   while a hand grips: its centre's distance from the bar's axis
 #       elbow         elbow bend (degrees; 0 = straight) of each arm
+#       elbow_back    how far an elbow sits behind its shoulder, along the chest's back (studs)
+#       elbow_hyper   a bent forearm folding toward the BACK of its upper arm, i.e. the wrong way (degrees)
+#     ending with PASS or FAIL against FAIL_LIMITS (a FAIL gets fixed, not explained away)
 #       foot_floor    lowest foot point below the floor; foot_slide: a planted ankle moving between keyframes
 #       pop           the fastest joint turn between keyframes (degrees per second): a jump/hitch in the motion
 #     and for lifts the mechanics (from the joints): shin lean (+ = knee ahead of the ankle), hip above knee, back angle
@@ -204,7 +207,7 @@ def grip_at(b, world, side):
     if not USE_GRIP_POINT:
         return hand_centre(b, world, side)
     size = HAND_SIZE.get(b, 1.22)
-    d, h = 0.135 * size + 0.07, 0.34 * size - 0.125
+    d, h = 0.135 * size + 0.07, (0.13 if GRIP_SHAPE == "SquatGrip" else 0.34) * size - 0.125   # (squat: the palm heel)
     local = Vector((d if side == "Left" else -d, -0.125 - h, 0))
     return at(b, world, side + "Hand", J[b][side + "Hand"] + local)
 
@@ -259,10 +262,10 @@ def build_ik(b, frames, t, force_held=False):
     world = frames_of(b, frames)
     held = force_held or (HELD and HELD[0] <= t < HELD[1])
     size = HAND_SIZE.get(b, 1.22)
-    d, h = 0.135 * size + 0.07, 0.34 * size - 0.125
+    d, h = 0.135 * size + 0.07, (0.13 if GRIP_SHAPE == "SquatGrip" else 0.34) * size - 0.125   # (squat: the palm heel)
     out = dict(frames)
     for side, s in (("Left", -1), ("Right", 1)):
-        gx = SQUAT_DELT[b] + 0.32
+        gx = SQUAT_DELT[b] + (0.32 if b in ("Fat", "BigBuff") else 0.12)   # (grip: a little outside the delts; wide only 105kg+ builds, user 2026-11-14)
         if held:
             goal = at(b, world, "UpperTorso", Vector((s * gx, SQUAT_BAR_Y, bar_spot_z(b))))
         else:
@@ -305,6 +308,8 @@ def build_ik(b, frames, t, force_held=False):
 
 
 GRIP_SHAPE = "Grip" if bpy.data.objects.get("%s_GripLeft" % BUILDS[0]) else "Fist"      # (the Grip swap once it exists)
+if "Squat" in ANIM and bpy.data.objects.get("%s_SquatGripLeft" % BUILDS[0]) and os.environ.get("QA_OLD_SQUAT_HAND") != "1":
+    GRIP_SHAPE = "SquatGrip"            # (the squat's thumbless palm-heel grip, 2026-11-14; QA_OLD_SQUAT_HAND=1: the Grip)
 
 
 # QA_SHAPES="Right:Point:2.4:2.85;Left:Fist:0.2:1.0": the game's other hand swaps (HandShapeConfig) in those spans
@@ -319,14 +324,14 @@ def set_hands(b, fist, t=None):
             if sd == side and t is not None and t0 <= t < t1:
                 shape = sh
         bpy.data.objects["%s_%sHand" % (b, side)].hide_render = shape is not None
-        for s in ("Fist", "Grip", "Point", "ThumbsUp"):
+        for s in ("Fist", "Grip", "SquatGrip", "Point", "ThumbsUp"):
             o = bpy.data.objects.get("%s_%s%s" % (b, s, side))
             if o:
                 o.hide_render = s != shape
 
 
 def visible_hand(b, side):
-    for s in ("Grip", "Fist", "Point", "ThumbsUp"):
+    for s in ("SquatGrip", "Grip", "Fist", "Point", "ThumbsUp"):
         o = bpy.data.objects.get("%s_%s%s" % (b, s, side))
         if o and not o.hide_render:
             return o
@@ -454,6 +459,24 @@ def mechanics(b, world, bar_r):
         arm += math.degrees(math.atan2(-((ua + la).dot(fwd)), -(ua + la).y)) / 2
     out["elbow"] = max(elbows)
     out["arm_from_vertical"] = arm
+    # (user 2026-11-14: "elbows are going a unrealistic, bad way ... physically impossible to go backwards")
+    back = (world["UpperTorso"].to_3x3() @ Vector((0, 0, 1))).normalized()     # the chest's back (it faces -Z)
+    eb, ebr, hyper = 0.0, 0.0, 0.0
+    up_dir = (world["UpperTorso"].to_3x3() @ Vector((0, 1, 0))).normalized()
+    for side in ("Left", "Right"):
+        sh, el = p(side + "UpperArm"), p(side + "LowerArm")
+        wr = p(side + "Hand")
+        eb = max(eb, (el - sh).dot(back))
+        if (wr - sh).dot(up_dir) > 0.3:          # hand raised above the shoulder (on the head, a fist up, ...)
+            ebr = max(ebr, (el - sh).dot(back))
+        u, v = (el - sh).normalized(), (wr - el).normalized()
+        if math.degrees(u.angle(v)) > 25.0:
+            front = (world[side + "UpperArm"].to_3x3() @ Vector((0, 0, -1))).normalized()   # the biceps side
+            bend = (v - u * v.dot(u)).normalized()
+            hyper = max(hyper, math.degrees(math.asin(max(0.0, min(1.0, -bend.dot(front))))))
+    out["elbow_back"] = eb             # elbow behind the shoulder, along the chest's back (studs)
+    out["elbow_back_raised"] = ebr     # the same while that hand is raised above the shoulder
+    out["elbow_hyper"] = hyper         # the forearm bending toward the BACK of the upper arm (degrees; 0 = fine)
     if bar_r is not None:
         top = mid(at(b, world, "LeftUpperArm", j["LeftUpperArm"] + Vector((-0.5, 0, 0))),
                   at(b, world, "RightUpperArm", j["RightUpperArm"] + Vector((0.5, 0, 0))))
@@ -644,7 +667,20 @@ if "Squat" in ANIM and any(f.endswith("@ik") for _t, f in FOLDERS):
     calibrate_squat_backs(next(f for _t, f in FOLDERS if f.endswith("@ik"))[:-3])
 
 
-KEYS = ["arm_in_body", "upper_in_head", "bar_in_body", "hand_to_bar", "elbow", "foot_floor", "foot_slide", "pop",
+# Hard limits (a FAIL is fixed, never explained away; user 2026-11-14 after an arm-in-chest slap and backward elbows).
+# QA_FAIL_LIMITS="arm_in_body=0.2" overrides one for a move with real, wanted contact (say why in the move's notes).
+# Calibrated 2026-11-14 on approved moves: arms hanging put the elbows ~0.55 behind the shoulders (normal); the approved
+# entrance ChestSlap reaches pop 1250 and arm_in_body 0.20-0.25 on the big builds (their per-build fit = game IK, §3.3).
+# arm_in_body: 0.15 on the first (slimmest) build, BIG_BUILD_ARM on the others.
+FAIL_LIMITS = {"arm_in_body": 0.15, "upper_in_head": 0.12, "elbow_back": 0.75, "elbow_back_raised": 0.4,
+               "elbow_hyper": 10.0, "foot_slide": 0.1,
+               "pop": 1300.0}
+BIG_BUILD_ARM = 0.26        # (the approved entrance ChestSlap sits at 0.25 on Muscular)
+for _f in os.environ.get("QA_FAIL_LIMITS", "").split(";"):
+    if "=" in _f:
+        FAIL_LIMITS[_f.split("=")[0].strip()] = float(_f.split("=")[1])
+KEYS = ["arm_in_body", "upper_in_head", "bar_in_body", "hand_to_bar", "elbow", "elbow_back", "elbow_back_raised", "elbow_hyper",
+        "foot_floor", "foot_slide", "pop",
         "shin_lean", "hip_above_knee", "back", "arm_from_vertical", "shoulder_ahead_of_bar", "bar_ahead_of_midfoot",
         "centre_ahead_of_midfoot"]
 report = ["# %s quality numbers (anim_qa.py, %s)\n" % (ANIM, ", ".join(BUILDS)),
@@ -667,11 +703,21 @@ for tag, folder in FOLDERS:
         for b in BUILDS:
             report.append("| %s | %s |\n" % (b, " | ".join("%.2f" % r[b].get(k, float("nan")) if k in r[b] else "-" for k in KEYS)))
     report.append("\n**worst over the animation**\n\n| | arm_in_body | upper_in_head | bar_in_body | hand_to_bar | "
-                  "foot_floor | foot_slide | pop (deg/s) |\n|---|---|---|---|---|---|---|---|\n")
-    for b in BUILDS:
+                  "foot_floor | foot_slide | pop (deg/s) | elbow_back | elbow_back_raised | elbow_hyper |\n"
+                  "|---|---|---|---|---|---|---|---|---|---|---|\n")
+    fails = []
+    for bi, b in enumerate(BUILDS):
         w = {k: max(rows, key=lambda r: r[b].get(k, 0.0)) for k in ("arm_in_body", "upper_in_head", "bar_in_body",
-                                                                   "hand_to_bar", "foot_floor", "foot_slide", "pop")}
-        report.append("| %s | %s |\n" % (b, " | ".join("%.2f (t %.2f)" % (w[k][b][k], w[k]["t"]) for k in w)))
+                                                                   "hand_to_bar", "foot_floor", "foot_slide", "pop",
+                                                                   "elbow_back", "elbow_back_raised", "elbow_hyper")}
+        report.append("| %s | %s |\n" % (b, " | ".join("%.2f (t %.2f)" % (w[k][b].get(k, 0.0), w[k]["t"]) for k in w)))
+        for k, limit in FAIL_LIMITS.items():
+            if k == "arm_in_body" and bi > 0:
+                limit = max(limit, BIG_BUILD_ARM)
+            if k in w and w[k][b].get(k, 0.0) > limit:
+                fails.append("%s %s %.2f at t %.2f (limit %.2f)" % (b, k, w[k][b][k], w[k]["t"], limit))
+    report.append("\n**%s**\n" % ("FAIL: " + "; ".join(fails) if fails else "PASS (limits)"))
+    print("[AnimQA] " + ("FAIL " + " | ".join(fails) if fails else "PASS (limits)"))
 open(os.path.join(OUT, ANIM + "_qa.md"), "w", encoding="utf-8").write("".join(report))
 print("".join(report))
 

@@ -44,6 +44,7 @@ SHAPES = {
     "Point": {"curled": ("Middle", "Ring", "Pinky"), "thumb": "across"},
     "ThumbsUp": {"curled": ("Index", "Middle", "Ring", "Pinky"), "thumb": "up"},
     "Grip": {"curled": (), "thumb": "grip"},          # wrapped round the bar: grip_finger / grip_thumb below
+    "SquatGrip": {"curled": (), "thumb": "beside"},   # the squat's thumbless grip, bar in the palm heel: heel_field below
 }
 # GRIP (asked 2026-11-13 for the deadlift, later every lift: "make sure the fingers are actually wrapped around
 # grabbing it"): a bar hole along hand-space X at GRIP_C, the palm's front face (y -0.135) plus the hole's radius, at the
@@ -138,9 +139,54 @@ def grip_field(P):
     return np.maximum(d, -hole)
 
 
+# SQUAT GRIP (2026-11-14, user: "Bar in palm heel"; the wrist wraps cut into the hand with the Grip's bar at the finger
+# base): the low-bar thumbless grip. The bar lies across the HEEL of the palm, close to the wrist (HEEL_C, along
+# hand-space X like GRIP_C), so the wrist can stay nearer straight with the elbows back and down; the four fingers hook
+# over the far side of the bar and the thumb lies beside the index on the same side (no thumb round the bar).
+# The game's grip point for the squat is HEEL_C in hand space.
+HEEL_C = (0.0, -0.197, -0.19)
+
+
+def heel_finger(P, name):
+    x, r, lift, _length = FINGERS[name]
+    root = v3(x, -0.005, KNUCKLE_Z + lift + 0.02)
+    p1 = root + v3(0.0, -0.065, -0.075)                       # on down, turning toward the palm side
+    p2 = v3(x, -0.185, KNUCKLE_Z + lift - 0.035)              # round under ...
+    tip = v3(x, -0.275, KNUCKLE_Z + lift + 0.075)             # ... and back up over the bar's far side (a hook)
+    return np.minimum(np.minimum(round_cone(P, root, p1, r, r * 0.96), round_cone(P, p1, p2, r * 0.96, r * 0.92)),
+                      round_cone(P, p2, tip, r * 0.92, r * 0.86))
+
+
+def heel_thumb(P):
+    root = v3(0.15, -0.045, -0.15)
+    pts = [root + v3(0.0, -0.075, -0.10), root + v3(-0.025, -0.15, -0.165)]      # beside the index, same side
+    base = round_cone(P, root + v3(-0.05, 0.02, 0.04), root, 0.085, 0.078)
+    seg = np.minimum(round_cone(P, root, pts[0], 0.076, 0.07), round_cone(P, pts[0], pts[1], 0.07, 0.064))
+    return smin(base, seg, 0.03)
+
+
+def heel_field(P):
+    palm = round_box(P, v3(0, 0.0, -0.23), v3(0.205, 0.135, 0.175), 0.11)
+    wrist = ellipsoid(P, v3(*WRIST), v3(0.115, 0.088, 0.10))
+    d = smin(palm, wrist, 0.06)
+    fingers = None
+    for name in FINGERS:
+        x, r, lift, _l = FINGERS[name]
+        knuckle = ellipsoid(P, v3(x, 0.045, KNUCKLE_Z + lift + 0.02), v3(r * 0.92, r * 1.0, r * 0.92))
+        d = smin(d, knuckle, 0.035)
+        f = heel_finger(P, name)
+        fingers = f if fingers is None else np.minimum(fingers, f)       # hard creases between fingers
+    d = smin(d, fingers, 0.03)
+    d = smin(d, heel_thumb(P), 0.03)
+    hole = np.sqrt((P[:, 1] - HEEL_C[1]) ** 2 + (P[:, 2] - HEEL_C[2]) ** 2) - (GRIP_R + 0.002)
+    return np.maximum(d, -hole)
+
+
 def hand_field(P, shape):
     if shape == "Grip":
         return grip_field(P)
+    if shape == "SquatGrip":
+        return heel_field(P)
     palm = round_box(P, v3(0, 0.0, -0.23), v3(0.205, 0.135, 0.175), 0.11)            # a chunky rounded block
     wrist = ellipsoid(P, v3(*WRIST), v3(0.115, 0.088, 0.10))                         # turns in place in the forearm
     d = smin(palm, wrist, 0.06)
@@ -228,7 +274,7 @@ def unfold(obj, passes=6):
 
 def make_hand(shape, coll, name=None):
     name = name or ("Hand04_" + shape)
-    lo = (-0.36, -0.58, -0.70) if shape == "Grip" else (-0.36, -0.40, -0.70)
+    lo = (-0.36, -0.58, -0.70) if shape in ("Grip", "SquatGrip") else (-0.36, -0.40, -0.70)
     me = mesh_field(name, lambda P: hand_field(P, shape), lo, (0.38, 0.24, 0.10))
     obj = bpy.data.objects.new(name, me)
     coll.objects.link(obj)

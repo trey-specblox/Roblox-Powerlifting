@@ -634,9 +634,47 @@ def palm_contact(pose, side, spot, fingers, w, start, below=0.25, facing=None):
 # back depth and shoulder width (Skinny back 0.39 ... Big and buff 0.72; delts 1.23 ... 2.03) is the game's per-build
 # hand IK (anim_qa.py QA_BUILD_IK previews it).
 SQUAT_BAR_REST = Vector((0.0, 4.30, 0.556 + 0.07 + 0.01))   # standing, from the floor (Roblox; +Z = behind): Fit's back
-SQUAT_GRIP_X = 1.95                                         # each hand's Grip hole out from the centre
-SQUAT_PALM, SQUAT_FINGERS = Vector((0.0, 0.3, -1.0)), Vector((0.0, 1.0, 0.3))   # palms forward, fingers up over the bar
+# Grip width (2026-11-14, user: the 1.95 grip was "right up against the plates", "only bigger builds should be doing
+# that like 105kgs+"): a little outside the shoulders, Fit's outer delt (1.55) + 0.12. Per build (the game's per-build
+# hand IK): delt + 0.12 for Skinny, Skinny-fat, Fit, Muscular; wide near the plates only for Fat and Big and buff.
+SQUAT_GRIP_X = 1.67                                         # each hand's grip point out from the centre
+# The squat's thumbless grip (user 2026-11-14 "Bar in palm heel"; the wrist wraps cut into the hand at the Grip's 80
+# degrees): the "SquatGrip" swap hand, the bar in the HEEL of the palm (build_cartoon_hands_04.HEEL_C (0, -0.197,
+# -0.19) in hand space, at Fit's hand size), much closer to the wrist than the Grip hole, so the wrist can stay nearer
+# straight while the elbows stay BACK AND DOWN (approved 2026-11-13; never pointed forward).
+SQUAT_GRIP_POINT = Vector((0.135 * 1.22 + 0.07, -(0.13 * 1.22 - 0.125), 0.0))
+# The hand's turn round the bar is chosen with the arm: of the shapes with the elbows at least SQUAT_ELBOW_UNDER below
+# the bar and SQUAT_ELBOW_BEHIND behind it (as far back as the approved hold), the straightest wrist. Measured
+# 2026-11-14: 59 degrees (the approved hold with the Grip hand: 80); elbows only level with the bar would allow 46, a
+# straight wrist only with the elbows forward, which the user rejected.
+SQUAT_ELBOW_UNDER, SQUAT_ELBOW_BEHIND = 0.35, 0.20     # (the approved hold: 0.72 under, +0.25 behind)
+SQUAT_TURNS = tuple(range(-90, 61, 15))
+_SQUAT_STARTS = [{"raise": r, "swing": sw, "twist": tw, "elbow": e} for r in (-30.0, 0.0, 30.0, 60.0)
+                 for sw in (-40.0, 0.0, 40.0) for tw in (30.0, 80.0, 130.0) for e in (100.0, 130.0)]
 _SQUAT_LOCK = None
+
+
+def squat_turn_frame(side, turn):
+    """The hand's frame turned `turn` degrees round the bar from palm forward / fingers up."""
+    t = math.radians(turn)
+    return hand_frame(side, Vector((0.0, math.sin(t), -math.cos(t))), Vector((0.0, math.cos(t), math.sin(t))))
+
+
+def squat_grip_from_wrist(side):
+    """The squat grip point (palm heel) from the wrist joint, in the hand part's frame (lock_hand's offset)."""
+    return Vector((SQUAT_GRIP_POINT.x if side == "Left" else -SQUAT_GRIP_POINT.x,
+                   SQUAT_GRIP_POINT.y - JOINTS[side + "Wrist"][3][1], 0.0))
+
+
+def squat_grip_point(w, side):
+    """Where this hand holds the squat bar (the SquatGrip palm heel), root part's frame."""
+    return w[side + "Hand"] @ Vector((SQUAT_GRIP_POINT.x if side == "Left" else -SQUAT_GRIP_POINT.x,
+                                      SQUAT_GRIP_POINT.y, 0.0))
+
+
+def wrist_bend(wrist):
+    """Degrees between the hand's long axis and the forearm's (a wrist bent back, forward or sideways)."""
+    return math.degrees((wrist.to_3x3() @ Vector((0, -1, 0))).angle(Vector((0, -1, 0))))
 
 
 def squat_lock_arms():
@@ -648,12 +686,35 @@ def squat_lock_arms():
         _SQUAT_LOCK = {}
         for side, s in (("Left", -1), ("Right", 1)):
             point = SQUAT_BAR_REST + Vector((s * SQUAT_GRIP_X, 0, 0))
-            start = {"raise": 60.0, "swing": 20.0, "twist": 60.0, "elbow": 110.0}
-            a, tfs, miss = lock_hand(ut, side, point, hand_frame(side, SQUAT_PALM, SQUAT_FINGERS), start)
+            _, _, c0s, c1s = JOINTS[side + "Shoulder"]
+            c0e = JOINTS[side + "Elbow"][2]
+            best = None
+            for turn in SQUAT_TURNS:
+                rot = squat_turn_frame(side, turn)
+                for start in _SQUAT_STARTS:
+                    a, tfs, miss = lock_hand(ut, side, point, rot, start, offset=squat_grip_from_wrist(side))
+                    if miss > 0.02:
+                        continue
+                    sh, _el = _arm_tf(side, a)
+                    elbow = (ut @ T(c0s) @ sh @ T(c1s).inverted()) @ Vector(c0e)
+                    if point.y - elbow.y < SQUAT_ELBOW_UNDER or elbow.z - point.z < SQUAT_ELBOW_BEHIND:
+                        continue                                   # (elbows down, and back: never in front of the bar)
+                    bend = wrist_bend(tfs[side + "Wrist"])
+                    if best is None or bend < best[0]:
+                        best = (bend, turn, a, tfs, miss)
+            bend, turn, a, tfs, miss = best
             _SQUAT_LOCK.update(tfs)
             _SQUAT_LOCK[side + "_miss"] = miss
             _SQUAT_LOCK[side + "_angles"] = a
-    return {k: v for k, v in _SQUAT_LOCK.items() if not (k.endswith("_miss") or k.endswith("_angles"))}
+            _SQUAT_LOCK[side + "_turn"] = turn
+            _SQUAT_LOCK[side + "_bend"] = bend
+    return {k: v for k, v in _SQUAT_LOCK.items() if not k.endswith(("_miss", "_angles", "_turn", "_bend"))}
+
+
+def squat_hand_frame(side):
+    """(torso rig) the hand's turn on the bar in the hold, in the upper torso's frame (the set-up uses the same)."""
+    squat_lock_arms()
+    return squat_turn_frame(side, _SQUAT_LOCK[side + "_turn"])
 
 
 def squat_wrists(g):

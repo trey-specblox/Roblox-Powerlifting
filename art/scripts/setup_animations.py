@@ -258,7 +258,24 @@ class Setup:
                     # (torso rig) the hand locked onto the bar by its whole frame (S.lock_hand): Grip hole on the bar
                     _tag, point, rot = target
                     a, tfs, miss = S.lock_hand(ut, side, point, rot, arms_now[side], Vector((0, -1, 0)),
-                                               root.to_3x3() @ Vector((0, 0, 1)))
+                                               root.to_3x3() @ Vector((0, 0, 1)),
+                                               offset=S.squat_grip_from_wrist(side) if self.lift == "Squat" else None)
+                    if self.lift == "Squat":
+                        # (2026-11-14) frame by frame the solve could stay stuck in an arm shape that bent the wrist
+                        # back ~130 degrees for the whole walk-out: each frame also tries a start nudged at most 6
+                        # degrees per angle toward the rep's own hold (S.squat_lock_arms: elbows back and down) and
+                        # keeps the straighter wrist, so the arm eases into the approved hold without a snap
+                        prev, hold = arms_now[side], S._SQUAT_LOCK[side + "_angles"]
+                        nudged = {k: prev[k] + max(-6.0, min(6.0, hold[k] - prev[k])) for k in S.ARM_KEYS}
+                        b = S.lock_hand(ut, side, point, rot, nudged, Vector((0, -1, 0)),
+                                        root.to_3x3() @ Vector((0, 0, 1)), offset=S.squat_grip_from_wrist(side),
+                                        first_step=4)
+
+                        def score(a2, tfs2, miss2):
+                            return (20.0 * miss2 + 3.0 * max(0.0, math.radians(S.wrist_bend(tfs2[side + "Wrist"]) - 30.0))
+                                    + 0.01 * sum(abs(a2[k] - prev[k]) for k in S.ARM_KEYS))
+                        if score(*b) < score(a, tfs, miss):
+                            a, tfs, miss = b
                     self.worst = max(self.worst, miss)
                     arms_now[side] = dict(a)
                     pose.update(tfs)
@@ -303,7 +320,8 @@ class Setup:
             return (bar[0] if bar else None), False
         w = self.world(t)
         if S.RIG == "torso":                         # (the bar sits in the Grip holes, not between the hand centres)
-            return (S.grip_point(w, "Left") + S.grip_point(w, "Right")) / 2, True
+            gp = S.squat_grip_point if self.lift == "Squat" else S.grip_point      # (squat: the palm heel)
+            return (gp(w, "Left") + gp(w, "Right")) / 2, True
         return S.hands_mid(w), True
 
 
@@ -413,7 +431,7 @@ def _squat_body(t):
             if reach < 1:
                 hang_centre, hang_upper = hand_world(ut, side, HANG)
                 hang_rot = hang_upper.to_3x3() @ arm_tf(side, HANG)[1].to_3x3()          # (the hanging hand's turn)
-                hang_grip = hang_centre + hang_rot @ (S.grip_from_wrist(side) + Vector(S.JOINTS[side + "Wrist"][3]))
+                hang_grip = hang_centre + hang_rot @ (S.squat_grip_from_wrist(side) + Vector(S.JOINTS[side + "Wrist"][3]))
                 point = hang_grip.lerp(point, reach)
                 rot = hang_rot.to_quaternion().slerp(rot.to_quaternion(), reach).to_matrix()
             targets[side] = ("lock", point, rot)
@@ -432,7 +450,7 @@ def _squat_body(t):
 
 def _sq_hand_torso(side):
     """(torso rig) the hand's turn on the back, in the upper torso's frame (the rep's: palms forward, fingers over)."""
-    return S.hand_frame(side, S.SQUAT_PALM, S.SQUAT_FINGERS)
+    return S.squat_hand_frame(side)          # (the palm-heel grip's turn, chosen with the elbows back: S.squat_lock_arms)
 
 
 def _sq_hand_rack(side):

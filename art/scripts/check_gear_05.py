@@ -4,7 +4,8 @@
 # culling on, as Roblox draws), plus the meet gear in the squat bottom, bench and deadlift bottom with the game's grip
 # hands.
 #   blender -b art/blender/CartoonGear_05.blend --python art/scripts/check_gear_05.py -- <out_dir> [only]
-# only: "clearance" or "pictures" (default both). Writes <out_dir>/Gear05_*.png and <out_dir>/gear05_clearance.txt.
+# only: "clearance", "pictures" or "wrists" (default clearance + pictures; clearance includes the wrist test). Writes
+# <out_dir>/Gear05_*.png and <out_dir>/gear05_clearance.txt (wrists alone: gear05_wrists.txt).
 import os
 import sys
 
@@ -98,9 +99,52 @@ if ONLY in ("", "clearance"):
     lines.append("SUMMARY over all builds (item, pose: clip points, skin-through points, deepest skin-through)")
     for (it, pose), (own, pokes, mx) in sorted(totals.items()):
         lines.append("  %-16s %-14s clip %4d  skin-through %4d  (%.3f)" % (it, pose, own, pokes, mx))
-    path = os.path.join(OUT, "gear05_clearance.txt")
-    open(path, "w").write("\n".join(lines))
-    print("[Check05g] wrote", path, flush=True)
+
+# ---------------------------------------------------------------- wrist wraps with the game's grip hands
+# The lifts hold the bar in the swap hands (SquatGrip in the squat, Grip in bench / deadlift), not the open hand the
+# test above uses. In-hand = wrap points inside the posed hand (it would show through the wrap).
+WRIST_POSES = [("SquatHold", "Station_Squat", 0.0, "SquatGrip"), ("SquatSetup", "Setup_Squat", None, "SquatGrip"),
+               ("SquatBottom", "Station_Squat", 1.9, "SquatGrip"), ("BenchChest", "Station_Bench", 2.0, "Grip"),
+               ("DeadliftBottom", "Station_Deadlift", 1.6, "Grip")]
+
+
+def wrist_report():
+    out = []
+    for b in BUILDS:
+        ps = pieces(b, "WornWristWrap")
+        if not ps:
+            continue
+        for label, anim, t, shape in WRIST_POSES:
+            swaps = [(bpy.data.objects.get("%s_%sHand" % (b, s)), bpy.data.objects.get("%s_%s%s" % (b, shape, s)))
+                     for s in ("Left", "Right")]
+            if not all(h and g for h, g in swaps):
+                out.append("WRISTS %-9s %-14s no %s hands in this file" % (b, label, shape))
+                continue
+            names = [(h.name, g.name) for h, g in swaps]
+            try:
+                for h, g in swaps:
+                    hn, gn = h.name, g.name
+                    h.name, g.name = hn + "_Open", hn
+                rep = G["clearance"](b, {"W": ps}, poses=[(label, anim, t)])
+            finally:
+                for (h, g), (hn, gn) in zip(swaps, names):
+                    g.name, h.name = gn, hn
+            r = rep[label]["W"]
+            out.append("WRISTS %-9s %-14s %-9s in-hand %4d  clip %3d  deepest %.3f" % (
+                b, label, shape, r["fold"], r["own"], r["minAll"]))
+    return out
+
+
+if ONLY in ("", "clearance", "wrists"):
+    wl = wrist_report()
+    print("\n".join(wl), flush=True)
+    if ONLY == "wrists":
+        open(os.path.join(OUT, "gear05_wrists.txt"), "w").write("\n".join(wl))
+    else:
+        lines += ["", "WRIST WRAPS with the game's grip hands (in-hand = wrap points inside the posed hand)"] + wl
+        path = os.path.join(OUT, "gear05_clearance.txt")
+        open(path, "w").write("\n".join(lines))
+        print("[Check05g] wrote", path, flush=True)
 
 # ---------------------------------------------------------------- pictures
 if ONLY in ("", "pictures"):
