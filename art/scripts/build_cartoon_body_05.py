@@ -1,6 +1,7 @@
 # Cartoon lifter bodies, PRODUCTION 05 (CHARACTER_ART_DIRECTION.md §11 Phase 2). Six bodies on ONE shared base mesh
 # (user's pick 2026-11-13: same vertex count and order on every build, each build a reshaped copy), on the TORSO_TALL
-# skeleton (approved 2026-11-13: hips/HipHeight 2.0, waist 2.54, shoulder 4.38, neck 4.70; arms x1.5: elbow 3.287, wrist 2.148).
+# skeleton (approved 2026-11-13: hips/HipHeight 2.0, waist 2.54, shoulder 4.38, neck 4.70; arms x1.5: elbow 3.287, wrist 2.148;
+# longer thighs: knee 1.00).
 #
 # The six (§5.4, two axes: muscle from PP, fat from bodyweight):
 #               Lean        Soft             Heavy
@@ -53,8 +54,12 @@ TALLER = P4["TALLER"]
 # elbow 3.287, wrist 2.148 (shoulder 4.38 minus 0.7284 x1.5 and 0.7596 x1.5), the hand's centre at about hip height.
 # Legs, torso, shoulder and hands unchanged. body_spec() stretches the arm shapes from S onto L (arm_z below), so the
 # muscles grow with the bones instead of sitting at the old elbow. build_cartoon_body_04.py is left as it was.
+# LONGER THIGHS, approved 2026-11-15 (user: "Can we make the legs, a little longer. so there is a gap between the
+# singlet, and the knee sleeves?", then picked "Knee 1.00" from a mock-up): the knee 1.178 -> 1.00 with the hips kept at
+# 2.0 (HipHeight, station heights and the arms x1.5 deadlift fix unchanged): thigh 0.822 -> 1.00, shin 0.926 -> 0.748
+# (real legs: the thigh longer than the shin). body_spec() stretches the leg shapes the same way (leg_z below).
 S = P4["TORSO_TALL"]
-L = dict(S, E=3.287, WR=2.148)
+L = dict(S, E=3.287, WR=2.148, K=1.00)
 E, C, BX, family, smin, smoothstep, lerp = (P4[k] for k in ("E", "C", "BX", "family", "smin", "smoothstep", "lerp"))
 # The prototype wrote its shapes on the taller-leg heights and stretched the torso shapes' heights by this factor for
 # the torso-tall bodies (the approved look); the same stretch is kept.
@@ -80,6 +85,39 @@ def arm_z(z):
         return sh + (z - sh) * k, k
     k = (L["E"] - L["WR"]) / (S["E"] - S["WR"])
     return L["E"] + (z - S["E"]) * k, k
+
+
+def leg_z(z):
+    """The same for the legs: thigh hip..knee, shin knee..ankle; above the hips and below the ankle (the feet) nothing
+    moves."""
+    hj, a = S["HJ"], S["A"]
+    if z >= hj or z <= a:
+        return z, 1.0
+    if z >= S["K"]:
+        k = (hj - L["K"]) / (hj - S["K"])
+        return hj + (z - hj) * k, k
+    k = (L["K"] - a) / (S["K"] - a)
+    return a + (z - a) * k, k
+
+
+def along(shapes, zmap):
+    """Shapes moved along a limb by zmap (cone ends moved; ellipsoids and boxes moved and lengthened with their
+    segment, same thickness)."""
+    out = []
+    for kind, args, blend, op, mirror in shapes:
+        if kind == "cone":
+            a, b, ra, rb = args
+            args = ((a[0], a[1], zmap(a[2])[0]), (b[0], b[1], zmap(b[2])[0]), ra, rb)
+        elif kind == "ellipsoid":
+            c, r, rot = args
+            z, k = zmap(c[2])
+            args = ((c[0], c[1], z), (r[0], r[1], r[2] * k), rot)
+        elif kind == "box":
+            c, h, rad, rot = args
+            z, k = zmap(c[2])
+            args = ((c[0], c[1], z), (h[0], h[1], h[2] * k), rad, rot)
+        out.append((kind, args, blend, op, mirror))
+    return out
 
 
 # ----------------------------------------------------------------------------------------------- the six builds
@@ -247,23 +285,9 @@ def body_spec(build):
             args = (c, (h[0], h[1], h[2] * TZ), rad, rot)
         out.append((kind, args, blend, op, mirror))
     spec["torso"] = out
-    # The arm shapes from the written arm (S) onto the built arm (L): cone ends moved along the arm, muscle ellipsoids
-    # moved and lengthened with their segment (same thickness: a longer arm, not a fatter one).
-    arms = []
-    for kind, args, blend, op, mirror in spec["arm"]:
-        if kind == "cone":
-            a, b, ra, rb = args
-            args = ((a[0], a[1], arm_z(a[2])[0]), (b[0], b[1], arm_z(b[2])[0]), ra, rb)
-        elif kind == "ellipsoid":
-            c, r, rot = args
-            z, k = arm_z(c[2])
-            args = ((c[0], c[1], z), (r[0], r[1], r[2] * k), rot)
-        elif kind == "box":
-            c, h, rad, rot = args
-            z, k = arm_z(c[2])
-            args = ((c[0], c[1], z), (h[0], h[1], h[2] * k), rad, rot)
-        arms.append((kind, args, blend, op, mirror))
-    spec["arm"] = arms
+    # The arm and leg shapes from the written limbs (S) onto the built ones (L): a longer arm or thigh, not a fatter one.
+    spec["arm"] = along(spec["arm"], arm_z)
+    spec["leg"] = along(spec["leg"], leg_z)
     return spec
 
 

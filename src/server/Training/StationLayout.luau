@@ -58,9 +58,10 @@ local LAYOUTS: { [string]: Layout } = {
 		-- the height of their shoulder blades", was the 3.80 hole and bar 3.49); bench uses the 3.45 hole (bar
 		-- 3.14: just under its 3.25 lockout lying on the bench). The posts' holes are 0.175 apart.
 		benchJCupDrop = -0.525,
-		-- 4 holes up (bar 4.365: just under the taller back's 4.41 bar-on-back height, art/scripts/lifter_heights.py),
-		-- and the bench 1 hole up (bar 3.315: the longer arms lock out 0.23 higher).
-		tallSquatJCupRaise = 0.70,
+		-- 3 holes up (bar 4.19: the torso-tall bodies' bar on the back stands at 4.31, so the taller rig's 4.365 would
+		-- sit above it; CHARACTER_ART_DIRECTION.md, the torso-rig animations, Phase 4), and the bench 1 hole up (bar
+		-- 3.315: the longer arms lock out higher, 3.47).
+		tallSquatJCupRaise = 0.525,
 		tallBenchJCupDrop = -0.35,
 		-- J-cup seat at z 3.595 + bar shaft radius 0.07; seat centre 0.28 in front of the posts
 		barRest = Vector3.new(0, 3.665, -0.28),

@@ -85,6 +85,8 @@ FLIPPED = {}
 # and rim). GEAR05_THIN=0 builds the unthinned version for comparison.
 THIN = os.environ.get("GEAR05_THIN", "1") == "1"
 MEET_TRIS = {"Tee": 560, "Singlet": 600, "KneeSleeves": 380, "Sneakers": 380}
+if os.environ.get("GEAR05_TRIS"):                # trials: "tee,singlet" inner triangle budgets
+    MEET_TRIS["Tee"], MEET_TRIS["Singlet"] = (int(x) for x in os.environ["GEAR05_TRIS"].split(","))
 EDGE_THIN = {"Tee": 1, "Singlet": 1, "KneeSleeves": 1, "Sneakers": 1}
 _thin = [None]
 # Wrist wraps: v4 ran them 0.17 below the wrist joint, which on the production hands is the middle of the palm: the
@@ -167,13 +169,14 @@ W["cut_shell"] = _cut_outward
 F["BUILDS"] = ORDER
 COLLECTION = "CartoonGear05"
 
-ITEMS = ("Tee", "TeeUnder", "WornSinglet", "WornLeverBelt", "WornKneeSleeve", "WornWristWrap", "Sneakers",
+ITEMS = ("Tee", "WornSinglet", "WornLeverBelt", "WornKneeSleeve", "WornWristWrap", "Sneakers",
          "LongSleeve", "Tank", "WornSquatSuit", "WornDeadliftSuit", "WornBenchShirt", "WornKneeWrap", "Shorts",
          "Joggers")
 _only = [i for i in os.environ.get("GEAR05_ITEMS", "").split(",") if i]
 WANT = set(_only or ITEMS)
-if "TeeUnder" in WANT or "WornSinglet" in WANT:
-    WANT |= {"Tee", "WornSinglet", "TeeUnder"}       # the under-tee is cut from the whole tee against the singlet
+if WANT & {"Tee", "WornSinglet", "WornSquatSuit", "WornDeadliftSuit"}:
+    WANT |= {"Tee", "WornSinglet"}                   # the singlet and the suits are fitted over the tee
+# (TeeUnder, the tee cut away under the singlet, is gone: user 2026-11-16, gear never removes the clothes under it)
 
 # preview colours for the items v4 had none for (the game colours come from ShopConfig / ClothesConfig)
 V["PREVIEW"].setdefault("WornBenchShirt", {})
@@ -284,11 +287,555 @@ def logos(body, coll, target, name, z_front, H, worn):
     back = V["front_patch"](body, coll, target, name + "BackText", L["SH"] - 0.95, 0.62, 0.15, "Red", side="back")
     join_into(front, [back])
     F["transfer_weights"](front, body)
+    if target.vertex_groups:
+        copy_weights_from(front, target, held=1.0, free=2.0)          # it bends with the garment it is printed on
     return front
 
 
+# ---------------------------------------------------------------- gear worn OVER the clothes (user 2026-11-16)
+# The user's Studio test of v5: "im seeing the shirts phasing through the singlet, the singlet having this weird warp
+# where it looks like its tearing ... When you put the singlet on there is a huge gap of what looks like skin. Like i
+# said before, singlets are accessories. You put them on it should be over the shirt it should not delete or make
+# something underneath disappear ... It phases through the singlet because when the arms move the body moves, and the
+# shirt is apart of the body, so it moves ignoring the singlet."
+# Causes: the singlet was fitted to the BODY at a set clearance and held by the torso and thighs only (SINGLET_BONES,
+# "torso-held straps"), while the tee bends with the arms at the shoulders; push_out_of left the tee's collar and hems
+# alone (collar 0.12), so its shoulders sat over the straps even standing; and the tee was cut away under the singlet
+# (TeeUnder), which showed skin in the scoop. Now: the tee is worn WHOLE; the singlet (and the suits, same top) is fitted
+# over the tee's own surface and takes the TEE's bone weights wherever the tee is under it (so the two bend as one), the
+# body's below the tee's hem; room is made in the lift poses against the posed tee as well as the body. Under the belt
+# both are held by the hips like the rigid belt, so the band can't bend out through it.
+OVER_GAP = float(os.environ.get("GEAR05_OVER_GAP", "0.055"))               # the singlet's outside from the tee's outside (its 0.018 fabric + room)
+OVER_MIX_ROOM = float(os.environ.get("GEAR05_OVER_MIX", "0.0"))   # extra room where arm and torso share a point
+OVER_HELD = 0.10               # singlet points this close to the tee take all of the tee's weights...
+OVER_FREE = 0.22               # ... fading to the body's by this far (below the tee's hem: the singlet's shorts)
+OVER_POSE_ROOM = 0.026         # in every check pose the singlet's outside stays this far outside the posed tee
+BELT_HOLD = (0.27, 0.12)       # inside the belt's half-height everything is held by the hips; fading over the next 0.12
+LAYER_POSES = None             # the check poses for relief_over (set below from gear_fit_03.CHECK_POSES + the lifts)
+
+
+def weights_of(o):
+    names = {g.index: g.name for g in o.vertex_groups}
+    return [{names[g.group]: g.weight for g in v.groups if g.weight > 0 and g.group in names} for v in o.data.vertices]
+
+
+def set_weights(o, per, top=4):
+    o.vertex_groups.clear()
+    groups = {}
+    for i, w in enumerate(per):
+        best = sorted(w.items(), key=lambda kv: -kv[1])[:top]
+        s = sum(x for _b, x in best) or 1.0
+        for b, x in best:
+            g = groups.get(b) or o.vertex_groups.new(name=b)
+            groups[b] = g
+            g.add([i], x / s, "REPLACE")
+
+
+def copy_weights_from(o, src, held=OVER_HELD, free=OVER_FREE, zblend=None, project=False):
+    """o takes src's bone weights (interpolated over the nearest face of src) where src is within `held`, its own
+    beyond `free`, blended between; or, with `zblend` = (z_full, z_none), by height: all of src's above z_full, none
+    below z_none (the singlet over the tee: however much room it stands off it, it bends as the tee does, down to the
+    tee's hem). Returns how many points took src's weights fully."""
+    from mathutils.bvhtree import BVHTree
+    sv = [v.co.copy() for v in src.data.vertices]
+    sf = [tuple(p.vertices) for p in src.data.polygons]
+    tree = BVHTree.FromPolygons(sv, sf)
+    sw = weights_of(src)
+    own = weights_of(o)
+    out, full = [], 0
+    o.data.update()
+    for v, w0 in zip(o.data.vertices, own):
+        # the src point straight BENEATH (along o's own normal), else the nearest: in a crease (the armpit, the back
+        # of the shoulder) the nearest tee point is off to one side and has another bone mix, and the two drifted
+        # apart when the arm moved
+        loc, _n, fi, d = tree.ray_cast(v.co + v.normal * 0.01, -v.normal, 0.4) if project else (None, None, None, None)
+        if loc is None:
+            loc, _n, fi, d = tree.find_nearest(v.co)
+        if loc is None:
+            out.append(w0)
+            continue
+        face = sf[fi]
+        inv = [1.0 / max(1e-5, (sv[j] - loc).length) for j in face]
+        s = sum(inv)
+        wt = {}
+        for j, a in zip(face, inv):
+            for b, x in sw[j].items():
+                wt[b] = wt.get(b, 0.0) + x * a / s
+        if zblend is not None:
+            t = smooth_scalar(zblend[1], zblend[0], v.co.z)
+        else:
+            t = 1.0 - smooth_scalar(held, free, d)
+        if t >= 0.999:
+            full += 1
+        mix = {b: x * (1 - t) for b, x in w0.items()}
+        for b, x in wt.items():
+            mix[b] = mix.get(b, 0.0) + x * t
+        out.append(mix)
+    set_weights(o, out)
+    return full
+
+
+def smooth_scalar(e0, e1, x):
+    t = min(1.0, max(0.0, (x - e0) / max(1e-9, e1 - e0)))
+    return t * t * (3 - 2 * t)
+
+
+def hold_belt_band(o, belt):
+    """Inside the belt's height the fabric is held by the hips (as the rigid belt is), fading out above and below."""
+    mid = belt[0]
+    per = weights_of(o)
+    for v, w in zip(o.data.vertices, per):
+        h = abs(v.co.z - mid)
+        t = 1.0 - smooth_scalar(BELT_HOLD[0], BELT_HOLD[0] + BELT_HOLD[1], h)
+        if t <= 0:
+            continue
+        for b in list(w):
+            w[b] *= (1 - t)
+        w["LowerTorso"] = w.get("LowerTorso", 0.0) + t
+    set_weights(o, per)
+
+
+def relief_over(o, inner, body, room=OVER_POSE_ROOM, cap=0.05, rounds=3):
+    """pose_relief against the posed INNER garment (the tee): in every check pose, where o's outside comes closer than
+    `room` to the posed tee's outside (or the tee comes out through o between its points), o's points move out at rest
+    (along the tee's surface), spread a little to their neighbours. Returns the largest move."""
+    from mathutils.bvhtree import BVHTree
+    rig = body.rig
+    nbr = [set() for _ in o.data.vertices]
+    for e in o.data.edges:
+        a, b = e.vertices
+        nbr[a].add(b)
+        nbr[b].add(a)
+    rest_tree = BVHTree.FromPolygons([v.co for v in inner.data.vertices], [tuple(p.vertices) for p in inner.data.polygons])
+    # the tee points o covers at rest: a ray straight out meets o
+    o_tree = BVHTree.FromPolygons([v.co for v in o.data.vertices], [tuple(p.vertices) for p in o.data.polygons])
+    covered = []
+    for i, v in enumerate(inner.data.vertices):
+        hit, _n, _f, _d = o_tree.ray_cast(v.co + v.normal * 0.002, v.normal, 0.15)
+        if hit is not None:
+            covered.append(i)
+    biggest = 0.0
+    saved = (o.matrix_world.copy(), inner.matrix_world.copy())
+    for _r in range(rounds):
+        mods = []
+        for ob in (o, inner):
+            ob.matrix_world = rig.matrix_world.copy()
+            m = ob.modifiers.new("OverArmature", "ARMATURE")
+            m.object = rig
+            mods.append((ob, m))
+        need = [0.0] * len(o.data.vertices)
+        try:
+            for _label, anim, t in LAYER_POSES:
+                if anim is None:
+                    F["rest_rig"](rig)
+                else:
+                    F["pose_rig"](rig, F["anim_at"](anim, F["extreme_time"](anim) if t is None else t))
+                ip, ifc = F["evaluated_points"](inner, rig)
+                op, ofc = F["evaluated_points"](o, rig)
+                itree = BVHTree.FromPolygons(ip, ifc)
+                for i, p in enumerate(op):
+                    loc, nrm, _f, d = itree.find_nearest(p, 0.3)
+                    if loc is None:
+                        continue
+                    g = d if (p - loc).dot(nrm) >= 0 else -d
+                    if g < room:
+                        need[i] = max(need[i], room - g)
+                otree = BVHTree.FromPolygons(op, ofc)
+                for si in covered:
+                    p = ip[si]
+                    loc, fn, fi, d = otree.find_nearest(p, 0.3)
+                    if loc is None:
+                        continue
+                    if (p - loc).dot(fn) > -FABRIC_05:          # the tee at or outside o's inside
+                        for vi in ofc[fi]:
+                            need[vi] = max(need[vi], (p - loc).dot(fn) + FABRIC_05 + room * 0.5)
+        finally:
+            for ob, m in mods:
+                ob.modifiers.remove(m)
+            F["rest_rig"](rig)
+            o.matrix_world, inner.matrix_world = saved
+        # a wide, smooth swell (moving single points along the tee's faces left the strap edges ragged): spread to
+        # the neighbours, evened out over many rounds, then every point out along the singlet's OWN smooth normal
+        for _ in range(4):
+            need = [max(n, 0.8 * max((need[j] for j in nbr[i]), default=0.0)) for i, n in enumerate(need)]
+        for _ in range(10):
+            need = [0.5 * n + 0.5 * (sum(need[j] for j in nbr[i]) / len(nbr[i]) if nbr[i] else n)
+                    for i, n in enumerate(need)]
+        o.data.update()
+        normals = [v.normal.copy() for v in o.data.vertices]
+        moved = 0
+        for v, n, nv in zip(o.data.vertices, need, normals):
+            n = min(cap, n)
+            if n <= 1e-4:
+                continue
+            v.co = v.co + nv * n
+            biggest = max(biggest, n)
+            moved += 1
+        o.data.update()
+        if moved == 0:
+            break
+    return biggest
+
+
+FABRIC_05 = 0.018              # (v4's FABRIC: every shell's thickness, grown inward)
+LAYER_POSES = list(F["CHECK_POSES"])
+FIT_H = [None]                 # the build's heights while fitting (legs_relief)
+
+
+def gap_stats(o, tee):
+    """How far o's points stand off the tee's outside (those over the tee): min / 10% / median."""
+    from mathutils.bvhtree import BVHTree
+    tree = BVHTree.FromPolygons([v.co for v in tee.data.vertices], [tuple(p.vertices) for p in tee.data.polygons])
+    g = []
+    for v in o.data.vertices:
+        loc, nrm, _f, d = tree.find_nearest(v.co, 0.25)
+        if loc is not None:
+            g.append(d if (v.co - loc).dot(nrm) >= 0 else -d)
+    g.sort()
+    if not g:
+        return "-"
+    return "min %.3f, 10%% %.3f, median %.3f (%d points)" % (g[0], g[len(g) // 10], g[len(g) // 2], len(g))
+
+
+def conform_over(o, tee, body, gap=None):
+    """Each point of o over the tee is put straight out from the tee point beneath it (along o's own normal; the
+    nearest if no ray meets it), along the tee's SMOOTH normal there (its corners' normals blended, not the flat
+    face's: that made the edges ragged), `gap` out, and takes exactly that tee point's bone weights. The two layers
+    then bend as one: a point and the tee point under it get the same blend of bones, so the gap between them is
+    carried along and can only shrink in a pose, never close (and o follows every bump of the tee instead of
+    skimming over them: the thinned singlet had stood from -0.02 to +0.06 off the tee standing). Below the tee's hem
+    o keeps its own place and the body's weights (blended over 0.2). Returns how many points were put on the tee."""
+    from mathutils import geometry
+    from mathutils.bvhtree import BVHTree
+    gap = OVER_GAP if gap is None else gap
+    H = FIT_H[0]
+    bm = bmesh.new()
+    bm.from_mesh(tee.data)
+    bm.normal_update()
+    bmesh.ops.triangulate(bm, faces=bm.faces)
+    bm.verts.ensure_lookup_table()
+    tv = [v.co.copy() for v in bm.verts]
+    tn = [v.normal.copy() for v in bm.verts]
+    tf = [tuple(v.index for v in f.verts) for f in bm.faces]
+    bm.free()
+    tree = BVHTree.FromPolygons(tv, tf)
+    tw = weights_of(tee)
+    own = weights_of(o)
+    o.data.update()
+    out, put = [], 0
+    for v, w0 in zip(o.data.vertices, own):
+        t = smooth_scalar(H["hem"] - 0.22, H["hem"] - 0.02, v.co.z) if H else 1.0
+        if t <= 0:
+            out.append(w0)
+            continue
+        loc, _n, fi, _d = tree.ray_cast(v.co + v.normal * 0.02, -v.normal, 0.45)
+        if loc is None:
+            loc, _n, fi, _d = tree.find_nearest(v.co, 0.45)
+        if loc is None:
+            out.append(w0)
+            continue
+        a, b, c = tf[fi]
+        bary = geometry.barycentric_transform(loc, tv[a], tv[b], tv[c], (1, 0, 0), (0, 1, 0), (0, 0, 1))
+        wa, wb, wc = (max(0.0, x) for x in bary)
+        s_ = (wa + wb + wc) or 1.0
+        wa, wb, wc = wa / s_, wb / s_, wc / s_
+        n = (tn[a] * wa + tn[b] * wb + tn[c] * wc).normalized()
+        wt = {}
+        for j, x in ((a, wa), (b, wb), (c, wc)):
+            for bone, y in tw[j].items():
+                wt[bone] = wt.get(bone, 0.0) + y * x
+        # where the arm and the torso share the point (the armpit, the shoulder) a big arm move shrinks the gap the
+        # most (to ~40% at 150 degrees): more room there, most at an even share
+        arm = sum(y for bone, y in wt.items() if bone.endswith("UpperArm"))
+        local = gap + OVER_MIX_ROOM * 4.0 * arm * (1.0 - arm)
+        v.co = v.co.lerp(loc + n * local, t)
+        mix = {bone: y * (1 - t) for bone, y in w0.items()}
+        for bone, y in wt.items():
+            mix[bone] = mix.get(bone, 0.0) + y * t
+        out.append(mix)
+        if t >= 0.999:
+            put += 1
+    set_weights(o, out)
+    o.data.update()
+    return put
+
+
+def fit_over(o, tee, body, belt, label):
+    """The singlet / suit worn over the whole tee: out of the body, then out of the tee to OVER_GAP everywhere (no
+    collar left alone), the tee's weights where the tee is under it, held by the hips under the belt, pressed in under
+    the belt, room in the poses against the body and the posed tee."""
+    log(body.build, label, "room over the tee as built:", gap_stats(o, tee))
+    F["push_clear"](o, body, W["SINGLET_CLEAR"] * 0.6)
+    F["transfer_weights"](o, body, only=W["SINGLET_BONES"])          # the body's (below the tee's hem: the shorts)
+    put = conform_over(o, tee, body)
+    if belt is not None:
+        hold_belt_band(o, belt)
+        W["under_belt"](o, belt, 0.015)
+    relief = legs_relief(o, body, FIT_H[0])
+    log(body.build, label, "room over the tee fitted:", gap_stats(o, tee))
+    log(body.build, label, "over the tee: %d points put on the tee (its weights), shorts room %.3f" % (put, relief))
+
+
+def accent_straps(o, shell, H):
+    """Each strap ONE colour (the accent, as approved: red shoulder tops), from over the shoulder down to just above
+    the front scoop: v4 turned the strap black part-way down its front (a red top, a black lower strap and the white
+    piping: the user saw a three-colour strap). Same strap columns as make_singlet's."""
+    xi = V["HEAD_HALF"] + 0.06
+    xo = min(xi + 0.28, shell.arm_inner_x(L["SH"] - 0.45) - 0.04)
+    z_lo = L["SH"] - 0.45
+    from mathutils.bvhtree import BVHTree
+    old_keys = list(o["keys"])
+    old = BVHTree.FromPolygons([v.co.copy() for v in o.data.vertices], [tuple(p.vertices) for p in o.data.polygons])
+    W["bisect"](o, [((0, 0, z_lo), (0, 0, 1), lambda c: xi - 0.03 <= abs(c.x) <= xo + 0.03 and c.y < 0.1)])
+    # (bisect splits faces: each new face keeps the key of the old face it lies in)
+    keys = [old_keys[old.find_nearest(p.center)[2]] for p in o.data.polygons]
+    C = np.array([p.center[:] for p in o.data.polygons], dtype=np.float32)
+    for i, (x, y, z) in enumerate(C):
+        if keys[i] == "Black" and xi - 0.005 <= abs(x) <= xo + 0.005 and z > z_lo and (y < 0.1 or z > L["SH"] - 0.14):
+            keys[i] = "Red"
+    o["keys"] = keys
+
+
+class OverShell:
+    """make_singlet's shell with the tee in it: the singlet's surface is the OUTER envelope of the body's at its usual
+    clearance and the tee's own surface at OVER_GAP (the union of the two: the smaller field), so it is fitted over the
+    tee wherever the tee is and keeps its clean cut edges (pushing the finished singlet out of the tee point by point
+    left the strap edges ragged). Below the tee's hem only the body counts; near the tee's openings (collar, sleeve
+    ends, hem) only the outside counts (an open sheet has no inside there)."""
+
+    def __init__(self, shell, tee, H, extra=None):
+        from mathutils.bvhtree import BVHTree
+        self.shell, self.H = shell, H
+        me = tee.data
+        self.tv = [v.co.copy() for v in me.vertices]
+        self.tf = [tuple(p.vertices) for p in me.polygons]
+        self.tree = BVHTree.FromPolygons(self.tv, self.tf)
+        # extra room over each tee point (tee_needs: where the poses bring the tee out through the singlet)
+        self.extra = extra
+        self.extra_max = float(max(extra)) if extra is not None and len(extra) else 0.0
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bm.faces.ensure_lookup_table()
+        self.edge_face = [any(e.is_boundary for e in f.edges) for f in bm.faces]
+        bm.free()
+
+    def __getattr__(self, k):
+        return getattr(self.shell, k)
+
+    def field(self, X):
+        from mathutils import Vector
+        f = self.shell.field(X)
+        H = self.H
+        z = X[:, 2]
+        lift = W["P"]["smoothstep"](H["hem"] - 0.15, H["hem"] + 0.02, z)
+        clr = W["TEE_CLEAR"] + (W["SINGLET_CLEAR"] - W["TEE_CLEAR"]) * lift
+        out = np.array(f, dtype=np.float32, copy=True)
+        # (down past the tee's hem too: its hem edge sits under the singlet's waist; near an edge only the outside
+        # counts, so below the hem it adds nothing but room over the edge)
+        band = np.nonzero((np.abs(f - clr) < 0.12 + self.extra_max) & (z > H["hem"] - 0.12))[0]
+        for i in band:
+            q = Vector(X[i].tolist())
+            loc, nrm, fi, d = self.tree.find_nearest(q, 0.3 + self.extra_max)
+            if loc is None:
+                continue
+            if (q - loc).dot(nrm) < 0 and not self.edge_face[fi]:
+                d = -d
+            room = OVER_GAP
+            if self.extra is not None:
+                face = self.tf[fi]
+                inv = [1.0 / max(1e-5, (self.tv[j] - loc).length) for j in face]
+                room += sum(self.extra[j] * a for j, a in zip(face, inv)) / sum(inv)
+            alt = d - room + clr[i]
+            if alt < out[i]:
+                out[i] = alt
+        return out
+
+
+NEED_GAIN = 1.6                # a pose's shortfall counts this much more at rest (blended bones shrink an offset)
+NEED_CAP = 0.14
+
+
+def tee_needs(tee, over, body, room=OVER_POSE_ROOM):
+    """Per tee point: how much more room the singlet needs over it at rest so that in no check pose the tee comes out
+    through it (or within `room` of its outside). Spread and evened out over the tee, so the rebuilt surface swells
+    smoothly. (Both bend with the same bones, but where the arm and torso share a point a big arm move shrinks the gap
+    between them: the armpits and the back of the shoulders.)"""
+    from mathutils.bvhtree import BVHTree
+    rig = body.rig
+    me = tee.data
+    nbr = [set() for _ in me.vertices]
+    for e in me.edges:
+        a, b = e.vertices
+        nbr[a].add(b)
+        nbr[b].add(a)
+    o_tree = BVHTree.FromPolygons([v.co for v in over.data.vertices], [tuple(p.vertices) for p in over.data.polygons])
+    covered = [i for i, v in enumerate(me.vertices)
+               if o_tree.ray_cast(v.co + v.normal * 0.002, v.normal, 0.2)[0] is not None]
+    need = [0.0] * len(me.vertices)
+    saved = (over.matrix_world.copy(), tee.matrix_world.copy())
+    mods = []
+    try:
+        for ob in (over, tee):
+            ob.matrix_world = rig.matrix_world.copy()
+            m = ob.modifiers.new("NeedArmature", "ARMATURE")
+            m.object = rig
+            mods.append((ob, m))
+        for _label, anim, t in LAYER_POSES:
+            if anim is None:
+                F["rest_rig"](rig)
+            else:
+                F["pose_rig"](rig, F["anim_at"](anim, F["extreme_time"](anim) if t is None else t))
+            dg = bpy.context.evaluated_depsgraph_get()
+            ev = tee.evaluated_get(dg)
+            tm = ev.to_mesh()
+            tp = [v.co.copy() for v in tm.vertices]
+            tn = [v.normal.copy() for v in tm.vertices]
+            ev.to_mesh_clear()
+            op, ofc = F["evaluated_points"](over, rig)
+            tree = BVHTree.FromPolygons(op, ofc)
+            for i in covered:
+                hit, _n, _f, dist = tree.ray_cast(tp[i] + tn[i] * 0.001, tn[i], 0.3)
+                if hit is None:                              # through it: how far back to it
+                    loc, _nn, _ff, back = tree.find_nearest(tp[i], 0.5)
+                    short = (back if loc is not None else 0.1) + room + FABRIC_05
+                else:
+                    short = room + FABRIC_05 - dist
+                if short > 0:
+                    need[i] = max(need[i], short * NEED_GAIN)
+    finally:
+        for ob, m in mods:
+            ob.modifiers.remove(m)
+        F["rest_rig"](rig)
+        over.matrix_world, tee.matrix_world = saved
+    for _ in range(3):
+        need = [max(n, 0.75 * max((need[j] for j in nbr[i]), default=0.0)) for i, n in enumerate(need)]
+    for _ in range(6):
+        need = [0.5 * n + 0.5 * (sum(need[j] for j in nbr[i]) / len(nbr[i]) if nbr[i] else n)
+                for i, n in enumerate(need)]
+    return [min(NEED_CAP, n) for n in need]
+
+
+def legs_relief(o, body, H):
+    """pose_relief against the body only for the shorts (below the tee's hem; over the tee the tee is what it must
+    clear, and moving points there left the straps ragged): the moves above fade out over 0.12."""
+    before = [v.co.copy() for v in o.data.vertices]
+    relief = F["pose_relief"](o, body, cap=0.04)
+    for v, b0 in zip(o.data.vertices, before):
+        keep = smooth_scalar(H["hem"] - 0.17, H["hem"] - 0.05, b0.z)
+        v.co = v.co.lerp(b0, keep)
+    o.data.update()
+    return relief
+
+
+def singlet_over_tee(make, shell, tee, H, body, belt, label, rounds=int(os.environ.get("GEAR05_OVER_ROUNDS", "0"))):
+    """Builds the one-piece with make(shell) over the tee, then rebuilds it with the room the poses need (tee_needs)
+    built into its surface, `rounds` times at most. Returns the finished (weighted, fitted) object."""
+    extra = None
+    o = None
+    FIT_H[0] = H
+    for r in range(rounds + 1):
+        if o is not None:
+            bpy.data.objects.remove(o, do_unlink=True)
+        o = make(OverShell(shell, tee, H, extra))
+        fit_over(o, tee, body, belt, label)
+        if r == rounds:
+            break
+        need = tee_needs(tee, o, body)
+        top = max(need) if need else 0.0
+        log(body.build, label, "round", r, "pose room still needed over the tee: up to %.3f at %d points" % (
+            top, sum(1 for n in need if n > 0.003)))
+        if top <= 0.003:
+            break
+        extra = need if extra is None else [a + b for a, b in zip(extra, need)]
+    return o
+
+
+TEE_WEIGHT_SMOOTH = int(os.environ.get("GEAR05_TEE_SMOOTH", "0"))
+
+
+def weights_from_body_beneath(o, body):
+    """o takes the body's bone weights from the skin point straight BENEATH each of its points (along o's normal,
+    inward; the nearest skin point if no ray meets it), blended over that skin triangle's corners: the layer then
+    bends exactly as the skin under it, so the gap between them is carried along and the body can't come out
+    through it (gear_fit_03.transfer_weights took the NEAREST skin point's weights: in the pecs, the traps and the
+    armpits that is off to one side, and the bench and arms-overhead poses pushed the body out through the tee)."""
+    from mathutils import geometry
+    from mathutils.bvhtree import BVHTree
+    keep = set(REGIONS_NO_HANDS)
+    faces = []
+    for f, part in zip(body.faces, body.face_part):
+        if part not in keep:
+            continue
+        if len(f) == 3:
+            faces.append(f)
+        else:
+            for k in range(1, len(f) - 1):
+                faces.append((f[0], f[k], f[k + 1]))
+    tree = BVHTree.FromPolygons(body.verts, faces)
+    o.data.update()
+    out = []
+    for v in o.data.vertices:
+        loc, _n, fi, _d = tree.ray_cast(v.co + v.normal * 0.01, -v.normal, 0.6)
+        if loc is None:
+            loc, _n, fi, _d = tree.find_nearest(v.co, 1.0)
+        a_, b_, c_ = faces[fi]
+        bary = geometry.barycentric_transform(loc, body.verts[a_], body.verts[b_], body.verts[c_],
+                                              (1, 0, 0), (0, 1, 0), (0, 0, 1))
+        ws = [max(0.0, x) for x in bary]
+        sw = sum(ws) or 1.0
+        wt = {}
+        for j, x in zip((a_, b_, c_), ws):
+            for bone, y in body.weights[j].items():
+                wt[bone] = wt.get(bone, 0.0) + y * x / sw
+        out.append(wt)
+    set_weights(o, out)
+
+
+REGIONS_NO_HANDS = ["LowerTorso", "UpperTorso"] + [s_ + p_ for s_ in ("Left", "Right") for p_ in
+                                                   ("UpperArm", "LowerArm", "UpperLeg", "LowerLeg", "Foot")]
+TEE_FROM_BODY_BENEATH = os.environ.get("GEAR05_TEE_BENEATH", "1") == "1"
+
+
+def smooth_weights(o, rounds):
+    """Neighbour averaging of the bone weights (a softer, wider blend): where the torso hands over to the arm the
+    weights changed so sharply that the singlet's bigger triangles (each point a copy of the tee's weights under it)
+    could not follow the tee between their corners, and a big arm move pushed the tee out between them."""
+    per = weights_of(o)
+    nbr = [set() for _ in o.data.vertices]
+    for e in o.data.edges:
+        a, b = e.vertices
+        nbr[a].add(b)
+        nbr[b].add(a)
+    for _ in range(rounds):
+        nxt = []
+        for i, w in enumerate(per):
+            acc = {k: x * 0.5 for k, x in w.items()}
+            if nbr[i]:
+                share = 0.5 / len(nbr[i])
+                for j in nbr[i]:
+                    for k, x in per[j].items():
+                        acc[k] = acc.get(k, 0.0) + x * share
+            else:
+                acc = dict(w)
+            nxt.append(acc)
+        per = nxt
+    set_weights(o, per)
+
+
+def tee_for_gear(tee, body, belt):
+    """The tee as the gear sees it: softer bone blends (smooth_weights), held by the hips under the belt (and pressed
+    in under it)."""
+    if TEE_FROM_BODY_BENEATH:
+        weights_from_body_beneath(tee, body)
+    if TEE_WEIGHT_SMOOTH:
+        smooth_weights(tee, TEE_WEIGHT_SMOOTH)
+    if belt is not None:
+        hold_belt_band(tee, belt)
+        W["under_belt"](tee, belt, 0.05)
+
+
 # ---------------------------------------------------------------- the one-piece family (singlet, suits, tank)
-def one_piece(body, shell, H, coll, worn, leg_hem=None, hem=None, clear=None, keymap=None, tris_out=950):
+def one_piece(body, shell, H, coll, worn, leg_hem=None, hem=None, clear=None, keymap=None, tris_out=950, finish=True):
     """The v4 singlet (make_singlet) with other leg lengths (`leg_hem`), or cut at a hem with no legs (`hem`, the tank),
     at another clearance (`clear`), its keys renamed (`keymap`: v4 key -> this item's key)."""
     Hx = dict(H)
@@ -309,21 +856,23 @@ def one_piece(body, shell, H, coll, worn, leg_hem=None, hem=None, clear=None, ke
         o.name = "%s_%s" % (body.build, worn)
         if keymap:
             rekey(o, lambda i, k: keymap.get(k, k))
-        relief = W["finish_shell"](o, body, sc, only=W["SINGLET_BONES"], cap=0.04)
+        # (finish=False: worn over the tee, fitted by singlet_over_tee / fit_over instead)
+        relief = W["finish_shell"](o, body, sc, only=W["SINGLET_BONES"], cap=0.04) if finish else 0.0
     log(body.build, worn, tris(o), "triangles, pose relief up to %.3f" % relief)
     return o, Hx
 
 
-def finish_one_piece(o, body, coll, H, worn, trim_key, plain_key, with_logo=True, tee=None, belt=None):
+def finish_one_piece(o, body, coll, H, worn, trim_key, plain_key, with_logo=True, tee=None, belt=None, fitted=False):
     """Out of the tee and pressed in under the belt (as the singlet), thickness, piping round the neck and armholes,
     the logo; one object per key."""
-    if tee is not None:
-        log(body.build, worn, "points pushed out of the tee:", W["push_out_of"](o, tee, 0.03))
-    if belt is not None:
+    if tee is not None and not fitted:
+        fit_over(o, tee, body, belt, worn)                            # worn over the whole tee (user 2026-11-16)
+    elif belt is not None and tee is None:
         log(body.build, worn, "under the belt:", W["under_belt"](o, belt, 0.015))
     edge = (lambda c, k: plain_key if c.z < H["leg_hem"] + 0.12 else trim_key)
     pipe = W["piping"](o, body.build + "_" + worn + "Piping", coll, body, lambda c: c.z > H["leg_hem"] + 0.12,
                        only=W["SINGLET_BONES"])
+    copy_weights_from(pipe, o, held=1.0, free=2.0)                    # it bends with the edge it lies on
     W["thicken"](o, edge)
     z_nf = o["z_nf"]
     pieces = V["split_keys"](o, coll, body.build + "_" + worn)
@@ -679,28 +1228,31 @@ for b in BUILDS:
     made = {}
     log(b, "heights", {k: round(v, 3) for k, v in H.items() if isinstance(v, float)})
 
-    # --- the meet set (v4): tee + singlet layered, both pressed in under the belt; the under-tee cut from the tee
+    # --- the meet set: the WHOLE tee, the singlet worn over it (gear over the clothes, user 2026-11-16), both held by
+    # the hips and pressed in under the belt
     tee_whole = None
     if "Tee" in WANT:
         with Thin("Tee"):
-            tee = tee_whole = W["make_tee"](body, shell, H, coll)
-        with Thin("Singlet"):
-            singlet = W["make_singlet"](body, shell, H, coll)
-        W["finish_singlet"](singlet, body, coll, H)
-        log(b, "singlet points pushed out of the tee:", W["push_out_of"](singlet, tee, 0.03))
-        log(b, "under the belt: tee", W["under_belt"](tee, belt, 0.05), "singlet", W["under_belt"](singlet, belt, 0.015))
-        z_nf = singlet["z_nf"]
-        tee_openings = boundary_points(tee)
-        under = covered_cut(tee, singlet, b + "_TeeUnder", coll)
-        W["thicken"](tee)
-        W["thicken"](under, near=tee_openings)
-        # a copy of the whole tee for the suits to sit outside of (the tee itself is split up below)
-        tee_whole = bpy.data.objects.new(b + "_TeeRef", tee.data.copy())
+            tee = W["make_tee"](body, shell, H, coll)
+        tee_for_gear(tee, body, belt)
+        # a copy of the whole tee (before its thickness: its outside, its weights) for the suits to be fitted over
+        tee_whole = tee.copy()
+        tee_whole.data = tee.data.copy()
+        tee_whole.name = b + "_TeeRef"
         coll.objects.link(tee_whole)
+        def make_singlet(sh):
+            with Thin("Singlet"):
+                o = W["make_singlet"](body, sh, H, coll)
+            accent_straps(o, shell, H)
+            return o
+        singlet = singlet_over_tee(make_singlet, shell, tee, H, body, belt, "Singlet")
+        z_nf = singlet["z_nf"]
         pipe = W["piping"](singlet, b + "_SingletPiping", coll, body, lambda c: c.z > H["leg_hem"] + 0.12,
                            only=W["SINGLET_BONES"])
+        copy_weights_from(pipe, singlet, held=1.0, free=2.0)          # it bends with the edge it lies on
+        W["thicken"](tee)
         W["thicken"](singlet, W["singlet_edge"](H))
-        for name, o in (("Tee", tee), ("TeeUnder", under)):
+        for name, o in (("Tee", tee),):
             pieces = V["split_keys"](o, coll, b + "_" + name)
             materials(pieces, name)
             made[name] = to_parts(pieces, lambda k, name=name: k.replace("Tee", name), body, coll)
@@ -731,9 +1283,16 @@ for b in BUILDS:
         if worn not in WANT:
             continue
         leg_hem = m["crotch"] - frac * (m["crotch"] - m["knee"])
-        with Thin("Singlet"):                         # worn instead of the singlet: the same budget
-            o, Hs = one_piece(body, shell, H, coll, worn, leg_hem=leg_hem, keymap=suit_keys, tris_out=1000)
-        made[worn] = to_parts(finish_one_piece(o, body, coll, Hs, worn, "Trim", "Body", tee=tee_whole, belt=belt),
+        Hs = dict(H, leg_hem=leg_hem)
+
+        def make_suit(sh, worn=worn, leg_hem=leg_hem):
+            with Thin("Singlet"):                     # worn instead of the singlet: the same budget
+                o, _h = one_piece(body, sh, H, coll, worn, leg_hem=leg_hem, keymap=suit_keys, tris_out=1000,
+                                  finish=False)
+            return o
+        o = singlet_over_tee(make_suit, shell, tee_whole, H, body, belt, worn)
+        made[worn] = to_parts(finish_one_piece(o, body, coll, Hs, worn, "Trim", "Body", tee=tee_whole, belt=belt,
+                                               fitted=True),
                               lambda k, worn=worn: worn + "_" + k, body, coll)
 
     # --- tank: the singlet's top cut at the tee's hem, worn alone at tee clearance, one colour

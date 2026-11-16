@@ -101,6 +101,11 @@ task.spawn(CelebrationFx.start)
 local HandShapeAnimator = require(MeetFolder:WaitForChild("HandShapeAnimator"))
 HandShapeAnimator.start()
 
+-- Every meet animation downloaded in the background, so none is still loading the first time it plays (a gap there
+-- showed the idle pose mid-lift). Visual only.
+local MeetAnimationPreload = require(MeetFolder:WaitForChild("MeetAnimationPreload"))
+MeetAnimationPreload.start()
+
 -- The meet's walks (walk-outs, walks back, coaches), drawn smoothly every frame from what the server sends. Visual only.
 local MeetWalkView = require(MeetFolder:WaitForChild("MeetWalkView"))
 MeetWalkView.start()

@@ -11,6 +11,12 @@
 #   blender -b --factory-startup --python art/scripts/celebration_animations.py -- [preview folder] [names...]
 # checks every clip, writes art/animations/Celebrate_<Name>.rbxmx, and with a folder renders preview sheets (front and
 # side) of each. Publish with art/scripts/upload_animations.py; ids go in src/shared/Config/CelebrationConfig.luau.
+#
+# CLOTHES (2026-11-16, rules 16-17): every clip is solved with clothed=True: hands and forearms are kept out of the meet
+# outfit (tee, singlet, belt) on all six builds (celebration_rig.clear_of_clothes). It needs the envelope data file
+# art/data/clothed_envelope_05.json (or CELEB_ENVELOPE=<path>); remake it whenever the bodies or the outfit exports change:
+#   blender -b art/blender/CartoonBodies_05_Rigged.blend --python art/scripts/celebration_rig.py -- envelope
+# Check with anim_qa.py on QA_BUILDS=Skinny,Fat,Muscular,BigBuff (arm_in_outfit must read 0.00).
 import importlib.util
 import math
 import os
@@ -100,6 +106,9 @@ def rest():
 
 V_UP = O((-1.78, 2.05, -0.2))          # arms up in a wide V
 SKY = O((-1.55, 2.2, -0.25))           # an arm straight up, out from the head (2026-11-14: -1.02 went through it)
+# (2026-11-16, clothed QA on all builds: BigBuff's huge upper arm, splayed further out at rest, swings IN toward the head
+#  when raised, so SKY / SKY_CLEAR still sank 0.15-0.16 into its head: the raised arm a little further out, a touch lower)
+SKY_OUT = O((-1.8, 2.12, -0.25))
 T_OUT = O((-2.7, 0.62, -0.25))         # an arm straight out to the side
 LOW_WING = O((-2.2, -0.62, -0.35))     # out and 45 degrees down
 HEAD_TOP = H((-0.88, 2.3, 0.0))       # hands on the head: the WRIST at the side of the head, the hand draped over
@@ -107,6 +116,8 @@ HEAD_TOP = H((-0.88, 2.3, 0.0))       # hands on the head: the WRIST at the side
 HEAD_TOP_R = H((0.88, 2.3, 0.0))
 HEAD_W_L, HEAD_W_R = (100.0, -90.0), (100.0, 90.0)   # the wrists that drape the hands over the crown
 FIST_CHEST = B((-0.5, 0.55, -0.95))    # a boxer's guard at the chest
+FIST_CHEST_W = B((-0.6, 0.55, -0.95))  # (2026-11-16: the guard a touch wider: on Skinny's narrow shoulders the two fists
+#                                        went 0.15-0.16 into each other)
 FIST_LOW = B((-0.6, -1.15, -0.85))     # fists pulled down in front of the hips
 BICEP = O((-1.95, 1.38, 0.0))          # double biceps: fist beside the head, upper arm out level
 GOALPOST = O((-1.95, 1.05, -0.15))
@@ -191,6 +202,19 @@ def bow_down():
     return d
 
 
+BOW_HANDS_X, BOW_HANDS_AHEAD = 1.3, 0.4    # (bow_down_clear)
+
+
+def bow_down_clear():
+    """bow_down with the forearms out wide and further ahead, beside the head (2026-11-16, clothed QA: under the folded
+    chest the big builds' chests and bellies lay ON the forearms, 0.25-0.33 into the singlet)."""
+    d = bow_down()
+    reach = KNEE_Z + (-1.35 - KNEE_Z) * TOR - BOW_HANDS_AHEAD
+    d.update({"lh": ("floor", (-BOW_HANDS_X, 0.62, reach)), "rh": ("floor", (BOW_HANDS_X, 0.62, reach)),
+              "le": (-1.0, -0.2, -0.2), "re": (1.0, -0.2, -0.2)})
+    return d
+
+
 def free_knees():
     return {"lk": None, "rk": None}
 
@@ -242,8 +266,39 @@ CLIPS = {}
 META = {}
 
 
+def _hand_spans():
+    """The game's hand swaps per celebration, read from src/shared/Config/HandShapeConfig.luau (read only): {name:
+    {side: [(t0, t1, shape)]}}. The clothes check uses the hand the player actually sees then (a fist's knuckles sit
+    elsewhere than an open hand's fingers)."""
+    import re
+    path = os.path.join(os.path.dirname(os.path.dirname(_HERE)), "src", "shared", "Config", "HandShapeConfig.luau")
+    out = {}
+    try:
+        text = open(path, encoding="utf-8").read()
+        block = text[text.index("local CELEBRATIONS"):text.index("local EMOTES")]
+    except (OSError, ValueError):
+        print("WARNING: HandShapeConfig.luau not read: the clothes check assumes open hands")
+        return out
+    for line in block.splitlines():
+        m = re.match(r"\s*(\w+)\s*=\s*\{(.*)\},", line)
+        if not m:
+            continue
+        spans = {"Left": [], "Right": []}
+        for kind, t0, t1, shape in re.findall(r'(right|left|both)\(([\d.]+),\s*([\d.]+),\s*"(\w+)"\)', m.group(2)):
+            for side in (("Left", "Right") if kind == "both" else (kind.capitalize(),)):
+                spans[side].append((float(t0), float(t1), shape))
+        out[m.group(1)] = spans
+    return out
+
+
+HAND_SPANS = _hand_spans()
+
+
 def clip(name, length, keys, layers=(), kind="standing", source="", rarity="Common", only=None, events=()):
-    c = R.Clip(name, length, keys, layers)
+    # clothed: hands and forearms kept out of the meet outfit on every build (celebration_rig.clear_of_clothes; rules
+    # 16-17, 2026-11-16), with the hand shapes the game shows (HandShapeConfig)
+    c = R.Clip(name, length, keys, layers, clothed=True)
+    c.hand_spans = HAND_SPANS.get(name)
     CLIPS[name] = c
     META[name] = {"kind": kind, "source": source, "rarity": rarity, "only": only, "events": list(events)}
     return c
@@ -253,10 +308,20 @@ ARMS_AND_HEAD = ("Head", "LeftUpperArm", "LeftLowerArm", "LeftHand", "RightUpper
 RIGHT_ARM_AND_HEAD = ("Head", "RightUpperArm", "RightLowerArm", "RightHand")
 
 # DEFAULT (CEL-71) chalk clap and fist pump: a clap at the chest, a proud beat, one bent-arm fist pump, ~3 s.
+# (2026-11-16, legs fix 2: at CLAP, 1.1 in front of the chest, the forearms sank into Fat's and BigBuff's tee and
+#  singlet; the clothed solve pushed the hands 0.3 apart and out, so on Fat they did not even meet, and on the way down
+#  to hanging they still read 0.03 into Fat's belt. Now the clap is out in front of the widest chest (chest frame, as the
+#  emote ChalkClap's), elbows named down and out (never back), and the hands come down round the front of the belly.)
+_CCP_CLAP = (-0.56, 0.27, -1.45)
+_CCP_APART = (-1.05, 0.34, -1.4)
+_CCP_ELBOW = (-0.6, -1.0, 0.0)          # (down and a little out: the forearms up, fingers up, as the old clap; the
+#                                          emote's (-0.85, -0.5, -0.15) raised the elbows into chicken wings here)
+_ccp_e = {"le": _CCP_ELBOW, "re": mx(_CCP_ELBOW)}
 clip("ChalkClapPump", 3.0, [
-    K(0.25, with_=both(CLAP_APART), up=-4),
-    K(0.42, with_=both(CLAP), up=-7, pos=P(0, -0.05, 0), ease="fast"),
-    K(0.58, with_=both(B((-0.78, 0.22, -1.08))), up=-4, pos=(0, 0, 0)),
+    K(0.25, with_=[both(_CCP_APART), _ccp_e], up=-4),
+    K(0.42, with_=[both(_CCP_CLAP), _ccp_e], up=-7, pos=P(0, -0.05, 0), ease="fast"),
+    K(0.58, with_=[both((-0.78, 0.3, -1.42)), _ccp_e], up=-4, pos=(0, 0, 0)),
+    K(0.78, with_=both((-1.3, -0.75, -1.35))),
     K(0.95, with_=rest(), cbend=-5, up=4),
     K(1.4, yaw=10, turn=8, cbend=-5, up=4),
     K(1.75, rh=("chest", PUMP_UP), re=ELBOW_PUMP, up=6, ease="fast"),
@@ -313,8 +378,8 @@ for i, t in enumerate((0.75, 0.95, 1.15, 1.35, 1.55, 1.75)):
                           with_=[feet(y=AY + L(0.1 if up_beat else 0.0), pitch=-22 if up_beat else 0.0),
                                  both(O((-1.85, -0.05 if up_beat else -0.25, -0.5)))]))
 clip("ArmsUpBounce", 2.5, [
-    K(0.32, with_=both(O((-1.55, 2.2, -0.25))), up=14, ease="fast"),
-    K(0.68, with_=both(O((-1.9, 0.2, -0.45))), up=8),
+    K(0.32, with_=both(SKY_OUT), up=14, ease="fast"),
+    K(0.68, with_=both(O((-1.9, 0.2, -0.7))), up=8),   # (2026-11-16: -0.45 swung BigBuff's elbows 0.41 back coming down)
     *_bounce_keys,
     K(2.1, with_=[rest(), stand_feet()], pos=(0, 0, 0), up=0),
     K(2.5),
@@ -323,8 +388,8 @@ clip("ArmsUpBounce", 2.5, [
 # UNCOMMON (CEL-51) walking finger to the sky: the right arm shoots straight up, chin up, held for three steps. Over
 # the walk.
 clip("SkyPoint", 3.4, [
-    K(0.45, rh=("chest", mx(SKY)), up=18, ease="fast"),
-    K(2.8, rh=("chest", mx(SKY)), up=20),
+    K(0.45, rh=("chest", mx(SKY_OUT)), up=18, ease="fast"),
+    K(2.8, rh=("chest", mx(SKY_OUT)), up=20),
     K(3.2, rh=REST, up=0),
     K(3.4),
 ], kind="walk", source="CEL-51", rarity="Uncommon", only=RIGHT_ARM_AND_HEAD)
@@ -402,8 +467,8 @@ clip("ReliefRoar", 4.2, [
 clip("LightsArmsUp", 3.8, [
     K(0.4, with_=both(HIPS), turn=-30, up=4, le=(-0.6, -0.2, 0.8), re=(0.6, -0.2, 0.8)),
     K(1.25, with_=both(HIPS), turn=-32, up=6),
-    K(1.55, with_=both(O((-1.55, 2.2, -0.25))), turn=0, up=20, cbend=-7, ease="fast"),
-    K(2.7, with_=both(O((-1.55, 2.2, -0.25))), up=22, cbend=-8),
+    K(1.55, with_=both(SKY_OUT), turn=0, up=20, cbend=-7, ease="fast"),
+    K(2.7, with_=both(SKY_OUT), up=22, cbend=-8),
     K(3.25, with_=rest(), up=0, cbend=0),
     K(3.8),
 ], layers=[tremble(1.65, 2.7, amp=0.04, chest=1.2)], source="CEL-36", rarity="Rare", events=[(1.55, "Roar")])
@@ -427,9 +492,13 @@ clip("SitAndLaugh", 5.2, [
     K(0.6, pos=P(0, -0.75, 0.25), lean=22, up=-8, with_=both(B((-1.5, -0.9, -0.8)), B((1.55, -1.0, -0.1)))),
     K(1.15, with_=_seat, lh=("chest", B((-1.25, -0.6, -1.2))), rh=_hand_back, up=30, turn=-12),
     K(3.0, with_=_seat, lh=("chest", B((-1.3, -0.35, -1.35))), rh=_hand_back, up=30, turn=-8),
-    K(3.3, rh=("chest", B((1.65, -0.55, -0.35))), lf=(-0.56, AY + L(0.2), (from_seat(-0.62, LEG) - 0.15) / 2, 18, 0),
+    # (2026-11-16, legs fix 2: getting up, the hands keyed on the knees sat inside the longer thighs of every build and
+    #  the clothed solve shoved them out a different way on each (out on Fat, up on BigBuff with a straight arm): 0.06
+    #  into Fat's shorts and a 1005 deg/s jerk. Now (chest frame) on the OUTSIDE of the knees, clear on every build, and
+    #  the left hand comes round there out wide.)
+    K(3.3, lh=("chest", (-1.8, -0.8, -1.15)), rh=("chest", B((1.65, -0.55, -0.35))), lf=(-0.56, AY + L(0.2), (from_seat(-0.62, LEG) - 0.15) / 2, 18, 0),
       rf=(0.3, AY + L(0.2), (from_seat(-0.78, LEG) - 0.2) / 2, 8, 0)),   # (feet lifted as they are drawn in: they slid)
-    K(3.55, pos=P(0, -1.0, 0.25), lean=26, lh=("chest", B((-1.3, -0.8, -1.25))), rh=("chest", B((0.9, -0.95, -1.35))),   # (pushes up off the knee)
+    K(3.55, pos=P(0, -1.0, 0.25), lean=26, lh=("chest", (-1.6, -1.05, -1.2)), rh=("chest", (1.6, -1.24, -1.19)),   # (pushes up off the knees)
      
       up=-5, turn=0, lf=foot("Left", z=-0.15), rf=foot("Right", z=-0.2)),
     K(4.2, pos=P(0, -0.3, 0.05), lean=10, with_=[rest(), stand_feet()], up=0),
@@ -452,25 +521,32 @@ clip("PointAndPrance", 3.6, [
     K(0.55, rf=R.stand_foot("Right"), pos=P(0, -0.08, 0)),
     K(0.85, with_=both(CHIN), pos=(0, 0, 0), up=6),
     K(1.02, with_=both(B((-1.25, 1.35, -0.85))), pos=P(0, 0.02, 0), up=10),   # (hands rise in front first: straight from the chin the arms flipped)
-    K(1.2, with_=both(O((-1.55, 2.18, -0.25))), rf=foot("Right", y=AY + L(0.8), z=AZ - L(0.5), pitch=12),
+    K(1.2, with_=both(SKY_OUT), rf=foot("Right", y=AY + L(0.8), z=AZ - L(0.5), pitch=12),
       pos=P(0, 0.08, 0), up=18, ease="fast"),
     *_prance,
-    K(2.58, with_=[stand_feet(), both(O((-1.55, 2.18, -0.25)))], pos=P(0, -0.05, 0)),
-    K(2.85, with_=both(O((-2.4, 0.7, -0.3))), le=(-0.4, -1.0, -0.2), re=(0.4, -1.0, -0.2), pos=(0, 0, 0), up=6),
+    K(2.58, with_=[stand_feet(), both(SKY_OUT)], pos=P(0, -0.05, 0)),
+    K(2.85, with_=both(O((-2.3, 0.7, -0.65))), le=(-0.4, -1.0, -0.3), re=(0.4, -1.0, -0.3), pos=(0, 0, 0), up=6),
+    # (2026-11-16: out at -0.3 BigBuff's elbows swung 0.45 back on the way down: the arms come down in front)
     K(3.25, with_=rest(), up=0),
     K(3.6),
 ], source="CEL-26", rarity="Epic", events=[(1.1, "Scream")])
 
+_FIST_CHEST_OUT = (-0.72, 0.8, -1.5)      # (chest frame) the guard out in front of every build's chest (FIST_CHEST sank)
+_FISTS_DOWN_FWD = (-0.92, -1.0, -1.7)     # (chest frame) fists pulled down in front of the knees, not into the thighs
+_GOALPOST_FWD = O((-1.95, 1.05, -0.32))   # (2026-11-16: GOALPOST's elbows went 0.40 back on BigBuff from the V: forward)
+_ELBOW_GOAL_FWD = (-0.72, -0.7, -0.1)
 # EPIC (CEL-20) rack-side double fist roar: a wide half squat with fists at the chest, up into a V, down into
 # goalposts, then sinking deep and pulling both fists down.
 clip("RackSideRoar", 3.4, [
     K(0.15, pos=P(0, 0.05, 0), with_=feet(x=0.72, y=AY + L(0.18), yaw=12)),   # (a little hop out to the wide stance: the feet slid)
-    K(0.3, with_=[feet(x=WIDE, yaw=24), both(FIST_CHEST)], pos=P(0, -0.55, 0.05), lean=10, up=8),
+    K(0.3, with_=[feet(x=WIDE, yaw=24), both(_FIST_CHEST_OUT)], pos=P(0, -0.55, 0.05), lean=10, up=8),
     K(0.65, with_=both(V_UP), pos=P(0, -0.05, 0), lean=-4, cbend=-10, up=30, ease="fast"),
-    K(1.1, with_=both(GOALPOST), le=ELBOW_BICEP, re=mx(ELBOW_BICEP), pos=P(0, -0.6, 0.05), lean=8, cbend=0, up=14,
+    K(1.1, with_=both(_GOALPOST_FWD), le=_ELBOW_GOAL_FWD, re=mx(_ELBOW_GOAL_FWD), pos=P(0, -0.6, 0.05), lean=8, cbend=0, up=14,
       ease="fast"),
-    K(1.6, with_=both(B((-0.85, -1.0, -1.4))), pos=P(0, -0.9, 0.15), lean=30, up=-16, ease="fast"),
-    K(1.95, pos=P(0, -0.88, 0.15), lean=30),
+    K(1.6, with_=both(_FISTS_DOWN_FWD), pos=P(0, -0.9, 0.15), lean=30, up=-16, ease="fast"),
+    K(1.95, with_=both(_FISTS_DOWN_FWD), pos=P(0, -0.88, 0.15), lean=30),   # (the hold re-states its fists: sliding
+    #                                                                       on toward the rest they went into the thighs)
+    K(2.15, with_=both((-1.5, -1.15, -1.3)), le=ELBOW_OUT, re=mx(ELBOW_OUT)),   # (rising: the fists come up round the outside of the thighs)
     K(2.45, with_=[rest(), stand_feet()], pos=(0, 0, 0), lean=0, up=0),
     K(3.4),
 ], layers=[tremble(0.7, 2.0, amp=0.04, chest=1.5)], source="CEL-20", rarity="Epic",
@@ -480,9 +556,10 @@ clip("RackSideRoar", 3.4, [
 _air = {"lf": foot("Left", y=AY + L(1.1), z=AZ + L(0.3), pitch=-25),
         "rf": foot("Right", y=AY + L(1.1), z=AZ + L(0.3), pitch=-25)}
 clip("CrouchRoarJump", 4.2, [
-    K(0.4, with_=[feet(x=0.75, yaw=20), both(B((-0.75, -0.95, -1.2)))], pos=P(0, -0.78, 0.1), lean=26, up=26,
-      ease="fast"),
-    K(1.15, pos=P(0, -0.75, 0.1), lean=25, up=24),
+    K(0.4, with_=[feet(x=0.75, yaw=20), both(_FISTS_DOWN_FWD)], pos=P(0, -0.78, 0.1), lean=26, cbend=3, up=26,
+      ease="fast"),   # (2026-11-16: the fists in front of the knees; between them they sank into the thighs and shorts)
+    K(1.15, with_=both(_FISTS_DOWN_FWD), pos=P(0, -0.75, 0.1), lean=25, cbend=3, up=24),   # (the chest holds too: easing
+    #   on toward the crunch it carried the fists down onto Fat's knees)
     K(1.4, with_=both(B((-0.6, -0.45, -1.4))), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.22, 0), lean=12, cbend=18,
       up=4),
     K(1.65, with_=[stand_feet(), both(B((-1.45, -1.0, 0.0)))], pos=P(0, -0.5, 0.05), lean=16, cbend=6),
@@ -523,9 +600,10 @@ clip("DisbeliefPrayer", 9.6, [
     K(1.3, with_=feet(x=WIDE, yaw=26)),
     K(1.5, with_=both(HEAD_TOP, HEAD_TOP_R), le=ELBOW_HEAD, re=mx(ELBOW_HEAD), lw=HEAD_W_L, rw=HEAD_W_R, pos=P(0, -0.32, 0.02), lean=-6, up=-4, hroll=0),
     K(1.75, with_=both(H((-1.05, 2.25, -0.85))), le=ELBOW_HEAD, re=mx(ELBOW_HEAD), lw=(40, -60), rw=(40, 60)),   # (hands up off the head and forward)
-    K(2.05, with_=both(FIST_CHEST), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lw=(0, 0), rw=(0, 0), pos=P(0, -0.42, 0.05), lean=10, up=6,
+    K(2.05, with_=both(FIST_CHEST_W), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lw=(0, 0), rw=(0, 0), pos=P(0, -0.42, 0.05), lean=10, up=6,
       ease="fast"),
-    K(2.45, with_=both(B((-1.45, -0.9, -0.55))), pos=P(0, -0.2, 0.02), lean=4, up=10),
+    K(2.45, with_=both(B((-1.6, -0.9, -0.75))), pos=P(0, -0.2, 0.02), lean=4, up=10),   # (2026-11-16: out from the belt:
+    #   at (-1.45, -0.9, -0.55) the forearms grazed Fat's belt)
     K(2.95, with_=both(B((-0.5, 0.35, -1.0))), pos=P(0, -1.22, 0.32), lean=24, up=-8),
     K(3.5, pos=P(0, -1.22, 0.32), lean=24, up=-10),
     K(4.0, pos=P(0, -0.25, 0.05), lean=6, up=0),
@@ -546,7 +624,8 @@ clip("DisbeliefPrayer", 9.6, [
 # LEGENDARY (CEL-03) world-record roar into wingspan and double biceps: a crouched scream, a hop back with the arms
 # flung up and wide, leaning back, turning to the crowd, then a double biceps.
 clip("WingspanBiceps", 6.2, [
-    K(0.3, with_=[feet(x=0.8, yaw=22), both(B((-0.75, -0.95, -1.2)))], pos=P(0, -0.62, 0.12), lean=30, up=-6),
+    K(0.3, with_=[feet(x=0.8, yaw=22), both(_FISTS_DOWN_FWD)], pos=P(0, -0.62, 0.12), lean=30, up=-6),   # (in front of
+    #   the knees, 2026-11-16: between them they sank into the thighs)
     K(0.5, up=30, ease="fast"),
     K(0.85, pos=P(0, 0.25, 0.3), lean=0, with_=feet(x=0.8, y=AY + L(0.25), z=AZ + L(0.2), yaw=22, pitch=-15),
       ease="fast"),
@@ -586,8 +665,8 @@ clip("LeapAndBow", 5.8, [
     K(1.18, pos=_kneel["pos"], lean=4, lk=_kneel["lk"], rk=_kneel["rk"], lf=_kneel["lf"], rf=_kneel["rf"],
       up=-20, ease="slow"),
     K(1.35, pos=(0, KNEEL_Y - 0.1, -0.05), lean=8),
-    K(1.75, with_=bow_down(), ease="smooth"),
-    K(2.85, with_=bow_down()),
+    K(1.75, with_=bow_down_clear(), ease="smooth"),
+    K(2.85, with_=bow_down_clear()),
     K(3.35, with_=[_kneel, rest()], cbend=0, up=0),
     K(3.75, rk=None, rf=foot("Right", z=AZ - L(0.55)), pos=(0, KNEEL_Y + 0.06, -0.15), lean=14),
     K(4.45, with_=[free_knees(), stand_feet()], pos=(0, 0, 0), lean=0),
@@ -601,10 +680,12 @@ clip("BowAndRise", 6.6, [
     K(1.05, pos=P(0, -0.3, 0.05), lean=16, with_=both(B((-0.95, -1.2, -0.9))), up=-10),
     K(1.55, with_=[kneel(48)], cbend=16, lh=("floor", (-0.8, 0.5, KNEE_Z + (-0.9 - KNEE_Z) * TOR)),
       rh=("floor", (0.8, 0.5, KNEE_Z + (-0.9 - KNEE_Z) * TOR))),
-    K(2.05, with_=bow_down()),
-    K(2.95, with_=bow_down()),
-    K(3.45, with_=kneel(46), lh=("floor", (-0.95, 0.55, KNEE_Z + (-0.7 - KNEE_Z) * TOR)),
-      rh=("floor", (0.95, 0.55, KNEE_Z + (-0.7 - KNEE_Z) * TOR)), cbend=14, up=-5),
+    K(2.05, with_=bow_down_clear()),
+    K(2.95, with_=bow_down_clear()),
+    # (2026-11-16, longer thighs: at x 0.95, z -0.7 the hands pushing up off the floor went 0.68 into Fat's knees and
+    #  thighs, anim_qa: now a little wider and further ahead, beside the knees)
+    K(3.45, with_=kneel(46), lh=("floor", (-1.15, 0.55, KNEE_Z + (-0.8 - KNEE_Z) * TOR)),
+      rh=("floor", (1.15, 0.55, KNEE_Z + (-0.8 - KNEE_Z) * TOR)), cbend=14, up=-5),
     K(3.65, with_=[kneel(0), both(H((-0.45, 0.95, -0.85)))], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), up=-6),
     K(3.95, with_=both(B((-1.28, -1.05, -0.15))), cbend=-10, up=6, ease="fast"),
     K(4.2, up=32, cbend=-12, ease="fast"),
@@ -649,9 +730,9 @@ clip("RecordJumpRoar", 9.2, [
     K(6.65, pos=P(0, -0.45, 0.05), lean=10),
     K(6.85, with_=both(B((-1.25, 1.05, -1.0))), pos=P(0, -0.1, 0), lean=0, up=8),
     K(7.0, with_=both(B((-0.5, 1.02, -1.08))), up=10, ease="fast"),
-    K(7.3, rh=("chest", mx(SKY)), lh=("chest", B((-0.6, 0.6, -1.0))), up=28, ease="fast"),
+    K(7.3, rh=("chest", mx(SKY_OUT)), lh=("chest", B((-0.6, 0.6, -1.0))), up=28, ease="fast"),
     K(7.55, rh=("chest", O((1.4, 1.85, -0.35)))),
-    K(7.8, rh=("chest", mx(SKY))),
+    K(7.8, rh=("chest", mx(SKY_OUT))),
     K(8.15, with_=both(CLAP), up=6),
     K(8.65, with_=rest(), up=0),
     K(9.2),
@@ -714,13 +795,14 @@ SKY_CLEAR = O((-1.55, 2.2, -0.25))           # an arm straight up, out from the 
 # the belly yelling at the floor, up again, down once more with the fists to the knees. Feet planted: heavy builds.
 _FISTS_HIPS = B((-1.55, -0.75, -0.85))      # fists at the hips, elbows bent out
 _FISTS_BELLY = B((-0.6, -0.15, -1.55))     # fists pulled in front of the belly (forward of the biggest belly)
+_FISTS_BELLY_W = B((-0.72, -0.15, -1.55))  # (2026-11-16: a touch apart: Skinny's fists went 0.16 into each other)
 _FISTS_KNEES = B((-0.9, -0.9, -1.2))
 clip("GorillaRoar", 3.6, [
     K(0.4, with_=both(_FISTS_HIPS), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.12, 0), cbend=-8, up=20),
     K(0.85, with_=both(_FISTS_HIPS), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.12, 0), cbend=-9, up=22),
-    K(1.25, with_=both(_FISTS_BELLY), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), pos=P(0, -0.5, 0.08), lean=22, cbend=14,
+    K(1.25, with_=both(_FISTS_BELLY_W), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), pos=P(0, -0.5, 0.08), lean=22, cbend=14,
       up=-12),
-    K(1.65, with_=both(_FISTS_BELLY), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), pos=P(0, -0.5, 0.08), lean=22, cbend=14,
+    K(1.65, with_=both(_FISTS_BELLY_W), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), pos=P(0, -0.5, 0.08), lean=22, cbend=14,
       up=-10),
     K(2.0, with_=both(_FISTS_HIPS), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.12, 0), lean=0, cbend=-8, up=18),
     K(2.35, with_=both(_FISTS_KNEES), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.45, 0.08), lean=20, cbend=8, up=-4),
@@ -734,15 +816,19 @@ clip("GorillaRoar", 3.6, [
 # EPIC (MC-008; YMrXwUrTpkw 2:06.8-2:11.5, a 93 kg man's junior world-record squat) hammer-fist roar: right fist
 # straight up overhead yelling with the head back, both forearms up in front of the face, then a deep forward lean
 # hammering both fists down toward the knees, and the head whips back up. On the spot (the walk-off is the server's).
-_HAMMER = B((-0.85, -0.95, -1.65))
+# (2026-11-16, legs fix 2: the old hammer spot B((-0.85, -0.95, -1.65)) is out of the arm's reach bent over (0.22 short)
+#  and inside the thighs and belly of Fat, Muscular and BigBuff; the clothed solve pushed it out up to 0.99, a different
+#  way on each build (out to the side on Fat, up with the elbow bent on BigBuff), a 1351 deg/s jerk. Now keyed (chest
+#  frame) where every build is clear: fists down beside the knees, arms nearly straight.)
+_HAMMER_CLEAR = (-1.25, -0.9, -1.7)
 _PUMP_OUT = B((1.5, 0.55, -0.9))            # (right) a fist pump at the shoulder, clear of the chest
 clip("HammerFistRoar", 3.4, [
-    K(0.45, rh=("chest", mx(SKY_CLEAR)), up=28, cbend=-6),
-    K(0.7, rh=("chest", mx(SKY_CLEAR)), up=30, cbend=-7),
+    K(0.45, rh=("chest", mx(SKY_OUT)), up=28, cbend=-6),
+    K(0.7, rh=("chest", mx(SKY_OUT)), up=30, cbend=-7),
     K(1.0, with_=both(H((-0.5, 1.0, -1.1))), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), up=10, cbend=0),
     K(1.2, with_=both(H((-0.5, 0.95, -1.1))), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lean=14, up=0),
-    K(1.5, with_=both(_HAMMER), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.35, 0.15), lean=45, cbend=15, up=-25),
-    K(1.75, with_=both(_HAMMER), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.35, 0.15), lean=45, cbend=15, up=-22),
+    K(1.5, with_=both(_HAMMER_CLEAR), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.35, 0.15), lean=45, cbend=15, up=-25),
+    K(1.75, with_=both(_HAMMER_CLEAR), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.35, 0.15), lean=45, cbend=15, up=-22),
     K(2.05, rh=("chest", _PUMP_OUT), re=ELBOW_PUMP, lh=REST, le=ELBOW_DOWN, pos=(0, 0, 0), lean=0, cbend=0, up=22),
     K(2.5, rh=("chest", B((1.35, -0.2, -0.9))), re=ELBOW_PUMP, lh=("chest", B((-1.35, 0.1, -0.85))), le=ELBOW_DOWN,
       up=8),
@@ -755,14 +841,16 @@ clip("HammerFistRoar", 3.4, [
 # kicked up behind, the body arched back and the left fist thrown up and back at the sky in the air; lands, walks on.
 # Light and middle builds (a small hop: it still reads on a heavy one).
 _PUNCH_UP = O((-1.5, 2.25, 0.0))       # straight up: the arched body makes it "up and back" (0.45 back threw the elbow behind)
+_PUNCH_UP_OUT = O((-1.75, 2.17, -0.1))   # (2026-11-16: _PUNCH_UP went 0.16 into BigBuff's head; out a little, as SKY_OUT)
 _WIND = B((-1.25, -0.6, -0.35))      # (wound down and a little back; 0.05 threw the elbow behind the body)
+_WIND_FWD = B((-1.3, -0.55, -0.65))  # (2026-11-16: out of the clothes _WIND's elbow went 0.77-0.83 behind: further forward)
 clip("HopSkyPunch", 2.4, [
     K(0.3, turn=12),
-    K(0.6, lh=("chest", _WIND), pos=P(0, -0.25, 0), lean=8, turn=12),
-    K(0.95, lh=("chest", _PUNCH_UP), rh=("chest", B((1.25, -0.35, -1.2))), re=mx(ELBOW_DOWN), pos=P(0, 0.45, 0), lean=-16, cbend=-12,
+    K(0.6, lh=("chest", _WIND_FWD), pos=P(0, -0.25, 0), lean=8, turn=12),
+    K(0.95, lh=("chest", _PUNCH_UP_OUT), rh=("chest", B((1.25, -0.35, -1.2))), re=mx(ELBOW_DOWN), pos=P(0, 0.45, 0), lean=-16, cbend=-12,
       up=28, turn=12, lf=foot("Left", y=AY + L(0.3), pitch=-20),
       rf=foot("Right", y=AY + L(0.9), z=AZ + L(0.6), pitch=30)),
-    K(1.2, lh=("chest", _PUNCH_UP), rh=("chest", B((1.25, -0.35, -1.2))), re=mx(ELBOW_DOWN), pos=P(0, 0.38, 0), lean=-16, cbend=-12,
+    K(1.2, lh=("chest", _PUNCH_UP_OUT), rh=("chest", B((1.25, -0.35, -1.2))), re=mx(ELBOW_DOWN), pos=P(0, 0.38, 0), lean=-16, cbend=-12,
       up=28, turn=12, lf=foot("Left", y=AY + L(0.25), pitch=-20),
       rf=foot("Right", y=AY + L(0.85), z=AZ + L(0.55), pitch=30)),
     K(1.55, with_=stand_feet(), lh=("chest", O((-1.7, 0.8, -0.35))), rh=REST, pos=P(0, -0.2, 0), lean=4, cbend=0, up=8,
@@ -790,14 +878,18 @@ clip("FistsBesideHead", 2.3, [
 # clap, crouching "YES": right index finger straight up at the ceiling half turned to the crowd, one hard clap in front
 # of the face (a chalk cloud), hands spread, then bent almost flat with the fists swinging down past the knees, up roaring.
 clip("SkyPointChalkYes", 4.0, [
-    K(0.5, rh=("chest", mx(SKY_CLEAR)), turn=-20, cbend=-6, up=18),
-    K(1.3, rh=("chest", mx(SKY_CLEAR)), turn=-20, cbend=-6, up=20),
+    K(0.5, rh=("chest", mx(SKY_OUT)), turn=-20, cbend=-6, up=18),
+    K(1.3, rh=("chest", mx(SKY_OUT)), turn=-20, cbend=-6, up=20),
     K(1.65, with_=both(B((-0.42, 0.9, -1.15))), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), turn=0, cbend=0, up=8),
     K(2.0, with_=both(O((-1.9, 0.6, -0.5))), le=ELBOW_OUT, re=mx(ELBOW_OUT), up=12),
-    K(2.35, with_=both(B((-0.5, -0.6, -1.45))), le=ELBOW_OUT, re=mx(ELBOW_OUT), lean=20, up=0),
-    K(2.65, with_=both(B((-0.7, -1.1, -1.2))), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.2, 0.25), lean=50, cbend=10,
+    # (2026-11-16, legs fix 2: the fists in front of the belly, past the knees and at the chest were inside Fat's and
+    #  BigBuff's clothes; the clothed solve pushed them out up to 0.82, a different way on each build (out to the side on
+    #  Fat, up on BigBuff): 0.06 into Fat's singlet and a 1204 deg/s jerk. Now keyed (chest frame) clear of every build:
+    #  further out in front of the belly, down beside the knees, the guard a little further from the chest.)
+    K(2.35, with_=both((-0.85, -0.65, -1.78)), le=ELBOW_OUT, re=mx(ELBOW_OUT), lean=20, up=0),
+    K(2.65, with_=both((-1.5, -1.25, -1.2)), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.2, 0.25), lean=50, cbend=10,
       up=-20),
-    K(3.0, with_=both(FIST_CHEST), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), pos=(0, 0, 0), lean=0, cbend=-6, up=16),
+    K(3.0, with_=both((-0.65, 0.76, -1.33)), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), pos=(0, 0, 0), lean=0, cbend=-6, up=16),
     K(3.5, with_=rest(), cbend=0, up=0),
     K(4.0),
 ], layers=[tremble(3.0, 3.35, amp=0.04, chest=1.4)], source="MC-034", rarity="Rare",
@@ -895,6 +987,8 @@ _ROLL_HIPS = (0, SEAT_Y + 0.65, SEAT_Z + 0.55)
 _LEG_UP_Y = AY + L(2.8)
 _KNEES_UP_L, _KNEES_UP_R = (-0.5, AY + L(4.5), SEAT_Z + 0.3), (0.5, AY + L(4.5), SEAT_Z + 0.3)   # (knees bend UP while lying:
 #                                                   by default a knee bends toward the toes and flipped as they turned)
+_LAP_CLEAR = (-1.05, -0.6, -1.75)   # (chest frame) sat up, the hands held up in front over the knees: in the lap
+#                                     (B((-0.85, -0.95, -1.0))) they sank into every build's thighs and shorts (2026-11-16)
 clip("BackRollLegsUp", 8.4, [
     K(0.5, with_=both(B((-0.5, 0.05, -1.15))), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), pos=P(0, -0.95, 0.25), lean=24,
       up=4),
@@ -912,7 +1006,7 @@ clip("BackRollLegsUp", 8.4, [
     # (feet lifted a little as they are drawn in: sitting up they slid along the floor, 2026-11-14)
     K(4.05, lf=(-0.58, AY + L(0.2), (SEAT_Z - L(0.55) + _seat["lf"][2]) / 2, 18, 0),
       rf=(0.58, AY + L(0.2), (SEAT_Z - L(0.55) + _seat["lf"][2]) / 2, 18, 0)),
-    K(4.3, with_=[_seat, free_knees(), both(B((-0.85, -0.95, -1.0)))], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), up=0),
+    K(4.3, with_=[_seat, free_knees(), both(_LAP_CLEAR)], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), up=0),
     K(4.8, with_=bow_down(), lean=40, cbend=18, up=-14),    # on hands and knees (a kneeling torso this long only
     #                                                         reaches the floor folded like the bow)
     # (hands up off the floor and out to the sides first: straight to the arms-back roar they went through the thighs)
@@ -949,13 +1043,16 @@ def one_knee(lean=0.0):
 # roaring with the fists low. One knee is the easiest floor pose: any build (big ones lower themselves).
 _V_KNEE = O((-1.7, 1.95, -0.25))          # V from the knee, a touch inside full reach (V_UP over-straightened)
 _KNEE_PUMP_UP, _KNEE_PUMP_DOWN = B((-0.6, 0.3, -1.1)), B((-0.9, -0.5, -1.35))
+_KNEE_PUMP_UP_W = B((-0.72, 0.3, -1.1))   # (2026-11-16: a touch apart: Skinny's fists went 0.16 into each other)
 clip("OneKneeFistPumps", 6.0, [
-    K(0.45, with_=both(B((-0.75, -1.0, -1.15))), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.2, 0.05), lean=24, cbend=8, up=-4),
-    K(1.2, with_=[one_knee(14), both(_KNEE_PUMP_UP)], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), cbend=8, up=-14),
+    # (2026-11-16, longer thighs: bent over, the hanging fists at z -1.15 went 0.60 into BigBuff's thighs above the
+    #  knees, anim_qa: a little further ahead and out)
+    K(0.45, with_=both(B((-0.85, -1.0, -1.38))), le=ELBOW_OUT, re=mx(ELBOW_OUT), pos=P(0, -0.2, 0.05), lean=24, cbend=8, up=-4),
+    K(1.2, with_=[one_knee(14), both(_KNEE_PUMP_UP_W)], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), cbend=8, up=-14),
     K(1.5, with_=[one_knee(16), both(_KNEE_PUMP_DOWN)], le=ELBOW_OUT, re=mx(ELBOW_OUT), cbend=10, up=-22),
-    K(1.8, with_=[one_knee(14), both(_KNEE_PUMP_UP)], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), cbend=8, up=-18),
+    K(1.8, with_=[one_knee(14), both(_KNEE_PUMP_UP_W)], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), cbend=8, up=-18),
     K(2.1, with_=[one_knee(16), both(_KNEE_PUMP_DOWN)], le=ELBOW_OUT, re=mx(ELBOW_OUT), cbend=10, up=-22),
-    K(2.4, with_=[one_knee(14), both(_KNEE_PUMP_UP)], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), cbend=8, up=-18),
+    K(2.4, with_=[one_knee(14), both(_KNEE_PUMP_UP_W)], le=ELBOW_DOWN, re=mx(ELBOW_DOWN), cbend=8, up=-18),
     K(2.75, with_=[one_knee(16), both(_KNEE_PUMP_DOWN)], le=ELBOW_OUT, re=mx(ELBOW_OUT), cbend=10, up=-24),
     K(3.35, with_=[one_knee(-4), both(_V_KNEE)], cbend=-8, up=30, ease="fast"),
     K(4.1, with_=[one_knee(-4), both(_V_KNEE)], cbend=-9, up=32),
@@ -1001,13 +1098,25 @@ clip("CrucifixTears", 6.6, [
 _CROSS_L = (0.6, _SHOULDER_NOW[1] - 0.45, -1.1)    # (left fist) at the right shoulder, in front
 _CROSS_R = (-0.6, _SHOULDER_NOW[1] - 0.3, -0.8)    # (right fist) at the left shoulder, behind
 _ELBOW_CROSS = (-0.2, -1.0, -0.35)          # (left) elbow low and in front: the forearms cross steeply (an X)
+_CROSS_L_FWD = (0.6, _SHOULDER_NOW[1] - 0.45, -1.33)   # (2026-11-16: the front forearm a little further out: on BigBuff the
+#                                                        crossed forearms went 0.27 into each other)
+_CROSS_L_OUT = (0.55, 0.25, -1.9)     # (legs fix 2, see the keys: the front fist as far out as the arm reaches)
+_CROSS_R_OUT = (-0.6, 0.62, -1.55)    # (the back fist clear of Fat's clothes, a little higher)
 clip("SkyFingerArmsCrossed", 7.3, [
-    K(0.45, rh=("chest", O((1.55, 2.2, -0.25))), cbend=-6, up=22),
-    K(1.4, rh=("chest", O((1.55, 2.2, -0.25))), cbend=-7, up=24),
+    K(0.45, rh=("chest", mx(SKY_OUT)), cbend=-6, up=22),
+    K(1.4, rh=("chest", mx(SKY_OUT)), cbend=-7, up=24),
     K(2.05, with_=rest(), cbend=0, up=4),
     K(2.35, with_=both(B((-0.75, -0.2, -1.5))), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lw=(0, 0), rw=(0, 0), up=0),
-    K(2.75, lh=("chest", _CROSS_L), rh=("chest", _CROSS_R), le=_ELBOW_CROSS, re=mx(_ELBOW_CROSS), lw=(0, 0), rw=(0, 0), up=-12),
-    K(6.0, lh=("chest", _CROSS_L), rh=("chest", _CROSS_R), le=_ELBOW_CROSS, re=mx(_ELBOW_CROSS), lw=(0, 0), rw=(0, 0), up=-14),
+    # (2026-11-16, legs fix 2: with the clothes really on the big builds, the back fist (_CROSS_R, 0.8 in front of the
+    #  chest) was pushed 0.56 out of Fat's tee and singlet, level with the front one, so the forearms went through each
+    #  other (0.26 into the singlet on Fat, 0.26 forearm-in-forearm on BigBuff). Now (chest frame) the back fist sits
+    #  where Fat's clothes are clear and the front one as far out as the arm reaches; the front arm crosses first, the back
+    #  one comes in behind it, and coming out the front arm leaves first with the back elbow held, so the forearms never
+    #  slide through each other. BigBuff's thick forearms still TOUCH in the hold (0.24-0.25, its limit 0.26).)
+    K(2.55, lh=("chest", (0.1, 0.0, -1.85)), rh=("chest", (0.55, 0.1, -1.4))),
+    K(2.75, lh=("chest", _CROSS_L_OUT), rh=("chest", _CROSS_R_OUT), le=_ELBOW_CROSS, re=mx(_ELBOW_CROSS), lw=(0, 0), rw=(0, 0), up=-12),
+    K(6.0, lh=("chest", _CROSS_L_OUT), rh=("chest", _CROSS_R_OUT), le=_ELBOW_CROSS, re=mx(_ELBOW_CROSS), lw=(0, 0), rw=(0, 0), up=-14),
+    K(6.2, lh=("chest", (-0.4, 0.0, -1.95)), rh=("chest", _CROSS_R_OUT), le=_ELBOW_CROSS, re=mx(_ELBOW_CROSS)),
     K(6.4, with_=both(B((-0.75, -0.2, -1.5))), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lw=(0, 0), rw=(0, 0), up=-4),   # (out in front of the belly)
     K(6.85, with_=rest(), up=0),
     K(7.3),
@@ -1020,19 +1129,22 @@ clip("SkyFingerArmsCrossed", 7.3, [
 _DB_OPEN = (_SHOULDER_NOW[0] - 0.85, _SHOULDER_NOW[1] + 1.44, -0.1)   # a true double biceps on the long arms:
 #   upper arm level out to the side (1.09), elbow ~90 deg, forearm straight up (user 2026-11-14: "arms more straight")
 _ELBOW_DB_OPEN = (-1.0, -0.25, 0.05)
+_DB_OPEN_FWD = (_DB_OPEN[0], _DB_OPEN[1], -0.22)   # (2026-11-16: the same double biceps a touch forward: BigBuff's raised
+#                                                    elbow sat 0.402 behind, limit 0.40)
 _PISTOLS = H((-0.45, 0.62, -1.3))      # pressed together in front of the mouth, fingers up
+_PISTOLS_W = H((-0.5, 0.62, -1.3))     # (2026-11-16: Skinny's pointing hands went 0.16 into each other: touching, not inside)
 _HOLSTER = B((-1.3, -1.0, -0.3))
 _POINT_CROWD = O((1.6, 0.75, -1.35))
 clip("Gunslinger", 5.0, [
-    K(0.85, with_=both(_PISTOLS), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), up=2),
-    K(1.25, with_=both(_PISTOLS), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lean=4, up=-4),
-    K(1.55, with_=both(_PISTOLS), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lean=0, up=2),
+    K(0.85, with_=both(_PISTOLS_W), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), up=2),
+    K(1.25, with_=both(_PISTOLS_W), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lean=4, up=-4),
+    K(1.55, with_=both(_PISTOLS_W), le=ELBOW_DOWN, re=mx(ELBOW_DOWN), lean=0, up=2),
     K(1.95, with_=both(_HOLSTER), le=ELBOW_OUT, re=mx(ELBOW_OUT), turn=10, up=4),
     K(2.35, rh=("chest", _POINT_CROWD), lh=("chest", _HOLSTER), le=ELBOW_OUT, turn=-14, up=8, ease="fast"),
     K(2.85, rh=("chest", _POINT_CROWD), lh=("chest", _HOLSTER), le=ELBOW_OUT, turn=12, up=8),
     K(3.25, rh=("chest", _POINT_CROWD), lh=("chest", _HOLSTER), le=ELBOW_OUT, turn=0, up=10, ease="fast"),
     K(3.55, rh=("chest", _POINT_CROWD), lh=("chest", _HOLSTER), le=ELBOW_OUT, turn=0, up=10),
-    K(3.9, with_=both(_DB_OPEN), le=_ELBOW_DB_OPEN, re=mx(_ELBOW_DB_OPEN), cbend=-8, up=12),
+    K(3.9, with_=both(_DB_OPEN_FWD), le=_ELBOW_DB_OPEN, re=mx(_ELBOW_DB_OPEN), cbend=-8, up=12),
     K(4.45, with_=rest(), cbend=0, up=0),
     K(5.0),
 ], source="MC-051", rarity="Epic", events=[(1.25, "Blow"), (3.9, "Roar")])
@@ -1040,6 +1152,7 @@ clip("Gunslinger", 5.0, [
 # ---- batch 5 (next wave, solo, any build)
 _PALMS_UP = (0, 175)          # (left wrist) on an arm held out: palm turned up (0 = back, 90 = forward, 120 = forward+up)
 _SKY_WIDE_R = mx(SKY_CLEAR)
+_SKY_OUT_R = mx(SKY_OUT)
 
 # EPIC (MC-025; eu_9nPA3zRs 75:52-76:01, a bulky 93 kg man's grinder squat, Houston) "are you not entertained": right
 # fist straight up, head tilted, a slap on the chest (a chalk puff), then both arms spread wide and level, palms up,
@@ -1049,8 +1162,8 @@ _SKY_WIDE_R = mx(SKY_CLEAR)
 _SLAP_PEC_R = B((0.66, 0.42, -1.0))
 _ELBOW_SLAP_R = (1.0, -0.15, 0.0)
 clip("AreYouNotEntertained", 6.0, [
-    K(0.4, rh=("chest", _SKY_WIDE_R), lh=REST, cbend=-6, up=14),
-    K(0.95, rh=("chest", _SKY_WIDE_R), lh=REST, cbend=-6, up=18),
+    K(0.4, rh=("chest", _SKY_OUT_R), lh=REST, cbend=-6, up=14),
+    K(0.95, rh=("chest", _SKY_OUT_R), lh=REST, cbend=-6, up=18),
     K(1.45, rh=("chest", B((1.45, 0.45, -1.0))), re=_ELBOW_SLAP_R, lh=REST, up=8),
     K(1.75, rh=("chest", _SLAP_PEC_R), re=_ELBOW_SLAP_R, lh=REST, cbend=4, up=4, ease="fast"),
     K(2.1, rh=("chest", B((1.3, 0.35, -1.05))), re=_ELBOW_SLAP_R, lh=REST, cbend=0, up=6),
@@ -1106,8 +1219,8 @@ clip("StageEdgeDoubleBiceps", 5.6, [
 clip("FistsChestCeilingRoar", 5.4, [
     K(0.5, with_=both(FIST_CHEST), le=ELBOW_OUT, re=mx(ELBOW_OUT), lean=-8, cbend=-12, up=18, ease="fast"),
     K(0.95, with_=both(FIST_CHEST), le=ELBOW_OUT, re=mx(ELBOW_OUT), lean=-8, cbend=-12, up=20, turn=10),
-    K(1.4, rh=("chest", _SKY_WIDE_R), lh=REST, lean=0, cbend=-6, up=14, turn=-10),
-    K(1.9, rh=("chest", _SKY_WIDE_R), lh=REST, cbend=-6, up=16, turn=-10),
+    K(1.4, rh=("chest", _SKY_OUT_R), lh=REST, lean=0, cbend=-6, up=14, turn=-10),
+    K(1.9, rh=("chest", _SKY_OUT_R), lh=REST, cbend=-6, up=16, turn=-10),
     K(2.45, with_=both(B((-1.5, -0.65, -0.6))), le=ELBOW_OUT, re=mx(ELBOW_OUT), lean=-8, cbend=-14, up=44, turn=0),
     K(3.9, with_=both(B((-1.5, -0.65, -0.6))), le=ELBOW_OUT, re=mx(ELBOW_OUT), lean=-8, cbend=-14, up=46),
     K(4.4, with_=rest(), lean=0, cbend=2, up=-10),
@@ -1133,8 +1246,64 @@ clip("LightsArmsWideHeadHands", 4.8, [
     K(4.8),
 ], source="MC-049", rarity="Uncommon", events=[(1.6, "Roar")])
 
+# ---- miss reactions over the walk back (user 2026-11-15: "the lifter does NOT do the fail animation while looking at the
+# crowd, the lifter would be facing the direction they are going back to, then yelling or screaming ... it should be
+# fail, turn while walking hand gestures, scream"). Arms and head only (the walk is the game's), so the lifter turns and
+# walks off while he does them. Elbows out to the sides, never back; open hands except the swipe's and the yell's fists
+# (HandShapeConfig). Replace the standing LeapAndBow / ReliefRoar reactions.
+# hands up onto the head walking away (the "can't believe I missed it" walk), a look up, then the head drops and shakes
+clip("MissHandsOnHead", 3.5, [
+    K(0.35, **_HOLD_HEAD, up=8),
+    K(1.0, **_HOLD_HEAD, up=14),
+    K(1.5, **_HOLD_HEAD, up=-10),
+    *[K(t, **_HOLD_HEAD, turn=tr, up=-10) for t, tr in ((1.75, 12), (1.95, -12), (2.15, 10), (2.35, -8))],
+    K(2.55, with_=both(H((-0.95, 2.5, -0.35))), le=_ELBOW_HEAD_SIDE, re=mx(_ELBOW_HEAD_SIDE), lw=(40, -60), rw=(40, 60),
+      turn=0, up=-6),   # (hands lift UP off the head first: curled fingers dig in otherwise)
+    # (2026-11-15, Studio: from the head out to the sides in 0.3 s turned the shoulders at 1600 deg/s in the game; 0.45 s)
+    K(3.0, with_=both(B((-1.45, 0.9, -0.9))), le=_ELBOW_HEAD_SIDE, re=mx(_ELBOW_HEAD_SIDE), lw=(20, -30), rw=(20, 30),
+      up=-4),
+    K(3.32, with_=rest(), lw=(0, 0), rw=(0, 0), up=0),
+    K(3.5),
+], kind="walk", source="User 2026-11-15 (miss: walk off)", rarity="Default", only=ARMS_AND_HEAD,
+    events=[(0.35, "Roar")])
+
+# a frustrated swipe: the right fist thrown up and slashed down across the body, then hands on the hips shaking the head
+_SWIPE_UP = B((1.45, 1.1, -0.55))
+_SWIPE_DOWN = B((0.6, -0.7, -1.6))      # (across in front, clear of the Fat belly)
+clip("MissArmSwipe", 3.0, [
+    K(0.25, rh=("chest", _SWIPE_UP), re=mx(_ELBOW_BY_HEAD), lh=REST, up=10),
+    K(0.55, rh=("chest", _SWIPE_DOWN), re=mx(ELBOW_DOWN), lh=REST, up=-8),
+    K(0.95, with_=both(_HIPS_CLEAR), le=ELBOW_OUT, re=mx(ELBOW_OUT), up=-6),
+    *[K(t, with_=both(_HIPS_CLEAR), le=ELBOW_OUT, re=mx(ELBOW_OUT), turn=tr, up=-8)
+      for t, tr in ((1.25, 14), (1.45, -14), (1.65, 12), (1.85, -10))],
+    K(2.2, with_=both(_HIPS_CLEAR), le=ELBOW_OUT, re=mx(ELBOW_OUT), turn=0, up=-4),
+    K(2.7, with_=rest(), up=0),
+    K(3.0),
+], kind="walk", source="User 2026-11-15 (miss: walk off)", rarity="Default", only=ARMS_AND_HEAD,
+    events=[(0.25, "Roar")])
+
+# yelling at the ceiling walking away, fists flared low and tense, two fists driven down, then the head drops
+_FLARE_LOW = O((-1.9, -0.45, -0.5))
+_DRIVE_DOWN = B((-1.3, -0.85, -0.75))
+clip("MissYell", 2.8, [
+    K(0.3, with_=both(_FLARE_LOW), le=ELBOW_OUT, re=mx(ELBOW_OUT), up=30),
+    K(1.05, with_=both(_FLARE_LOW), le=ELBOW_OUT, re=mx(ELBOW_OUT), up=32),
+    K(1.3, with_=both(_DRIVE_DOWN), le=ELBOW_OUT, re=mx(ELBOW_OUT), up=4),
+    K(1.55, with_=both(B((-1.35, -0.55, -0.7))), le=ELBOW_OUT, re=mx(ELBOW_OUT), up=0),
+    K(1.8, with_=both(_DRIVE_DOWN), le=ELBOW_OUT, re=mx(ELBOW_OUT), up=-10),
+    K(2.4, with_=rest(), up=-6),
+    K(2.8, up=0),
+], layers=[tremble(0.3, 1.05, amp=0.04, chest=0.0)], kind="walk", source="User 2026-11-15 (miss: walk off)",
+    rarity="Default", only=ARMS_AND_HEAD, events=[(0.3, "Roar")])
+
 
 # ---------------------------------------------------------------- run
+# (2026-11-16, longer-thigh rebuild of the bodies) BigBuff's forearm folded 0.26-0.27 into its own biceps whenever an
+# elbow bent ~128-148 degrees on the rebuilt arms, so AreYouNotEntertained, ChalkClapPump, ExitFistPump, FistsBesideHead,
+# HammerFistRoar, LeapAndBow, RecordJumpRoar and VStrutRoar had their elbows capped at 126 (Clip.elbow_max). Removed the
+# same day: the bodies' inner-elbow weights now blend over the inside of the elbow (build_cartoon_rig_05.spread_elbows)
+# and every one of them passes anim_qa uncapped, the fists back on their own spots.
+
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     folder = argv[0] if argv else None

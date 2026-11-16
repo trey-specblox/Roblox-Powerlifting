@@ -31,7 +31,9 @@ local StarterGymConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 
 local MirrorController = {}
 
-local PIXELS_PER_STUD = 20
+local PIXELS_PER_STUD = 20 -- the least sharp it gets
+local MAX_PIXELS_PER_STUD = 50
+local MAX_VIEW_PIXELS = 2048 -- the mirror's picture is never more than this many pixels across (the cost stays low)
 local MAX_HALF_ANGLE = math.rad(60) -- the widest the viewport's camera may see (FieldOfView 120)
 local MAX_PARTS = 2500 -- the most room parts one mirror copies
 
@@ -223,8 +225,15 @@ local function updateCharacters(mirror: Mirror, world: WorldModel)
 					end
 				end
 				if copy then
+					-- The whole character as ONE rigid piece, turned to face out of the glass: half a turn about the upright
+					-- line on the glass straight in front of them, so they stand just as far behind it. Each part reflected on
+					-- its own (as the room's are) turned every limb differently, and the skinned body, clothes and gear
+					-- stretched wrongly between them: spindly arms, a warped torso (user 2026-11-16: "fix the mirror it is
+					-- terrible ... my proportions are extremely ugly"). Writing on them reads the right way round, as before.
+					local onGlass = root.Position - out * mirror.normal
+					local turn = CFrame.new(onGlass) * CFrame.Angles(0, math.pi, 0) * CFrame.new(-onGlass)
 					for _, pair in ipairs(copy.follow) do
-						pair.copy.CFrame = reflect(pair.original.CFrame, mirror.centre, mirror.normal)
+						pair.copy.CFrame = turn * pair.original.CFrame
 					end
 				end
 			end
@@ -270,8 +279,16 @@ local function update()
 		local u, v = (foot - topLeft):Dot(mirror.right), (topLeft - foot).Y
 		local half = math.max(math.abs(u), math.abs(mirror.width - u), math.abs(v), math.abs(mirror.height - v))
 		half = math.min(half, distance * math.tan(MAX_HALF_ANGLE))
-		viewport.Position = UDim2.fromOffset((u - half) * PIXELS_PER_STUD, (v - half) * PIXELS_PER_STUD)
-		viewport.Size = UDim2.fromOffset(2 * half * PIXELS_PER_STUD, 2 * half * PIXELS_PER_STUD)
+		-- As sharp as the picture's size allows (user 2026-11-16: the reflection was blurry and blocky at 20 per stud):
+		-- up to MAX_PIXELS_PER_STUD, the whole picture at most MAX_VIEW_PIXELS across.
+		local pps = math.clamp(MAX_VIEW_PIXELS / (2 * half), PIXELS_PER_STUD, MAX_PIXELS_PER_STUD)
+		if math.abs(gui.PixelsPerStud - pps) > 2 then
+			gui.PixelsPerStud = pps
+		else
+			pps = gui.PixelsPerStud
+		end
+		viewport.Position = UDim2.fromOffset((u - half) * pps, (v - half) * pps)
+		viewport.Size = UDim2.fromOffset(2 * half * pps, 2 * half * pps)
 		view.FieldOfView = math.deg(2 * math.atan(half / distance))
 		view.CFrame = CFrame.lookAt(eye, eye - mirror.normal)
 	end

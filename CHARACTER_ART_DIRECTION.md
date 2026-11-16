@@ -766,6 +766,23 @@ exported or committed; no game file changed.
   (about as before). The figures below are the x1.2-arm build's where they differ; its two .blend files are kept in
   `D:\ClaudeScratch\bodies05_armsx12`. Pose pictures still use the committed block-rig animations (made for short
   arms: the deadlift fists now go into the floor until Phase 1's re-made set is used).
+- **Longer thighs (2026-11-15, user: "Can we make the legs, a little longer. so there is a gap between the singlet,
+  and the knee sleeves?", then "Knee 1.00" from a mock-up, `art/previews/Bodies05_LegTrial_{Front,Side}.png`):** knee
+  1.178 -> **1.00**, hips kept at 2.0 (HipHeight, station heights and the arms x1.5 deadlift fix unchanged): thigh
+  0.822 -> 1.00, shin 0.926 -> 0.748. `build_cartoon_body_05.py`: `L["K"] = 1.00`, `leg_z` stretches the leg shapes
+  along thigh and shin like the arms. Raising the hips instead was advised against (taller lifter, the hands above the
+  hips again). Now 2,168 points, body 4,332 + hands 1,200 = **5,532 triangles**; 0 folds; CHECK PASSED on both files.
+  Tee test about as before (squat bar hold 0, arms up 0-1, double biceps 0-6, bench 0-2 but Big and buff 14 at most
+  0.05 deep, overhead clap 32-120). Every knee-bending animation and the gear need re-making for the new knee. The
+  knee-1.178 files are kept in `D:\ClaudeScratch\bodies05_knee1178`.
+- **Softer inner elbow (2026-11-15, asked by the animation session):** on the big builds a deeply bent elbow sank the
+  forearm into the biceps (anim_qa arm_in_body over its 0.26 limit on Big and buff from ~128 degrees, so ~10 moves had
+  their elbows capped). Measured on every point, the knee-1.178 bodies were just as deep; anim_qa samples every other
+  point and missed it there. Fix in `build_cartoon_rig_05.spread_elbows`: the upper-arm/forearm weight split blended
+  over +-0.75 along the arm on the INSIDE of the elbow only (the bony back keeps its point; a blend all round made a
+  rubber-hose bend at 90 degrees). Big and buff at 130/138/148 degrees: 0.26/0.27/0.32 -> 0.06/0.14/0.26 (every
+  point), 0/0.085/0.21 (anim_qa's sampling). Tee test unchanged; CHECK PASSED. Picture:
+  `art/previews/Bodies05_Close_ElbowBend.png` (top: before, bottom: after; Big and buff and Fit at 90 and 130 degrees).
 - **Grip hand (2026-11-13, for the deadlift, later every lift; user: the fingers must be "actually wrapped around
   grabbing it"):** `build_cartoon_hands_04.py` shape "Grip": a bar hole along hand-space X at `GRIP_C` (0, -0.197,
   -0.40), radius 0.062 (0.075 studs at Fit's 1.22; one mesh scaled per build). Fingers run from the knuckles under the

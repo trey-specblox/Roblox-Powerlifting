@@ -21,9 +21,17 @@ local HandShapeAnimator = {}
 type Watch = { character: Model, folder: Instance, shown: { [string]: string? }, tracks: { [AnimationTrack]: { HandShapeConfig.Span } } }
 
 local watched: { [Model]: Watch } = {}
--- Characters whose hands grip something right now (the bar in a lift: StationPoseAnimator).
-local gripping: { [Model]: boolean } = {}
+-- Characters whose hands grip something right now (the bar in a lift: StationPoseAnimator): when it was last said
+-- (os.clock) and the grip's shape. StationPoseAnimator says it every frame while the lift lasts and simply stops when
+-- the lift ends (MeetLiftAnimation.stop clears MeetLift / MeetBarHeld, so that character is no longer followed), so a
+-- grip not said for GRIP_LAPSE seconds is over: before, the last "true" stuck and the fists showed all through the
+-- next celebration.
+local gripping: { [Model]: { at: number, shape: string } } = {}
+local GRIP_LAPSE = 0.25
 local SIDES = { "Left", "Right" }
+-- The station / meet attributes that say which lift a character is doing (StationPoseAnimator's).
+local POSE_ATTRIBUTE = "StationPose"
+local MEET_LIFT_ATTRIBUTE = "MeetLift"
 
 -- Shows `shape` (nil = the open hand) on `side`.
 local function show(watch: Watch, side: string, shape: string?)
@@ -70,6 +78,7 @@ local function watch(character: Model, folder: Instance)
 	character.AncestryChanged:Connect(function(_, parent)
 		if parent == nil then
 			watched[character] = nil
+			gripping[character] = nil
 		end
 	end)
 end
@@ -95,15 +104,29 @@ local function step()
 				wanted[side] = wanted[side] or HandShapeConfig.shapeAt(spans, track.TimePosition, side)
 			end
 		end
+		local grip = gripping[character]
+		if grip and os.clock() - grip.at > GRIP_LAPSE then
+			gripping[character] = nil
+			grip = nil
+		end
 		for _, side in ipairs(SIDES) do
-			show(w, side, wanted[side] or (if gripping[character] then HandShapeConfig.Grip else nil))
+			show(w, side, wanted[side] or (if grip then grip.shape else nil))
 		end
 	end
 end
 
--- Whether `character`'s hands grip something (the bar): they close (HandShapeConfig.Grip) while nothing else is shown.
-function HandShapeAnimator.setGrip(character: Model, on: boolean)
-	gripping[character] = if on then true else nil
+--[[
+	Whether `character`'s hands grip something (the bar): they show the lift's grip (HandShapeConfig.gripFor: SquatGrip in
+	the squat, Grip otherwise) while nothing else is shown. Say it every frame while it lasts: a grip not said for
+	GRIP_LAPSE seconds lets go by itself.
+]]
+function HandShapeAnimator.setGrip(character: Model, on: boolean, lift: string?)
+	if not on then
+		gripping[character] = nil
+		return
+	end
+	local which = lift or character:GetAttribute(MEET_LIFT_ATTRIBUTE) or character:GetAttribute(POSE_ATTRIBUTE)
+	gripping[character] = { at = os.clock(), shape = HandShapeConfig.gripFor(which) }
 end
 
 function HandShapeAnimator.start()

@@ -386,7 +386,7 @@ end
 
 -- Draws celebration `id`'s effects on `figure`, as of `startedAt` (Workspace:GetServerTimeNow()).
 function CelebrationFx.play(id: string, startedAt: number, figure: Model)
-	local celebration = CelebrationConfig.byId[id]
+	local celebration = CelebrationConfig.get(id)   -- (a celebration or a miss reaction)
 	local root = part(figure, "HumanoidRootPart")
 	if celebration == nil or root == nil or figure.Parent == nil then
 		return

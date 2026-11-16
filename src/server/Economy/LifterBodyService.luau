@@ -121,8 +121,8 @@ end
 function LifterBodyService.buildFor(player: Player): string
 	if RunService:IsStudio() then
 		local picked = Workspace:GetAttribute(ClothesConfig.StudioBuildAttribute)
-		if typeof(picked) == "string" and ClothesConfig.Bodies[picked] then
-			return picked
+		if typeof(picked) == "string" and ClothesConfig.Bodies[LifterBuild.current(picked)] then
+			return LifterBuild.current(picked)
 		end
 	end
 	local data = PlayerDataService.getData(player)
@@ -203,13 +203,21 @@ local function getClothes(build: string): Model?
 	return model
 end
 
--- The hand shapes model (HandShapeConfig), once.
+-- The hand shapes model (HandShapeConfig), once. A body built while another is still loading it waits for that load
+-- (Studio 2026-11-15: the coach and the player were built together, the player's call came back empty during the
+-- first load and that player had no hand shapes all session, so their hands never opened or closed).
+local handsLoading = false
 local function getHands(): Model?
+	while handsLoading do
+		task.wait(0.1)
+	end
 	if handsModel or handsTried or HandShapeConfig.AssetId == 0 then
 		return handsModel
 	end
 	handsTried = true
+	handsLoading = true
 	handsModel = loadModel(HandShapeConfig.AssetId)
+	handsLoading = false
 	if handsModel then
 		handsModel.Name = "HandShapes"
 		handsModel.Parent = templatesFolder()

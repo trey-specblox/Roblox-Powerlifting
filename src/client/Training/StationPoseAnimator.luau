@@ -53,7 +53,12 @@ local function barSpot(character: Model, lift: string, handsMid: Vector3): Vecto
 		return handsMid
 	end
 	local inTorso = upper.CFrame:PointToObjectSpace(handsMid)
-	local z = if lift == "Squat" then body.squatBarRest else math.min(inTorso.Z, -body.benchBarClear)
+	if lift == "Squat" then
+		-- ON the upper back, at the body's own bar spot (user 2026-11-15: "there is a huge gap inbetween the bar and the
+		-- lifter"): a fixed height and the build's back depth, centred, never the hands' height.
+		return upper.CFrame:PointToWorldSpace(Vector3.new(0, StationAnimationConfig.SquatBarOnBackY, body.squatBarRest))
+	end
+	local z = math.min(inTorso.Z, -body.benchBarClear)
 	return upper.CFrame:PointToWorldSpace(Vector3.new(inTorso.X, inTorso.Y, z))
 end
 

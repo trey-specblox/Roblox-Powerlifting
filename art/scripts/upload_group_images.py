@@ -6,7 +6,8 @@
 The manifest lists each material's prepared map files (color/normal/roughness PNGs, made from ambientCG or
 Poly Haven with the Roblox Maps kit's prep step) under "materials", GLB models under "models" (uploaded as
 Model assets: a GLB arrives at 1 Blender unit = 1 stud), single PNG pictures under "images" (signs,
-drawings) and WAV sounds under "sounds" (uploaded as Audio assets), and receives the uploaded asset ids. Ids already in the manifest are never uploaded again.
+drawings) and WAV sounds under "sounds" (uploaded as Audio assets), and receives the uploaded asset ids. Ids already in the manifest are never uploaded again, and an entry marked "skip": true (a version replaced
+before it was ever uploaded) is left out.
 
 Why our own uploader: the game belongs to group 529442797, so its images must be owned by that group (images a
 user uploads fail to load in a group game). The Maps kit's uploader always uploads as the user.
@@ -91,6 +92,8 @@ def main(argv):
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     todo = []
     for name, entry in manifest.get("materials", {}).items():
+        if entry.get("skip"):
+            continue
         folder = Path(entry["preparedFolder"]).expanduser()
         ids = entry.setdefault("ids", {})
         for kind in MAP_ORDER:
@@ -100,6 +103,8 @@ def main(argv):
                     sys.exit(f"{name}: missing {path}")
                 todo.append(("materials", name, kind, path))
     for name, entry in manifest.get("models", {}).items():
+        if entry.get("skip"):
+            continue
         ids = entry.setdefault("ids", {})
         if not ids.get("model"):
             path = Path(entry["file"])
@@ -107,6 +112,8 @@ def main(argv):
                 sys.exit(f"{name}: missing {path}")
             todo.append(("models", name, "model", path))
     for name, entry in manifest.get("images", {}).items():
+        if entry.get("skip"):
+            continue
         ids = entry.setdefault("ids", {})
         if not ids.get("image"):
             path = Path(entry["file"]).expanduser()
@@ -114,6 +121,8 @@ def main(argv):
                 sys.exit(f"{name}: missing {path}")
             todo.append(("images", name, "image", path))
     for name, entry in manifest.get("sounds", {}).items():
+        if entry.get("skip"):
+            continue
         ids = entry.setdefault("ids", {})
         if not ids.get("audio"):
             path = Path(entry["file"]).expanduser()
@@ -130,7 +139,7 @@ def main(argv):
         asset = upload_file(path, f"{name} {kind}", key)
         manifest[section][name]["ids"][kind] = asset
         # save after every upload, so an interrupted run never uploads the same map twice
-        manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+        manifest_path.write_text(json.dumps(manifest, indent=1) + "\n", encoding="utf-8")
         print(f"  uploaded {name} {kind} -> {asset}")
     return 0
 

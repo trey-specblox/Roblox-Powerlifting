@@ -18,7 +18,10 @@
 import os
 
 TABLES = {
-    "torso": {"NEW_HIPS": 2.0, "TORSO": 1.35, "ARM": 1.5},
+    # NEW_KNEE (2026-11-16, user-approved in the bodies session, build_cartoon_body_05.L["K"] = 1.00, was 1.178): longer
+    # thighs, shorter shins, so the singlet's shorts and the knee sleeves have a gap between them. Hips, ankle and the
+    # whole leg's length unchanged: thigh x1.2165, shin x0.808. (No NEW_KNEE: the knee moves with the leg.)
+    "torso": {"NEW_HIPS": 2.0, "TORSO": 1.35, "ARM": 1.5, "NEW_KNEE": 1.00},
     "taller": {"NEW_HIPS": 2.4, "TORSO": 1.15, "ARM": 1.15},
     "block": {"NEW_HIPS": 2.0, "TORSO": 1.0, "ARM": 1.0},
 }
@@ -35,7 +38,11 @@ for _key, _env in (("ARM", "LIFTER_ARM"), ("TORSO", "LIFTER_TORSO"), ("NEW_HIPS"
 ANKLE = 0.25          # below this nothing changes (the feet)
 OLD_HIPS = 2.0
 NEW_HIPS = TABLES[RIG]["NEW_HIPS"]
-LEG = (NEW_HIPS - ANKLE) / (OLD_HIPS - ANKLE)     # 1.0 torso / block, 1.2286 taller
+LEG = (NEW_HIPS - ANKLE) / (OLD_HIPS - ANKLE)     # 1.0 torso / block, 1.2286 taller (the whole leg)
+OLD_KNEE = 1.178                                  # the block skeleton's knee joint
+NEW_KNEE = TABLES[RIG].get("NEW_KNEE") or ANKLE + (OLD_KNEE - ANKLE) * LEG
+THIGH = (NEW_HIPS - NEW_KNEE) / (OLD_HIPS - OLD_KNEE)   # the upper leg (x1.2165 torso)
+SHIN = (NEW_KNEE - ANKLE) / (OLD_KNEE - ANKLE)          # the lower leg (x0.808 torso)
 TORSO = TABLES[RIG]["TORSO"]                      # the torso and everything above the hips
 ARM = TABLES[RIG]["ARM"]                          # upper and lower arm (the hands keep their size)
 
@@ -47,8 +54,10 @@ def z(old):
     """An old (block-skeleton) height on the body to the new one (the arms hang from it: lengths along an arm use ARM)."""
     if old <= ANKLE:
         return old
+    if old <= OLD_KNEE:
+        return ANKLE + (old - ANKLE) * SHIN
     if old <= OLD_HIPS:
-        return ANKLE + (old - ANKLE) * LEG
+        return NEW_KNEE + (old - OLD_KNEE) * THIGH
     return NEW_HIPS + (old - OLD_HIPS) * TORSO
 
 
@@ -56,7 +65,9 @@ def slope(old):
     """How much a short length at that height stretches."""
     if old <= ANKLE:
         return 1.0
-    return LEG if old <= OLD_HIPS else TORSO
+    if old <= OLD_KNEE:
+        return SHIN
+    return THIGH if old <= OLD_HIPS else TORSO
 
 
 def span(old_low, old_high):

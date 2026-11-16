@@ -48,6 +48,8 @@ export type Path = {
 	duration: number,
 	startYaw: number,
 	finalYaw: number,
+	-- A few steps straight back, still facing the way it faces (MeetWalkPath.isBackStep): no turning round.
+	backward: boolean,
 }
 
 -- Sample spacing of the speed table (seconds).
@@ -65,6 +67,11 @@ local START_TURN = 1.5
 local FINAL_TURN = 3.0
 -- A walk can't run longer than this (a broken route).
 local MAX_SECONDS = 60
+-- Stepping back (isBackStep): at most this far, with the start and end facing within about 35 degrees of each other,
+-- and the way to go within about 35 degrees of straight behind.
+local BACK_STEP_MAX_STUDS = 6
+local BACK_STEP_SAME_FACING = 0.82
+local BACK_STEP_BEHIND = -0.82
 
 local function flat(v: Vector3): Vector3
 	return Vector3.new(v.X, 0, v.Z)
@@ -87,6 +94,24 @@ end
 local function smooth(u: number): number
 	u = math.clamp(u, 0, 1)
 	return u * u * (3 - 2 * u)
+end
+
+--[[
+	Whether a walk is a few steps straight back (Studio 2026-11-15: after racking the squat bar the lifter turned away,
+	walked 4.6 studs to the lift spot and spun back round to celebrate; a real lifter steps back out of the rack still
+	facing it). One leg, short, ending facing the way it started, going backward: the body keeps its facing and the walk
+	plays in reverse (ComputerLifters.walkBody). Pure: the server and every client answer the same.
+]]
+function MeetWalkPath.isBackStep(from: Vector3, look: Vector3, points: { Vector3 }, final: CFrame): boolean
+	if #points > 0 then
+		return false
+	end
+	local step = flat(final.Position - from)
+	local facing, finalFacing = flat(look), flat(final.LookVector)
+	if step.Magnitude < 0.3 or step.Magnitude > BACK_STEP_MAX_STUDS or facing.Magnitude < 1e-3 or finalFacing.Magnitude < 1e-3 then
+		return false
+	end
+	return facing.Unit:Dot(finalFacing.Unit) >= BACK_STEP_SAME_FACING and step.Unit:Dot(facing.Unit) <= BACK_STEP_BEHIND
 end
 
 function MeetWalkPath.new(spec: Spec): Path
@@ -137,6 +162,7 @@ function MeetWalkPath.new(spec: Spec): Path
 		duration = (#distances - 1) * STEP,
 		startYaw = yawOf(if look.Magnitude > 1e-3 then look elseif first.Magnitude > 1e-3 then first else Vector3.new(0, 0, -1)),
 		finalYaw = yawOf(if finalLook.Magnitude > 1e-3 then finalLook else Vector3.new(0, 0, -1)),
+		backward = MeetWalkPath.isBackStep(spec.from, spec.look, spec.points, spec.final),
 	}
 end
 
@@ -178,6 +204,10 @@ function MeetWalkPath.at(path: Path, t: number): (CFrame, boolean)
 	end
 	local s = MeetWalkPath.progress(path, t)
 	local here = pointAt(path, s)
+	if path.backward then
+		local yaw = turnBetween(path.startYaw, path.finalYaw, smooth(s / path.total))
+		return CFrame.lookAt(here, here + lookOf(yaw)) + Vector3.new(0, spec.height, 0), false
+	end
 	local ahead = flat(pointAt(path, math.min(path.total, s + LOOK_AHEAD)) - here)
 	local yaw = if ahead.Magnitude > 1e-3 then yawOf(ahead) else path.finalYaw
 	yaw = turnBetween(path.startYaw, yaw, smooth(s / START_TURN))

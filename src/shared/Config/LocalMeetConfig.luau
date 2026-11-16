@@ -217,9 +217,9 @@ LocalMeetConfig.Awards = {
 LocalMeetConfig.CoachFollowSeconds = 1
 
 LocalMeetConfig.Chalk = {
-	LifterAnimationId = "rbxassetid://117237414323040",
-	CoachBackAnimationId = "rbxassetid://113361762391365",
-	CoachTalkAnimationId = "rbxassetid://107749236099343",
+	LifterAnimationId = "rbxassetid://133012402954744",
+	CoachBackAnimationId = "rbxassetid://116488229566310",
+	CoachTalkAnimationId = "rbxassetid://91384972687834",
 	-- From the lifter's spot to the stand's post, and to the coach behind them.
 	StandAheadStuds = 1.75,
 	CoachBehindStuds = 2,
@@ -233,6 +233,8 @@ LocalMeetConfig.Chalk = {
 	RubAt = { 1.3, 3.1 },
 	ClapAt = { 4.4, 4.77 },
 	SlapAt = { 4.85, 5.15 },
+	-- Chalk_Lifter's and Chalk_Coach_Back's loop (both the same length).
+	LoopSeconds = 9,
 	PuffParticles = 14,
 	-- The camera: side-on to them, this far back and this far up from the middle of the group, gliding at this rate,
 	-- with the group this share of the way across the clear part of the screen.
@@ -290,6 +292,9 @@ LocalMeetConfig.Ritual = {
 	Seconds = 7.6,
 	-- The coach leaves the front of the stand for the lifter's back (during the Hands shot, off camera).
 	CoachMoveAt = 3.9,
+	-- About how long the coach's walk round to the lifter's back takes, out wide round the Hands shot's camera (measured
+	-- in Studio 2026-11-15: 2.3 s).
+	CoachRoundSeconds = 2.3,
 	-- The coach's back-slap animation starts this far into its loop, so the slaps come soon after they arrive.
 	SlapLeadSeconds = 0.45,
 	-- What the coach shouts with the slaps (text only).

@@ -27,6 +27,7 @@
 # Layers: functions layer(t, ch) that add to the sampled channels before solving (a shake, breathing...).
 import importlib.util
 import math
+import glob
 import os
 
 from mathutils import Euler, Matrix, Vector
@@ -209,6 +210,9 @@ def resolve_hand(spec, upper):
 
 # ---------------------------------------------------------------- solving
 ARM_KEYS = ("raise", "swing", "twist", "elbow")
+# The most an elbow may bend (degrees). 150 for every clip unless the clip sets its own Clip.elbow_max (opt-in, 2026-11-16
+# legs fix): Clip.solve() sets this for its own solve and puts it back after.
+ELBOW_MAX = 150.0
 LEG_KEYS = ("flex", "out", "turn", "bend")
 STEPS = (8, 4, 2, 1, 0.5, 0.25)
 
@@ -260,7 +264,7 @@ def _reach(upper, side, target, start, wrist, iterations=40):
             break
         for k, c in zip(ARM_KEYS, columns):
             a[k] += max(-15.0, min(15.0, c.dot(x)))
-        a["elbow"] = max(-5.0, min(150.0, a["elbow"]))
+        a["elbow"] = max(-5.0, min(ELBOW_MAX, a["elbow"]))
     return a
 
 
@@ -299,7 +303,7 @@ def solve_arm(upper, side, target, elbow_dir, previous, wrist, firm=False):
     start = _reach(upper, side, target, previous, wrist)
 
     def cost(a):
-        if not (-5 <= a["elbow"] <= 150):
+        if not (-5 <= a["elbow"] <= ELBOW_MAX):
             return 1e9
         ua, la, hand = _arm_chain(upper, side, a, wrist)
         c = 6.0 * (hand.to_translation() - target).length
@@ -380,14 +384,328 @@ def solve_leg(lower, side, ankle_target, knee_target, foot_yaw):
     return hip, bend
 
 
+# ---------------------------------------------------------------- clothes count as the body (rules 16-17, 2026-11-16)
+# One animation plays on all six builds, each with its own shoulder width and arm splay, wearing the meet outfit (tee,
+# singlet, belt). A hand or forearm must never sink into the clothes on ANY build (contact fitted to the widest clothed
+# build; a small float on Skinny is accepted, user 2026-11-16). anim_qa.py measures it (arm_in_outfit); this makes the
+# clips meet it while they are solved.
+#
+# The ENVELOPE (a data file made from the real bodies and the game's outfit exports, export_envelope() below): per
+# build its rest joints, the skin of the torso and thighs sampled every ~0.07 stud with each spot's outward normal and
+# how thick the outfit is stacked on it there (the same layer stacking as anim_qa: the tee, the singlet over it, the
+# belt over that), and the forearm's far half and the hand (open and fist) as points. Each solved frame is posed on
+# every build exactly as the game and anim_qa pose a shared animation (each part = parent * (its rest joint offset) *
+# the joint's Transform), and when a hand or forearm point would sit inside the outfit plus CLOTHED_MARGIN on any build,
+# that hand is moved out along the clothes' normal there and the arm re-solved (a few rounds). A clip opts in with
+# clothed=True (celebration_animations does for every celebration; emotes are not touched).
+#   make the envelope:  blender -b art/blender/CartoonBodies_05_Rigged.blend --python art/scripts/celebration_rig.py
+#                         -- envelope [out.json]
+ENVELOPE_PATH = os.environ.get("CELEB_ENVELOPE") or os.path.join(os.path.dirname(_HERE), "data",
+                                                                   "clothed_envelope_05.json")
+CLOTHED_LAYER_EXTRA = 1.3     # + this share of a layer's thickness past 0.13 (the belt, 0.19-0.27, bends and slides more
+#                               than the skin as the body bends: measured 0.04-0.11 further out in anim_qa on Fat bent
+#                               over; the tee and the shorts get ~none: the hand hanging at rest stays exactly the idle's)
+CLOTHED_MARGIN = 0.04          # clearance over the outermost layer (anim_qa's limit is 0.03 INTO it; the singlet may
+#                                still move out a little, 2026-11-16)
+CLOTHED_UP_SHARE = 0.3        # how much of the clothes' normal's chest-up part a push keeps (clear_of_clothes)
+CLOTHED_PARTS = ("UpperTorso", "LowerTorso", "LeftUpperLeg", "RightUpperLeg")   # anim_qa.OUTFIT_BODY_PARTS
+
+def centre_outfit(meshes, part_of=lambda o: o.name.partition("__")[2].split(".")[0]):
+    """The exports store each build's pieces where that build stood in the gear file (Fat 9.2 studs over, Muscular
+    18.4, BigBuff 23) while its skeleton stands at the centre: move the pieces' mesh data onto the centre line (the
+    outfit is left-right symmetric; its torso pieces' middle). 2026-11-16: missed, so on every build but Skinny the
+    clothes were far from the body and only the skin was kept clear of / checked."""
+    from mathutils import Matrix, Vector
+    xs = [v.co.x for o in meshes if part_of(o) == "UpperTorso" for v in o.data.vertices]
+    if not xs:
+        return 0.0
+    shift = -(min(xs) + max(xs)) / 2
+    if abs(shift) <= 0.5:
+        return 0.0
+    for o in meshes:
+        o.data.transform(Matrix.Translation(Vector((shift, 0, 0))))
+    return shift
+HAND_SHAPES = ("Open", "Fist", "Point", "ThumbsUp")     # (the game's hand swaps, HandShapeConfig)
+_PART_JOINT = {child: joint for joint, (parent, child, c0, c1) in S.JOINTS.items()}
+_PART_PARENT = {child: parent for joint, (parent, child, c0, c1) in S.JOINTS.items()}
+_ENVELOPE = {}
+
+
+def _envelope():
+    """{build: {"J": {part: Vector}, "parts": {part: (KDTree, [(point, normal, layer)])}, "arm": {side: [(part, point)]}}}
+    (rest, Roblox space, points relative to their part's joint)."""
+    if not _ENVELOPE:
+        import json
+        from mathutils.kdtree import KDTree
+        if not os.path.exists(ENVELOPE_PATH):
+            raise FileNotFoundError(f"clothed envelope missing: {ENVELOPE_PATH} (make it: celebration_rig.py -- envelope)")
+        data = json.load(open(ENVELOPE_PATH))
+        for build, d in data["builds"].items():
+            J = {k: Vector(v) for k, v in d["J"].items()}
+            parts = {}
+            for part, rows in d["skin"].items():
+                pts = [(Vector(r[0:3]), Vector(r[3:6]), r[6]) for r in rows]
+                tree = KDTree(len(pts))
+                for i, (p, _n, _l) in enumerate(pts):
+                    tree.insert(p, i)
+                tree.balance()
+                parts[part] = (tree, pts)
+            # per hand shape: the forearm points go with every shape; the hand's are the open hand's unless the game
+            # swaps in a fist / point / thumbs up then (Clip.hand_spans; the fist hanging at rest reads 0.04 into
+            # Skinny's shorts, but at rest the game's hand is open)
+            arm = {}
+            for side in ("Left", "Right"):
+                rows = [(r[2], r[0], Vector(r[1])) for r in d["arm"][side]]
+                fore = [(part, v) for shape, part, v in rows if shape == "Arm"]
+                arm[side] = {shape: fore + [(part, v) for sh, part, v in rows if sh == shape] for shape in HAND_SHAPES}
+                for shape in HAND_SHAPES:
+                    if len(arm[side][shape]) == len(fore):
+                        arm[side][shape] = arm[side]["Open"]       # (a shape this build has no mesh for)
+            _ENVELOPE[build] = {"J": J, "parts": parts, "arm": arm, "upper_r": d.get("upper_r")}
+    return _ENVELOPE
+
+
+_BUILD_ORDER = ["LowerTorso", "UpperTorso", "LeftUpperLeg", "RightUpperLeg", "LeftUpperArm", "LeftLowerArm", "LeftHand",
+                "RightUpperArm", "RightLowerArm", "RightHand"]
+
+
+def build_frames(J, pose, parts=_BUILD_ORDER):
+    """A build's part frames (Roblox space, its root part standing at its rest place) for a pose {joint: Transform}:
+    world[part] = world[parent] @ T(J[part] - J[parent]) @ Transform, as gear_fit_03.pose_rig and anim_qa pose it. A
+    rest point p of a part is at world[part] @ (p - J[part])."""
+    world = {"HumanoidRootPart": Matrix.Translation(J["HumanoidRootNode"])}
+    for part in parts:
+        parent = _PART_PARENT[part]
+        jp = J["HumanoidRootNode"] if parent == "HumanoidRootPart" else J[parent]
+        world[part] = world[parent] @ Matrix.Translation(J[part] - jp) @ pose.get(_PART_JOINT[part], Matrix.Identity(4))
+    return world
+
+
+def clothed_deficit(pose, side, margin=CLOTHED_MARGIN, shapes=("Open",)):
+    """The worst over every build of how far this arm's hand / forearm far half sits inside the clothes + margin:
+    (deficit, outward normal (Roblox world axes), how far along the forearm that point is (1 = the hand), build)."""
+    worst = (0.0, None, 1.0, None)
+    for build, env in _envelope().items():
+        world = build_frames(env["J"], pose)
+        inv = {p: world[p].inverted() for p in CLOTHED_PARTS}
+        elbow = world[side + "LowerArm"].to_translation()
+        hand_c = world[side + "Hand"].to_translation()
+        reach = (hand_c - elbow).length
+        # (quick: a hand far from the torso and thighs touches nothing)
+        if min((hand_c - world[p].to_translation()).length for p in CLOTHED_PARTS) > 3.2:
+            continue
+        sh = world[side + "UpperArm"].to_translation()
+        axis = world[side + "UpperArm"] @ (env["J"][side + "LowerArm"] - env["J"][side + "UpperArm"]) - sh
+        profile = (env.get("upper_r") or {}).get(side)
+        for part, q in [pt for shape in shapes for pt in env["arm"][side][shape]]:
+            p = world[part] @ q
+            if profile:
+                u = (p - sh).dot(axis) / axis.length_squared
+                if 0.0 <= u < 1.0 and (p - (sh + axis * u)).length < profile[int(u * 6)]:
+                    continue        # (inside its own upper arm: not the clothes' business; anim_qa skips it too)
+            best = None
+            for name in CLOTHED_PARTS:
+                local = inv[name] @ p
+                tree, pts = env["parts"][name]
+                co, i, dist = tree.find(local)
+                if co is not None and (best is None or dist < best[0]):
+                    best = (dist, name, local, i)
+            if best is None or best[0] > 0.6:
+                continue
+            dist, name, local, i = best
+            sp, n, layer = env["parts"][name][1][i]
+            s = (local - sp).dot(n)
+            deficit = layer + CLOTHED_LAYER_EXTRA * max(0.0, layer - 0.13) + margin - s     # (thick layers (the belt) shift more
+            #                                                               as the body bends: a share extra)
+            if deficit > worst[0]:
+                along = max(0.35, min(1.0, (p - elbow).length / max(reach, 1e-3)))
+                worst = (deficit, (world[name].to_3x3() @ n).normalized(), along, build)
+    return worst
+
+
+def clear_of_clothes(pose, upper, side, angles, wrist, rounds=14, shapes=("Open",)):
+    """The arm's angles moved (the hand out along the clothes' normal, the arm re-solved) until no build's hand or
+    forearm sits inside the outfit + margin. Returns (angles, how far the hand moved)."""
+    moved = Vector((0, 0, 0))
+    for _ in range(rounds):
+        pose[side + "Shoulder"] = _shoulder(side, angles)
+        pose[side + "Elbow"] = rx(angles["elbow"])
+        deficit, normal, along, _build = clothed_deficit(pose, side, shapes=shapes)
+        if deficit <= 1e-4:
+            break
+        hand = _hand_at(upper, side, angles, wrist)
+        # Out mostly level with the chest, not along a sloping belly's or pec's normal (that dragged a chest clap down
+        # to the belly): the chest-up part of the push is damped, and the push made long enough to clear along the
+        # true normal.
+        up = (upper.to_3x3() @ Vector((0, 1, 0))).normalized()
+        push = normal - up * (normal.dot(up) * (1 - CLOTHED_UP_SHARE))
+        if push.length < 1e-6 or push.dot(normal) < 0.2:
+            push = normal.copy()
+        if hand.y < 1.2 and push.y < 0:
+            push.y = 0.0            # (a hand down by the floor (a bow, kneeling) is never pushed into the floor)
+            if push.length < 0.2 or push.normalized().dot(normal) < 0.2:
+                break               # (nowhere to go but the floor: left as it is)
+        push.normalize()
+        step = push * ((deficit + 0.005) / max(0.35, push.dot(normal)))     # (a forearm point: several small rounds,
+        #                                               not one hand move of deficit / along: that overshot 0.9 stud)
+        angles = _reach(upper, side, hand + step, angles, wrist, 16)
+        moved += _hand_at(upper, side, angles, wrist) - hand
+    pose[side + "Shoulder"] = _shoulder(side, angles)
+    pose[side + "Elbow"] = rx(angles["elbow"])
+    return angles, moved.length
+
+
+def export_envelope(path=ENVELOPE_PATH, spacing=0.07):
+    """(Inside Blender, art/blender/CartoonBodies_05_Rigged.blend open.) Writes the envelope: every build's rest joints,
+    its torso and thigh skin sampled every `spacing` with outward normals and the outfit's stacked thickness there, and
+    its forearm far half + hand points (open hand and fist). The outfit is the game's (art/exports Cartoon{Clothes,Gear}05_
+    <build>.glb), the same items and layer stacking anim_qa.py measures against."""
+    import json
+    import bpy
+    from mathutils.bvhtree import BVHTree
+    root = os.path.dirname(os.path.dirname(_HERE))
+    to_b = Matrix(((-1, 0, 0, 0), (0, 0, 1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))     # (gear_fit_03.TO_B; its own inverse)
+    items = ["Tee", "WornSinglet_Black", "WornSinglet_Red", "WornSinglet_Shorts", "WornSinglet_Trim",
+             "WornLeverBelt_Outer", "WornLeverBelt_Lining", "WornLeverBelt_Lever"]
+    first, gap, most = 0.15, 0.08, 0.35          # anim_qa OUTFIT_FIRST / OUTFIT_GAP / OUTFIT_MAX
+    dg = None
+    out = {"note": "celebration_rig.export_envelope: rest, Roblox space; skin rows (x, y, z, nx, ny, nz, layer) "
+                   "relative to their part's joint; arm rows (part, (x, y, z) relative to the part's joint, shape)",
+           "spacing": spacing, "builds": {}}
+    builds = [o.name[:-3] for o in bpy.data.objects if o.type == "ARMATURE" and o.name.endswith("Rig")]
+    for b in builds:
+        rig = bpy.data.objects[b + "Rig"]
+        for pb in rig.pose.bones:
+            pb.matrix_basis = Matrix.Identity(4)
+        before = set(bpy.data.objects)
+        for kind in ("Clothes", "Gear"):
+            found = sorted(glob.glob(os.path.join(root, "art", "exports", f"Cartoon{kind}[0-9][0-9]_{b}.glb")))
+            p = found[-1] if found else ""   # (the newest outfit export: the highest version number on disk)
+            if os.path.exists(p):
+                bpy.ops.import_scene.gltf(filepath=p)
+        cloth = []
+        centre_outfit([o for o in bpy.data.objects if o not in before and o.type == "MESH"
+                       and o.name.partition("__")[0] in items])
+        for o in [o for o in bpy.data.objects if o not in before]:
+            item, _, part = o.name.partition("__")
+            if o.type == "MESH" and item in items and part.split(".")[0] in CLOTHED_PARTS:
+                basis = o.matrix_world.copy()
+                o.parent = rig
+                o.matrix_parent_inverse = Matrix.Identity(4)
+                o.matrix_basis = basis
+                for m in o.modifiers:
+                    if m.type == "ARMATURE":
+                        m.object = rig
+                cloth.append(o)
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        rinv = rig.matrix_world.inverted()
+
+        def to_r(v):
+            return to_b @ (rinv @ v)
+
+        def mesh_of(objs):
+            verts, polys = [], []
+            for o in objs:
+                ev = o.evaluated_get(dg)
+                me = ev.to_mesh()
+                base = len(verts)
+                verts += [o.matrix_world @ v.co for v in me.vertices]
+                polys += [tuple(base + i for i in p.vertices) for p in me.polygons]
+                ev.to_mesh_clear()
+            return verts, polys
+        cv, cp = mesh_of(cloth)
+        cloth_t = BVHTree.FromPolygons(cv, cp) if cp else None
+        J = {bone.name: to_b @ bone.head_local for bone in rig.data.bones}
+        skin = {}
+        for part in CLOTHED_PARTS:
+            verts, polys = mesh_of([bpy.data.objects[f"{b}_{part}"]])
+            rows = []
+            for poly in polys:
+                pts = [verts[i] for i in poly]
+                for k in range(1, len(pts) - 1):
+                    a, c1, c2 = pts[0], pts[k], pts[k + 1]
+                    nrm = (c1 - a).cross(c2 - a)
+                    if nrm.length < 1e-9:
+                        continue
+                    nrm.normalize()
+                    n = max(1, int(math.ceil(max((c1 - a).length, (c2 - a).length, (c2 - c1).length) / spacing)))
+                    for i in range(n + 1):
+                        for j in range(n + 1 - i):
+                            u, v = (i + 1 / 3) / (n + 1), (j + 1 / 3) / (n + 1)
+                            if u + v > 1:
+                                continue
+                            loc = a + (c1 - a) * u + (c2 - a) * v
+                            layer, q = 0.0, loc + nrm * 0.002
+                            for _ in range(8):
+                                hit = cloth_t.ray_cast(q, nrm, first if layer == 0.0 else gap) if cloth_t else (None,)
+                                if hit[0] is None:
+                                    break
+                                layer = (hit[0] - loc).dot(nrm)
+                                q = hit[0] + nrm * 1e-4
+                                if layer > most:
+                                    break
+                            r = to_r(loc) - J[part]
+                            rn = (to_b.to_3x3() @ (rinv.to_3x3() @ nrm)).normalized()
+                            rows.append([round(x, 4) for x in (*r, *rn)] + [round(min(layer, most), 4)])
+            skin[part] = rows
+        arm, upper_r = {}, {}
+        for side in ("Left", "Right"):
+            rows = []
+            elbow = J[side + "LowerArm"]
+            for name, part, shape in ((f"{b}_{side}LowerArm", side + "LowerArm", "Arm"),
+                                      (f"{b}_{side}Hand", side + "Hand", "Open"), (f"{b}_Fist{side}", side + "Hand", "Fist"),
+                                      (f"{b}_Point{side}", side + "Hand", "Point"),
+                                      (f"{b}_ThumbsUp{side}", side + "Hand", "ThumbsUp")):
+                o = bpy.data.objects.get(name)
+                if o is None:
+                    continue
+                verts, _p = mesh_of([o])
+                for v in verts:
+                    r = to_r(v)
+                    if (r - elbow).length < 0.6:          # (anim_qa: the hand and the forearm's far half)
+                        continue
+                    rows.append([part, [round(x, 4) for x in (r - J[part])], shape])
+            arm[side] = rows
+            # the upper arm's thickness along it (6 bins shoulder -> elbow, 70th percentile of the skin's distance from
+            # the bone): a forearm point inside it is the upper arm's business, as anim_qa skips it (a fist pumped up
+            # with the forearm folded on the biceps)
+            sh, el = J[side + "UpperArm"], J[side + "LowerArm"]
+            axis = el - sh
+            bins = [[] for _ in range(6)]
+            verts, _p = mesh_of([bpy.data.objects[f"{b}_{side}UpperArm"]])
+            for v in verts:
+                r = to_r(v)
+                u = max(0.0, min(0.999, (r - sh).dot(axis) / axis.length_squared))
+                bins[int(u * 6)].append((r - (sh + axis * u)).length)
+            upper_r[side] = [round(sorted(x)[int(len(x) * 0.7)] if x else 0.0, 4) for x in bins]
+        for o in cloth:
+            bpy.data.objects.remove(o, do_unlink=True)
+        out["builds"][b] = {"J": {k: [round(x, 5) for x in v] for k, v in J.items()}, "skin": skin, "arm": arm,
+                            "upper_r": upper_r}
+        print(f"[Envelope] {b}: skin " + ", ".join(f"{k} {len(v)}" for k, v in skin.items()) +
+              f"; arm points {len(arm['Left'])}/{len(arm['Right'])}; outfit pieces {len(cloth)}")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    json.dump(out, open(path, "w"))
+    print("[Envelope] wrote", path)
+
+
 # ---------------------------------------------------------------- a clip
 class Clip:
     """A celebration: keys, optional layers, and how it is exported."""
 
     STEP = 1 / 30          # solve and write every 1/30 s
+    # (opt-in, 2026-11-16 legs fix) the most this clip's elbows may bend (degrees; None = ELBOW_MAX, 150). The rebuilt
+    # bodies (CartoonBodies_05_Rigged, longer-thigh rebuild) fold BigBuff's forearm 0.26-0.27 into its own biceps with
+    # the elbow bent ~128-148 degrees (anim_qa arm_in_body limit 0.26); a clip that bends that far sets 126 here, and a
+    # hand keyed closer to its shoulder than that bend reaches stops a little short, out along the arm.
+    elbow_max = None
 
-    def __init__(self, name, length, keys, layers=(), title="", notes="", contact=False):
+    def __init__(self, name, length, keys, layers=(), title="", notes="", contact=False, clothed=False):
         self.name, self.length, self.layers, self.title, self.notes = name, length, list(layers), title, notes
+        self.clothed = clothed      # (hands and forearms kept out of every build's clothes: clear_of_clothes)
+        self.clothed_moved = 0.0    # (the most a hand was moved out of the clothes, for the CHECK line)
+        self.hand_spans = None      # {side: [(t0, t1, shape)]}: the game's hand swaps (HandShapeConfig), for clothed
         self.contact = contact and S.RIG == "torso"     # (hands stop at the skin: S.contact_out)
         # palms (torso rig): authored body contact, set after creation: {"spot": left hand's spot (root frame; the
         # right mirrors), "fingers": left fingers' direction, "weight": [(t, 0..1)], "below": elbow under the hand}
@@ -529,6 +847,18 @@ class Clip:
             self.worst_foot = max(self.worst_foot, ((ll @ _C0V[side + "Ankle"]) - ankle_target).length)
             want = foot_rotation(side, fyaw, fpitch)
             pose[side + "Ankle"] = (ll.to_3x3().inverted() @ want.to_3x3()).to_4x4()
+        if self.clothed:
+            # (after both legs: a hand by the thigh needs the thigh where it is this frame)
+            for side, sx in SIDES:
+                s = _SHORT[side]
+                # (the open hand always, and the swapped-in shape in its span: both must clear, so the clip passes
+                #  anim_qa with open hands and with the game's shapes, and a swap a frame early or late is safe)
+                shapes = ("Open",) + tuple(sh for t0, t1, sh in (self.hand_spans or {}).get(side, ())
+                                           if t0 - 0.05 <= t < t1 + 0.05 and sh != "Open")
+                _angles, moved = clear_of_clothes(pose, upper, side, dict(out_prev[s + "arm"]), ch[s + "w"],
+                                                  shapes=shapes)
+                if moved > self.clothed_moved:
+                    self.clothed_moved, self.clothed_moved_at = moved, (t, side)
         return pose, out_prev
 
     @staticmethod
@@ -566,16 +896,23 @@ class Clip:
         return pose
 
     def solve(self):
-        prev = {"larm": dict(START_ARM), "rarm": dict(START_ARM), "lleg": None, "rleg": None}
-        self._arm_cache = {}
-        self._table = []
-        n = int(math.ceil(self.length / self.STEP))
-        for i in range(n + 1):
-            t = min(self.length, i * self.STEP)
-            pose, prev = self._solve_at(t, prev)
-            if self.palms and S.RIG == "torso":
-                pose = self._palms_at(t, pose)
-            self._table.append((t, pose))
+        global ELBOW_MAX
+        keep_max = ELBOW_MAX
+        if self.elbow_max is not None:
+            ELBOW_MAX = float(self.elbow_max)
+        try:
+            prev = {"larm": dict(START_ARM), "rarm": dict(START_ARM), "lleg": None, "rleg": None}
+            self._arm_cache = {}
+            self._table = []
+            n = int(math.ceil(self.length / self.STEP))
+            for i in range(n + 1):
+                t = min(self.length, i * self.STEP)
+                pose, prev = self._solve_at(t, prev)
+                if self.palms and S.RIG == "torso":
+                    pose = self._palms_at(t, pose)
+                self._table.append((t, pose))
+        finally:
+            ELBOW_MAX = keep_max
         return self
 
     def pose(self, t):
@@ -625,7 +962,9 @@ def check(clip):
         return max((w[p].to_translation() - stand[p].to_translation()).length for p in S.ORDER)
     first, last = clip.samples()[0][1], clip.samples()[-1][1]
     return (f"{clip.name}: {clip.length:.1f} s, lowest {lowest:.2f}, hand miss {clip.worst_hand:.3f}, "
-            f"foot miss {clip.worst_foot:.3f}, start off {off(first):.2f}, end off {off(last):.2f}")
+            f"foot miss {clip.worst_foot:.3f}, start off {off(first):.2f}, end off {off(last):.2f}"
+            + (f", moved out of the clothes up to {clip.clothed_moved:.2f} (t, side {getattr(clip, 'clothed_moved_at', '-')})"
+               if getattr(clip, "clothed", False) else ""))
 
 
 def export(clip, priority=2, step=1 / 24, only=None, looped=False):
@@ -723,3 +1062,10 @@ def preview_sheet(clip, folder, times=None, view="front", width=2200):
     scene.render.filepath = os.path.join(folder, f"{clip.name}_{view}.png")
     bpy.ops.render.render(write_still=True)
     return scene.render.filepath
+
+
+if __name__ == "__main__":
+    import sys
+    _argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if _argv and _argv[0] == "envelope":
+        export_envelope(_argv[1] if len(_argv) > 1 else ENVELOPE_PATH)

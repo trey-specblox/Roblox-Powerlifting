@@ -6,7 +6,7 @@
 #   blender -b art/blender/CartoonBodies_05.blend --python art/scripts/build_cartoon_rig_05.py
 # Writes art/blender/CartoonBodies_05_Rigged.blend.
 #
-# Skeleton: TORSO_TALL (hips/HipHeight 2.0, waist 2.54, shoulder 4.38, elbow 3.287, wrist 2.148, knee 1.178; arms x1.5
+# Skeleton: TORSO_TALL (hips/HipHeight 2.0, waist 2.54, shoulder 4.38, elbow 3.287, wrist 2.148, knee 1.00 (longer thighs 2026-11-15); arms x1.5
 # approved 2026-11-13), the arms
 # at each build's arm_x, the shoulder joint at its pivot_x.
 #
@@ -155,6 +155,45 @@ def spread_shoulders(co, W, bones, spec, rounds):
             a = np.where(free, 0.5 * a + 0.5 * mean, a)
         W[zone, ua] = pool[zone] * a[zone]
         W[zone, ut] = pool[zone] * (1 - a[zone])
+    return W
+
+
+ELBOW_REACH = float(os.environ.get("RIG05_ELBOW_REACH", "0.75"))  # half-height of the elbow blend (0 = off)
+ELBOW_ROUNDS = int(os.environ.get("RIG05_ELBOW_ROUNDS", "80"))
+ELBOW_BACK_Y = float(os.environ.get("RIG05_ELBOW_BACK", "-0.05"))   # the blend fades in from this far behind the arm's
+ELBOW_FRONT_Y = float(os.environ.get("RIG05_ELBOW_FRONT", "0.12"))  # line to fully on this far in front of it
+
+
+def spread_elbows(co, W, bones, reach, rounds):
+    """The upper-arm/forearm split round each elbow spread over +-reach along the arm (the forearm's share averaged
+    with its neighbours inside that band; the band's ends keep their weights, so the share ramps smoothly across it).
+    A bent elbow then folds its inner skin in towards the joint instead of the forearm swinging rigidly into the
+    biceps (big builds' arm_in_body).
+    Measured 2026-11-15 (elbow bent forward at rest, the deepest forearm/hand point inside the rest of the body, every
+    point, points within 0.45 of the elbow skipped as anim_qa): BigBuff 126/130/138/148 deg 0.243/0.260/0.273/0.321
+    without -> 0.015/0.058/0.142/0.258 with reach 0.75 (0.55: 0.106/0.142/0.212/0.321); Muscular 148 0.270 -> 0.191;
+    Fit 148 0.145 -> 0.090. The knee-1.178 bodies were as deep (BigBuff 130: 0.286): anim_qa samples every other
+    point and missed it there."""
+    pairs, cnt = NEIGHBOURS
+    starts = np.r_[0, np.cumsum(cnt)[:-1]]
+    bi = {b: i for i, b in enumerate(bones)}
+    for side in ("Left", "Right"):
+        ua, la = bi[side + "UpperArm"], bi[side + "LowerArm"]
+        pool = W[:, ua] + W[:, la]
+        share = np.where(pool > 1e-6, W[:, la] / np.maximum(pool, 1e-9), 0.0)
+        near = np.abs(co[:, 2] - L["E"])
+        zone = (pool > 0.9) & (near < reach)
+        free = zone & (near < reach - 0.06)
+        a = share.copy()
+        for _ in range(rounds):
+            mean = np.add.reduceat(a[pairs[:, 1]], starts) / cnt
+            a = np.where(free, 0.5 * a + 0.5 * mean, a)
+        # only the INSIDE of the elbow (the front at rest, -y: the crease the forearm folds into) gets the soft blend;
+        # the bony back of the elbow keeps its sharp point (a blend all round made a rubber-hose bend at 90 degrees)
+        front = smoothstep(ELBOW_BACK_Y, ELBOW_FRONT_Y, -co[:, 1])
+        a = share + (a - share) * front
+        W[zone, la] = pool[zone] * a[zone]
+        W[zone, ua] = pool[zone] * (1 - a[zone])
     return W
 
 
@@ -307,6 +346,8 @@ for side in ("Left", "Right"):
 W = limit_normalise(W)
 NEIGHBOURS = B["neighbour_table"](base.data)
 W = shoulder_weights(co, W, bones, specs[BASE], SHOULDER_MODE)
+if ELBOW_REACH > 0:
+    W = spread_elbows(co, W, bones, ELBOW_REACH, ELBOW_ROUNDS)
 mirror, worst = B["mirror_map"](co.astype(np.float32))
 log("mirror twins, worst %.5f" % worst)
 W = mirror_weights(W, bones, mirror, co)

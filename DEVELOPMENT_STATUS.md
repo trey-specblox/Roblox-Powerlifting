@@ -13,6 +13,213 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**GEAR v6 = EVERY LAYER BUILT ON THE BODY'S OWN MESH (2026-11-16, user: "Yes, build it", after rejecting the v5
+rework's pictures: "STOP guessing"). PROTOTYPE ON FIT IN PROGRESS, NOTHING UPLOADED, NOT COMMITTED.**
+- Why: separately shaped tee / singlet / belt meshes bend from different points and cross. `art/scripts/
+  build_cartoon_gear_06.py` (NEW): the build's body parts joined into one skin mesh; every layer a copy of it, point i
+  out along ONE shared line per skin point (the smoothed skin's normal; grooves bridged, not copied) with that skin
+  point's exact bone weights: skin -> tee 0.035 -> singlet +0.042 -> belt +0.022 (0.085 thick, outward, stiffened into
+  a cone band per angle). Garments cut along smooth lines (cut_lines: each edge/colour line a field's zero line),
+  thickness along the same lines (thicken_stacked), trim = an even band measured from the real edge, straps one accent
+  colour, one blended armhole cut (deep, out of the armpit crease), tee whole. Approved by the user as an exception to
+  the 2026-11-12 "never copy the skin" rule (it bridges grooves, stands off, has real thickness and clean edges).
+- 2026-11-16 later: tee sleeve hem slants down below the armpit on the inside; crew neck one smooth curve (soft max);
+  edge lines refined (refine_near) so cut edges are smooth curves. Fit prototype D:\ClaudeScratch\gear06\proto15.blend:
+  tee 3,432 / singlet 5,448 / belt 2,992 triangles. Picture art/previews/Gear06_Fit_Prototype.png (fixed views + the
+  NOT FIXED armpit with arms fully overhead: the body's own armpit folds, skin comes through; layer smoothing / more
+  room were measured and made it worse, so it needs the body's shoulder deformation fixed).
+- Checked so far on Fit: standing, arms up, bench, deadlift, squat hold/set-up, double biceps clean in close-ups; the
+  layer check (check_layers_05.py, now with "Body under Tee" and an edge test that works for thick layers) clean in
+  the quick poses except tiny folds at the back of the shoulder in the squat set-up (the skin itself folds there).
+  Full every-animation check running. Triangles (Fit): tee 3,154, singlet 4,979, belt 2,992 (higher than v5: to
+  review with the user before the other builds).
+- 2026-11-16 BELT BACK TO THE APPROVED RIGID BELT (user: the layered belt "is bending and curving and the gap is way
+  too big ... it can stay how it was, its okay if the somthing phases through the belt a little bit"). v6 now builds
+  the v4/v5 rigid lever belt (BELT_SEGMENTS 18) at the navel, its room over the body raised only as far as the
+  singlet needs (belt_shortfall: 0.100, none needed on Fit). Layered belt code removed. Tried holding the tee/singlet
+  by the hips under the belt (as v5): with the legs held the body came out through the tee at the hips (0.08); with
+  the legs free it changed nothing, so it was taken out. Close-ups (art/previews/Gear06_Fit_RigidBelt_DeepBends.png,
+  squat bottom / deadlift / war crouch / bench, front, both sides, back): belt straight, snug, nothing through it.
+  The layer check still counts singlet points leaving the belt's cover in deep bends (up to 0.49): they slide out
+  under the lower edge, not through the belt. Fit triangles: tee 3,432 / singlet 5,448 / belt 756.
+  Seen in the same close-ups, NOT the belt: jagged facets on the seat in the deep squat / deadlift. The bare body
+  shows the same facets (its own hip fold), and the shorts follow it. It's a body deformation job, like the armpit.
+- 2026-11-15 ALL SIX BUILDS BUILT (user: "Build all six"). art/blender/CartoonGear_06.blend (NEW, not committed,
+  NOT exported or uploaded): tee + singlet + rigid belt on Skinny, SkinnyFat, Fat, Fit, Muscular, BigBuff.
+  check_models.py: CHECK PASSED (338 meshes). Pictures: art/previews/Gear06_AllBuilds.png (every build, standard
+  poses), Gear06_Muscular_RigidBelt_DeepBends.png. Fixes made on the way (build_cartoon_gear_06.py):
+  - the singlet ran down the thin builds' arms (the strap guard reached below the armhole): the guard now ends
+    there, and below it only the arm's own skin (smoothed arm share, ARM_LOW_OFF 0.6) is cut;
+  - Skinny / SkinnyFat (torso narrower than the strap's outer edge) get a side opening under the arm
+    (side_oval) and drop_trim_strips removes trim left far from any red / black (it read as a loose string);
+  - REAL BUG: colours were chosen by re-measuring each face's middle, which disagreed with the values the cut
+    was drawn from: trim teeth along BigBuff's straps, stepped panel edges. cut_lines(store=...) now keeps
+    each field's cut values and the singlet's trim / red / panel and the tee's keep / cuff use them. (Values
+    are written before triangulating: after it the points no longer match as dictionary keys.)
+  - rim search reached half the longest edge further (long straight edges were missed);
+  - tee sleeve cuts drawn on a smoothed arm share (spikes at the seam between the arm and torso meshes).
+  Layer check (quick, all six): body under tee and tee under singlet at most 0.03 deep (Fat's 0.41 = its
+  forearm resting on the belly, then moving away: not under the tee). Singlet / tee leaving the belt's
+  cover in deep bends up to 0.50: close-ups of Fit, Skinny, Muscular, BigBuff show it sliding out under the
+  belt's lower edge, the belt straight and snug, nothing through it.
+  STILL VISIBLE: the arms-overhead armpit fold (body), BigBuff's tee pinching under the arm when the arms go
+  up (the same fold), jagged facets on the seat in deep bends (body hip fold), small jaggies at the thin
+  builds' back armholes up close. Suits (and their v6 versions) not built yet.
+- 2026-11-15 EXPORTED + UPLOADED (user: "Export and upload"). art/scripts/export_cartoon_06.py (NEW) opens
+  CartoonGear_05.blend, swaps in v6's Tee/TeeWhite, WornSinglet_*, WornLeverBelt_* (rigs checked identical), drops
+  TeeUnder (unused), writes art/exports/CartoonGear06_<Build>.glb + CartoonClothes06_<Build>.glb. Uploaded (group),
+  materials.json CartoonGear06_* / CartoonClothes06_*: gear Skinny 85640672901698, SkinnyFat 94699938608461, Fat
+  81753029164220, Fit 85303720218024, Muscular 82349415440601, BigBuff 114669552330860; clothes Skinny
+  139193616267598, SkinnyFat 83613509561729, Fat 93393523893981, Fit 71976665106186, Muscular 109601138190591,
+  BigBuff 138958982863043. Wired: WornGearConfig.CartoonAssetIds, ClothesConfig.Bodies[*].clothesAssetId. All 12
+  load in Studio (InsertService, read-only check: pieces and bones present). NOT play-tested in Studio yet: the
+  user's Studio look is next (singlet over the tee, belt in the lifts). The suits are still v5 and were not refitted
+  over the v6 tee: watch for the tee showing through a suit.
+- 2026-11-15 USER'S STUDIO TEST OF v6: singlet REJECTED ("tears, and rough edged ... does not even cover the bottom
+  crotch area ... a big hole in the middle of the chest"; the strap's colour block "goes too far down. with a
+  visible corner piece"; reference = the SBD singlet over a tee, sent again). Body folds with arms up also seen.
+  GEAR v7 IN PROGRESS (art/scripts/build_cartoon_gear_07.py, NEW; v6 kept as uploaded): the singlet redesigned
+  from the reference: high round neck (superellipse scoop to SH-0.34, back SH-0.20, its sides turning straight up
+  into the straps), straps in the singlet's own colour with piping only (no strap colour block), armhole = a set
+  distance off the arm's root (0.04 over the shoulder, 0.10 under the armpit; a smooth ramp keeps the strap), red
+  only on the side panel from the armhole down to the hip, crotch covered (the old leg hem was above the bottom of
+  the crotch; the hem now dips at the inseam), every edge one smooth field scaled to surface distance, piping its
+  parallel line. Fit / Fat / Muscular / BigBuff look right up close; picture art/previews/Gear07_Fit_SingletDesign.png
+  (the user's test colours). STILL WRONG: Skinny / SkinnyFat armpits (spikes, a narrow slot, notches in the red).
+  Singlet triangles ~6-8k per build (v6 ~5.4k). Nothing uploaded.
+- 2026-11-15 v7 FINISHED ON ALL SIX (user: "Yes, finish it"). The thin builds' armpits fixed by telling arm from body
+  by the arm PARTS' meshes (joined_skin7 marks them, group _IsArm, removed before export): the armhole's root is the
+  arm parts' points above the armpit, and below the armpit the singlet is cut along the arm/body seam (bone weights
+  had a strip on the inside of the thin upper arm; smoothed weights notched the red). art/blender/CartoonGear_07.blend
+  (NEW, not committed): check_models CHECK PASSED (336 meshes); layer check quick on all six: body under tee <= 0.03,
+  tee under singlet <= 0.033 (Fat's 0.41 body/tee = its forearm on the belly, a false hit). Pictures:
+  art/previews/Gear07_AllBuilds_SingletDesign.png. Left: a small step at the very bottom of the thin builds'
+  armholes, under the arm (seen only up close); the arms-up body folds. Singlet ~6.3-8.7k triangles per build.
+  Next: export + upload only with the user's OK (export_cartoon_06.py pattern: swap the v7 singlet in).
+- 2026-11-15 user (on the v7 pictures): "still seeing rough edges ... tear look ... the crotch area NEEDS TO BE FILLED
+  ... THAT SMALL COVER, and LITTLE GAP BETWEEN THE LEG". Done: relax_seams (every open edge and colour line smoothed
+  along itself, Taubin, put back on the surface; also the tee), the armhole measured from a Taubin-smoothed copy of the
+  arm's surface (the deltoid's facets made the strap edge wavy), shorts hem a level ring, no inseam dip. The shorts
+  are full tubes, crotch closed; their hem can't go lower than just above the v5 knee sleeves (which reach ~70% up
+  these short thighs; at 40% of the thigh the sleeves stood out through the shorts by up to 0.13). From below, the
+  thighs (touching / overlapping on the heavy builds) still show beside the crotch panel. OPEN QUESTION to the user:
+  shorten the knee sleeves so the shorts can reach ~40% of the thigh like the reference. CartoonGear_07.blend rebuilt,
+  CHECK PASSED, layer check quick clean as before. Pictures Gear07_AllBuilds_SingletDesign.png / _Armholes.png.
+- 2026-11-15 user: "keep the sleeves, just fix this" (a ring of bare thigh between the shorts and the knee sleeve,
+  from below; the shorter-sleeve option was rejected). Done in build_cartoon_gear_07.py: the shorts' hem now OVERLAPS
+  the v5 sleeve's top (GEAR07_LEG_OVER, 0.04 deep where the 42%-of-thigh limit allows), snug_hems draws the leg
+  openings in, and clear_sleeves fits the shorts radially onto the uploaded sleeve (loaded from CartoonGear_05.blend)
+  at the sleeve's full width up past its rounded top, so no gap is left to see up and the sleeve's jagged top edge
+  stays hidden. Tried: hem above the sleeve (the ring), nearest-face fitting (the sleeve's top lip left a sliver),
+  tighter hems (the sleeve's top showed through as black teeth). All six rebuilt into CartoonGear_07.blend, CHECK
+  PASSED. Picture art/previews/Gear07_ShortsOverSleeves.png. Left: a hairline at the sleeve's top only visible with
+  test colours; the v5 knee sleeves break into jagged pieces at the bent knee in the deep squat (an existing v5
+  problem, seen in these pictures, not looked into yet). Nothing exported or uploaded.
+- 2026-11-15 KNEE SLEEVES IN THE DEEP SQUAT (user: "Yes, check the squat"). Cause: the kneecap's skin pushed out
+  through the front of the v5 sleeve (a coarse shell over the smoothed leg, weights smoothed across the knee); giving
+  it the skin's exact weights did not help. Fixed in build_cartoon_gear_07.py: build_knee_sleeves7 makes the same
+  sleeve (same ends knee_bot..knee_top, 0.02 thick, two outer stripes, logo patch low on the front) as a layer of the
+  skin (0.035 out, the skin's weights), so it bends exactly with the knee; one piece per leg per colour under
+  "<Side>LowerLeg" (leg_parts: the dominant-bone split ran a zigzag across the kneecap and its two sides shaded apart
+  in the bend); stripes / patch lifted 0.012 / 0.016 (the patch broke up at 0.008). The shorts now fit over THESE
+  sleeves. CartoonGear_07.blend rebuilt (all six), CHECK PASSED, sleeves ~920-1,030 triangles per build (v5 ~380
+  meet budget: more, to follow the skin). Pictures art/previews/Gear07_KneeSleeves_Standing.png / _DeepSquat.png.
+  Seen in the same squat pictures, NOT the sleeves: red and skin through the singlet where the torso folds onto the
+  thigh at the hip (the body's own hip fold, like the armpit). Export would now take v7's singlet, tee, belt AND knee
+  sleeves; nothing exported or uploaded.
+- 2026-11-15 v7 EXPORTED + UPLOADED (user: "Export and upload"). art/scripts/export_cartoon_07.py (NEW): opens
+  CartoonGear_05.blend, swaps in v7's Tee/TeeWhite, WornSinglet_*, WornLeverBelt_*, WornKneeSleeve_* (rigs checked
+  identical), drops TeeUnder; art/exports/CartoonGear07_<Build>.glb + CartoonClothes07_<Build>.glb. Uploaded (group),
+  materials.json CartoonGear07_* / CartoonClothes07_*: gear Skinny 101907133037058, SkinnyFat 140325152799374, Fat
+  72518083583615, Fit 94675235118409, Muscular 78093984859885, BigBuff 76694293661116; clothes Skinny
+  123762491326888, SkinnyFat 90056220410411, Fat 88842631368650, Fit 85355784180122, Muscular 86432747997356, BigBuff
+  135130375975787. Wired: WornGearConfig.CartoonAssetIds, ClothesConfig.Bodies[*].clothesAssetId. All 12 load in Studio
+  (InsertService on the Play server, read-only: singlet 18, sleeves 6, tee 8 pieces, bones present). Studio was in
+  Play when wired: the running test still has the v6 ids (Rojo syncs on the next Play). NOT play-tested yet.
+- 2026-11-15 user (Studio, v7): "make the legs, a little longer. so there is a gap between the singlet, and the knee
+  sleeves? also i still see tears on the back of the singlet". Legs: user picked "Longer body legs"; the bodies
+  session rebuilt CartoonBodies_05(.blend/_Rigged) with knee 1.00 (was 1.178), hips 2.0 unchanged. Gear rebuilt on
+  them (art/blender/CartoonGear_07.blend, NOT exported/uploaded): shorts end 31% down the thigh, at least 0.10 above the
+  sleeves' top (a strip of bare thigh), crotch still covered. Back "tears" were (1) drop_trim_strips measuring to
+  corner points: rectangular bites out of the piping -> drop_trim_strips7 measures to the faces; (2) the armhole and
+  the arm-seam cut meeting at a corner -> blended into one field; (3) edge points sliding past inner neighbours ->
+  relax_seams also smooths two inner rings (INNER_ROUNDS); strap edge softness 0.05; dedupe_faces fixes a "face
+  already exists" crash. CHECK PASSED; layer check quick as before. Pictures art/previews/Gear07_LongerLegs_Gap.png.
+  Left: a few tiny dark marks on the back piping (Fat, SkinnyFat) up close. NOTE: the uploaded bodies still have the
+  old knee: bodies (CartoonBody05) + CartoonExport05.json must be re-exported and re-uploaded together with this gear,
+  and the knee-bending animations need the animation session's knee update first.
+- 2026-11-16 LONGER LEGS GO-LIVE (user, via the redesign session: "Okay continue doing what you need to do, in order to
+  go live, and then commit"). EXPORTED, UPLOADED (group 529442797), WIRED; loaded read-only in Studio (Edit,
+  game:GetObjects: all 18 load; bodies 14 parts + 14 Motor6Ds, hip 2.000 / knee 1.000 / ankle 0.252; gear and clothes
+  knee bones 1.000; no TeeUnder). NOT PLAY-TESTED, NOT PUBLISHED, NOT COMMITTED (the redesign session commits).
+  - Base items: the approved, COMMITTED build_cartoon_gear_05.py (HEAD copy, D:\ClaudeScratch\golive\gear\
+    build_cartoon_gear_05_approved.py) re-run on the knee-1.00 bodies -> art/blender/CartoonGear_05_Knee100.blend
+    (CHECK PASSED). NOT the working-copy script: its unfinished "singlet over the tee" rework changes the suits and
+    is not approved. (A first Knee100 built with the working copy was overwritten.)
+  - art/scripts/export_cartoon_08.py (gear v7 + those items -> CartoonGear08_* / CartoonClothes08_*, TeeUnder
+    dropped) and art/scripts/export_cartoon_body_08.py (export_cartoon_05 writing CartoonBody08_*; rewrites
+    art/exports/CartoonExport05.json in place, old copy in D:\ClaudeScratch\golive\gear\old05). Only the knee joints
+    changed in the JSON; neck marks / bench clearance moved by up to 0.02 (the rebuilt torso), written into
+    ClothesConfig.Bodies. Swap hands byte-identical: CartoonHands05 kept, not re-uploaded.
+  - Ids (materials.json, build order Skinny, SkinnyFat, Fat, Fit, Muscular, BigBuff): bodies CartoonBody08_*
+    117068136403546 / 113015580385760 / 73408190821733 / 77562974459220 / 77603128598959 / 85589236707019; gear
+    CartoonGear08_* 87981689532076 / 98049189140592 / 107255763090235 / 105929007280971 / 124551978504954 /
+    109710136813307; clothes CartoonClothes08_* 117265939901739 / 92154331822828 / 109623796762402 / 89896403203508 /
+    123271626676248 / 115461360597179.
+  - Wired in one step: ClothesConfig.Bodies (assetId, neckMark, squatBarRest, benchBarClear, clothesAssetId),
+    WornGearConfig.CartoonAssetIds, and the animation session's 103 knee-1.00 animations (wire_ids.py: 103 of 103,
+    Celebration / Emote / Entrance / LocalMeet / StationAnimation configs). No old body / gear / clothes id left in src.
+  - ClothesConfig.LiveEnabled still FALSE (Studio only). NEXT: the user's Studio play test (each build, lifts, squat
+    depth with the new knee, celebrations, gear on/off), then the user decides LiveEnabled.
+
+**SINGLET OVER THE TEE REWORK (2026-11-16, user's Studio test via the animation session: "singlets are accessories
+... it should not delete or make something underneath disappear"; tee through the singlet, torn 3-colour straps, skin
+gap at the neck, belt phasing). IN PROGRESS, NOTHING UPLOADED, NOT COMMITTED.**
+- build_cartoon_gear_05.py: TeeUnder (the cut tee) is GONE; the singlet and suits are fitted over the WHOLE tee
+  (OverShell: the outer envelope of the body and the tee; conform_over: every singlet point straight out from the tee
+  point beneath it with exactly its bone weights), the tee takes the body's weights from the skin straight beneath it
+  (weights_from_body_beneath: the body no longer comes through the tee in the bench / arms-overhead poses), straps one
+  colour (accent_straps), tee + singlet held by the hips under the belt (hold_belt_band). Trial switches (env):
+  GEAR05_OVER_GAP (default 0.055), GEAR05_TRIS (tee,singlet inner budgets), GEAR05_OVER_MIX / _ROUNDS / _SKIP (tried,
+  off: they made the straps ragged or float). New read-only check art/scripts/check_layers_05.py (tee under singlet /
+  suits, singlet / tee under the belt, every animation or "quick").
+- Result (Fit, quick poses): standing, arms up, double biceps, deadlift clean; bench nearly clean with more triangles
+  (GEAR05_TRIS=1000,1300: meet gear about +1,500 triangles per lifter); the squat hold / set-up (arms up and back)
+  still show tee at the sides. All six built slim in D:\ClaudeScratch\gear05\over_six.blend (CHECK PASSED).
+  Pictures art/previews/Gear05_SingletOverTee_Fit.png, Gear05_SingletOverTee_AllBuilds.png.
+- Game code: ClothesConfig Tee.underSinglet and LifterBodyService's under-tee switch REMOVED again (the tee is worn
+  whole). The uploaded v5 gear/clothes (2026-11-15) still have the old singlet; re-upload waits for the user's OK.
+- NEXT: the user's choice on detail vs triangles, then all six + suits, the full-animation layer check, pictures,
+  then the user approves uploads.
+
+**PHASE 4 GO-LIVE, MODELS + CONFIG (2026-11-15, user "Yes, upload them"): the six CartoonBodies_05 bodies, swap hands,
+gear v5, clothes v5 and the CENTRAL logo EXPORTED, UPLOADED to group 529442797 and WIRED into the config. NOT TESTED IN
+STUDIO YET (only loaded read-only there: the body imports with 14 parts + Motor6Ds, gear/clothes/hands with the right
+names and sizes). NOT COMMITTED.** The animation session (Phase 1, "torso-tall skeleton and animations") does the
+animations, their ids and the bar/rack/spotter code in parallel.
+- `art/scripts/export_cartoon_05.py` (NEW, read-only on CartoonGear_05.blend): CartoonBody05_<Build>.glb,
+  CartoonGear05_<Build>.glb, CartoonClothes05_<Build>.glb, CartoonHands05.glb, CartoonExport05.json (joints, neck
+  marks, hand sizes/offsets, squat bar rest, bench clearance). Bones pointed up for export as build_cartoon_rig_02 did
+  (the swap hands are read BEFORE that: they ride the hand bone).
+- Ids (materials.json): bodies Skinny 138509612282088, SkinnyFat 107399796450304, Fat 86667576221055, Fit
+  113863442317146, Muscular 99374578139052, BigBuff 128202234358339; gear 87833238548501 / 121509918411914 /
+  99741122953878 / 131534044760862 / 111292367596098 / 122506871460397; clothes 87211009340376 / 93840354739777 /
+  111457014666042 / 74034414476869 / 78411860387154 / 101346241628183 (same build order); hands 94039364109733; logo
+  image 114644943724696. The v03 manifest entries (never uploaded) are marked "skip" (upload_group_images.py now skips
+  those); the uploader saves the manifest at its own 1-space indent.
+- Config: ClothesConfig.Bodies = six builds (assetId, neckMark, squatBarRest, benchBarClear, new squatGrip,
+  clothesAssetId), HipHeight 2.4 -> 2.0, Tee.underSinglet = "TeeUnder"; LifterBuild = the approved two-axis table
+  (muscle from PP 0.35/0.70, fat over lean 66/83/105 kg +20 soft), Spotter "Fat", old "Heavy" -> "Fat"
+  (LifterBuild.current); HandShapeConfig AssetId, Shapes + Grip/SquatGrip, per-shape offsets/sizes at hand size 1,
+  six HandSizes, gripFor(lift); WornGearConfig.CartoonAssetIds (six) + LogoImageId; StationLayout tallSquatJCupRaise
+  0.70 -> 0.525. LifterBodyService: a Tee under a singlet/suit wears its TeeUnder pieces; the Studio build attribute
+  maps old names. HandShapeAnimator: the grip lapses 0.25 s after StationPoseAnimator stops saying it (it stuck after
+  MeetLiftAnimation.stop: fists through the next celebration) and shows SquatGrip in the squat, Grip otherwise.
+- ClothesConfig.LiveEnabled stays FALSE (Studio only) until a Studio test passes.
+- NEXT: Studio test (each build via workspace attribute LifterBodyBuild; lifts, celebrations, gear on/off, the tee under
+  a singlet, logos), with the animation session's new animation ids; then the user decides LiveEnabled. Commit only when
+  the user asks.
+
 **CARTOON GEAR v5 = GEAR REFIT TO THE SIX PRODUCTION BODIES (2026-11-14, Phase 3 of CHARACTER_ART_DIRECTION §11),
 BUILT, LOOK APPROVED BY THE USER 2026-11-14 ("Looks right", on Gear05_BeforeAfter / MeetGear / OtherOutfits / Pose
 sheets), then thinned + new wrist wraps, also approved. COMMITTED 2026-11-14 (the commit after 1992169: the two
@@ -80,16 +287,19 @@ scripts, CartoonGear_05.blend, this file; previews not committed). NOT EXPORTED,
   animations") at the user's request. That session's answer (user-approved, installed, not committed): new SquatGrip
   hand (bar in the palm heel), wrist bend now ~59 deg in the hold / 65 at the set-up's worst; a straight wrist is not
   possible with the approved elbows-back hold and arms x1.5, so the wrap is reshaped instead.
-- **WAITING FOR THE USER'S OK (2026-11-14): wrist wraps tilted for the ~60 deg squat wrist.** build_cartoon_gear_05.py
+- **APPROVED 2026-11-14 ("Looks right"): wrist wraps tilted for the ~60 deg squat wrist.** build_cartoon_gear_05.py
   now measures every keyframe of the squat hold, set-up (from 1.2 s, hand on the bar) and 8 fails with the SquatGrip
   hand, and bench/deadlift with the Grip hand, in the forearm's own frame, and tilts the whole wrap (lower edge up on
   the front where the hand bends, top following 0.85, rise capped at 70% of the wrap's height). check_gear_05.py has a
   new wrist test with the game's grip hands (mode "wrists"; also in "clearance"). Wrap points inside the hand, hold:
   Skinny 0 / Skinny-fat 1 / Fat 3 / Fit 1 (all <= 0.009), Muscular 28 (0.046, was 74 / 0.165), Big and buff 26 (0.065,
   was 87 / 0.174); set-up worst frame similar; Big and buff bench 13 (0.083, was 0, hidden on the palm side). Wraps
-  644-701 triangles, CHECK PASSED. Built to scratch only (D:\ClaudeScratch\gear05\heel_final.blend, wraps alone);
-  CartoonGear_05.blend NOT rebuilt yet. Picture art/previews/Gear05_WristWraps_SquatGrip_BeforeAfter.png.
-- NEXT (each with the user's OK): rebuild CartoonGear_05.blend with the tilted wraps, export GLBs, ClothesConfig keys for
+  644-701 triangles. Picture art/previews/Gear05_WristWraps_SquatGrip_BeforeAfter.png. 2026-11-15: CartoonGear_05.blend
+  REBUILT in full from the updated CartoonBodies_05_Rigged.blend (805 pieces, now carries the SquatGrip hands; CHECK
+  PASSED, 955 meshes); clearance re-run, wrist numbers identical to the test. Old file backed up at
+  D:\ClaudeScratch\gear05\CartoonGear_05_before_tilt.blend. NOT committed (the gear changes ride with the animation
+  session's uncommitted squat files and SquatGrip hand; commit only when the user asks).
+- NEXT (each with the user's OK): export GLBs, ClothesConfig keys for
   TeeUnder/LongSleeve/Tank, uploads, Studio test (Phase 4).
 
 **CARTOON GEAR v3, IN PROGRESS (2026-11-12, session "gear rebuild"), NOT COMMITTED, NOTHING UPLOADED** (approved plan,

@@ -40,30 +40,73 @@ def stand(arm=None, neck=-10.0):
 
 def hips(neck=-22.0):
     s = stand(neck=neck)
-    return F.planted(dict(s, arm=F.hands_on_hips(s), neck=neck))
+    return F.planted(dict(s, **F.hips_hold(s), neck=neck))
+
+
+# Hands on the head, as the celebrations' fixed hold (celebration_animations._HOLD_HEAD, 2026-11-15; the old target sat
+# behind the head and threw the elbows back, anim_qa elbow_back ~1.0; user rule 1: "elbows out to the sides, never back
+# behind the head"): the hand at the side of the head just under the crown (chest frame, as _HEAD_CLAMP), the wrist
+# pitched 70 and rolled a quarter turn so the big hand drapes over the crown, the elbows out to the sides at ear height,
+# a touch forward.
+_HEAD_UP = (S.JOINTS["Neck"][2][1] - S.JOINTS["Neck"][3][1]) - (S.BLOCK_JOINTS["Neck"][2][1] - S.BLOCK_JOINTS["Neck"][3][1])
+HEAD_HAND = Vector((-0.88, 2.24 + _HEAD_UP, 0.0))      # (chest frame: from the upper torso's centre)
+HEAD_ELBOW = (-1.0, 0.3, -0.2)
+HEAD_WRIST = (S.rx(70.0) @ S.ry(-90.0)).to_quaternion()
+_HEAD_HOLD = {}
+
+
+def head_hold():
+    """{"arm", "wrist"} with both hands on top of the head, for an upright key (solved once in the chest's frame)."""
+    if not _HEAD_HOLD:
+        body = F.standing_body_pose(stand())
+        w = S.forward_kinematics(Matrix.Identity(4), body)
+        a, _ = F.solve_hand(body, w["UpperTorso"] @ HEAD_HAND, HEAD_ELBOW, HEAD_WRIST, at="hand")
+        _HEAD_HOLD.update(arm=a, wrist=HEAD_WRIST)
+    return {"arm": dict(_HEAD_HOLD["arm"]), "wrist": _HEAD_HOLD["wrist"].copy()}
 
 
 def head_hands(neck=18.0):
     """Standing, both hands on top of the head, looking up: frustration."""
     s = stand(neck=neck)
-    # On top of the head: 0.414 above the head's centre (2.3 on the taller rig, user 2026-11-12; 2.0 on the block rig).
-    top = Vector((-0.55, S.BENCH_HEAD_UP + 0.414, 0.15))
-    return F.planted(dict(s, arm=arms_to(s, top, {"raise": 120.0, "swing": 20.0, "twist": -30.0, "elbow": 120.0}),
-                          neck=neck))
+    return F.planted(dict(s, **head_hold(), neck=neck))
 
 
 def bent_over(neck=10.0):
-    """Bent over, hands on the knees, catching a breath."""
-    p = {"torso": -42.0, "thigh": 18.0, "shin": -14.0, "toes": S.SQUAT_TOES_OUT, "arm": HANG, "neck": neck}
-    p = F.planted(p)
-    p["arm"] = arms_to(p, S.hand_on_body(-0.75, -1.35, -0.75), {"raise": 10.0, "swing": 40.0, "twist": 0.0,
-                                                                     "elbow": 10.0})
-    return F.planted(p)
+    """Bent over, hands on the knees, catching a breath: a deadlift-stance key (the feet stay where they stood at the
+    bar; 2026-11-15: a squat-stance key here slid the planted feet 0.4). The wrists rest just above the knees on the
+    front of the thighs, palms on them, fingers down toward the knees, elbows a little out."""
+    torso, thigh, shin = -42.0, 18.0, -14.0
+    body = S._deadlift_body(torso, thigh, shin)
+    w = S.forward_kinematics(Matrix.Identity(4), body)
+    knee, hip = S.joint_point(w, "LeftKnee"), S.joint_point(w, "LeftHip")
+    up = (hip - knee).normalized()
+    fwd = Vector((0, 0, -1))
+    front = (fwd - up * fwd.dot(up)).normalized()
+    target = knee + up * KNEE_HAND_UP + front * KNEE_HAND_OUT + Vector((-KNEE_HAND_SIDE, 0.0, 0.0))
+    a, _ = F.solve_hand(body, target, KNEE_ELBOW)
+    fingers = -up + Vector((0.3, 0.0, 0.0))                                 # down the thigh, a little inward
+    ut = w["UpperTorso"].to_3x3().inverted()
+    q = F.wrist_for(body, a, ut @ -front, ut @ fingers)
+    return {"mode": "deadlift", "torso": torso, "thigh": thigh, "shin": shin, "held": False, "arm": a, "neck": neck,
+            "grip": 0.0, "wrist": q}
+
+
+# the wrist above the knee joint, out in front of the thigh's middle, and toward its outer side (clear of Fat's thighs)
+# (2026-11-16, clothes count as the body: 0.5 up / 0.15 out to the side, elbows out and a little back, put the forearms
+#  0.31 into the singlet over Fat's belly and the hands into Skinny's belt as he bent over; now the hands sit lower,
+#  just above the knees and further to their outer side, the elbows straight out to the sides, so the forearms come
+#  down outside the belly; and on the way down the arms swing out wider (down), not through the thighs)
+KNEE_HAND_UP, KNEE_HAND_OUT, KNEE_HAND_SIDE = 0.2, 0.68, 0.6
+KNEE_ELBOW = (-1.0, -0.1, 0.0)
 
 
 # Pushing the squat bar up and back off the shoulders (a bail-out dump), then the hands come away.
-PUSH = {"raise": 60.0, "swing": -10.0, "twist": 60.0, "elbow": 90.0}
-PUSH_UP = {"raise": 140.0, "swing": -25.0, "twist": 30.0, "elbow": 20.0}
+# (2026-11-15: swung forward, swing -10/-25 -> +10: the raised arms put the elbows 0.6-0.7 behind the shoulders, anim_qa
+# elbow_back_raised; user rule 1: an elbow never points behind the body. The hands push up and let the bar go behind.)
+# (2026-11-16: swing 10 -> 18: on the widest build, BigBuff, the elbow still sat right at the 0.40 limit behind the
+#  shoulder on the way up)
+PUSH = {"raise": 60.0, "swing": 18.0, "twist": 60.0, "elbow": 90.0}
+PUSH_UP = {"raise": 140.0, "swing": 10.0, "twist": 30.0, "elbow": 20.0}
 SHAKE_OUT = {"raise": 14.0, "swing": 6.0, "twist": 0.0, "elbow": 20.0}
 
 
@@ -136,13 +179,13 @@ def grinder_deadlift_1():
     b = F._dl_bottom()
     inch = dl(0.9, torso_add=-8.0, thigh_add=-b[1] * 0.25, shin_add=-b[2] * 0.25)
     return [(0.0, dl(1.0)), (0.4, dl(1.0, torso_add=-4.0)), (2.0, inch), (2.4, inch), (2.8, dl(1.0)),
-            (3.5, dl(0.0, held=False)), (4.0, dl(0.0, held=False, arm=F._dl_hips_arm(), neck=-20.0)),
-            (4.8, dl(0.0, held=False, arm=F._dl_hips_arm(), neck=-24.0))]
+            (3.5, dl(0.0, held=False)), (4.0, dl(0.0, held=False, **F.dl_hips(), neck=-20.0)),
+            (4.8, dl(0.0, held=False, **F.dl_hips(), neck=-24.0))]
 
 
 def grinder_deadlift_2():
     return [(0.0, dl(0.70)), (1.6, dl(0.45, torso_add=-3.0, shin_add=-3.0)), (2.1, dl(0.47, torso_add=-4.0)),
-            (2.6, dl(1.0)), (3.2, dl(0.0, held=False)), (3.9, dl(0.0, held=False, arm=F._dl_hips_arm(), neck=-20.0))]
+            (2.6, dl(1.0)), (3.2, dl(0.0, held=False)), (3.9, dl(0.0, held=False, **F.dl_hips(), neck=-20.0))]
 
 
 # ---------------------------------------------------------------- BAILOUT
@@ -168,14 +211,14 @@ def bailout_bench_2():
 
 def bailout_deadlift_1():
     return [(0.0, dl(1.0)), (0.4, dl(0.97, torso_add=-4.0)), (0.8, dl(1.0)), (1.5, dl(0.0, held=False)),
-            (2.2, dl(0.0, held=False, arm=SHAKE_OUT, neck=-6.0)), (3.4, dl(0.0, held=False, arm=F._dl_hips_arm(),
+            (2.2, dl(0.0, held=False, arm=SHAKE_OUT, neck=-6.0)), (3.4, dl(0.0, held=False, **F.dl_hips(),
                                                                           neck=-20.0))]
 
 
 def bailout_deadlift_2():
     return [(0.0, dl(0.70)), (0.3, dl(0.74)), (0.6, dl(0.76, held=False, neck=0.0)), (1.4, dl(0.0, held=False)),
-            (2.2, dl(0.0, held=False, arm=F._dl_hips_arm(), neck=-20.0)),
-            (3.0, dl(0.0, held=False, arm=F._dl_hips_arm(), neck=-24.0))]
+            (2.2, dl(0.0, held=False, **F.dl_hips(), neck=-20.0)),
+            (3.0, dl(0.0, held=False, **F.dl_hips(), neck=-24.0))]
 
 
 # ---------------------------------------------------------------- DRAMATIC
@@ -198,7 +241,10 @@ def dramatic_squat_2():
         if k.get("mode") == "ground":
             sit = k
             break
-    sit_head = dict(sit, arm={"raise": 115.0, "swing": 30.0, "twist": -40.0, "elbow": 140.0}, neck=24.0)
+    # (2026-11-16: the old raw arm angles put the hands behind the head, 0.2-0.4 into the singlet and tee at the upper
+    #  back on every build, anim_qa arm_in_outfit; now the same hands-on-the-head hold as standing: hands on the crown,
+    #  elbows out to the sides)
+    sit_head = dict(sit, **head_hold(), neck=18.0)
     return [(0.0, sq(1.0)), (0.45, sq(0.86, torso_add=-8.0)), (1.6, sq(0.88, torso_add=-12.0)),
             (2.6, sit), (3.2, sit_head), (4.2, sit_head), (5.0, stand(neck=-6.0)), (5.6, hips())]
 
@@ -223,13 +269,16 @@ def dramatic_deadlift_1():
     b = F._dl_bottom()
     stuck = dl(0.95, torso_add=-6.0, thigh_add=-b[1] * 0.4, shin_add=-b[2] * 0.4)
     return [(0.0, dl(1.0)), (0.5, stuck), (1.4, stuck), (1.8, dl(1.0)), (2.2, stuck), (2.8, dl(1.0)),
-            (3.5, dl(0.0, held=False)), (4.1, dl(0.0, held=False, arm=head_hands()["arm"], neck=18.0)),
-            (4.8, dl(0.0, held=False, arm=head_hands()["arm"], neck=16.0))]
+            (3.5, dl(0.0, held=False)), (4.1, dl(0.0, held=False, **head_hold(), neck=18.0)),
+            (4.8, dl(0.0, held=False, **head_hold(), neck=16.0))]
 
 
 def dramatic_deadlift_2():
     soft = dict(torso_add=-8.0, shin_add=-8.0)
-    down = {"raise": 8.0, "swing": -30.0, "twist": 0.0, "elbow": 5.0}
+    # (2026-11-15: raise 8 -> 18, swing -30 -> -20: on the way down to the knees the hands brushed through the thighs)
+    # (2026-11-16: raise 18 -> 28, swing -20 -> -5, elbow 5 -> 15: with the hands nearer the knees they swung through
+    #  the singlet shorts on the way down)
+    down = {"raise": 28.0, "swing": -5.0, "twist": 0.0, "elbow": 15.0}
     return [(0.0, dl(0.70)), (0.5, dl(0.72, **soft)), (1.0, dl(0.62, torso_add=-4.0, shin_add=-4.0)),
             (1.3, dl(0.75, **soft)), (1.45, dl(0.76, **soft)), (1.8, dl(0.76, held=False, neck=0.0, **soft)),
             (2.3, dl(0.0, held=False, arm=down, neck=-12.0)), (3.0, bent_over()), (3.9, bent_over(6.0))]

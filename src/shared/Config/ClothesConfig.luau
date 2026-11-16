@@ -6,20 +6,23 @@
 	The lifter body and the plain basic clothes (GAME_DESIGN.md §38.5-38.6, user 2026-11-12).
 
 	The body (GAME_DESIGN §38.7, the cartoon style, user 2026-11-12): every character gets one of the cartoon lifter
-	bodies (art/scripts/build_cartoon_rig_02.py, uploaded as Bodies) on the original block skeleton, so every existing
-	animation still fits; the player keeps their own full-size head. Which build a lifter gets will come from their
-	progress (§38.1); until that is built everyone gets DefaultBuild, and in Studio the workspace attribute
-	"LifterBodyBuild" ("Skinny", "Heavy", "Muscular") picks one for a test. On in Studio only for now (LiveEnabled
-	false); the workspace attribute "LifterBody" (true/false) overrides that in Studio.
+	bodies (Bodies: the six production builds of CartoonBodies_05 on the torso-tall skeleton; every animation re-made
+	for it); the player keeps their own full-size head. Which build a lifter gets comes from their bodyweight and
+	numbers (§38.1, LifterBuild); in Studio the workspace attribute "LifterBodyBuild" ("Skinny", "SkinnyFat", "Fat",
+	"Fit", "Muscular", "BigBuff") picks one for a test. On in Studio only for now (LiveEnabled false); the workspace
+	attribute "LifterBody" (true/false) overrides that in Studio.
 
-	The clothes: one shirt, one bottom and one pair of shoes, in any of Colours. Every piece is a skinned mesh in
-	ClothesAssetId (art/scripts/build_clothes_01.py), named "<Item>__<Part>", worn over the body part <Part> and bending
-	with it. Basic clothes are free (`free`); clothing stores come later (the save keeps a list of owned clothes for
-	them). Those pieces were shaped for the realistic body (§38.5, dropped), so they stay off (ClothesShown false)
-	until they are remade for the cartoon bodies; the outfit, the toggle and the save keep working meanwhile.
+	The clothes: one shirt, one bottom and one pair of shoes, in any of Colours. Every piece is a skinned mesh in the
+	build's clothes model (Bodies[build].clothesAssetId, art/scripts/export_cartoon_08.py: the tee from
+	build_cartoon_gear_07.py, the rest from build_cartoon_gear_05.py), named "<Item>__<Part>",
+	worn over the body part <Part> and bending with it. Basic clothes are free (`free`); clothing stores come later (the
+	save keeps a list of owned clothes for them).
 
 	The gear toggle: gear ON wears the gear slots (WornGearConfig) and, when a singlet or suit is worn, takes the
-	bottom off so the legs show; the shirt stays on under it. Gear OFF wears the outfit alone.
+	bottom off so the legs show; the shirt stays on, WHOLE, under it (user 2026-11-16: gear is an accessory worn over the
+	clothes, it never removes or cuts anything under it; gear v6, art/scripts/build_cartoon_gear_06.py: the tee and the
+	singlet are both built on the body's own mesh, stacked, so they bend together. The suits are still v5's).
+	Gear OFF wears the outfit alone.
 ]]
 
 local ClothesConfig = {}
@@ -39,19 +42,34 @@ export type Body = {
 	-- front is 0.31 / 0.46 / 0.45 in front; plus the bar's radius 0.07 (the heavy bar sank 0.16 into the chest), plus
 	-- 0.07 for the shirt and singlet.
 	benchBarClear: number,
-	-- This build's clothes (art/scripts/build_cartoon_clothes_02.py, materials.json "CartoonClothes02_<Build>"); 0 = not
-	-- uploaded yet.
+	-- This build's clothes (art/scripts/export_cartoon_07.py, materials.json "CartoonClothes07_<Build>", uploaded
+	-- 2026-11-15); 0 = not uploaded yet.
 	clothesAssetId: number,
+	-- Each hand's grip on the squat bar, from the bar's centre (studs; Character Animation Quality.md §4.1b): a
+	-- little outside the shoulders, wide only on the big builds. For the game's per-build squat hold.
+	squatGrip: number,
 }
 
--- The cartoon bodies (materials.json "CartoonBody_<Build>"). All on the taller rig's heights: HipHeight 2.4.
+-- The production cartoon bodies (2026-11-15, materials.json "CartoonBody08_<Build>": CartoonBodies_05, the torso-tall
+-- skeleton, arms x1.5, the OPEN hand as the body's own hand; since 2026-11-16 on the LONGER legs, knee 1.00 (was 1.178,
+-- the 05 uploads); exported by art/scripts/export_cartoon_body_08.py, every number here from
+-- art/exports/CartoonExport05.json). squatBarRest = the §4.1b bar centre behind the spine (0.51 / 0.52 /
+-- 0.85 / 0.64 / 0.93 / 1.08) moved into the UpperTorso's own space (its centre isn't on the spine); benchBarClear = the
+-- chest's front from the UpperTorso's centre + the bar's radius 0.07 + 0.07 for the tee and singlet. Replaced the
+-- three block-skeleton fist bodies (Skinny 129935421578716, Heavy 86964380216834, Muscular 92735685532150).
 ClothesConfig.Bodies = {
-	Skinny = { assetId = 129935421578716, neckMark = Vector3.new(0, 0.843, -0.0055), squatBarRest = 0.51,
-		benchBarClear = 0.46, clothesAssetId = 0 },
-	Heavy = { assetId = 86964380216834, neckMark = Vector3.new(0, 0.9778, 0.1493), squatBarRest = 0.87,
-		benchBarClear = 0.61, clothesAssetId = 0 },
-	Muscular = { assetId = 92735685532150, neckMark = Vector3.new(0, 0.7484, 0.0221), squatBarRest = 0.67,
-		benchBarClear = 0.60, clothesAssetId = 0 },
+	Skinny = { assetId = 117068136403546, neckMark = Vector3.new(0, 1.0255, 0.0013), squatBarRest = 0.511,
+		squatGrip = 1.55, benchBarClear = 0.581, clothesAssetId = 117265939901739 },
+	SkinnyFat = { assetId = 113015580385760, neckMark = Vector3.new(0, 0.9993, 0.0838), squatBarRest = 0.604,
+		squatGrip = 1.66, benchBarClear = 0.486, clothesAssetId = 92154331822828 },
+	Fat = { assetId = 73408190821733, neckMark = Vector3.new(0, 0.9503, 0.179), squatBarRest = 1.029,
+		squatGrip = 2.05, benchBarClear = 0.711, clothesAssetId = 109623796762402 },
+	Fit = { assetId = 77562974459220, neckMark = Vector3.new(0, 0.9552, -0.0155), squatBarRest = 0.624,
+		squatGrip = 1.87, benchBarClear = 0.69, clothesAssetId = 89896403203508 },
+	Muscular = { assetId = 77603128598959, neckMark = Vector3.new(0, 0.8869, -0.0172), squatBarRest = 0.913,
+		squatGrip = 2.17, benchBarClear = 0.754, clothesAssetId = 123271626676248 },
+	BigBuff = { assetId = 85589236707019, neckMark = Vector3.new(0, 0.8354, -0.0047), squatBarRest = 1.075,
+		squatGrip = 2.35, benchBarClear = 0.847, clothesAssetId = 115461360597179 },
 } :: { [string]: Body }
 ClothesConfig.DefaultBuild = "Skinny"
 ClothesConfig.StudioBuildAttribute = "LifterBodyBuild"
@@ -65,9 +83,10 @@ ClothesConfig.LiveEnabled = false
 ClothesConfig.StudioEnabled = true
 ClothesConfig.StudioAttribute = "LifterBody"
 
--- The Root joint's height above the floor (the taller bodies, user 2026-11-12, art/scripts/lifter_heights.py: hips 2.0 ->
--- 2.4; every animation re-made on that rig), and the player's head at its own size.
-ClothesConfig.HipHeight = 2.4
+-- The Root joint's height above the floor: the torso-tall skeleton keeps the R15 block rig's legs (GAME_DESIGN §38.2,
+-- user 2026-11-13: HipHeight 2.0, the root node at 3.0; every animation re-made on that rig), and the player's head at
+-- its own size. (2.4 was the taller rig's, before.)
+ClothesConfig.HipHeight = 2.0
 ClothesConfig.HeadScale = 1.0
 
 -- Folder in the character holding the clothes (rebuilt whenever the outfit or the gear toggle changes).

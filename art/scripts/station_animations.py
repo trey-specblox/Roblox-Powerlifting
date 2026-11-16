@@ -69,7 +69,7 @@ BLOCK_JOINTS = dict(JOINTS)
 BLOCK_SIZES = dict(SIZES)
 _STRETCH = {"HumanoidRootPart": 1.0, "LowerTorso": _LH["TORSO"], "UpperTorso": _LH["TORSO"], "Head": 1.0,
             "UpperArm": _LH["ARM"], "LowerArm": _LH["ARM"], "Hand": 1.0,
-            "UpperLeg": _LH["LEG"], "LowerLeg": _LH["LEG"], "Foot": 1.0}
+            "UpperLeg": _LH["THIGH"], "LowerLeg": _LH["SHIN"], "Foot": 1.0}   # (knee 1.00 since 2026-11-16)
 
 
 def _stretch_of(part):
@@ -867,16 +867,17 @@ DEADLIFT_BAR_HELD = (1.6, 4.3)
 DEADLIFT_BAR = Vector((-1.5, 1.0 - HRP_STAND_Y, -0.6))      # left hand centre on the floor bar (its centre 1.0 up)
 DEADLIFT_TOES_OUT = 10.0
 
-def _deadlift_body(torso, thigh, shin, swing=None, forward=None, grip=0.0, swing_right=None):
+def _deadlift_body(torso, thigh, shin, swing=None, forward=None, grip=0.0, swing_right=None, arm_out=0.0):
     """swing: arms' forward angle relative to the torso; default hangs them straight down.
     forward: how far the whole lifter stands closer to the bar than the root part (torso rig: deadlift_forward()).
     grip (torso rig, 0..1): how far the hands have turned into the MIXED GRIP; swing_right: the right arm's own swing
-    (a mixed grip puts the two hands on opposite sides of the bar, so the arms differ by a few degrees)."""
+    (a mixed grip puts the two hands on opposite sides of the bar, so the arms differ by a few degrees).
+    arm_out (opt-in, default 0 = unchanged): both arms raised that many degrees out from the sides."""
     pose = {"Root": rx(torso), "Neck": rx(-torso * 0.45)}
     pose.update(legs(torso, thigh, shin, 0.0, DEADLIFT_TOES_OUT))
-    pose.update(arms({"raise": 0.0, "swing": -torso if swing is None else swing, "twist": 0.0, "elbow": 0.0}))
+    pose.update(arms({"raise": arm_out, "swing": -torso if swing is None else swing, "twist": 0.0, "elbow": 0.0}))
     if swing_right is not None:
-        pose["RightShoulder"] = rx(swing_right)
+        pose["RightShoulder"] = rz(arm_out) @ rx(swing_right) if arm_out else rx(swing_right)
     if grip:
         pose.update(mixed_grip_wrists(grip))
     pose = plant_feet(pose)
@@ -911,10 +912,10 @@ def grip_point(w, side):
 DEADLIFT_BAR_RIGHT = Vector((-DEADLIFT_BAR.x, DEADLIFT_BAR.y, DEADLIFT_BAR.z))
 
 
-def _right_swing_onto(torso, thigh, shin, swing, fwd, target_z=None, grip=1.0):
+def _right_swing_onto(torso, thigh, shin, swing, fwd, target_z=None, grip=1.0, arm_out=0.0):
     """The right arm's swing that puts its grip on the bar (target_z: only on that bar path line, by bisection)."""
     def body(s):
-        return forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, swing, fwd, grip, s))
+        return forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, swing, fwd, grip, s, arm_out))
     if target_z is not None:
         lo, hi = -torso - 60.0, -torso + 80.0
         for _ in range(40):
@@ -1023,10 +1024,11 @@ def deadlift_forward():
     """How far the lifter stands closer to the floor bar than the root part (torso rig only; 0 elsewhere)."""
     return _dl_fit()[4] if RIG == "torso" else 0.0
 
-def _deadlift_on_bar_path(torso, thigh, shin):
+def _deadlift_on_bar_path(torso, thigh, shin, arm_out=0.0):
     """While the bar is held: straight arms swung just enough to keep the hands (the
     bar) on a vertical path DEADLIFT_BAR.z in front of the feet, so the bar slides up
-    the front of the shins and thighs instead of passing through them (bisection)."""
+    the front of the shins and thighs instead of passing through them (bisection).
+    arm_out (opt-in, default 0 = unchanged): the arms that many degrees out from the sides (Station_Deadlift's lockout)."""
     lo, hi = -torso - 5.0, -torso + 80.0          # more swing = hands further forward (-z)
     grip = 0.0
     if RIG == "torso":
@@ -1034,7 +1036,7 @@ def _deadlift_on_bar_path(torso, thigh, shin):
         grip = 1.0                                # (and hold it in the mixed grip, by the Grip hole)
     for _ in range(40):
         mid = (lo + hi) / 2
-        w = forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, mid, None, grip))
+        w = forward_kinematics(Matrix.Identity(4), _deadlift_body(torso, thigh, shin, mid, None, grip, None, arm_out))
         if grip_point(w, "Left").z > DEADLIFT_BAR.z:
             lo = mid
         else:
@@ -1042,8 +1044,8 @@ def _deadlift_on_bar_path(torso, thigh, shin):
     left = (lo + hi) / 2
     if RIG != "torso":
         return _deadlift_body(torso, thigh, shin, left)
-    right = _right_swing_onto(torso, thigh, shin, left, None, DEADLIFT_BAR.z)
-    return _deadlift_body(torso, thigh, shin, left, None, 1.0, right)
+    right = _right_swing_onto(torso, thigh, shin, left, None, DEADLIFT_BAR.z, 1.0, arm_out)
+    return _deadlift_body(torso, thigh, shin, left, None, 1.0, right, arm_out)
 
 def _solve_deadlift_bottom():
     """Hip hinge that puts the straight-armed hands on the floor bar, hips above the knees. (torso rig: the set-up
@@ -1099,7 +1101,15 @@ def deadlift_depth(t):
 # (user reviews 2026-10-19). Torso + = leans back.
 DEADLIFT_LOCKOUT = (12.0, -3.0, -3.0)
 
-def deadlift_pose(t):
+# (2026-11-16, clothes count as the body, rule 17) Station_Deadlift ONLY: whenever he is upright (standing, and the bar
+# at the lockout) the arms hang this many degrees out from the sides, easing to 0 as he goes down to the floor bar (the
+# set position is unchanged), so the hands stay outside the singlet shorts where they flare at the hip (Skinny: the
+# underhand left hand's back sank 0.15 into them at the lockout, the hanging hand 0.09 standing up; 4 degrees still left
+# 0.02 at mid-thigh in the pull). Setup_Deadlift's hanging arms: setup_animations.DL_HANG_OUT. Other scripts calling
+# deadlift_pose(t) / _deadlift_on_bar_path keep the old arms (default 0).
+DEADLIFT_STATION_ARM_OUT = 5.0
+
+def deadlift_pose(t, arm_out=0.0):
     global _DEADLIFT
     if _DEADLIFT is None:
         _DEADLIFT = _solve_deadlift_bottom()[0]
@@ -1110,15 +1120,16 @@ def deadlift_pose(t):
     top = DEADLIFT_LOCKOUT if held else (0.0, 0.0, 0.0)
     torso, thigh, shin = (blend(top[i], _DEADLIFT[i], u) for i in range(3))
     if held:
-        return _deadlift_on_bar_path(torso, thigh, shin)
+        return _deadlift_on_bar_path(torso, thigh, shin, arm_out * (1.0 - u))
     if RIG == "torso" and u > 0:
         # (torso rig) the arms reach for the bar on the way down (and leave it on the way up): at the bottom they hang
         # slanted onto the bar, not straight down
         reach = _dl_fit()[3] + (_DEADLIFT[0] - torso)            # the bottom's slant, kept as the torso turns
         reach_right = _dl_fit()[5] + (_DEADLIFT[0] - torso)
         g = smooth(u)                                             # (the hands turn into the mixed grip as they reach)
-        return _deadlift_body(torso, thigh, shin, blend(-torso, reach, g), None, g, blend(-torso, reach_right, g))
-    return _deadlift_body(torso, thigh, shin)
+        return _deadlift_body(torso, thigh, shin, blend(-torso, reach, g), None, g, blend(-torso, reach_right, g),
+                              arm_out * (1.0 - u))
+    return _deadlift_body(torso, thigh, shin, arm_out=arm_out * (1.0 - u))
 
 def deadlift_bar_held(t):
     return DEADLIFT_BAR_HELD[0] <= t < DEADLIFT_BAR_HELD[1]
@@ -1128,7 +1139,8 @@ def deadlift_bar_held(t):
 ANIMATIONS = {
     "Squat": {"length": SQUAT_LENGTH, "pose": squat_pose, "held": lambda t: True},
     "Bench": {"length": BENCH_LENGTH, "pose": bench_pose, "held": lambda t: True},
-    "Deadlift": {"length": DEADLIFT_LENGTH, "pose": deadlift_pose, "held": deadlift_bar_held},
+    "Deadlift": {"length": DEADLIFT_LENGTH, "pose": lambda t: deadlift_pose(t, DEADLIFT_STATION_ARM_OUT),
+                 "held": deadlift_bar_held},
 }
 
 # ---------------------------------------------------------------- Roblox KeyframeSequence writer

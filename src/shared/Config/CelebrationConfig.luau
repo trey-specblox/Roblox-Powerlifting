@@ -121,7 +121,7 @@ CelebrationConfig.RarityOrder = { "Default", "Common", "Uncommon", "Rare", "Epic
 CelebrationConfig.List = {
 	{
 		id = "ChalkClapPump", name = "Chalk Clap & Pump", rarity = "Default", seconds = 3.0, kind = "Standing",
-		animationId = "rbxassetid://128556766854007", source = "CEL-71",
+		animationId = "rbxassetid://101433631364198", source = "CEL-71",
 		soundtrack = "rbxassetid://130751571992816",
 		description = "A chalky clap at the chest, a proud beat, one fist pump. What real lifters do on an ordinary good lift.",
 		events = { ev(0.42, "ChalkClap") },
@@ -129,7 +129,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "ExitFistPump", name = "Exit Fist Pump", rarity = "Common", seconds = 1.6, kind = "Walk",
-		animationId = "rbxassetid://87493089985283", source = "CEL-59",
+		animationId = "rbxassetid://134859787250285", source = "CEL-59",
 		soundtrack = "rbxassetid://100065691077554",
 		description = "Never stops walking: one fist up beside the head on the way off. 'Opener done.'",
 		events = {},
@@ -137,7 +137,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "FistSalute", name = "Fist Salute", rarity = "Common", seconds = 2.4, kind = "Standing",
-		animationId = "rbxassetid://123710487093671", source = "CEL-60",
+		animationId = "rbxassetid://90866174331816", source = "CEL-60",
 		soundtrack = "rbxassetid://129076185496758",
 		description = "A fist held up beside the head, upper arm level, looking up at the crowd. Calm and businesslike.",
 		events = {},
@@ -145,7 +145,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "MilitarySalute", name = "Military Salute", rarity = "Common", seconds = 3.0, kind = "Standing",
-		animationId = "rbxassetid://135407665577251", source = "CEL-66",
+		animationId = "rbxassetid://85071617856836", source = "CEL-66",
 		soundtrack = "rbxassetid://112831292294445",
 		description = "Chest out, a crisp salute to the judges, then at attention. Dignified, not every unlock is a scream.",
 		events = { ev(0.21, "CelebStomp") },
@@ -153,7 +153,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "WingspanHold", name = "Wingspan", rarity = "Uncommon", seconds = 3.4, kind = "Standing",
-		animationId = "rbxassetid://79043773456497", source = "CEL-46",
+		animationId = "rbxassetid://85457936961427", source = "CEL-46",
 		soundtrack = "rbxassetid://70393531422307",
 		description = "Arms swing out into a T and hold, chin up, soaking it in. 'What did you expect?'",
 		events = {},
@@ -161,7 +161,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "ArmsUpBounce", name = "Arms Up Bounce", rarity = "Uncommon", seconds = 2.5, kind = "Standing",
-		animationId = "rbxassetid://117132977931241", source = "CEL-49",
+		animationId = "rbxassetid://84884154138335", source = "CEL-49",
 		soundtrack = "rbxassetid://101557833195011",
 		description = "Both arms straight up, then bouncing on the toes with the arms out, laughing.",
 		events = { ev(0.75, "CelebFootTap"), ev(1.15, "CelebFootTap"), ev(1.55, "CelebFootTap") },
@@ -169,23 +169,15 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "SkyPoint", name = "Finger to the Sky", rarity = "Uncommon", seconds = 3.4, kind = "Walk",
-		animationId = "rbxassetid://109828605839081", source = "CEL-51",
+		animationId = "rbxassetid://133328327237528", source = "CEL-51",
 		soundtrack = "rbxassetid://108014192803753",
 		description = "Walking off with one arm straight up, a finger to the sky, chin up. Unhurried, dominant.",
 		events = {},
 		fx = { fx(0.2, "Swoosh", 0.4) },
 	},
 	{
-		id = "ReliefRoar", name = "Relief Roar", rarity = "Rare", seconds = 4.2, kind = "Standing",
-		animationId = "rbxassetid://136293012059892", source = "CEL-34",
-		soundtrack = "rbxassetid://72039361401656",
-		description = "A heavyweight's sinking roar, arms tense, then both hands locked on the head. Feet never move.",
-		events = {},
-		fx = { fx(0.4, "Shout", 1.0), fx(1.75, "Swoosh", 0.55) },
-	},
-	{
 		id = "LightsArmsUp", name = "Wait for the Lights", rarity = "Rare", seconds = 3.8, kind = "Standing",
-		animationId = "rbxassetid://89117731000961", source = "CEL-36",
+		animationId = "rbxassetid://90598922249245", source = "CEL-36",
 		soundtrack = "rbxassetid://104407525026280",
 		description = "Hands on hips, watching the judges... then both arms shoot straight up.",
 		events = {},
@@ -193,7 +185,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "SitAndLaugh", name = "Sit Down and Laugh", rarity = "Rare", seconds = 5.2, kind = "Standing",
-		animationId = "rbxassetid://104660341072158", source = "CEL-43",
+		animationId = "rbxassetid://113230523485052", source = "CEL-43",
 		soundtrack = "rbxassetid://124071275481756",
 		description = "Just sits down on the platform, leaning back on one hand, laughing up at the lights.",
 		events = { ev(1.15, "CelebSit"), ev(3.55, "CelebFootTap"), ev(4.2, "CelebFootTap") },
@@ -201,17 +193,17 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "PointAndPrance", name = "Point & Prance", rarity = "Epic", seconds = 3.6, kind = "Standing",
-		animationId = "rbxassetid://104214935349918", source = "CEL-26",
+		animationId = "rbxassetid://131527478336184", source = "CEL-26",
 		soundtrack = "rbxassetid://126738208009576",
 		description = "Giddy hands at the chin, then both arms up pointing at the ceiling and high knees on the spot.",
 		-- (a tap as each foot comes down from the skip and the high knees)
-		events = { ev(0.55, "CelebFootTap"), ev(1.33, "CelebFootTap"), ev(1.55, "CelebFootTap"), ev(1.77, "CelebFootTap"),
-			ev(1.99, "CelebFootTap"), ev(2.21, "CelebFootTap"), ev(2.45, "CelebFootTap") },
-		fx = { fx(0.9, "Swoosh", 0.45), fx(1.1, "Shout", 0.8), fx(1.33, "Dust"), fx(1.77, "Dust"), fx(2.21, "Dust") },
+		events = { ev(0.55, "CelebFootTap"), ev(1.33, "CelebFootTap"), ev(1.58, "CelebFootTap"), ev(1.83, "CelebFootTap"),
+			ev(2.08, "CelebFootTap"), ev(2.33, "CelebFootTap"), ev(2.58, "CelebFootTap") },
+		fx = { fx(1.0, "Swoosh", 0.45), fx(1.2, "Shout", 0.8), fx(1.33, "Dust"), fx(1.83, "Dust"), fx(2.33, "Dust") },
 	},
 	{
 		id = "RackSideRoar", name = "Rack-Side Roar", rarity = "Epic", seconds = 3.4, kind = "Standing",
-		animationId = "rbxassetid://108298610910777", source = "CEL-20",
+		animationId = "rbxassetid://102747506662616", source = "CEL-20",
 		soundtrack = "rbxassetid://128293594914349",
 		description = "Wide half squat, up into a V, down into goalposts, then sinking deep and pulling it all down. Three roars.",
 		events = { ev(0.26, "CelebStomp"), ev(2.45, "CelebFootTap") },
@@ -220,7 +212,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "CrouchRoarJump", name = "Crouch Roar & Jump", rarity = "Epic", seconds = 4.2, kind = "Standing",
-		animationId = "rbxassetid://90946364509609", source = "CEL-18",
+		animationId = "rbxassetid://88493667409251", source = "CEL-18",
 		soundtrack = "rbxassetid://101654183248134",
 		description = "A deep crouch roar with the fists low, a crunch, a tuck jump and a little hop.",
 		events = { ev(0.36, "CelebStomp"), ev(2.35, "CelebLand"), ev(3.1, "CelebFootTap") },
@@ -229,7 +221,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "WingspanCrunch", name = "Wingspan Crunch", rarity = "Epic", seconds = 4.2, kind = "Standing",
-		animationId = "rbxassetid://75711873319608", source = "CEL-17",
+		animationId = "rbxassetid://137285118933604", source = "CEL-17",
 		soundtrack = "rbxassetid://140504637248836",
 		description = "Watching the lights, then arms flung out to a T roaring, held, then sweeping down into a crunching squeeze.",
 		events = {},
@@ -237,11 +229,11 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "DisbeliefPrayer", name = "Disbelief", rarity = "Legendary", seconds = 9.6, kind = "Standing",
-		animationId = "rbxassetid://91590042223818", source = "CEL-02",
+		animationId = "rbxassetid://117449701756272", source = "CEL-02",
 		soundtrack = "rbxassetid://115588207298207",
 		description = "A title-winning last attempt: frozen shock, hands on the head, a roar, a full deep squat, 'can you believe it', arms to the sky, hands over the face.",
 		events = { ev(1.3, "CelebFootTap"), ev(4.45, "CelebFootTap") },
-		fx = { fx(1.7, "Swoosh", 0.4), fx(1.95, "Shout", 0.5), fx(2.9, "Dust"), fx(6.2, "Swoosh", 0.45),
+		fx = { fx(1.8, "Swoosh", 0.4), fx(2.05, "Shout", 0.5), fx(2.9, "Dust"), fx(6.2, "Swoosh", 0.45),
 			fx(6.5, "Shout", 0.85), fx(6.5, "ChalkPuff") },
 		cinematic = {
 			shots = { { at = 0, shot = "FrontMid" }, { at = 1.9, shot = "Close" }, { at = 2.8, shot = "LowFront" },
@@ -251,7 +243,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "WingspanBiceps", name = "World Record Wingspan", rarity = "Legendary", seconds = 6.2, kind = "Standing",
-		animationId = "rbxassetid://120155702006810", source = "CEL-03",
+		animationId = "rbxassetid://106344233838305", source = "CEL-03",
 		soundtrack = "rbxassetid://87589154566724",
 		description = "A world record: a crouched scream, a hop back with the arms flung up and wide, leaning back, then a double biceps.",
 		events = { ev(0.3, "CelebFootTap"), ev(1.05, "CelebLand"), ev(2.6, "CelebFootTap") },
@@ -264,22 +256,8 @@ CelebrationConfig.List = {
 		},
 	},
 	{
-		id = "LeapAndBow", name = "Leap & Bow", rarity = "Legendary", seconds = 5.8, kind = "Standing",
-		animationId = "rbxassetid://96553342636481", source = "CEL-04",
-		soundtrack = "rbxassetid://83740584871242",
-		description = "Springs up with the hands by the head and the shins tucked, lands straight on both knees and bows to the platform.",
-		events = { ev(1.18, "CelebKnees"), ev(3.75, "CelebFootTap"), ev(4.45, "CelebFootTap") },
-		fx = { fx(0.3, "Dust"), fx(0.4, "Swoosh", 0.55), fx(0.55, "Shout", 0.4), fx(0.55, "Jump", 0.63),
-			fx(1.18, "KneeDust") },
-		cinematic = {
-			shots = { { at = 0, shot = "Side" }, { at = 0.5, shot = "LowFront" }, { at = 1.6, shot = "LowSide" },
-				{ at = 3.4, shot = "FrontMid" } },
-			look = { tint = Color3.fromRGB(255, 236, 236), key = Color3.fromRGB(255, 225, 225), haze = 0.25 },
-		},
-	},
-	{
 		id = "BowAndRise", name = "Bow, Then Rise Roaring", rarity = "Legendary", seconds = 6.6, kind = "Standing",
-		animationId = "rbxassetid://125955308007974", source = "CEL-05",
+		animationId = "rbxassetid://137915016316855", source = "CEL-05",
 		soundtrack = "rbxassetid://103458950942006",
 		description = "Stunned, the knees buckle into a face-down bow... then up on the knees, fists driven down, head thrown back: the roar. Hand on the heart.",
 		events = { ev(1.55, "CelebKnees"), ev(4.6, "CelebFootTap"), ev(5.1, "CelebFootTap") },
@@ -292,24 +270,176 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "RecordJumpRoar", name = "Record Jump & Chalk Burst", rarity = "Legendary", seconds = 9.2, kind = "Standing",
-		animationId = "rbxassetid://130354718153201", source = "CEL-01",
+		animationId = "rbxassetid://99930838223185", source = "CEL-01",
 		soundtrack = "rbxassetid://75363847444209",
 		description = "A meet-winning record: arms wide in disbelief, a look up at the screen, hands on the head, a skip, a tucked jump punching forward, a clap that bursts chalk, a fist to the sky out of the cloud.",
 		events = { ev(0.4, "CelebFootTap"), ev(1.9, "CelebFootTap"), ev(5.25, "CelebFootTap"), ev(5.75, "CelebFootTap"),
 			ev(6.45, "CelebLand"), ev(7.0, "ChalkClap") },
 		fx = { fx(0.3, "Swoosh", 0.4), fx(0.4, "Shout", 1.1), fx(5.3, "Swoosh", 0.5), fx(5.95, "Jump", 0.5),
-			fx(6.45, "Dust"), fx(7.0, "ChalkBurst"), fx(7.1, "Swoosh", 0.5), fx(7.25, "Shout", 0.65) },
+			fx(6.45, "Dust"), fx(7.0, "ChalkBurst"), fx(7.1, "Swoosh", 0.5), fx(7.3, "Shout", 0.65) },
 		cinematic = {
 			shots = { { at = 0, shot = "Side" }, { at = 1.9, shot = "BackHigh" }, { at = 3.5, shot = "FrontMid" },
 				{ at = 5.4, shot = "Side" }, { at = 6.8, shot = "LowFront" } },
 			look = { tint = Color3.fromRGB(255, 225, 245), key = Color3.fromRGB(255, 120, 200), haze = 0.3 },
 		},
 	},
+	-- From the FULL Meet Study (user 2026-11-14: "study EVERYTHING ... the male celebrations"; References/Meet Study/Meet
+	-- Celebration Catalogue.md: `source` is its MC number). No sound tracks yet: their body sounds play one by one.
+	{
+		id = "HeadClampRoar", name = "Head Clamp Roar", rarity = "Legendary", seconds = 7.0, kind = "Standing",
+		animationId = "rbxassetid://83917301171358", source = "MC-010",
+		description = "A heavyweight world-record deadlift: up out of the bend into a double-biceps roar, arms to the sky, both hands clamped on the head screaming, a crouched gorilla roar.",
+		events = {},
+		fx = { fx(0.8, "Swoosh", 0.4), fx(1.0, "Shout", 0.5), fx(1.75, "Swoosh", 0.4), fx(3.0, "Shout", 1.0),
+			fx(4.5, "Shout", 0.6), fx(5.3, "Swoosh", 0.4) },
+		cinematic = {
+			shots = { { at = 0, shot = "FrontMid" }, { at = 0.9, shot = "LowFront" }, { at = 2.6, shot = "Close" },
+				{ at = 4.4, shot = "Wide" } },
+			look = { tint = Color3.fromRGB(255, 236, 222), key = Color3.fromRGB(255, 214, 180), haze = 0.2 },
+		},
+	},
+	{
+		id = "GorillaRoar", name = "Gorilla Roar", rarity = "Epic", seconds = 3.6, kind = "Standing",
+		animationId = "rbxassetid://88188049616838", source = "MC-020",
+		description = "Chest out, fists at the hips roaring at the ceiling, then crunching down roaring at the floor. Twice.",
+		events = {},
+		fx = { fx(0.4, "Shout", 0.45), fx(1.25, "Shout", 0.4), fx(2.35, "Shout", 0.4) },
+	},
+	{
+		id = "HammerFistRoar", name = "Hammer Fist", rarity = "Epic", seconds = 3.4, kind = "Standing",
+		animationId = "rbxassetid://137690240669280", source = "MC-008",
+		description = "A junior world record: one fist to the sky yelling, then a deep lean hammering both fists down past the knees.",
+		events = {},
+		fx = { fx(0.3, "Swoosh", 0.35), fx(0.45, "Shout", 0.3), fx(1.3, "Swoosh", 0.35), fx(1.5, "Shout", 0.3) },
+	},
+	{
+		id = "HopSkyPunch", name = "Hopping Sky Punch", rarity = "Epic", seconds = 2.4, kind = "Standing",
+		animationId = "rbxassetid://71296247286322", source = "MC-018",
+		description = "A little sideways hop, one leg kicked back, body arched, a fist punched up at the sky in mid-air.",
+		events = { ev(1.45, "CelebLand") },
+		fx = { fx(0.6, "Jump", 0.4), fx(0.8, "Swoosh", 0.4), fx(0.95, "Shout", 0.3), fx(1.45, "Dust") },
+	},
+	{
+		id = "FistsBesideHead", name = "Fists Beside the Head", rarity = "Uncommon", seconds = 2.3, kind = "Standing",
+		animationId = "rbxassetid://116731349065196", source = "MC-064",
+		description = "A junior's signature on every good pull: a clap at the chin, both fists up beside the head, one fist pump.",
+		events = { ev(0.55, "ChalkClap") },
+		fx = { fx(0.55, "ChalkPuff"), fx(0.7, "Swoosh", 0.3), fx(0.85, "Shout", 0.3) },
+	},
+	{
+		id = "SkyPointChalkYes", name = "Sky Point & Chalk", rarity = "Rare", seconds = 4.0, kind = "Standing",
+		animationId = "rbxassetid://79016920083257", source = "MC-034",
+		description = "A finger to the ceiling, one clap that throws a chalk cloud, then bent almost flat swinging the fists down: YES.",
+		events = { ev(1.65, "ChalkClap") },
+		fx = { fx(0.3, "Swoosh", 0.3), fx(1.65, "ChalkBurst"), fx(2.4, "Swoosh", 0.4), fx(3.0, "Shout", 0.4) },
+	},
+	{
+		id = "HunchedDance", name = "Hunched Victory Dance", rarity = "Epic", seconds = 4.2, kind = "Standing",
+		animationId = "rbxassetid://106118951508425", source = "MC-022",
+		description = "After a record squat: bent forward, knees bouncing to the beat, elbows swinging, knee-lift stomps and a running-man kick.",
+		events = { ev(0.85, "CelebStomp"), ev(1.35, "CelebStomp"), ev(2.35, "CelebFootTap"), ev(2.85, "CelebFootTap") },
+		fx = { fx(0.85, "Dust"), fx(1.35, "Dust"), fx(2.35, "Dust"), fx(2.85, "Dust") },
+	},
+	{
+		id = "ChalkClapRightHere", name = "Right Here", rarity = "Legendary", seconds = 5.8, kind = "Standing",
+		animationId = "rbxassetid://108334306481725", source = "MC-004",
+		description = "A meet-winning deadlift: an arm flung up screaming, arms thrown wide at the crowd, a chalk-cloud clap, a crouched roar, then a step in roaring 'right here' at the floor.",
+		events = { ev(2.15, "ChalkClap"), ev(3.75, "CelebStomp") },
+		fx = { fx(0.2, "Swoosh", 0.35), fx(0.35, "Shout", 0.5), fx(1.1, "Swoosh", 0.4), fx(2.15, "ChalkBurst"),
+			fx(2.5, "Shout", 0.4), fx(3.75, "Dust"), fx(3.75, "Shout", 0.7) },
+		cinematic = {
+			shots = { { at = 0, shot = "FrontMid" }, { at = 1.2, shot = "Wide" }, { at = 2.0, shot = "Close" },
+				{ at = 3.6, shot = "LowFront" } },
+			look = { tint = Color3.fromRGB(240, 244, 255), key = Color3.fromRGB(220, 230, 255), haze = 0.3 },
+		},
+	},
+	{
+		id = "VStrutRoar", name = "V Strut", rarity = "Epic", seconds = 6.0, kind = "Standing",
+		animationId = "rbxassetid://104580649958760", source = "MC-011",
+		description = "A showman's world record: arms up in a high V with the hips swaying, a sudden half-squat roar, a flex, then a point at the crowd.",
+		events = {},
+		fx = { fx(0.25, "Swoosh", 0.4), fx(1.85, "Shout", 0.45), fx(3.0, "Shout", 0.35), fx(4.35, "Swoosh", 0.3) },
+	},
+	{
+		id = "BackRollLegsUp", name = "Back Roll, Legs Up", rarity = "Legendary", seconds = 8.4, kind = "Standing",
+		animationId = "rbxassetid://132710771867516", source = "MC-013",
+		description = "A European-record deadlift: sits back, rolls onto his back with both legs in the air, then up onto his knees screaming at the ceiling.",
+		events = { ev(1.15, "CelebSit"), ev(1.75, "CelebSit"), ev(4.8, "CelebKnees"), ev(7.2, "Clap"), ev(7.6, "Clap") },
+		fx = { fx(1.15, "Dust"), fx(1.75, "Dust"), fx(4.8, "KneeDust"), fx(5.4, "Shout", 0.5) },
+		cinematic = {
+			shots = { { at = 0, shot = "FrontMid" }, { at = 1.6, shot = "Wide" }, { at = 4.6, shot = "LowSide" },
+				{ at = 5.3, shot = "LowFront" }, { at = 6.8, shot = "FrontMid" } },
+			look = { tint = Color3.fromRGB(255, 244, 228), key = Color3.fromRGB(255, 232, 200), haze = 0.2 },
+		},
+	},
+	{
+		id = "OneKneeFistPumps", name = "One-Knee Fist Pumps", rarity = "Epic", seconds = 6.0, kind = "Standing",
+		animationId = "rbxassetid://122732418337477", source = "MC-016",
+		description = "A national record: down on one knee pumping both fists, head bowed, then both arms up in a V from the knee.",
+		events = { ev(1.2, "CelebKnees"), ev(4.8, "CelebStomp") },
+		fx = { fx(0.45, "Shout", 0.3), fx(1.2, "KneeDust"), fx(3.2, "Swoosh", 0.3), fx(3.35, "Shout", 0.75), fx(4.8, "Dust") },
+	},
+	{
+		id = "CrucifixTears", name = "Crucifix to Tears", rarity = "Epic", seconds = 6.6, kind = "Standing",
+		animationId = "rbxassetid://77749737387518", source = "MC-021",
+		description = "A last deadlift: a V, then arms out to the sides with the face to the sky... and he breaks down, forearm over his face.",
+		events = {},
+		fx = { fx(0.2, "Swoosh", 0.3), fx(0.35, "Shout", 0.4) },
+	},
+	{
+		id = "SkyFingerArmsCrossed", name = "Finger Up, Arms Crossed", rarity = "Rare", seconds = 7.3, kind = "Standing",
+		animationId = "rbxassetid://86186278650542", source = "MC-031",
+		description = "The heaviest squat ever: a finger thrust to the sky, then standing still with the arms crossed, taking it in.",
+		events = {},
+		fx = { fx(0.3, "Swoosh", 0.3), fx(0.45, "Shout", 0.5) },
+	},
+	{
+		id = "Gunslinger", name = "Gunslinger", rarity = "Epic", seconds = 5.0, kind = "Standing",
+		animationId = "rbxassetid://138620700673748", source = "MC-051",
+		description = "Two finger pistols at the mouth, blow the smoke off, holster them, point at the crowd, then fists by the head.",
+		events = {},
+		fx = { fx(2.3, "Swoosh", 0.3), fx(3.8, "Swoosh", 0.3), fx(3.9, "Shout", 0.4) },
+	},
+	{
+		id = "AreYouNotEntertained", name = "Are You Not Entertained?", rarity = "Epic", seconds = 6.0, kind = "Standing",
+		animationId = "rbxassetid://137415132772884", source = "MC-025",
+		description = "A fist to the sky, a slap on the chest that throws chalk, then arms spread wide, palms up, chin raised, perfectly still.",
+		events = { ev(1.75, "BackSlap") },
+		fx = { fx(0.3, "Swoosh", 0.3), fx(1.75, "ChalkPuff"), fx(2.4, "Swoosh", 0.4) },
+	},
+	{
+		id = "LongVHold", name = "The Long V", rarity = "Rare", seconds = 6.4, kind = "Standing",
+		animationId = "rbxassetid://75249448938574", source = "MC-030",
+		description = "The biggest deadlift in history: both arms straight up and held, head thrown back roaring at the ceiling.",
+		events = {},
+		fx = { fx(0.4, "Swoosh", 0.3), fx(0.55, "Shout", 1.5) },
+	},
+	{
+		id = "StageEdgeDoubleBiceps", name = "Stage-Edge Double Biceps", rarity = "Epic", seconds = 5.6, kind = "Standing",
+		animationId = "rbxassetid://121585072803238", source = "MC-035",
+		description = "Six for six: a front double biceps pumped twice, a most-muscular squeeze, a 'come on' sweep, then the crab.",
+		events = {},
+		fx = { fx(0.9, "Swoosh", 0.3), fx(1.0, "Shout", 0.3), fx(2.45, "Shout", 0.45), fx(3.35, "Swoosh", 0.3) },
+	},
+	{
+		id = "FistsChestCeilingRoar", name = "Ceiling Roar", rarity = "Rare", seconds = 5.4, kind = "Standing",
+		animationId = "rbxassetid://130334347632285", source = "MC-024",
+		description = "A grinder PR: fists pulled to the chest roaring, a fist thrust up, then the head thrown right back screaming at the ceiling.",
+		events = {},
+		fx = { fx(0.5, "Shout", 0.45), fx(1.3, "Swoosh", 0.3), fx(2.45, "Shout", 1.45) },
+	},
+	{
+		id = "LightsArmsWideHeadHands", name = "Lights, Then Relief", rarity = "Uncommon", seconds = 4.8, kind = "Standing",
+		animationId = "rbxassetid://137321931821990", source = "MC-049",
+		description = "Staring up at the lights board... three whites: arms thrown wide 'come on!', then both hands on the head.",
+		events = {},
+		fx = { fx(1.5, "Swoosh", 0.4), fx(1.6, "Shout", 0.5) },
+	},
 	-- All the way back (user 2026-11-11), from the user's videos rewatched for how lifters step off and walk away
 	-- (art/scripts/celebration_animations.py notes the moments).
 	{
 		id = "ThankYouWave", name = "Thank-You Wave", rarity = "Rare", seconds = 3.6, kind = "WalkLoop",
-		animationId = "rbxassetid://134338402606763", source = "Walk-off: lNOrz4CVNMY 23:30",
+		animationId = "rbxassetid://93339834494171", source = "Walk-off: lNOrz4CVNMY 23:30",
 		soundtrack = "rbxassetid://115133666349196",
 		description = "All the way back to your spot: an open hand waved up to the crowd, then a hand on the heart and a nod.",
 		events = {},
@@ -317,7 +447,7 @@ CelebrationConfig.List = {
 	},
 	{
 		id = "CrowdPleaser", name = "Crowd Pleaser", rarity = "Epic", seconds = 4.4, kind = "WalkLoop",
-		animationId = "rbxassetid://100705289483893", source = "Walk-off: 9FQM0Z6_s8Q 1:16.8, lNOrz4CVNMY 20:55",
+		animationId = "rbxassetid://78622244351624", source = "Walk-off: 9FQM0Z6_s8Q 1:16.8, lNOrz4CVNMY 20:55",
 		soundtrack = "rbxassetid://102629709943437",
 		description = "All the way back to your spot: two roaring fist pumps, arms flung wide, then double thumbs up to the stands. Again and again.",
 		events = {},
@@ -328,6 +458,61 @@ CelebrationConfig.List = {
 CelebrationConfig.byId = {} :: { [string]: Celebration }
 for _, celebration in ipairs(CelebrationConfig.List) do
 	CelebrationConfig.byId[celebration.id] = celebration
+end
+
+--[[
+	MISS REACTIONS (user 2026-11-15): the two moves that were studied from lifts that were really MISSES (CEL-04, CEL-34;
+	the full Meet Study found it) are no longer celebrations. After a failed lift's own fail animation, now and then the
+	lifter reacts with one of them: about `MissReactionChance` of misses, one of these at random, for every lifter
+	(players and computer lifters, no unlock, nothing saved), at the meets that have celebrations (MeetLevels). No camera
+	shots: a miss stays quick. The server rolls (CelebrationService.missReaction); a player who owned one of them as a
+	celebration now has the Default there (an id the list no longer has counts as the Default, ProfileOperations).
+	Same fields as a celebration; never in the spin, the viewer's list or a loadout.
+]]
+--[[
+	CHANGED (user 2026-11-15, after a Studio test): "the lifter does NOT do the fail animation while looking at the crowd,
+	the lifter would be facing the direction they are going back to, then yelling or screaming ... it should be fail, turn
+	while walking hand gestures, scream." So EVERY miss now gets one: after the fail animation the lifter turns toward
+	where he is going and does one of these OVER the walk back (kind "Walk": arms and head only, the walk is the game's;
+	LocalMeetService.walkBack). Leap & Bow and Sinking Roar (standing, facing the crowd) are no longer used. The roar is
+	Sinking Roar's sound track for now (its roar lands at 0.4 s, these yell at 0.25-0.35 s).
+]]
+CelebrationConfig.MissReactionChance = 1
+local MISS_ROAR = "rbxassetid://72039361401656"
+CelebrationConfig.MissReactions = {
+	{
+		id = "MissHandsOnHead", name = "Hands on Head", rarity = "Default", seconds = 3.5, kind = "Walk",
+		animationId = "rbxassetid://132007727430646", source = "User 2026-11-15 (miss: walk off)",
+		soundtrack = MISS_ROAR,
+		description = "After a miss, walking off: both hands up onto the head, a look up, then the head drops and shakes.",
+		events = {},
+		fx = { fx(0.35, "Shout", 0.6) },
+	},
+	{
+		id = "MissArmSwipe", name = "Fist Swipe", rarity = "Default", seconds = 3.0, kind = "Walk",
+		animationId = "rbxassetid://122776395159397", source = "User 2026-11-15 (miss: walk off)",
+		soundtrack = MISS_ROAR,
+		description = "After a miss, walking off: the right fist thrown up and slashed down, then hands on the hips, head shaking.",
+		events = {},
+		fx = { fx(0.25, "Shout", 0.6), fx(0.4, "Swoosh", 0.5) },
+	},
+	{
+		id = "MissYell", name = "Yell", rarity = "Default", seconds = 2.8, kind = "Walk",
+		animationId = "rbxassetid://70835981258039", source = "User 2026-11-15 (miss: walk off)",
+		soundtrack = MISS_ROAR,
+		description = "After a miss, walking off: yelling at the ceiling with tense fists low, two fists driven down, head drops.",
+		events = {},
+		fx = { fx(0.3, "Shout", 1.0) },
+	},
+} :: { Celebration }
+CelebrationConfig.missById = {} :: { [string]: Celebration }
+for _, reaction in ipairs(CelebrationConfig.MissReactions) do
+	CelebrationConfig.missById[reaction.id] = reaction
+end
+
+-- A celebration or a miss reaction by id (what plays on a body), or nil.
+function CelebrationConfig.get(id: string): Celebration?
+	return CelebrationConfig.byId[id] or CelebrationConfig.missById[id]
 end
 
 --[[

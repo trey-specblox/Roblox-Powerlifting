@@ -375,6 +375,13 @@ end
 	Each client draws the walk every frame (MeetWalkView, user 2026-11-08: "not smooth"); the server sends it once and
 	plays the animations, and only puts its own body down where the walk ends.
 ]]
+-- A walk's animation runs on this long after it ends, for a walk straight after it to carry on (walkBody).
+local WALK_CARRY_SECONDS = 0.12
+local lingering: { [Model]: { track: AnimationTrack, id: string } } = {}
+
+-- Stepping back out of the rack goes at this share of the walking speed (MeetWalkPath.isBackStep).
+local BACK_STEP_SPEED = 0.6
+
 function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFrame, stillGoing: () -> boolean,
 	options: WalkOptions?)
 	if not body or not body.Parent then
@@ -387,13 +394,16 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 	local pivot = body:GetPivot()
 	local styleId = style.animationId
 	local styleSpeed = if styleId then style.speed or CONFIG.WalkSpeed else nil
+	local from = pivot.Position - Vector3.new(0, height, 0)
+	-- A few steps straight back (out of the rack): slower, the walk played in reverse, no turning (MeetWalkPath).
+	local backStep = MeetWalkPath.isBackStep(from, pivot.LookVector, points, final)
 	local spec: MeetWalkPath.Spec = {
-		from = pivot.Position - Vector3.new(0, height, 0),
+		from = from,
 		look = pivot.LookVector,
 		points = points,
 		final = final,
 		height = height,
-		usualSpeed = CONFIG.WalkSpeed,
+		usualSpeed = if backStep then CONFIG.WalkSpeed * BACK_STEP_SPEED else CONFIG.WalkSpeed,
 		styleSpeed = styleSpeed,
 		styleStuds = if styleId then style.styleStuds or math.huge else nil,
 	}
@@ -405,10 +415,19 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 	end
 
 	local styled = styleId ~= nil and path.styleFrom <= 0
-	local track = playWalk(body, if styled then styleId else nil)
+	local wantedId = if styled then styleId else CONFIG.WalkAnimationId
+	-- A walk straight after another (arrive, then on to the seat) carries the same walk on (Studio 2026-11-15: a fresh
+	-- copy started from its first frame and the arms jumped in one frame).
+	local carried = lingering[body]
+	lingering[body] = nil
+	local track = if carried and carried.id == wantedId and carried.track.IsPlaying then carried.track
+		else playWalk(body, if styled then styleId else nil)
+	if carried and carried.track ~= track then
+		carried.track:Stop(0.25)
+	end
 	-- The speed the playing walk is made for: its steps keep pace with the body as it speeds up and slows down.
 	local madeFor = if styled then styleSpeed or CONFIG.WalkSpeed else CONFIG.WalkSpeed
-	local rate = -1
+	local rate = math.huge
 	local touch: AnimationTrack? = nil
 	local arrived = false
 	while true do
@@ -434,7 +453,7 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 			end
 			track = playWalk(body, styleId, 0.4)
 			madeFor = styleSpeed or CONFIG.WalkSpeed
-			rate = -1
+			rate = math.huge
 		end
 		if touch == nil and style.touchAnimationId and path.duration - t <= (style.touchSeconds or 0) then
 			touch = loadTrack(body, style.touchAnimationId)
@@ -447,14 +466,23 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 				task.spawn(style.onTouch)
 			end
 		end
-		local wanted = math.clamp(speed / madeFor, 0.35, 1.25)
+		local wanted = math.clamp(speed / madeFor, 0.35, 1.25) * (if backStep then -1 else 1)
 		if track and math.abs(wanted - rate) > 0.08 then
 			track:AdjustSpeed(wanted)
 			rate = wanted
 		end
 	end
 	if track then
-		track:Stop(0.25)
+		-- Stopped a moment later unless another walk carries it on.
+		local ending = track
+		local entry = { track = ending, id = if styled then (styleId or CONFIG.WalkAnimationId) else CONFIG.WalkAnimationId }
+		lingering[body] = entry
+		task.delay(WALK_CARRY_SECONDS, function()
+			if lingering[body] == entry then
+				lingering[body] = nil
+				ending:Stop(0.25)
+			end
+		end)
 	end
 	if touch then
 		touch:Stop(0.3)

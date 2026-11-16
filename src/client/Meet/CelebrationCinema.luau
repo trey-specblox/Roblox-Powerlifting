@@ -214,7 +214,7 @@ end
 	cinematic, or with no character.
 ]]
 function CelebrationCinema.play(id: string, startedAt: number)
-	local celebration = CelebrationConfig.byId[id]
+	local celebration = CelebrationConfig.get(id)
 	local cinematic = celebration and celebration.cinematic
 	local character = Players.LocalPlayer.Character
 	local root = part(character, "HumanoidRootPart")

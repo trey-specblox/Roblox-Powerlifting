@@ -51,6 +51,10 @@ local FAIL_FADE_SECONDS = 0.5
 -- The glide from one progress update to the next (they come about ten times a second).
 local PROGRESS_GLIDE_SECONDS = 0.15
 local FADE_SECONDS = 0.15
+-- A missed bench's getting up (getUp): from this long after the re-rack's bar is in the J-cups (his hands off it),
+-- blended in over this long from the fail's last pose.
+local GET_UP_AFTER_RACKED_SECONDS = 0.35
+local GET_UP_FADE_SECONDS = 0.35
 -- Face up, head toward the rack (+Z), feet toward the open front (as StationPoses lies a lifter on the bench).
 local LYING = CFrame.fromMatrix(Vector3.zero, Vector3.xAxis, Vector3.zAxis)
 -- Facing the rack (rack-local +Z), as every lift at a gym rack does.
@@ -81,6 +85,24 @@ local PRE_WALK_STUDS = 0.4
 local SETUP_HANDOVER_SECONDS = 0.15
 local SETUP_SETTLE_SECONDS = 0.3
 
+--[[
+	Hands over from `old` to a track that has just started fading in: `old` stays at full weight for HANDOVER_HOLD_SECONDS
+	first, then fades out over `fade`. Faded out at the same moment (the old way), a player's copy could show neither for a
+	moment (the new one still loading, or the two fades a frame apart), and the standing idle came through: the arms swung
+	down and back up mid-lift (Studio 2026-11-15; the user's "elbows and shoulders doing a full 360").
+]]
+local HANDOVER_HOLD_SECONDS = 0.4
+local function holdThenStop(old: AnimationTrack?, fade: number)
+	if old == nil then
+		return
+	end
+	task.delay(HANDOVER_HOLD_SECONDS, function()
+		if old.IsPlaying then
+			old:Stop(fade)
+		end
+	end)
+end
+
 export type Handle = {
 	character: Model,
 	lift: string,
@@ -96,6 +118,8 @@ export type Handle = {
 	readyAt: number?,
 	-- When the setup takes the bar out of the J-cups (os.clock()).
 	barLeavesAt: number?,
+	-- The re-rack animation while it plays (StationAnimationConfig.Reracks).
+	rerackTrack: AnimationTrack?,
 }
 
 -- The lift's published setup animation, or nil.
@@ -465,9 +489,7 @@ function MeetLiftAnimation.finish(handle: Handle?, good: boolean, fail: StationA
 						failTrack.TimePosition = math.max(0, fail.length - 0.05)
 					end
 				end)
-				if track then
-					track:Stop(FAIL_FADE_SECONDS)
-				end
+				holdThenStop(track, FAIL_FADE_SECONDS)
 			end
 		end
 		return fail.length
@@ -475,6 +497,62 @@ function MeetLiftAnimation.finish(handle: Handle?, good: boolean, fail: StationA
 	local finish = stages.finish
 	stage(handle, finish[1], finish[2], finish[2] - finish[1])
 	return finish[2] - finish[1]
+end
+
+--[[
+	After a MISSED bench the spotters have the bar and he is still lying on the bench: he sits up and stands up, the second
+	half of his own re-rack (Reracks.Bench, from just after his hands leave the racked bar), and ends standing at the
+	set-up's start, like after a good lift. Before, the walk off started from the lying pose: stood up with his facing
+	pointing at the ceiling, he sank into the floor and popped up mid-walk (Studio 2026-11-15). Returns the seconds it
+	takes (0: nothing to do, a squat or deadlift miss ends on his feet).
+]]
+function MeetLiftAnimation.getUp(handle: Handle?): number
+	if handle == nil or handle.lift ~= "Bench" then
+		return 0
+	end
+	local character = handle.character
+	local rerackAnim = StationAnimationConfig.Reracks.Bench
+	local root = rootOf(character)
+	local animator = animatorOf(character)
+	local rackValue = character:FindFirstChild(RACK_VALUE)
+	local rack = if rackValue and rackValue:IsA("ObjectValue") then rackValue.Value else nil
+	local approach = if rack and rack:IsA("Model") then MeetLiftAnimation.approachFor(rack, "Bench") else nil
+	if rerackAnim == nil or rerackAnim.id == "" or root == nil or animator == nil or approach == nil then
+		return 0
+	end
+	local animation = Instance.new("Animation")
+	animation.Name = "MeetGetUp_Bench"
+	animation.AnimationId = rerackAnim.id
+	local ok, loaded = pcall(function()
+		return (animator :: Animator):LoadAnimation(animation)
+	end)
+	if not ok then
+		return 0
+	end
+	local track = loaded :: AnimationTrack
+	track.Priority = Enum.AnimationPriority.Action
+	track.Looped = false
+	handle.token += 1
+	local token = handle.token
+	handle.rerackTrack = track
+	character:SetAttribute(BAR_HELD_ATTRIBUTE, false)
+	local from = math.min(rerackAnim.length, rerackAnim.barRackedAt + GET_UP_AFTER_RACKED_SECONDS)
+	track:Play(GET_UP_FADE_SECONDS)
+	track.TimePosition = from
+	holdThenStop(handle.failTrack, GET_UP_FADE_SECONDS)
+	local seconds = rerackAnim.length - from
+	local standAt = (approach :: CFrame) + Vector3.new(0, standingHeight(character, root :: BasePart), 0)
+	task.delay(math.max(0, seconds - 0.03), function()
+		if handle.token ~= token or not character.Parent then
+			return
+		end
+		character:PivotTo(standAt)
+		track:Stop(0)
+		if handle.rerackTrack == track then
+			handle.rerackTrack = nil
+		end
+	end)
+	return seconds
 end
 
 --[[
@@ -490,6 +568,53 @@ function MeetLiftAnimation.rerack(handle: Handle?): (number, number)
 		return 0, 0
 	end
 	local character = handle.character
+	-- The lifter racks it HIMSELF (user 2026-11-15): his set-up backwards (StationAnimationConfig.Reracks), the bar in
+	-- his hands / on his back until it sits in the rack, then he steps back to where the set-up started.
+	local rerackAnim = StationAnimationConfig.Reracks[handle.lift]
+	local root = rootOf(character)
+	local animator = animatorOf(character)
+	local rackValue = character:FindFirstChild(RACK_VALUE)
+	local rack = if rackValue and rackValue:IsA("ObjectValue") then rackValue.Value else nil
+	local approach = if rack and rack:IsA("Model") then MeetLiftAnimation.approachFor(rack, handle.lift) else nil
+	if rerackAnim and rerackAnim.id ~= "" and root and animator and approach then
+		local animation = Instance.new("Animation")
+		animation.Name = "MeetRerack_" .. handle.lift
+		animation.AnimationId = rerackAnim.id
+		local ok, loaded = pcall(function()
+			return (animator :: Animator):LoadAnimation(animation)
+		end)
+		if ok then
+			local track = loaded :: AnimationTrack
+			track.Priority = Enum.AnimationPriority.Action
+			track.Looped = false
+			handle.token += 1
+			local token = handle.token
+			handle.rerackTrack = track
+			character:SetAttribute(BAR_HELD_ATTRIBUTE, true)
+			-- Over the lift's finishing pose (the same pose the re-rack starts on).
+			track:Play(FADE_SECONDS)
+			holdThenStop(handle.track, FADE_SECONDS)
+			task.delay(rerackAnim.barRackedAt, function()
+				if handle.token == token and character.Parent then
+					character:SetAttribute(BAR_HELD_ATTRIBUTE, false)
+				end
+			end)
+			-- Its last pose stands him at the set-up's start (the approach spot): put the body there as it ends, so the
+			-- walk back starts where he is seen (no snap back under the bar).
+			local standAt = (approach :: CFrame) + Vector3.new(0, standingHeight(character, root :: BasePart), 0)
+			task.delay(math.max(0, rerackAnim.length - 0.03), function()
+				if handle.token ~= token or not character.Parent then
+					return
+				end
+				character:PivotTo(standAt)
+				track:Stop(0)
+				if handle.rerackTrack == track then
+					handle.rerackTrack = nil
+				end
+			end)
+			return rerackAnim.barRackedAt, rerackAnim.length
+		end
+	end
 	if handle.lift == "Bench" then
 		character:SetAttribute(BAR_HELD_ATTRIBUTE, false)
 		return 0, RERACK_BENCH_SECONDS
@@ -535,6 +660,12 @@ function MeetLiftAnimation.stop(handle: Handle?)
 	handle.token += 1
 	local track, failTrack, setupTrack = handle.track, handle.failTrack, handle.setupTrack
 	handle.track, handle.failTrack, handle.setupTrack = nil, nil, nil
+	local rerackTrack = handle.rerackTrack
+	handle.rerackTrack = nil
+	if rerackTrack then
+		rerackTrack:Stop(FADE_SECONDS)
+		rerackTrack:Destroy()
+	end
 	if setupTrack then
 		setupTrack:Stop(FADE_SECONDS)
 		setupTrack:Destroy()

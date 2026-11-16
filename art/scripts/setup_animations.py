@@ -50,6 +50,9 @@ STEP = 0.025                       # solving step (s); export samples every 0.05
 I4 = Matrix.Identity(4)
 C0_ROOT = T(S.JOINTS["Root"][2])
 HANG = {"raise": 4.0, "swing": 0.0, "twist": 0.0, "elbow": 8.0}
+# (2026-11-16, the longer thighs, knee 1.00: walking round to the bench, BigBuff's thick thigh swung up into its hanging
+#  hand, 0.58 in. The bench set-up's arms hang this much further out from the sides until they reach for the bench.)
+BENCH_HANG = dict(HANG, **{"raise": HANG["raise"] + 6.0})
 
 # The rack (StationLayout ComboRack_01, rack-local): bar rests, the bench, the deadlift bar.
 # The squat J-cups at the shoulder blades (user 2026-11-08; build_combo_rack_01.py hole 3.975): just under the 3.75
@@ -236,8 +239,11 @@ class Setup:
          bar:     (world centre, held) or None
     solved in time order every STEP, the last `blend_s` seconds easing into the rep animation's pose."""
 
-    def __init__(self, lift, length, body, blend_s=0.4):
+    def __init__(self, lift, length, body, blend_s=0.4, arm_step_limit=None):
         self.lift, self.length, self.body, self.blend_s = lift, length, body, blend_s
+        # (degrees) the most any arm angle may change from one STEP to the next on a reach (solve_arm): the arm then
+        # can't snap to another shape mid-reach, it gets there a little later instead
+        self.arm_step_limit = arm_step_limit
         self.frames, self.bars, self.worst, self.virtual = None, None, 0.0, None
 
     def _solve(self):
@@ -287,6 +293,10 @@ class Setup:
                 else:
                     a, miss = solve_arm(ut, side, target, arms_now[side],
                                         root.to_3x3() @ Vector((0, -1, 0.3)).normalized())
+                    if self.arm_step_limit is not None:
+                        lim, prev = self.arm_step_limit, arms_now[side]
+                        a = {k: prev[k] + max(-lim, min(lim, a[k] - prev[k])) for k in a}
+                        miss = (hand_world(ut, side, a)[0] - target).length
                     self.worst = max(self.worst, miss)
                 arms_now[side] = dict(a)
                 sh, el = arm_tf(side, a)
@@ -511,7 +521,8 @@ def _bench_body(t):
         arch = keyed([(4.4, 0.0), (4.9, 9.0), (6.2, 9.0), (6.55, 0.0)], t)
         root = T((0, 0, slide)) @ _lying_root(angle) @ T((0, 0, -0.04 * arch / 6.0))
         pose = {"Root": rx(-arch * 0.4), "Waist": rx(arch),
-                "Neck": rx(keyed([(2.9, 4.0), (3.3, 30.0), (3.95, 30.0), (4.4, -6.0), (5.0, 0.0)], t))}
+                # (chin tucked further while the head passes under the bar: 30 left the bar 0.18 into the head, 2026-11-15)
+                "Neck": rx(keyed([(2.9, 4.0), (3.3, 45.0), (4.05, 45.0), (4.45, -6.0), (5.0, 0.0)], t))}
 
     # Feet: turning steps round the root, two steps back, planted in front of the bench as they sit, out to the
     # bench stance lying.
@@ -554,23 +565,23 @@ def _bench_body(t):
     left_dir = FINAL["Bench"].to_3x3() @ Vector((-1, 0, 0))
     targets = {}
     for side, sign in (("Left", 1), ("Right", -1)):
-        hang = hand_world(ut, side, HANG)[0]
+        hang = hand_world(ut, side, BENCH_HANG)[0]
         sx = -1 if side == "Left" else 1
         thigh = lt @ Vector(S.JOINTS[side + "Hip"][2])
-        knee_pt = thigh + (feet[side][0] - thigh) * 0.25
-        on_thigh = knee_pt + Vector((0, 0.62, 0)) + left_dir * (0.2 * sign)
-        beside = hang
+        # (2026-11-15: a quarter of the way down the thigh the folded forearm sank into the Fat belly, 0.52, as he lay
+        #  back: halfway to the knee and a little outside, the elbow stays clear)
+        knee_pt = thigh + (feet[side][0] - thigh) * 0.42
+        on_thigh = knee_pt + Vector((0, 0.78, 0)) + left_dir * (0.55 * sign)   # (resting ON the thigh, not in it)
+        beside = hang + left_dir * (0.35 * sign)    # (a little out from the sides lying back: tight in, 0.25 into Skinny)
         on_bar = bar + left_dir * (BE["grip"] * sign)
-        if t < 1.9:
-            targets[side] = None
-        elif t < 2.6:
-            targets[side] = hang.lerp(on_thigh, smooth((t - 1.9) / 0.7))
-        elif t < 3.3:
-            targets[side] = on_thigh
+        if t < 3.3:
+            targets[side] = dict(BENCH_HANG)  # (relaxed arms while he sits: the big hands resting on the thighs dipped
+            #                                   their fingers into Skinny's legs, 0.24-0.30; 2026-11-15)
         elif t < 3.9:
-            targets[side] = on_thigh.lerp(beside, smooth((t - 3.3) / 0.6))
+            targets[side] = hang.lerp(beside, smooth((t - 3.3) / 0.6))
         elif t < 4.3:
-            targets[side] = dict(HANG)
+            # (2026-11-15, Studio: this was the plain hanging pose, a jump from `beside` at 3.9 and back at 4.3)
+            targets[side] = beside
         elif t < 4.95:
             targets[side] = beside.lerp(on_bar, smooth((t - 4.3) / 0.65))
         else:
@@ -578,12 +589,16 @@ def _bench_body(t):
     return root, pose, feet, targets, (bar, held)
 
 
-BENCH = Setup("Bench", BENCH_LENGTH, _bench_body, blend_s=0.35)
+# (2026-11-15, Studio: lying back and reaching up for the bar, the straight arm ran out of reach at 4.40 s and the solve
+#  snapped to a bent arm in one frame, elbow 3 -> 40 deg and the shoulder 17 deg round: 1020 deg/s in the game, the
+#  user's "elbows and shoulders doing a full 360" at the bench set-up. 6 deg a step at most: the elbow bends over ~0.4 s.)
+BENCH = Setup("Bench", BENCH_LENGTH, _bench_body, blend_s=0.35, arm_step_limit=6.0)
 
 
 # ---------------------------------------------------------------- deadlift
 DL_BOTTOM = S._solve_deadlift_bottom()[0]
 DL_LENGTH = 3.3
+DL_HANG_OUT = 4.0                  # the hanging arms' raise out from the sides before the reach (degrees)
 
 
 def _deadlift_body(t):
@@ -616,7 +631,9 @@ def _deadlift_body(t):
         feet[side] = (ankle + Vector((0, lift, 0)), rot, knee)
     _, ut = upper_frames(root, pose)
     targets = {}
-    hanging = {"raise": 0.0, "swing": -(torso + tall), "twist": 0.0, "elbow": 0.0}
+    # (2026-11-16, clothes count as the body, rule 17: hanging straight down, the open left hand sank 0.08 into Skinny's
+    #  loose singlet shorts while he stood tall; DL_HANG_OUT degrees out from the sides keeps the hands on the outside)
+    hanging = {"raise": DL_HANG_OUT, "swing": -(torso + tall), "twist": 0.0, "elbow": 0.0}
     for side, sign, at in (("Right", -1, 2.45), ("Left", 1, 2.65)):
         grip = DL_BAR + Vector((1.5 * sign, 0, 0))
         hang = hand_world(ut, side, hanging)[0]

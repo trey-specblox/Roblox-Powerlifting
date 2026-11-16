@@ -6295,6 +6295,20 @@ in their weight class and stay in it. This reopens the ladder points
 >       their moves, sound and effects; **the celebration's own camera shots play at State only**
 >       (CelebrationConfig.CinematicMeetLevels; the admin's PLAY ON ME still shows them).
 >     - **Fail styles** already played at every meet.
+>     **[DECIDED BY THE USER, 2026-11-15] Miss reactions.** The full Meet Study (References/Meet Study) found that two built
+>     celebrations, Leap & Bow (CEL-04) and Relief Roar (CEL-34), were studied from lifts that were really MISSES. "for the
+>     lifts that were actually fails, we can make it where its a normal fail, then the fail animation plays." Picked from
+>     options: **some misses at random** and **everyone, picked at random**. So they are no longer celebrations (not in the
+>     spin or a loadout; a player who owned one now has the Default there): after a failed lift's own fail animation,
+>     about **1 miss in 3** (CelebrationConfig.MissReactionChance) the lifter does one of the two, picked at random, players
+>     and computer lifters alike, at every meet that has celebrations, without camera shots; then walks back as usual
+>     (CelebrationConfig.MissReactions; CelebrationService.missReaction; LocalMeetService after the result).
+>     **[CHANGED BY THE USER, 2026-11-15, after a Studio test]** "the lifter does NOT do the fail animation while looking at
+>     the crowd, the lifter would be facing the direction they are going back to, then yelling or screaming ... it should be
+>     fail, turn while walking hand gestures, scream." So EVERY miss now goes: the fail animation, the lifter turns toward
+>     where he is going and walks off doing one of three walking reactions picked at random (hands on the head, a fist
+>     swipe, a yell with fists down), with a roar. Leap & Bow and Sinking Roar (standing, facing the crowd) are no longer
+>     used. MissReactionChance = 1.
 > - **Their own walk-out and camera:** every lifter gets a walk-out with its own camera shot. One default for now; styles unlocked from crates
 >   (§36.1) plug in later.
 > - **More room:** one row of warm-up racks goes, and the banners stand further back from the racks and further apart. **Each chalk stand is right behind its own

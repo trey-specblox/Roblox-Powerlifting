@@ -7,10 +7,17 @@
 	active class's three Competition Numbers are to that class's Progression Reference table (PP, §29.2). Technique
 	never counts. Looks only: it never changes strength.
 
-	Three builds to start (ClothesConfig.Bodies): high PP looks Muscular in any class; below that a heavy lifter looks
-	Heavy (fat), a light one Skinny. A 53 kg starter is measured against the 59 kg references (its class), so starts
-	Skinny. The thresholds are Claude's pick (2026-11-12), in BuildRules, for the user to tune; the per-part steady
-	thickening between builds and per-lift muscle growth are proposals, not built.
+	Six builds (ClothesConfig.Bodies; GAME_DESIGN §38.2, CHARACTER_ART_DIRECTION.md §5.3-5.4, user's pick 2026-11-13):
+	two separate axes. MUSCLE from PP: Low under 0.35, Mid 0.35-0.70, High from 0.70. FAT from bodyweight over the lean
+	weight that muscle level fills (Low 66, Mid 83, High 105 kg): at or under it Lean, up to 20 kg over Soft, more Heavy.
+
+	  Muscle \ Fat | Lean     | Soft          | Heavy
+	  Low          | Skinny   | SkinnyFat     | Fat
+	  Mid          | Fit      | BigBuff       | Fat
+	  High         | Muscular | BigBuff       | BigBuff
+
+	A 53 kg starter is measured against the 59 kg references (its class), so starts Skinny. The thresholds are in
+	BuildRules, for the user to tune; the small steps within a body (§5.5) are not built.
 
 	The unlimited class (120+) has no reference (ProgressionReferenceConfig.get returns nil there); for LOOKS ONLY it is
 	measured against the 120 kg references, never for progression.
@@ -25,14 +32,26 @@ local WeightClass = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChil
 local LifterBuild = {}
 
 LifterBuild.BuildRules = {
-	-- The average PP of the three lifts at or above which a lifter looks Muscular.
-	MuscularFromPP = 0.40,
-	-- Below that, a lifter heavier than this (kg) looks Heavy, at or under it Skinny.
-	HeavyAboveKg = 83,
+	-- The average PP of the three lifts at which the muscle level becomes Mid, and High.
+	MidFromPP = 0.35,
+	HighFromPP = 0.70,
+	-- The bodyweight (kg) each muscle level fills while lean; up to SoftKg over it looks Soft, more looks Heavy.
+	LeanKg = { Low = 66, Mid = 83, High = 105 } :: { [string]: number },
+	SoftKg = 20,
 	-- What computer lifters with no numbers and the meet's spotters (an average build in §38.1) get.
 	Fallback = "Skinny",
-	Spotter = "Heavy",
+	Spotter = "Fat",
 }
+
+-- Muscle level -> fat level -> build (the table above).
+LifterBuild.Table = {
+	Low = { Lean = "Skinny", Soft = "SkinnyFat", Heavy = "Fat" },
+	Mid = { Lean = "Fit", Soft = "BigBuff", Heavy = "Fat" },
+	High = { Lean = "Muscular", Soft = "BigBuff", Heavy = "BigBuff" },
+} :: { [string]: { [string]: string } }
+
+-- Older names (the three block-skeleton bodies) -> today's build, for saves, Studio attributes and old callers.
+LifterBuild.Renamed = { Heavy = "Fat" } :: { [string]: string }
 
 local LIFTS = { "Squat", "Bench", "Deadlift" }
 
@@ -54,16 +73,23 @@ function LifterBuild.proximity(bodyweightKg: number, competitionNumber: { [strin
 	return if count == 3 then total / count else nil
 end
 
--- The build ("Skinny", "Heavy", "Muscular") for a lifter of `bodyweightKg` with these Competition Numbers.
+-- The build ("Skinny", "SkinnyFat", "Fat", "Fit", "Muscular", "BigBuff") for a lifter of `bodyweightKg` with these
+-- Competition Numbers.
 function LifterBuild.forNumbers(bodyweightKg: number, competitionNumber: { [string]: number }): string
 	local pp = LifterBuild.proximity(bodyweightKg, competitionNumber)
 	if pp == nil then
 		return LifterBuild.BuildRules.Fallback
 	end
-	if pp >= LifterBuild.BuildRules.MuscularFromPP then
-		return "Muscular"
-	end
-	return if bodyweightKg > LifterBuild.BuildRules.HeavyAboveKg then "Heavy" else "Skinny"
+	local rules = LifterBuild.BuildRules
+	local muscle = if pp >= rules.HighFromPP then "High" elseif pp >= rules.MidFromPP then "Mid" else "Low"
+	local over = bodyweightKg - rules.LeanKg[muscle]
+	local fat = if over <= 0 then "Lean" elseif over <= rules.SoftKg then "Soft" else "Heavy"
+	return LifterBuild.Table[muscle][fat]
+end
+
+-- Today's name for a build name (an older one is mapped; an unknown one comes back as it is).
+function LifterBuild.current(build: string): string
+	return LifterBuild.Renamed[build] or build
 end
 
 return LifterBuild

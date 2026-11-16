@@ -19,9 +19,9 @@ local StationAnimationConfig = {}
 -- that owns the game (529442797). An animation owned by anyone else (even the
 -- group's owner personally) will not play in this game.
 StationAnimationConfig.AnimationIds = {
-	Squat = "rbxassetid://132820904488036",
-	Bench = "rbxassetid://87040674560117",
-	Deadlift = "rbxassetid://91506920973531",
+	Squat = "rbxassetid://93862678697152",
+	Bench = "rbxassetid://91290587737913",
+	Deadlift = "rbxassetid://121881660138525",
 } :: { [string]: string }
 
 --[[
@@ -74,10 +74,32 @@ export type MeetStages = {
 ]]
 export type Setup = { id: string, length: number, barHeldAt: number }
 StationAnimationConfig.Setups = {
-	Squat = { id = "rbxassetid://81320883735495", length = 6.7, barHeldAt = 3.1 },
-	Bench = { id = "rbxassetid://99874634718117", length = 6.9, barHeldAt = 5.4 },
-	Deadlift = { id = "rbxassetid://112100062833525", length = 3.3, barHeldAt = 3.3 },
+	Squat = { id = "rbxassetid://105312305574023", length = 6.7, barHeldAt = 3.1 },
+	Bench = { id = "rbxassetid://86170083963565", length = 6.9, barHeldAt = 5.4 },
+	Deadlift = { id = "rbxassetid://136288103219025", length = 3.3, barHeldAt = 3.3 },
 } :: { [string]: Setup }
+
+--[[
+	THE RE-RACKS (user 2026-11-15: "the lifter HAS to unrack, and rack the bar themselves ... i should not be seeing the
+	lifter magically lift the bar out the rack, making it look like the spotters are doing it for them"): after a good
+	squat or bench the lifter puts the bar back himself, his own set-up played backwards (art/scripts/
+	reverse_animation.py): squat, walk the bar forward into the rack, bend to set it in the J-cups, dip out from under it,
+	hands off, step back; bench, press it back over the hooks and set it down, hands off, slide down, sit up, stand. It
+	starts on the rep's finishing pose (= the set-up's end) and ends on the set-up's first pose, standing at the approach
+	spot (MeetLiftAnimation.approachFor). `barRackedAt`: the bar sits in the rack and leaves the hands. An empty id: the
+	old code-driven re-rack.
+]]
+export type Rerack = { id: string, length: number, barRackedAt: number }
+StationAnimationConfig.Reracks = {
+	Squat = { id = "rbxassetid://129712664822259", length = 5.36, barRackedAt = 2.88 },
+	Bench = { id = "rbxassetid://75146839274605", length = 5.75, barRackedAt = 1.25 },
+} :: { [string]: Rerack }
+
+-- Where the squat bar sits on the upper back, in the UpperTorso's own space: this height (above its centre) on every
+-- build, at the build's back depth (ClothesConfig.Bodies[build].squatBarRest), centred. From the torso rig's
+-- SQUAT_BAR_REST (4.30 above the floor standing, UpperTorso centre at 3.62; station_animations.py). The bar is drawn
+-- there whenever it is held on the back, not between the hands (whose small offsets left it floating or sinking).
+StationAnimationConfig.SquatBarOnBackY = 0.68
 
 StationAnimationConfig.MeetStages = {
 	Squat = { setup = { 0.6, 0.6 }, phases = { { 0.6, 1.9 }, { 1.9, 2.1 } }, finish = { 2.1, 3.1 } },
@@ -102,17 +124,17 @@ StationAnimationConfig.MeetStages = {
 export type Fail = { id: string, length: number, release: number, catch: number? }
 StationAnimationConfig.Fails = {
 	Squat = {
-		{ id = "rbxassetid://84903718437719", length = 5.0, release = 1.3, catch = 0.9 }, -- 1: "Lost it on the way down"
-		{ id = "rbxassetid://86328163429809", length = 5.6, release = 2.6, catch = 2.1 }, -- 2: "Stuck in the hole"
+		{ id = "rbxassetid://81669699419021", length = 5.0, release = 1.3, catch = 0.9 }, -- 1: "Lost it on the way down"
+		{ id = "rbxassetid://127355917928131", length = 5.6, release = 2.6, catch = 2.1 }, -- 2: "Stuck in the hole"
 	},
 	Bench = {
-		{ id = "rbxassetid://76203047859489", length = 4.4, release = 2.2, catch = 1.5 }, -- 1: "Crushed on the way down"
-		{ id = "rbxassetid://83126819156638", length = 4.4, release = 2.8, catch = 2.2 }, -- 2: "Stalls on the press"
+		{ id = "rbxassetid://124478490835987", length = 4.4, release = 2.2, catch = 1.5 }, -- 1: "Crushed on the way down"
+		{ id = "rbxassetid://103028067244730", length = 4.4, release = 2.8, catch = 2.2 }, -- 2: "Stalls on the press"
 	},
 	Deadlift = {
 		-- Both remade and published 2026-11-03 with art/scripts/upload_animations.py.
-		{ id = "rbxassetid://136367570731516", length = 4.8, release = 2.55, catch = nil }, -- 1: "Won't break the floor"
-		{ id = "rbxassetid://89595096759924", length = 3.8, release = 1.45, catch = nil }, -- 2: "Can't lock out"
+		{ id = "rbxassetid://102994355971293", length = 4.8, release = 2.55, catch = nil }, -- 1: "Won't break the floor"
+		{ id = "rbxassetid://117185101686132", length = 3.8, release = 1.45, catch = nil }, -- 2: "Can't lock out"
 	},
 } :: { [string]: { Fail } }
 
@@ -130,16 +152,16 @@ StationAnimationConfig.FailStyles = {
 		description = "Quick escapes: dumps the squat off the back, lets go at once on the bench, drops the deadlift fast.",
 		fails = {
 			Squat = {
-				{ id = "rbxassetid://104699451246353", length = 3.4, release = 0.6, catch = 0.5 },
-				{ id = "rbxassetid://104224688950961", length = 3.4, release = 0.55, catch = 0.45 },
+				{ id = "rbxassetid://106850036812375", length = 3.4, release = 0.6, catch = 0.5 },
+				{ id = "rbxassetid://72918566908918", length = 3.4, release = 0.55, catch = 0.45 },
 			},
 			Bench = {
-				{ id = "rbxassetid://119068247255634", length = 3.0, release = 0.7, catch = 0.45 },
-				{ id = "rbxassetid://124963246140386", length = 3.0, release = 0.8, catch = 0.55 },
+				{ id = "rbxassetid://93137864299030", length = 3.0, release = 0.7, catch = 0.45 },
+				{ id = "rbxassetid://103114364144509", length = 3.0, release = 0.8, catch = 0.55 },
 			},
 			Deadlift = {
-				{ id = "rbxassetid://91525345354865", length = 3.4, release = 0.9, catch = nil },
-				{ id = "rbxassetid://89404221495583", length = 3.0, release = 0.35, catch = nil },
+				{ id = "rbxassetid://76480209643361", length = 3.4, release = 0.9, catch = nil },
+				{ id = "rbxassetid://130968947204433", length = 3.0, release = 0.35, catch = nil },
 			},
 		},
 	},
@@ -149,16 +171,16 @@ StationAnimationConfig.FailStyles = {
 		description = "Long, shaking grinds that get so close, then give out at the last moment.",
 		fails = {
 			Squat = {
-				{ id = "rbxassetid://90292420083198", length = 5.2, release = 3.6, catch = 3.2 },
-				{ id = "rbxassetid://130852838697366", length = 5.6, release = 3.8, catch = 3.4 },
+				{ id = "rbxassetid://111918538065548", length = 5.2, release = 3.6, catch = 3.2 },
+				{ id = "rbxassetid://135544922972092", length = 5.6, release = 3.8, catch = 3.4 },
 			},
 			Bench = {
-				{ id = "rbxassetid://105833668719392", length = 4.6, release = 3.4, catch = 3.1 },
-				{ id = "rbxassetid://83755185682700", length = 4.6, release = 3.3, catch = 2.9 },
+				{ id = "rbxassetid://129243804826692", length = 4.6, release = 3.4, catch = 3.1 },
+				{ id = "rbxassetid://90296660700963", length = 4.6, release = 3.3, catch = 2.9 },
 			},
 			Deadlift = {
-				{ id = "rbxassetid://116590810428713", length = 4.8, release = 2.9, catch = nil },
-				{ id = "rbxassetid://80066352596888", length = 3.9, release = 2.7, catch = nil },
+				{ id = "rbxassetid://76643900124672", length = 4.8, release = 2.9, catch = nil },
+				{ id = "rbxassetid://72473494713818", length = 3.9, release = 2.7, catch = nil },
 			},
 		},
 	},
@@ -168,16 +190,16 @@ StationAnimationConfig.FailStyles = {
 		description = "Big collapses and frustration: floor slaps, head in hands, flopped out on the bench.",
 		fails = {
 			Squat = {
-				{ id = "rbxassetid://138743801019475", length = 5.6, release = 1.3, catch = 0.9 },
-				{ id = "rbxassetid://129516000420910", length = 5.6, release = 2.6, catch = 2.1 },
+				{ id = "rbxassetid://122838350921224", length = 5.6, release = 1.3, catch = 0.9 },
+				{ id = "rbxassetid://113791706475144", length = 5.6, release = 2.6, catch = 2.1 },
 			},
 			Bench = {
-				{ id = "rbxassetid://122588216461359", length = 4.6, release = 2.2, catch = 1.5 },
-				{ id = "rbxassetid://133908083326219", length = 4.6, release = 2.8, catch = 2.2 },
+				{ id = "rbxassetid://120321652775597", length = 4.6, release = 2.2, catch = 1.5 },
+				{ id = "rbxassetid://94701650988818", length = 4.6, release = 2.8, catch = 2.2 },
 			},
 			Deadlift = {
-				{ id = "rbxassetid://108533985724841", length = 4.8, release = 3.0, catch = nil },
-				{ id = "rbxassetid://103466352260214", length = 3.9, release = 1.45, catch = nil },
+				{ id = "rbxassetid://113427254731337", length = 4.8, release = 3.0, catch = nil },
+				{ id = "rbxassetid://71949595917767", length = 3.9, release = 1.45, catch = nil },
 			},
 		},
 	},

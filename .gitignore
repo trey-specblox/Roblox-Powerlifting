@@ -26,3 +26,6 @@ __pycache__/
 
 # Local backups of the Roblox place (personal, large)
 PlaceBackup_*.rbxl
+
+# QA preview pictures (anim_qa.py contact sheets), regenerated on demand; ~670 MB
+/art/previews/

@@ -215,6 +215,8 @@ type Lifter = {
 	coinsEarned: number,
 	-- The last attempt's result and weight, for the other lifters' coaches ("Tess missed 30 kg!").
 	lastResult: string?,
+	-- A miss: how long its fail animation lasts (the walk back starts right after it, user 2026-11-15).
+	failSeconds: number?,
 	lastKg: number?,
 	-- On the walk out to the platform or back (GAME_DESIGN §37.5); a new walk bumps the token and ends the old one.
 	walking: boolean?,
@@ -984,6 +986,8 @@ local WALK_OUT_TIMEOUT_SECONDS = 12
 local WALK_BACK_TIMEOUT_SECONDS = 20
 -- After a good lift's finish, how long the lifter stays before racking the bar and walking off.
 local LEAVE_AFTER_FINISH_SECONDS = 0.8
+-- After a miss's fail animation, this beat and he turns and walks off (user 2026-11-15).
+local MISS_WALK_BEAT_SECONDS = 0.25
 -- The spotters stand clear of a celebrating lifter (LocalMeetVenue.clearSpotters): long enough for the step back to
 -- the lift spot (renewed when the celebration starts), and this long after it, while the lifter walks off.
 local SPOTTERS_CLEAR_TO_SPOT_SECONDS = 6
@@ -1051,7 +1055,7 @@ end
 	lifter's coach stands watching at the doorway: nobody reads what they say, and walking
 	every coach would cost eight more moving bodies per hall.
 ]]
-local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model) -> ())?, via: Vector3?)
+local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model) -> ())?, via: Vector3?, first: Vector3?)
 	local coach = LocalMeetVenue.coachFigure(lifter.platform)
 	if coach == nil or lifter.player == nil then
 		return
@@ -1063,6 +1067,9 @@ local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model
 	local points: { Vector3 } = {}
 	if (ComputerLifters.positionOf(coach).Position.Z < wallZ) ~= going then
 		points = if going then { way[1], way[2] } else { way[2], way[1] }
+	end
+	if first then
+		table.insert(points, first)
 	end
 	if via then
 		table.insert(points, via)
@@ -1079,6 +1086,14 @@ local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model
 		end
 	end)
 end
+
+-- The coach's slaps keep to the lifter's own chalking; a coach arriving with the lifter's loop past the first slap less
+-- this moves the lifter's loop back to the slaps (coachSendOff).
+local RITUAL_LATE_LIMIT_SECONDS = 0.1
+-- On the send-off the coach first steps this far out to the open side (coachSendOff).
+local RITUAL_COACH_WIDE_STUDS = 4.3
+-- ... and this far back from the lifter, so he passes behind that camera, not in front of it.
+local RITUAL_COACH_BACK_STUDS = 1.4
 
 local function stopChalk(lifter: Lifter)
 	MeetChalk.stop(lifter.chalkTrack)
@@ -1176,6 +1191,13 @@ local function startChalk(lifter: Lifter, lift: string, ritual: boolean?)
 	stopChalk(lifter)
 	local chalk = LocalMeetConfig.Chalk
 	lifter.chalkTrack = MeetChalk.play(characterOf(lifter), chalk.LifterAnimationId)
+	-- With the ritual, the lifter's loop starts where it reaches the coach's slaps as the coach gets round to their back
+	-- (coachSendOff), so the two play in step without a jump.
+	if ritual and lifter.chalkTrack then
+		local first = chalk.SlapAt[1] - LocalMeetConfig.Ritual.SlapLeadSeconds
+		local arrive = LocalMeetConfig.Ritual.CoachMoveAt + LocalMeetConfig.Ritual.CoachRoundSeconds
+		lifter.chalkTrack.TimePosition = (first - arrive) % chalk.LoopSeconds
+	end
 	local onBack = lift == "Squat" and not ritual
 	local platform = lifter.platform
 	MeetFigures.showClipboard(LocalMeetVenue.coachFigure(platform), not onBack)
@@ -1201,7 +1223,18 @@ local function coachSendOff(lifter: Lifter, line: string)
 	lifter.coachTrack = nil
 	lifter.coachHere = false
 	LocalMeetVenue.coachSays(platform, nil)
-	MeetFigures.showClipboard(LocalMeetVenue.coachFigure(platform), false)
+	local coachFigure = LocalMeetVenue.coachFigure(platform)
+	MeetFigures.showClipboard(coachFigure, false)
+	-- Out wide first, round behind the Hands shot's camera (MeetRitualShot: in front of the lifter on the open side): the
+	-- straight way round crossed its lens two studs away, a blur of coach filling the screen (Studio 2026-11-15).
+	local wide: Vector3? = nil
+	if coachFigure then
+		local at = ComputerLifters.positionOf(coachFigure)
+		local away = Vector3.new(-at.LookVector.X, 0, -at.LookVector.Z)   -- (he faces the lifter: away is behind him)
+		local floor = Vector3.new(at.Position.X, platform.coachBackSpot.Position.Y, at.Position.Z)   -- (a floor point)
+		wide = floor + platform.chalkOut * RITUAL_COACH_WIDE_STUDS
+			+ (if away.Magnitude > 1e-3 then away.Unit * RITUAL_COACH_BACK_STUDS else Vector3.zero)
+	end
 	coachWalk(lifter, platform.coachBackSpot, function(coach: Model)
 		-- (Still chalking up: the walk out may have begun while they came round.)
 		if lifter.chalkTrack == nil then
@@ -1209,14 +1242,26 @@ local function coachSendOff(lifter: Lifter, line: string)
 		end
 		local track = MeetChalk.play(coach, LocalMeetConfig.Chalk.CoachBackAnimationId)
 		if track then
-			local first = LocalMeetConfig.Chalk.SlapAt[1] - LocalMeetConfig.Ritual.SlapLeadSeconds
-			track.TimePosition = math.max(0, first)
+			-- In step with the lifter's own chalking, so the slaps land on the back pose they were made for. Before, the
+			-- coach jumped to its slaps on its own, the two ran about 1.4 s apart and the slaps landed on the back of
+			-- the head (Studio 2026-11-15; the user: "the coach is not even slapping the shoulders or neck"). The
+			-- lifter's chalking was started so it is about at `first` now (startChalk); only a late coach moves it.
+			local first = math.max(0, LocalMeetConfig.Chalk.SlapAt[1] - LocalMeetConfig.Ritual.SlapLeadSeconds)
+			local chalkTrack = lifter.chalkTrack :: AnimationTrack
+			local at = chalkTrack.TimePosition
+			-- The coach falls in step with the lifter; only a coach too late for the slaps moves the lifter back to them
+			-- (a jump, so not for a coach a little late or early: that popped the arms).
+			if at > LocalMeetConfig.Chalk.SlapAt[1] - RITUAL_LATE_LIMIT_SECONDS then
+				chalkTrack.TimePosition = first
+				at = first
+			end
+			track.TimePosition = at
 		end
 		lifter.coachTrack = track
 		lifter.coachHere = true
 		lifter.coachLine = line
 		LocalMeetVenue.coachSays(platform, line)
-	end, platform.coachBackVia)
+	end, platform.coachBackVia, wide)
 end
 
 -- The coach follows the lifter back from the platform, once they have gone past, to wait near the chalk stand (user 2026-11-07).
@@ -1323,6 +1368,7 @@ local function finishLift(lifter: Lifter, lift: string, good: boolean, failedPar
 	lifter.livePhase = nil
 	local fail = if good then nil else failAnimationFor(lifter, lift, failedPart, attemptNumber)
 	local seconds = MeetLiftAnimation.finish(lifter.liftAnim, good, fail)
+	lifter.failSeconds = if fail then fail.length else nil
 	local commands = LocalMeetConfig.RefereeCommands[lift]
 	local handle = lifter.liftAnim
 	local barCue = MeetSoundConfig.endOfLiftCue(lift, good, failedPart, weightKg)
@@ -1371,7 +1417,9 @@ end
 -- The walk back from the platform to the warm-up room: the bar put back, back on their feet where they are, out to
 -- the lift spot, then the way out, reversed. `celebrate` (optional) plays at the lift spot, well clear of the bar, and
 -- says how long it takes; a computer lifter's cheer does the same (user 2026-11-07: nobody touches the bar).
-local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
+-- `overWalk` (optional): starts as the walk back starts and plays OVER it (a miss reaction: user 2026-11-15, "fail, turn
+-- while walking hand gestures, scream"), with no stop at the lift spot first.
+local function walkBack(lifter: Lifter, celebrate: (() -> number)?, overWalk: (() -> ())?)
 	LocalMeetVenue.setStageLight(lifter.platform, 1)
 	local good = lifter.lastResult == "GoodLift"
 	local racked, clear = 0, 0
@@ -1380,6 +1428,9 @@ local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
 		if lifter.currentLift ~= "Deadlift" then
 			task.delay(racked + MeetSoundConfig.RackGlideSeconds, soundCue, lifter, "BarRack")
 		end
+	else
+		-- A missed bench: he sits up and stands before he turns and walks off (MeetLiftAnimation.getUp).
+		clear = MeetLiftAnimation.getUp(lifter.liftAnim)
 	end
 	local function leave()
 		endLift(lifter)
@@ -1392,7 +1443,10 @@ local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
 		local spot = lifter.platform.liftSpot
 		if character then
 			local at = character:GetPivot().Position
-			local here = CFrame.new(at.X, spot.Y, at.Z) * spot.Rotation
+			-- After a miss he keeps facing the way he is (no snap round to the front first); the walk turns him toward
+			-- the way out as he goes (MeetWalkPath).
+			local facing = if overWalk then character:GetPivot().Rotation else spot.Rotation
+			local here = CFrame.new(at.X, spot.Y, at.Z) * facing
 			local player = lifter.player
 			if player then
 				standAt(player, here, true)
@@ -1436,6 +1490,9 @@ local function walkBack(lifter: Lifter, celebrate: (() -> number)?)
 		-- Held still at their waiting spot until the next walk out (user 2026-11-04): a lifter stays put all meet.
 		walkLifter(lifter, back, lifter.platform.waitSpot, true, home)
 		coachFollowBack(lifter)
+		if overWalk then
+			overWalk()
+		end
 	end
 	if clear <= 0 then
 		leave()
@@ -1905,7 +1962,10 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	-- soon after its finish; after a miss once its fail animation has played. A walk out that started meanwhile wins.
 	local token = lifter.walkToken
 	local finish = StationAnimationConfig.MeetStages[lift].finish
-	local leaveIn = if good then finish[2] - finish[1] + LEAVE_AFTER_FINISH_SECONDS else LocalMeetConfig.ResultSeconds
+	-- (A miss: right after its own fail animation, not a flat ResultSeconds that left him standing frozen; user
+	-- 2026-11-15.)
+	local leaveIn = if good then finish[2] - finish[1] + LEAVE_AFTER_FINISH_SECONDS
+		else (lifter.failSeconds or LocalMeetConfig.ResultSeconds) + MISS_WALK_BEAT_SECONDS
 	task.delay(leaveIn, function()
 		if current.hall.meet ~= current or current.final or not stillLifting(lifter) or lifter.walkToken ~= token then
 			return
@@ -1922,6 +1982,17 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 						cinematic)
 				end
 				return CelebrationService.play(lifter.body, CelebrationService.forComputer(lifter.body), nil)
+			end)
+			return
+		end
+		-- A miss, once its fail animation has played: he turns and walks off at once, a miss reaction (gestures, the yell)
+		-- playing OVER the walk (user 2026-11-15: "fail, turn while walking hand gestures, scream";
+		-- CelebrationConfig.MissReactions, arms and head only), players and computer lifters alike.
+		local reaction = if not good and CelebrationConfig.MeetLevels[current.level] then CelebrationService.missReaction()
+			else nil
+		if reaction then
+			walkBack(lifter, nil, function()
+				CelebrationService.play(if player then player.Character else lifter.body, reaction :: string, player)
 			end)
 			return
 		end

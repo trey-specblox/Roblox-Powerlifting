@@ -19,17 +19,24 @@ local WornGearConfig = {}
 -- The group Model asset with every worn piece (art/exports/WornGear_01.glb, materials.json "WornGear_01"; 0 would
 -- mean not uploaded: the gear is then saved and chosen, but not drawn).
 WornGearConfig.AssetId = 130216457283907
--- The gear fitted to the cartoon bodies (version 3, 2026-11-12: one master per item fitted to each build by
--- art/scripts/build_cartoon_gear_03.py + gear_fit_03.py; materials.json "CartoonGear03_<Build>"; v02 was rejected), one
--- model per build, skinned pieces named "<Worn>_<ColourKey>__<Part>", worn like the clothes (WornGearFit.dressCartoon).
--- 0 = not uploaded yet: a cartoon body then wears nothing rather than the block-body pieces (they float off it).
-WornGearConfig.CartoonAssetIds = { Skinny = 0, Heavy = 0, Muscular = 0 } :: { [string]: number }
+-- The gear fitted to the cartoon bodies (version 8, uploaded 2026-11-16: version 7 rebuilt on the longer legs, knee 1.00,
+-- the shorts ending above the knee sleeves, materials.json "CartoonGear08_<Build>", export_cartoon_08.py. Version 7, 2026-11-15: the singlet redesigned from the user's reference
+-- and the knee sleeves rebuilt on the skin, art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt at the
+-- navel; suits, bench shirt, knee wraps and tilted wrist wraps as v5, build_cartoon_gear_05.py; put together by
+-- export_cartoon_07.py, materials.json "CartoonGear07_<Build>"), one model per build, skinned pieces named
+-- "<Worn>_<ColourKey>__<Part>", worn
+-- like the clothes (WornGearFit.dressCartoon). 0 = not uploaded yet: a cartoon body then wears nothing rather than the
+-- block-body pieces (they float off it).
+WornGearConfig.CartoonAssetIds = {
+	Skinny = 87981689532076, SkinnyFat = 98049189140592, Fat = 107255763090235, Fit = 105929007280971,
+	Muscular = 124551978504954, BigBuff = 109710136813307,
+} :: { [string]: number }
 
 -- The CENTRAL logo on the cartoon gear (art/logos/CentralGearLogo_03_White.png: white letters on clear, materials.json
 -- "CentralGearLogo_03"). Each logo piece is a thin patch on the garment; the logo goes on it as a Decal tinted with the
 -- item's colour for that key (a MeshPart's own texture can't take a colour). 0 = not uploaded: the logo pieces and the
 -- label boxes behind them are left off (never an empty box, memory "gear-brand-central").
-WornGearConfig.LogoImageId = 0
+WornGearConfig.LogoImageId = 114644943724696
 WornGearConfig.LogoKeys = { Patch = true, Text = true } :: { [string]: boolean }
 WornGearConfig.LabelKeys = { Label = true } :: { [string]: boolean }
 -- Which side of its patch each worn model's logo faces (wrist wraps: the outer side of each wrist).
@@ -47,7 +54,7 @@ end
 
 -- Holds the arms forward while a bench shirt is worn (art/scripts/shirt_animations.py; Movement priority, so every lift,
 -- chalk, station and cardio animation, all Action, takes over by itself).
-WornGearConfig.BenchShirtArmsAnimation = "rbxassetid://128402843443034"
+WornGearConfig.BenchShirtArmsAnimation = "rbxassetid://92842342723709"
 
 -- The rough canvas (art/scripts/make_suit_canvas.py, a MaterialVariant in default.project.json) and the pieces of a `rough`
 -- item that wear it. Its base material is Fabric.

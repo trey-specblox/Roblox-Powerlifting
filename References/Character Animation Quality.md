@@ -5,6 +5,10 @@ user sees it. Started 2026-11-13 from the user's review of the torso-rig pose pi
 (`art/previews/TorsoAnim_*.png`) and the brief "CRITICAL: character animation, rigging & equipment interaction quality
 corrections".
 
+**FIRST: read §5.0, the user's standing rules (hands open for claps and slaps, the lifter unracks and racks every bar,
+fails turn and walk off yelling, no joint flips, elbows never backward, nothing through the body), before ANY animation
+or lift work, and check the game's own systems against them, not only the Blender pictures.**
+
 Status words: **VERIFIED** = measured in this project. **UNVERIFIED** = a likely cause nobody has inspected yet.
 **APPROVED** = the user said yes. Nothing here is approved yet unless it says so.
 
@@ -246,6 +250,14 @@ brace, then unrack.
     65 (was 149), fastest moment 703 deg/s (was 819).
   - Wraps (gear v5, measured with the Grip hand mesh, the palm block is the same): still 57-103 points in the hand in
     the hold: the gear session reshapes the wrap's lower edge for ~60 degrees.
+  - **Wraps tilted (gear session, 2026-11-15, user approved: "Looks right"):** build_cartoon_gear_05.py measures every
+    keyframe of Station_Squat, the 8 squat fails and Setup_Squat from 1.2 s with the SquatGrip hand (bench/deadlift with
+    Grip) in the forearm frame and tilts the whole wrap (lower edge up on the front where the hand bends; the set-up's
+    open-hand reach 0.45-1.2 s left out). Wrap points inside the hand in the hold: Skinny 0, Skinny-fat 1, Fat 3, Fit 1
+    (all <= 0.009); Muscular 28 (0.046, was 74/0.165), Big and buff 26 (0.065, was 87/0.174): their hands are too big
+    to clear fully. CartoonGear_05.blend rebuilt from the current bodies (carries the SquatGrip hands), CHECK PASSED;
+    check_gear_05.py "wrists" mode tests wraps with the swap hands. Picture
+    `art/previews/Gear05_WristWraps_SquatGrip_BeforeAfter.png`. Not committed.
   - Pictures `art/previews/SquatHeelQA_*` (before row = the old hand and animation).
 
 ### 4.1d Celebrations from the Meet Study (2026-11-14, user: "Men's top celebrations")
@@ -345,6 +357,99 @@ brace, then unrack.
     WingspanBiceps, WingspanCrunch, ChalkClapPump, ExitFistPump, RackSideRoar;
   - feet sliding 0.11-0.13: RackSideRoar, SitAndLaugh, WingspanBiceps; floor-hand misses SitAndLaugh, BowAndRise.
   Fixing them changes uploaded animations (new uploads and ids in CelebrationConfig).
+- **ROOT CAUSE of the user's 2026-11-15 Studio faults (closed hands, coach "punching", squat bar gap and floating
+  unrack, bench bar leaving the hooks by itself, arms looking broken in set-ups):** the game never got the rebuilt
+  set. Studio still runs the v02 cartoon bodies (block skeleton, FIST hands baked into the mesh), the hand swaps are not
+  uploaded (HandShapeConfig.AssetId 0, so nothing can open or close), and the set-up / station / fail / walk-out /
+  coach animation ids are the block-rig originals, while HipHeight 2.4 and the raised J-cups come from the taller config.
+  The bar is never on the lifter: the client glides it from the J-cups to the hands' midpoint on a timer (barHeldAt),
+  spotters' hands follow it, and re-racking is a code glide/slide. My celebration ids (torso-rig uploads, 2026-11-15)
+  went live onto those old bodies against DEVELOPMENT_STATUS's own "do not publish taller animation ids until the
+  cartoon bodies go live" note: a mistake. Fix order: (1) bodies, hand swaps, gear, clothes and the re-made animations
+  live together, config matched (HipHeight 2.0, J-cups 0.525, per-body bar numbers); (2) the bar drawn at the grip /
+  back point with the hand-off at the frame the hands are on it; lifter-driven unrack and re-rack animations; spotters
+  wait; (3) coach slaps open-handed on shoulders/neck; fails walk off yelling; the heavy walk faster; joint-flip check
+  on the hypes after (1).
+- **LONGER THIGHS (2026-11-16, user-approved in the bodies session: knee 1.00, was 1.178; hips/ankle/leg length
+  unchanged):** lifter_heights.py has NEW_KNEE / THIGH (x1.2165) / SHIN (x0.808), station_animations stretches upper
+  and lower legs separately. Every animation re-made on the new legs and the new-leg outfit (Cartoon*08), with the
+  outfit placement fix and the bodies session's inner-elbow weight spread (build_cartoon_rig_05.spread_elbows): all 108
+  PASS on Skinny/Fat/Muscular/BigBuff; the 126-deg elbow caps were removed again. 106 installed (old-leg files in
+  D:\ClaudeScratch\backup_oldlegs_2026-11-16), 103 uploaded (D:\ClaudeScratch\golive\legs\upload_ids.txt); the config
+  switch D:\ClaudeScratch\golive\legs\wire_ids.py runs together with the body + gear upload (not before: the live
+  bodies still have the old legs).
+- **OUTFIT PLACEMENT BUG (found 2026-11-16 by the legs-fix helper):** the gear exports store each build's pieces where
+  that build stood in the gear file (Fat 9.2 studs over, Muscular 18.4, BigBuff 23) while its skeleton stands at the
+  centre. anim_qa, celebration_rig's clothed envelope and the entrance Hype.outfit all loaded them as-is, so on every
+  build but Skinny the clothes hung beside the body: the "keep clear of the clothes" solves and the arm_in_outfit
+  checks below were REALLY only done on Skinny (big builds were kept clear of the bare skin only). Fixed in all three
+  (centre_outfit: the outfit's torso middle onto the build's centre line); everything is being re-solved and
+  re-checked on the new legs. RULE: when loading a per-build export, measure that it lines up with the body
+  (QA_OUTFIT_DEBUG=place prints both) before trusting any number.
+- **CLOTHED PASS (2026-11-16, rules 16-17, user chose "widest build"):** audit of all 108 animations wearing the v5
+  outfit on Skinny/Fat/Muscular/BigBuff found 77 FAILs (mostly hands/forearms into the tee/singlet/belt, e.g. hands
+  on hips up through the belt's bottom edge). Fixed by four helpers: celebration_rig + entrance Hype solver now have an
+  opt-in "keep clear of the clothes" solve on all six builds (celebrations, emotes: `clothed=True`, data
+  art/data/clothed_envelope_05.json, remake after any outfit change; hypes/chalk: `Hype.outfit`), hips holds rest on the
+  belt's side, low fists moved outside the knees, raised arms slightly more V (BigBuff head). 74 changed animations
+  installed, uploaded and wired (ids: D:\ClaudeScratch\golive\clothed\upload_ids.txt); Studio State meet run clean
+  (no joint > 1100 deg/s). Left for the user: the approved squat hold on the biggest builds (BigBuff elbow_back
+  0.96 vs 0.95; Muscular/BigBuff duck forearm folding into its own upper arm 0.27-0.31); Skinny floats more than "a
+  little" on chest contact (crossed arms, hand on heart, chest slap) - a per-build hand correction in the game would
+  fix that. RE-RUN AGAINST GEAR v6 (2026-11-16, exports CartoonClothes06/CartoonGear06; the QA, celebration_rig and
+  the Hype solver now take the newest export): arm_in_outfit clear on all 108; 97 PASS; the 11 FAILs are only the
+  approved squat hold on Muscular/BigBuff (awaiting the user). clothed_envelope_05.json rebuilt from v6.
+  GEAR v7 (same day, redesigned singlet): same result, arm_in_outfit clear on all 108, 97 PASS, the same 11 squat-hold
+  FAILs; the scripts now take the highest-numbered export on disk; envelope rebuilt from v7.
+- **GO-LIVE DONE + STUDIO-TESTED (2026-11-15, my own State-meet play tests, forced good lifts and misses):** every
+  re-made animation is uploaded and wired (Station, Setup, Rerack, Chalk, 24 Fails, 8 Emotes, 9 walks + 10 hypes +
+  GameFace, 3 walk-off miss reactions, BenchShirt). Checked in the game with a per-frame recorder (tracks, facing, hand
+  shapes, bar in UpperTorso space, coach hands on the lifter) and a joint-speed monitor (AnimationConstraint.Transform,
+  flags > 700 deg/s): squat bar ON the back (0.13 before the grab, 0.51 held), the lifter unracks / racks himself, hands
+  close to the grip only on the bar and open after, bench unrack at 5.4 s by the lifter, celebrations open-handed with
+  fists only in their spans, misses turn and walk off with the reaction over the walk. Faults found IN THE GAME and fixed:
+  1. the player had NO hand shapes (LifterBodyService.getHands race: a second body built during the first load got
+     nil) - nothing could open or close all session; now waits for the load.
+  2. the "elbows and shoulders doing a full 360" between animations: the old track faded out while the new one was
+     still downloading on the client, so the idle pose bled through (arms down and back up, ~0.45 s at 800-1000 deg/s).
+     Fix: MeetAnimationPreload (client downloads every meet animation at start) + holdThenStop in MeetLiftAnimation
+     (the old track stays at full weight 0.4 s). RULE: never stop the outgoing track at the same moment the new one
+     starts; never start two tracks of the SAME animation and stop one (it can stop the other on clients).
+  3. Setup_Bench at 4.40 s: the reach IK snapped from a straight to a bent arm in one frame (elbow 3 -> 40, 1020 deg/s);
+     Setup(arm_step_limit=6) + no jump to the plain hanging pose at 3.9-4.3. RULE: QA's per-key pop check can miss
+     single-step IK branch flips - check joint speed between EXPORTED keyframes (D:\ClaudeScratch\golive\jspeed.py).
+  4. chalk loops had a seam (hand 42 deg, upper arm 18 deg off between 9.0 and 0.0): chalk export now eases the last
+     0.6 s onto the first frame. RULE: every looped clip must end on its first frame.
+  5. coach slaps ran 1.4 s out of step with the lifter (coach jumped to his slaps alone); now the lifter's loop is
+     started so it reaches the slaps as the coach arrives and the coach syncs to it; the coach walks out wide round
+     the Hands shot's camera (he crossed its lens at 2 studs, a screen full of coach).
+  6. after a good squat/bench the lifter turned away, walked 4.6 studs and spun back to celebrate: short straight
+     backward walks are now a back step (MeetWalkPath.isBackStep, reversed walk, 0.6 speed).
+  7. a missed bench walked off from the lying pose (sank into the floor, popped up mid-walk): MeetLiftAnimation.getUp
+     plays the second half of Rerack_Bench first.
+  8. MissHandsOnHead off-the-head swing 1592 deg/s in game: slowed to 0.45 s (884 at keys).
+  9. back-to-back walks restarted the walk from frame 0 (one-frame arm jump): the walk track is carried over.
+  Still open: getting up from / sitting on the meet seat snaps in one frame (Roblox seat + Animate; needs a stand-up /
+  sit-down animation); the heavy walk's speed needs the user's eye; TrapSlap's clap is knuckles (approved look).
+- **GO-LIVE WORK (user "Yes, go ahead", 2026-11-15), in progress:** gear session uploads the six bodies, swap hands,
+  gear v5, clothes and wires ClothesConfig / LifterBuild / HandShapeConfig assets / StationLayout (and the sticky-grip
+  fix). This session: QA exceptions (squat elbow_back 0.95, walk cycles' foot_slide); Setup_Bench fixed (relaxed arms
+  while sitting, hands out beside the hips lying back: PASS; the head passes 0.17 under the bar lying back: check in
+  Studio); Chalk_Coach_Back rebuilt (open hands on the traps, slaps on the shoulders and back of the neck, down round
+  the outside: PASS; contact with the lifter to check in Studio); Rerack_Squat (5.36 s, racked 2.88) and Rerack_Bench
+  (5.75 s, racked 1.25) = the set-ups reversed (art/scripts/reverse_animation.py); three walking miss reactions
+  (MissHandsOnHead, MissArmSwipe, MissYell: arms and head over the walk back, PASS); SuperHeavy walk 2.59 -> 3.87 studs/s.
+  Code: the squat bar drawn ON the back (StationAnimationConfig.SquatBarOnBackY 0.68 in UpperTorso space + the build's
+  squatBarRest), MeetLiftAnimation.rerack plays the re-rack with the bar held until racked then puts the lifter at the
+  approach spot, the miss walks off right after its fail (failSeconds + 0.25) with the reaction over the walk (no snap to
+  face the front). Helpers fixing Fail_*, Entrance_Hype_* and Emote_* FAILs in scratch folders.
+- **UPLOADED and WIRED (user "Yes, upload them", 2026-11-15):** all 38 published to the group (ids in
+  CelebrationConfig; the run's list in `D:\ClaudeScratch\celebM\upload_ids.txt`). The 19 fixed ones point at their new
+  uploads; the 19 new ones are in CelebrationConfig.List (rarities from the catalogue; their body sounds one by one, no
+  sound tracks yet; camera shots for the three Legendary ones) with HandShapeConfig spans. LeapAndBow and ReliefRoar
+  ("Sinking Roar") moved to CelebrationConfig.MissReactions (GAME_DESIGN, 2026-11-15). Retimed fx/events/hand spans
+  updated (DisbeliefPrayer, RecordJumpRoar, PointAndPrance). Not yet: their sound tracks re-lined, new sound tracks,
+  a Studio play test.
 - **INSTALLED (user "Yes, install them", 2026-11-14):** the 19 fixed + 19 new celebrations copied from
   `D:\ClaudeScratch\celebM\out` into art/animations (checksums match; MilitarySalute, Shhh, WingspanHold untouched;
   41 Celebrate_ files now). Backup of the previous 22: `D:\ClaudeScratch\backup_celebrations_2026-11-14`. NOT uploaded:
@@ -511,6 +616,47 @@ re-read or applied. This list is the gate.)
    spread: up), fists/points via the game's hand swaps, shown in the QA pictures (QA_SHAPES).
 6. **Poses as the user described them:** double biceps = upper arms out level, forearms straight up (`_DB_OPEN`).
 7. Look at all three builds in front, side and three-quarter before sending; zoom (QA_FOCUS) on hands and elbows.
+
+Added 2026-11-15 after the user's Studio test ("you should have been noticed this and i should not have to repeat this
+over, and over, and over again"):
+8. **Hands OPEN unless a fist or a point is the gesture.** Claps are open palms meeting; slaps (chest, trap, shoulder,
+   neck, back) are OPEN hands landing flat; waves and salutes open. Fists only to grip the bar or for fist pumps/roars.
+   This must be true IN THE GAME, not only in the Blender pictures: check the game's hand-swap code actually opens
+   them (a closed hand slapping reads as punching).
+9. **The coach ritual:** the coach SLAPS the lifter's shoulders, traps and neck with open hands, landing on them.
+10. **Squat: the lifter does it all.** Walk to the bar, duck UNDER it, the bar sits ON the upper back (no gap), hands
+   set on the bar, stand up to unrack it, walk it out; after the lift walk it back in and rack it. The bar never rises
+   on its own or "floats" onto the lifter (that reads as the spotters doing it). Spotters only follow.
+11. **Bench: the lifter unracks and racks the bar himself** (arms lift it out of the hooks and put it back); never a
+   bar that leaves the rack by itself.
+12. **Fails:** the lifter does not stand facing the crowd yelling, then walk. Fail -> turn toward where he is going
+   back to -> walk off WHILE yelling/screaming with hand gestures.
+13. **No joint flips, ever:** no elbow or shoulder spinning through a full turn in set-ups or transitions (check pop
+   deg/s and LOOK at every transition, not only the poses). Blend joints as rotations, never raw angle numbers.
+14. **Walk speeds look human:** even the "really heavy" walk must not crawl.
+   (QA exceptions by name, 2026-11-15: squat animations allow elbow_back 0.95, the approved squat hold; in-place walk
+   cycles Entrance_Walk_* are not judged on foot_slide. 2026-11-16, user "Keep it as approved" for the hold on the
+   biggest builds: squat animations allow elbow_back 0.97, elbow_back_raised 0.62 and arm_in_body 0.32 on the bigger
+   builds - BigBuff's elbows in the hold, and the duck's forearm folding into its own thick upper arm. Never change the
+   hold to clear them.)
+15. **What the player sees in Roblox is the test.** Blender QA pictures prove the animation file; the game's own
+   systems (hand swaps, bar attach and rack/unrack, walk speed, facing) must be read in code and checked against
+   these rules too, before saying something is done. Never claim it works in game without a Studio test.
+16. **Gear is an ACCESSORY worn OVER the clothes** (user 2026-11-16, said before and not followed: "singlets are
+   accessories. You put them on it should be over the shirt it should not delete or make something underneath
+   disappear"). Putting on a singlet, belt or suit never cuts, hides or removes any part of the tee or body under it;
+   the tee stays whole (its crew neck shows) and the gear sits outside it with clearance in EVERY pose, bending with it
+   (same skin weights), never torn / inside-out / z-fighting at its edges.
+17. **Clothes and gear count as the body for clipping** (user 2026-11-16: "phasing of the elbows and hands" through
+   the singlet and tee in celebrations and walk-outs). anim_qa's arm_in_body limits (0.15 / 0.26 into the BARE body)
+   let hands sink through the clothes; contact moves (claps at the chest, hands on hips/belly/belt, slaps) are judged
+   against the OUTERMOST layer (tee, singlet, belt) on every build. One animation plays on all six builds, so contact
+   targets are fitted to the widest clothed build (a small float on Skinny beats sinking on Fat; the user chose this
+   2026-11-16). anim_qa now WEARS the meet outfit from the game's exports (tee, singlet, belt; QA_OUTFIT) on every
+   build's rig and reports `arm_in_outfit`: how far the hand / the forearm's far half sinks into the stacked layers
+   (limit 0.03). Run with QA_BUILDS=Skinny,Fat,Muscular,BigBuff for contact moves.
+18. **The mirror shows the real body** (user 2026-11-16): the gym mirror copies each character as one rigid piece
+   (MirrorController); never per-part reflection, which warped the skinned body and clothes.
 
 Tool: `art/scripts/anim_qa.py` (read-only, headless Blender):
 

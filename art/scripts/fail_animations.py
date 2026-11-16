@@ -18,7 +18,7 @@
 # bar; export_all() writes art/animations/Fail_<Lift>_<Part>.rbxmx (Action
 # priority, not looped), to publish in Studio under the game's group.
 import importlib.util, math, os
-from mathutils import Matrix, Vector
+from mathutils import Matrix, Quaternion, Vector
 
 _HERE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else \
     r"D:\Powerlifting Roblox\art\scripts"
@@ -38,6 +38,8 @@ SAMPLE_STEP = 0.05         # finer than the reps: the grinds tremble
 def lerp(a, b, u):
     if isinstance(a, dict):
         return {k: lerp(a[k], b[k], u) for k in a}
+    if isinstance(a, Quaternion):                 # a wrist: blended as a rotation (the short way round)
+        return a.slerp(b if a.dot(b) >= 0 else -b, u)
     if isinstance(a, Vector):
         return a.lerp(b, u)
     return a + (b - a) * u
@@ -69,7 +71,92 @@ def _body(p, root=None):
     pose.update(S.arms(p["arm"]))
     if S.RIG == "torso" and p.get("sqgrip"):
         pose.update(S.squat_wrists(p["sqgrip"]))      # (torso rig: the hands turned onto the bar, easing off as they let go)
+    add_wrists(pose, p.get("wrist"))
     return pose
+
+
+# ---------------------------------------------------------------- free hands placed by the whole hand (2026-11-15)
+# A key may carry "wrist": the LEFT wrist's turn (a Quaternion; the right is mirrored), blended as a rotation. Hands on
+# the hips, on the knees or on the head are placed by the wrist joint and turned to lie ON the body (palm on the hip,
+# the thigh, the crown) instead of pointing the fingers along the forearm into it (anim_qa arm_in_body, user rule 2).
+NO_WRIST = Quaternion()
+
+
+def wrists(q):
+    """{LeftWrist, RightWrist} from the left wrist's turn q (the right mirrored: the y and z turns flip)."""
+    return {"LeftWrist": q.to_matrix().to_4x4(), "RightWrist": Quaternion((q.w, q.x, -q.y, -q.z)).to_matrix().to_4x4()}
+
+
+def add_wrists(pose, q):
+    if q is None:
+        return
+    for j, m in wrists(q).items():
+        pose[j] = pose.get(j, Matrix.Identity(4)) @ m
+
+
+ARM_STARTS = [{"raise": 4.0, "swing": 0.0, "twist": 0.0, "elbow": 8.0},
+              {"raise": 35.0, "swing": -15.0, "twist": -70.0, "elbow": 60.0},
+              {"raise": 85.0, "swing": 0.0, "twist": 0.0, "elbow": 15.0},
+              {"raise": 120.0, "swing": 10.0, "twist": -30.0, "elbow": 120.0},
+              {"raise": 80.0, "swing": 10.0, "twist": -60.0, "elbow": 100.0},
+              {"raise": 15.0, "swing": 40.0, "twist": 0.0, "elbow": 20.0}]
+
+
+def solve_hand(body_pose, target, elbow_dir, wrist=NO_WRIST, at="wrist", starts=ARM_STARTS):
+    """Left arm angles (the right mirrored) that put the wrist joint (at="wrist") or the hand's centre (at="hand") on
+    `target` (root part's frame) with the wrist turned `wrist`, the elbow pointing toward elbow_dir (the chest's frame,
+    measured off the shoulder-hand line, as celebration_rig.solve_arm does). Best of several starts (no local folds)."""
+    wr = wrists(wrist)
+
+    def cost(a):
+        if not (-5 <= a["elbow"] <= 150):
+            return 1e9
+        p = dict(body_pose)
+        p.update(S.arms(a))
+        p.update(wr)
+        w = S.forward_kinematics(Matrix.Identity(4), p)
+        pt = S.joint_point(w, "LeftWrist") if at == "wrist" else w["LeftHand"].to_translation()
+        c = 6.0 * (pt - target).length
+        sh, el = S.joint_point(w, "LeftShoulder"), S.joint_point(w, "LeftElbow")
+        line = pt - sh
+        if a["elbow"] > 15 and line.length > 1e-6:
+            u = line.normalized()
+            off = (el - sh) - u * (el - sh).dot(u)
+            pole = (w["UpperTorso"].to_3x3() @ Vector(elbow_dir)).normalized()
+            if off.length > 1e-6:
+                c += 1.5 * (1 - off.normalized().dot(pole))
+        return c + 0.0015 * abs(a["twist"]) + 0.0004 * abs(a["raise"])
+    best = None
+    for start in starts:
+        a, c = dict(start), cost(start)
+        for step in (16, 8, 4, 2, 1, 0.5, 0.25):
+            improved = True
+            while improved:
+                improved = False
+                for k in S.ARM_KEYS:
+                    for d in (step, -step):
+                        b = dict(a)
+                        b[k] += d
+                        cb = cost(b)
+                        if cb < c - 1e-7:
+                            a, c, improved = b, cb, True
+        if best is None or c < best[1]:
+            best = (a, c)
+    return best
+
+
+def wrist_for(body_pose, arm, palm, fingers):
+    """The left wrist's turn that lays the hand with its palm facing `palm` and its fingers pointing `fingers` (chest
+    frame directions), the arm posed `arm` (the hand part: palm +X on the left hand, fingers -Y)."""
+    p = dict(body_pose)
+    p.update(S.arms(arm))
+    w = S.forward_kinematics(Matrix.Identity(4), p)
+    f = Vector(fingers).normalized()
+    x = Vector(palm)
+    x = (x - f * x.dot(f)).normalized()
+    y = -f
+    hand = Matrix((x, y, x.cross(y))).transposed()            # columns: the hand's +X, +Y, +Z in the chest frame
+    return (w["LeftLowerArm"].to_3x3().inverted() @ w["UpperTorso"].to_3x3() @ hand).to_quaternion()
 
 def _with_stance(p):
     """Opens the legs so the ankles stay as wide as when standing (squat_pose's bisection)."""
@@ -128,11 +215,36 @@ def standing_body_pose(p):
     pose.update(S.legs(p["torso"], p["thigh"], p["shin"], p["stance"], p["toes"]))
     return pose
 
+# Hands on the hips (2026-11-15; the old hand target sank the fingers into every build's hips, arm_in_body 0.24-0.37):
+# the wrist on the side of the hips 2.45 above the floor (the hanging wrist is at 2.15: the elbow bends out), the palm
+# flat on the hip, fingers forward and a little down along the top of the hip, where the six CartoonBodies_05 builds
+# are about equally wide (half widths 0.73-0.82 Skinny ... 1.03-1.08 Fat at 2.0-2.4), elbows out to the sides.
+# (Tried 2026-11-15: fingers pointing further down dig into Skinny's thigh; measured arm_in_body Skinny 0.04, Fat 0.13.)
+# (2026-11-16, clothes count as the body, rules 16-17: at 2.45 the wrist and forearm came up through the bottom edge of
+#  the BELT, which sits at the navel ~0.22 out from the skin (anim_qa arm_in_outfit 0.11-0.25 on every build; seen by the
+#  user on Fat). The hands now rest ON the belt's side: the wrist 2.75 up and 1.45 out, fitted to the widest belt (Fat,
+#  BigBuff ~1.3 out there); the palm on it, fingers forward over its top edge; the elbows out to the sides and a touch
+#  forward, never back (elbow_back 0.12 Skinny, was 0.48). One animation plays on every build, so the hands float a
+#  little off Skinny's narrower belt, as the user chose: a float on Skinny, never sinking on Fat.)
+HIP_WRIST = Vector((-1.45, 2.75 - S.HRP_STAND_Y, -0.05))
+HIP_ELBOW = (-1.0, 0.1, -0.15)
+HIP_PALM, HIP_FINGERS = (1.0, 0.0, 0.0), (0.0, -0.35, -0.94)
+_HIPS_HOLD = {}
+
+
+def hips_hold(p):
+    """{"arm", "wrist"} resting the hands on the hips for an upright standing key (torso 0: the arms are solved in the
+    chest's frame, so one answer serves every upright key)."""
+    if not _HIPS_HOLD:
+        body = standing_body_pose(dict(p, torso=0.0))
+        a, _ = solve_hand(body, HIP_WRIST, HIP_ELBOW)
+        _HIPS_HOLD.update(arm=a, wrist=wrist_for(body, a, HIP_PALM, HIP_FINGERS))
+    return {"arm": dict(_HIPS_HOLD["arm"]), "wrist": _HIPS_HOLD["wrist"].copy()}
+
+
 def hands_on_hips(p):
-    """Arm angles that rest the hands on the hips for a standing key."""
-    a, _ = S.solve_arms(standing_body_pose(p), S.hand_on_body(-1.2, -0.75, -0.05),
-                        {"raise": 30.0, "swing": -10.0, "twist": -60.0, "elbow": 95.0})
-    return a
+    """Arm angles of the hands-on-hips hold (use hips_hold: it also turns the wrists onto the hips)."""
+    return hips_hold(p)["arm"]
 
 def build_standing(p, root):
     return _body(p, root)
@@ -140,7 +252,7 @@ def build_standing(p, root):
 # ---------------------------------------------------------------- the squat fails
 def _squat_1_keys():
     stand = sq(0.0, arm=HANG, neck=0.0)
-    hips = dict(stand, arm=hands_on_hips(stand), neck=-22.0)
+    hips = dict(stand, **hips_hold(stand), neck=-22.0)
     hips = planted(hips)
     free = {"raise": 10.0, "swing": 55.0, "twist": 0.0, "elbow": 25.0}
     # On hands and knees, stumbled forward: knees on the floor ahead of where the feet were.
@@ -266,18 +378,33 @@ def _dl_bottom():
         _DL_CACHE["bottom"] = S._solve_deadlift_bottom()[0]
     return _DL_CACHE["bottom"]
 
-def dl(u, torso_add=0.0, thigh_add=0.0, shin_add=0.0, held=True, arm=None, neck=None):
+def dl(u, torso_add=0.0, thigh_add=0.0, shin_add=0.0, held=True, arm=None, neck=None, wrist=None):
     """A deadlift key at depth u (0 lockout, 1 the bar on the floor)."""
     bottom = _dl_bottom()
     top = S.DEADLIFT_LOCKOUT if held else (0.0, 0.0, 0.0)
     torso, thigh, shin = (S.blend(top[i], bottom[i], u) for i in range(3))
-    return {"mode": "deadlift", "torso": torso + torso_add, "thigh": thigh + thigh_add, "shin": shin + shin_add,
-            "held": held, "arm": arm, "neck": -(torso + torso_add) * 0.45 if neck is None else neck,
-            "grip": 1.0 if held else 0.0}
+    k = {"mode": "deadlift", "torso": torso + torso_add, "thigh": thigh + thigh_add, "shin": shin + shin_add,
+         "held": held, "arm": arm, "neck": -(torso + torso_add) * 0.45 if neck is None else neck,
+         "grip": 1.0 if held else 0.0, "u": u}
+    if wrist is not None:
+        k["wrist"] = wrist
+    return k
+
+# (2026-11-16, clothes count as the body) While the bar is held the arms hang a few degrees out from the sides near the
+# top, as Station_Deadlift's do (station_animations.DEADLIFT_STATION_ARM_OUT, easing to 0 at the floor bar), so the
+# hands stay outside the singlet shorts where they flare at the hip (Grinder_Deadlift_2 on Skinny: 0.06 into them at
+# mid-thigh) and the fails start from the same arms the meet's pull ends in.
+_ARM_OUT = getattr(S, "DEADLIFT_STATION_ARM_OUT", 0.0)
+_ON_BAR_HAS_ARM_OUT = "arm_out" in __import__("inspect").signature(S._deadlift_on_bar_path).parameters
+
 
 def build_deadlift(p):
     if p["held"]:
-        pose = S._deadlift_on_bar_path(p["torso"], p["thigh"], p["shin"])
+        if _ON_BAR_HAS_ARM_OUT and _ARM_OUT:
+            out = _ARM_OUT * (1.0 - max(0.0, min(1.0, p.get("u", 1.0))))
+            pose = S._deadlift_on_bar_path(p["torso"], p["thigh"], p["shin"], arm_out=out)
+        else:
+            pose = S._deadlift_on_bar_path(p["torso"], p["thigh"], p["shin"])
     else:
         pose = S._deadlift_body(p["torso"], p["thigh"], p["shin"])
         if p["arm"] is not None:
@@ -285,16 +412,17 @@ def build_deadlift(p):
         if S.RIG == "torso" and p.get("grip"):
             # (torso rig) the hands untwist out of the mixed grip while letting go, instead of snapping back
             pose.update(S.mixed_grip_wrists(p["grip"]))
+        add_wrists(pose, p.get("wrist"))
     pose["Neck"] = S.rx(p["neck"])
     return pose
 
-_DL_HIPS = {}
+def dl_hips():
+    """dl() keyword arguments for the hands-on-hips hold (arm and wrist)."""
+    stand = {"torso": 0.0, "thigh": 0.0, "shin": 0.0, "stance": 0.0, "toes": S.DEADLIFT_TOES_OUT, "neck": 0.0}
+    return hips_hold(stand)
 
 def _dl_hips_arm():
-    if not _DL_HIPS:
-        stand = {"torso": 0.0, "thigh": 0.0, "shin": 0.0, "stance": 0.0, "toes": S.DEADLIFT_TOES_OUT, "neck": 0.0}
-        _DL_HIPS["arm"] = hands_on_hips(stand)
-    return _DL_HIPS["arm"]
+    return dl_hips()["arm"]
 
 def _deadlift_1_keys():
     b = _dl_bottom()
@@ -307,8 +435,8 @@ def _deadlift_1_keys():
         (2.0, stuck),                              # straining (tremble below)
         (2.5, dl(1.0)),                            # set down
         (3.3, dl(0.0, held=False)),                # lets go and stands
-        (3.8, dl(0.0, held=False, arm=_dl_hips_arm(), neck=-20.0)),
-        (4.8, dl(0.0, held=False, arm=_dl_hips_arm(), neck=-24.0)),
+        (3.8, dl(0.0, held=False, **dl_hips(), neck=-20.0)),
+        (4.8, dl(0.0, held=False, **dl_hips(), neck=-24.0)),
     ]
 
 def _deadlift_2_keys():
@@ -323,8 +451,8 @@ def _deadlift_2_keys():
         (1.45, dl(0.76, **soft)),                  # and drops the bar
         (1.8, dl(0.76, held=False, neck=0.0, **soft)),
         (2.5, dl(0.0, held=False)),                # stands up
-        (3.0, dl(0.0, held=False, arm=_dl_hips_arm(), neck=-20.0)),
-        (3.8, dl(0.0, held=False, arm=_dl_hips_arm(), neck=-24.0)),
+        (3.0, dl(0.0, held=False, **dl_hips(), neck=-20.0)),
+        (3.8, dl(0.0, held=False, **dl_hips(), neck=-24.0)),
     ]
 
 # ---------------------------------------------------------------- sampling
@@ -344,6 +472,7 @@ def _sample(keys, t, shake):
         return S.plant_feet(build_standing(p, None))
     return build_standing(p, p["root"])
 
+HANG_FREE_RAISE = 7.0               # a free arm hanging (deadlift fails after the release): out from the thigh
 GRIP_KEYS = ("grip", "sqgrip")      # (torso rig) how far the hands are turned onto the bar: a key without one has let go
 
 
@@ -352,8 +481,11 @@ def lerp_params(a, b, u):
     for k in GRIP_KEYS:
         if k in b and k not in a:
             out[k] = lerp(0.0, b[k], u)
+    if a.get("wrist") is not None or b.get("wrist") is not None:     # (a key without a wrist turn: the hand straight)
+        wa, wb = a.get("wrist"), b.get("wrist")
+        out["wrist"] = lerp(NO_WRIST if wa is None else wa, NO_WRIST if wb is None else wb, u)
     for k, v in a.items():
-        if k in ("mode", "held"):
+        if k in ("mode", "held", "wrist"):
             continue
         w = b.get(k, 0.0 if k in GRIP_KEYS else v)
         if v is None or w is None:
@@ -365,9 +497,11 @@ def lerp_params(a, b, u):
         # straight down (as _deadlift_body does), so the arms blend instead of jumping.
         out["held"] = a["held"] and b["held"]
         if not out["held"]:
+            # (2026-11-16: raise 0 -> 7: hanging dead straight, the hands brushed 0.07-0.10 into Skinny's singlet
+            #  shorts as he stood up from the bar, anim_qa arm_in_outfit; now they hang a hair out from the thighs)
             def arm_of(p):
-                return p["arm"] if p["arm"] is not None else {"raise": 0.0, "swing": -p["torso"], "twist": 0.0,
-                                                              "elbow": 0.0}
+                return p["arm"] if p["arm"] is not None else {"raise": HANG_FREE_RAISE, "swing": -p["torso"],
+                                                              "twist": 0.0, "elbow": 0.0}
             out["arm"] = lerp(arm_of(a), arm_of(b), u)
     return out
 

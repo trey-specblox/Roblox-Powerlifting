@@ -6,6 +6,9 @@
 # All looped. Chalk_Lifter and Chalk_Coach_Back are the same length and start together; the claps and slaps fall at
 # CLAPS and SLAPS, kept in step with LocalMeetConfig.Chalk.
 #
+# (2026-11-16, user rule §5.0.17) Chalk_Lifter and Chalk_Coach_Back keep hands and forearms outside their own worn
+# outfit on every build (entrance_animations Hype.outfit); the coach's slaps on the lifter are held exactly in place.
+#
 # Distances: the lifter stands STAND_AHEAD from the stand's post (LocalMeetVenue), the coach COACH_BEHIND behind them.
 #
 #   blender -b --factory-startup --python art/scripts/chalk_animations.py -- <preview.png>
@@ -187,7 +190,9 @@ def coach_back_hands(t):
 
 # ---------------------------------------------------------------- the coach, in front of the lifter, talking
 HOLD = S.hand_on_body(-0.62, -0.2, -1.05)
-TALK_LOW = S.hand_on_body(-0.78, -0.1, -1.0)
+TALK_LOW = S.hand_on_body(-0.9, -0.1, -1.1)     # (2026-11-16, legs fix 2: was (-0.78, -0.1, -1.0); at rest the talking
+#   arm's forearm brushed 0.05 into Fat's worn belt at its side (anim_qa arm_in_outfit, rule 17): a touch further out and
+#   forward. The loop still starts and ends on it.)
 TALK_HIGH = S.hand_on_body(-0.7, 0.36, -1.2)
 TALK_MID = S.hand_on_body(-0.76, 0.14, -1.1)
 TALK_HAND = [(0.0, TALK_LOW), (1.0, TALK_HIGH), (1.5, TALK_MID), (2.2, TALK_HIGH), (3.2, TALK_LOW), (TALK_SECONDS, TALK_LOW)]
@@ -222,11 +227,15 @@ if S.RIG == "torso":
     PART_HAND = Vector((APART_HAND.x - 0.3, APART_HAND.y - 0.4, APART_HAND.z + 0.05))   # out wide and forward
     TO_BOWL = E.arc_mid(HANG_HAND, BOWL_HAND)                           # (forward round the shoulder, clear of the belly)
     DOWN_ARC = E.arc_mid(PART_HAND, HANG_HAND)
+    # (2026-11-16, longer-thigh rebuild: the solve ends the hang with the upper arm turned 58 deg from the first frame;
+    #  while the loop's last 0.6 s eases it back, Skinny's fingertips brushed 0.05 into the singlet's shorts, anim_qa.
+    #  The hands hang a touch further out after the claps, so the ease back stays clear; the first frame is unchanged.)
+    HANG_END = HANG_HAND + Vector((-0.12, 0.0, 0.0))
     LIFTER_HANDS = [
         (0.0, HANG_HAND), (0.5, HANG_HAND), (0.8, TO_BOWL), (1.1, BOWL_HAND), (2.3, BOWL_HAND), (2.9, RUB_HAND),
         (4.0, RUB_HAND),
         (4.2, CLAP_APART), (CLAPS[0], RUB_HAND), (4.6, CLAP_APART), (CLAPS[1], RUB_HAND), (5.0, PART_HAND),
-        (5.4, DOWN_ARC), (5.8, HANG_HAND), (LOOP_SECONDS, HANG_HAND),
+        (5.4, DOWN_ARC), (5.8, HANG_END), (LOOP_SECONDS, HANG_END),
     ]
 
     class _LifterHype(E.Hype):
@@ -248,6 +257,13 @@ if S.RIG == "torso":
 
     _lifter = _LifterHype(LOOP_SECONDS, LIFTER_BODY, [(0.0, HANG_HAND), (LOOP_SECONDS, HANG_HAND)])
     _lifter.natural = True
+    _lifter.outfit = True    # (2026-11-16, rule §5.0.17: hands and forearms kept outside the worn tee, singlet, belt)
+    # (the rub and the claps: pushed out of the clothes forward and up only, the palms still together)
+    # (in the bowl: pushed only further forward over the bowl (1.0 stud round the post), never up or out past its rim:
+    # Fat's leaning belly reaches the bowl's near side)
+    _lifter.outfit_mirror = True   # (the hands mirror each other but for the rub)
+    _lifter.outfit_forward = [(0.0, 0.0), (0.75, 0.0), (0.95, 1.0), (2.3, 1.0), (2.6, 0.0), (LOOP_SECONDS, 0.0)]
+    _lifter.outfit_claps = [(0.0, 0.0), (2.62, 0.0), (2.9, 1.0), (CLAPS[1] + 0.05, 1.0), (5.0, 0.0), (LOOP_SECONDS, 0.0)]
     _lifter.keep = 0.01      # (the elbows had swung round the shoulder-hand line frame to frame in the claps)
     _lifter.hands = [
         # in the bowl: palms down, fingers forward
@@ -258,9 +274,59 @@ if S.RIG == "torso":
          "weight": [(0.0, 0.0), (2.62, 0.0), (2.9, 1.0), (CLAPS[1] + 0.05, 1.0), (5.15, 0.0), (LOOP_SECONDS, 0.0)]},
     ]
 
+    # (torso rig, 2026-11-15, user: "the coach is not even slapping the shoulders or neck of the lifter, because the hands
+    # are closed and it just looks like hes punching the lifter") The coach behind the lifter: open hands ON the lifter's
+    # traps rubbing the chalk in, then the two slaps land flat on top of the SHOULDERS and on the traps at the back of the
+    # NECK (before: a fixed spot on the mid-back, 0.35 up the block body), palms down, fingers forward over the shoulder.
+    # Same slap times (LocalMeetConfig.Chalk.SlapAt: the game's slap sounds and chalk puffs). The lifter stands
+    # COACH_BEHIND ahead; his back surface is ~0.5-1.1 behind his spine by build, so the wrists sit 0.7 behind the
+    # lifter's shoulder line (a mid build; the palm reaches forward onto the top of the shoulder).
+    _BACK_Z = -(COACH_BEHIND - 0.7)
+    ON_TRAPS = S.hand_on_body(-0.5, 1.02, _BACK_Z)          # rubbing chalk on the traps
+    ON_SHOULDERS = S.hand_on_body(-0.85, 0.98, _BACK_Z + 0.08)   # slap 1: flat on top of each shoulder
+    ON_NECK = S.hand_on_body(-0.38, 1.12, _BACK_Z - 0.05)   # slap 2: the traps at the back of the neck
+    LIFTED = Vector((0, 0.42, 0.1))                         # the wind-up between slaps: up off the body (not back at
+    #                                                         his own face)
+    TO_TRAPS = E.arc_mid(HANG_HAND, ON_TRAPS)
+    OUT_SIDE = Vector((HANG_HAND.x - 0.55, (ON_NECK.y + HANG_HAND.y) / 2, -0.55))   # down round the outside (straight
+    #                                                         down from the neck went through his own Fat belly)
+    COACH_BACK_HANDS = [
+        (0.0, HANG_HAND), (0.3, HANG_HAND), (0.62, TO_TRAPS), (0.9, ON_TRAPS), (4.5, ON_TRAPS),
+        (4.7, ON_SHOULDERS + LIFTED), (SLAPS[0], ON_SHOULDERS), (5.0, ON_NECK + LIFTED), (SLAPS[1], ON_NECK),
+        (5.4, ON_NECK), (5.75, OUT_SIDE), (6.1, HANG_HAND), (LOOP_SECONDS, HANG_HAND),
+    ]
+
+    def coach_back_hands(t):
+        base = hand_at(COACH_BACK_HANDS, t)
+        rub = wave(t, 1.0, 4.4, 1.3)          # rubbing across the traps, the hands going opposite ways
+        return (base + Vector((0.1 * rub, 0.04 * rub, 0)), mirror(base) + Vector((0.1 * rub, -0.04 * rub, 0)))
+
+    class _CoachBackHype(E.Hype):
+        def _targets(self, t):
+            return coach_back_hands(t)
+
+    # (2026-11-16, longer-thigh rebuild of the bodies: the coach's elbows bent 131 deg for the first slap, which folds
+    #  BigBuff's forearm 0.27 into its own biceps, anim_qa. He stands a touch more upright for the two slaps, so his
+    #  shoulders sit further back and the elbows open; the hands still land on exactly the same spots on the lifter.)
+    SLAP_UPRIGHT = dict(LOOK_AT_BACK, torso=3.0)
+    COACH_BACK_BODY_T = [(0.0, STAND), (0.3, STAND), (0.9, LOOK_AT_BACK), (4.45, LOOK_AT_BACK), (4.68, SLAP_UPRIGHT),
+                         (5.2, SLAP_UPRIGHT), (5.4, LOOK_AT_BACK), (6.1, STAND), (LOOP_SECONDS, STAND)]
+    _coach_back = _CoachBackHype(LOOP_SECONDS, COACH_BACK_BODY_T, [(0.0, HANG_HAND), (LOOP_SECONDS, HANG_HAND)])
+    _coach_back.natural = True
+    _coach_back.outfit = True   # (his own clothes)
+    # the slaps land on the LIFTER exactly as before (LocalMeetConfig.Chalk.SlapAt): no push there
+    _coach_back.outfit_hold = [(0.0, 0.0), (4.4, 0.0), (4.55, 1.0), (5.25, 1.0), (5.4, 0.0), (LOOP_SECONDS, 0.0)]
+    _coach_back.keep = 0.01
+    _coach_back.hands = [
+        # on the traps and the slaps: palm down on the body, fingers forward over the shoulder
+        {"palm": Vector((0.0, -1.0, 0.0)), "fingers": Vector((0.0, 0.0, -1.0)),
+         "weight": [(0.0, 0.0), (0.62, 0.0), (0.9, 1.0), (5.4, 1.0), (5.75, 0.0), (LOOP_SECONDS, 0.0)]},
+    ]
+
 CLIPS = {
     "Lifter": HypeClip("Lifter", _lifter) if S.RIG == "torso" else Clip("Lifter", LOOP_SECONDS, lifter_body, lifter_hands),
-    "Coach_Back": Clip("Coach_Back", LOOP_SECONDS, coach_back_body, coach_back_hands),
+    "Coach_Back": (HypeClip("Coach_Back", _coach_back) if S.RIG == "torso"
+                   else Clip("Coach_Back", LOOP_SECONDS, coach_back_body, coach_back_hands)),
     "Coach_Talk": Clip("Coach_Talk", TALK_SECONDS, coach_talk_body, coach_talk_hands),
 }
 # (torso rig, 2026-11-13, the user's flagged move) the coach's clipboard hand and talking hand stay in front of the body
@@ -277,6 +343,10 @@ def sample_times(clip):
         t += 0.05 if clip.name != "Coach_Talk" and 4.0 <= t < 5.3 else 0.1
     times.append(clip.length)
     return times
+
+
+# Every clip here loops: its last this-many seconds ease onto its first frame (export, closed_pose).
+LOOP_SEAM_SECONDS = 0.6
 
 
 def export(clip):
@@ -305,10 +375,32 @@ def export(clip):
         return s + "</Item>"
 
     times = sample_times(clip)
+    first = clip.pose(0.0)
+
+    def closed_pose(t):
+        """The pose at `t`, eased over the last LOOP_SEAM_SECONDS onto the first frame's, so the loop has no seam
+        (Studio 2026-11-15: the solver ended Chalk_Lifter with the hand 42 deg and the upper arm 18 deg off its start, a
+        one-frame 2400 deg/s jump of the shoulders every time the loop came round)."""
+        pose = clip.pose(t)
+        u = (t - (clip.length - LOOP_SEAM_SECONDS)) / LOOP_SEAM_SECONDS
+        if u <= 0.0:
+            return pose
+        w = min(1.0, u)
+        w = w * w * (3.0 - 2.0 * w)
+        out_pose = {}
+        for joint, m in pose.items():
+            f = first.get(joint)
+            if f is None:
+                out_pose[joint] = m
+                continue
+            q = m.to_quaternion().slerp(f.to_quaternion(), w)
+            out_pose[joint] = Matrix.Translation(m.to_translation().lerp(f.to_translation(), w)) @ q.to_matrix().to_4x4()
+        return out_pose
+
     for t in times:
         out.append(f'<Item class="Keyframe" referent="RBX{next(refs)}"><Properties>'
                    f'<string name="Name">Keyframe</string><float name="Time">{t:.3f}</float></Properties>')
-        out.append(pose_xml("HumanoidRootPart", clip.pose(t)))
+        out.append(pose_xml("HumanoidRootPart", closed_pose(t)))
         out.append("</Item>")
     out.append("</Item></roblox>")
     os.makedirs(S.OUT_DIR, exist_ok=True)
@@ -402,6 +494,8 @@ def preview(path):
 if __name__ == "__main__":
     for clip in CLIPS.values():
         print("EXPORTED", export(clip))
+        if getattr(getattr(clip, "hype", None), "outfit", None):
+            print("OUTFIT", clip.name, clip.hype.outfit_log)
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if argv:
         preview(argv[0])

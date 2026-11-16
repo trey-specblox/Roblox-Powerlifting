@@ -817,7 +817,7 @@
    "supersedes": "rbxassetid://115016229826377 (before the rare suits and knee wraps, 2026-11-06; unused); rbxassetid://124628901641945 (rework without the knee fix: the sleeve halves opened a gap whenever the knee bent, even in idle poses; replaced 2026-10-31); rbxassetid://75664723615342 (first version: belt too flat, knee sleeve halves showed a gap, wraps too small)"
   },
   "Trophy_01": {
-   "about": "The trophy the top 3 hold on the awards podium at a Regional or State meet (GAME_DESIGN §35.8): a two-handled cup on a stem (Trophy_Metal, coloured gold, silver or bronze by the game, with CENTRAL on the base's front) on a black base (Trophy_Base). Made by art/scripts/build_trophy_01.py (art/blender/Trophy_01.blend).",
+   "about": "The trophy the top 3 hold on the awards podium at a Regional or State meet (GAME_DESIGN \u00a735.8): a two-handled cup on a stem (Trophy_Metal, coloured gold, silver or bronze by the game, with CENTRAL on the base's front) on a black base (Trophy_Base). Made by art/scripts/build_trophy_01.py (art/blender/Trophy_01.blend).",
    "file": "art/exports/Trophy_01.glb",
    "license": "own work",
    "ids": {
@@ -859,7 +859,7 @@
    }
   },
   "LifterBody_01": {
-   "about": "The lifter body, Average build, on the realistic R15 skeleton (GAME_DESIGN §38.5): 14 skinned body parts, no head. Made by art/scripts/build_lifter_body_01.py from MPFB (MakeHuman, CC0 output) in art/blender/LifterBody_01.blend. CHECK PASSED, 8,998 triangles.",
+   "about": "The lifter body, Average build, on the realistic R15 skeleton (GAME_DESIGN \u00a738.5): 14 skinned body parts, no head. Made by art/scripts/build_lifter_body_01.py from MPFB (MakeHuman, CC0 output) in art/blender/LifterBody_01.blend. CHECK PASSED, 8,998 triangles.",
    "file": "art/exports/LifterBody_01.glb",
    "license": "own work (MPFB/MakeHuman output is CC0)",
    "supersedes": "rbxassetid://138617159277013 (first upload: exported facing +Y, and Roblox's importer turns a GLB half round, so the body faced backwards; unused)",
@@ -868,7 +868,7 @@
    }
   },
   "Clothes_01": {
-   "about": "Plain basic clothes for the lifter body (GAME_DESIGN §38.6): Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers (+ SneakersSole), skinned to the LifterBody_01 skeleton, one mesh per R15 part named <Item>__<Part>. Made by art/scripts/build_clothes_01.py (art/blender/Clothes_01.blend). CHECK PASSED, 13,716 triangles.",
+   "about": "Plain basic clothes for the lifter body (GAME_DESIGN \u00a738.6): Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers (+ SneakersSole), skinned to the LifterBody_01 skeleton, one mesh per R15 part named <Item>__<Part>. Made by art/scripts/build_clothes_01.py (art/blender/Clothes_01.blend). CHECK PASSED, 13,716 triangles.",
    "file": "art/exports/Clothes_01.glb",
    "license": "own work (shaped from MPFB/MakeHuman output, CC0)",
    "ids": {
@@ -876,7 +876,7 @@
    }
   },
   "CartoonBody_Skinny": {
-   "about": "Cartoon lifter body, Skinny build (GAME_DESIGN §38.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+   "about": "Cartoon lifter body, Skinny build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
    "file": "art/exports/CartoonBody_Skinny.glb",
    "license": "own work",
    "supersedes": "rbxassetid://129133191533052 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
@@ -885,7 +885,7 @@
    }
   },
   "CartoonBody_Heavy": {
-   "about": "Cartoon lifter body, Heavy build (GAME_DESIGN §38.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+   "about": "Cartoon lifter body, Heavy build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
    "file": "art/exports/CartoonBody_Heavy.glb",
    "license": "own work",
    "supersedes": "rbxassetid://71182274432851 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
@@ -894,7 +894,7 @@
    }
   },
   "CartoonBody_Muscular": {
-   "about": "Cartoon lifter body, Muscular build (GAME_DESIGN §38.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
+   "about": "Cartoon lifter body, Muscular build (GAME_DESIGN \u00a738.7): 14 skinned R15 parts on the block skeleton, Fist hands, no head. Made by art/scripts/build_cartoon_rig_02.py (art/blender/CartoonBodies_02.blend). CHECK PASSED, ~7,000 triangles.",
    "file": "art/exports/CartoonBody_Muscular.glb",
    "license": "own work",
    "supersedes": "rbxassetid://140000230648162 (first upload: the Blender file still held the realistic body's parts, so these were exported as LeftFoot.001 etc. and Roblox joined every part straight to the root; unused)",
@@ -903,73 +903,630 @@
    }
   },
   "CartoonHands_03": {
-   "about": "Hand-shape swaps for the cartoon bodies (GAME_DESIGN §38.7, HandShapeConfig): Open, Point, ThumbsUp, Fist x Left/Right, rigid, at hand size 1 in the hand bone's space. Made by art/scripts/build_cartoon_rig_02.py from build_cartoon_hands_03.py. CHECK PASSED, ~1,400 triangles each.",
+   "about": "Hand-shape swaps for the cartoon bodies (GAME_DESIGN \u00a738.7, HandShapeConfig): Open, Point, ThumbsUp, Fist x Left/Right, rigid, at hand size 1 in the hand bone's space. Made by art/scripts/build_cartoon_rig_02.py from build_cartoon_hands_03.py. CHECK PASSED, ~1,400 triangles each.",
    "file": "art/exports/CartoonHands_03.glb",
    "license": "own work",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonBody03_Skinny": {
    "about": "Cartoon lifter body, Skinny build, TALLER (user 2026-11-12, art/scripts/lifter_heights.py: hips 2.4, neck 4.70), OPEN hands by default, the heavy back crease and wrist ridge fixed. 14 skinned R15 parts, no head. art/scripts/build_cartoon_rig_02.py. CHECK PASSED, ~8,000 triangles.",
    "file": "art/exports/CartoonBody_Skinny.glb",
    "license": "own work",
    "supersedes": "CartoonBody_Skinny (shorter, fist hands)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonBody03_Heavy": {
    "about": "Cartoon lifter body, Heavy build, TALLER (user 2026-11-12, art/scripts/lifter_heights.py: hips 2.4, neck 4.70), OPEN hands by default, the heavy back crease and wrist ridge fixed. 14 skinned R15 parts, no head. art/scripts/build_cartoon_rig_02.py. CHECK PASSED, ~8,000 triangles.",
    "file": "art/exports/CartoonBody_Heavy.glb",
    "license": "own work",
    "supersedes": "CartoonBody_Heavy (shorter, fist hands)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonBody03_Muscular": {
    "about": "Cartoon lifter body, Muscular build, TALLER (user 2026-11-12, art/scripts/lifter_heights.py: hips 2.4, neck 4.70), OPEN hands by default, the heavy back crease and wrist ridge fixed. 14 skinned R15 parts, no head. art/scripts/build_cartoon_rig_02.py. CHECK PASSED, ~8,000 triangles.",
    "file": "art/exports/CartoonBody_Muscular.glb",
    "license": "own work",
    "supersedes": "CartoonBody_Muscular (shorter, fist hands)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonGear03_Skinny": {
    "about": "Worn lifting gear v3 for the Skinny cartoon body: one master per item fitted to the build (singlet, squat and deadlift suits, bench shirt, rigid lever belt, knee sleeves, knee wraps, wrist wraps; CENTRAL logo patches), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_03.py + gear_fit_03.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
    "file": "art/exports/CartoonGear03_Skinny.glb",
    "license": "own work",
    "supersedes": "CartoonGear02_Skinny (rejected, never uploaded)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonClothes03_Skinny": {
    "about": "Everyday clothes v3 for the Skinny cartoon body (Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistband/drawstrings/soles as *White / SneakersSole), the same fitted masters as the gear, skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_03.py. CHECK PASSED.",
    "file": "art/exports/CartoonClothes03_Skinny.glb",
    "license": "own work",
    "supersedes": "CartoonClothes02_Skinny (skin copies, never uploaded)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonGear03_Heavy": {
    "about": "Worn lifting gear v3 for the Heavy cartoon body: one master per item fitted to the build (singlet, squat and deadlift suits, bench shirt, rigid lever belt, knee sleeves, knee wraps, wrist wraps; CENTRAL logo patches), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_03.py + gear_fit_03.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
    "file": "art/exports/CartoonGear03_Heavy.glb",
    "license": "own work",
    "supersedes": "CartoonGear02_Heavy (rejected, never uploaded)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonClothes03_Heavy": {
    "about": "Everyday clothes v3 for the Heavy cartoon body (Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistband/drawstrings/soles as *White / SneakersSole), the same fitted masters as the gear, skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_03.py. CHECK PASSED.",
    "file": "art/exports/CartoonClothes03_Heavy.glb",
    "license": "own work",
    "supersedes": "CartoonClothes02_Heavy (skin copies, never uploaded)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonGear03_Muscular": {
    "about": "Worn lifting gear v3 for the Muscular cartoon body: one master per item fitted to the build (singlet, squat and deadlift suits, bench shirt, rigid lever belt, knee sleeves, knee wraps, wrist wraps; CENTRAL logo patches), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_03.py + gear_fit_03.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
    "file": "art/exports/CartoonGear03_Muscular.glb",
    "license": "own work",
    "supersedes": "CartoonGear02_Muscular (rejected, never uploaded)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
   },
   "CartoonClothes03_Muscular": {
    "about": "Everyday clothes v3 for the Muscular cartoon body (Tee, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistband/drawstrings/soles as *White / SneakersSole), the same fitted masters as the gear, skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_03.py. CHECK PASSED.",
    "file": "art/exports/CartoonClothes03_Muscular.glb",
    "license": "own work",
    "supersedes": "CartoonClothes02_Muscular (skin copies, never uploaded)",
-   "ids": {}
+   "ids": {},
+   "skip": true,
+   "skipReason": "replaced before upload by the v05 production set (CartoonBody05/Gear05/Clothes05/Hands05, 2026-11-15)"
+  },
+  "CartoonBody05_Skinny": {
+   "about": "Production cartoon lifter body, Skinny build (CartoonBodies_05: torso-tall skeleton, HipHeight 2.0, arms x1.5), the OPEN hand as the body's own hand; 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py + build_cartoon_rig_05.py, exported by art/scripts/export_cartoon_05.py from art/blender/CartoonGear_05.blend. CHECK PASSED, 5,424 triangles.",
+   "file": "art/exports/CartoonBody05_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_* (v02 block-skeleton fist bodies)",
+   "ids": {
+    "model": "rbxassetid://138509612282088"
+   }
+  },
+  "CartoonGear05_Skinny": {
+   "about": "Worn lifting gear v5 for the Skinny body (approved 2026-11-14: singlet, squat/deadlift suits, bench shirt, lever belt, knee sleeves, knee wraps, tilted wrist wraps; CENTRAL logo patches as Patch/Text keys), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear05_Skinny.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://87833238548501"
+   }
+  },
+  "CartoonClothes05_Skinny": {
+   "about": "Everyday clothes v5 for the Skinny body (Tee, TeeUnder = the tee cut away under a singlet, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistbands/soles as *White / SneakersSole), skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes05_Skinny.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://87211009340376"
+   }
+  },
+  "CartoonBody05_SkinnyFat": {
+   "about": "Production cartoon lifter body, Skinny-fat build (CartoonBodies_05: torso-tall skeleton, HipHeight 2.0, arms x1.5), the OPEN hand as the body's own hand; 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py + build_cartoon_rig_05.py, exported by art/scripts/export_cartoon_05.py from art/blender/CartoonGear_05.blend. CHECK PASSED, 5,424 triangles.",
+   "file": "art/exports/CartoonBody05_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_* (v02 block-skeleton fist bodies)",
+   "ids": {
+    "model": "rbxassetid://107399796450304"
+   }
+  },
+  "CartoonGear05_SkinnyFat": {
+   "about": "Worn lifting gear v5 for the Skinny-fat body (approved 2026-11-14: singlet, squat/deadlift suits, bench shirt, lever belt, knee sleeves, knee wraps, tilted wrist wraps; CENTRAL logo patches as Patch/Text keys), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear05_SkinnyFat.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://121509918411914"
+   }
+  },
+  "CartoonClothes05_SkinnyFat": {
+   "about": "Everyday clothes v5 for the Skinny-fat body (Tee, TeeUnder = the tee cut away under a singlet, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistbands/soles as *White / SneakersSole), skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes05_SkinnyFat.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://93840354739777"
+   }
+  },
+  "CartoonBody05_Fat": {
+   "about": "Production cartoon lifter body, Fat build (CartoonBodies_05: torso-tall skeleton, HipHeight 2.0, arms x1.5), the OPEN hand as the body's own hand; 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py + build_cartoon_rig_05.py, exported by art/scripts/export_cartoon_05.py from art/blender/CartoonGear_05.blend. CHECK PASSED, 5,424 triangles.",
+   "file": "art/exports/CartoonBody05_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_* (v02 block-skeleton fist bodies)",
+   "ids": {
+    "model": "rbxassetid://86667576221055"
+   }
+  },
+  "CartoonGear05_Fat": {
+   "about": "Worn lifting gear v5 for the Fat body (approved 2026-11-14: singlet, squat/deadlift suits, bench shirt, lever belt, knee sleeves, knee wraps, tilted wrist wraps; CENTRAL logo patches as Patch/Text keys), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear05_Fat.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://99741122953878"
+   }
+  },
+  "CartoonClothes05_Fat": {
+   "about": "Everyday clothes v5 for the Fat body (Tee, TeeUnder = the tee cut away under a singlet, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistbands/soles as *White / SneakersSole), skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes05_Fat.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://111457014666042"
+   }
+  },
+  "CartoonBody05_Fit": {
+   "about": "Production cartoon lifter body, Fit build (CartoonBodies_05: torso-tall skeleton, HipHeight 2.0, arms x1.5), the OPEN hand as the body's own hand; 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py + build_cartoon_rig_05.py, exported by art/scripts/export_cartoon_05.py from art/blender/CartoonGear_05.blend. CHECK PASSED, 5,424 triangles.",
+   "file": "art/exports/CartoonBody05_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_* (v02 block-skeleton fist bodies)",
+   "ids": {
+    "model": "rbxassetid://113863442317146"
+   }
+  },
+  "CartoonGear05_Fit": {
+   "about": "Worn lifting gear v5 for the Fit body (approved 2026-11-14: singlet, squat/deadlift suits, bench shirt, lever belt, knee sleeves, knee wraps, tilted wrist wraps; CENTRAL logo patches as Patch/Text keys), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear05_Fit.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://131534044760862"
+   }
+  },
+  "CartoonClothes05_Fit": {
+   "about": "Everyday clothes v5 for the Fit body (Tee, TeeUnder = the tee cut away under a singlet, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistbands/soles as *White / SneakersSole), skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes05_Fit.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://74034414476869"
+   }
+  },
+  "CartoonBody05_Muscular": {
+   "about": "Production cartoon lifter body, Muscular build (CartoonBodies_05: torso-tall skeleton, HipHeight 2.0, arms x1.5), the OPEN hand as the body's own hand; 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py + build_cartoon_rig_05.py, exported by art/scripts/export_cartoon_05.py from art/blender/CartoonGear_05.blend. CHECK PASSED, 5,424 triangles.",
+   "file": "art/exports/CartoonBody05_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_* (v02 block-skeleton fist bodies)",
+   "ids": {
+    "model": "rbxassetid://99374578139052"
+   }
+  },
+  "CartoonGear05_Muscular": {
+   "about": "Worn lifting gear v5 for the Muscular body (approved 2026-11-14: singlet, squat/deadlift suits, bench shirt, lever belt, knee sleeves, knee wraps, tilted wrist wraps; CENTRAL logo patches as Patch/Text keys), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear05_Muscular.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://111292367596098"
+   }
+  },
+  "CartoonClothes05_Muscular": {
+   "about": "Everyday clothes v5 for the Muscular body (Tee, TeeUnder = the tee cut away under a singlet, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistbands/soles as *White / SneakersSole), skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes05_Muscular.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://78411860387154"
+   }
+  },
+  "CartoonBody05_BigBuff": {
+   "about": "Production cartoon lifter body, Big and buff build (CartoonBodies_05: torso-tall skeleton, HipHeight 2.0, arms x1.5), the OPEN hand as the body's own hand; 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py + build_cartoon_rig_05.py, exported by art/scripts/export_cartoon_05.py from art/blender/CartoonGear_05.blend. CHECK PASSED, 5,424 triangles.",
+   "file": "art/exports/CartoonBody05_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody_* (v02 block-skeleton fist bodies)",
+   "ids": {
+    "model": "rbxassetid://128202234358339"
+   }
+  },
+  "CartoonGear05_BigBuff": {
+   "about": "Worn lifting gear v5 for the Big and buff body (approved 2026-11-14: singlet, squat/deadlift suits, bench shirt, lever belt, knee sleeves, knee wraps, tilted wrist wraps; CENTRAL logo patches as Patch/Text keys), skinned, <Worn>_<ColourKey>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear05_BigBuff.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://122506871460397"
+   }
+  },
+  "CartoonClothes05_BigBuff": {
+   "about": "Everyday clothes v5 for the Big and buff body (Tee, TeeUnder = the tee cut away under a singlet, LongSleeve, Tank, Shorts, Joggers, Sneakers; white cuffs/waistbands/soles as *White / SneakersSole), skinned, <Item>__<Part>. art/scripts/build_cartoon_gear_05.py, exported by export_cartoon_05.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes05_BigBuff.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://101346241628183"
+   }
+  },
+  "CartoonHands05": {
+   "about": "Hand-shape swaps for the CartoonBodies_05 lifters (HandShapeConfig): Fist, Point, ThumbsUp, Grip (bar through the fingers), SquatGrip (bar in the palm heel) x Left/Right, rigid, at hand size 1 in the hand bone's space; per-build sizes and offsets in art/exports/CartoonExport05.json. Exported by art/scripts/export_cartoon_05.py. CHECK PASSED, 600 triangles each.",
+   "file": "art/exports/CartoonHands05.glb",
+   "license": "own work",
+   "supersedes": "CartoonHands_03 (never uploaded)",
+   "ids": {
+    "model": "rbxassetid://94039364109733"
+   }
+  },
+  "CartoonGear06_Skinny": {
+   "about": "Worn lifting gear v6 for the Skinny body (2026-11-15, user: \"Export and upload\"): the singlet rebuilt on the body's own mesh over the whole tee (art/scripts/build_cartoon_gear_06.py) and the approved rigid lever belt; suits, bench shirt, knee sleeves, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear06_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear05_Skinny",
+   "ids": {
+    "model": "rbxassetid://85640672901698"
+   }
+  },
+  "CartoonClothes06_Skinny": {
+   "about": "Everyday clothes v6 for the Skinny body (2026-11-15): the Tee / TeeWhite rebuilt on the body's own mesh (build_cartoon_gear_06.py, worn whole under gear); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5; TeeUnder dropped. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes06_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes05_Skinny",
+   "ids": {
+    "model": "rbxassetid://139193616267598"
+   }
+  },
+  "CartoonGear06_SkinnyFat": {
+   "about": "Worn lifting gear v6 for the SkinnyFat body (2026-11-15, user: \"Export and upload\"): the singlet rebuilt on the body's own mesh over the whole tee (art/scripts/build_cartoon_gear_06.py) and the approved rigid lever belt; suits, bench shirt, knee sleeves, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear06_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear05_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://94699938608461"
+   }
+  },
+  "CartoonClothes06_SkinnyFat": {
+   "about": "Everyday clothes v6 for the SkinnyFat body (2026-11-15): the Tee / TeeWhite rebuilt on the body's own mesh (build_cartoon_gear_06.py, worn whole under gear); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5; TeeUnder dropped. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes06_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes05_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://83613509561729"
+   }
+  },
+  "CartoonGear06_Fat": {
+   "about": "Worn lifting gear v6 for the Fat body (2026-11-15, user: \"Export and upload\"): the singlet rebuilt on the body's own mesh over the whole tee (art/scripts/build_cartoon_gear_06.py) and the approved rigid lever belt; suits, bench shirt, knee sleeves, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear06_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear05_Fat",
+   "ids": {
+    "model": "rbxassetid://81753029164220"
+   }
+  },
+  "CartoonClothes06_Fat": {
+   "about": "Everyday clothes v6 for the Fat body (2026-11-15): the Tee / TeeWhite rebuilt on the body's own mesh (build_cartoon_gear_06.py, worn whole under gear); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5; TeeUnder dropped. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes06_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes05_Fat",
+   "ids": {
+    "model": "rbxassetid://93393523893981"
+   }
+  },
+  "CartoonGear06_Fit": {
+   "about": "Worn lifting gear v6 for the Fit body (2026-11-15, user: \"Export and upload\"): the singlet rebuilt on the body's own mesh over the whole tee (art/scripts/build_cartoon_gear_06.py) and the approved rigid lever belt; suits, bench shirt, knee sleeves, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear06_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear05_Fit",
+   "ids": {
+    "model": "rbxassetid://85303720218024"
+   }
+  },
+  "CartoonClothes06_Fit": {
+   "about": "Everyday clothes v6 for the Fit body (2026-11-15): the Tee / TeeWhite rebuilt on the body's own mesh (build_cartoon_gear_06.py, worn whole under gear); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5; TeeUnder dropped. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes06_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes05_Fit",
+   "ids": {
+    "model": "rbxassetid://71976665106186"
+   }
+  },
+  "CartoonGear06_Muscular": {
+   "about": "Worn lifting gear v6 for the Muscular body (2026-11-15, user: \"Export and upload\"): the singlet rebuilt on the body's own mesh over the whole tee (art/scripts/build_cartoon_gear_06.py) and the approved rigid lever belt; suits, bench shirt, knee sleeves, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear06_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear05_Muscular",
+   "ids": {
+    "model": "rbxassetid://82349415440601"
+   }
+  },
+  "CartoonClothes06_Muscular": {
+   "about": "Everyday clothes v6 for the Muscular body (2026-11-15): the Tee / TeeWhite rebuilt on the body's own mesh (build_cartoon_gear_06.py, worn whole under gear); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5; TeeUnder dropped. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes06_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes05_Muscular",
+   "ids": {
+    "model": "rbxassetid://109601138190591"
+   }
+  },
+  "CartoonGear06_BigBuff": {
+   "about": "Worn lifting gear v6 for the BigBuff body (2026-11-15, user: \"Export and upload\"): the singlet rebuilt on the body's own mesh over the whole tee (art/scripts/build_cartoon_gear_06.py) and the approved rigid lever belt; suits, bench shirt, knee sleeves, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear06_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear05_BigBuff",
+   "ids": {
+    "model": "rbxassetid://114669552330860"
+   }
+  },
+  "CartoonClothes06_BigBuff": {
+   "about": "Everyday clothes v6 for the BigBuff body (2026-11-15): the Tee / TeeWhite rebuilt on the body's own mesh (build_cartoon_gear_06.py, worn whole under gear); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5; TeeUnder dropped. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_06.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes06_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes05_BigBuff",
+   "ids": {
+    "model": "rbxassetid://138958982863043"
+   }
+  },
+  "CartoonGear07_Skinny": {
+   "about": "Worn lifting gear v7 for the Skinny body (2026-11-15, user: \"Export and upload\"): the singlet redesigned from the user's reference (high round neck, piped one-colour straps, smooth armholes, side panel, covered crotch, smoothed edges) and the knee sleeves rebuilt on the skin (whole in the deep squat; one piece per leg), art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt; suits, bench shirt, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear07_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear06_Skinny",
+   "ids": {
+    "model": "rbxassetid://101907133037058"
+   }
+  },
+  "CartoonClothes07_Skinny": {
+   "about": "Everyday clothes v7 for the Skinny body (2026-11-15): the Tee / TeeWhite on the body's own mesh with smoothed edges (build_cartoon_gear_07.py); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes07_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes06_Skinny",
+   "ids": {
+    "model": "rbxassetid://123762491326888"
+   }
+  },
+  "CartoonGear07_SkinnyFat": {
+   "about": "Worn lifting gear v7 for the SkinnyFat body (2026-11-15, user: \"Export and upload\"): the singlet redesigned from the user's reference (high round neck, piped one-colour straps, smooth armholes, side panel, covered crotch, smoothed edges) and the knee sleeves rebuilt on the skin (whole in the deep squat; one piece per leg), art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt; suits, bench shirt, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear07_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear06_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://140325152799374"
+   }
+  },
+  "CartoonClothes07_SkinnyFat": {
+   "about": "Everyday clothes v7 for the SkinnyFat body (2026-11-15): the Tee / TeeWhite on the body's own mesh with smoothed edges (build_cartoon_gear_07.py); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes07_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes06_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://90056220410411"
+   }
+  },
+  "CartoonGear07_Fat": {
+   "about": "Worn lifting gear v7 for the Fat body (2026-11-15, user: \"Export and upload\"): the singlet redesigned from the user's reference (high round neck, piped one-colour straps, smooth armholes, side panel, covered crotch, smoothed edges) and the knee sleeves rebuilt on the skin (whole in the deep squat; one piece per leg), art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt; suits, bench shirt, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear07_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear06_Fat",
+   "ids": {
+    "model": "rbxassetid://72518083583615"
+   }
+  },
+  "CartoonClothes07_Fat": {
+   "about": "Everyday clothes v7 for the Fat body (2026-11-15): the Tee / TeeWhite on the body's own mesh with smoothed edges (build_cartoon_gear_07.py); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes07_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes06_Fat",
+   "ids": {
+    "model": "rbxassetid://88842631368650"
+   }
+  },
+  "CartoonGear07_Fit": {
+   "about": "Worn lifting gear v7 for the Fit body (2026-11-15, user: \"Export and upload\"): the singlet redesigned from the user's reference (high round neck, piped one-colour straps, smooth armholes, side panel, covered crotch, smoothed edges) and the knee sleeves rebuilt on the skin (whole in the deep squat; one piece per leg), art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt; suits, bench shirt, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear07_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear06_Fit",
+   "ids": {
+    "model": "rbxassetid://94675235118409"
+   }
+  },
+  "CartoonClothes07_Fit": {
+   "about": "Everyday clothes v7 for the Fit body (2026-11-15): the Tee / TeeWhite on the body's own mesh with smoothed edges (build_cartoon_gear_07.py); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes07_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes06_Fit",
+   "ids": {
+    "model": "rbxassetid://85355784180122"
+   }
+  },
+  "CartoonGear07_Muscular": {
+   "about": "Worn lifting gear v7 for the Muscular body (2026-11-15, user: \"Export and upload\"): the singlet redesigned from the user's reference (high round neck, piped one-colour straps, smooth armholes, side panel, covered crotch, smoothed edges) and the knee sleeves rebuilt on the skin (whole in the deep squat; one piece per leg), art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt; suits, bench shirt, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear07_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear06_Muscular",
+   "ids": {
+    "model": "rbxassetid://78093984859885"
+   }
+  },
+  "CartoonClothes07_Muscular": {
+   "about": "Everyday clothes v7 for the Muscular body (2026-11-15): the Tee / TeeWhite on the body's own mesh with smoothed edges (build_cartoon_gear_07.py); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes07_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes06_Muscular",
+   "ids": {
+    "model": "rbxassetid://86432747997356"
+   }
+  },
+  "CartoonGear07_BigBuff": {
+   "about": "Worn lifting gear v7 for the BigBuff body (2026-11-15, user: \"Export and upload\"): the singlet redesigned from the user's reference (high round neck, piped one-colour straps, smooth armholes, side panel, covered crotch, smoothed edges) and the knee sleeves rebuilt on the skin (whole in the deep squat; one piece per leg), art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt; suits, bench shirt, knee wraps and wrist wraps as v5. Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear07_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear06_BigBuff",
+   "ids": {
+    "model": "rbxassetid://76694293661116"
+   }
+  },
+  "CartoonClothes07_BigBuff": {
+   "about": "Everyday clothes v7 for the BigBuff body (2026-11-15): the Tee / TeeWhite on the body's own mesh with smoothed edges (build_cartoon_gear_07.py); LongSleeve, Tank, Shorts, Joggers, Sneakers as v5. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_07.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes07_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes06_BigBuff",
+   "ids": {
+    "model": "rbxassetid://135130375975787"
+   }
+  },
+  "CartoonBody08_Skinny": {
+   "about": "Production cartoon lifter body, Skinny build, on the LONGER legs (2026-11-15 user: \"make the legs a little longer\"; knee 1.00, was 1.178; hips 2.0 and HipHeight unchanged; go-live approved 2026-11-16). As CartoonBody05 otherwise: OPEN hand, 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py, exported by art/scripts/export_cartoon_body_08.py from art/blender/CartoonGear_05_Knee100.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CartoonBody08_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody05_Skinny",
+   "ids": {
+    "model": "rbxassetid://117068136403546"
+   }
+  },
+  "CartoonBody08_SkinnyFat": {
+   "about": "Production cartoon lifter body, SkinnyFat build, on the LONGER legs (2026-11-15 user: \"make the legs a little longer\"; knee 1.00, was 1.178; hips 2.0 and HipHeight unchanged; go-live approved 2026-11-16). As CartoonBody05 otherwise: OPEN hand, 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py, exported by art/scripts/export_cartoon_body_08.py from art/blender/CartoonGear_05_Knee100.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CartoonBody08_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody05_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://113015580385760"
+   }
+  },
+  "CartoonBody08_Fat": {
+   "about": "Production cartoon lifter body, Fat build, on the LONGER legs (2026-11-15 user: \"make the legs a little longer\"; knee 1.00, was 1.178; hips 2.0 and HipHeight unchanged; go-live approved 2026-11-16). As CartoonBody05 otherwise: OPEN hand, 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py, exported by art/scripts/export_cartoon_body_08.py from art/blender/CartoonGear_05_Knee100.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CartoonBody08_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody05_Fat",
+   "ids": {
+    "model": "rbxassetid://73408190821733"
+   }
+  },
+  "CartoonBody08_Fit": {
+   "about": "Production cartoon lifter body, Fit build, on the LONGER legs (2026-11-15 user: \"make the legs a little longer\"; knee 1.00, was 1.178; hips 2.0 and HipHeight unchanged; go-live approved 2026-11-16). As CartoonBody05 otherwise: OPEN hand, 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py, exported by art/scripts/export_cartoon_body_08.py from art/blender/CartoonGear_05_Knee100.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CartoonBody08_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody05_Fit",
+   "ids": {
+    "model": "rbxassetid://77562974459220"
+   }
+  },
+  "CartoonBody08_Muscular": {
+   "about": "Production cartoon lifter body, Muscular build, on the LONGER legs (2026-11-15 user: \"make the legs a little longer\"; knee 1.00, was 1.178; hips 2.0 and HipHeight unchanged; go-live approved 2026-11-16). As CartoonBody05 otherwise: OPEN hand, 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py, exported by art/scripts/export_cartoon_body_08.py from art/blender/CartoonGear_05_Knee100.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CartoonBody08_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody05_Muscular",
+   "ids": {
+    "model": "rbxassetid://77603128598959"
+   }
+  },
+  "CartoonBody08_BigBuff": {
+   "about": "Production cartoon lifter body, BigBuff build, on the LONGER legs (2026-11-15 user: \"make the legs a little longer\"; knee 1.00, was 1.178; hips 2.0 and HipHeight unchanged; go-live approved 2026-11-16). As CartoonBody05 otherwise: OPEN hand, 14 skinned R15 parts, no head. art/scripts/build_cartoon_body_05.py, exported by art/scripts/export_cartoon_body_08.py from art/blender/CartoonGear_05_Knee100.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CartoonBody08_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonBody05_BigBuff",
+   "ids": {
+    "model": "rbxassetid://85589236707019"
+   }
+  },
+  "CartoonGear08_Skinny": {
+   "about": "Worn lifting gear v8 for the Skinny body: gear v7 (singlet, rigid lever belt, knee sleeves on the skin; build_cartoon_gear_07.py) rebuilt on the LONGER legs (knee 1.00), the shorts ending above the knee sleeves with bare thigh between (user 2026-11-15); suits, bench shirt, knee wraps and wrist wraps = the approved v5 builder (committed build_cartoon_gear_05.py) re-run on the new legs (art/blender/CartoonGear_05_Knee100.blend). Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear08_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear07_Skinny",
+   "ids": {
+    "model": "rbxassetid://87981689532076"
+   }
+  },
+  "CartoonGear08_SkinnyFat": {
+   "about": "Worn lifting gear v8 for the SkinnyFat body: gear v7 (singlet, rigid lever belt, knee sleeves on the skin; build_cartoon_gear_07.py) rebuilt on the LONGER legs (knee 1.00), the shorts ending above the knee sleeves with bare thigh between (user 2026-11-15); suits, bench shirt, knee wraps and wrist wraps = the approved v5 builder (committed build_cartoon_gear_05.py) re-run on the new legs (art/blender/CartoonGear_05_Knee100.blend). Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear08_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear07_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://98049189140592"
+   }
+  },
+  "CartoonGear08_Fat": {
+   "about": "Worn lifting gear v8 for the Fat body: gear v7 (singlet, rigid lever belt, knee sleeves on the skin; build_cartoon_gear_07.py) rebuilt on the LONGER legs (knee 1.00), the shorts ending above the knee sleeves with bare thigh between (user 2026-11-15); suits, bench shirt, knee wraps and wrist wraps = the approved v5 builder (committed build_cartoon_gear_05.py) re-run on the new legs (art/blender/CartoonGear_05_Knee100.blend). Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear08_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear07_Fat",
+   "ids": {
+    "model": "rbxassetid://107255763090235"
+   }
+  },
+  "CartoonGear08_Fit": {
+   "about": "Worn lifting gear v8 for the Fit body: gear v7 (singlet, rigid lever belt, knee sleeves on the skin; build_cartoon_gear_07.py) rebuilt on the LONGER legs (knee 1.00), the shorts ending above the knee sleeves with bare thigh between (user 2026-11-15); suits, bench shirt, knee wraps and wrist wraps = the approved v5 builder (committed build_cartoon_gear_05.py) re-run on the new legs (art/blender/CartoonGear_05_Knee100.blend). Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear08_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear07_Fit",
+   "ids": {
+    "model": "rbxassetid://105929007280971"
+   }
+  },
+  "CartoonGear08_Muscular": {
+   "about": "Worn lifting gear v8 for the Muscular body: gear v7 (singlet, rigid lever belt, knee sleeves on the skin; build_cartoon_gear_07.py) rebuilt on the LONGER legs (knee 1.00), the shorts ending above the knee sleeves with bare thigh between (user 2026-11-15); suits, bench shirt, knee wraps and wrist wraps = the approved v5 builder (committed build_cartoon_gear_05.py) re-run on the new legs (art/blender/CartoonGear_05_Knee100.blend). Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear08_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear07_Muscular",
+   "ids": {
+    "model": "rbxassetid://124551978504954"
+   }
+  },
+  "CartoonGear08_BigBuff": {
+   "about": "Worn lifting gear v8 for the BigBuff body: gear v7 (singlet, rigid lever belt, knee sleeves on the skin; build_cartoon_gear_07.py) rebuilt on the LONGER legs (knee 1.00), the shorts ending above the knee sleeves with bare thigh between (user 2026-11-15); suits, bench shirt, knee wraps and wrist wraps = the approved v5 builder (committed build_cartoon_gear_05.py) re-run on the new legs (art/blender/CartoonGear_05_Knee100.blend). Skinned, <Worn>_<ColourKey>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear08_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear07_BigBuff",
+   "ids": {
+    "model": "rbxassetid://109710136813307"
+   }
+  },
+  "CartoonClothes08_Skinny": {
+   "about": "Everyday clothes v8 for the Skinny body on the LONGER legs (knee 1.00): the v7 Tee / TeeWhite; LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder re-run on the new legs. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes08_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes07_Skinny",
+   "ids": {
+    "model": "rbxassetid://117265939901739"
+   }
+  },
+  "CartoonClothes08_SkinnyFat": {
+   "about": "Everyday clothes v8 for the SkinnyFat body on the LONGER legs (knee 1.00): the v7 Tee / TeeWhite; LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder re-run on the new legs. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes08_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes07_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://92154331822828"
+   }
+  },
+  "CartoonClothes08_Fat": {
+   "about": "Everyday clothes v8 for the Fat body on the LONGER legs (knee 1.00): the v7 Tee / TeeWhite; LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder re-run on the new legs. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes08_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes07_Fat",
+   "ids": {
+    "model": "rbxassetid://109623796762402"
+   }
+  },
+  "CartoonClothes08_Fit": {
+   "about": "Everyday clothes v8 for the Fit body on the LONGER legs (knee 1.00): the v7 Tee / TeeWhite; LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder re-run on the new legs. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes08_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes07_Fit",
+   "ids": {
+    "model": "rbxassetid://89896403203508"
+   }
+  },
+  "CartoonClothes08_Muscular": {
+   "about": "Everyday clothes v8 for the Muscular body on the LONGER legs (knee 1.00): the v7 Tee / TeeWhite; LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder re-run on the new legs. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes08_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes07_Muscular",
+   "ids": {
+    "model": "rbxassetid://123271626676248"
+   }
+  },
+  "CartoonClothes08_BigBuff": {
+   "about": "Everyday clothes v8 for the BigBuff body on the LONGER legs (knee 1.00): the v7 Tee / TeeWhite; LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder re-run on the new legs. Skinned, <Item>__<Part>. Exported by art/scripts/export_cartoon_08.py. CHECK PASSED.",
+   "file": "art/exports/CartoonClothes08_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes07_BigBuff",
+   "ids": {
+    "model": "rbxassetid://115461360597179"
+   }
   }
  },
  "images": {
@@ -1025,7 +1582,9 @@
    "about": "The CENTRAL gear logo: white letters and an underline on clear (1024 x 256), put on the cartoon gear's logo patches as a Decal tinted per item (WornGearConfig.LogoImageId). Drawn with PIL (Arial Black) by Claude.",
    "file": "art/logos/CentralGearLogo_03_White.png",
    "license": "own work",
-   "ids": {}
+   "ids": {
+    "image": "rbxassetid://114644943724696"
+   }
   }
  },
  "sounds": {

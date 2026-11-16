@@ -27,6 +27,7 @@
 #   (optional) QA_BUILDS=Skinny,Fat,Muscular  QA_VIEWS=front,side,threequarter,back  QA_BAR=deadlift|none
 #   blender -b art/blender/CartoonBodies_05_Rigged.blend --python art/scripts/anim_qa.py -- <out_dir>
 import math
+import glob
 import os
 import sys
 
@@ -115,6 +116,66 @@ if ARM_STRETCH:
 J = {b: {bone.name: TO_B @ bone.head_local for bone in rigs[b].data.bones} for b in BUILDS}   # rest joints, Roblox
 coll = bpy.data.collections.new("AnimQA")
 bpy.context.scene.collection.children.link(coll)
+
+# ---------------------------------------------------------------- the worn outfit (2026-11-16, user rules 16-17: clothes
+# and gear count as the body for clipping). The meet look straight from the game's exports (art/exports
+# CartoonClothes05_<Build>.glb, CartoonGear05_<Build>.glb: the same skeleton and bone names as this file's rigs), each
+# piece moved onto its build's rig so every pose bends it exactly as the game does. Shown in the pictures too.
+# QA_OUTFIT=none: bare bodies; QA_OUTFIT=<item,item,...> another outfit (item = the export's name before "__").
+OUTFIT_SPEC = os.environ.get("QA_OUTFIT", "Tee,WornSinglet_Black,WornSinglet_Red,WornSinglet_Shorts,WornSinglet_Trim,"
+                                          "WornLeverBelt_Outer,WornLeverBelt_Lining,WornLeverBelt_Lever")
+OUTFIT_ITEMS = [] if OUTFIT_SPEC.strip().lower() == "none" else [x.strip() for x in OUTFIT_SPEC.split(",") if x.strip()]
+# The outfit's pieces over the torso and thighs: what a forearm or hand must stay outside of (arm_in_outfit).
+OUTFIT_BODY_PARTS = ("UpperTorso", "LowerTorso", "LeftUpperLeg", "RightUpperLeg")
+OUTFIT_FROM_ELBOW = 0.6     # arm points at least this far from the elbow are judged (hand + the forearm's far half)
+OUTFIT_FIRST = 0.15         # the first layer starts within this of the skin (tee 0.035, belt 0.10 in the v5 gear)
+OUTFIT_GAP = 0.08           # each next layer within this of the last (fabric, the singlet over the tee, belt thickness)
+OUTFIT_MAX = 0.35           # never thicker than this (the belt's outside ~0.22-0.25)
+outfit = {b: [] for b in BUILDS}
+for _b in (BUILDS if OUTFIT_ITEMS else []):
+    _before = set(bpy.data.objects)
+    for _kind in ("Clothes", "Gear"):
+        # the newest outfit export (gear v6 2026-11-16, else v5)
+        _found = sorted(glob.glob(os.path.join(ROOT, "art", "exports", "Cartoon%s[0-9][0-9]_%s.glb" % (_kind, _b))))
+        _path = _found[-1] if _found else ""      # (the highest version number on disk)
+        if os.path.exists(_path):
+            bpy.ops.import_scene.gltf(filepath=_path)
+    _kept = []
+    for _o in [o for o in bpy.data.objects if o not in _before]:
+        _item, _, _part = _o.name.partition("__")
+        if _o.type == "MESH" and _item in OUTFIT_ITEMS:
+            # Hung on the rig exactly like the build's own body parts (same parent inverse and basis, the mesh moved
+            # into their frame), so place() moves them together. (2026-11-16: hung with an identity parent inverse, the
+            # pieces lagged the build's original spot, e.g. 9.2 studs on Fat, when place() lined the builds up: the
+            # outfit was really measured on Skinny only.)
+            _ref = bpy.data.objects[_b + "_UpperTorso"]
+            _rel = _ref.matrix_parent_inverse @ _ref.matrix_basis
+            _o.data.transform(_rel.inverted() @ _o.matrix_world)   # (the import's armature stands at the origin)
+            _o.parent = rigs[_b]
+            _o.matrix_parent_inverse = _ref.matrix_parent_inverse.copy()
+            _o.matrix_basis = _ref.matrix_basis.copy()
+            _kept.append(_o)
+            for _m in _o.modifiers:
+                if _m.type == "ARMATURE":
+                    _m.object = rigs[_b]
+            if _part.split(".")[0] in OUTFIT_BODY_PARTS:
+                outfit[_b].append(_o)
+        else:
+            bpy.data.objects.remove(_o, do_unlink=True)
+    # The exports store each build's pieces where that build stood in the gear file (Fat 9.2 studs over, ...) while
+    # its skeleton stands at the centre: line them up on the build's centre line (the outfit is left-right symmetric;
+    # its torso pieces' middle) before anything is measured. (2026-11-16: missed, the outfit hung beside Fat, Muscular
+    # and BigBuff and only Skinny was really checked.)
+    _torso = [v.co.x for o in _kept if o.name.partition("__")[2].split(".")[0] == "UpperTorso" for v in o.data.vertices]
+    if _torso:
+        _mid = (min(_torso) + max(_torso)) / 2
+        _body = [v.co.x for v in bpy.data.objects[_b + "_UpperTorso"].data.vertices]
+        _shift = (min(_body) + max(_body)) / 2 - _mid
+        _shift = _shift if abs(_shift) > 0.5 else 0.0     # (a build already in place: a mesh's own slight asymmetry)
+        for _o in _kept:
+            _o.data.transform(Matrix.Translation(Vector((_shift, 0, 0))))
+        print("[AnimQA] outfit on %s: lined up by %.3f" % (_b, _shift))
+    print("[AnimQA] outfit on %s: %d pieces over the torso and thighs" % (_b, len(outfit[_b])))
 
 
 def material(name, rgba):
@@ -398,6 +459,63 @@ def part(b, name):
     return bpy.data.objects["%s_%s" % (b, name)]
 
 
+def arm_in_outfit(b, world):
+    """How far a forearm or hand sinks into the worn outfit over the torso and thighs (tee, singlet, belt): at each arm
+    point near the body, the outfit's outermost surface along the body's normal there, less how far the point is out
+    from the skin. 0 when nothing is worn there or the arm stays outside it (rule 17, 2026-11-16)."""
+    if not outfit[b]:
+        return 0.0
+    body_t, _v = surface([part(b, n) for n in OUTFIT_BODY_PARTS])
+    out_t, _w = surface(outfit[b])
+    if os.environ.get("QA_OUTFIT_DEBUG") == "place":
+        print("[AnimQA] place %s: torso x %.2f..%.2f, outfit x %.2f..%.2f" % (
+            b, min(v.x for v in _v), max(v.x for v in _v), min(v.x for v in _w), max(v.x for v in _w)))
+        for _o in outfit[b]:
+            _t2, _ww = surface([_o])
+            print("[AnimQA] piece %s %s x %.2f..%.2f parent %s pinv %s" % (b, _o.name, min(v.x for v in _ww),
+                  max(v.x for v in _ww), _o.parent.name if _o.parent else None,
+                  tuple(round(x, 2) for x in _o.matrix_parent_inverse.translation)))
+    worst = 0.0
+    names = ["UpperTorso", "LowerTorso", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg",
+             "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "LeftFoot", "RightFoot"]
+    head = bpy.data.objects.get(b + "_StandInHead")
+    for side in ("Left", "Right"):
+        # inside or outside the skin: ray parity against the whole body less this forearm (as arm_in_body: the parts
+        # are open at their joint cuts, so the nearest face's normal lied next to the shoulders, 2026-11-16)
+        rest_t, _r = surface([part(b, n) for n in names if n != side + "LowerArm"] + ([head] if head else []))
+        _t, pts = surface([part(b, side + "LowerArm"), visible_hand(b, side)])
+        elbow = to_blender(b, at(b, world, side + "LowerArm", J[b][side + "LowerArm"]))
+        for p in pts[::2]:
+            # the hand and the forearm's half by it: where hands phase through the clothes (the elbow tucked against
+            # a big build's side is arm_in_body's, and from the armpit the ray found the SLEEVE as "the layer")
+            if (p - elbow).length < OUTFIT_FROM_ELBOW:
+                continue
+            loc, nrm, _i, d = body_t.find_nearest(p, 0.6)
+            if loc is None:
+                continue
+            depth = inside_depth([p], rest_t)
+            if depth > 0 and d > depth + 0.05:
+                continue        # (inside an arm or a leg, not the torso: arm_in_body's, e.g. the squat grip's hand)
+            out_from_skin = -depth if depth > 0 else d
+            # the outfit's layers stacked on the skin there: the first within OUTFIT_FIRST of the skin, each next one
+            # within OUTFIT_GAP of the last (the tee, the singlet over it, the belt over that), nothing further out
+            layer, q = 0.0, loc + nrm * 0.002
+            for _ in range(8):
+                hit = out_t.ray_cast(q, nrm, OUTFIT_FIRST if layer == 0.0 else OUTFIT_GAP)
+                if hit[0] is None:
+                    break
+                layer = (hit[0] - loc).dot(nrm)
+                q = hit[0] + nrm * 1e-4
+                if layer > OUTFIT_MAX:
+                    break
+            if layer > 0 and layer - out_from_skin > worst:
+                worst = layer - out_from_skin
+                if os.environ.get("QA_OUTFIT_DEBUG"):
+                    print("[AnimQA] outfit worst %s %s %.3f: layer %.3f, out from skin %.3f, elbow %.2f, point %s" % (
+                        b, side, worst, layer, out_from_skin, (p - elbow).length, tuple(round(c, 2) for c in p)))
+    return worst
+
+
 def mesh_numbers(b, world, bar_r):
     body = [part(b, n) for n in ("UpperTorso", "LowerTorso", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg",
                                  "RightLowerLeg")]
@@ -416,6 +534,7 @@ def mesh_numbers(b, world, bar_r):
         elbow = to_blender(b, at(b, world, side + "LowerArm", J[b][side + "LowerArm"]))
         worst = max(worst, inside_depth(pts[::2], tree, lambda q, e=elbow: (q - e).length < 0.45))   # (elbow fold)
     out["arm_in_body"] = worst
+    out["arm_in_outfit"] = arm_in_outfit(b, world)
     up = 0.0
     for side in ("Left", "Right"):
         sh = to_blender(b, at(b, world, side + "UpperArm", J[b][side + "UpperArm"]))
@@ -674,12 +793,28 @@ if "Squat" in ANIM and any(f.endswith("@ik") for _t, f in FOLDERS):
 # arm_in_body: 0.15 on the first (slimmest) build, BIG_BUILD_ARM on the others.
 FAIL_LIMITS = {"arm_in_body": 0.15, "upper_in_head": 0.12, "elbow_back": 0.75, "elbow_back_raised": 0.4,
                "elbow_hyper": 10.0, "foot_slide": 0.1,
-               "pop": 1300.0}
+               "pop": 1300.0, "arm_in_outfit": 0.03}   # (arm_in_outfit: a palm may rest ON the outfit, not sink in)
 BIG_BUILD_ARM = 0.26        # (the approved entrance ChestSlap sits at 0.25 on Muscular)
+# Two documented exceptions (2026-11-15), applied by the animation's name:
+#  - a squat bar on the back: the APPROVED hold is "elbows back and down" (squat-hold-rules): 0.80-0.89 behind on the
+#    builds, so elbow_back allows 0.95 in any squat animation (raised elbows still use elbow_back_raised);
+#  - an in-place walk cycle (Entrance_Walk_*): the game moves the body and the stance foot slides back under it BY
+#    DESIGN at the walk's speed, so foot_slide is not judged there.
+if "Squat" in ANIM:
+    FAIL_LIMITS["elbow_back"] = 0.95
+    # The same APPROVED hold and duck-under on the biggest builds (user 2026-11-16, "Keep it as approved"): BigBuff's
+    # elbows 0.96 back in the hold, its wrist rising past the shoulder in the duck (elbow_back_raised 0.61, the same
+    # elbows-back hold counted only because that wrist rises), and the forearm folding into its OWN thick upper arm at
+    # the duck's tightest moment (arm_in_body Muscular 0.27, BigBuff 0.31). Not to be "fixed" by changing the hold.
+    FAIL_LIMITS["elbow_back"] = 0.97
+    FAIL_LIMITS["elbow_back_raised"] = 0.62
+    BIG_BUILD_ARM = 0.32
+if ANIM.startswith("Entrance_Walk_"):
+    FAIL_LIMITS["foot_slide"] = 99.0
 for _f in os.environ.get("QA_FAIL_LIMITS", "").split(";"):
     if "=" in _f:
         FAIL_LIMITS[_f.split("=")[0].strip()] = float(_f.split("=")[1])
-KEYS = ["arm_in_body", "upper_in_head", "bar_in_body", "hand_to_bar", "elbow", "elbow_back", "elbow_back_raised", "elbow_hyper",
+KEYS = ["arm_in_body", "arm_in_outfit", "upper_in_head", "bar_in_body", "hand_to_bar", "elbow", "elbow_back", "elbow_back_raised", "elbow_hyper",
         "foot_floor", "foot_slide", "pop",
         "shin_lean", "hip_above_knee", "back", "arm_from_vertical", "shoulder_ahead_of_bar", "bar_ahead_of_midfoot",
         "centre_ahead_of_midfoot"]
@@ -702,12 +837,12 @@ for tag, folder in FOLDERS:
         report.append("\n**t %.2f %s**\n\n| | %s |\n|---|%s\n" % (r["t"], note, " | ".join(KEYS), "---|" * len(KEYS)))
         for b in BUILDS:
             report.append("| %s | %s |\n" % (b, " | ".join("%.2f" % r[b].get(k, float("nan")) if k in r[b] else "-" for k in KEYS)))
-    report.append("\n**worst over the animation**\n\n| | arm_in_body | upper_in_head | bar_in_body | hand_to_bar | "
+    report.append("\n**worst over the animation**\n\n| | arm_in_body | arm_in_outfit | upper_in_head | bar_in_body | hand_to_bar | "
                   "foot_floor | foot_slide | pop (deg/s) | elbow_back | elbow_back_raised | elbow_hyper |\n"
-                  "|---|---|---|---|---|---|---|---|---|---|---|\n")
+                  "|---|---|---|---|---|---|---|---|---|---|---|---|\n")
     fails = []
     for bi, b in enumerate(BUILDS):
-        w = {k: max(rows, key=lambda r: r[b].get(k, 0.0)) for k in ("arm_in_body", "upper_in_head", "bar_in_body",
+        w = {k: max(rows, key=lambda r: r[b].get(k, 0.0)) for k in ("arm_in_body", "arm_in_outfit", "upper_in_head", "bar_in_body",
                                                                    "hand_to_bar", "foot_floor", "foot_slide", "pop",
                                                                    "elbow_back", "elbow_back_raised", "elbow_hyper")}
         report.append("| %s | %s |\n" % (b, " | ".join("%.2f (t %.2f)" % (w[k][b].get(k, 0.0), w[k]["t"]) for k in w)))

@@ -44,6 +44,8 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
@@ -331,6 +333,16 @@ local function onPhaseComplete(attempt: Attempt, spec: PhaseSpec, result: LiftAt
 			spec.phaseName
 		))
 		return
+	end
+
+	-- STUDIO TEST ONLY: the workspace attribute "StudioForcePhaseResult" ("Pass" or "Fail") decides every phase, so a
+	-- play test can watch good lifts, celebrations and misses without playing the minigames. Never in the live game.
+	local forced = if RunService:IsStudio() then Workspace:GetAttribute("StudioForcePhaseResult") else nil
+	if forced == "Pass" or forced == "Fail" then
+		local copy = table.clone(result)
+		copy.passed = forced == "Pass"
+		copy.outcome = if copy.passed then "StudioPass" else "StudioFail"
+		result = copy
 	end
 
 	attempt.phaseResults[spec.phaseName] = result

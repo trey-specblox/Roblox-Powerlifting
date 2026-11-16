@@ -60,6 +60,17 @@ function CelebrationService.forComputer(_body: Model?): string
 	return CelebrationConfig.Default
 end
 
+-- After a miss (user 2026-11-15): now and then (CelebrationConfig.MissReactionChance) a miss reaction at random, for any
+-- lifter; nil the rest of the time. The server's roll, never a client's.
+local missRandom = Random.new()
+function CelebrationService.missReaction(): string?
+	local list = CelebrationConfig.MissReactions
+	if #list == 0 or missRandom:NextNumber() >= CelebrationConfig.MissReactionChance then
+		return nil
+	end
+	return list[missRandom:NextInteger(1, #list)].id
+end
+
 local function animatorOf(figure: Model): Animator?
 	local humanoid = figure:FindFirstChildOfClass("Humanoid")
 	if humanoid == nil or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
@@ -111,7 +122,7 @@ end
 -- `cinematic`: the celebrating player's screen runs its camera shots, if it has any (State, CelebrationConfig
 -- .CinematicMeetLevels; the admin's PLAY ON ME). Otherwise just the moves, sound and effects.
 function CelebrationService.play(figure: Model?, id: string, _owner: Player?, cinematic: boolean?): number
-	local celebration = CelebrationConfig.byId[id]
+	local celebration = CelebrationConfig.get(id)   -- (a celebration or a miss reaction)
 	if figure == nil or celebration == nil or not figure.Parent then
 		return 0
 	end
