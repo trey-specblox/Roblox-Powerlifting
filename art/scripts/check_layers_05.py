@@ -195,6 +195,9 @@ for b in BUILDS:
     skin = [bpy.data.objects[b + "_" + p] for p in G["PARTS"] if not p.endswith("Hand") and bpy.data.objects.get(b + "_" + p)]
     if tee and skin:
         pairs.insert(0, ("Body under Tee", skin, tee))
+    sing = pieces(b, heads_of(b, "WornSinglet"))
+    if sing and skin:                  # (2026-11-17: the straps held by the torso: the shoulder must stay under them)
+        pairs.insert(1, ("Body under WornSinglet", skin, sing))
     cov = {label: covered(u, o, rig) for label, u, o in pairs}
     grp = {label: seam_groups(u, rig) for label, u, o in pairs}
     worst = {label: (0, 0.0, "") for label, _u, _o in pairs}

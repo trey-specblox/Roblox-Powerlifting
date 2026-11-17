@@ -36,6 +36,35 @@ G6 = {"__name__": "gear06_lib"}
 exec(_src, G6)
 globals().update({k: v for k, v in G6.items() if not k.startswith("__")})
 
+# (prototype, user 2026-11-17 via the redesign session) the tee sleeve's hem ends this much HIGHER on the underside of
+# the arm only (the outside keeps its length, like a real tee's underarm seam): standing, the cuff's underside tucked
+# into the crease between arm and body and showed as points beside the singlet's edge. 0 = v6's hem.
+SLEEVE_UNDER_UP = float(os.environ.get("GEAR07_SLEEVE_UNDER_UP", "0"))
+_tee_lines6 = G6["tee_lines"]
+
+
+def tee_lines7(H, body):
+    t = _tee_lines6(H, body)
+    if SLEEVE_UNDER_UP <= 0:
+        return t
+    sleeve = H["sleeve"]
+    low = min(sleeve, H["m"]["armpit"] - 0.12 + SLEEVE_UNDER_UP)
+    sh, el = body.joints["LeftUpperArm"], body.joints["LeftLowerArm"]
+
+    def arm_x(z):
+        k = (sh.z - z) / max(1e-6, sh.z - el.z)
+        return abs(sh.x + (el.x - sh.x) * k)
+    r = 0.24
+
+    def hem(c, up=0.0):                     # v6's slanted hem, its inside end raised
+        inner = min(1.0, max(0.0, (arm_x(c.z) + r - abs(c.x)) / (2 * r)))
+        return sleeve + up - (sleeve - low) * inner * inner * (3 - 2 * inner)
+    t["sleeve_at"] = hem
+    return t
+
+
+G6["tee_lines"] = tee_lines7
+
 OUT_BLEND = os.environ.get("GEAR07_OUT") or os.path.join(ROOT, "art", "blender", "CartoonGear_07_Proto.blend")
 BUILDS = tuple(b for b in os.environ.get("GEAR07_BUILDS", "Fit").split(",") if b)
 COLLECTION = "CartoonGear07"
@@ -57,12 +86,12 @@ NECK_ROUND = float(os.environ.get("GEAR07_NECK_ROUND", "0.06"))  # how softly th
 # unchanged: wider straps, a narrower opening, as the reference (the tee's collar is about half the old opening's width)
 NECK_NARROW = float(os.environ.get("GEAR07_NECK_NARROW", "0.12"))
 NECK_NARROW_BACK = float(os.environ.get("GEAR07_NECK_NARROW_BACK", "0.04"))
-ARM_UNDER = 0.06             # the armhole's bottom below the armpit
+ARM_UNDER = float(os.environ.get("GEAR07_ARM_UNDER", "0.06"))             # the armhole's bottom below the armpit
 STRAP_PUSH, STRAP_SOFT = 3.0, 0.05   # how strongly the strap's zone is kept, and how soft its edge is
 STRAP_W = 0.22               # the straps' width over the shoulder (narrower where the shoulder is: thin builds)
 ARM_GAP_TOP = 0.04           # the armhole's edge this far off the arm's root over the shoulder ...
-ARM_GAP_UNDER = 0.10         # ... and this far below it (just under the armpit)
-PANEL_TOP = 0.2              # the side panel reaches this far above the armhole's bottom (into its piping)
+ARM_GAP_UNDER = float(os.environ.get("GEAR07_ARM_GAP_UNDER", "0.10"))         # ... and this far below it (just under the armpit)
+PANEL_TOP = float(os.environ.get("GEAR07_PANEL_TOP", "0.2"))              # the side panel reaches this far above the armhole's bottom (into its piping)
 PIPING = 0.035               # the piping's width along the neck and the armholes
 PANEL_HALF = 0.22            # the side panel's half-width front to back
 PANEL_LOW = 0.25             # the panel's bottom above the hip joints, ...
@@ -404,6 +433,301 @@ def dedupe_faces(o):
     return len(gone)
 
 
+STIFF_BAND = float(os.environ.get("GEAR07_STIFF_BAND", "0.30"))   # how far in from an open edge the weights are smoothed
+STIFF_ROUNDS = int(os.environ.get("GEAR07_STIFF_ROUNDS", "16"))    # rounds of smoothing (full strength at the edge)
+
+
+def stiff_edges7(o, band=None, rounds=None):
+    """Smooths the bone weights near the garment's OPEN EDGES where the arm takes part (the tee's sleeve ends, the
+    singlet's armholes): the skin under a raised arm bunches (a one-joint shoulder), and an edge with the skin's own
+    weights crumpled into a white zigzag there (user 2026-11-17, body polish, "Arms overhead - left side"). Each point
+    within `band` (along the surface) of an open edge takes the average of its neighbours' weights, round after round,
+    at full strength on the edge and fading to none at `band`; edge points average along the edge. Max 4 bones a point
+    (Roblox), normalised. Returns the number of points smoothed.
+    Used on the TEE only. Tried and dropped 2026-11-17 for the singlet's crease under a raised arm (all made it worse):
+    the same smoothing on the singlet (wider / 200 rounds: the tee came through it); one smoothed shoulder field for tee
+    and singlet (over the chest the skin came through the tee; under the arm alone it didn't help, Body under Tee 7-24 ->
+    54-112 points); a deeper armhole (its bottom folded into a V notch) with the red panel lower (a loose red oval); the
+    garment under the armpit following the torso (Body under Tee 115-182 points)."""
+    import heapq
+    band = STIFF_BAND if band is None else band
+    rounds = STIFF_ROUNDS if rounds is None else rounds
+    me = o.data
+    bones = {g.index: g.name for g in o.vertex_groups if not g.name.startswith("_")}
+    arm = {i for i, n in bones.items() if "UpperArm" in n or "LowerArm" in n}
+    n = len(me.vertices)
+    W = [{g.group: g.weight for g in v.groups if g.group in bones and g.weight > 1e-5} for v in me.vertices]
+    nb = [set() for _ in range(n)]
+    count = {}
+    for p_ in me.polygons:
+        for ek in p_.edge_keys:
+            count[ek] = count.get(ek, 0) + 1
+    edge_nb = [set() for _ in range(n)]
+    for e in me.edges:
+        a_, b_ = e.vertices
+        nb[a_].add(b_)
+        nb[b_].add(a_)
+        if count.get(tuple(sorted((a_, b_))), 0) == 1:
+            edge_nb[a_].add(b_)
+            edge_nb[b_].add(a_)
+    on_edge = [len(edge_nb[i]) > 0 for i in range(n)]
+    # distance along the surface to the nearest open edge (Dijkstra out to band)
+    co = [v.co.copy() for v in me.vertices]
+    dist = [band] * n
+    heap = [(0.0, i) for i in range(n) if on_edge[i]]
+    for _, i in heap:
+        dist[i] = 0.0
+    heapq.heapify(heap)
+    while heap:
+        d, i = heapq.heappop(heap)
+        if d > dist[i]:
+            continue
+        for j in nb[i]:
+            dj = d + (co[i] - co[j]).length
+            if dj < dist[j]:
+                dist[j] = dj
+                heapq.heappush(heap, (dj, j))
+    # only where the arm takes part: the point or a neighbour has some arm weight
+    armish = [any(k in arm for k in W[i]) for i in range(n)]
+    region = [i for i in range(n) if dist[i] < band and (armish[i] or any(armish[j] for j in nb[i]))]
+    if not region:
+        return 0
+    strength = {i: (1.0 - dist[i] / band) ** 1.5 for i in region}
+    for _ in range(rounds):
+        new = {}
+        for i in region:
+            src = edge_nb[i] if on_edge[i] and len(edge_nb[i]) == 2 else nb[i]
+            avg = {}
+            for j in src:
+                for k, w in W[j].items():
+                    avg[k] = avg.get(k, 0.0) + w / len(src)
+            f = 0.6 * strength[i]
+            keys = set(avg) | set(W[i])
+            new[i] = {k: W[i].get(k, 0.0) * (1 - f) + avg.get(k, 0.0) * f for k in keys}
+        for i, w in new.items():
+            top = sorted(w.items(), key=lambda kv: -kv[1])[:4]
+            tot = sum(x for _, x in top) or 1.0
+            W[i] = {k: x / tot for k, x in top if x / tot > 1e-4}
+    groups = {i: o.vertex_groups[bones[i]] for i in bones}
+    for i in region:
+        for gi, g in groups.items():
+            g.remove([i])
+        for k, w in W[i].items():
+            groups[k].add([i], w, "REPLACE")
+    return len(region)
+
+
+# The armhole's lower part (below SHARE_TOP under the shoulder line) also stops where the skin is more than SHARE_CUT
+# on the arm (its smoothed share): there the arm drags the skin, and the singlet's edge round the armpit stretched up
+# to 5-13x with the arm overhead (user 2026-11-17: "the singlet strap disappears ... gets all torn up"). 0 = off.
+SHARE_CUT = float(os.environ.get("GEAR07_SHARE_CUT", "0"))
+SHARE_TOP = float(os.environ.get("GEAR07_SHARE_TOP", "0.35"))    # below SH: the straps above it are left as they are
+SHARE_ROUNDS = int(os.environ.get("GEAR07_SHARE_ROUNDS", "8"))   # smoothing rounds of the arm share (a smooth line)
+SHARE_K = 2.0                                                     # the share's step to studs (for the soft blend)
+# PROTOTYPE (user 2026-11-17: "try it, i wanna take a look"): a DEEP armhole like real singlets, so no fabric lies on
+# the skin that stretches from the side of the ribs to the arm's root (2.6-4x with the arms overhead, SH-0.7..-1.1 on
+# the side): a smooth superellipse in the side view round the arm's root, down to DEEP below the shoulder line, cut only
+# on the torso's side (|x| beyond DEEP_IN inside the torso's half-width). The straps are left exactly as approved.
+DEEP = float(os.environ.get("GEAR07_DEEP", "0"))                 # its bottom this far below SH; 0 = off
+DEEP_Y = float(os.environ.get("GEAR07_DEEP_Y", "0.30"))          # its half-width toward the BACK from the arm's root
+# ... and toward the FRONT (user 2026-11-17, "middle way": "i dont like how theres this whole right here ... is it
+# possible to have that area covered" - from the front the singlet stays closed up to the tee sleeve as before; the
+# deep cut is only at the true side and toward the back). Unset = DEEP_Y (the symmetric first prototype).
+DEEP_YF = float(os.environ["GEAR07_DEEP_YF"]) if os.environ.get("GEAR07_DEEP_YF") else None   # negative = the
+                             # opening's front edge BEHIND the arm's root (hidden from the front, user 2026-11-17)
+DEEP_BLEND = float(os.environ.get("GEAR07_DEEP_BLEND", "0.05"))  # how softly the deep cut merges into the armhole (a
+                             # hard meeting left a step and a tooth in the piping under the arm, user 2026-11-17)
+DEEP_MORPH = os.environ.get("GEAR07_DEEP_MORPH", "")   # (prototype) "above,below" the armpit: the armhole's curve turns
+                             # INTO the deep oval over this band (one line, no corner where two cuts meet); "" = off
+# (prototype, the redesign session's "(a)", 2026-11-17) the deep armhole as ONE shape: the armhole is the band a set
+# distance round the arm's root, and that distance itself grows under and behind the arm, so the edge is a single
+# offset curve from the strap round the armpit and down (two cuts blended left a notch / kink / curl at the armpit).
+ONE_DEEP = float(os.environ.get("GEAR07_ONE_DEEP", "0"))      # the extra distance at full depth (0 = off)
+ONE_TOP = float(os.environ.get("GEAR07_ONE_TOP", "0.05"))     # it starts this far above the armpit ...
+ONE_FULL = float(os.environ.get("GEAR07_ONE_FULL", "0.35"))   # ... and is full this far below it
+ONE_YF = float(os.environ.get("GEAR07_ONE_YF", "0.02"))       # none in front of (arm root - this): the front stays shut
+ONE_YB = float(os.environ.get("GEAR07_ONE_YB", "0.14"))       # full behind (arm root + this)
+ONE_PANEL = float(os.environ.get("GEAR07_ONE_PANEL", "0.10"))  # the red panel's centre behind the arm's root
+DEEP_SMOOTH = float(os.environ.get("GEAR07_DEEP_SMOOTH", "0"))  # (prototype) the armhole + deep oval cut, as ONE
+                             # field blurred over this radius before its line is drawn: the corner where the two met
+                             # (a notch / kink / curl at the armpit, user 2026-11-17) rounds into one curve. 0 = off
+DEEP_TEE_PUSH = float(os.environ.get("GEAR07_DEEP_TEE_PUSH", "0"))  # the tee pushed out this much inside the opening
+DEEP_TOP = float(os.environ.get("GEAR07_DEEP_TOP", "0.10"))      # its top this far above the armpit
+DEEP_IN = float(os.environ.get("GEAR07_DEEP_IN", "0.18"))        # how far round the side it reaches inward
+DEEP_P = 2.4                                                      # its roundness
+HOLD_FULL = float(os.environ.get("GEAR07_HOLD_FULL", "0.15"))    # the singlet is torso-only from this far below the
+HOLD_FADE = float(os.environ.get("GEAR07_HOLD_FADE", "0.30"))    # armpit up, fading to the skin's own weights over this
+HOLD_AMOUNT = float(os.environ.get("GEAR07_HOLD_AMOUNT", "0.0"))  # the share of the arm's weight handed to the torso.
+# OFF (0) until the body holds the shoulder's top on the torso: on the body-polish weights (Prod_Rigged, 2026-11-17) the
+# skin carries 40-65% arm where the straps lie and 15-28% even beside the neck, so a torso-held singlet let the skin out
+# through it (full hold: stretch p99 1.04-1.22, max <= 2.25, but Body under WornSinglet 95-203 points, up to 0.49
+# deep; half: p99 1.7-1.9, max 3-7, skin 53-134 points, 0.18-0.22; off: p99 2.6-3.1, max 6-13, skin ~0).
+
+
+def hold_straps7(o, pit, only=None):
+    """The singlet's straps and armhole band move with the TORSO only: every point's arm share (UpperArm, LowerArm,
+    Hand) goes to UpperTorso from HOLD_FULL below the armpit up, fading back to the skin's copied weights over HOLD_FADE
+    below that. The approved v4 rule (memory worn-gear-style: "the straps stay put while the arm moves"); v7's copied
+    skin weights dragged the straps with the arm overhead: edges stretched up to 7-19x, the strap seemed to vanish and
+    the armpit tore (user 2026-11-17). Returns the number of points changed."""
+    bones = {g.index: g.name for g in o.vertex_groups if not g.name.startswith("_")}
+    arm = {i for i, n in bones.items() if "UpperArm" in n or "LowerArm" in n or n.endswith("Hand")}
+    ut = o.vertex_groups.get("UpperTorso") or o.vertex_groups.new(name="UpperTorso")
+    z_full, z_none = pit - HOLD_FULL, pit - HOLD_FULL - HOLD_FADE
+    changed = 0
+    for v in o.data.vertices:
+        if v.co.z <= z_none or (only is not None and not only[v.index]):
+            continue
+        w = {g.group: g.weight for g in v.groups if g.group in bones and g.weight > 0}
+        a = sum(x for k, x in w.items() if k in arm)
+        if a <= 1e-5:
+            continue
+        t = min(1.0, (v.co.z - z_none) / max(1e-6, z_full - z_none))
+        t = t * t * (3 - 2 * t) * HOLD_AMOUNT
+        moved = 0.0
+        for k in list(w):
+            if k in arm:
+                moved += w[k] * t
+                w[k] *= 1 - t
+        w[ut.index] = w.get(ut.index, 0.0) + moved
+        top = sorted(w.items(), key=lambda kv: -kv[1])[:4]
+        tot = sum(x for _, x in top) or 1.0
+        for g in list(v.groups):
+            if g.group in bones:
+                o.vertex_groups[bones[g.group]].remove([v.index])
+        for k, x in top:
+            if x / tot > 1e-4:
+                o.vertex_groups[bones.get(k, "UpperTorso")].add([v.index], x / tot, "REPLACE")
+        changed += 1
+    return changed
+
+
+def covered_by7(o, cover, reach=0.15):
+    """Per point of `o` (a layer under `cover`, both at rest, not yet thickened): does `cover` lie straight out from it
+    along its stacking line, within `reach`?"""
+    from mathutils.bvhtree import BVHTree
+    bm = bmesh.new()
+    bm.from_mesh(cover.data)
+    tree = BVHTree.FromBMesh(bm)
+    bm.free()
+    line = o.data.attributes.get("line")
+    out = []
+    for v in o.data.vertices:
+        d = Vector(line.data[v.index].vector) if line is not None else Vector(v.normal)
+        if d.length < 1e-6:
+            d = Vector(v.normal)
+        d.normalize()
+        out.append(tree.ray_cast(v.co - d * 0.005, d, reach)[0] is not None)
+    return out
+
+
+SLIVER = float(os.environ.get("GEAR07_SLIVER", "0"))   # (prototype) points closer than this are merged; 0 = off
+
+
+def weld_slivers7(o, dist):
+    """Merges points closer than `dist` and dissolves the near-flat slivers left where two cut lines nearly meet (the
+    piping's 0.004-long edges at the deep armhole's junction read as points and teeth, user 2026-11-17). The faces'
+    colours (o["keys"]) ride along as a face attribute."""
+    me = o.data
+    keys = list(o["keys"])
+    names = sorted(set(keys))
+    att = me.attributes.new("_kid", "INT", "FACE")
+    for i, k in enumerate(keys):
+        att.data[i].value = names.index(k)
+    n0 = len(me.vertices)
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=dist)
+    bmesh.ops.dissolve_degenerate(bm, dist=dist, edges=bm.edges[:])
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    att = me.attributes["_kid"]
+    o["keys"] = [names[att.data[i].value] for i in range(len(me.polygons))]
+    me.attributes.remove(att)
+    return n0 - len(me.vertices)
+
+
+TEE_PIT = float(os.environ.get("GEAR07_TEE_PIT", "0"))   # (prototype) the tee smoothed within this of each armpit; 0 off
+
+
+def smooth_armpit7(o, skin, centres, radius, rounds=12):
+    """The tee's sleeve underside and its join to the body in the armpit, at rest: one smooth surface. Its points within
+    `radius` of an armpit are smoothed (Taubin, strongest at the armpit; points on the tee's open edges move only along
+    the edge), which bridges the crease outward like a garment over a groove, then kept at least TEE_OUT * 0.9 off the
+    skin (pushed back out along their lines). The skin's crease had the layer bunched into teeth and points beside the
+    singlet's edge (user 2026-11-17: "has points to it ... rough edges trying to line up with the armpit"). Returns the
+    number of points moved."""
+    from mathutils.bvhtree import BVHTree
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    bm.verts.ensure_lookup_table()
+    w = {}
+    for v in bm.verts:
+        d = min((v.co - c).length for c in centres)
+        if d < radius:
+            w[v] = (1.0 - d / radius) ** 2
+    if not w:
+        bm.free()
+        return 0
+    nbr = {}
+    for v in w:
+        if v.is_boundary:
+            nbr[v] = [e.other_vert(v) for e in v.link_edges if e.is_boundary]
+        else:
+            nbr[v] = [e.other_vert(v) for e in v.link_edges]
+    for _ in range(rounds):
+        for f in (0.5, -0.53):
+            new = {}
+            for v, k in w.items():
+                ns = nbr[v]
+                if not ns:
+                    continue
+                c = Vector()
+                for n in ns:
+                    c += n.co
+                new[v] = v.co + (c / len(ns) - v.co) * f * k
+            for v, c in new.items():
+                v.co = c
+    # the stacking lines there too (the thickness is grown inward along them: crossing lines in the crease pushed the
+    # inner layer out through the cuff's edge as dark teeth)
+    line_l = bm.verts.layers.float_vector.get("line")
+    if line_l is not None:
+        for _ in range(rounds):
+            new = {}
+            for v, k in w.items():
+                acc = Vector(v[line_l])
+                for e in v.link_edges:
+                    acc += Vector(e.other_vert(v)[line_l])
+                if acc.length > 1e-9:
+                    new[v] = Vector(v[line_l]).lerp(acc.normalized() * Vector(v[line_l]).length, k)
+            for v, c in new.items():
+                v[line_l] = c
+    # keep the tee off the skin
+    sb = bmesh.new()
+    sb.from_mesh(skin.data)
+    tree = BVHTree.FromBMesh(sb)
+    sb.free()
+    line = bm.verts.layers.float_vector.get("line")
+    need = TEE_OUT * 0.9
+    for v in w:
+        hit = tree.find_nearest(v.co, 0.5)
+        if hit[0] is None:
+            continue
+        d = (v.co - hit[0]).length
+        if (v.co - hit[0]).dot(hit[1]) < 0:
+            d = -d
+        if d < need:
+            n = Vector(v[line]) if line is not None else Vector(hit[1])
+            if n.length < 1e-6:
+                n = Vector(hit[1])
+            v.co += n.normalized() * (need - d)
+    bm.to_mesh(o.data)
+    bm.free()
+    o.data.update()
+    return len(w)
+
+
 def colour_islands7(o, rounds=2):
     """A face whose colour (o["keys"]) matches none of its neighbours takes the colour most of them have: a lone body
     face poking into the piping read as a speck in the edge up close (user 2026-11-16, "a little tear"). Returns how
@@ -569,7 +893,12 @@ def singlet_lines7(body, H, skin, layer):
         # arm's own skin on these bodies, and the plain distance cut the straps away. (Tried: a separate strap zone:
         # a step where it ended; measuring only from the root's faces outside the strap: a ragged strap edge.)
         inward = STRAP_PUSH * STRAP_SOFT * math.log1p(math.exp((xs - abs(c.x)) / STRAP_SOFT))
-        return d + inward - out - (ARM_GAP_TOP + (ARM_GAP_UNDER - ARM_GAP_TOP) * t * t * (3 - 2 * t))
+        gap = ARM_GAP_TOP + (ARM_GAP_UNDER - ARM_GAP_TOP) * t * t * (3 - 2 * t)
+        if ONE_DEEP > 0:
+            wz = min(1.0, max(0.0, (pit + ONE_TOP - c.z) / (ONE_TOP + ONE_FULL)))
+            wy = min(1.0, max(0.0, (c.y - (y_arm - ONE_YF)) / (ONE_YF + ONE_YB)))
+            gap += ONE_DEEP * (wz * wz * (3 - 2 * wz)) * (wy * wy * (3 - 2 * wy))
+        return d + inward - out - gap
 
     # The shorts' legs: full tubes round each thigh, their hems a level ring as low as the knee sleeves allow (v4's hem,
     # just under the crotch, left the inside of the thighs bare beside a narrow strip over the crotch: user 2026-11-15
@@ -588,22 +917,43 @@ def singlet_lines7(body, H, skin, layer):
 
     z_pb = L["HJ"] + PANEL_LOW
     py = PANEL_HALF
+    yf = DEEP_YF if DEEP_YF is not None else DEEP_Y
+    y_deep, w_deep = y_arm + (DEEP_Y - yf) / 2, (DEEP_Y + yf) / 2
+    # with the deep cut the red side panel is centred on the opening, so it runs up into it (beside it, it left a notch)
+    y_panel = y_deep if DEEP > 0 else (y_arm + ONE_PANEL if ONE_DEEP > 0 else y_arm)
 
     z_pt = z_bot + PANEL_TOP
 
     def panel(c):
         # from just above the armhole's bottom (the piping round the armhole meets it) down to the hip, rounded
-        return soft_min(soft_min(py - abs(c.y - y_arm), c.z - z_pb, PANEL_ROUND), z_pt - c.z, PANEL_ROUND)
+        return soft_min(soft_min(py - abs(c.y - y_panel), c.z - z_pb, PANEL_ROUND), z_pt - c.z, PANEL_ROUND)
 
     z_sh = L["HJ"] - SHORTS_TOP
 
     def shorts(c):
         return z_sh - c.z
 
+    deep = None
+    if DEEP > 0:
+        torso_x = max(abs(v.co.x) for v in me.vertices if abs(v.co.z - pit) < 0.08 and not is_arm[v.index])
+        xg = torso_x - DEEP_IN
+        z_lo, z_hi = SH - DEEP, pit + DEEP_TOP
+        zc, az = (z_lo + z_hi) / 2, (z_hi - z_lo) / 2
+
+        def deep(c):
+            # kept: outside the oval (side view) or inward of the gate (the chest / back)
+            # ONE superellipse (smooth all round): from DEEP_YF in front of the arm's root to DEEP_Y behind it
+            u = abs(c.y - y_deep) / w_deep
+            v = abs(c.z - zc) / az
+            outside = ((u ** DEEP_P + v ** DEEP_P) ** (1.0 / DEEP_P) - 1.0) * min(w_deep, az)
+            return -soft_min(-outside, -(xg - abs(c.x)), 0.04)
+
     log(body.build, "singlet v7: strap from %.3f, armhole %d root faces, front U to %.3f (top half-width %.3f, back %.3f to %.3f), arm blend %.3f, leg hem %.3f (crotch %.3f)"
         % (xi, len(root), SH - NECK_FRONT, xi - NECK_NARROW, xi - NECK_NARROW_BACK, SH - NECK_BACK, ARM_BLEND, hem_z,
            m["crotch"]))
-    return dict(neck=neck, arm=arm, leg=leg, panel=panel, shorts=shorts, xi=xi, xo=xo, z_ah=z_bot, pit=pit, hem=hem_z)
+    side_x = max(abs(v.co.x) for v in me.vertices if abs(v.co.z - pit) < 0.08 and not is_arm[v.index])
+    return dict(neck=neck, arm=arm, leg=leg, panel=panel, shorts=shorts, xi=xi, xo=xo, z_ah=z_bot, pit=pit, hem=hem_z,
+                deep=deep, one=(arm if ONE_DEEP > 0 else None), pit_pts=[Vector((sx * side_x, y_arm, pit)) for sx in (1, -1)])
 
 
 def build_singlet7(skin, P, N, fill, H, coll, build, body):
@@ -631,6 +981,43 @@ def build_singlet7(skin, P, N, fill, H, coll, build, body):
     # at a corner, a notch in the piping on the back under the shoulder (user 2026-11-15: "tears on the back")
     f_arm_raw = f_arm
     f_arm = lambda v, dl: soft_min(f_arm_raw(v, dl), f_armskin(v, dl), ARM_BLEND)
+    if s["deep"] is not None and DEEP_MORPH:
+        f_deep = along_surface(s["deep"])
+        m_hi, m_lo = (float(x) for x in DEEP_MORPH.split(","))
+        z_mhi, z_mlo = s["pit"] + m_hi, s["pit"] - m_lo
+
+        def f_morph(v, dl):
+            t = min(1.0, max(0.0, (z_mhi - v.co.z) / max(1e-6, z_mhi - z_mlo)))
+            t = t * t * (3 - 2 * t)
+            a = f_arm_raw(v, dl)
+            return a if t <= 0 else (1 - t) * a + t * f_deep(v, dl)
+        f_arm = lambda v, dl: soft_min(f_morph(v, dl), f_armskin(v, dl), ARM_BLEND)
+    elif s["deep"] is not None and DEEP_SMOOTH > 0:
+        arm_p, deep_p = s["arm"], s["deep"]
+        r_ = DEEP_SMOOTH
+        k_ = r_ / math.sqrt(3.0)
+        offs = [Vector((0, 0, 0))] + [Vector(v_) * r_ for v_ in ((1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0),
+                                                                 (0, 0, 1), (0, 0, -1))] +                [Vector((sx_ * k_, sy_ * k_, sz_ * k_)) for sx_ in (1, -1) for sy_ in (1, -1) for sz_ in (1, -1)]
+
+        def both(c):
+            return soft_min(arm_p(c), deep_p(c), DEEP_BLEND)
+
+        def blurred(c):
+            return sum(both(c + o_) for o_ in offs) / len(offs)
+        f_one = along_surface(blurred)
+        f_arm = lambda v, dl: soft_min(f_one(v, dl), f_armskin(v, dl), ARM_BLEND)
+    elif s["deep"] is not None:
+        f_deep = along_surface(s["deep"])
+        f_arm_shallow = f_arm
+        f_arm = lambda v, dl: soft_min(f_arm_shallow(v, dl), f_deep(v, dl), DEEP_BLEND)
+    if SHARE_CUT > 0:
+        share_g = smoothed_arm_group(o, rounds=SHARE_ROUNDS)
+        z_share = L["SH"] - SHARE_TOP
+        # kept where the skin is mostly the torso's, or above z_share (a soft maximum: one smooth edge)
+        f_share = lambda v, dl: -soft_min(-SHARE_K * (SHARE_CUT - _deform_weight(v, dl, share_g)), -(v.co.z - z_share),
+                                          ARM_BLEND)
+        f_arm_held = f_arm
+        f_arm = lambda v, dl: soft_min(f_arm_held(v, dl), f_share(v, dl), ARM_BLEND)
     edges = [f_neck, f_arm, f_leg]
     refine_near(o, [f_neck, f_arm], band=REFINE_BAND, rounds=2)        # (the edges seen up close: finest)
     refine_near(o, [f_leg, f_panel, f_shorts], band=REFINE_BAND, rounds=1)
@@ -668,11 +1055,15 @@ def build_singlet7(skin, P, N, fill, H, coll, build, body):
     log(build, "Singlet", "points smoothed along the edges and colour lines:", relax_seams(o, SEAM_ROUNDS))
     log(build, "Singlet", "leg hems drawn in snug:", snug_hems(o, s["hem"]))
     log(build, "Singlet", "repeated faces dropped:", dedupe_faces(o))
+    if SLIVER > 0:
+        log(build, "Singlet", "points merged at slivers:", weld_slivers7(o, SLIVER))
     log(build, "Singlet", "hem points pushed out over the knee sleeves: %d (up to %.3f)" % clear_sleeves(o, build, s["hem"]))
     log(build, "Singlet", "hem points pushed out clear of the thigh: %d (up to %.3f)" % clear_skin_band(o, skin, s["hem"]))
     log(build, "Singlet", "folded faces smoothed out (before, left): %d, %d" % unfold7(o))
+    log(build, "Singlet", "straps and armholes held by the torso:", hold_straps7(o, s["pit"]))
     drop_group(o, IS_ARM)
     drop_group(o, IS_ARM_S)
+    drop_group(o, "_ArmCut")
     return o, s
 
 
@@ -817,17 +1208,59 @@ for b in BUILDS:
     drop_group(tee, IS_ARM)
     dedupe_faces(tee)
     log(b, "Tee", "points smoothed along the edges and colour lines:", relax_seams(tee, SEAM_ROUNDS))
-    thicken_stacked(tee, FABRIC)
-    log(b, "Tee", tris(tee), "triangles")
-    pieces = V["split_keys"](tee, coll, b + "_Tee")
-    materials(pieces, "Tee")
-    made["Tee"] = to_parts(pieces, lambda k: k, body, coll)
+    log(b, "Tee", "weights smoothed near the sleeve ends:", stiff_edges7(tee))
+    if SLIVER > 0:                    # (prototype: the tee's crumple in the armpit at rest, beside the singlet's edge)
+        log(b, "Tee", "folded faces smoothed out (before, left): %d, %d" % unfold7(tee))
 
     sleeves = build_knee_sleeves7(skin, P, N, fill, H, coll, b, body)
     SLEEVES_NOW[0] = sleeve_tree_from(sleeves)
     made["WornKneeSleeve"] = leg_parts(sleeves, lambda k: "WornKneeSleeve_" + k, body, coll)
 
     singlet, s = build_singlet7(skin, P, N, fill, H, coll, b, body)
+    # the tee under the singlet held by the torso like the singlet's straps (else it rose through them with the arm)
+    if TEE_PIT > 0:
+        log(b, "Tee", "points smoothed in the armpits:", smooth_armpit7(tee, skin, s["pit_pts"], TEE_PIT,
+                                                                         int(os.environ.get("GEAR07_TEE_PIT_ROUNDS", "12"))))
+    if s["one"] is not None and DEEP_TEE_PUSH > 0:
+        # (one-shape armhole) the tee seen in the opening: on the torso (not the sleeve) below the armpit, inside the
+        # armhole, pushed out a little along its lines
+        line = tee.data.attributes.get("line")
+        armg = {g.index for g in tee.vertex_groups if "Arm" in g.name and not g.name.startswith("_")}
+        pushed = 0
+        for v in tee.data.vertices:
+            if v.co.z > s["pit"] + 0.02 or sum(g.weight for g in v.groups if g.group in armg) > 0.5:
+                continue
+            inside = -s["one"](v.co)
+            if inside <= 0:
+                continue
+            d = Vector(line.data[v.index].vector) if line is not None else Vector(v.normal)
+            if d.length < 1e-6:
+                continue
+            v.co += d.normalized() * DEEP_TEE_PUSH * min(1.0, inside / 0.06)
+            pushed += 1
+        log(b, "Tee", "points inside the one-shape armhole pushed out:", pushed)
+    if s["deep"] is not None and DEEP_TEE_PUSH > 0:
+        # inside the deep opening the tee is seen: pushed out a little along its lines (the skin came through it in
+        # small spots under the raised arm), fading out over 0.06 toward the opening's edge (the singlet covers it)
+        line = tee.data.attributes.get("line")
+        pushed = 0
+        for v in tee.data.vertices:
+            inside = -s["deep"](v.co)
+            if inside <= 0:
+                continue
+            d = Vector(line.data[v.index].vector) if line is not None else Vector(v.normal)
+            if d.length < 1e-6:
+                continue
+            v.co += d.normalized() * DEEP_TEE_PUSH * min(1.0, inside / 0.06)
+            pushed += 1
+        log(b, "Tee", "points inside the deep armhole pushed out:", pushed)
+    log(b, "Tee", "points under the singlet held by the torso:",
+        hold_straps7(tee, s["pit"], only=covered_by7(tee, singlet)))
+    thicken_stacked(tee, FABRIC)
+    log(b, "Tee", tris(tee), "triangles")
+    pieces = V["split_keys"](tee, coll, b + "_Tee")
+    materials(pieces, "Tee")
+    made["Tee"] = to_parts(pieces, lambda k: k, body, coll)
     thicken_stacked(singlet, FABRIC, edge_key=lambda c, k: "Shorts" if k == "Shorts" else "Trim")
     # (again on the thick shell, only faces turned well against their neighbours: the rims along the edges stand at a
     # right angle to the faces beside them and are left alone)

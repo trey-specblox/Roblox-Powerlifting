@@ -9,7 +9,7 @@
 	bodies (Bodies: the six production builds of CartoonBodies_05 on the torso-tall skeleton; every animation re-made
 	for it); the player keeps their own full-size head. Which build a lifter gets comes from their bodyweight and
 	numbers (§38.1, LifterBuild); in Studio the workspace attribute "LifterBodyBuild" ("Skinny", "SkinnyFat", "Fat",
-	"Fit", "Muscular", "BigBuff") picks one for a test. On in Studio only for now (LiveEnabled false); the workspace
+	"Fit", "Muscular", "BigBuff") picks one for a test. Live for everyone since 2026-11-16 (LiveEnabled); the workspace
 	attribute "LifterBody" (true/false) overrides that in Studio.
 
 	The clothes: one shirt, one bottom and one pair of shoes, in any of Colours. Every piece is a skinned mesh in the
@@ -58,18 +58,18 @@ export type Body = {
 -- chest's front from the UpperTorso's centre + the bar's radius 0.07 + 0.07 for the tee and singlet. Replaced the
 -- three block-skeleton fist bodies (Skinny 129935421578716, Heavy 86964380216834, Muscular 92735685532150).
 ClothesConfig.Bodies = {
-	Skinny = { assetId = 117068136403546, neckMark = Vector3.new(0, 1.0255, 0.0013), squatBarRest = 0.511,
-		squatGrip = 1.55, benchBarClear = 0.581, clothesAssetId = 108740516612854 },
-	SkinnyFat = { assetId = 113015580385760, neckMark = Vector3.new(0, 0.9993, 0.0838), squatBarRest = 0.604,
-		squatGrip = 1.66, benchBarClear = 0.486, clothesAssetId = 99089485229486 },
-	Fat = { assetId = 73408190821733, neckMark = Vector3.new(0, 0.9503, 0.179), squatBarRest = 1.029,
-		squatGrip = 2.05, benchBarClear = 0.711, clothesAssetId = 111962683322893 },
-	Fit = { assetId = 77562974459220, neckMark = Vector3.new(0, 0.9552, -0.0155), squatBarRest = 0.624,
-		squatGrip = 1.87, benchBarClear = 0.69, clothesAssetId = 116108165042681 },
-	Muscular = { assetId = 77603128598959, neckMark = Vector3.new(0, 0.8869, -0.0172), squatBarRest = 0.913,
-		squatGrip = 2.17, benchBarClear = 0.754, clothesAssetId = 138513051247712 },
-	BigBuff = { assetId = 85589236707019, neckMark = Vector3.new(0, 0.8354, -0.0047), squatBarRest = 1.075,
-		squatGrip = 2.35, benchBarClear = 0.847, clothesAssetId = 124030235873477 },
+	Skinny = { assetId = 89940499075640, neckMark = Vector3.new(0, 1.0255, 0.0013), squatBarRest = 0.511,
+		squatGrip = 1.55, benchBarClear = 0.581, clothesAssetId = 83677300602965 },
+	SkinnyFat = { assetId = 119724826023810, neckMark = Vector3.new(0, 0.9993, 0.0838), squatBarRest = 0.604,
+		squatGrip = 1.66, benchBarClear = 0.486, clothesAssetId = 135333972488670 },
+	Fat = { assetId = 113520176766393, neckMark = Vector3.new(0, 0.9503, 0.179), squatBarRest = 1.029,
+		squatGrip = 2.05, benchBarClear = 0.711, clothesAssetId = 114662706829485 },
+	Fit = { assetId = 102399068343184, neckMark = Vector3.new(0, 0.9552, -0.0155), squatBarRest = 0.624,
+		squatGrip = 1.87, benchBarClear = 0.69, clothesAssetId = 82908685773387 },
+	Muscular = { assetId = 93479186515150, neckMark = Vector3.new(0, 0.8869, -0.0172), squatBarRest = 0.913,
+		squatGrip = 2.17, benchBarClear = 0.754, clothesAssetId = 101044753006455 },
+	BigBuff = { assetId = 127501040475668, neckMark = Vector3.new(0, 0.8354, -0.0047), squatBarRest = 1.075,
+		squatGrip = 2.35, benchBarClear = 0.847, clothesAssetId = 138927065217215 },
 } :: { [string]: Body }
 ClothesConfig.DefaultBuild = "Skinny"
 ClothesConfig.StudioBuildAttribute = "LifterBodyBuild"

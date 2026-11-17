@@ -145,8 +145,8 @@
     ]
    },
    "triangles": 5532,
-   "gearPieces": 82,
-   "clothesPieces": 60
+   "gearPieces": 83,
+   "clothesPieces": 64
   },
   "SkinnyFat": {
    "joints": {
@@ -293,8 +293,8 @@
     ]
    },
    "triangles": 5532,
-   "gearPieces": 78,
-   "clothesPieces": 57
+   "gearPieces": 80,
+   "clothesPieces": 56
   },
   "Fat": {
    "joints": {
@@ -441,8 +441,8 @@
     ]
    },
    "triangles": 5532,
-   "gearPieces": 81,
-   "clothesPieces": 58
+   "gearPieces": 83,
+   "clothesPieces": 57
   },
   "Fit": {
    "joints": {
@@ -737,8 +737,8 @@
     ]
    },
    "triangles": 5532,
-   "gearPieces": 79,
-   "clothesPieces": 60
+   "gearPieces": 76,
+   "clothesPieces": 62
   },
   "BigBuff": {
    "joints": {
@@ -886,7 +886,7 @@
    },
    "triangles": 5532,
    "gearPieces": 81,
-   "clothesPieces": 58
+   "clothesPieces": 57
   }
  },
  "shapes": {

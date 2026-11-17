@@ -11,7 +11,8 @@ import os
 SCRIPTS = r"D:\Powerlifting Roblox\art\scripts"
 SCRATCH = r"D:\ClaudeScratch\golive\gear\scratch_exports"
 src = open(os.path.join(SCRIPTS, "export_cartoon_05.py"), encoding="utf-8").read()
-for a, b in (('os.path.join(EXPORTS, "CartoonBody05_%s.glb" % b)', 'os.path.join(EXPORTS, "CartoonBody08_%s.glb" % b)'),
+NUM = os.environ.get("BODY_EXPORT_NUM", "08")    # 10 = the body-polish weights (2026-11-17, user "Ship")
+for a, b in (('os.path.join(EXPORTS, "CartoonBody05_%s.glb" % b)', 'os.path.join(EXPORTS, "CartoonBody%s_%%s.glb" %% b)' % NUM),
              ('os.path.join(EXPORTS, "CartoonGear05_%s.glb" % b)', 'os.path.join(SCRATCH, "CartoonGear05_%s.glb" % b)'),
              ('os.path.join(EXPORTS, "CartoonClothes05_%s.glb" % b)', 'os.path.join(SCRATCH, "CartoonClothes05_%s.glb" % b)'),
              ('os.path.join(EXPORTS, "CartoonHands05.glb")', 'os.path.join(SCRATCH, "CartoonHands05.glb")')):

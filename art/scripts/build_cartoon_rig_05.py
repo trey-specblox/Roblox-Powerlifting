@@ -352,8 +352,23 @@ mirror, worst = B["mirror_map"](co.astype(np.float32))
 log("mirror twins, worst %.5f" % worst)
 W = mirror_weights(W, bones, mirror, co)
 W = limit_normalise(W)
-# the shared part table: each face goes to the bone most of its points follow
+# the shared part table: each face goes to the bone most of its points follow (taken BEFORE the fold solve below, so
+# the R15 parts keep exactly the faces they had: the solve only changes how the skin bends, not where parts are cut)
 main = np.argmax(W, axis=1)
+W_PRE = W.copy()                                   # the weights before the fold solve (BigBuff's deltoid cap, below)
+# BODY POLISH 2026-11-17: the armpit and hip folds solved out of the torso/limb split (skin_split_solve.py; it says
+# what and why, with the measurements). RIG05_SOLVE=0 builds the weights as they were before it.
+if os.environ.get("RIG05_SOLVE", "1") == "1":
+    SS = {"__name__": "skin_split_solve"}
+    exec(open(os.path.join(SCRIPTS, "skin_split_solve.py"), encoding="utf-8").read(), SS)
+    mesh = SS["Mesh"](len(co), [tuple(f.vertices) for f in base.data.polygons])
+    rests = {b: np.array([v.co for v in bpy.data.objects["Body05_" + b].data.vertices], dtype=np.float64)
+             for b in ORDER}
+    arm_p = {b: np.array(joints(specs[b])["LeftUpperArm"]) for b in ORDER}
+    leg_p = {b: np.array(joints(specs[b])["LeftUpperLeg"]) for b in ORDER}
+    W = SS["solve_shoulders_hips"](W, bones, mesh, co, rests, arm_p, leg_p, L, log)
+    W = mirror_weights(W, bones, mirror, co)
+    W = limit_normalise(W)
 faces_part = np.zeros(len(base.data.polygons), dtype=np.int32)
 for f in base.data.polygons:
     votes = {}
@@ -368,8 +383,34 @@ bpy.data.objects.remove(base_rig, do_unlink=True)
 # 2) every build: the same weights, the same split
 HL = B["load_hands"]()
 H = {s: HL["make_hand"](s, swap_coll, name="Hand04_" + s) for s in SWAP_SHAPES}
+CAP_BUILDS = ("BigBuff",)
+
+
+def deltoid_cap_patch(build, W):
+    """BIG AND BUFF ONLY (2026-11-17, anim_qa on the polished weights: 19 clips failed upper_in_head 0.15-0.19, limit
+    0.12, all BigBuff with the arms overhead; the old weights gave 0.06-0.09): the solve had moved Big and buff's OUTER
+    DELTOID CAP a little further onto the arm (torso share 0.12 -> 0.07), and with the arm overhead that cap rose into
+    the head. Here its cap (more than ~0.5 from the shoulder joint, outside it, at shoulder height) takes back the
+    weights from before the solve, blended in smoothly; its armpit and hip keep the solved weights. The other five
+    builds are untouched (one shared weight set)."""
+    if build not in CAP_BUILDS or os.environ.get("RIG05_SOLVE", "1") != "1":
+        return W
+    r = np.array([v.co for v in bpy.data.objects["Body05_" + build].data.vertices], dtype=np.float64)
+    piv = specs[build]["pivot_x"]
+    ax = np.abs(r[:, 0])
+    d = np.sqrt((ax - piv) ** 2 + r[:, 1] ** 2 + (r[:, 2] - L["SH"]) ** 2)
+    m = (smoothstep(CAP_R0, CAP_R1, d) * smoothstep(piv - 0.1, piv + 0.15, ax) *
+         smoothstep(L["SH"] - 0.9, L["SH"] - 0.6, r[:, 2]))
+    out = W * (1 - m[:, None]) + W_PRE * m[:, None]
+    log(build, "deltoid cap from the pre-solve weights: %d points (%d fully)" % (int((m > 0.01).sum()),
+                                                                               int((m > 0.99).sum())))
+    return limit_normalise(out)
+
+
+CAP_R0 = float(os.environ.get("RIG05_CAP_R0", "0.45"))
+CAP_R1 = float(os.environ.get("RIG05_CAP_R1", "0.70"))
 for i, build in enumerate(ORDER):
-    rig = make_body(build, specs[build], W, bones, faces_part, coll, i)
+    rig = make_body(build, specs[build], deltoid_cap_patch(build, W), bones, faces_part, coll, i)
     swap_hands(build, specs[build], rig, swap_coll, H)
     tris = sum(B["triangles"](o) for o in coll.objects if o.type == "MESH" and o.name.startswith(build + "_")
                and not o.name.endswith("StandInHead"))

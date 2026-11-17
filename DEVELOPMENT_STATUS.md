@@ -257,6 +257,174 @@ rework's pictures: "STOP guessing"). PROTOTYPE ON FIT IN PROGRESS, NOTHING UPLOA
     WornGearConfig.CartoonAssetIds, ClothesConfig.Bodies[*].clothesAssetId (each 08 id replaced once). Bodies unchanged
     (CartoonBody08_*). Studio (Edit, read-only GetObjects): all 12 load; every piece within 0.54 (x) of its body part
     (worst: v5 suit panels on the outer thigh), singlet 18 pieces per build.
+- 2026-11-17 GEAR ON THE BODY-POLISH WEIGHTS (redesign session's request; bodies session's solver in
+  build_cartoon_rig_05.py, rigged copy D:\ClaudeScratch\folds\Prod_Rigged.blend; the real CartoonBodies_05_Rigged.blend
+  NOT overwritten). NOT uploaded, NOT committed, art/blender/CartoonGear_07.blend NOT changed (still the live v09).
+  - build_cartoon_gear_07.py: stiff_edges7 smooths the TEE's weights within 0.30 of its open edges where the arm takes
+    part (16 rounds): the sleeve hem no longer crumples into a white zigzag under a raised arm (all builds).
+    ARM_UNDER / ARM_GAP_UNDER / PANEL_TOP readable from env (defaults unchanged).
+  - Built on Prod_Rigged: D:\ClaudeScratch\hem\Gear_After2.blend, CHECK PASSED. Layer check (quick) Body under Tee
+    18 / 34 / 21 / 9 / 6 / 21 points, deepest <= 0.03 but Fat 0.395 in the bench (live v09: 24 / 30 / 63 / 13 / 17 / 26,
+    Fat 0.484).
+  - Sheets (before = live v09 on today's bodies, after = polished body + new gear):
+    art/previews/BodyPolish/Gear_1_ArmsUp_Left.png ... Gear_5_DeadliftBottom_Back.png.
+  - NOT CLEAN (also in the live version, a little better now): the SINGLET under a raised arm (side view: the armhole
+    edge and the red panel's top crease into spikes; Skinny / SkinnyFat show tee through it there); the deadlift seat
+    (sawtooth crease, SkinnyFat / Fat / BigBuff); a little thigh skin at the leg openings in the squat. Tried for the
+    singlet, all worse (see stiff_edges7's note): smoothing its weights, one shared field for tee + singlet, a deeper
+    armhole, a lower red panel, the garment following the torso under the armpit.
+- 2026-11-17 SINGLET STRAPS STRETCH IN MOTION (user via the bodies session: "the singlet strap disappears ... gets all
+  torn up"; breaks the approved v4 rule "the straps stay put while the arm moves"). build_cartoon_gear_07.py:
+  hold_straps7 (the singlet's arm share handed to UpperTorso from 0.15 below the armpit up, fading over 0.30) and the
+  tee points under the singlet held the same way (covered_by7; the tee is now thickened after the singlet sheet
+  exists). check_layers_05.py: new pair "Body under WornSinglet". Measured on Prod_Rigged (Skinny, Fit, BigBuff):
+  full hold fixes the stretch (p99 1.04-1.22, max <= 2.25) but the skin comes out through the singlet (95-203 points,
+  up to 0.49 deep, every quick pose incl. walking, all round the shoulder); half hold is between (p99 1.7-1.9, max 3-7;
+  skin 53-134 points, 0.18-0.22). Cause: the polished skin carries 40-65% arm weight where the straps lie and 15-28%
+  even beside the neck (the skin itself stretches p99 ~2x there). HOLD_AMOUNT defaults to 0 (off) until the body keeps
+  the top of the shoulder on the torso (bodies session). Nothing uploaded, nothing committed.
+  - Bodies session (same day): putting the strap band on UpperTorso in the BODY made the skin worse (folds 14-66 per
+    build), not shipped; the skin under the straps already stretches only 1.2-1.6x (p99). The singlet's worst
+    stretch is round the armpit (the armhole's lower part, skin 50-67% arm, edges 5-13x), not on the straps.
+  - Tried: SHARE_CUT (the lower armhole also cut where the smoothed arm share > 0.35 / 0.45; GEAR07_SHARE_CUT, default
+    0 = off). Skin stays under (Body under WornSinglet 6-24 points, <= 0.06), but the stretch hardly drops (p99
+    2.4-2.6, max 4-9) and arms up the straps thin out, the top bunches at the shoulders, more tee (crumpled) shows.
+  - Conclusion: with one shoulder joint the skin round the armpit itself stretches ~2x (p99); a singlet following it
+    can't get to ~1x, and one held still lets the skin through. The structural fix is a second shoulder bone (a
+    clavicle turning about half as far as the arm): rig + every animation + export, a new task for the user to decide.
+- 2026-11-17 SHIPPED THE 10 SET (user via the redesign session: "Ship, test collarbone"). The polished
+  CartoonBodies_05_Rigged.blend (bodies session); CartoonGear_05_Knee100.blend rebuilt on it with the APPROVED suit
+  script (the 628246d version, D:\ClaudeScratch\golive\gear\build_cartoon_gear_05_approved.py: HEAD's
+  build_cartoon_gear_05.py is the unfinished "singlet over the tee" rework, committed in a5c7ae7); body weights checked
+  identical to the rigged file. CartoonGear_07.blend rebuilt: tee sleeve-hem fix ON, strap hold / share cut OFF.
+  Previous files kept in D:\ClaudeScratch\ship10. CHECK PASSED on all three. Layer check (quick) as After2; Body under
+  WornSinglet 7-25 points (SkinnyFat 0.497, Fat 0.444 deep in the squat bottom / bench; the live v09: 68 / 69 points).
+  Exports CartoonBody10_* (export_cartoon_body_08.py, BODY_EXPORT_NUM 10), CartoonGear10_* / CartoonClothes10_*
+  (export_cartoon_08.py, GEAR_EXPORT_NUM 10, centring check passed); CartoonExport05.json rewritten, NO marks changed;
+  hands byte-identical (not re-uploaded). UPLOADED (group), ids (Skinny, SkinnyFat, Fat, Fit, Muscular, BigBuff):
+  bodies 89940499075640 / 119724826023810 / 113520176766393 / 102399068343184 / 93479186515150 / 86252899674131;
+  gear 127442997671832 / 86908017222661 / 83466180688270 / 91475121223440 / 132205207024331 / 137005608102718;
+  clothes 83677300602965 / 135333972488670 / 114662706829485 / 82908685773387 / 101044753006455 / 95980724892887.
+  WIRED: ClothesConfig.Bodies assetId + clothesAssetId, WornGearConfig.CartoonAssetIds (each old id replaced once).
+  Studio (Edit, read-only GetObjects): all 18 load; bodies 14 parts + 14 Motor6Ds, knee 1.000; every gear / clothes
+  piece within 0.53 (x) of its body part. NOT play-tested, NOT committed (the redesign session commits).
+  - BIGBUFF TEMPORARILY BACK ON 08/09 (same day, the redesign session; the config must be safe to publish): anim_qa on
+    the polished weights put BigBuff's raised shoulder inside the head (upper_in_head 0.15-0.19, limit 0.12, 19
+    animations; the other builds clean). Config BigBuff = body CartoonBody08 85589236707019, gear CartoonGear09
+    79643326990603, clothes CartoonClothes09 124030235873477 (the matched set anim_qa passed; each id replaced once).
+    The other five builds stay on the 10 set. NEXT: after the bodies session's BigBuff shoulder fix, rebuild from the
+    new rigged file and upload + wire BigBuff 11 only (all six if the fix touches other builds).
+  - DONE (same day): the bodies session put BigBuff's outer deltoid cap back on its pre-solve weights (other builds
+    identical); anim_qa (animation session) on the fixed file: all 108 animations PASS on every build. Knee100 and
+    CartoonGear_07 rebuilt from it (previous 10-set files in D:\ClaudeScratch\ship11), CHECK PASSED (all three files),
+    layers as the 10 set, centring passed; exported the 11 set (all six), CartoonExport05.json unchanged. UPLOADED
+    BigBuff only: body CartoonBody11 127501040475668, gear CartoonGear11 100148587140880, clothes CartoonClothes11
+    138927065217215; WIRED (each 08/09 BigBuff id replaced once). Studio (read-only): loads, 14 parts + 14 Motor6Ds,
+    knee 1.000, pieces within 0.50 of their parts. The animation ids needed no switch (wire_ids.py: all 103 already the
+    new ones). Config now: five builds on 10, BigBuff on 11. NOT committed, NOT play-tested.
+- 2026-11-17 PROTOTYPE, DEEP ARMHOLE (user: "try it, i wanna take a look"; Blender only, nothing uploaded or wired).
+  build_cartoon_gear_07.py GEAR07_DEEP (default 0 = off): a superellipse in the side view round the arm's root, down
+  to SH - 1.15, half-width 0.30 front-to-back, cut on the torso's side (|x| beyond torso half-width - 0.18); straps as
+  approved (copied weights; hold / share cut off). Built on the polished bodies: D:\ClaudeScratch\hem\Deep6.blend,
+  CHECK PASSED. Stretch (p99 / worst, arms up): now 2.6-3.4 / 6-13.2 -> deep 2.4-3.1 / 3.9-6.9 (overhead clap
+  similar, squat hold unchanged ~2.3-2.6). Layers: Body under Tee as now; Body under WornSinglet 6-29 points (Fat
+  0.454 in the squat bottom), Tee under WornSinglet 9-54 points, <= 0.044. (A wider cut, Y 0.42 / IN 0.32, cut
+  kidney-shaped holes into the chest seen standing: dropped.) Sheets art/previews/BodyPolish/Deep_1_Front.png,
+  Deep_2_Left.png, Deep_3_Back.png, Deep_4_Stand.png (NOW = live; BigBuff's NOW from its live 08/09 file).
+  Seen: side view much cleaner (a smooth deep U, no red spikes); tiny skin spots through the tee inside the opening on
+  Fat / Fit / Muscular; front / back with arms up nearly the same as now: the straps' tips still curl at the
+  shoulders; standing almost unchanged (a little more tee at the sides).
+- 2026-11-17 PROTOTYPE, MIDDLE WAY (user: "try the middle way"; they circled the front of Deep6's opening, "is it
+  possible to have that area covered"). GEAR07_DEEP 1.15 + GEAR07_DEEP_YF 0.06 (the cut only from the arm's root
+  backward: closed from the front like now) + GEAR07_DEEP_TEE_PUSH 0.03 (the tee pushed out inside the opening).
+  D:\ClaudeScratch\hem\Mid6.blend, CHECK PASSED. Stretch arms up p99 3.0-3.9 / worst 6.9-15.9 (Muscular 72x on
+  0.001-long piping slivers where the narrow front meets the side): WORSE than now (2.6-3.4 / 6-13) and Deep6
+  (2.4-3.1 / 3.9-6.9): the front edge sits back on the stretching skin. Layers: Body under WornSinglet 6-27 points
+  (<= 0.053), Tee under WornSinglet 12-50 (<= 0.028), Body under Tee as now. Sheets
+  art/previews/BodyPolish/Middle_1_Stand.png, Middle_2_Left.png. Seen: standing = now (closed front); side cleaner than
+  now (no red spikes) but small skin patches through the tee at the opening's top (Fit, Muscular) and a small red
+  notch where the panel meets the opening (Skinny, SkinnyFat).
+- 2026-11-17 MIDDLE WAY POLISHED (user: the front edge "has points to it ... rough edges", on Fit / Muscular / Big
+  and buff standing). build_cartoon_gear_07.py: the deep cut is ONE superellipse from DEEP_YF in front of the arm's
+  root to DEEP_Y behind it (was two halves switching at the root); GEAR07_DEEP_TOP -0.05 (the opening starts just under
+  the armpit), GEAR07_DEEP_BLEND 0.08 (a softer merge into the armhole); the red panel centred on the opening (no
+  notch); GEAR07_SLIVER 0.008 (weld_slivers7: points closer than this merged, near-flat slivers dissolved, the faces'
+  colours kept: the junction's 0.004-long piping pieces) + unfold7 on the tee; tee push 0.05.
+  D:\ClaudeScratch\hem\Mid7.blend, CHECK PASSED. Stretch arms up p99 2.8-3.5 (BigBuff 4.4), worst 4.3-7.0 (BigBuff
+  one near-zero edge reads 1205x: a measuring artefact of a degenerate edge, not visible). Layers: Body under
+  WornSinglet 4-29 points (SkinnyFat 0.493 in the squat bottom), Tee under WornSinglet 12-54 (<= 0.044), Body under Tee
+  as now. Sheets art/previews/BodyPolish/Middle2_1_Stand.png, Middle2_2_EdgeCloseup.png, Middle2_3_Left.png.
+  Seen: the singlet's front edge from the armpit down is now one smooth line; the red panel rounds into the opening.
+  LEFT: small teeth right IN the armpit on Muscular / Big and buff are the TEE sleeve's underside bunching where it meets
+  the body (the live version has them too; unfold7 on the tee didn't remove them); small skin patches at the top of
+  the opening (Fit, Muscular) not cleared by the 0.05 tee push; a short zigzag in Fat's piping at the opening's top.
+- 2026-11-17 ARMPIT POINTS (redesign session: they are the user's "points"; go-ahead for a shorter tee underarm).
+  The points were the tee sleeve cuff's UNDERSIDE tucked into the armpit crease at rest (not folds, not the per-part
+  split; smoothing the tee there - GEAR07_TEE_PIT, also its stacking lines - changed nothing). GEAR07_SLEEVE_UNDER_UP
+  (tee_lines7 patched into the v6 library: v6's slanted hem with its INSIDE end raised; the outside keeps its length)
+  0.12: the dark teeth are GONE on every build. That exposed a small kink in the singlet's piping where the armhole
+  meets the arm. Tried: ARM_BLEND 0.05 (worse: an S-wiggle, more stretch), DEEP_TOP 0.10 + DEEP_BLEND 0.12 (best: Fit,
+  Skinny, Fat smooth), GEAR07_DEEP_MORPH (the armhole's curve morphed into the oval over a band: broke SkinnyFat - a
+  strip of singlet left along the arm; OFF). Best = D:\ClaudeScratch\hem\Mid8.blend (DEEP 1.15, Y 0.30, YF 0.06,
+  TOP 0.10, BLEND 0.12, SLIVER 0.008, TEE_PUSH 0.05, SLEEVE_UNDER_UP 0.12), CHECK PASSED; close-ups
+  D:\ClaudeScratch\hem\m8_af_all.png. Still NOT clean: SkinnyFat a sharp notch at the armpit (both sides), Muscular a
+  small kink, BigBuff a small curl. Stretch arms up p99 2.7-3.4, worst 5.6-12 (Skinny / SkinnyFat ~11). No sheets
+  sent (the redesign session's rule: not until every NEW close-up is free of points).
+- 2026-11-17 ARMHOLE AS ONE SHAPE (redesign session: "(a)"). Tried GEAR07_ONE_DEEP (the arm-root distance band
+  itself growing under / behind the arm): one curve, but under the arm it came out two-lobed with a strip of singlet
+  between (a red spike arms up) and SkinnyFat's opening nearly closed: dropped (switch off). KEPT: GEAR07_DEEP_SMOOTH
+  0.08 - the armhole + deep-oval cut evaluated as ONE field blurred over 0.08 before its line is drawn, so the corner
+  where they met rounds into one curve. Mid9 = Mid8 settings + DEEP_SMOOTH 0.08: D:\ClaudeScratch\hem\Mid9.blend,
+  CHECK PASSED. Stretch arms up p99 2.7-3.6, worst 4.1-10.7 (Fit / Muscular / BigBuff better than Mid8). Layers:
+  Body under WornSinglet 10-28 points (<= 0.064), Tee under WornSinglet 12-72 (<= 0.027), Body under Tee as now
+  (Fat's bench 0.455 known). Close-ups, standing: every edge one continuous curve, no notch / step / tooth; on
+  SkinnyFat, Muscular, BigBuff it still makes a ROUNDED inward bend at the armpit (wrapping round the arm, as the live
+  armhole does). Arms up, side: no worse than Mid8, smoother; with the shorter sleeve underside more bare armpit skin
+  shows arms up; a very small step at the top of SkinnyFat's opening. Sheets art/previews/BodyPolish/Middle3_1_Stand,
+  Middle3_2_EdgeCloseup, Middle3_3_Sleeve, Middle3_4_Left.png (NOW = live: five builds on 10, BigBuff on 11).
+- 2026-11-17 USER CLARIFIED (images 38-40): NO notch, point or flap at the armpit at all; from the front ONE nearly
+  straight line from under the tee sleeve to the waist ("fill in the gap ... because the singlet itself is wider").
+  GEAR07_DEEP_YF may now be NEGATIVE (the opening's front edge BEHIND the arm's root, hidden from the front).
+  st1 (YF -0.08, Y 0.36, ARM_GAP_UNDER 0.04, + Mid9's settings): Fit / Muscular / BigBuff close to the drawn line
+  (small bends left), SkinnyFat still a white tee flap + notch under the sleeve; stretch arms up p99 3.4-4.1, worst
+  6.8-21.6 (live: 2.6-3.4 / 6-13.6). st2 (YF -0.15, gap 0.02) and st3 (gap 0, full sleeve): singlet left on the
+  upper arm - broken. No sheets sent. Blocker: a straight edge up to the sleeve needs the singlet over the arm root,
+  where the skin is shared by arm and torso; a smaller armhole leaves singlet on the arm, and the stretch there comes
+  back above live.
+
+**DECISION 2026-11-17 (user, via the redesign session): "A" - KEEP THE LIVE ARMHOLE. The deep-armhole / strap work is
+PARKED. Don't retry it blindly; read this first.**
+- Why (measured on the polished bodies): with the one-joint shoulder, the skin from the side of the ribs to the arm's
+  root moves with the arm (40-65% arm weight where the straps lie, 15-28% even beside the neck; skin stretch p99 ~2x,
+  worst 2.5-4x arms up). The live singlet follows that skin: arms up its armhole band stretches (p99 2.6-3.4, worst
+  6-13.6x) - accepted for the short overhead moments (a lower arm raise in specific celebrations is a separate job).
+- What was tried, all in art/scripts/build_cartoon_gear_07.py, every switch OFF by default:
+  - straps held by the torso (GEAR07_HOLD_AMOUNT): stretch fixed (p99 1.04-1.22) but the skin came out through the
+    singlet up to 0.49 deep (half hold: 0.18-0.22); the body side can't hold the strap band either (bodies session:
+    folds 14-66).
+  - lower armhole cut by arm share (GEAR07_SHARE_CUT): stretch barely down, straps thinned, top bunched.
+  - deep armhole (GEAR07_DEEP + _Y / _YF / _IN / _TOP / _BLEND, DEEP_SMOOTH, SLIVER, DEEP_TEE_PUSH): cleaner arms up
+    (worst 3.9-6.9) but from the front either an opening (user: "a whole") or, closed at the front ("middle way"), a
+    notch / point / flap where the armhole meets the arm; ONE_DEEP and DEEP_MORPH (one-shape tries) broke (a strip of
+    singlet left under / along the arm).
+  - the user's straight front line (DEEP_YF negative + a smaller gap under the arm): close on Fit / Muscular / BigBuff
+    but SkinnyFat keeps a tee flap + notch (its arm sits too close to the side to fill), stretch worse than live (worst
+    up to 21.6x); a smaller armhole leaves singlet on the upper arm.
+  - tee: SLEEVE_UNDER_UP (shorter underarm, removed the cuff's teeth in the crease but bares the armpit arms up),
+    TEE_PIT (armpit smoothing: no effect).
+  - The trade-off with this body: a straight front edge, no tearing arms up, and stretch no worse than live - only two
+    of the three. A second shoulder bone (clavicle) made the stretch worse in the bodies session's test.
+- Verified 2026-11-17: a default build of build_cartoon_gear_07.py on the current CartoonBodies_05_Rigged.blend is
+  IDENTICAL to art/blender/CartoonGear_07.blend (372 meshes, every point and weight, difference 0), CHECK PASSED - the
+  shipped 10 (five builds) / 11 (BigBuff) gear. Prototype files stay in D:\ClaudeScratch\hem (Mid9.blend, st1.blend ...)
+  and the sheets in art/previews/BodyPolish (Deep_*, Middle*_*).
+- 2026-11-17 REAL-COLOUR LOOK (user: "let me see how the singlet looks first"): black singlet, red panels and piping,
+  black tee, belt on (D:\ClaudeScratch\hem\real_look.py). 1 = shipped; 2 = shipped + GEAR07_SLEEVE_UNDER_UP 0.12 only
+  (D:\ClaudeScratch\hem\Var2.blend, CHECK PASSED). Sheets art/previews/BodyPolish/Real_1_Shipped.png,
+  Real_1b_ShippedArmpit.png, Real_2_ShorterUnderarm.png. Stretch: identical (the singlet doesn't change). Layers: as
+  shipped. Close-ups: in black the old tee bunching barely shows; BOTH keep a small Z-shaped hook in the red piping at
+  the armpit where the armhole wraps round the arm (clearest Muscular, BigBuff; smaller SkinnyFat); 2 adds bare skin
+  under the shorter sleeve. Verdict: 1 (shipped) is the cleaner; neither is the user's perfectly straight line.
 
 **SINGLET OVER THE TEE REWORK (2026-11-16, user's Studio test via the animation session: "singlets are accessories
 ... it should not delete or make something underneath disappear"; tee through the singlet, torn 3-colour straps, skin

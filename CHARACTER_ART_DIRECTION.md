@@ -783,6 +783,47 @@ exported or committed; no game file changed.
   rubber-hose bend at 90 degrees). Big and buff at 130/138/148 degrees: 0.26/0.27/0.32 -> 0.06/0.14/0.26 (every
   point), 0/0.085/0.21 (anim_qa's sampling). Tee test unchanged; CHECK PASSED. Picture:
   `art/previews/Bodies05_Close_ElbowBend.png` (top: before, bottom: after; Big and buff and Fit at 90 and 130 degrees).
+- **Body polish: armpit and hip folds (2026-11-17, user picked "Body polish") [EXPERIMENTAL, waiting for the user's
+  look; nothing exported, uploaded or committed].** New `art/scripts/skin_split_solve.py`, called by
+  `build_cartoon_rig_05.py` (RIG05_SOLVE=0 = the old weights, checked identical to the live ones): round the shoulder
+  and the hip, each skin point's share of torso vs limb is SOLVED so the skin keeps its edge lengths, flips no
+  triangle and doesn't crumple over arm/hip sweeps plus the game's own hardest moments (arms up, overhead clap, squat
+  bar hold, bench, double biceps, squat bottom, deadlift, sitting), all six builds together. The R15 part split is
+  unchanged (taken before the solve). Skin folding onto itself, all six: arms up 14-104 -> 0-10 triangles, squat bar
+  hold 14-84 -> 0-35, squat bottom hip 18-52 -> 0-2, sitting 0-48 -> 0-4; bench / chest slap / deadlift unchanged or
+  better; overhead clap about as before (thin builds better, the two biggest a little worse bare). Clothed (gear v7
+  rebuilt on the new weights, check_layers_05): body under tee / tee under singlet fewer on all six (Fit 62 -> 25,
+  66 -> 21); v4 tee test overhead clap 32-119 -> 10-34, Big and buff bench 14 -> 0; elbow sweep identical; CHECK PASSED.
+  **Found:** the "jagged seat facets" in Blender pictures are mostly Blender bending each face's stored normals; shaded
+  as Roblox does (each point's normal turned by its own bone blend) they are not there. Pictures are now rendered that
+  way. **Left:** the tee's sleeve hem crumples into a zigzag under a fully raised arm on every build (worst Big and
+  buff), about the same before and after: the hem follows skin that bunches under the arm (one-joint shoulder); best
+  fixed in the gear (a stiffer hem). The shirt slips a little more under the rigid belt's lower edge in the squat
+  bottom (Fit 63 -> 87 points; known, nothing goes through the belt). Front crease across the chest with the arms up is
+  still there. Pictures: `art/previews/BodyPolish/BodyPolish_*.png` (rows: bare before/after, clothed before/after).
+  Knock-on if approved: rebuild CartoonBodies_05_Rigged.blend (rig_05), then re-export the bodies
+  (export_cartoon_body_08.py) and rebuild + re-export the gear (build_cartoon_gear_07.py, export_cartoon_08.py: v7
+  copies the body's weights); re-run anim_qa. The result built in scratch: D:\ClaudeScratch\folds\Prod_Rigged.blend.
+  **Big and buff's deltoid cap (same day, anim_qa on all 108 animations):** 19 clips failed upper_in_head 0.15-0.19
+  (limit 0.12), all Big and buff with the arms overhead: the solve had moved its outer deltoid cap a little further onto
+  the arm (torso share 0.12 -> 0.07) and it rose into the head. `build_cartoon_rig_05.deltoid_cap_patch`: on Big and
+  buff ONLY, the cap (more than ~0.45-0.7 from the shoulder joint, outside it, at shoulder height) takes back the
+  pre-solve weights, blended. Head depth back to 0.06-0.09 (as before the solve); the other five builds identical (weight
+  difference 0); Big and buff keeps arms-up folds 0 (was 14), squat hip 0 (18), deadlift 0 (28), sitting 0 (20); squat
+  bar hold 28 (polished 26, before 20), double biceps 4 (polished 0, before 10). So Big and buff no longer shares every
+  weight with the other builds (only the deltoid cap differs; the part split is still shared).
+- **Collarbone / shoulder helper bone: tested and STOPPED (2026-11-17, user: "Ship, test collarbone", then "Stop
+  here").** Goal: the singlet stretching/tearing at the armpit with the arms up. Headless Blender test on all six (scratch
+  D:\ClaudeScratch\folds\clav_*.py, Clav_Rigged.blend): a helper bone per side at the shoulder joint turning half as
+  far as the arm (as a client script would drive it), shoulder skin re-split torso -> helper -> arm. Folds went to 0 (arms
+  up, squat bar hold) but the skin round the armpit stretched MORE (p99 2.0-2.3x -> 2.3-2.8x; under the straps
+  1.2-1.6x -> 1.6-2.1x); lifting the shoulder joint like a real collarbone (0.15 / 0.3 studs) was worse (2.4-2.9x);
+  with simple weights the shoulder tops bulged and opened slits beside the head. Reason: with the arm overhead the skin
+  between the side of the ribs and the arm's root must cover a longer path; bones only change where that stretch goes.
+  So the singlet's armpit has to be solved in the singlet's design (a deeper armhole cut out of the stretching zone,
+  straps held on the torso). Not tested in Studio (the one test upload was refused by the user's permission settings;
+  not needed after this result). Also tried and dropped the same day: pinning the strap band of the skin to the torso
+  (`skin_split_solve.py` SOLVE_HOLD_X, OFF): more stretch and the folds came back.
 - **Grip hand (2026-11-13, for the deadlift, later every lift; user: the fingers must be "actually wrapped around
   grabbing it"):** `build_cartoon_hands_04.py` shape "Grip": a bar hole along hand-space X at `GRIP_C` (0, -0.197,
   -0.40), radius 0.062 (0.075 studs at Fit's 1.22; one mesh scaled per build). Fingers run from the knuckles under the
