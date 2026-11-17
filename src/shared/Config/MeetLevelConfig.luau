@@ -151,6 +151,40 @@ MeetLevelConfig.Ladder = {
 }
 
 --[[
+	THE NATIONALS SPOT (user 2026-11-17, GAME_DESIGN §36.4 "The Nationals spot"). A top-3 place at a State meet is a
+	PLACING, in the class the lifter weighed in at, but never for more than half the lifters in that meet (rounded up):
+	2 lifters give 1 placing (the winner), 3-4 give 2, 5 or more give 3. PlacingsTarget placings in one class earn that
+	class's Nationals spot. Placings never reset with the month. The spot is kept until the player competes at Nationals;
+	when the month of their first Nationals meet on it is over, the class goes back to 0 placings and no spot.
+	Saved in the career (PlayerProfileSchema version 27). Nationals itself is not built yet.
+]]
+MeetLevelConfig.Nationals = {
+	PlacingsTarget = 10,
+	TopPlaces = 3,
+	-- A meet gives placings to at most this share of its lifters, rounded up.
+	MaxShareOfField = 0.5,
+}
+
+-- How many places count toward Nationals at a State meet with `lifters` lifters in it.
+function MeetLevelConfig.nationalsPlaces(lifters: number): number
+	local settings = MeetLevelConfig.Nationals
+	return math.clamp(math.ceil(lifters * settings.MaxShareOfField), 0, settings.TopPlaces)
+end
+
+-- The fewest lifters a State meet needs for `place` (1-3) to count toward Nationals, or nil when it never does.
+function MeetLevelConfig.nationalsFieldFor(place: number): number?
+	if place < 1 or place > MeetLevelConfig.Nationals.TopPlaces or place ~= math.floor(place) then
+		return nil
+	end
+	for lifters = 1, 100 do
+		if MeetLevelConfig.nationalsPlaces(lifters) >= place then
+			return lifters
+		end
+	end
+	return nil
+end
+
+--[[
 	POINTS (user, 2026-11-06, GAME_DESIGN §37.4): every meet against other players
 	ranks by IPF GL points, in place of the old % of a made-up class Total:
 		points = total x 100 / (A - B x e^(-C x bodyweight))

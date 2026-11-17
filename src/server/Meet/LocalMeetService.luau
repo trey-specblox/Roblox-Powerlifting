@@ -199,6 +199,12 @@ type Lifter = {
 	bestTotalKg: number?,
 	localWins: number,
 	stateQualified: boolean,
+	-- Their top-3 State placings toward Nationals in this class, and whether they hold its Nationals spot (GAME_DESIGN
+	-- §36.4 "The Nationals spot"), read at the weigh-in and updated when this meet is saved.
+	nationalsPlacings: number,
+	nationalsQualified: boolean,
+	-- A placing toward Nationals counted at this meet, for the card at the awards (nil = none).
+	nationalsNews: LocalMeetRemotes.NationalsNews?,
 	-- Their meet titles (career.titles, GAME_DESIGN §35.8): id -> count.
 	titles: { [string]: number },
 	-- Their numbered State Champion badges, newest first (GAME_DESIGN §36.4; number 0 = on its way), the one won at
@@ -762,6 +768,19 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	local wonIt = current.rewards and totalKg ~= nil and place == 1
 	local championSeason = if wonIt and current.level == "State" then MeetLevelConfig.seasonFor(nowUnix) else nil
 	local badgeOutcome: ProfileOperations.ChampionBadgeOutcome? = nil
+	-- A top-3 place at a State meet that pays in full is a placing toward Nationals, but never for more than half the
+	-- lifters in the meet (GAME_DESIGN §36.4 "The Nationals spot", MeetLevelConfig.Nationals).
+	local fieldSize = 0
+	for _, other in ipairs(current.lifters) do
+		if other.player then
+			fieldSize += 1
+		end
+	end
+	local stateTop3 = current.rewards and current.level == "State" and totalKg ~= nil and place ~= nil
+		and place <= MeetLevelConfig.Nationals.TopPlaces
+	local nationalsCounts = stateTop3 and (place :: number) <= MeetLevelConfig.nationalsPlaces(fieldSize)
+	local nationalsOutcome: ProfileOperations.NationalsOutcome? = nil
+	local nationals: ProfileOperations.NationalsView? = nil
 	local ladderOutcome: ProfileOperations.LadderOutcome? = nil
 	local ladder: ProfileOperations.LadderView? = nil
 	local saved = PlayerDataService.update(player, function(data)
@@ -797,6 +816,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 			if championSeason then
 				-- Its number comes from the game-wide counter just after this save (ChampionBadges.numberPending).
 				badgeOutcome = ProfileOperations.addStateChampionBadge(data, championSeason, 0)
+			end
+			if nationalsCounts then
+				nationalsOutcome, nationals = ProfileOperations.addNationalsPlacing(data, lifter.classLabel, nowUnix)
 			end
 		end
 		if ladderPoints > 0 then
@@ -841,6 +863,26 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	elseif badgeOutcome == "Rejected" then
 		warn(string.format("[LocalMeetService] %s's State Champion badge was not saved", player.Name))
 	end
+	if nationals and (nationalsOutcome == "Added" or nationalsOutcome == "Qualified") then
+		lifter.nationalsPlacings, lifter.nationalsQualified = nationals.placings, nationals.qualified
+		lifter.nationalsNews = { classLabel = lifter.classLabel, placings = nationals.placings, target = nationals.target,
+			earned = nationalsOutcome == "Qualified" }
+		table.insert(lines, if nationalsOutcome == "Qualified"
+			then string.format("NATIONALS SPOT EARNED (%s)! %d / %d top-3 State placings", lifter.classLabel, nationals.placings,
+				nationals.target)
+			else string.format("Top 3 at State: %d / %d toward Nationals (%s)", nationals.placings, nationals.target,
+				lifter.classLabel))
+	elseif nationalsOutcome == "AlreadyQualified" then
+		table.insert(lines, string.format("You already hold a Nationals spot (%s)", lifter.classLabel))
+	elseif nationalsOutcome == "Rejected" then
+		warn(string.format("[LocalMeetService] %s's Nationals placing was not saved", player.Name))
+	elseif stateTop3 and not nationalsCounts and place then
+		-- A top-3 place in a small field: say what it takes.
+		local needs = MeetLevelConfig.nationalsFieldFor(place)
+		if needs then
+			table.insert(lines, string.format("%s place counts toward Nationals with %d+ lifters", placeText(place), needs))
+		end
+	end
 	if ladder and ladderOutcome == "Qualified" then
 		table.insert(lines, string.format("+%d ladder points%s: QUALIFIED FOR STATE (%s)!", ladderPoints, perfectNote,
 			lifter.classLabel))
@@ -852,11 +894,12 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	elseif ladderOutcome == "Rejected" then
 		warn(string.format("[LocalMeetService] %s's ladder points were not saved", player.Name))
 	end
-	log("%s saved (%s, total %s, rewards %s, solo %s): CN S %s B %s D %s, best Total %s, wins %s, ladder +%d %s",
+	log("%s saved (%s, total %s, rewards %s, solo %s): CN S %s B %s D %s, best Total %s, wins %s, ladder +%d %s, nationals %s%s",
 		player.Name, lifter.classLabel, if totalKg then kgText(totalKg) else "none", tostring(current.rewards),
 		tostring(current.solo),
 		tostring(cnOutcomes.Squat), tostring(cnOutcomes.Bench), tostring(cnOutcomes.Deadlift), tostring(totalOutcome),
-		tostring(wins), ladderPoints, tostring(ladderOutcome))
+		tostring(wins), ladderPoints, tostring(ladderOutcome), tostring(nationalsOutcome),
+		if nationals then string.format(" %d/%d", nationals.placings, nationals.target) else "")
 	return lines
 end
 
@@ -941,6 +984,13 @@ local function factsFor(lifter: Lifter): { string }
 			local name = string.upper(MeetLevelConfig.Titles[id])
 			table.insert(facts, if count > 1 then string.format("%dx %s", count, name) else name)
 		end
+	end
+	-- Their road to Nationals in this class (GAME_DESIGN §36.4 "The Nationals spot").
+	if lifter.nationalsQualified then
+		table.insert(facts, "QUALIFIED FOR NATIONALS")
+	elseif lifter.nationalsPlacings > 0 then
+		table.insert(facts, string.format("%d / %d TOWARD NATIONALS", lifter.nationalsPlacings,
+			MeetLevelConfig.Nationals.PlacingsTarget))
 	end
 	if lifter.stateQualified then
 		table.insert(facts, "QUALIFIED FOR STATE")
@@ -2728,9 +2778,23 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 			name = MeetLevelConfig.ChampionBadge.Name },
 		seconds = LocalMeetConfig.DoneSeconds,
 	}
+	-- A placing toward Nationals at this meet: a card on that lifter's own screen only.
+	local news: { [Player]: LocalMeetRemotes.NationalsNews } = {}
+	for _, lifter in ipairs(current.lifters) do
+		if lifter.player and lifter.nationalsNews then
+			news[lifter.player] = lifter.nationalsNews
+		end
+	end
 	for player, visit in pairs(visits) do
 		if visit.hall == current.hall.index then
-			remotes.awards:FireClient(player, moment)
+			local mine = news[player]
+			if mine then
+				local own = table.clone(moment)
+				own.nationals = mine
+				remotes.awards:FireClient(player, own)
+			else
+				remotes.awards:FireClient(player, moment)
+			end
 		end
 	end
 end
@@ -3134,7 +3198,7 @@ end
 -- Reads a signed-up player's weigh-in, or nil and why they cannot lift.
 local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: string, competitionNumber: { [string]: number },
 	bestTotalKg: number?, localWins: number, titles: { [string]: number }, stateQualified: boolean,
-	championBadges: { ProfileOperations.ChampionBadgeView } }?, string?)
+	nationals: ProfileOperations.NationalsView, championBadges: { ProfileOperations.ChampionBadgeView } }?, string?)
 	local data = PlayerDataService.getData(player)
 	if data == nil then
 		return nil, "your data is still loading"
@@ -3159,6 +3223,7 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 		bestTotalKg = if typeof(best) == "number" and best > 0 then best else nil, localWins = wins,
 		titles = ProfileOperations.getTitles(data),
 		stateQualified = ProfileOperations.getLadder(data, classKey, os.time()).qualified,
+		nationals = ProfileOperations.getNationals(data, classKey, os.time()),
 		championBadges = ProfileOperations.getStateChampionBadges(data) }, nil
 end
 
@@ -3304,6 +3369,9 @@ local function tryStartMeet(hall: Hall)
 			bestTotalKg = weigh.bestTotalKg,
 			localWins = weigh.localWins,
 			stateQualified = weigh.stateQualified,
+			nationalsPlacings = weigh.nationals.placings,
+			nationalsQualified = weigh.nationals.qualified,
+			nationalsNews = nil,
 			titles = weigh.titles,
 			championBadges = weigh.championBadges,
 			gymRecords = {},
@@ -3373,6 +3441,9 @@ local function tryStartMeet(hall: Hall)
 				bestTotalKg = nil,
 				localWins = 0,
 				stateQualified = false,
+				nationalsPlacings = 0,
+				nationalsQualified = false,
+				nationalsNews = nil,
 				titles = {},
 				championBadges = {},
 				gymRecords = {},

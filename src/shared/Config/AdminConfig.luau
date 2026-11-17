@@ -36,6 +36,7 @@ AdminConfig.TabOffsetY = -218
 	order shown. `kind` picks the limits below and how the server writes it:
 		Bodyweight         the current bodyweight (and the target, so it stays): picks the class
 		Ladder             State ladder points in the current class, this season
+		Nationals          top-3 State placings toward Nationals in the current class (the target = the spot)
 		CompetitionNumber  one lift's CN in the current class
 		Scale              one lift's proven weight (Competition Scale) in the current class
 		Technique          one raw technique stat (the stats screen shows it through the curve)
@@ -45,6 +46,7 @@ export type StatField = { id: string, label: string, kind: string, lift: string?
 AdminConfig.StatLimits = {
 	Bodyweight = { min = 40, max = 200 },
 	Ladder = { min = 0, max = 100 },
+	Nationals = { min = 0, max = 10 },
 	CompetitionNumber = { min = 20, max = 1000 },
 	Scale = { min = 0, max = 1000 },
 	Technique = { min = 0, max = 1000 },
@@ -53,6 +55,7 @@ AdminConfig.StatLimits = {
 local fields: { StatField } = {
 	{ id = "Bodyweight", label = "BODYWEIGHT KG", kind = "Bodyweight" },
 	{ id = "Ladder", label = "LADDER POINTS", kind = "Ladder" },
+	{ id = "Nationals", label = "NATIONALS PLACINGS", kind = "Nationals" },
 }
 for _, lift in ipairs(ProgressionConfig.Lifts) do
 	table.insert(fields, { id = "CN_" .. lift, label = string.upper(lift) .. " CN", kind = "CompetitionNumber", lift = lift })

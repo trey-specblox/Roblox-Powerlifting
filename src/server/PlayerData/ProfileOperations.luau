@@ -943,6 +943,115 @@ function ProfileOperations.addLadderPoints(data: ProfileData, classKey: string, 
 end
 
 --[[
+	THE NATIONALS SPOT (schema 27; user 2026-11-17, GAME_DESIGN §36.4, MeetLevelConfig.Nationals). Per weight class:
+	top-3 State placings add up (never reset by a new month) until PlacingsTarget, which earns the class's spot. The spot
+	is kept until the player competes at Nationals; once the season (month) of that first Nationals meet is over, the
+	class reads as 0 placings and no spot, and the next write clears it for good.
+]]
+export type NationalsView = {
+	classKey: string,
+	placings: number,
+	target: number,
+	qualified: boolean,
+	-- The season of the first Nationals meet lifted on this spot, or "" (not competed yet).
+	competedSeason: string,
+}
+
+export type NationalsOutcome = "Added" | "Qualified" | "AlreadyQualified" | "Rejected"
+
+local function nationalsOf(data: ProfileData): { [string]: PlayerProfileSchema.NationalsSpot }?
+	local career = (data :: any).career
+	local spots = if typeof(career) == "table" then career.nationals else nil
+	return if typeof(spots) == "table" then spots else nil
+end
+
+local function isUsableNationals(spot: any): boolean
+	return typeof(spot) == "table" and typeof(spot.qualified) == "boolean" and typeof(spot.competedSeason) == "string"
+		and isFiniteNumber(spot.placings) and spot.placings >= 0 and spot.placings == math.floor(spot.placings)
+end
+
+-- Whether a usable spot was used at Nationals in a season that is now over (so it resets).
+local function nationalsSpent(spot: any, season: string): boolean
+	return spot.competedSeason ~= "" and spot.competedSeason < season
+end
+
+-- The player's road to Nationals in `classKey` at `nowUnix` (0 placings when there is none, it is unusable, or its
+-- spot was used in a season that is over). Read only.
+function ProfileOperations.getNationals(data: ProfileData, classKey: string, nowUnix: number): NationalsView
+	local target = MeetLevelConfig.Nationals.PlacingsTarget
+	local spots = nationalsOf(data)
+	local spot: any = if spots and typeof(classKey) == "string" then spots[classKey] else nil
+	if not isUsableNationals(spot) or nationalsSpent(spot, MeetLevelConfig.seasonFor(nowUnix)) then
+		return { classKey = classKey, placings = 0, target = target, qualified = false, competedSeason = "" }
+	end
+	return { classKey = classKey, placings = math.min(spot.placings, target), target = target,
+		qualified = spot.qualified or spot.placings >= target, competedSeason = spot.competedSeason }
+end
+
+--[[
+	Adds one top-3 State placing in `classKey` at `nowUnix` (starting the class's entry when it has none, and clearing a
+	spot used in a season that is over first). The placing that reaches PlacingsTarget earns the spot. Returns:
+		"Added"             counted; no spot yet
+		"Qualified"         reached the target: the class's Nationals spot, now
+		"AlreadyQualified"  the class already holds its spot: nothing added
+		"Rejected"          no nationals map, no build for the class, or an unusable stored entry; nothing changed
+	and that class's view afterwards. SECURITY BOUNDARY: the caller (LocalMeetService) decides from the State meet's
+	result, its field size and MeetLevelConfig.Nationals whether the place counts, and the class from the weigh-in.
+]]
+function ProfileOperations.addNationalsPlacing(data: ProfileData, classKey: string, nowUnix: number)
+	: (NationalsOutcome, NationalsView)
+	local spots = nationalsOf(data)
+	local safeNow = if isFiniteNumber(nowUnix) then nowUnix else 0
+	if spots == nil or typeof(classKey) ~= "string" or ProfileOperations.getBuild(data, classKey) == nil
+		or not isFiniteNumber(nowUnix) then
+		return "Rejected", ProfileOperations.getNationals(data, classKey, safeNow)
+	end
+	local spot: any = spots[classKey]
+	if spot == nil then
+		spot = { placings = 0, qualified = false, competedSeason = "" }
+		spots[classKey] = spot
+	elseif not isUsableNationals(spot) then
+		return "Rejected", ProfileOperations.getNationals(data, classKey, nowUnix)
+	end
+	local target = MeetLevelConfig.Nationals.PlacingsTarget
+	if nationalsSpent(spot, MeetLevelConfig.seasonFor(nowUnix)) then
+		spot.placings, spot.qualified, spot.competedSeason = 0, false, ""
+	end
+	local outcome: NationalsOutcome
+	if spot.qualified or spot.placings >= target then
+		spot.qualified = true
+		outcome = "AlreadyQualified"
+	else
+		spot.placings += 1
+		spot.qualified = spot.placings >= target
+		outcome = if spot.qualified then "Qualified" else "Added"
+	end
+	return outcome, ProfileOperations.getNationals(data, classKey, nowUnix)
+end
+
+--[[
+	For the Nationals meet (not built yet): the player competed at Nationals in `classKey` at `nowUnix`. Stamps the season
+	of the FIRST Nationals meet on this spot; later ones that season change nothing. When that season is over the spot
+	resets (getNationals, addNationalsPlacing). Returns false, changing nothing, when the class holds no spot now.
+]]
+function ProfileOperations.markNationalsCompeted(data: ProfileData, classKey: string, nowUnix: number): boolean
+	local spots = nationalsOf(data)
+	local spot: any = if spots and typeof(classKey) == "string" then spots[classKey] else nil
+	if not isFiniteNumber(nowUnix) or not isUsableNationals(spot) then
+		return false
+	end
+	local season = MeetLevelConfig.seasonFor(nowUnix)
+	if nationalsSpent(spot, season) or not (spot.qualified or spot.placings >= MeetLevelConfig.Nationals.PlacingsTarget) then
+		return false
+	end
+	spot.qualified = true
+	if spot.competedSeason == "" then
+		spot.competedSeason = season
+	end
+	return true
+end
+
+--[[
 	=========================================================================
 	COINS  (GAME_DESIGN.md 30.6, the money system's first build; schema 12)
 	=========================================================================
@@ -2063,7 +2172,7 @@ function ProfileOperations.adminSetStat(data: ProfileData, fieldId: string, valu
 	end
 	local kind = field.kind
 	local set = math.clamp(value, limits.min, limits.max)
-	set = if kind == "Ladder" then math.floor(set + 0.5) else math.floor(set * 10 + 0.5) / 10
+	set = if kind == "Ladder" or kind == "Nationals" then math.floor(set + 0.5) else math.floor(set * 10 + 0.5) / 10
 	local profile = data :: any
 	if kind == "Bodyweight" then
 		local classKey = PlayerProfileSchema.classKeyFor(set)
@@ -2101,6 +2210,15 @@ function ProfileOperations.adminSetStat(data: ProfileData, fieldId: string, valu
 		local view = ProfileOperations.getLadder(data, classKey, nowUnix)
 		return true, string.format("Ladder %d/%d in %s%s.", view.points, view.target, classKey,
 			if view.qualified then ": qualified for State" else "")
+	elseif kind == "Nationals" then
+		local spots = nationalsOf(data)
+		if spots == nil then
+			return false, "The save has no Nationals placings."
+		end
+		local target = MeetLevelConfig.Nationals.PlacingsTarget
+		spots[classKey] = { placings = set, qualified = set >= target, competedSeason = "" }
+		return true, string.format("Nationals placings %d/%d in %s%s.", set, target, classKey,
+			if set >= target then ": Nationals spot" else "")
 	end
 	return false, "That isn't a stat."
 end

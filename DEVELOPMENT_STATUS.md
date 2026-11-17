@@ -13,10 +13,41 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**THE NATIONALS SPOT (2026-11-17; the second item on the State list, GAME_DESIGN §36.4 "The Nationals spot"). BUILT AND
+TESTED IN STUDIO (one player, API services off, so nothing saved). NOT COMMITTED (last commit 8c5890d). NATIONALS ITSELF
+WAS THEN DESIGNED WITH THE USER (GAME_DESIGN §39: every 2 hours across all servers into one Nationals server, a new
+arena from the user's photos, per-class National Champions who qualify for Worlds, x5 pot). NOT BUILT. NEXT: the user
+sends arena photos; build step 1 (cross-server sign-up + teleport, with the State arena as a stand-in venue).**
+- The user's rules: a top-3 place at a paying State meet with a total is a PLACING, but never for more than half the
+  lifters (rounded up: 2 lifters 1 placing, 3-4 two, 5+ three); 10 placings in one class = that class's Nationals spot;
+  placings never reset with the month; the spot is kept until the player competes at Nationals, then resets (0
+  placings, no spot) when the month of that first Nationals meet ends. Old State results don't count (everyone at 0).
+- Save version 27: `career.nationals` (class -> { placings, qualified, competedSeason }). ProfileOperations:
+  getNationals, addNationalsPlacing, markNationalsCompeted (for the future Nationals meet; nothing calls it yet), and
+  adminSetStat kind "Nationals". Config: `MeetLevelConfig.Nationals` (PlacingsTarget 10, TopPlaces 3, MaxShareOfField
+  0.5), nationalsPlaces(lifters), nationalsFieldFor(place).
+- LocalMeetService.saveLifter counts the placing in the same save as the rest of the meet; result lines ("Top 3 at
+  State: 4 / 10 toward Nationals (74 kg)", "NATIONALS SPOT EARNED (74 kg)! ...", "You already hold a Nationals spot",
+  "3rd place counts toward Nationals with 5+ lifters"); fun-facts strip ("QUALIFIED FOR NATIONALS" / "4 / 10 TOWARD
+  NATIONALS"); the awards moment carries `nationals` (NationalsNews) to THAT lifter only.
+- Client: NEW `src/client/UI/NationalsCard.luau` (navy slab, UIShadow glow, 10 diamond pips, rays when earned; sound:
+  MeetSoundConfig LightsGood for a placing, GearStatsConfig.Sounds.Big for the spot), shown by LocalMeetAwards after
+  the State Champion badge reveal (or in its slot when there is none). StatsScreen: NATIONALS row + bar + hint under
+  the State ladder; both rows' value labels widened (the old STATE LADDER "QUALIFIED" was clipped to "QUALIFI").
+  StatsRemotes/PlayerStatsService send `nationals`. Admin PLAYER STATS: NATIONALS PLACINGS box (0-10).
+- Tests: PlayerDataProbe 630/630 (new section for v26->27, 21 checks; the badge section's "migrated 25 to 26" now
+  expects the current version; probe switched back OFF). Studio solo State meet with StudioForcePhaseResult = Pass and
+  placings set to 9 by the admin panel: 9/9 good lifts, server log "nationals Qualified 10/10", the card showed
+  "NATIONALS SPOT EARNED!" 12.9 s after the badge reveal with 10 gold pips, rays and its sound; STATS showed QUALIFIED,
+  then 4 / 10 after setting 4; admin box fits. Screenshots checked. Synced scripts checked against disk byte counts.
+  luau-lsp: no errors on the new lines (the files' older warnings are unchanged).
+- Not verified: a State meet with 2+ real players (the half-the-field rule and the "counts with N+ lifters" line were
+  only checked by the probe), how the card's sound and look land for the user, a phone screen.
+
 **NUMBERED STATE CHAMPION BADGE + ROBLOX WIN BADGES (2026-11-16; the first item on the State list, changed by the user
 from "finisher badge for everyone" to "#1001 State Champion" for winners only, GAME_DESIGN §36.4). BUILT AND TESTED IN
-STUDIO (one player; API services off, so nothing saved and the counter counted in memory). NOT COMMITTED. A REAL STATE
-MEET WITH TWO PLAYERS HAS NOT BEEN RUN WITH IT.**
+STUDIO (one player; API services off, so nothing saved and the counter counted in memory). COMMITTED (4ee3e4b, 63f0633)
+and published; the user tested it live 2026-11-17 ("I tested the badges, it works").**
 - Save version 26: `career.stateChampionBadges` (month -> game-wide number, 0 = on its way). Players who already won
   State get a Nov 2026 badge, numbered on their next join. ProfileOperations: addStateChampionBadge,
   fillStateChampionNumber, getStateChampionBadges, pendingStateChampionSeasons.

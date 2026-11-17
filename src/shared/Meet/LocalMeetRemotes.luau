@@ -224,9 +224,15 @@ export type AwardsMoment = {
 	-- A numbered State Champion badge the winner earned at this meet (GAME_DESIGN §36.4), for the reveal on every screen
 	-- in the hall; nil = none. number 0 = its number is still on its way (the card shows no number).
 	championBadge: { number: number, seasonLabel: string, name: string }?,
+	-- A top-3 State placing toward Nationals that THIS player earned at this meet (GAME_DESIGN §36.4 "The Nationals
+	-- spot"), sent only to them; nil = none.
+	nationals: NationalsNews?,
 	-- How long the ceremony lasts.
 	seconds: number,
 }
+
+-- One lifter's new placing toward Nationals: their class, placings of target, and whether it just earned the spot.
+export type NationalsNews = { classLabel: string, placings: number, target: number, earned: boolean }
 
 --[[
 	A player's cheering bar, server -> that player (CHEER_STATE), when it changes. Display only.

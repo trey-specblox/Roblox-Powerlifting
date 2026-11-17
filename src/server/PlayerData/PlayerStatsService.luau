@@ -100,6 +100,8 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 	local nowUnix = os.time()
 	-- The ladder of the class the player is in now (points are per class, GAME_DESIGN §36.3).
 	local ladder = ProfileOperations.getLadder(data, WeightClass.resolve(bodyweight.currentKg).label, nowUnix)
+	-- And the road to Nationals in that class (GAME_DESIGN §36.4).
+	local nationals = ProfileOperations.getNationals(data, WeightClass.resolve(bodyweight.currentKg).label, nowUnix)
 
 	return {
 		classLabel = WeightClass.resolve(bodyweight.currentKg).label,
@@ -114,6 +116,8 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		championBadges = championBadges,
 		ladder = { points = ladder.points, target = ladder.target, qualified = ladder.qualified,
 			seasonEndsAt = MeetLevelConfig.seasonEndsAt(nowUnix) },
+		nationals = { placings = nationals.placings, target = nationals.target, qualified = nationals.qualified,
+			competed = nationals.competedSeason ~= "" },
 	}
 end
 

@@ -62,9 +62,9 @@ local PlayerProfileSchema = {}
 	the player's celebration; version 23: the fail style and the emotes won;
 	version 24: walk-outs, celebrations and fail styles collected, with a slot
 	for each attempt; version 25: clothes and the gear toggle; version 26: the
-	numbered State Champion badges).
+	numbered State Champion badges; version 27: the Nationals spots).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 26
+PlayerProfileSchema.CURRENT_VERSION = 27
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -243,6 +243,12 @@ export type MeetAllowance = {
 		            ChampionBadges fills it in). At most one per season. Only
 		            ProfileOperations.addStateChampionBadge adds one and only
 		            fillStateChampionNumber fills a 0.
+		nationals   (version 27) the Nationals spots, PER WEIGHT CLASS
+		            (GAME_DESIGN §36.4 "The Nationals spot", MeetLevelConfig.
+		            Nationals): class key ("74 kg") -> NationalsSpot. A class
+		            with no entry has 0 placings. Only
+		            ProfileOperations.addNationalsPlacing and
+		            markNationalsCompeted write it.
 
 	localWins is a lifetime statistic now: ladder points decide State.
 ]]
@@ -252,6 +258,26 @@ export type Career = {
 	ladders: { [string]: Ladder },
 	stateQualifications: number,
 	stateChampionBadges: { [string]: number },
+	nationals: { [string]: NationalsSpot },
+}
+
+--[[
+	One class's road to Nationals (version 27; user 2026-11-17, GAME_DESIGN §36.4).
+
+		placings        top-3 State placings that counted, in this class (a
+		                whole number, 0 .. MeetLevelConfig.Nationals.PlacingsTarget).
+		                NEVER reset by a new month: they add up until the target.
+		qualified       reached the target: the class's Nationals spot. Kept,
+		                however long, until the player competes at Nationals
+		competedSeason  "" = has not competed at Nationals on this spot yet;
+		                otherwise the season ("2026-12") of the first Nationals
+		                meet lifted on it. When that season is over the spot and
+		                the placings reset to 0 (the player earns it again).
+]]
+export type NationalsSpot = {
+	placings: number,
+	qualified: boolean,
+	competedSeason: string,
 }
 
 --[[
@@ -593,14 +619,15 @@ local template: ProfileData = {
 		Lockout = StartingValuesConfig.Technique.Lockout,
 	},
 
-	-- A new lifter has won nothing, has no ladder points in any class, has never qualified for State and has no
-	-- State Champion badge.
+	-- A new lifter has won nothing, has no ladder points in any class, has never qualified for State, has no
+	-- State Champion badge and no State placings toward Nationals.
 	career = {
 		localWins = 0,
 		titles = {},
 		ladders = {},
 		stateQualifications = 0,
 		stateChampionBadges = {},
+		nationals = {},
 	},
 
 	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
@@ -1849,7 +1876,8 @@ local FIRST_STATE_SEASON = "2026-11"
 migrations[25] = function(data: ProfileData)
 	local career = (data :: any).career
 	if typeof(career) ~= "table" then
-		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0, stateChampionBadges = {} }
+		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0, stateChampionBadges = {},
+			nationals = {} }
 		return
 	end
 	local badges = career.stateChampionBadges
@@ -1867,6 +1895,36 @@ migrations[25] = function(data: ProfileData)
 	local wins = if typeof(titles) == "table" then titles.StateChampion else nil
 	if typeof(wins) == "number" and wins >= 1 and next(badges) == nil then
 		badges[FIRST_STATE_SEASON] = 0
+	end
+end
+
+--[[
+	Version 26 -> 27: the Nationals spots (user 2026-11-17, GAME_DESIGN §36.4 "The Nationals spot").
+
+	Everyone starts at 0 placings in every class (the user's pick: State results from before today do not count).
+
+	REPAIRS, NEVER OVERWRITES: a usable stored map is kept (only broken entries go); a missing career is created.
+	IDEMPOTENT: a second run finds the map there and changes nothing.
+]]
+migrations[26] = function(data: ProfileData)
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0, stateChampionBadges = {},
+			nationals = {} }
+		return
+	end
+	local spots = career.nationals
+	if typeof(spots) ~= "table" then
+		career.nationals = {}
+		return
+	end
+	for classKey, spot in pairs(spots) do
+		local placings = if typeof(spot) == "table" then spot.placings else nil
+		if typeof(classKey) ~= "string" or typeof(spot) ~= "table" or typeof(placings) ~= "number" or placings ~= placings
+			or placings < 0 or placings ~= math.floor(placings) or placings == math.huge
+			or typeof(spot.qualified) ~= "boolean" or typeof(spot.competedSeason) ~= "string" then
+			spots[classKey] = nil
+		end
 	end
 end
 

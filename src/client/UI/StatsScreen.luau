@@ -20,7 +20,8 @@
 		        build of the current weight class
 		right   TECHNIQUE: a five-cornered radar of the five trainable stats
 		        (effective values, the outer edge = 100) with each stat's name
-		        and value at its corner
+		        and value at its corner; under it the STATE LADDER and the
+		        NATIONALS placings (GAME_DESIGN §36.4) of the current class
 ]]
 
 local Players = game:GetService("Players")
@@ -305,13 +306,25 @@ function StatsScreen.start()
 	local ladderY = 384
 	UIStyle.text(body, "LadderName", UDim2.fromOffset(640, ladderY), UDim2.fromOffset(170, 28), SIZES.body, C.white,
 		UIStyle.heading()).Text = "STATE LADDER"
-	local ladderText = UIStyle.text(body, "Ladder", UDim2.fromOffset(800, ladderY), UDim2.fromOffset(110, 28),
+	local ladderText = UIStyle.text(body, "Ladder", UDim2.fromOffset(740, ladderY), UDim2.fromOffset(170, 28),
 		SIZES.heading, C.yellow, UIStyle.heading(), Enum.TextXAlignment.Right)
 	local ladderBar = UIStyle.frame(body, "LadderBar", UDim2.fromOffset(640, ladderY + 34), UDim2.fromOffset(270, 12),
 		C.navyDeep)
 	UIStyle.stroke(ladderBar, C.white, 1)
 	local ladderFill = UIStyle.frame(ladderBar, "Fill", UDim2.fromOffset(0, 0), UDim2.fromScale(0, 1), C.yellow)
 	local ladderHint = UIStyle.text(body, "LadderHint", UDim2.fromOffset(640, ladderY + 52), UDim2.fromOffset(270, 20),
+		SIZES.small, C.muted)
+	-- Under it: the top-3 State placings toward Nationals in this class (GAME_DESIGN §36.4 "The Nationals spot").
+	local nationalsY = ladderY + 72
+	UIStyle.text(body, "NationalsName", UDim2.fromOffset(640, nationalsY), UDim2.fromOffset(170, 26), SIZES.body, C.white,
+		UIStyle.heading()).Text = "NATIONALS"
+	local nationalsText = UIStyle.text(body, "Nationals", UDim2.fromOffset(740, nationalsY), UDim2.fromOffset(170, 26),
+		SIZES.heading, C.yellow, UIStyle.heading(), Enum.TextXAlignment.Right)
+	local nationalsBar = UIStyle.frame(body, "NationalsBar", UDim2.fromOffset(640, nationalsY + 28), UDim2.fromOffset(270, 10),
+		C.navyDeep)
+	UIStyle.stroke(nationalsBar, C.white, 1)
+	local nationalsFill = UIStyle.frame(nationalsBar, "Fill", UDim2.fromOffset(0, 0), UDim2.fromScale(0, 1), C.yellow)
+	local nationalsHint = UIStyle.text(body, "NationalsHint", UDim2.fromOffset(640, nationalsY + 40), UDim2.fromOffset(270, 18),
 		SIZES.small, C.muted)
 
 	UIStyle.exitButton(holder, "Back", "BACK", UDim2.new(1, -150, 1, 20), function()
@@ -353,6 +366,16 @@ function StatsScreen.start()
 			ladderFill.Size = UDim2.fromScale(if ladder.qualified then 1 else math.clamp(ladder.points / ladder.target, 0, 1), 1)
 			ladderHint.Text = string.format("%s class · season ends in %d day%s", snapshot.classLabel, daysLeft,
 				if daysLeft == 1 then "" else "s")
+		end
+		local nationals = snapshot.nationals
+		if nationals then
+			nationalsText.Text = if nationals.qualified then "QUALIFIED" else string.format("%d / %d", nationals.placings,
+				nationals.target)
+			nationalsFill.Size = UDim2.fromScale(if nationals.qualified then 1
+				else math.clamp(nationals.placings / math.max(nationals.target, 1), 0, 1), 1)
+			nationalsHint.Text = if nationals.competed then "Competed · resets when the month ends"
+				elseif nationals.qualified then "Kept until you compete at Nationals"
+				else "Top-3 State placings · never reset"
 		end
 		local total = 0
 		for _, lift in ipairs(ProgressionConfig.Lifts) do

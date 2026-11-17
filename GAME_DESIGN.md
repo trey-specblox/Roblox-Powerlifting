@@ -5984,7 +5984,7 @@ in their weight class and stay in it. This reopens the ladder points
 |---|---|
 | **When State runs** | **On a timer:** a State meet starts every **20 minutes** if at least **2 qualified players** signed up at the State arena's sign-up desk, like the Local meet (§29.10). Fewer than 2: no meet, and sign-ups carry to the next start. **[PROVISIONAL]** times |
 | **Placing** | **One ranking by IPF GL points** for everyone, as at Local and Regional (§37.4 "Points", changed by the user 2026-11-06), ties by more good lifts, then lighter bodyweight. The **top 3 overall** get the State titles. Class winners are shown too. Lifters still enter only in the class they qualified in (§36.3) |
-| **What State pays** | All four: the **bigger coin pot** (×3 the Local pot, `MeetLevelConfig`); **titles and trophies** for the top 3 (already built); a **Nationals spot** for the top 3 (the details come with the Nationals design); and a **State finisher badge** for everyone who finishes with a total, for that season. **[CHANGED BY THE USER, 2026-11-16]:** no finisher badge; instead a **numbered State Champion badge** for the **winner** only (see "Built (2026-11-16)" below) |
+| **What State pays** | All four: the **bigger coin pot** (×3 the Local pot, `MeetLevelConfig`); **titles and trophies** for the top 3 (already built); a **Nationals spot** for the top 3 (the details come with the Nationals design; **[CHANGED BY THE USER, 2026-11-17]:** 10 top-3 State placings earn the spot, see "The Nationals spot" below); and a **State finisher badge** for everyone who finishes with a total, for that season. **[CHANGED BY THE USER, 2026-11-16]:** no finisher badge; instead a **numbered State Champion badge** for the **winner** only (see "Built (2026-11-16)" below) |
 | **The format ("slower, big stage")** | **4 racks, one lifter at a time** (user, 2026-11-01, settling "one main platform" vs §36.1's 4 racks): each of the 4 lifters has **their own rack**, with its live screen above and its spectate zone, and they lift **in turn**, lightest bar first in each round as in real meets, with the camera and the big screens on each lift. **At most 4 lifters** per meet, about 20 minutes. **[PROVISIONAL]**: with more than 4 sign-ups, the first 4 lift and the rest carry to the next meet |
 
 > **Built (2026-11-01): the arena, step 1 (visits).** The State arena
@@ -6009,7 +6009,7 @@ in their weight class and stay in it. This reopens the ladder points
 > (memory of 2026-11-06). It pays the x3 pot, titles and trophies for the top 3 as already built. Each rack's screen shows its
 > lifter's name, lift, weight and result. **Not built yet, in this order:** the finisher badge, the Nationals spot, then show-off items
 > and spectator help (§36.5). **[Update 2026-11-16]:** the badge is built (as the numbered State Champion badge, below); next is the
-> Nationals spot.
+> Nationals spot. **[Update 2026-11-17]:** the Nationals spot is built (below); next is the Nationals design, then show-off items.
 
 > **[DECIDED BY THE USER, 2026-11-16] The numbered State Champion badge (replaces the finisher badge).** Asked about the badge's
 > look and where it shows, the user changed it: "instead of State finisher Nov 2026, it should be ... the number of total state's ...
@@ -6041,6 +6041,33 @@ in their weight class and stay in it. This reopens the ladder points
 > - **Roblox badges:** the code gives them after a counting win and, on joining, for wins a player already had. They switch on when
 >   their ids are filled in `MeetLevelConfig.WinnerBadgeIds`. **The user made all three on 2026-11-16 and they are ON:** "Local
 >   Meet Winner!", "Won Regionals!" and "State Champion!" (made on the Creator Dashboard).
+
+> **[DECIDED BY THE USER, 2026-11-17] The Nationals spot.** Asked what earns a spot and how long it lasts, the user added "a
+> special twist. to qualify for nationals, you need to place top 3 in state 10 times." Picked from options:
+> - **A placing:** a **top-3 place at a State meet** that pays in full, finished with a total, but **never for more than half the
+>   lifters in that meet** (rounded up), so a small meet can't hand everyone one: 2 lifters give 1 placing (the winner), 3-4 give
+>   2, 5 or more give 3. **[PROVISIONAL]** numbers (`MeetLevelConfig.Nationals`).
+> - **The spot: 10 placings** in one weight class earn that class's Nationals spot (the class the lifter weighed in at, as §36.3).
+> - **Placings never reset with the month** (the user's pick over "reset monthly" and "half carries over"): they add up until 10.
+> - **How long the spot lasts:** "you keep it until you compete at a national meet, once you compete at a national meet, at the end
+>   of the month then you get reset." So the spot is kept however long it takes; when the month of the player's first Nationals
+>   meet on it is over, that class goes back to 0 placings and no spot.
+> - **Old results:** State places from before 2026-11-17 do **not** count (the user's pick); everyone starts at 0.
+> - **Then Nationals itself** is designed next (the user's pick: "Spot + design Nationals").
+
+> **Built (2026-11-17): the Nationals spot.**
+> - **Saved** in the career (save version 27, `career.nationals`: class -> placings, spot, month of the first Nationals meet on
+>   it). Only the server counts a placing, from the meet's own result (`ProfileOperations.addNationalsPlacing`); no client can ask
+>   for one. `markNationalsCompeted` is ready for the Nationals meet to call when it exists.
+> - **At the meet:** the result line says "Top 3 at State: 4 / 10 toward Nationals (74 kg)", "NATIONALS SPOT EARNED (74 kg)!"
+>   or "You already hold a Nationals spot", and for a top-3 place in too small a meet "3rd place counts toward Nationals with 5+
+>   lifters". At the awards, after the State Champion badge, a card slides up **on that lifter's own screen only**: "TOWARD
+>   NATIONALS" with ten diamonds (the new one pops in with the good-lift lights chime), or "NATIONALS SPOT EARNED!" all gold over
+>   turning rays with the big reveal sound.
+> - **STATS:** a NATIONALS row under the State ladder: "4 / 10" with a bar, or "QUALIFIED" ("Kept until you compete at
+>   Nationals"). **Meet screens' fun-facts strip:** "QUALIFIED FOR NATIONALS" or "4 / 10 TOWARD NATIONALS".
+> - **Admin panel:** PLAYER STATS has a NATIONALS PLACINGS box (0-10) for testing.
+> - **Qualifying unlocks nothing yet:** Nationals itself is the next design.
 
 > **Built (2026-11-07): the live minigame on the rack screens.** While a lifter lifts at the State meet, their rack's screen shows their
 > minigame as they play it: the squat's track and marker, the bench's closing ring with MASH! and HOLD!, the deadlift's letters, and the
@@ -6353,6 +6380,9 @@ in their weight class and stay in it. This reopens the ladder points
   crates and spectator help.
 - ~~The badge's look and where it shows (nameplate, STATS, both).~~ Decided and built 2026-11-16 (§36.4, the numbered State
   Champion badge).
+- ~~Who earns a Nationals spot and how long it lasts.~~ Decided and built 2026-11-17 (§36.4, "The Nationals spot").
+- ~~**Nationals itself** (§35.8 "Not decided here"): where, how often, the format, rewards, and how it leads to Worlds.~~
+  Designed 2026-11-17 (§39); not built.
 - The open questions in §36.2 (voice cheering, music, crates).
 
 ## 37. Meets as the main strength source, and meets that always run (user, 2026-11-01)
@@ -7195,3 +7225,27 @@ after two shoulder fixes the user approved: **"Yes, looks good."** This replaces
   thighs and glutes; bench: chest, shoulders, triceps; deadlift: back, traps, forearms), growing a little at a time.
 - **Dropped:** the realistic MPFB body (LifterBody_01), its realistic clothes shapes and the 70% head. The clothes
   system's code (outfit, gear toggle, save v25, menu) stays and is fitted to the new bodies.
+
+## 39. Nationals (user, 2026-11-17, picked from options)
+
+The step after State (§35.4): this settles §35.8's "Not decided here: Nationals itself". Entry is the **Nationals spot**
+(§36.4: 10 top-3 State placings in a class; built 2026-11-17). Real players only (§37, [FINAL]); cheering and the big
+presentation apply, as at State and up (§36.4). Numbers marked **[PROVISIONAL]** are starting values.
+
+| Question | Decision |
+|---|---|
+| **How lifters get together** | **At set times, across all servers.** Spot-holders are rare, so one server would seldom have two. Every **2 hours** **[PROVISIONAL]**, every spot-holder who is online and signs up is sent to **one Nationals server**, where the meet runs (each about 30-40 minutes). Claude's note: this needs cross-server teleports (a reserved server) and a sign-up queue shared by every server; the user accepted the bigger build. |
+| **Where** | **A new, bigger arena** of its own, made in Blender. **The user will send reference photos** first, as for State (§36.1). |
+| **Ranking** | **Per weight class:** a **National Champion** in each class ("74 kg National Champion"), plus Runner-up and 3rd, by total in the class. Lifters lift in the class their spot is in. |
+| **A class with one lifter** | **They can win it if they finish with a total**, as at real meets. |
+| **What it pays** | **5x the Local prize pot** **[PROVISIONAL]**, National Champion / Runner-up / 3rd **titles and trophies per class**, and a better rare-suit chance than State. |
+| **What it leads to** | **Each class's National Champion qualifies for Worlds.** Worlds stays as designed (§31, §32). |
+| **The spot afterwards** | As decided for the spot (§36.4): competing at a Nationals keeps the spot for the rest of that month; then the class goes back to 0 placings. |
+
+**Not decided yet:** the arena's look (the user's photos), how sign-up works in each server (a desk, the MEETS list or
+both), what happens to a spot-holder who is mid-meet elsewhere when Nationals starts, how a Worlds spot is stored and
+how long it lasts, the rare-suit chance's number, and how long the meet's format runs with many classes at once.
+
+**Build order (Claude's recommendation; the user decides):** 1) the cross-server sign-up and teleport, tested with a
+stand-in venue (the State arena re-dressed) so the hard part is proven first; 2) the meet itself per class, titles,
+pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, then swapped in.

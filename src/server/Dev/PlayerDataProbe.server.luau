@@ -2627,7 +2627,8 @@ do
 	champion.career.titles = { StateChampion = 2 }
 	;(champion.career :: any).stateChampionBadges = nil
 	champion.version = 25
-	check("migrated 25 to 26", PlayerProfileSchema.migrate(champion, 25) == 26 and champion.version == 26)
+	check("migrated 25 to the current version", PlayerProfileSchema.migrate(champion, 25) == PlayerProfileSchema.CURRENT_VERSION
+		and champion.version == PlayerProfileSchema.CURRENT_VERSION)
 	check("an earlier State Champion gets the November 2026 badge, number on its way",
 		champion.career.stateChampionBadges["2026-11"] == 0)
 	PlayerProfileSchema.migrate(champion, 25)
@@ -2665,6 +2666,73 @@ do
 	local reloaded = saveAndReload(data)
 	check("badges survive a save and reload", reloaded.career.stateChampionBadges["2026-11"] == 1001
 		and reloaded.career.stateChampionBadges["2027-02"] == 0)
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("--- version 26 to 27: the Nationals spots (GAME_DESIGN §36.4) ---")
+do
+	local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
+	-- Unix times in UTC: 2026-11-17, 2026-12-05, 2027-01-02.
+	local NOV_17, DEC_5, JAN_2 = 1794873600, 1796428800, 1798848000
+	local CLASS = classOf(newProfile())
+	check("half the field, at most 3", MeetLevelConfig.nationalsPlaces(2) == 1 and MeetLevelConfig.nationalsPlaces(3) == 2
+		and MeetLevelConfig.nationalsPlaces(4) == 2 and MeetLevelConfig.nationalsPlaces(5) == 3
+		and MeetLevelConfig.nationalsPlaces(40) == 3 and MeetLevelConfig.nationalsPlaces(1) == 1)
+	check("lifters needed per place", MeetLevelConfig.nationalsFieldFor(1) == 1 and MeetLevelConfig.nationalsFieldFor(2) == 3
+		and MeetLevelConfig.nationalsFieldFor(3) == 5 and MeetLevelConfig.nationalsFieldFor(4) == nil)
+
+	local old = newProfile()
+	;(old.career :: any).nationals = nil
+	old.career.titles = { StateChampion = 3, StateRunnerUp = 1 }
+	check("migrated 26 to the current version", PlayerProfileSchema.migrate(old, 26) == PlayerProfileSchema.CURRENT_VERSION
+		and old.version == PlayerProfileSchema.CURRENT_VERSION)
+	check("old State places do not count (user's pick)", typeof(old.career.nationals) == "table"
+		and next(old.career.nationals) == nil and ProfileOperations.getNationals(old, CLASS, NOV_17).placings == 0)
+	local broken = newProfile()
+	;(broken.career :: any).nationals = { ["74 kg"] = { placings = 4, qualified = false, competedSeason = "" },
+		["83 kg"] = { placings = -1, qualified = false, competedSeason = "" }, ["93 kg"] = 5 }
+	PlayerProfileSchema.migrate(broken, 26)
+	check("broken entries are dropped, good ones kept", broken.career.nationals["74 kg"].placings == 4
+		and broken.career.nationals["83 kg"] == nil and broken.career.nationals["93 kg"] == nil)
+	PlayerProfileSchema.migrate(broken, 26)
+	check("a re-run changes nothing", broken.career.nationals["74 kg"].placings == 4)
+
+	local data = newProfile()
+	local outcome, view = ProfileOperations.addNationalsPlacing(data, CLASS, NOV_17)
+	check("a first placing counts", outcome == "Added" and view.placings == 1 and view.target == 10 and not view.qualified)
+	for _ = 2, 9 do
+		ProfileOperations.addNationalsPlacing(data, CLASS, NOV_17)
+	end
+	check("placings never reset with the month", ProfileOperations.getNationals(data, CLASS, JAN_2).placings == 9)
+	outcome, view = ProfileOperations.addNationalsPlacing(data, CLASS, JAN_2)
+	check("the 10th placing earns the spot", outcome == "Qualified" and view.placings == 10 and view.qualified)
+	outcome = ProfileOperations.addNationalsPlacing(data, CLASS, JAN_2)
+	check("another placing with a spot adds nothing", outcome == "AlreadyQualified"
+		and data.career.nationals[CLASS].placings == 10)
+	check("no build for the class: refused", ProfileOperations.addNationalsPlacing(data, "120+ kg", JAN_2) == "Rejected")
+	check("other classes are untouched", ProfileOperations.getNationals(data, "74 kg", JAN_2).placings == 0 or CLASS == "74 kg")
+	check("the spot is kept, months later", ProfileOperations.getNationals(data, CLASS, JAN_2 + 200 * 86400).qualified)
+
+	local spent = deepCopy(data)
+	check("competing at Nationals stamps the month", ProfileOperations.markNationalsCompeted(spent, CLASS, JAN_2)
+		and spent.career.nationals[CLASS].competedSeason == "2027-01")
+	check("a second Nationals that month keeps the first month",
+		ProfileOperations.markNationalsCompeted(spent, CLASS, JAN_2 + 86400)
+		and spent.career.nationals[CLASS].competedSeason == "2027-01")
+	check("the spot holds through that month", ProfileOperations.getNationals(spent, CLASS, JAN_2 + 20 * 86400).qualified)
+	local feb = JAN_2 + 31 * 86400
+	local afterView = ProfileOperations.getNationals(spent, CLASS, feb)
+	check("after that month it resets to 0", not afterView.qualified and afterView.placings == 0)
+	check("a reset spot cannot be used at Nationals", not ProfileOperations.markNationalsCompeted(spent, CLASS, feb))
+	outcome, view = ProfileOperations.addNationalsPlacing(spent, CLASS, feb)
+	check("and counts from 1 again", outcome == "Added" and view.placings == 1
+		and spent.career.nationals[CLASS].competedSeason == "")
+	check("no spot, no Nationals", not ProfileOperations.markNationalsCompeted(newProfile(), CLASS, DEC_5))
+
+	local reloaded = saveAndReload(data)
+	check("the spot survives a save and reload", reloaded.career.nationals[CLASS].placings == 10
+		and reloaded.career.nationals[CLASS].qualified == true)
 end
 
 --------------------------------------------------------------------------------

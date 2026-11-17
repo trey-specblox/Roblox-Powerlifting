@@ -53,6 +53,9 @@ export type StatsSnapshot = {
 	-- This season's ladder toward State in the player's current class (GAME_DESIGN §35.8, §36.3): points of
 	-- target, qualified, and when the season ends (Unix seconds).
 	ladder: { points: number, target: number, qualified: boolean, seasonEndsAt: number }?,
+	-- The road to Nationals in the player's current class (GAME_DESIGN §36.4 "The Nationals spot"): top-3 State
+	-- placings of target, whether they hold the spot, and whether they have competed at Nationals on it yet.
+	nationals: { placings: number, target: number, qualified: boolean, competed: boolean }?,
 }
 
 export type RemoteSet = {

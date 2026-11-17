@@ -14,6 +14,8 @@
 		- if THIS player won, their character does the winner's celebration
 		- a new numbered State Champion badge (GAME_DESIGN §36.4) is revealed low on
 		  the screen as the camera reaches the winner (ChampionBadge.reveal)
+		- a top-3 State placing toward Nationals (GAME_DESIGN §36.4) shows on that lifter's
+		  own screen only, after the badge (NationalsCard)
 	The camera goes back to normal when the ceremony ends or the player leaves
 	the venue. Display only: it decides and saves nothing.
 ]]
@@ -28,6 +30,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("LocalMeetRemotes"))
 local ChampionBadge = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("ChampionBadge"))
+local NationalsCard = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("NationalsCard"))
 
 local LocalMeetAwards = {}
 
@@ -35,6 +38,8 @@ local SETTINGS = LocalMeetConfig.Awards
 -- How high over the podium's top the shots look: about a standing winner's chest, and their face.
 local CHEST_HEIGHT = 3
 local FACE_HEIGHT = 4.4
+-- The longest the Nationals card stays (seconds).
+local NATIONALS_CARD_SECONDS = 5
 
 -- Everything the running ceremony made, so stop() can undo it; `id` makes an older ceremony's timers do nothing.
 local current: {
@@ -45,6 +50,8 @@ local current: {
 	leaving: RBXScriptConnection?,
 	-- Ends the badge reveal, if one is showing.
 	endReveal: (() -> ())?,
+	-- Ends this player's Nationals card, if one is showing.
+	endNationals: (() -> ())?,
 }? = nil
 local nextId = 0
 
@@ -86,6 +93,9 @@ function LocalMeetAwards.stop()
 	if ceremony.endReveal then
 		ceremony.endReveal()
 	end
+	if ceremony.endNationals then
+		ceremony.endNationals()
+	end
 	local camera = Workspace.CurrentCamera
 	local character = Players.LocalPlayer.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -105,7 +115,7 @@ function LocalMeetAwards.play(moment: LocalMeetRemotes.AwardsMoment)
 	nextId += 1
 	local id = nextId
 	local ceremony = { id = id, sounds = {} :: { Sound }, track = nil :: AnimationTrack?, tween = nil :: Tween?,
-		leaving = nil :: RBXScriptConnection?, endReveal = nil :: (() -> ())? }
+		leaving = nil :: RBXScriptConnection?, endReveal = nil :: (() -> ())?, endNationals = nil :: (() -> ())? }
 	current = ceremony
 	local function stillRunning(): boolean
 		return current ~= nil and current.id == id
@@ -192,6 +202,20 @@ function LocalMeetAwards.play(moment: LocalMeetRemotes.AwardsMoment)
 				end
 			end)
 		end
+	end
+	-- This player's own placing toward Nationals (GAME_DESIGN §36.4): after the badge's reveal, or in its place.
+	local nationals = moment.nationals
+	if nationals and typeof(nationals.placings) == "number" and typeof(nationals.target) == "number"
+		and typeof(nationals.classLabel) == "string" then
+		local hasReveal = spot ~= nil and moment.championBadge ~= nil
+		local startAt = SETTINGS.WideShotSeconds + SETTINGS.GlideSeconds * 0.6
+			+ (if hasReveal then SETTINGS.CloseUpSeconds + SETTINGS.GlideSeconds + 0.5 else 0)
+		local showFor = math.clamp(moment.seconds - startAt - 0.6, 2.5, NATIONALS_CARD_SECONDS)
+		task.delay(startAt, function()
+			if stillRunning() then
+				ceremony.endNationals = NationalsCard.show(nationals, showFor)
+			end
+		end)
 	end
 	task.delay(moment.seconds, function()
 		if stillRunning() then

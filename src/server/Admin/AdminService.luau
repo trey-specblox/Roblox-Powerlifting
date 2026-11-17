@@ -94,6 +94,8 @@ local function targetViewFor(target: Player): AdminRemotes.TargetView?
 			value = profile.bodyweight and profile.bodyweight.currentKg
 		elseif field.kind == "Ladder" then
 			value = ladder.points
+		elseif field.kind == "Nationals" then
+			value = ProfileOperations.getNationals(data, classKey, os.time()).placings
 		elseif field.kind == "CompetitionNumber" and field.lift then
 			value = (build.competitionNumber :: any)[field.lift]
 		elseif field.kind == "Scale" and field.lift then
