@@ -93,9 +93,9 @@ end
 	Badges); 0 = not made yet, so nothing is given. Never change an id once players have it.
 ]]
 MeetLevelConfig.WinnerBadgeIds = {
-	Local = 0,
-	Regional = 0,
-	State = 0,
+	Local = 3517943830860955, -- "Local Meet Winner!"
+	Regional = 4321150741828938, -- "Won Regionals!"
+	State = 3696266731109373, -- "State Champion!"
 } :: { [string]: number }
 
 -- The trophy model the top 3 hold on the podium at a level with titles (art/blender/Trophy_01.blend; 0 = not

@@ -22,8 +22,9 @@ MEET WITH TWO PLAYERS HAS NOT BEEN RUN WITH IT.**
   fillStateChampionNumber, getStateChampionBadges, pendingStateChampionSeasons.
 - NEW `src/server/Meet/ChampionBadges.luau`: the game-wide counter (DataStore "StateChampionCounter", key "Count";
   Studio "StudioCount"; memory in Studio without API access), retries, numbering on join; Roblox win badges (awardWin +
-  catch-up on join) from `MeetLevelConfig.WinnerBadgeIds`, ALL 0 = OFF until the user makes them on the Creator
-  Dashboard and sends the ids.
+  catch-up on join) from `MeetLevelConfig.WinnerBadgeIds`: the user made the three badges on 2026-11-16 and their ids
+  are filled in (Local "Local Meet Winner!", Regional "Won Regionals!", State "State Champion!"), checked by name in
+  Studio. Not yet seen awarded in a live game (not fired in Studio, to keep test badges off the user's account).
 - LocalMeetService: the State winner's save adds the badge and numbers it; result line; fun-facts strip; the awards
   moment carries the badge and the rack callers announce it. Client: NEW `src/client/UI/ChampionBadge.luau` (gold
   medal + reveal card, UI kit glow/shine/gloss/rays, GearStatsConfig.Sounds.Big), LocalMeetAwards shows the reveal at

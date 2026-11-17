@@ -6039,8 +6039,8 @@ in their weight class and stay in it. This reopens the ladder points
 >   there are more; pressing it lists every month's badge. **Meet screens:** "#1001 STATE CHAMPION · NOV 2026 (+2 MORE)" in the
 >   fun-facts strip.
 > - **Roblox badges:** the code gives them after a counting win and, on joining, for wins a player already had. They switch on when
->   their ids are filled in `MeetLevelConfig.WinnerBadgeIds` (0 = not made yet); the badges themselves are made on the Creator
->   Dashboard.
+>   their ids are filled in `MeetLevelConfig.WinnerBadgeIds`. **The user made all three on 2026-11-16 and they are ON:** "Local
+>   Meet Winner!", "Won Regionals!" and "State Champion!" (made on the Creator Dashboard).
 
 > **Built (2026-11-07): the live minigame on the rack screens.** While a lifter lifts at the State meet, their rack's screen shows their
 > minigame as they play it: the squat's track and marker, the bench's closing ring with MASH! and HOLD!, the deadlift's letters, and the
