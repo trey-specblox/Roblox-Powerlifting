@@ -13,6 +13,23 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**PERFORMANCE PASS (2026-11-16, user: "Shadows + audit tool"). TESTED IN STUDIO (play test, one player), NOT COMMITTED,
+NOT MEASURED ON A PHONE.** Audit findings: the world total is over budget only because the server holds every area at
+once; streaming (min 64, target 1024) means a player loads only where they are. The 110 combo racks (30 gym + 80 in
+the halls, 26 pieces each, every piece casting a shadow) were ~65% of all shadow casters.
+- `src/server/Training/RackConfigurator.luau`: profile field `noShadow` (pins, bolts, rubber liners, foot caps, lock
+  pins, safety pins) gets CastShadow false. `src/server/Training/StationVisuals.luau`: bar collars cast no shadow.
+  Hiding a rack for a meet deadlift still restores each part's own setting.
+- `tools/studio/PerformanceAudit.luau`: says which view it ran in (server = whole world, client = this device) and
+  lists parts / shadows per area, each meet hall separately.
+- Before -> after (no meet running): world shadows 5,550 -> 4,540; GymRacks 1,034 -> 744; each hall 694 -> 550.
+  Player in the gym: 5,527 parts, shadows 1,984 -> 1,694, 664 unique meshes, 144 lights, 76 screens. Player in a hall:
+  1,419 parts, shadows 734 -> 590. Parts unchanged (13,005 world). No script errors; 30/30 gym racks registered.
+- Not done (user chose not to): merging rack pieces by colour in Blender (26 -> 14 per rack, ~-360 parts in the gym
+  view; needs uploads and J-cup/bench code changes). Mesh reuse: only ~5 near-duplicate uploads found.
+- Stray objects at Workspace root in the place (not touched): ScaleTest_2StudCube_v2, decals SBDCentral_DeskBanner_2,
+  EPG_FrontSignArt_4. Findings in full: side-session notes `performance-audit-2026-11-16.md`.
+
 **GEAR v6 = EVERY LAYER BUILT ON THE BODY'S OWN MESH (2026-11-16, user: "Yes, build it", after rejecting the v5
 rework's pictures: "STOP guessing"). PROTOTYPE ON FIT IN PROGRESS, NOTHING UPLOADED, NOT COMMITTED.**
 - Why: separately shaped tee / singlet / belt meshes bend from different points and cross. `art/scripts/

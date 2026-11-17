@@ -38,6 +38,13 @@ type RackProfile = {
 	nonColliding: { string },
 	-- Posts whose average centre is the rack's centre (StandPoint goes below it, on the floor).
 	centrePosts: { string },
+	--[[
+		PERFORMANCE (audit 2026-11-16): tiny pieces whose shadow is too small to
+		see (pins, bolts, rubber liners and caps) cast none. Every rack piece cast a
+		shadow, and the 110 racks were about 65% of the world's shadow casters.
+		Hiding a rack (StationVisuals) remembers and restores this setting.
+	]]
+	noShadow: { string },
 }
 
 local RACK_PROFILES: { [string]: RackProfile } = {
@@ -51,6 +58,7 @@ local RACK_PROFILES: { [string]: RackProfile } = {
 			"SafetyBar_Left", "SafetyBar_Right", "SafetyPins", "FrameBolts",
 		},
 		centrePosts = { "Upright_FrontLeft", "Upright_FrontRight", "Upright_BackLeft", "Upright_BackRight" },
+		noShadow = { "JCupPin_Left", "JCupPin_Right", "JCupLiner_Left", "JCupLiner_Right", "SafetyPins", "FrameBolts" },
 	},
 	-- art/scripts/build_combo_rack_01.py: combo rack with a bench, StandPoint between
 	-- the two tall posts (under the racked bar). The bench is not solid, so it can
@@ -66,6 +74,8 @@ local RACK_PROFILES: { [string]: RackProfile } = {
 			"FrameBolts", "Bench_Pad", "Bench_Frame",
 		},
 		centrePosts = { "Upright_Left", "Upright_Right" },
+		noShadow = { "JCupPin_Left", "JCupPin_Right", "JCupLiner_Left", "JCupLiner_Right",
+			"SafetyPins", "FrameBolts", "InsertLockPins", "FootCaps" },
 	},
 }
 
@@ -204,6 +214,13 @@ function RackConfigurator.configure(rack: Model, templateName: string): (boolean
 		part.Anchored = true
 		part.CanTouch = false
 		part.CanCollide = false
+	end
+	-- Only pieces already found above (collectParts), so a name here must also be in solid/nonColliding.
+	for _, name in ipairs(profile.noShadow) do
+		local part = parts[name]
+		if part then
+			part.CastShadow = false
+		end
 	end
 
 	local standPoint = Instance.new("Part")

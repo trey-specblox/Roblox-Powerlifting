@@ -167,6 +167,8 @@ local function setLoad(barbell: Barbell, load: BarLoad.Load)
 			local lift = barbell.shaft.CFrame:ToObjectSpace(collar.CFrame).Y * scale
 			addToBar(barbell, collar, CFrame.new(side * (x + collar.Size.X / 2), lift, 0),
 				Vector3.new(collar.Size.X, collar.Size.Y * scale, collar.Size.Z * scale))
+			-- PERFORMANCE (audit 2026-11-16): too small for a visible shadow, right beside the plates' own.
+			barbell.parts[#barbell.parts].part.CastShadow = false
 		end
 	end
 end
