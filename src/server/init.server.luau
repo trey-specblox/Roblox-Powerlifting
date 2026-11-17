@@ -68,6 +68,11 @@ LocalMeetService.start()
 local StateArenaService = require(MeetFolder:WaitForChild("StateArenaService"))
 StateArenaService.start()
 
+-- Nationals, step 1 (GAME_DESIGN §39): the sign-up list shared by every server and the gathering into one Nationals
+-- server, with the State arena as its stand-in venue. Not Live yet (NationalsConfig.Live): admins only in live servers.
+local NationalsService = require(MeetFolder:WaitForChild("NationalsService"))
+NationalsService.start()
+
 -- The TELEPORT menu: the client asks for a place, the server checks and moves the player.
 local TeleportService = require(WorldFolder:WaitForChild("TeleportService"))
 TeleportService.start()

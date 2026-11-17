@@ -24,10 +24,13 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local MeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("MeetConfig"))
+local NationalsConfig = require(Shared:WaitForChild("Config"):WaitForChild("NationalsConfig"))
 local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("LocalMeetRemotes"))
+local NationalsRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("NationalsRemotes"))
 
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 local C = UIStyle.Colours
@@ -39,6 +42,9 @@ export type Handlers = {
 	-- Each asks for one of the meets by its number.
 	signUp: (index: number) -> (),
 	spectate: (index: number) -> (),
+	-- The NATIONALS row (GAME_DESIGN §39): sign up / take off, and at Nationals, LEAVE NATIONALS.
+	nationalsSignUp: () -> (),
+	nationalsLeave: () -> (),
 }
 
 export type Ui = {
@@ -50,6 +56,8 @@ export type Ui = {
 	-- `serverNow` is workspace:GetServerTimeNow().
 	drawLobby: (lobby: LocalMeetRemotes.LobbyState?, serverNow: number) -> (),
 	drawStandings: (standings: LocalMeetRemotes.Standings?) -> (),
+	-- The NATIONALS row under the meets, from the server's view (nil or not shown: no row).
+	drawNationals: (view: NationalsRemotes.View?, serverNow: number) -> (),
 }
 
 -- Below the meet screen's notice (24..130 from the top), which also carries the venue's notices, and right
@@ -93,6 +101,15 @@ local function clockText(seconds: number): string
 	return string.format("%d:%02d", whole // 60, whole % 60)
 end
 
+-- Nationals is hours away: "1:59:30", or "1:30" under an hour.
+local function longClockText(seconds: number): string
+	local whole = math.max(0, math.ceil(seconds))
+	if whole >= 3600 then
+		return string.format("%d:%02d:%02d", whole // 3600, (whole % 3600) // 60, whole % 60)
+	end
+	return clockText(whole)
+end
+
 local function placeText(place: number): string
 	local suffix = "TH"
 	if place % 100 < 11 or place % 100 > 13 then
@@ -113,7 +130,8 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 
 	-- ------------------------------------------------ the MEETS list
 	local cardHolder, card = UIStyle.panel(gui, "Card", UDim2.fromOffset(LEFT, CARD_TOP),
-		UDim2.fromOffset(LIST_WIDTH, LIST_TOP + MEET_COUNT * LIST_ROW_HEIGHT + 10))
+		-- Room for the NATIONALS row too (fitCard shortens the card while it isn't shown).
+		UDim2.fromOffset(LIST_WIDTH, LIST_TOP + (MEET_COUNT + 1) * LIST_ROW_HEIGHT + 10))
 	UIStyle.titleTag(cardHolder, "Tag", "MEETS", UDim2.fromOffset(-14, -24), UDim2.fromOffset(180, 40), nil, "star")
 	UIStyle.collapsible(cardHolder)
 	-- How far a meet could still raise each lift's CN (the meet allowance, GAME_DESIGN 33.3b).
@@ -143,6 +161,41 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 				end),
 		}
 	end
+	-- The NATIONALS row under the meets: one button (on the right), so its words have the second button's room too.
+	local nationalsY = LIST_TOP + MEET_COUNT * LIST_ROW_HEIGHT
+	local nationalsTextWidth = LIST_WIDTH - (LIST_BUTTON_WIDTH + LIST_GAP) - 30
+	local nationalsButtonY = nationalsY + (LIST_ROW_HEIGHT - LIST_BUTTON_HEIGHT) / 2
+	-- What the button does now (sign up / take off, or leave).
+	local nationalsLeaving = false
+	local nationalsRow = {
+		title = UIStyle.label(card, "Title_Nationals", UDim2.fromOffset(18, nationalsY + 4 * LIST_SCALE),
+			UDim2.fromOffset(nationalsTextWidth, 23 * LIST_SCALE), C.yellow, UIStyle.heading()),
+		status = UIStyle.label(card, "Status_Nationals", UDim2.fromOffset(18, nationalsY + 29 * LIST_SCALE),
+			UDim2.fromOffset(nationalsTextWidth, 17 * LIST_SCALE), C.muted),
+		button = UIStyle.button(card, "SignUp_Nationals", "SIGN UP",
+			UDim2.fromOffset(LIST_WIDTH - 14 - LIST_BUTTON_WIDTH, nationalsButtonY),
+			UDim2.fromOffset(LIST_BUTTON_WIDTH, LIST_BUTTON_HEIGHT), "primary", function()
+				if nationalsLeaving then
+					handlers.nationalsLeave()
+				else
+					handlers.nationalsSignUp()
+				end
+			end),
+	}
+	nationalsRow.title.Visible, nationalsRow.status.Visible, nationalsRow.button.Visible = false, false, false
+	-- The card is as tall as its rows: the meets, and the NATIONALS row when it shows.
+	local function fitCard(withNationals: boolean)
+		local rows = MEET_COUNT + (if withNationals then 1 else 0)
+		local height = UDim2.new(1, 0, 0, LIST_TOP + rows * LIST_ROW_HEIGHT + 10)
+		for _, name in ipairs({ "Body", "Back" }) do
+			local piece = cardHolder:FindFirstChild(name)
+			if piece and piece:IsA("GuiObject") then
+				piece.Size = height
+			end
+		end
+	end
+	fitCard(false)
+	local nationalsShown = false
 
 	-- ------------------------------------------------ the STANDINGS
 	local standingsSize = Vector2.new(STANDINGS_WIDTH, ROWS_TOP + ROWS * ROW_HEIGHT + FOOT_HEIGHT + 8)
@@ -266,7 +319,12 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 			local untilStart = meet.nextStartAt - serverNow
 			local closesIn = meet.signUpClosesAt - serverNow
 			local lifters = string.format("%d/%d", meet.signedUpCount, meet.maxLifters)
-			if meet.notQualified and not meet.running then
+			-- The arena is hosting Nationals (GAME_DESIGN §39; the server refuses State sign-ups meanwhile).
+			if meet.state and Workspace:GetAttribute(NationalsConfig.ServerAttribute) ~= nil then
+				row.status.Text = "HOSTING NATIONALS"
+				row.status.TextColor3 = C.muted
+				row.signUp.Visible = false
+			elseif meet.notQualified and not meet.running then
 				row.status.Text = "QUALIFY FIRST  ·  " .. meet.notQualified
 				row.status.TextColor3 = C.muted
 				row.signUp.Text = "SIGN UP"
@@ -297,6 +355,53 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 			row.spectate.AutoButtonColor = lobby.hereIndex ~= index
 			row.spectate.TextTransparency = if lobby.hereIndex == index then 0.5 else 0
 		end
+	end
+
+	-- The NATIONALS row (GAME_DESIGN §39): drawn from the server's view, deciding nothing.
+	ui.drawNationals = function(view: NationalsRemotes.View?, serverNow: number)
+		local shown = view ~= nil and view.shown
+		if shown ~= nationalsShown then
+			nationalsShown = shown
+			fitCard(shown)
+			nationalsRow.title.Visible, nationalsRow.status.Visible, nationalsRow.button.Visible = shown, shown, shown
+		end
+		if view == nil or not shown then
+			return
+		end
+		local row = nationalsRow
+		row.title.Text = string.format("NATIONALS  ·  x%d%s", view.potMultiplier, if view.test then "  ·  TEST" else "")
+		row.status.TextColor3 = C.muted
+		nationalsLeaving = false
+		row.button.Visible = true
+		local untilStart = view.nextStartAt - serverNow
+		local count = if view.signedUpCount then string.format("%d SIGNED UP", view.signedUpCount) else nil
+		if view.here then
+			row.status.Text = string.format("YOU ARE AT NATIONALS  ·  %s  ·  %d %s", view.classLabel or "",
+				view.liftersHere or 0, if view.liftersHere == 1 then "LIFTER" else "LIFTERS")
+			row.status.TextColor3 = C.yellow
+			row.button.Text = "LEAVE"
+			nationalsLeaving = true
+		elseif view.status then
+			row.status.Text = view.status
+			row.status.TextColor3 = C.yellow
+			row.button.Visible = false
+		elseif view.signedUp then
+			row.status.Text = string.format("SIGNED UP (%s)  ·  STARTS IN %s%s", view.classLabel or "", longClockText(untilStart),
+				if count then "  ·  " .. count else "")
+			row.status.TextColor3 = C.yellow
+			row.button.Text = "TAKE OFF"
+		elseif not view.qualified then
+			row.status.Text = "SPOT HOLDERS ONLY  ·  " .. (view.why or "")
+			row.button.Text = "SIGN UP"
+		elseif view.signUpClosesAt - serverNow <= 0 then
+			row.status.Text = "SIGN-UPS CLOSED  ·  STARTS IN " .. longClockText(untilStart)
+			row.button.Text = "SIGN UP"
+		else
+			row.status.Text = string.format("STARTS IN %s  ·  %s  ·  NEEDS %d", longClockText(untilStart),
+				count or "ALL SERVERS", view.minimumLifters)
+			row.button.Text = "SIGN UP"
+		end
+		row.button.Visible = row.button.Visible and not liftingNow
 	end
 
 	-- "YOU: 2ND  ·  1.25 BEHIND THEO (CPU)  ·  0.80 AHEAD OF NADIA (CPU)".

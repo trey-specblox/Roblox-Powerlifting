@@ -27,6 +27,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("LocalMeetRemotes"))
+local NationalsRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("NationalsRemotes"))
 local MockMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("MockMeetRemotes"))
 
 local MockMeetController = require(script.Parent:WaitForChild("MockMeetController"))
@@ -67,7 +68,16 @@ function LocalMeetController.start()
 
 	local lobby: LocalMeetRemotes.LobbyState? = nil
 	local standings: LocalMeetRemotes.Standings? = nil
+	-- Nationals (GAME_DESIGN §39): its own remotes, its row in the same list.
+	local nationalsRemotes = NationalsRemotes.waitForClient(ReplicatedStorage)
+	local nationals: NationalsRemotes.View? = nil
 	local ui = LocalMeetLobbyUI.build({
+		nationalsSignUp = function()
+			nationalsRemotes.signUp:FireServer()
+		end,
+		nationalsLeave = function()
+			nationalsRemotes.leave:FireServer()
+		end,
 		exit = function()
 			remotes.exit:FireServer()
 		end,
@@ -125,6 +135,7 @@ function LocalMeetController.start()
 		listOpen = not listOpen
 		if listOpen then
 			remotes.lobbyRequest:FireServer()
+			nationalsRemotes.request:FireServer()
 		end
 		refresh()
 	end)
@@ -138,6 +149,10 @@ function LocalMeetController.start()
 
 	remotes.lobby.OnClientEvent:Connect(function(newLobby: LocalMeetRemotes.LobbyState)
 		lobby = newLobby
+	end)
+	nationalsRemotes.state.OnClientEvent:Connect(function(view: NationalsRemotes.View)
+		nationals = view
+		ui.drawNationals(nationals, Workspace:GetServerTimeNow())
 	end)
 	remotes.standings.OnClientEvent:Connect(function(newStandings: LocalMeetRemotes.Standings)
 		standings = newStandings
@@ -169,6 +184,7 @@ function LocalMeetController.start()
 		end
 		nextDraw = os.clock() + 0.25
 		ui.drawLobby(lobby, Workspace:GetServerTimeNow())
+		ui.drawNationals(nationals, Workspace:GetServerTimeNow())
 	end)
 	-- The tab counts down to the meet the player is signed up for, once a second.
 	task.spawn(function()
@@ -180,12 +196,20 @@ function LocalMeetController.start()
 					text = string.format("%s  %d:%02d", if meet.state then "STATE" else "MEET " .. meet.index, seconds // 60, seconds % 60)
 				end
 			end
+			-- Signed up for Nationals and no meet sooner: its countdown (hours, so "NATS 1:59").
+			local view = nationals
+			if text == nil and view and view.signedUp and view.status == nil then
+				local seconds = math.max(0, math.ceil(view.nextStartAt - Workspace:GetServerTimeNow()))
+				text = if seconds >= 3600 then string.format("NATS  %d:%02d", seconds // 3600, (seconds % 3600) // 60)
+					else string.format("NATS  %d:%02d", seconds // 60, seconds % 60)
+			end
 			tab.setCountdown(text)
 			task.wait(1)
 		end
 	end)
 	-- The list and the countdown work from anywhere, so ask for them from the start.
 	remotes.lobbyRequest:FireServer()
+	nationalsRemotes.request:FireServer()
 end
 
 return LocalMeetController

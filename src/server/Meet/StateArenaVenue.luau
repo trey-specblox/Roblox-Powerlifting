@@ -58,6 +58,7 @@ local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local CheerConfig = require(ConfigFolder:WaitForChild("CheerConfig"))
+local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 
 local ServerFolder = script.Parent.Parent
 local WorldFolder = ServerFolder:WaitForChild("World")
@@ -805,6 +806,144 @@ function StateArenaVenue.build(): (Venue?, string?)
 		inMeetArea = inMeetArea,
 	}
 	return venue, nil
+end
+
+-- The arena once built (nil before).
+function StateArenaVenue.current(): Venue?
+	return venue
+end
+
+--[[
+	THE NATIONALS DESK (GAME_DESIGN §39, user 2026-11-17: "MEETS list + a desk"; NationalsService): a
+	second MockMeet_01 desk (the same uploaded mesh as the State desk, no new model) on the lobby floor at
+	`at` (the arena's frame), facing the main stand like the State desk, with its own screen and an
+	invisible point for its prompt. It stands always, not only between State meets. Built once; returns
+	the point and the screen, or nil when the arena isn't built or the desk didn't load.
+	PERFORMANCE: one more desk (its mesh is already loaded for the State desk), no shadows.
+]]
+local nationalsDesk: { point: BasePart, screen: StyledScreen.Handle? }? = nil
+
+function StateArenaVenue.addNationalsDesk(at: Vector3, tag: string, lines: { string }): (BasePart?, StyledScreen.Handle?)
+	if nationalsDesk then
+		return nationalsDesk.point, nationalsDesk.screen
+	end
+	local v = venue
+	if v == nil then
+		return nil, nil
+	end
+	local frame = v.frame
+	local copy = RoomProps.propCopy("MeetDesk", 1)
+	if copy == nil then
+		return nil, nil
+	end
+	local folder = Instance.new("Folder")
+	folder.Name = "NationalsDesk"
+	copy.Name = "NationalsDesk"
+	local world = frame * at
+	copy:PivotTo(CFrame.lookAt(world, world + frame:VectorToWorldSpace(-Vector3.zAxis)))
+	copy.Parent = folder
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CastShadow = false
+		end
+	end
+	hide(BuildParts.placed(folder, "NationalsDesk_Solid", Vector3.new(10.5, 3.3, 2.3), frame * CFrame.new(at.X, 1.65, at.Z),
+		looks.Glass))
+	local screen: StyledScreen.Handle? = nil
+	local monitor = copy:FindFirstChild("MeetDesk_MonitorScreen", true) :: BasePart?
+	if monitor then
+		screen = StyledScreen.build(monitor, StyledScreen.faceToward(monitor, frame.ZVector), tag, lines, "bar", 120)
+	end
+	local point = BuildParts.placed(folder, "NationalsSignUpPoint", Vector3.new(2, 4, 2), frame * CFrame.new(at.X, 2, at.Z - 4),
+		looks.Glass)
+	hide(point)
+	point.CanCollide = false
+	point.CanQuery = false
+	folder.Parent = v.model
+	nationalsDesk = { point = point, screen = screen }
+	return point, screen
+end
+
+--[[
+	THE NATIONALS STAND-IN (GAME_DESIGN §39 step 1): the State arena re-dressed for Nationals until the new
+	arena (from the user's photos) exists. On: the eight red banners' modelled STATE CHAMPS lettering is
+	hidden and the game writes `title` / CHAMPS / CENTRAL on the cloth instead; the centre cube and the
+	end signs say `title` between lifts; the State desk and the awards backdrop say so; the entrance
+	sign reads `title` / `sub`. Off puts the State words back. Text only: no model changes.
+]]
+local dressed = false
+local BANNER_WRITING = "NationalsWriting"
+-- The game's sign lettering (LocalMeetVenue's signs).
+local SIGN_FONT = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
+
+local function bannerWriting(cloth: BasePart, out: Vector3, title: string)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = BANNER_WRITING
+	gui.Face = StyledScreen.faceToward(cloth, out)
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 40
+	gui.LightInfluence = 0.4
+	gui.Parent = cloth
+	-- Where the modelled lettering was: between the two yellow trims, the top 12 % to 70 % of the cloth.
+	local function line(name: string, text: string, y: number, height: number)
+		local label = Instance.new("TextLabel")
+		label.Name = name
+		label.BackgroundTransparency = 1
+		label.Position = UDim2.fromScale(0.08, y)
+		label.Size = UDim2.fromScale(0.84, height)
+		label.Text = text
+		label.TextColor3 = Color3.new(1, 1, 1)
+		label.TextScaled = true
+		label.FontFace = SIGN_FONT
+		label.Parent = gui
+	end
+	line("Title", title, 0.2, 0.12)
+	line("Champs", "CHAMPS", 0.34, 0.1)
+	line("Brand", "CENTRAL", 0.5, 0.07)
+end
+
+function StateArenaVenue.dressAsNationals(on: boolean, title: string, sub: string)
+	local v = venue
+	if v == nil or dressed == on then
+		return
+	end
+	dressed = on
+	StateArenaShow.setEventName(if on then title else nil)
+	for _, banner in ipairs(v.model:GetChildren()) do
+		if string.sub(banner.Name, 1, 7) ~= "Banner_" then
+			continue
+		end
+		local lettering = banner:FindFirstChild("ArenaBanner_Text", true)
+		if lettering and lettering:IsA("BasePart") then
+			lettering.Transparency = if on then 1 else 0
+		end
+		local cloth = banner:FindFirstChild("ArenaBanner_Cloth", true)
+		if cloth and cloth:IsA("BasePart") then
+			local old = cloth:FindFirstChild(BANNER_WRITING)
+			if old then
+				old:Destroy()
+			end
+			if on then
+				bannerWriting(cloth, towardMiddle(v.frame, cloth), title)
+			end
+		end
+	end
+	local state = MeetLevelConfig.Levels.State
+	if on then
+		LocalMeetVenue.setLevel(v.meet, title, { "This arena is hosting", "Nationals" }, 0)
+	else
+		LocalMeetVenue.setLevel(v.meet, state.label, { string.format("Prize pot x%d", state.potMultiplier), "Top 3 earn titles" }, 0)
+	end
+	local entrance = Workspace:FindFirstChild(ENTRANCE_NAME)
+	local sign = entrance and entrance:FindFirstChild("ArenaEntrance_SignScreen", true)
+	local writing = sign and sign:FindFirstChild("Writing")
+	local back = writing and writing:FindFirstChild("Back")
+	local titleLabel = back and back:FindFirstChild("Title")
+	local subLabel = back and back:FindFirstChild("Sub")
+	if titleLabel and titleLabel:IsA("TextLabel") and subLabel and subLabel:IsA("TextLabel") then
+		titleLabel.Text = if on then title else "STATE ARENA"
+		subLabel.Text = (if on then sub else "STATE CHAMPIONSHIP") .. "  //  HOLD E AT THE DOORS"
+	end
 end
 
 --[[

@@ -68,6 +68,9 @@ local function isAdmin(player: Player): boolean
 	return ADMIN_USER_IDS[player.UserId] == true
 end
 
+-- Whether `player` is on the admin list (for systems open only to admins while being tested live, e.g. Nationals).
+AdminService.isAdmin = isAdmin
+
 -- The player in this server with this UserId, or nil. Safe with anything a client sends.
 local function playerFor(userId: any): Player?
 	if typeof(userId) ~= "number" or userId ~= userId then

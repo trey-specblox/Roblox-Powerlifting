@@ -96,6 +96,7 @@ local StateArenaConfig = require(ConfigFolder:WaitForChild("StateArenaConfig"))
 local TeleportConfig = require(ConfigFolder:WaitForChild("TeleportConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
+local NationalsConfig = require(ConfigFolder:WaitForChild("NationalsConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
@@ -564,7 +565,10 @@ local function rollLevel(hall: Hall)
 	if hall.state then
 		-- Always State, with nothing to announce: it comes round on its own timetable.
 		hall.nextLevel = "State"
-		LocalMeetVenue.setLevel(hall.venue, MeetLevelConfig.Levels.State.label, perksOf("State"), hall.index)
+		-- (While the arena hosts Nationals its desk and backdrop say so: StateArenaVenue.dressAsNationals.)
+		if Workspace:GetAttribute(NationalsConfig.ServerAttribute) == nil then
+			LocalMeetVenue.setLevel(hall.venue, MeetLevelConfig.Levels.State.label, perksOf("State"), hall.index)
+		end
 		return
 	end
 	local forced = if RunService:IsStudio() then Workspace:GetAttribute("ForceMeetLevel") else nil
@@ -3267,6 +3271,10 @@ local function tryStartMeet(hall: Hall)
 	if hall.meet ~= nil then
 		return
 	end
+	-- The arena is hosting Nationals (GAME_DESIGN §39, NationalsService): no State meet in it; the list carries over.
+	if hall.state and Workspace:GetAttribute(NationalsConfig.ServerAttribute) ~= nil then
+		return
+	end
 	-- Anyone signed up who went off to do something else is taken there now (user 2026-11-06).
 	bringToMeet(hall)
 	-- Only names now in the venue, alive and free can lift; the list keeps its order, and anyone who can't lift stays
@@ -3636,6 +3644,9 @@ local function toggleSignUp(player: Player, hall: Hall)
 	if signedUpAt(player) == hall then
 		removeSignUp(player)
 		notify(player, "You took your name off the list.")
+	elseif hall.state and Workspace:GetAttribute(NationalsConfig.ServerAttribute) ~= nil then
+		notify(player, "The arena is hosting Nationals right now, so there is no State meet here.")
+		return
 	else
 		local untilStart = hall.nextStartAt - now()
 		if untilStart <= closesSeconds(hall) then
@@ -3739,6 +3750,72 @@ function LocalMeetService.watchMeet(player: Player, hallIndex: any): (boolean, s
 	end
 	spectate(player, hall)
 	return visit.hall == hall.index, nil
+end
+
+-- ---------------------------------------------------------------- Nationals (GAME_DESIGN §39, NationalsService)
+
+-- A message on the player's screen, as the meets' own.
+function LocalMeetService.notify(player: Player, message: string)
+	notify(player, message)
+end
+
+--[[
+	Nationals is starting and `player` goes (user 2026-11-17: a spot-holder mid-meet elsewhere is pulled
+	out): off any meet's list, off a warm-up rack, and out of a meet they lift in, which counts as
+	withdrawing (their misses so far are saved now, while their data is still loaded). They stay where
+	they are; NationalsService then sends them on.
+]]
+function LocalMeetService.pullOutForNationals(player: Player)
+	removeSignUp(player)
+	if warmUp then
+		warmUp.stop(player, false)
+	end
+	local _, lifter = activeLifter(player)
+	if lifter then
+		withdraw(player, "went to Nationals")
+		if visits[player] then
+			standAt(player, LocalMeetVenue.lobbySpotFor(lifter.hall.venue, lifter.order), false)
+		end
+	end
+	broadcastLobby()
+end
+
+--[[
+	Into the State arena (the Nationals stand-in venue) from anywhere in this server: off a rack, a
+	machine or a lift first, as a meet's call does. Returns whether they are there now, and why not.
+]]
+function LocalMeetService.bringToStateArena(player: Player): (boolean, string?)
+	local stateHall: Hall? = nil
+	for _, hall in ipairs(halls) do
+		if hall.state then
+			stateHall = hall
+		end
+	end
+	if stateHall == nil then
+		return false, "The arena is still being built."
+	end
+	local visit = visits[player]
+	if visit and visit.hall == stateHall.index then
+		return true, nil
+	end
+	if LiftAttemptService.isAttemptActive(player) then
+		LiftAttemptService.abandon(player)
+	end
+	TrainingStationService.letGo(player, "You are going to Nationals.")
+	CardioMachineService.hopOff(player)
+	if visit then
+		spectate(player, stateHall)
+		local arrived = visits[player]
+		return arrived ~= nil and arrived.hall == stateHall.index, nil
+	end
+	return enterVenue(player, nil, stateHall)
+end
+
+-- Out of the venue, back to where they came from (the venue's EXIT). Nothing when they aren't in it.
+function LocalMeetService.leaveToGym(player: Player)
+	if visits[player] then
+		leaveVenue(player, true)
+	end
 end
 
 -- How often one player may ask for the meets list, and when each last did.

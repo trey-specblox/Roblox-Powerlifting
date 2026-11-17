@@ -7242,10 +7242,38 @@ presentation apply, as at State and up (§36.4). Numbers marked **[PROVISIONAL]*
 | **What it leads to** | **Each class's National Champion qualifies for Worlds.** Worlds stays as designed (§31, §32). |
 | **The spot afterwards** | As decided for the spot (§36.4): competing at a Nationals keeps the spot for the rest of that month; then the class goes back to 0 placings. |
 
-**Not decided yet:** the arena's look (the user's photos), how sign-up works in each server (a desk, the MEETS list or
-both), what happens to a spot-holder who is mid-meet elsewhere when Nationals starts, how a Worlds spot is stored and
-how long it lasts, the rare-suit chance's number, and how long the meet's format runs with many classes at once.
+**Not decided yet:** the arena's look (the user's photos), how a Worlds spot is stored and how long it lasts, the
+rare-suit chance's number, and how long the meet's format runs with many classes at once.
 
 **Build order (Claude's recommendation; the user decides):** 1) the cross-server sign-up and teleport, tested with a
 stand-in venue (the State arena re-dressed) so the hard part is proven first; 2) the meet itself per class, titles,
 pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, then swapped in.
+
+> **[DECIDED BY THE USER, 2026-11-17] Sign-up, the meet clash and the minimum** (picked from options, for step 1):
+> - **Where to sign up:** the **MEETS list** (a NATIONALS row) **and a NATIONALS desk** (in the State arena's lobby, beside
+>   the State desk, for now).
+> - **A spot-holder mid-meet elsewhere when Nationals starts:** **pulled out of that meet** (it counts as withdrawing:
+>   their misses so far are saved, no total) **and sent to Nationals.** Claude had recommended "stay, go next time".
+> - **The minimum:** **2 lifters across all servers.** Fewer: no Nationals, and every sign-up carries to the next one.
+>   (This also covers "a class with one lifter": with 2+ at Nationals, a class can still have only one.)
+> - **The arena (user, 2026-11-17, during step 1):** "i dont want nationals to be another arena, i have my reference
+>   photos". The State arena re-dressed is **only the step-1 stand-in**; Nationals gets its own arena from the user's photos.
+
+> **Built (2026-11-17): step 1, the gathering. NOT LIVE YET** (`NationalsConfig.Live = false`: in a live server only admins
+> see the NATIONALS row, test Nationals come every 10 minutes and need 1 lifter; the desk is only built when Live).
+> - **The timetable:** a Nationals every **2 hours** on one clock for every server (00:00, 02:00 ... UTC) **[PROVISIONAL]**;
+>   sign-ups close 60 s before; signed-up lifters are warned 30 s before ("even out of a meet").
+> - **Signing up:** the NATIONALS row ("NATIONALS · x5", the countdown, how many signed up across the game, SIGN UP / TAKE
+>   OFF) and the desk. The server checks the spot in the class the player weighs in at now; without one: "Nationals is for
+>   spot holders: 4 / 10 toward nationals in 74 kg". The MEETS tab counts down "NATS 1:59" when no meet is sooner.
+> - **The shared list:** Roblox MemoryStore (free within its quota), one list per Nationals, readable by every server.
+> - **The start:** one server wins the round, reads the list and either cancels (fewer than 2: "Not enough lifters signed
+>   up across the game (1 of 2) ... You're on the list for the next Nationals") or reserves ONE Nationals server and lists
+>   who goes (the first 40 signed up; the rest carry over). Every server then pulls its own lifters out of any meet and
+>   teleports them there (3 tries; a lifter it can't move goes on the next list).
+> - **The Nationals server:** brings each listed lifter into the State arena dressed as NATIONALS (banners NATIONALS / CHAMPS
+>   / CENTRAL over the modelled STATE CHAMPS, the centre cube and end signs "NATIONALS CHAMPIONSHIP", the State desk and
+>   entrance sign say so); anyone not listed is sent back; no State meet runs there ("HOSTING NATIONALS"). The NATIONALS row
+>   reads "YOU ARE AT NATIONALS · 74 kg · 3 LIFTERS" with LEAVE, which teleports back to a public server.
+> - **Not yet:** the meet itself (step 2: per class, titles, x5 pot, Worlds spot, `markNationalsCompeted`), the arena
+>   from the user's photos (step 3).

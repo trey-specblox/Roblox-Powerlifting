@@ -13,6 +13,40 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**NATIONALS STEP 1: THE GATHERING (2026-11-17, GAME_DESIGN §39 "Built (2026-11-17): step 1"). BUILT AND TESTED IN STUDIO
+(one player, one server, API services off). NOT COMMITTED (last commit 68b2d0d). NOT LIVE: `NationalsConfig.Live = false`
+(admins only in live servers). THE REAL CROSS-SERVER PART (MemoryStore list, reserved server, teleports) IS UNTESTED:
+Studio can't do it. NEXT: the user commits, publishes and runs the live admin test (`References/Nationals step 1 - test
+guide.md`), then step 2 (the meet itself) or step 3 (the arena from the user's photos; the
+user has the photos ready and said the re-dressed State arena must not stay).**
+- User decisions (picked 2026-11-17): sign up in the MEETS list AND at a desk; a spot-holder mid-meet elsewhere is PULLED
+  OUT (withdraws) and sent; needs 2 lifters across all servers, else every sign-up carries over.
+- NEW `src/shared/Config/NationalsConfig.luau` (Live switch, 2 h cycle / 10 min test / 120 s Studio, minimums, MemoryStore
+  names, desk spot), `src/shared/Meet/NationalsRemotes.luau` (SignUp, Leave, Request, State/View),
+  `src/server/Meet/NationalsQueue.luau` (the shared list: MemoryStore sorted maps live, in-server tables in Studio; claim /
+  publish hand-shake, server info by PrivateServerId), `src/server/Meet/NationalsService.luau` (sign-ups and the spot
+  check, the clock, gather -> lead -> reserve -> teleport with retries, the Nationals server admitting listed lifters,
+  LEAVE home; Studio: this server becomes the stand-in).
+- CHANGED: LocalMeetService (notify, pullOutForNationals, bringToStateArena, leaveToGym; no State meet / sign-up / level
+  text while workspace attribute NationalsServer is set), StateArenaVenue (current, addNationalsDesk, dressAsNationals),
+  StateArenaShow (setEventName), AdminService (exports isAdmin), init.server (starts NationalsService),
+  LocalMeetLobbyUI (NATIONALS row, card fits it, State row "HOSTING NATIONALS"), LocalMeetController (wiring, NATS
+  countdown on the MEETS tab).
+- Studio tests (all passed, server log clean apart from the usual DataStore-off lines): sign-up refused without a spot
+  ("0 / 10 toward nationals in 59 kg"); refused in the closed window; admin SetStat Nationals 10 -> signed up, count 1;
+  put in a Local meet on platform 1, then at the start: 30 s warning, "GATHERING", "Taking you there", withdrew from the
+  meet ("went to Nationals"), walked into the arena, AT NATIONALS row; State sign-up refused while hosting; LEAVE -> gym,
+  arena back to STATE (banner lettering back, writing gone); StudioNationalsMinimum = 2 -> "Not enough lifters ... (1 of
+  2)", still signed up for the next; TAKE OFF -> count 0. Screenshots checked: banner NATIONALS/CHAMPS/CENTRAL, cube
+  NATIONALS CHAMPIONSHIP, desk screen, MEETS row. Synced scripts matched disk character counts. luau-lsp: no errors in
+  the new files or new lines (older warnings unchanged).
+- Studio-only attributes: StudioNationalsAnyone (no spot needed), StudioNationalsMinimum (number),
+  StudioNationalsMemoryStore (use MemoryStore with Studio keys; needs API access).
+- Not verified: anything across servers (MemoryStore, ReserveServer, TeleportAsync, the Nationals server reading its
+  facts, LEAVE's teleport home); two real players; the desk's prompt pressed by hand (same code path as the row); the
+  shortened "HOSTING NATIONALS" text on screen (the longer text was seen too small and cut); phone layout of the 7th row.
+- Watch: the place's Max Players must be at least 40 (`NationalsConfig.MaxLifters`) or a full Nationals won't fit.
+
 **THE NATIONALS SPOT (2026-11-17; the second item on the State list, GAME_DESIGN §36.4 "The Nationals spot"). BUILT AND
 TESTED IN STUDIO (one player, API services off, so nothing saved). COMMITTED as f35b17e (not pushed). NATIONALS ITSELF
 WAS THEN DESIGNED WITH THE USER (GAME_DESIGN §39: every 2 hours across all servers into one Nationals server, a new
