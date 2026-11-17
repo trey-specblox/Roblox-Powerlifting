@@ -26,7 +26,7 @@ import math
 import os
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 ROOT = r"D:\Powerlifting Roblox"
 os.environ["GEAR06_BUILDS"] = ""
@@ -90,7 +90,7 @@ ARM_UNDER = float(os.environ.get("GEAR07_ARM_UNDER", "0.06"))             # the 
 STRAP_PUSH, STRAP_SOFT = 3.0, 0.05   # how strongly the strap's zone is kept, and how soft its edge is
 STRAP_W = 0.22               # the straps' width over the shoulder (narrower where the shoulder is: thin builds)
 ARM_GAP_TOP = 0.04           # the armhole's edge this far off the arm's root over the shoulder ...
-ARM_GAP_UNDER = float(os.environ.get("GEAR07_ARM_GAP_UNDER", "0.10"))         # ... and this far below it (just under the armpit)
+ARM_GAP_UNDER = float(os.environ.get("GEAR07_ARM_GAP_UNDER", "0.16"))         # ... and this far below it (just under the armpit)
 PANEL_TOP = float(os.environ.get("GEAR07_PANEL_TOP", "0.2"))              # the side panel reaches this far above the armhole's bottom (into its piping)
 PIPING = 0.035               # the piping's width along the neck and the armholes
 PANEL_HALF = 0.22            # the side panel's half-width front to back
@@ -651,7 +651,7 @@ def weld_slivers7(o, dist):
 TEE_PIT = float(os.environ.get("GEAR07_TEE_PIT", "0"))   # (prototype) the tee smoothed within this of each armpit; 0 off
 
 
-def smooth_armpit7(o, skin, centres, radius, rounds=12):
+def smooth_armpit7(o, skin, centres, radius, rounds=12, need=None):
     """The tee's sleeve underside and its join to the body in the armpit, at rest: one smooth surface. Its points within
     `radius` of an armpit are smoothed (Taubin, strongest at the armpit; points on the tee's open edges move only along
     the edge), which bridges the crease outward like a garment over a groove, then kept at least TEE_OUT * 0.9 off the
@@ -709,7 +709,7 @@ def smooth_armpit7(o, skin, centres, radius, rounds=12):
     tree = BVHTree.FromBMesh(sb)
     sb.free()
     line = bm.verts.layers.float_vector.get("line")
-    need = TEE_OUT * 0.9
+    need = TEE_OUT * 0.9 if need is None else need
     for v in w:
         hit = tree.find_nearest(v.co, 0.5)
         if hit[0] is None:
@@ -726,6 +726,428 @@ def smooth_armpit7(o, skin, centres, radius, rounds=12):
     bm.free()
     o.data.update()
     return len(w)
+
+
+JOIN_SMOOTH = int(os.environ.get("GEAR07_JOIN_SMOOTH", "0"))   # rounds: the armhole's edge smoothed where it meets
+JOIN_ABOVE = float(os.environ.get("GEAR07_JOIN_ABOVE", "0.15"))  # the arm-seam cut, below this far above the armpit
+JOIN_BACK = os.environ.get("GEAR07_JOIN_BACK", "1") == "1"     # ... on the back half only (behind the arm's root)
+
+
+def smoothed_field7(fn, rounds, z_max, fade=0.10, y_min=None, y_fade=0.08):
+    """A cut field whose values are averaged over the mesh (rounds of neighbour averaging) below z_max, fading in over
+    `fade`: where the armhole meets the cut along the arm's seam the two lines met at a hook, read on the back as a
+    torn black edge (user 2026-11-17: "right when i loaded in i see this on the back of my singlet. Fix this tear").
+    Values are worked out per connected piece the first time one of its points is asked for."""
+    cache = {}
+
+    def g(v, dl):
+        if v not in cache:
+            comp, todo = {v}, [v]
+            while todo:
+                u = todo.pop()
+                for e in u.link_edges:
+                    w_ = e.other_vert(u)
+                    if w_ not in comp:
+                        comp.add(w_)
+                        todo.append(w_)
+            raw = {u: fn(u, dl) for u in comp}
+            vals = dict(raw)
+            low = [u for u in comp if u.co.z < z_max and (y_min is None or u.co.y > y_min - y_fade)]
+            for _ in range(rounds):
+                new = {}
+                for u in low:
+                    nb = [e.other_vert(u) for e in u.link_edges]
+                    if nb:
+                        new[u] = 0.5 * vals[u] + 0.5 * sum(vals[n] for n in nb) / len(nb)
+                vals.update(new)
+            for u in comp:
+                t = min(1.0, max(0.0, (z_max - u.co.z) / fade))
+                if y_min is not None:            # (the back only: the front of the armhole stays as approved)
+                    t *= min(1.0, max(0.0, (u.co.y - (y_min - y_fade)) / y_fade))
+                cache[u] = raw[u] * (1 - t) + vals[u] * t
+        return cache[v]
+    return g
+
+
+BACK_RELAX = int(os.environ.get("GEAR07_BACK_RELAX", "0"))      # rounds: the edge and colour lines at the back of
+BACK_RELAX_ABOVE = float(os.environ.get("GEAR07_BACK_RELAX_ABOVE", "0.40"))  # the armpit straightened (below this
+                             # far above the armpit, behind the arm's root); 0 = off
+
+
+def relax_back_pit7(o, pit, y_arm, rounds, above, fade=0.08):
+    """The armhole's edge and the piping / panel lines beside it, at the back of the armpit: each point on such a line
+    moves toward the middle of its two neighbours along it (Taubin, many rounds: straightens the S-shaped bulge the
+    armhole made round the back of the armpit, read as a torn edge, user 2026-11-17) and back onto the garment, with
+    strength fading out above `above` and in front of the arm's root. Corners stay put. Returns the points moved."""
+    from mathutils.bvhtree import BVHTree
+    me = o.data
+    keys = list(o["keys"])
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.faces.ensure_lookup_table()
+    tree = BVHTree.FromBMesh(bm)
+    nbrs = {}
+    for e in bm.edges:
+        fs = e.link_faces
+        if len(fs) == 1 or (len(fs) == 2 and keys[fs[0].index] != keys[fs[1].index]):
+            a_, b_ = e.verts
+            nbrs.setdefault(a_, []).append(b_)
+            nbrs.setdefault(b_, []).append(a_)
+    z_top = pit + above
+
+    def strength(v):
+        tz = min(1.0, max(0.0, (z_top - v.co.z) / fade))
+        ty = min(1.0, max(0.0, (v.co.y - (y_arm - fade)) / fade))
+        return tz * ty
+    line = {v: n for v, n in nbrs.items() if len(n) == 2 and strength(v) > 0}
+    k = {v: strength(v) for v in line}
+    for _ in range(rounds):
+        for f in (0.5, -0.53):
+            new = {v: v.co + ((n[0].co + n[1].co) * 0.5 - v.co) * f * k[v] for v, n in line.items()}
+            for v, c in new.items():
+                v.co = c
+        for v in line:                       # (back onto the surface every round: the curve stays on the body)
+            hit = tree.find_nearest(v.co)
+            if hit[0] is not None:
+                v.co = hit[0]
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    return len(line)
+
+
+PANEL_FLARE = float(os.environ.get("GEAR07_PANEL_FLARE", "0"))   # how far the panel's top flares along the piping
+PANEL_FLARE_BAND = float(os.environ.get("GEAR07_PANEL_FLARE_BAND", "0.08"))  # within this of the armhole's edge
+
+
+BACK_FILL = float(os.environ.get("GEAR07_BACK_FILL", "0"))   # (fix) the back armhole's bay filled: measured this far
+                             # above the armpit, the edge's |x| is held straight down below it (0 = off)
+
+
+BACK_BRIDGE = float(os.environ.get("GEAR07_BACK_BRIDGE", "0"))     # radius: the tee and singlet at the BACK of each
+BACK_BRIDGE_ROUNDS = int(os.environ.get("GEAR07_BACK_BRIDGE_ROUNDS", "20"))  # armpit smoothed (bridging the fold the
+                             # armhole's edge dipped into: an S-shaped "tear" seen from behind, user 2026-11-17); 0 = off
+
+
+BACK_SPAN = float(os.environ.get("GEAR07_BACK_SPAN", "0"))            # radius round the back of each armpit (0 = off)
+BACK_SPAN_ROUNDS = int(os.environ.get("GEAR07_BACK_SPAN_ROUNDS", "30"))  # rounds of plain smoothing of that surface
+
+
+def back_span_fill7(skin, P, N, fill, pit):
+    """The layers' base at the BACK of each armpit taken from a much smoother copy of the skin, so the tee and the
+    singlet (both stacked on the same base) span the fold there instead of following the skin into it: seen from
+    behind, the armhole's edge, piping and panel dipped into the fold in an S-shaped bay with tee bits in it - a "tear"
+    (user 2026-11-17, Studio). Returns the new fill (the old one wherever this gives less) and the points it raised."""
+    me = skin.data
+    nbr = neighbours(me)
+    S = P.copy()
+    # plain (shrinking) smoothing: it lifts hollows like the fold outward; only the outward part is used below
+    for _ in range(BACK_SPAN_ROUNDS):
+        avg = np.array([S[list(n)].mean(axis=0) if n else S[i] for i, n in enumerate(nbr)])
+        S = S + 0.5 * (avg - S)
+    fill2 = np.maximum(0.0, ((S - P) * N).sum(axis=1))
+    ia = skin.vertex_groups[IS_ARM].index
+    is_arm = np.array([any(g.group == ia and g.weight > 0.5 for g in v.groups) for v in me.vertices])
+    band = np.abs(P[:, 2] - pit) < 0.08
+    side_x = np.abs(P[band & ~is_arm, 0]).max()
+    y_j = SKIN_JOINTS[0]["LeftUpperArm"][1]
+    w = np.zeros(len(P))
+    for sx in (1, -1):
+        c = np.array([sx * side_x, y_j + 0.15, pit])
+        d = np.linalg.norm(P - c, axis=1)
+        t = np.clip(1.0 - d / BACK_SPAN, 0.0, 1.0)
+        w = np.maximum(w, t * t * (3 - 2 * t))
+    wy = np.clip((P[:, 1] - (y_j - 0.05)) / 0.10, 0.0, 1.0)      # behind the shoulder joint only (the front as shipped)
+    w = w * wy * wy * (3 - 2 * wy)
+    new = np.maximum(fill, fill2 * w)
+    reg = w > 0.3
+    log("span: side_x %.3f y_j %.3f pit %.3f, region %d points, fill there %.3f..%.3f, smoother lift %.3f..%.3f"
+        % (side_x, y_j, pit, int(reg.sum()), fill[reg].min() if reg.any() else 0, fill[reg].max() if reg.any() else 0,
+           fill2[reg].min() if reg.any() else 0, fill2[reg].max() if reg.any() else 0))
+    return new, int((new > fill + 1e-4).sum())
+
+
+BACK_LINE = float(os.environ.get("GEAR07_BACK_LINE", "0"))          # the back armhole's edge a straight line from this
+BACK_LINE_LOW = float(os.environ.get("GEAR07_BACK_LINE_LOW", "0.12"))  # far above the armpit to this far below it
+
+
+GUSSET = float(os.environ.get("GEAR07_GUSSET", "0"))     # (per build) the underarm gusset's size; 0 = none
+GUSSET_ROUNDS = int(os.environ.get("GEAR07_GUSSET_ROUNDS", "30"))
+GUSSET_X_OUT = float(os.environ.get("GEAR07_GUSSET_X_OUT", "0.03"))   # how far past the body's side it may reach
+GUSSET_OVER = float(os.environ.get("GEAR07_GUSSET_OVER", "0.006"))   # on top of the singlet by this (over the hook)
+GUSSET_DOWN = float(os.environ.get("GEAR07_GUSSET_DOWN", "0.10"))    # the oval's centre below the armpit
+GUSSET_RZ = float(os.environ.get("GEAR07_GUSSET_RZ", "0.12"))        # its half-height
+
+
+def gusset7(skin, P, N, coll, b, s, scale):
+    """A small underarm GUSSET for each back armpit (user 2026-11-17: "is there no way to just cover that slit up"):
+    a piece of the singlet's panel fabric lying just UNDER the singlet over a much smoother copy of the skin (which
+    bridges the crease between the thin builds' arm and body), cut to a smooth oval in the side view behind the arm's
+    root, moving with the torso only. Where the singlet covers it the singlet is in front; in the slit it shows.
+    Returns the thickened patch (keys all "Red": the panel's colour key) or None."""
+    me = skin.data
+    nbr = neighbours(me)
+    S = P.copy()
+    for _ in range(GUSSET_ROUNDS):
+        avg = np.array([S[list(n)].mean(axis=0) if n else S[i] for i, n in enumerate(nbr)])
+        S = S + 0.5 * (avg - S)
+    out = TEE_OUT + SINGLET_OUT + GUSSET_OVER
+    g = make_layer(skin, b + "_Gusset07", out, coll, S, N, np.zeros(len(S)))
+    pit, y_arm = s["pit"], s["y_arm"]
+    y_panel_c = y_arm                                    # (the panel's centre: the patch stays within its width)
+    side_x = abs(s["pit_pts"][0].x)
+    yc, zc = y_panel_c, pit - GUSSET_DOWN
+    ry, rz = (PANEL_HALF - 0.01) * scale, GUSSET_RZ * scale
+
+    def field(v, dl):          # > 0 inside: an oval (side view) on the body's side, near the arm
+        c = v.co
+        e = 1.0 - math.sqrt(((c.y - yc) / ry) ** 2 + ((c.z - zc) / rz) ** 2)
+        sx = abs(c.x) - (side_x - 0.30)
+        sx_out = (side_x + GUSSET_X_OUT) - abs(c.x)        # stops at the crease (it bulged out over the arm)
+        return min(e * min(ry, rz), sx, sx_out)
+    cut_lines(g, [field], store=["g_at"])
+    me_g = g.data
+    at = [me_g.attributes["g_at"].data[i].value for i in range(len(me_g.vertices))]
+    keep_faces(g, lambda c, w, verts: sum(at[i] for i in verts) / len(verts) > 0, with_verts=True)
+    me_g.attributes.remove(me_g.attributes["g_at"])
+    if len(g.data.polygons) == 0:
+        bpy.data.objects.remove(g, do_unlink=True)
+        return None
+    keep_largest_two = None
+    # torso only: the arm's share handed to UpperTorso (it must not swing out with the arm)
+    bones = {gr.index: gr.name for gr in g.vertex_groups if not gr.name.startswith("_")}
+    ut = g.vertex_groups.get("UpperTorso") or g.vertex_groups.new(name="UpperTorso")
+    for v in g.data.vertices:
+        a = sum(gg.weight for gg in v.groups if gg.group in bones and ("Arm" in bones[gg.group] or bones[gg.group].endswith("Hand")))
+        if a <= 0:
+            continue
+        for gg in list(v.groups):
+            if gg.group in bones and ("Arm" in bones[gg.group] or bones[gg.group].endswith("Hand")):
+                g.vertex_groups[bones[gg.group]].remove([v.index])
+        ut.add([v.index], a, "ADD")
+    for name in (IS_ARM, IS_ARM_S, "_ArmCut"):
+        drop_group(g, name)
+    g["keys"] = ["Red"] * len(g.data.polygons)
+    relax_seams(g, SEAM_ROUNDS)
+    thicken_stacked(g, FABRIC)
+    log(b, "Gusset", tris(g), "triangles")
+    return g
+
+
+GUSSET8 = float(os.environ.get("GEAR07_GUSSET8", "0"))        # (per build) the modelled underarm gusset; 0 = none
+G8_A = float(os.environ.get("GEAR07_G8_A", "0.11"))           # its half-width in the view (across)
+G8_B = float(os.environ.get("GEAR07_G8_B", "0.17"))           # its half-height in the view
+G8_CX = float(os.environ.get("GEAR07_G8_CX", "0.0"))          # its centre: |x| off the body's side at the armpit
+G8_CY = float(os.environ.get("GEAR07_G8_CY", "0.10"))         # ... behind the arm's root
+G8_CZ = float(os.environ.get("GEAR07_G8_CZ", "-0.08"))        # ... off the armpit's height
+G8_P = 2.6                                                     # the outline's roundness (superellipse power)
+G8_WIN_IN = float(os.environ.get("GEAR07_G8_WIN_IN", "0.12"))  # the rim taken from this far inside the body's side,
+G8_WIN_LO = float(os.environ.get("GEAR07_G8_WIN_LO", "0.22"))  # ... this far below the armpit,
+G8_WIN_HI = float(os.environ.get("GEAR07_G8_WIN_HI", "0.08"))  # ... this far above it,
+G8_WIN_BACK = float(os.environ.get("GEAR07_G8_WIN_BACK", "0.25"))  # ... up to this far behind the arm's root
+G8_SHRINK = float(os.environ.get("GEAR07_G8_SHRINK", "0.94"))
+G8_OVER_SLEEVE = os.environ.get("GEAR07_G8_OVER_SLEEVE", "0") == "1"   # 1: also in front of the tee's sleeves
+G8_ARM_SHARE = float(os.environ.get("GEAR07_G8_ARM_SHARE", "0"))       # the share of the arm's weight it keeps
+G8_WIN_FRONT = float(os.environ.get("GEAR07_G8_WIN_FRONT", "-0.02"))   # the rim from this far behind the arm's root
+G8_OVER_SINGLET = os.environ.get("GEAR07_G8_OVER_SINGLET", "1") == "1"  # 0: kept in front of skin + tee only (flat;
+                             # the singlet's own crumpled edge, the same colour, may stand in front of it)
+G8_STEP = 0.012
+
+
+def hull2d(pts):
+    pts = sorted(set(pts))
+    if len(pts) < 3:
+        return pts
+    def cr(o, a, b_):
+        return (a[0] - o[0]) * (b_[1] - o[1]) - (a[1] - o[1]) * (b_[0] - o[0])
+    lo, hi = [], []
+    for p_ in pts:
+        while len(lo) >= 2 and cr(lo[-2], lo[-1], p_) <= 0:
+            lo.pop()
+        lo.append(p_)
+    for p_ in reversed(pts):
+        while len(hi) >= 2 and cr(hi[-2], hi[-1], p_) <= 0:
+            hi.pop()
+        hi.append(p_)
+    return lo[:-1] + hi[:-1]
+
+
+def inside2d(poly, q):
+    n, ins = len(poly), False
+    for i in range(n):
+        (x1, y1), (x2, y2) = poly[i], poly[(i + 1) % n]
+        if (y1 > q[1]) != (y2 > q[1]) and q[0] < (x2 - x1) * (q[1] - y1) / (y2 - y1 + 1e-12) + x1:
+            ins = not ins
+    return ins
+G8_GAP = 0.006                                                 # in front of everything under it by this
+
+
+def gusset8(skin, singlet, coll, b, s):
+    """The modelled underarm GUSSET (user 2026-11-17, "wait": a hand-shaped panel over the back armpit slit of the thin
+    builds). Per side: a clean superellipse outline drawn in the view the back armpit is seen from (behind, a little
+    to the side); a grid inside it is cast onto the torso's surfaces under it (skin, tee and singlet, not the arm's);
+    the depths are relaxed like a stretched membrane, never behind any of them (so it spans the crease taut instead
+    of following its waves), set G8_GAP in front, made into a thin shell, and weighted to the torso only (the
+    nearest torso skin's weights with the arm's share on UpperTorso). Keys "Red" (the side panel's colour)."""
+    from mathutils.bvhtree import BVHTree
+    from mathutils.kdtree import KDTree
+    rig = bpy.data.objects[b + "Rig"]
+    inv = rig.matrix_world.inverted()
+    # what it lies over: the torso's skin, the tee's torso pieces, the singlet (rig space)
+    verts, polys = [], []
+    def add(o, keep_face=None):
+        m = Matrix()                                  # (the meshes' points are already in the rig's space)
+        base = len(verts)
+        verts.extend(m @ v.co for v in o.data.vertices)
+        for p_ in o.data.polygons:
+            if keep_face is None or keep_face(p_):
+                polys.append([base + i for i in p_.vertices])
+    ia = skin.vertex_groups[IS_ARM].index
+    is_arm = [any(g.group == ia and g.weight > 0.5 for g in v.groups) for v in skin.data.vertices]
+    add(skin, lambda p_: not all(is_arm[i] for i in p_.vertices))
+    for o in bpy.data.objects:
+        if o.type == "MESH" and (o.name.startswith(b + "_Tee__") or o.name.startswith(b + "_TeeWhite__"))                 and (G8_OVER_SLEEVE or "Arm" not in o.name.split("__")[-1]):
+            add(o)
+    if G8_OVER_SINGLET:
+        add(singlet)
+    tree = BVHTree.FromPolygons(verts, polys)
+    # torso skin weights for the patch (nearest torso points)
+    bones = {g.index: g.name for g in skin.vertex_groups if not g.name.startswith("_")}
+    kd_pts = [(i, v.co.copy()) for i, v in enumerate(skin.data.vertices) if not is_arm[i]]
+    kd = KDTree(len(kd_pts))
+    for k, (i, c) in enumerate(kd_pts):
+        kd.insert(c, k)
+    kd.balance()
+    pit, y_arm = s["pit"], s["y_arm"]
+    side_x = abs(s["pit_pts"][0].x)
+    made = []
+    for sx in (1, -1):
+        w = Vector((0.25 * sx, 1.0, 0.05)).normalized()           # toward the viewer (behind, a little to the side)
+        u = Vector((0, 0, 1)).cross(w).normalized()                 # across
+        v_ = w.cross(u).normalized()                                # up
+        C = Vector((sx * (side_x + G8_CX), y_arm + G8_CY, pit + G8_CZ))
+        # the outline: the convex hull, in this view, of the singlet's open edge round the back of the armpit (the
+        # hook): over the edging it is hidden, across the slit it is one smooth chord
+        sbm = bmesh.new()
+        sbm.from_mesh(singlet.data)
+        mS = Matrix()
+        rim = []
+        for vv in sbm.verts:
+            if not vv.is_boundary:
+                continue
+            c = mS @ vv.co
+            if c.x * sx < side_x - G8_WIN_IN or not (pit - G8_WIN_LO < c.z < pit + G8_WIN_HI)                     or not (y_arm + G8_WIN_FRONT < c.y < y_arm + G8_WIN_BACK):
+                continue
+            rim.append(((c - C).dot(u), (c - C).dot(v_)))
+        if os.environ.get("GEAR07_G8_DEBUG"):
+            import json as _j
+            allrim = []
+            for vv in sbm.verts:
+                if vv.is_boundary:
+                    c = mS @ vv.co
+                    if c.x * sx > side_x - 0.40 and pit - 0.45 < c.z < pit + 0.35 and c.y > y_arm - 0.25:
+                        allrim.append([(c - C).dot(u), (c - C).dot(v_), c.x, c.y, c.z])
+            _j.dump({"rim": allrim, "win": rim, "side_x": side_x, "pit": pit, "y_arm": y_arm},
+                    open(os.environ["GEAR07_G8_DEBUG"] + "_%s_%d.json" % (b, sx), "w"))
+        sbm.free()
+        if len(rim) < 6:
+            continue
+        hull = hull2d(rim)
+        # shrink a touch toward its middle (its edge stays on the edging, never past it)
+        mu = sum(p_[0] for p_ in hull) / len(hull)
+        mv = sum(p_[1] for p_ in hull) / len(hull)
+        hull = [(mu + (a - mu) * G8_SHRINK, mv + (c - mv) * G8_SHRINK) for a, c in hull]
+        # the outline rounded (Chaikin) and evenly resampled; the patch built as rings from its middle out to it (a
+        # clean edge, not a staircase); key (r, m): ring r, point m (ring 0 = the middle)
+        for _ in range(3):
+            nh = []
+            for k in range(len(hull)):
+                a_, b_ = hull[k], hull[(k + 1) % len(hull)]
+                nh += [(0.75 * a_[0] + 0.25 * b_[0], 0.75 * a_[1] + 0.25 * b_[1]),
+                       (0.25 * a_[0] + 0.75 * b_[0], 0.25 * a_[1] + 0.75 * b_[1])]
+            hull = nh
+        per = [math.hypot(hull[(k + 1) % len(hull)][0] - hull[k][0], hull[(k + 1) % len(hull)][1] - hull[k][1])
+               for k in range(len(hull))]
+        L_ = sum(per)
+        M = max(24, int(L_ / G8_STEP))
+        outline, acc_, k = [], 0.0, 0
+        for m in range(M):
+            t_ = L_ * m / M
+            while k < len(per) - 1 and acc_ + per[k] < t_:
+                acc_ += per[k]
+                k += 1
+            f_ = (t_ - acc_) / max(per[k], 1e-9)
+            a_, b_ = hull[k], hull[(k + 1) % len(hull)]
+            outline.append((a_[0] + (b_[0] - a_[0]) * f_, a_[1] + (b_[1] - a_[1]) * f_))
+        mu = sum(p_[0] for p_ in outline) / M
+        mv = sum(p_[1] for p_ in outline) / M
+        R = max(3, int(max(math.hypot(a_ - mu, c_ - mv) for a_, c_ in outline) / G8_STEP))
+        grid = {}
+        for r_ in range(R + 1):
+            f_ = r_ / R
+            pts_ = [(mu, mv)] if r_ == 0 else [(mu + (a_ - mu) * f_, mv + (c_ - mv) * f_) for a_, c_ in outline]
+            for m, (a_, c_) in enumerate(pts_):
+                o_ = C + u * a_ + v_ * c_
+                hit = tree.ray_cast(o_ + w * 1.0, -w, 2.5)
+                grid[(r_, m)] = [o_, 1.0 + 2.5 if hit[0] is None else hit[3], None]
+
+        def nbrs(key):
+            r_, m = key
+            if r_ == 0:
+                return [(1, k_) for k_ in range(M)]
+            out_ = [(r_, (m - 1) % M), (r_, (m + 1) % M), (r_ - 1, 0 if r_ == 1 else m)]
+            if r_ < R:
+                out_.append((r_ + 1, m))
+            return out_
+        lim = {k_: g[1] - G8_GAP for k_, g in grid.items()}
+        dep = dict(lim)
+        for _ in range(300):                                        # a taut membrane over the crease, never behind
+            new = {}
+            for key, d in dep.items():
+                nb = [dep[n] for n in nbrs(key)]
+                new[key] = min(lim[key], 0.5 * d + 0.5 * sum(nb) / len(nb))
+            dep = new
+        bm = bmesh.new()
+        idx = {k_: bm.verts.new(g[0] + w * 1.0 - w * dep[k_]) for k_, g in grid.items()}
+        for m in range(M):
+            bm.faces.new([idx[(0, 0)], idx[(1, m)], idx[(1, (m + 1) % M)]])
+        for r_ in range(1, R):
+            for m in range(M):
+                bm.faces.new([idx[(r_, m)], idx[(r_ + 1, m)], idx[(r_ + 1, (m + 1) % M)], idx[(r_, (m + 1) % M)]])
+        bm.normal_update()
+        for f in bm.faces:                                          # facing the viewer
+            if f.normal.dot(w) < 0:
+                f.normal_flip()
+        bmesh.ops.solidify(bm, geom=bm.faces[:], thickness=FABRIC)
+        me = bpy.data.meshes.new("%s_Gusset8_%d" % (b, sx))
+        bm.to_mesh(me)
+        bm.free()
+        o = bpy.data.objects.new(me.name, me)
+        coll.objects.link(o)                         # (unparented, in the rig's space like the singlet it joins)
+        for nm in bones.values():
+            o.vertex_groups.new(name=nm)
+        for vv in o.data.vertices:
+            acc = {}
+            near = kd.find_n(vv.co, 4)
+            tot = 0.0
+            for (_c, k, dist) in near:
+                wt = 1.0 / max(dist, 1e-3)
+                tot += wt
+                for g in skin.data.vertices[kd_pts[k][0]].groups:
+                    if g.group in bones:
+                        nm = bones[g.group]
+                        x_ = g.weight * wt
+                        if "Arm" in nm or nm.endswith("Hand"):
+                            acc["UpperTorso"] = acc.get("UpperTorso", 0.0) + x_ * (1 - G8_ARM_SHARE)
+                            x_ *= G8_ARM_SHARE
+                        acc[nm] = acc.get(nm, 0.0) + x_
+            t2 = sum(acc.values()) or 1.0
+            for nm, x in acc.items():
+                o.vertex_groups[nm].add([vv.index], x / t2, "REPLACE")
+        o["keys"] = ["Red"] * len(o.data.polygons)
+        made.append(o)
+        log(b, "Gusset8 side %+d: %d grid points, %d triangles" % (sx, len(grid), tris(o)))
+    return made
 
 
 def colour_islands7(o, rounds=2):
@@ -837,6 +1259,13 @@ def singlet_lines7(body, H, skin, layer):
     arm_ids = group_ids(skin, ("UpperArm", "LowerArm", "Hand"))
     pit = m["armpit"]
     xs = min(xi + STRAP_W, xo + 0.02)                                 # the straps' outer edge over the shoulder
+    if STRAP_IN > 0 and STRAP_OUT > 0:
+        # (per build, 2026-11-17) the strap on the build's own torso: on the thin builds the head-width strap
+        # (|x| 0.66 .. 0.88) lay wholly on the arm's skin, and the armhole under it was forced into the crease between
+        # arm and body (a black hook with tee poking out, seen from behind)
+        xi, xs = STRAP_IN, STRAP_OUT
+        xo = xs - 0.02
+        log(body.build, "strap on the torso: inner %.2f, outer %.2f (width %.2f)" % (xi, xs, xs - xi))
     # The armhole: everything within a set distance of the arm's ROOT (the arm's own skin above the armpit). Its edge is
     # one smooth curve round the arm, that distance off it: just inside the deltoid over the shoulder (where the strap
     # ends), just under the armpit below. The arm itself is inside it, so the arm comes off as a loose piece.
@@ -900,6 +1329,47 @@ def singlet_lines7(body, H, skin, layer):
             gap += ONE_DEEP * (wz * wz * (3 - 2 * wz)) * (wy * wy * (3 - 2 * wy))
         return d + inward - out - gap
 
+    arm_plain = arm
+    if BACK_FILL > 0:
+        # the back of the armhole: at armpit height the distance round the arm's root swung inward toward the spine
+        # (the back of the armpit fold sits close to the body) and back out, an S-shaped bay with the tee showing in
+        # it: read as a torn edge on the back (user 2026-11-17, Studio). Below BACK_FILL above the armpit, behind the
+        # arm's root, the singlet is kept out to the edge's |x| measured just above the bay: the edge runs straight
+        # down instead.
+        z_m = pit + BACK_FILL
+        ref = [v.co for v in me.vertices if abs(v.co.z - z_m) < 0.04 and v.co.y > y_arm + 0.08 and not is_arm[v.index]]
+        kept_x = [abs(c_.x) for c_ in ref if arm_plain(c_) > 0]
+        x_edge = max(kept_x) if kept_x else None
+
+        def back_fill(c):
+            if x_edge is None:
+                return -1.0
+            wz = (z_m - c.z) / 0.06                      # 0 at z_m .. 1 below
+            wy = (c.y - y_arm) / 0.06                    # 0 at the root's line .. 1 behind it
+            return min(x_edge - abs(c.x), 0.06 * min(1.0, wz), 0.06 * min(1.0, wy))
+    else:
+        back_fill = None
+    if BACK_LINE > 0:
+        # Seen straight from behind, the back of the armhole hooked inward at the armpit and a flap of singlet stuck
+        # out toward the arm below it (the armhole's bottom curving forward under the arm): a "tear" (user 2026-11-17,
+        # Studio). On the back, from BACK_LINE above the armpit to BACK_LINE_LOW below it, the armhole's edge is
+        # blended into a straight vertical line at the edge's own |x| just above (fading in and out over 0.08).
+        z_hi = pit + BACK_LINE
+        z_lo = pit - BACK_LINE_LOW
+        ref = [v.co for v in me.vertices if abs(v.co.z - z_hi) < 0.04 and v.co.y > y_arm + 0.08 and not is_arm[v.index]]
+        kept_x = [abs(c_.x) for c_ in ref if arm_plain(c_) > 0]
+        x_line = max(kept_x) if kept_x else None
+        arm_before_line = arm
+
+        def arm(c):
+            a = arm_before_line(c)
+            if x_line is None:
+                return a
+            wz = min(1.0, max(0.0, (z_hi - c.z) / 0.08), max(0.0, (c.z - (z_lo - 0.08)) / 0.08))
+            wy = min(1.0, max(0.0, (c.y - y_arm) / 0.08))
+            w_ = wz * wz * (3 - 2 * wz) * wy * wy * (3 - 2 * wy)
+            return a if w_ <= 0 else (1 - w_) * a + w_ * (x_line - abs(c.x))
+
     # The shorts' legs: full tubes round each thigh, their hems a level ring as low as the knee sleeves allow (v4's hem,
     # just under the crotch, left the inside of the thighs bare beside a narrow strip over the crotch: user 2026-11-15
     # "THAT SMALL COVER, and LITTLE GAP BETWEEN THE LEG ... IT NEEDS TO BE FULLY COVERED")
@@ -926,7 +1396,14 @@ def singlet_lines7(body, H, skin, layer):
 
     def panel(c):
         # from just above the armhole's bottom (the piping round the armhole meets it) down to the hip, rounded
-        return soft_min(soft_min(py - abs(c.y - y_panel), c.z - z_pb, PANEL_ROUND), z_pt - c.z, PANEL_ROUND)
+        p_ = soft_min(soft_min(py - abs(c.y - y_panel), c.z - z_pb, PANEL_ROUND), z_pt - c.z, PANEL_ROUND)
+        if PANEL_FLARE > 0:
+            # the panel's top flares into the armhole's piping (a fillet): in a scheme where panel and piping share a
+            # colour their joint outline made an S-shaped notch at the back of the armpit, read as a tear (user
+            # 2026-11-17, red singlet with black panels)
+            near = soft_min(PANEL_FLARE_BAND - arm(c), p_ + PANEL_FLARE, 0.02)
+            p_ = -soft_min(-p_, -near, 0.03)
+        return p_
 
     z_sh = L["HJ"] - SHORTS_TOP
 
@@ -953,7 +1430,7 @@ def singlet_lines7(body, H, skin, layer):
            m["crotch"]))
     side_x = max(abs(v.co.x) for v in me.vertices if abs(v.co.z - pit) < 0.08 and not is_arm[v.index])
     return dict(neck=neck, arm=arm, leg=leg, panel=panel, shorts=shorts, xi=xi, xo=xo, z_ah=z_bot, pit=pit, hem=hem_z,
-                deep=deep, one=(arm if ONE_DEEP > 0 else None), pit_pts=[Vector((sx * side_x, y_arm, pit)) for sx in (1, -1)])
+                deep=deep, y_arm=y_arm, back_fill=back_fill, one=(arm if ONE_DEEP > 0 else None), pit_pts=[Vector((sx * side_x, y_arm, pit)) for sx in (1, -1)])
 
 
 def build_singlet7(skin, P, N, fill, H, coll, build, body):
@@ -974,13 +1451,25 @@ def build_singlet7(skin, P, N, fill, H, coll, build, body):
         # arm's mesh above the armpit) takes the arm off already, but for the strap. (Tried: from below the top of the
         # shoulder: the thin builds' straps, on the arm's mesh, were cut off; from under the armhole's bottom with the
         # root found by bone weights: a flap stayed on the arm.)
-        return -soft_min(-(0.5 - _deform_weight(v, dl, arm_seam)) * 0.4, -(v.co.z - z_seam), ARMSKIN_ROUND)
+        # (SEAM_SHIFT > 0: the cut moved off the seam toward the torso, out of the crease a thin build's arm makes
+        # against the body - the edge ran down that crease, a black hook seen from behind, user 2026-11-17)
+        return -soft_min(-((0.5 - SEAM_SHIFT) - _deform_weight(v, dl, arm_seam)) * 0.4, -(v.co.z - z_seam),
+                         ARMSKIN_ROUND)
     f_neck, f_arm, f_leg = along_surface(s["neck"]), along_surface(s["arm"]), along_surface(s["leg"])
     f_panel, f_shorts = along_surface(s["panel"]), along_surface(s["shorts"])
     # The armhole and the cut along the arm's seam are ONE edge (blended, a soft minimum): cut as two lines they met
     # at a corner, a notch in the piping on the back under the shoulder (user 2026-11-15: "tears on the back")
     f_arm_raw = f_arm
     f_arm = lambda v, dl: soft_min(f_arm_raw(v, dl), f_armskin(v, dl), ARM_BLEND)
+    if s.get("back_fill") is not None:
+        # (both cuts: below the armpit the edge on the back is the arm-seam cut, which carved the bay)
+        f_fill = along_surface(s["back_fill"])
+        f_arm_cut = f_arm
+        f_arm = lambda v, dl: -soft_min(-f_arm_cut(v, dl), -f_fill(v, dl), 0.03)
+    if JOIN_SMOOTH > 0 and s["deep"] is None:
+        f_arm_joined = f_arm
+        f_arm = smoothed_field7(f_arm_joined, JOIN_SMOOTH, s["pit"] + JOIN_ABOVE,
+                                y_min=(s["y_arm"] if JOIN_BACK else None))
     if s["deep"] is not None and DEEP_MORPH:
         f_deep = along_surface(s["deep"])
         m_hi, m_lo = (float(x) for x in DEEP_MORPH.split(","))
@@ -1053,6 +1542,9 @@ def build_singlet7(skin, P, N, fill, H, coll, build, body):
     log(build, "Singlet", "trim-only strips dropped:", drop_trim_strips7(o))
     log(build, "Singlet", "lone colour faces matched to their neighbours:", colour_islands7(o))
     log(build, "Singlet", "points smoothed along the edges and colour lines:", relax_seams(o, SEAM_ROUNDS))
+    if BACK_RELAX > 0:
+        log(build, "Singlet", "back-armpit lines straightened:",
+            relax_back_pit7(o, s["pit"], s["y_arm"], BACK_RELAX, BACK_RELAX_ABOVE))
     log(build, "Singlet", "leg hems drawn in snug:", snug_hems(o, s["hem"]))
     log(build, "Singlet", "repeated faces dropped:", dedupe_faces(o))
     if SLIVER > 0:
@@ -1197,12 +1689,38 @@ if coll.name not in bpy.context.scene.collection.children:
 for o in list(coll.objects):
     bpy.data.objects.remove(o, do_unlink=True)
 RESULT = {}
+SEAM_SHIFT = float(os.environ.get("GEAR07_SEAM_SHIFT", "0"))
+STRAP_IN = float(os.environ.get("GEAR07_STRAP_IN", "-1"))      # per-build strap edges (|x|), -1 = from the head's width
+STRAP_OUT = float(os.environ.get("GEAR07_STRAP_OUT", "-1"))
+_BASE = {"ARM_GAP_UNDER": ARM_GAP_UNDER, "SLEEVE_UNDER_UP": SLEEVE_UNDER_UP, "TEE_PIT": TEE_PIT, "SEAM_SHIFT": SEAM_SHIFT,
+         "STRAP_IN": STRAP_IN, "STRAP_OUT": STRAP_OUT, "ARM_GAP_TOP": ARM_GAP_TOP,
+         "NECK_NARROW": NECK_NARROW, "NECK_NARROW_BACK": NECK_NARROW_BACK,
+         "GUSSET": GUSSET, "GUSSET8": GUSSET8, "G8_A": G8_A, "G8_B": G8_B, "G8_CX": G8_CX, "G8_CY": G8_CY,
+         "G8_CZ": G8_CZ, "G8_WIN_HI": G8_WIN_HI, "G8_WIN_FRONT": G8_WIN_FRONT, "G8_SHRINK": G8_SHRINK,
+         "G8_OVER_SINGLET": float(G8_OVER_SINGLET), "G8_OVER_SLEEVE": float(G8_OVER_SLEEVE), "G8_ARM_SHARE": G8_ARM_SHARE}
+# APPROVED per-build settings (user 2026-11-17, "keep the new one"): Skinny and SkinnyFat get Fit's singlet proportions
+# scaled to their own shoulders (torso edge at shoulder height: Fit 0.80, Skinny 0.52, SkinnyFat 0.57) - on these two
+# the head-width straps lay on the arm and the armhole was forced into the crease (the back-armpit hook). The other
+# four keep the head-width straps. All six: ARM_GAP_UNDER 0.16 (the accepted back-armpit fix, was 0.10).
+PER_BUILD = {
+    "Skinny": {"STRAP_IN": 0.43, "STRAP_OUT": 0.57, "NECK_NARROW": 0.08, "NECK_NARROW_BACK": 0.03},
+    "SkinnyFat": {"STRAP_IN": 0.47, "STRAP_OUT": 0.63, "NECK_NARROW": 0.085, "NECK_NARROW_BACK": 0.03},
+}
 for b in BUILDS:
+    # per-build: the approved table above, then any GEAR07_<NAME>__<Build> override (trials)
+    for _n, _v in _BASE.items():
+        _o = os.environ.get("GEAR07_%s__%s" % (_n, b))
+        globals()[_n] = float(_o) if _o else PER_BUILD.get(b, {}).get(_n, _v)
+    if b in PER_BUILD or any(os.environ.get("GEAR07_%s__%s" % (_n, b)) for _n in _BASE):
+        log(b, "per-build settings:", {_n: globals()[_n] for _n in _BASE})
     body = F["Body"](b)
     H = W["heights"](body)
     skin = joined_skin7(b, coll)
     SKIN_JOINTS[0] = {k: tuple(v) for k, v in body.joints.items()}
     P, N, fill = layer_lines(skin)
+    if BACK_SPAN > 0:
+        fill, raised = back_span_fill7(skin, P, N, fill, H["m"]["armpit"])
+        log(b, "Skin", "points raised to span the back of the armpits:", raised)
     made = {}
     tee = build_tee(skin, P, N, fill, H, coll, b, body)
     drop_group(tee, IS_ARM)
@@ -1218,6 +1736,12 @@ for b in BUILDS:
 
     singlet, s = build_singlet7(skin, P, N, fill, H, coll, b, body)
     # the tee under the singlet held by the torso like the singlet's straps (else it rose through them with the arm)
+    if BACK_BRIDGE > 0:
+        back_pts = [Vector((p_.x, s["y_arm"] + 0.15, p_.z)) for p_ in s["pit_pts"]]
+        log(b, "Tee", "back-armpit points bridged:",
+            smooth_armpit7(tee, skin, back_pts, BACK_BRIDGE, BACK_BRIDGE_ROUNDS))
+        log(b, "Singlet", "back-armpit points bridged:",
+            smooth_armpit7(singlet, skin, back_pts, BACK_BRIDGE, BACK_BRIDGE_ROUNDS, need=(TEE_OUT + SINGLET_OUT) * 0.9))
     if TEE_PIT > 0:
         log(b, "Tee", "points smoothed in the armpits:", smooth_armpit7(tee, skin, s["pit_pts"], TEE_PIT,
                                                                          int(os.environ.get("GEAR07_TEE_PIT_ROUNDS", "12"))))
@@ -1265,6 +1789,29 @@ for b in BUILDS:
     # (again on the thick shell, only faces turned well against their neighbours: the rims along the edges stand at a
     # right angle to the faces beside them and are left alone)
     log(b, "Singlet", "folds in the thick shell smoothed out (before, left): %d, %d" % unfold7(singlet, thresh=-0.2))
+    gus8 = gusset8(skin, singlet, coll, b, s) if GUSSET8 > 0 else []
+    for gus in gus8:
+        keys_s, keys_g = list(singlet["keys"]), list(gus["keys"])
+        n_s = len(singlet.data.polygons)
+        bpy.ops.object.select_all(action="DESELECT")
+        singlet.select_set(True)
+        gus.select_set(True)
+        bpy.context.view_layer.objects.active = singlet
+        bpy.ops.object.join()
+        assert len(singlet.data.polygons) == n_s + len(keys_g)
+        singlet["keys"] = keys_s + keys_g
+    if GUSSET > 0:
+        gus = gusset7(skin, P, N, coll, b, s, GUSSET)
+        if gus is not None:
+            keys_s, keys_g = list(singlet["keys"]), list(gus["keys"])
+            n_s = len(singlet.data.polygons)
+            bpy.ops.object.select_all(action="DESELECT")
+            singlet.select_set(True)
+            gus.select_set(True)
+            bpy.context.view_layer.objects.active = singlet
+            bpy.ops.object.join()
+            assert len(singlet.data.polygons) == n_s + len(keys_g)
+            singlet["keys"] = keys_s + keys_g
     log(b, "Singlet", tris(singlet), "triangles")
     sp = V["split_keys"](singlet, coll, b + "_WornSinglet")
     target = sp.get("Black") or next(iter(sp.values()))

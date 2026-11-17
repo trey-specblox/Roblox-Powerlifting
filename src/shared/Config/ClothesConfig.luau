@@ -59,17 +59,17 @@ export type Body = {
 -- three block-skeleton fist bodies (Skinny 129935421578716, Heavy 86964380216834, Muscular 92735685532150).
 ClothesConfig.Bodies = {
 	Skinny = { assetId = 89940499075640, neckMark = Vector3.new(0, 1.0255, 0.0013), squatBarRest = 0.511,
-		squatGrip = 1.55, benchBarClear = 0.581, clothesAssetId = 83677300602965 },
+		squatGrip = 1.55, benchBarClear = 0.581, clothesAssetId = 81104956699865 },
 	SkinnyFat = { assetId = 119724826023810, neckMark = Vector3.new(0, 0.9993, 0.0838), squatBarRest = 0.604,
-		squatGrip = 1.66, benchBarClear = 0.486, clothesAssetId = 135333972488670 },
+		squatGrip = 1.66, benchBarClear = 0.486, clothesAssetId = 72923953634118 },
 	Fat = { assetId = 113520176766393, neckMark = Vector3.new(0, 0.9503, 0.179), squatBarRest = 1.029,
-		squatGrip = 2.05, benchBarClear = 0.711, clothesAssetId = 114662706829485 },
+		squatGrip = 2.05, benchBarClear = 0.711, clothesAssetId = 129826274100150 },
 	Fit = { assetId = 102399068343184, neckMark = Vector3.new(0, 0.9552, -0.0155), squatBarRest = 0.624,
-		squatGrip = 1.87, benchBarClear = 0.69, clothesAssetId = 82908685773387 },
+		squatGrip = 1.87, benchBarClear = 0.69, clothesAssetId = 112085918465443 },
 	Muscular = { assetId = 93479186515150, neckMark = Vector3.new(0, 0.8869, -0.0172), squatBarRest = 0.913,
-		squatGrip = 2.17, benchBarClear = 0.754, clothesAssetId = 101044753006455 },
+		squatGrip = 2.17, benchBarClear = 0.754, clothesAssetId = 129989746661221 },
 	BigBuff = { assetId = 127501040475668, neckMark = Vector3.new(0, 0.8354, -0.0047), squatBarRest = 1.075,
-		squatGrip = 2.35, benchBarClear = 0.847, clothesAssetId = 138927065217215 },
+		squatGrip = 2.35, benchBarClear = 0.847, clothesAssetId = 94343850079984 },
 } :: { [string]: Body }
 ClothesConfig.DefaultBuild = "Skinny"
 ClothesConfig.StudioBuildAttribute = "LifterBodyBuild"

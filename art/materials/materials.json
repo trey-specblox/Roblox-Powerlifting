@@ -1824,6 +1824,114 @@
    "ids": {
     "model": "rbxassetid://138927065217215"
    }
+  },
+  "CartoonGear12_Skinny": {
+   "about": "Worn lifting gear v12 for the Skinny body (2026-11-17): build_cartoon_gear_07.py with the approved defaults (armpit gap 0.16 on all six, tee sleeve-hem fix). Skinny/SkinnyFat singlet: Fit's strap and neckline proportions scaled to the build's own torso (approved by the user 2026-11-17). Suits etc. = the approved v5 builder 628246d. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonGear12_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear10_Skinny",
+   "ids": {
+    "model": "rbxassetid://87069610385590"
+   }
+  },
+  "CartoonGear12_SkinnyFat": {
+   "about": "Worn lifting gear v12 for the SkinnyFat body (2026-11-17): build_cartoon_gear_07.py with the approved defaults (armpit gap 0.16 on all six, tee sleeve-hem fix). Skinny/SkinnyFat singlet: Fit's strap and neckline proportions scaled to the build's own torso (approved by the user 2026-11-17). Suits etc. = the approved v5 builder 628246d. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonGear12_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear10_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://84693693860715"
+   }
+  },
+  "CartoonGear12_Fat": {
+   "about": "Worn lifting gear v12 for the Fat body (2026-11-17): build_cartoon_gear_07.py with the approved defaults (armpit gap 0.16 on all six, tee sleeve-hem fix). Suits etc. = the approved v5 builder 628246d. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonGear12_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear10_Fat",
+   "ids": {
+    "model": "rbxassetid://120232504119452"
+   }
+  },
+  "CartoonGear12_Fit": {
+   "about": "Worn lifting gear v12 for the Fit body (2026-11-17): build_cartoon_gear_07.py with the approved defaults (armpit gap 0.16 on all six, tee sleeve-hem fix). Suits etc. = the approved v5 builder 628246d. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonGear12_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear10_Fit",
+   "ids": {
+    "model": "rbxassetid://106726945139710"
+   }
+  },
+  "CartoonGear12_Muscular": {
+   "about": "Worn lifting gear v12 for the Muscular body (2026-11-17): build_cartoon_gear_07.py with the approved defaults (armpit gap 0.16 on all six, tee sleeve-hem fix). Suits etc. = the approved v5 builder 628246d. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonGear12_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear10_Muscular",
+   "ids": {
+    "model": "rbxassetid://73580207323727"
+   }
+  },
+  "CartoonGear12_BigBuff": {
+   "about": "Worn lifting gear v12 for the BigBuff body (2026-11-17): build_cartoon_gear_07.py with the approved defaults (armpit gap 0.16 on all six, tee sleeve-hem fix). Suits etc. = the approved v5 builder 628246d. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonGear12_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear11_BigBuff",
+   "ids": {
+    "model": "rbxassetid://78011781067261"
+   }
+  },
+  "CartoonClothes12_Skinny": {
+   "about": "Everyday clothes v12 for the Skinny body (2026-11-17): tee from the v12 gear build (sleeve-hem fix); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes12_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes10_Skinny",
+   "ids": {
+    "model": "rbxassetid://81104956699865"
+   }
+  },
+  "CartoonClothes12_SkinnyFat": {
+   "about": "Everyday clothes v12 for the SkinnyFat body (2026-11-17): tee from the v12 gear build (sleeve-hem fix); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes12_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes10_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://72923953634118"
+   }
+  },
+  "CartoonClothes12_Fat": {
+   "about": "Everyday clothes v12 for the Fat body (2026-11-17): tee from the v12 gear build (sleeve-hem fix); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes12_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes10_Fat",
+   "ids": {
+    "model": "rbxassetid://129826274100150"
+   }
+  },
+  "CartoonClothes12_Fit": {
+   "about": "Everyday clothes v12 for the Fit body (2026-11-17): tee from the v12 gear build (sleeve-hem fix); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes12_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes10_Fit",
+   "ids": {
+    "model": "rbxassetid://112085918465443"
+   }
+  },
+  "CartoonClothes12_Muscular": {
+   "about": "Everyday clothes v12 for the Muscular body (2026-11-17): tee from the v12 gear build (sleeve-hem fix); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes12_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes10_Muscular",
+   "ids": {
+    "model": "rbxassetid://129989746661221"
+   }
+  },
+  "CartoonClothes12_BigBuff": {
+   "about": "Everyday clothes v12 for the BigBuff body (2026-11-17): tee from the v12 gear build (sleeve-hem fix); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 12, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes12_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes11_BigBuff",
+   "ids": {
+    "model": "rbxassetid://94343850079984"
+   }
   }
  },
  "images": {

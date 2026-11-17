@@ -425,6 +425,95 @@ PARKED. Don't retry it blindly; read this first.**
   shipped. Close-ups: in black the old tee bunching barely shows; BOTH keep a small Z-shaped hook in the red piping at
   the armpit where the armhole wraps round the arm (clearest Muscular, BigBuff; smaller SkinnyFat); 2 adds bare skin
   under the shorter sleeve. Verdict: 1 (shipped) is the cleaner; neither is the user's perfectly straight line.
+- 2026-11-17 BACK "TEAR" (user, Studio, red singlet with black panels / piping, white tee; images\41.png; probably
+  Skinny). Reproduced (D:\ClaudeScratch\hem\back_look.py, back_diag.py with a colour per part). Cause: at the bottom of
+  each BACK armhole the edge (with its piping) follows the skin into the fold at the back of the armpit and loops
+  under the arm; seen from behind it makes an S-shaped bay, and with panel and piping in the SAME colour (black) their
+  joint outline reads as a jagged tear (default colours: a red panel meeting white piping, which reads as a joint).
+  Tried (all switches OFF by default in build_cartoon_gear_07.py): JOIN_SMOOTH (cut values smoothed at the junction:
+  no change; strong: the piping vanished), BACK_RELAX (lines straightened: no change), PANEL_FLARE (panel top filleted
+  into the piping: no change), BACK_FILL (the bay filled out to a straight |x|: no change - the bay is the fold's
+  geometry, not the cut), BACK_BRIDGE (tee + singlet smoothed over the fold: S stays, panel top jagged). A default
+  build still matches the shipped file exactly (checked again). NOT fixed; reported to the redesign session.
+  - Then (redesign session: "(a)"): BACK_SPAN (layers' base from a smoother surface at the back of the armpit) moved
+    only 4-6 points - the bay isn't a groove the layers dip into. BACK_LINE (the back edge forced to a vertical line):
+    broke (steps across the back). FOUND: a bigger gap under the arm, GEAR07_ARM_GAP_UNDER 0.16 (shipped 0.10; the
+    armhole's edge further off the arm's root under the arm) - the armhole's bottom no longer follows the skin into
+    the fold. D:\ClaudeScratch\hem\gap16.blend, CHECK PASSED. Straight from behind: the S-hook bay gone on all six,
+    the edge runs smoothly down. Angled close-ups: Skinny / SkinnyFat a much smaller hook left, Fit / Muscular /
+    BigBuff a small white tee bit right at the armpit (as shipped). Front, arms-up back, squat back: as shipped.
+    Stretch arms up p99 2.7-3.8, worst 6.1-13.0 (shipped 2.6-3.6 / 6.6-13.6) except BigBuff one 0.001-long piping
+    sliver reading 100x (not visible). Layers as shipped. 0.20 tried too: no better, BigBuff worst 20x.
+    Sheets art/previews/BodyPolish/BackTear_1_Back.png, BackTear_2_Closeups.png. NOT uploaded / committed / pushed.
+  - User on BackTear_2: Fat / Fit / Muscular / BigBuff ACCEPTED as gap16 (ARM_GAP_UNDER 0.16); Skinny and SkinnyFat
+    "still seeing the same tears" (images 42-43: the tee sleeve's white underside poking out, the singlet's black
+    edge hooking round it). build_cartoon_gear_07.py now takes PER-BUILD overrides GEAR07_<NAME>__<Build> for
+    ARM_GAP_UNDER, SLEEVE_UNDER_UP, TEE_PIT, SEAM_SHIFT (new: the arm-seam cut moved toward the torso; 0 = as before,
+    formula unchanged). Six trials on the two (D:\ClaudeScratch\hem\th1..th6.blend, thin_cmp.png, thin2_cmp.png):
+    gap 0.16 / 0.22 with SLEEVE_UNDER_UP 0.12 / 0.18 - the white bulge goes, a light inner sliver of the tee shows and
+    the black hook stays (gap 0.22: Skinny worst stretch 31x); SEAM_SHIFT 0.25 - a bigger round notch; 0.40 - torn,
+    stretch > 100x. Cause: on these two thin builds the arm rests against the side, and the singlet's armhole bottom
+    has to run through the crease between them; no cut placement keeps it out of the crease. NOT fixed.
+  - OPTION C (redesign session; the bodies session measured the thin builds' arm-to-torso gap at rest = Fit's, so
+    the real difference is the strap): on Skinny the UpperTorso ends at |x| 0.52 at shoulder height (SkinnyFat 0.57),
+    but the head-width strap ran |x| 0.66-0.88: wholly on the arm's skin. New per-build overrides STRAP_IN /
+    STRAP_OUT (strap edges), ARM_GAP_TOP, NECK_NARROW / NECK_NARROW_BACK. c3 = Skinny strap 0.36-0.52, SkinnyFat
+    0.40-0.56 (0.16 wide), NECK_NARROW 0 / BACK 0 (the neck U's top at the strap's inner edge), ARM_GAP_UNDER 0.16
+    (D:\ClaudeScratch\hem\c3.blend, CHECK PASSED). Stretch arms up: Skinny p99 2.66 / worst 7.1 (gap16 2.90 / 12.0),
+    SkinnyFat 2.98 / 6.0 (3.13 / 6.1). Layers fine (Body under WornSinglet 5-11 points; SkinnyFat's known squat-
+    bottom spot 0.499). Looks: narrower straps and a narrower U from the front, more tee at the shoulder; from behind
+    the long edge is one smooth curve, the black hook much smaller; a small step at the armpit on Skinny (left) and
+    small white tee bits on SkinnyFat remain. Sheet art/previews/BodyPolish/ThinStraps_Compare.png. Not uploaded.
+  - User REJECTED the narrower straps ("From the front, the old singlet just looks better"): c3 dropped, the two
+    keep the old straps + gap16. Then option 3, an underarm GUSSET (per-build GEAR07_GUSSET__<Build>, gusset7: a
+    patch over a plain-smoothed skin, cut to an oval behind the arm's root, torso-only weights, joined into the
+    singlet as the panel colour; GUSSET_OVER / _DOWN / _RZ / _ROUNDS / _X_OUT). gs1 (under the singlet): the tee
+    still poked through, spikes at the top. gs2 (on top, within the panel's width): the slit covered on both, but a
+    crumpled black lump at the armpit. gs3 / gs4 (stopped at the crease): too small or gone (SkinnyFat none), Skinny's
+    loop back. D:\ClaudeScratch\hem\gs2_cmp.png, gs4_cmp.png. Not smooth; not sent as a fix. All off by default.
+  - User chose "wait": a properly modelled gusset first. gusset8 (per-build GEAR07_GUSSET8__<Build>; G8_WIN_* /
+    G8_SHRINK / G8_STEP; GEAR07_G8_DEBUG dumps the edge points): the outline = the convex hull, in the back-armpit
+    view, of the singlet's open edge round the hook (over the edging it hides, across the slit a smooth chord),
+    rounded (Chaikin) and resampled; a ring mesh from its middle; each point cast onto the torso's skin / tee / singlet
+    (not the arm's) and the depths relaxed as a taut membrane never behind them; 0.006 in front; solidified; torso-only
+    weights; joined as the panel colour. Bugs found and fixed on the way: the meshes' points are already rig space
+    (SkinnyFat's rig stands at x 4.6: everything landed off), the patch must stay unparented. Best so far g8d / g8e
+    (+ SLEEVE_UNDER_UP 0.12 on the two): SkinnyFat's slit covered (a small rounded black knob), Skinny a small white
+    bit + crease left; straight from behind both fairly smooth. D:\ClaudeScratch\hem\g8d_cmp.png, g8e_cmp.png. Motion
+    checks not run yet (not worth it until the standing look is right). NOT done.
+  - REGRESSION CHECK (redesign session, 2026-11-17): the back-armpit hook / slit is NOT new. Rendered from the
+    committed sources: published 28d5549 (art/blender/CartoonGear_07.blend blob c5556c3, = the gear-09 source, old
+    body weights) vs 66dee6f (blob 8a23051, the 10 set + BigBuff 11): nearly identical on all six - the hook + slit on
+    Skinny / SkinnyFat, a small hook on Fat, small white tee bits on Fit / Muscular / BigBuff, in BOTH. Sheet
+    art/previews/BodyPolish/Regression_BackArmpit.png. Gusset work paused (g8best run stopped).
+  - Resumed (user: "make sure the tear patch is cleared up"): g8f-g8k (tight window, flat over the singlet,
+    in front of the sleeve, arm share 0.5, shorter underarm 0.12 / 0.18): D:\ClaudeScratch\hem\g8hi_cmp.png,
+    g8jk_cmp.png. In front of the sleeve it stands out as a black knob (the sleeve's underside bulges toward the
+    viewer there); flat / behind it, the white sleeve or small black folds stay. None meets the bar (no hook, slit,
+    lump, knob, white, patch edge). About 15 variants in all. NOT done; reported to the redesign session.
+  - User (direct): the gusset results were "terrible" (the patch widened the side, the hook stayed). Gusset dropped.
+    One attempt at the cause instead: Skinny / SkinnyFat singlet with Fit's proportions scaled to their own
+    shoulders (torso edge at shoulder height: Fit 0.80, Skinny 0.52, SkinnyFat 0.57): straps 0.43-0.57 / 0.47-0.63,
+    neck U 0.35 / 0.385 front, gap16, no patch (D:\ClaudeScratch\hem\prop.ps1, prop.blend). CHECK PASSED. vs PUBLISHED:
+    stretch worst Skinny 8.6 -> 5.9, SkinnyFat 17.5 -> 8.0; Body under WornSinglet Skinny 44 -> 27 points, SkinnyFat
+    68 (0.485 deep) -> 22 (0.029). Close-ups: back armpit hook mostly gone (Skinny L a small notch left, SkinnyFat R a
+    small white bit), arms-up and walking armpit clean (published: zigzag / white); front: straps further in, more tee
+    at the shoulders, narrower neck. Sheets art/previews/BodyPolish/Proportional_Skinny.png, _SkinnyFat.png. Shown to
+    the user; waiting for their call.
+  - USER APPROVED (2026-11-17, direct: "keep the new one"). SHIPPED AS SET 12, NOT COMMITTED:
+    build_cartoon_gear_07.py defaults now ARM_GAP_UNDER 0.16 (all six) + PER_BUILD table (Skinny straps 0.43-0.57,
+    neck 0.08 / back 0.03; SkinnyFat 0.47-0.63, neck 0.085 / back 0.03). art/blender/CartoonGear_07.blend rebuilt
+    (old one backed up at D:\ClaudeScratch\ship12): Fat / Fit / Muscular / BigBuff identical to the reviewed
+    gap16.blend, Skinny / SkinnyFat identical to prop.blend (worst move 0.000000). CHECK PASSED (Gear_07 and
+    Knee100); stretch and layers as reviewed. Exported CartoonGear12_* / CartoonClothes12_* (centring passed, all
+    six), uploaded to group 529442797:
+    gear Skinny 87069610385590, SkinnyFat 84693693860715, Fat 120232504119452, Fit 106726945139710,
+    Muscular 73580207323727, BigBuff 78011781067261; clothes Skinny 81104956699865, SkinnyFat 72923953634118,
+    Fat 129826274100150, Fit 112085918465443, Muscular 129989746661221, BigBuff 94343850079984.
+    Wired: WornGearConfig.CartoonAssetIds + ClothesConfig clothesAssetId (body ids unchanged); materials.json entries.
+    Studio read-only load check (GetObjects, nothing parented): all 12 load, piece counts and names match the old
+    sets, every piece within 0.6 of its body part (worst 0.533), knee 1.000, ONLY WornSinglet pieces differ from the
+    old gear, clothes identical. Not yet seen in a Studio play test on a real character.
 
 **SINGLET OVER THE TEE REWORK (2026-11-16, user's Studio test via the animation session: "singlets are accessories
 ... it should not delete or make something underneath disappear"; tee through the singlet, torn 3-colour straps, skin

@@ -29,8 +29,8 @@ WornGearConfig.AssetId = 130216457283907
 -- like the clothes (WornGearFit.dressCartoon). 0 = not uploaded yet: a cartoon body then wears nothing rather than the
 -- block-body pieces (they float off it).
 WornGearConfig.CartoonAssetIds = {
-	Skinny = 127442997671832, SkinnyFat = 86908017222661, Fat = 83466180688270, Fit = 91475121223440,
-	Muscular = 132205207024331, BigBuff = 100148587140880,
+	Skinny = 87069610385590, SkinnyFat = 84693693860715, Fat = 120232504119452, Fit = 106726945139710,
+	Muscular = 73580207323727, BigBuff = 78011781067261,
 } :: { [string]: number }
 
 -- The CENTRAL logo on the cartoon gear (art/logos/CentralGearLogo_03_White.png: white letters on clear, materials.json
