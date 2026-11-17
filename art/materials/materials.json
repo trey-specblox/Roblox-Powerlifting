@@ -1527,6 +1527,114 @@
    "ids": {
     "model": "rbxassetid://115461360597179"
    }
+  },
+  "CartoonGear09_Skinny": {
+   "about": "Worn lifting gear v9 for the Skinny body (2026-11-16, user \"Looks good, upload\"): as v8 (longer legs, knee 1.00) with the singlet's neckline a rounded U front and back like the SBD reference (higher, wider straps, less tee), the notch where the strap meets the armhole fixed, folded edge triangles smoothed out (build_cartoon_gear_07.py), and every piece centred on its body (v8's v7 pieces sat 4.6 x the build's index off the body on all builds but Skinny). Suits, bench shirt, knee wraps, wrist wraps = the approved v5 builder on the new legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear09_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear08_Skinny",
+   "ids": {
+    "model": "rbxassetid://88671609395545"
+   }
+  },
+  "CartoonGear09_SkinnyFat": {
+   "about": "Worn lifting gear v9 for the SkinnyFat body (2026-11-16, user \"Looks good, upload\"): as v8 (longer legs, knee 1.00) with the singlet's neckline a rounded U front and back like the SBD reference (higher, wider straps, less tee), the notch where the strap meets the armhole fixed, folded edge triangles smoothed out (build_cartoon_gear_07.py), and every piece centred on its body (v8's v7 pieces sat 4.6 x the build's index off the body on all builds but Skinny). Suits, bench shirt, knee wraps, wrist wraps = the approved v5 builder on the new legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear09_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear08_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://140487444103304"
+   }
+  },
+  "CartoonGear09_Fat": {
+   "about": "Worn lifting gear v9 for the Fat body (2026-11-16, user \"Looks good, upload\"): as v8 (longer legs, knee 1.00) with the singlet's neckline a rounded U front and back like the SBD reference (higher, wider straps, less tee), the notch where the strap meets the armhole fixed, folded edge triangles smoothed out (build_cartoon_gear_07.py), and every piece centred on its body (v8's v7 pieces sat 4.6 x the build's index off the body on all builds but Skinny). Suits, bench shirt, knee wraps, wrist wraps = the approved v5 builder on the new legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear09_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear08_Fat",
+   "ids": {
+    "model": "rbxassetid://101718270996233"
+   }
+  },
+  "CartoonGear09_Fit": {
+   "about": "Worn lifting gear v9 for the Fit body (2026-11-16, user \"Looks good, upload\"): as v8 (longer legs, knee 1.00) with the singlet's neckline a rounded U front and back like the SBD reference (higher, wider straps, less tee), the notch where the strap meets the armhole fixed, folded edge triangles smoothed out (build_cartoon_gear_07.py), and every piece centred on its body (v8's v7 pieces sat 4.6 x the build's index off the body on all builds but Skinny). Suits, bench shirt, knee wraps, wrist wraps = the approved v5 builder on the new legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear09_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear08_Fit",
+   "ids": {
+    "model": "rbxassetid://97427784604307"
+   }
+  },
+  "CartoonGear09_Muscular": {
+   "about": "Worn lifting gear v9 for the Muscular body (2026-11-16, user \"Looks good, upload\"): as v8 (longer legs, knee 1.00) with the singlet's neckline a rounded U front and back like the SBD reference (higher, wider straps, less tee), the notch where the strap meets the armhole fixed, folded edge triangles smoothed out (build_cartoon_gear_07.py), and every piece centred on its body (v8's v7 pieces sat 4.6 x the build's index off the body on all builds but Skinny). Suits, bench shirt, knee wraps, wrist wraps = the approved v5 builder on the new legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear09_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear08_Muscular",
+   "ids": {
+    "model": "rbxassetid://86426561361975"
+   }
+  },
+  "CartoonGear09_BigBuff": {
+   "about": "Worn lifting gear v9 for the BigBuff body (2026-11-16, user \"Looks good, upload\"): as v8 (longer legs, knee 1.00) with the singlet's neckline a rounded U front and back like the SBD reference (higher, wider straps, less tee), the notch where the strap meets the armhole fixed, folded edge triangles smoothed out (build_cartoon_gear_07.py), and every piece centred on its body (v8's v7 pieces sat 4.6 x the build's index off the body on all builds but Skinny). Suits, bench shirt, knee wraps, wrist wraps = the approved v5 builder on the new legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED. No images inside (the logo is CentralGearLogo_03).",
+   "file": "art/exports/CartoonGear09_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonGear08_BigBuff",
+   "ids": {
+    "model": "rbxassetid://79643326990603"
+   }
+  },
+  "CartoonClothes09_Skinny": {
+   "about": "Everyday clothes v9 for the Skinny body (2026-11-16): as v8 with the Tee / TeeWhite centred on the body (v8's sat off it on all builds but Skinny); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder on the longer legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes09_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes08_Skinny",
+   "ids": {
+    "model": "rbxassetid://108740516612854"
+   }
+  },
+  "CartoonClothes09_SkinnyFat": {
+   "about": "Everyday clothes v9 for the SkinnyFat body (2026-11-16): as v8 with the Tee / TeeWhite centred on the body (v8's sat off it on all builds but Skinny); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder on the longer legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes09_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes08_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://99089485229486"
+   }
+  },
+  "CartoonClothes09_Fat": {
+   "about": "Everyday clothes v9 for the Fat body (2026-11-16): as v8 with the Tee / TeeWhite centred on the body (v8's sat off it on all builds but Skinny); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder on the longer legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes09_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes08_Fat",
+   "ids": {
+    "model": "rbxassetid://111962683322893"
+   }
+  },
+  "CartoonClothes09_Fit": {
+   "about": "Everyday clothes v9 for the Fit body (2026-11-16): as v8 with the Tee / TeeWhite centred on the body (v8's sat off it on all builds but Skinny); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder on the longer legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes09_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes08_Fit",
+   "ids": {
+    "model": "rbxassetid://116108165042681"
+   }
+  },
+  "CartoonClothes09_Muscular": {
+   "about": "Everyday clothes v9 for the Muscular body (2026-11-16): as v8 with the Tee / TeeWhite centred on the body (v8's sat off it on all builds but Skinny); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder on the longer legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes09_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes08_Muscular",
+   "ids": {
+    "model": "rbxassetid://138513051247712"
+   }
+  },
+  "CartoonClothes09_BigBuff": {
+   "about": "Everyday clothes v9 for the BigBuff body (2026-11-16): as v8 with the Tee / TeeWhite centred on the body (v8's sat off it on all builds but Skinny); LongSleeve, Tank, Shorts, Joggers, Sneakers = the approved v5 builder on the longer legs. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 09, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes09_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes08_BigBuff",
+   "ids": {
+    "model": "rbxassetid://124030235873477"
+   }
   }
  },
  "images": {

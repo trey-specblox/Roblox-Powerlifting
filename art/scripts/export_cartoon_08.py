@@ -20,13 +20,16 @@ import os
 import bpy
 
 ROOT = r"D:\Powerlifting Roblox"
-EXPORTS = os.path.join(ROOT, "art", "exports")
-V6_BLEND = os.path.join(ROOT, "art", "blender", "CartoonGear_07.blend")   # (the name kept from v6's script: the new file)
+EXPORTS = os.environ.get("GEAR08_EXPORTS") or os.path.join(ROOT, "art", "exports")   # (env: a trial elsewhere)
+V6_BLEND = os.environ.get("GEAR08_V7_BLEND") or os.path.join(ROOT, "art", "blender", "CartoonGear_07.blend")
 E5 = os.path.join(ROOT, "art", "scripts", "export_cartoon_05.py")
 ORDER = ("Skinny", "SkinnyFat", "Fat", "Fit", "Muscular", "BigBuff")
 V6_HEADS = ("Tee", "TeeWhite")                       # clothes items replaced by v6
 V6_GEAR = ("WornSinglet_", "WornLeverBelt_", "WornKneeSleeve_")   # gear items replaced by v7
 DROPPED = ("TeeUnder", "TeeUnderWhite")
+NUM = os.environ.get("GEAR_EXPORT_NUM", "09")       # the files' number: 09 = the rounded-U neckline + centring fix
+                                                     # (2026-11-16, user "Looks good, upload"); 08 = the first knee-1.00 set
+CENTRE_LIMIT = 0.6                                   # every exported piece's centre within this (x) of its body part's
 
 
 def log(*a):
@@ -75,16 +78,22 @@ for o in dst_data.objects:
         bpy.data.objects.remove(o, do_unlink=True)
         continue
     rig = bpy.data.objects[b + "Rig"]
+    # the piece's place in ITS OWN rig's space, carried over to this file's rig (2026-11-16 fix: the world matrix was
+    # kept, so every build but the first kept the v7 file's side-by-side offset: the tee and gear floated 4.6 x the
+    # build's index studs off the body in the 08 uploads)
+    src_rig = o.parent if (o.parent is not None and o.parent.type == "ARMATURE") else None
     for m in o.modifiers:
         if m.type == "ARMATURE":
             if m.object is not None and m.object is not rig:
                 extra_rigs.add(m.object)
+                src_rig = src_rig or m.object
             m.object = rig
     if o.parent is not None and o.parent is not rig:
         extra_rigs.add(o.parent)
-    mw = o.matrix_world.copy()
+    assert src_rig is not None, "%s: no rig to place it by" % o.name
+    local = src_rig.matrix_world.inverted() @ o.matrix_world
     o.parent = rig
-    o.matrix_world = mw
+    o.matrix_world = rig.matrix_world @ local
     coll.objects.link(o)
     brought += 1
 for r in extra_rigs:
@@ -121,8 +130,19 @@ for b in ORDER:
             clothes[o] = name
         else:
             log("NOT EXPORTED (unknown piece)", o.name)
-    E["export_glb"](os.path.join(EXPORTS, "CartoonGear08_%s.glb" % b), rig, list(gear), gear)
-    E["export_glb"](os.path.join(EXPORTS, "CartoonClothes08_%s.glb" % b), rig, list(clothes), clothes)
+    # every piece centred on the body part it's worn on (the "__<Part>" in its name) before anything is written
+    from mathutils import Vector
+    def cx(o):
+        return sum((o.matrix_world @ Vector(c)).x for c in o.bound_box) / 8
+    off = []
+    for o in list(gear) + list(clothes):
+        part = bpy.data.objects[b + "_" + o.name.split("__")[-1]]
+        if abs(cx(o) - cx(part)) > CENTRE_LIMIT:
+            off.append("%s %+.2f" % (o.name, cx(o) - cx(part)))
+    assert not off, "%s: pieces off their body part (x): %s" % (b, off[:12])
+    log(b, "centring check passed:", len(gear) + len(clothes), "pieces within %.1f of their body part" % CENTRE_LIMIT)
+    E["export_glb"](os.path.join(EXPORTS, "CartoonGear%s_%s.glb" % (NUM, b)), rig, list(gear), gear)
+    E["export_glb"](os.path.join(EXPORTS, "CartoonClothes%s_%s.glb" % (NUM, b)), rig, list(clothes), clothes)
     heads = sorted({n.split("__")[0] for n in list(gear.values()) + list(clothes.values())})
     log(b, "items:", heads)
     rig.location = saved_loc

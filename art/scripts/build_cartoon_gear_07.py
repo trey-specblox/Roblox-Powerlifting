@@ -41,10 +41,22 @@ BUILDS = tuple(b for b in os.environ.get("GEAR07_BUILDS", "Fit").split(",") if b
 COLLECTION = "CartoonGear07"
 
 # --- the singlet's shape (studs; SH = the shoulder joints' height)
-NECK_FRONT = 0.34            # the front scoop's bottom below SH (the tee's crew collar is at SH - 0.2: it shows above)
-NECK_BACK = 0.20             # the back's
-NECK_TURN = 0.02             # below SH, where the scoop's sides turn straight up into the straps' inner edges
-NECK_P = 2.4                 # the scoop's roundness (2 = an ellipse, higher = squarer)
+# The neck (user 2026-11-16, Studio, with the SBD reference: "the chest and back area seems overexposed ... you made the
+# model seem like a straight line across the chest, instead of a oval like"): a rounded U on the front and the back, its
+# sides running up into the straps' inner edges in one curve. (Was a squarish superellipse 0.34 deep, power 2.4, three
+# times as wide as deep: a flat line across the chest with square corners, too much tee showing.)
+NECK_FRONT = float(os.environ.get("GEAR07_NECK_FRONT", "0.26"))  # the front U's bottom below SH (the tee's collar is at
+                             # about SH at the front's middle: ~0.26 of tee shows, was 0.31)
+NECK_BACK = float(os.environ.get("GEAR07_NECK_BACK", "-0.10"))   # the back U's bottom, ABOVE SH: the tee's collar is at
+                             # ~SH + 0.48 at the back (it was 0.24 below SH: ~0.75 of tee showed, a box over the back)
+NECK_TURN = 0.02             # below SH, where the front U's sides reach the straps' inner edges
+NECK_H_BACK = float(os.environ.get("GEAR07_NECK_H_BACK", "0.25"))  # the back U's height, bottom to the straps
+NECK_K = float(os.environ.get("GEAR07_NECK_K", "2.0"))           # the U's power (2 = a parabola: round, no flat bottom)
+NECK_ROUND = float(os.environ.get("GEAR07_NECK_ROUND", "0.06"))  # how softly the U turns into the straps' inner edges
+# The U's top is this much narrower than v4's strap inner edge (HEAD_HALF + 0.06), front / back, the straps' outer edges
+# unchanged: wider straps, a narrower opening, as the reference (the tee's collar is about half the old opening's width)
+NECK_NARROW = float(os.environ.get("GEAR07_NECK_NARROW", "0.12"))
+NECK_NARROW_BACK = float(os.environ.get("GEAR07_NECK_NARROW_BACK", "0.04"))
 ARM_UNDER = 0.06             # the armhole's bottom below the armpit
 STRAP_PUSH, STRAP_SOFT = 3.0, 0.05   # how strongly the strap's zone is kept, and how soft its edge is
 STRAP_W = 0.22               # the straps' width over the shoulder (narrower where the shoulder is: thin builds)
@@ -73,7 +85,8 @@ ROOT_SMOOTH = 10             # rounds of smoothing of the arm's surface the armh
 SEAM_ROUNDS = 60              # rounds of smoothing along every edge and colour line (Taubin, kept on the surface)
 SHORTS_TOP = 0.05            # the shorts' colour starts this far below the hip joints (a level line)
 REFINE_BAND = 0.03
-ARM_BLEND = 0.04             # the armhole and the arm-seam cut blended into one curve over this
+ARM_BLEND = float(os.environ.get("GEAR07_ARM_BLEND", "0.015"))  # the armhole and the arm-seam cut blended over this (0.04 pulled the
+                             # edge in where the two lines run close: the notch at the strap's foot, user 2026-11-16)
 ARMSEAM_TOP, ARMSKIN_ROUND = 0.0, 0.05   # the cut along the arm's seam stops this far above the armpit, blended in
 ARMSEAM_SMOOTH = 2           # rounds of smoothing of the arm-part marker (its 0.5 line stays on the seam)
 IS_ARM_S = "_IsArmS"
@@ -391,6 +404,82 @@ def dedupe_faces(o):
     return len(gone)
 
 
+def colour_islands7(o, rounds=2):
+    """A face whose colour (o["keys"]) matches none of its neighbours takes the colour most of them have: a lone body
+    face poking into the piping read as a speck in the edge up close (user 2026-11-16, "a little tear"). Returns how
+    many changed."""
+    from collections import Counter
+    me = o.data
+    keys = list(o["keys"])
+    by_edge = {}
+    for p_ in me.polygons:
+        for ek in p_.edge_keys:
+            by_edge.setdefault(ek, []).append(p_.index)
+    nb = [[g for ek in p_.edge_keys for g in by_edge[ek] if g != p_.index] for p_ in me.polygons]
+    changed = 0
+    for _ in range(rounds):
+        new = list(keys)
+        for i, n in enumerate(nb):
+            # (never a piping face: where the piping is one triangle wide that would cut a gap into it)
+            if keys[i] != "Trim" and len(n) >= 2 and all(keys[j] != keys[i] for j in n):
+                new[i] = Counter(keys[j] for j in n).most_common(1)[0][0]
+                changed += 1
+        keys = new
+    o["keys"] = keys
+    return changed
+
+
+def unfold7(o, rounds=UNFOLD_ROUNDS if "UNFOLD_ROUNDS" in globals() else 15, thresh=0.3):
+    """Smooths out folded triangles (a face turned against its neighbours: up close a dark notch, a "little tear", user
+    2026-11-16): their corners and the ring round them move toward their neighbours (along the edge for edge points) and
+    back onto the garment's surface, until none is left. Returns (folded faces before, after)."""
+    from mathutils.bvhtree import BVHTree
+    me = o.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.faces.ensure_lookup_table()
+    tree = BVHTree.FromBMesh(bm)
+
+    def folded():
+        bm.normal_update()
+        out = []
+        for f in bm.faces:
+            nb = {g for e in f.edges for g in e.link_faces if g is not f}
+            avg = Vector()
+            for g in nb:
+                avg += g.normal
+            if avg.length > 1e-6 and f.normal.dot(avg.normalized()) < thresh:
+                out.append(f)
+        return out
+    bad = folded()
+    first = len(bad)
+    for _ in range(rounds):
+        if not bad:
+            break
+        move = {v for f in bad for v in f.verts}
+        move |= {e.other_vert(v) for v in list(move) for e in v.link_edges}
+        new = {}
+        for v in move:
+            if v.is_boundary:
+                nbv = [e.other_vert(v) for e in v.link_edges if e.is_boundary]
+                if len(nbv) != 2:
+                    continue
+            else:
+                nbv = [e.other_vert(v) for e in v.link_edges]
+            c = Vector()
+            for n in nbv:
+                c += n.co
+            new[v] = v.co.lerp(c / len(nbv), 0.6)
+        for v, c in new.items():
+            hit = tree.find_nearest(c)
+            v.co = hit[0] if hit[0] is not None else c
+        bad = folded()
+    bm.to_mesh(me)
+    bm.free()
+    me.update()
+    return first, len(bad)
+
+
 def soft_min(a, b, k):
     if k <= 0:
         return min(a, b)
@@ -461,12 +550,16 @@ def singlet_lines7(body, H, skin, layer):
     import numpy as np
 
     def neck(c):
+        # kept below the U's edge (its height at |x|: the bottom at the middle, rising as a parabola to the straps' inner
+        # edge at z_turn) or outside the straps' inner edge; a soft maximum of the two rounds where they meet
         back = smooth(-0.15, 0.15, np.array([c.y]))[0]
-        h = NECK_FRONT + (NECK_BACK - NECK_FRONT) * back - NECK_TURN
-        u = abs(c.x) / xi
-        v = max(0.0, z_turn - c.z) / h
-        r = (u ** NECK_P + v ** NECK_P) ** (1.0 / NECK_P)
-        return (r - 1.0) * min(xi, h)
+        bottom = SH - (NECK_FRONT + (NECK_BACK - NECK_FRONT) * back)
+        h = (NECK_FRONT - NECK_TURN) + (NECK_H_BACK - (NECK_FRONT - NECK_TURN)) * back
+        xn = xi - (NECK_NARROW + (NECK_NARROW_BACK - NECK_NARROW) * back)
+        t = min(1.0, abs(c.x) / xn)
+        below = bottom + h * t ** NECK_K - c.z
+        outside = abs(c.x) - xn
+        return -soft_min(-below, -outside, NECK_ROUND)
 
     def arm(c):
         hit = tree.find_nearest(c, 2.0)
@@ -507,8 +600,9 @@ def singlet_lines7(body, H, skin, layer):
     def shorts(c):
         return z_sh - c.z
 
-    log(body.build, "singlet v7: strap from %.3f, armhole %d root faces, front scoop to %.3f, leg hem %.3f (crotch %.3f)"
-        % (xi, len(root), SH - NECK_FRONT, hem_z, m["crotch"]))
+    log(body.build, "singlet v7: strap from %.3f, armhole %d root faces, front U to %.3f (top half-width %.3f, back %.3f to %.3f), arm blend %.3f, leg hem %.3f (crotch %.3f)"
+        % (xi, len(root), SH - NECK_FRONT, xi - NECK_NARROW, xi - NECK_NARROW_BACK, SH - NECK_BACK, ARM_BLEND, hem_z,
+           m["crotch"]))
     return dict(neck=neck, arm=arm, leg=leg, panel=panel, shorts=shorts, xi=xi, xo=xo, z_ah=z_bot, pit=pit, hem=hem_z)
 
 
@@ -570,11 +664,13 @@ def build_singlet7(skin, P, N, fill, H, coll, build, body):
         return "Black"
     face_keys(o, key, with_verts=True)
     log(build, "Singlet", "trim-only strips dropped:", drop_trim_strips7(o))
+    log(build, "Singlet", "lone colour faces matched to their neighbours:", colour_islands7(o))
     log(build, "Singlet", "points smoothed along the edges and colour lines:", relax_seams(o, SEAM_ROUNDS))
     log(build, "Singlet", "leg hems drawn in snug:", snug_hems(o, s["hem"]))
     log(build, "Singlet", "repeated faces dropped:", dedupe_faces(o))
     log(build, "Singlet", "hem points pushed out over the knee sleeves: %d (up to %.3f)" % clear_sleeves(o, build, s["hem"]))
     log(build, "Singlet", "hem points pushed out clear of the thigh: %d (up to %.3f)" % clear_skin_band(o, skin, s["hem"]))
+    log(build, "Singlet", "folded faces smoothed out (before, left): %d, %d" % unfold7(o))
     drop_group(o, IS_ARM)
     drop_group(o, IS_ARM_S)
     return o, s
@@ -733,6 +829,9 @@ for b in BUILDS:
 
     singlet, s = build_singlet7(skin, P, N, fill, H, coll, b, body)
     thicken_stacked(singlet, FABRIC, edge_key=lambda c, k: "Shorts" if k == "Shorts" else "Trim")
+    # (again on the thick shell, only faces turned well against their neighbours: the rims along the edges stand at a
+    # right angle to the faces beside them and are left alone)
+    log(b, "Singlet", "folds in the thick shell smoothed out (before, left): %d, %d" % unfold7(singlet, thresh=-0.2))
     log(b, "Singlet", tris(singlet), "triangles")
     sp = V["split_keys"](singlet, coll, b + "_WornSinglet")
     target = sp.get("Black") or next(iter(sp.values()))

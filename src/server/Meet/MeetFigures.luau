@@ -203,9 +203,10 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 				part.Anchored = false
 				part.Massless = true
 				part.CanQuery = false
-				local weld = Instance.new("WeldConstraint")
+				local weld = Instance.new("Weld")
 				weld.Part0 = hand
 				weld.Part1 = part
+				weld.C0 = hand.CFrame:ToObjectSpace(part.CFrame)
 				weld.Parent = part
 			end
 			local clipboard = RoomProps.propCopy("Clipboard", 1)
@@ -402,9 +403,12 @@ function labelTee(figure: Model, torso: BasePart, build: string)
 		card.Massless = true
 		card.CFrame = torso.CFrame * CFrame.new(0, 0.2, side.z)
 		card.Parent = figure
-		local weld = Instance.new("WeldConstraint")
+		-- A Weld with the offset written out: a WeldConstraint keeps wherever the parts happen to be, and the figure's
+		-- rig may still be coming together (labels floating off the spotters, Studio 2026-11-16).
+		local weld = Instance.new("Weld")
 		weld.Part0 = torso
 		weld.Part1 = card
+		weld.C0 = CFrame.new(0, 0.2, side.z)
 		weld.Parent = card
 		printTee(card, side.face)
 		local gui = card:FindFirstChildOfClass("SurfaceGui")

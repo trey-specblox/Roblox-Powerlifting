@@ -41,6 +41,10 @@ local LifterBodyService = {}
 local TEMPLATES_FOLDER = "LifterBodyTemplates"
 local TOO_FAST_SECONDS = 0.25
 
+-- The Humanoid body scales that leave a part at exactly its own size (swapBody sets them).
+local NEUTRAL_SCALES: { [string]: number } = { BodyWidthScale = 1, BodyDepthScale = 1, BodyHeightScale = 1,
+	BodyTypeScale = 0, BodyProportionScale = 0 }
+
 -- R15 part -> the joint whose mark it carries towards its parent.
 local JOINT_OF: { [string]: string } = { LowerTorso = "Root", UpperTorso = "Waist" }
 for _, side in ipairs({ "Left", "Right" }) do
@@ -346,6 +350,16 @@ function swapBody(character: Model, build: string, label: string): boolean
 	end
 	humanoid.RequiresNeck = false
 	humanoid.BreakJointsOnDeath = false
+	-- The body keeps exactly its build's size: the clothes and gear are shaped for it. Roblox otherwise rescales the new
+	-- parts by the avatar's body scales (a HumanoidDescription's defaults are BodyType 0.3 / Proportion 1, and the
+	-- computer lifters had Width up to 1.25): Studio 2026-11-16, NPC bodies 15-20% bigger than their clothes, coming
+	-- through them. The build itself says how big a lifter is (LifterBuild).
+	for name, value in pairs(NEUTRAL_SCALES) do
+		local scale = humanoid:FindFirstChild(name)
+		if scale and scale:IsA("NumberValue") then
+			scale.Value = value
+		end
+	end
 	local skin = head.Color
 	for _, child in ipairs(character:GetChildren()) do
 		if child:IsA("Shirt") or child:IsA("Pants") or child:IsA("ShirtGraphic") or child:IsA("BodyColors") then
@@ -491,10 +505,16 @@ function dress(character: Model, build: string, pick: (string) -> (ClothesConfig
 			copy.CanQuery = false
 			copy.CanTouch = false
 			copy.Massless = true
-			copy.CFrame = bodyPart.CFrame * rest:ToObjectSpace(piece.CFrame)
-			local weld = Instance.new("WeldConstraint")
+			-- A Weld with the offset written out, never a WeldConstraint: a WeldConstraint keeps wherever the parts
+			-- happen to be, and a computer lifter's / staff figure is dressed before it is parented, while its new
+			-- body parts still sit where the swap left them (Studio 2026-11-16: their clothes floated up to 3+ studs
+			-- off the body once the rig came together; the player, dressed in the workspace, was exact).
+			local offset = rest:ToObjectSpace(piece.CFrame)
+			copy.CFrame = bodyPart.CFrame * offset
+			local weld = Instance.new("Weld")
 			weld.Part0 = bodyPart
 			weld.Part1 = copy
+			weld.C0 = offset
 			weld.Parent = copy
 			copy.Parent = folder
 		end

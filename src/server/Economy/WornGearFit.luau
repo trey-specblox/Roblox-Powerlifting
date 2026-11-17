@@ -298,7 +298,8 @@ function WornGearFit.dressCartoon(character: Model, worn: { [string]: string }, 
 			copy.CanQuery = false
 			copy.Massless = true
 			copy.CastShadow = false
-			copy.CFrame = bodyPart.CFrame * at:ToObjectSpace(piece.CFrame)
+			local offset = at:ToObjectSpace(piece.CFrame)
+			copy.CFrame = bodyPart.CFrame * offset
 			if isLogo then
 				-- the patch itself is invisible; the CENTRAL logo goes on it tinted in the item's colour for this key
 				copy.Transparency = 1
@@ -309,9 +310,12 @@ function WornGearFit.dressCartoon(character: Model, worn: { [string]: string }, 
 				decal.Face = WornGearConfig.logoFace(wornName :: string, partName :: string)
 				decal.Parent = copy
 			end
-			local weld = Instance.new("WeldConstraint")
+			-- A Weld with the offset written out (not a WeldConstraint, which keeps wherever the parts happen to be:
+			-- a figure dressed before its rig comes together would get its gear floating off the body).
+			local weld = Instance.new("Weld")
 			weld.Part0 = bodyPart
 			weld.Part1 = copy
+			weld.C0 = offset
 			weld.Parent = copy
 			copy.Parent = folder
 			made += 1

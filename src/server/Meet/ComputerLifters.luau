@@ -31,6 +31,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
+local ShopConfig = require(ConfigFolder:WaitForChild("ShopConfig"))
+local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local AttemptRules = require(MeetFolder:WaitForChild("AttemptRules"))
 local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
@@ -164,6 +166,37 @@ local function folder(): Folder
 	return made
 end
 
+-- GearService, required on first use (it is a big service; this keeps the require order free of loops).
+local gearService: any = nil
+local function GearService(): any
+	if gearService == nil then
+		gearService = require(script.Parent.Parent:WaitForChild("Economy"):WaitForChild("GearService"))
+	end
+	return gearService
+end
+
+-- A computer lifter's random worn gear (CONFIG.GearChances): slot id -> a ShopConfig item of that slot.
+local function randomGear(random: Random): { [string]: string }
+	local worn: { [string]: string } = {}
+	for _, slot in ipairs(WornGearConfig.Slots) do
+		local chance = CONFIG.GearChances[slot.id]
+		if chance == nil or random:NextNumber() >= chance then
+			continue
+		end
+		local choices = {}
+		for _, item in ipairs(ShopConfig.Items) do
+			-- only the slot's own shop category: never a rare suit or knee wraps (meet drops only, §35.12)
+			if item.category == slot.category and item.price > 0 then
+				table.insert(choices, item.id)
+			end
+		end
+		if #choices > 0 then
+			worn[slot.id] = choices[random:NextInteger(1, #choices)]
+		end
+	end
+	return worn
+end
+
 -- Height of the root part's centre above the floor when the body stands.
 local function standingHeight(body: Model): number
 	local humanoid = body:FindFirstChildOfClass("Humanoid")
@@ -209,15 +242,23 @@ function ComputerLifters.spawnBody(plan: Plan, spot: CFrame, random: Random): Mo
 	end
 	local model = body :: Model
 	model.Name = plan.name
-	-- The cartoon body of its own progress (§38.1), dressed: a tank top in its singlet's colour (its random singlets come
-	-- with the computer lifters' gear, §38.4 step 4), black shorts, dark sneakers.
+	-- The cartoon body of its own progress (§38.1), in random shop gear (CONFIG.GearChances: always a singlet) over a
+	-- tee, and dark sneakers; the singlet has its own shorts. If the gear can't go on, a tank top and black shorts.
 	local torso = model:FindFirstChild("UpperTorso")
 	local singlet = if torso and torso:IsA("BasePart") then torso.Color else Color3.fromRGB(30, 30, 34)
-	LifterBodyService.prepareFigure(model, LifterBuild.forNumbers(plan.bodyweightKg, plan.competitionNumber), {
-		Shirt = { item = "Tank", colour = singlet },
-		Bottom = { item = "Shorts", colour = Color3.fromRGB(24, 24, 27) },
+	local worn = randomGear(random)
+	local tee = CONFIG.TeeColours[random:NextInteger(1, #CONFIG.TeeColours)]
+	local dressed = LifterBodyService.prepareFigure(model, LifterBuild.forNumbers(plan.bodyweightKg, plan.competitionNumber), {
+		Shirt = { item = "Tee", colour = tee },
 		Shoes = { item = "Sneakers", colour = Color3.fromRGB(40, 40, 46) },
 	})
+	if dressed and GearService().dressFigure(model, worn) == 0 then
+		LifterBodyService.prepareFigure(model, LifterBuild.forNumbers(plan.bodyweightKg, plan.competitionNumber), {
+			Shirt = { item = "Tank", colour = singlet },
+			Bottom = { item = "Shorts", colour = Color3.fromRGB(24, 24, 27) },
+			Shoes = { item = "Sneakers", colour = Color3.fromRGB(40, 40, 46) },
+		})
+	end
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		humanoid.DisplayName = plan.name

@@ -19,7 +19,8 @@ local WornGearConfig = {}
 -- The group Model asset with every worn piece (art/exports/WornGear_01.glb, materials.json "WornGear_01"; 0 would
 -- mean not uploaded: the gear is then saved and chosen, but not drawn).
 WornGearConfig.AssetId = 130216457283907
--- The gear fitted to the cartoon bodies (version 8, uploaded 2026-11-16: version 7 rebuilt on the longer legs, knee 1.00,
+-- The gear fitted to the cartoon bodies (version 9, uploaded 2026-11-16: the singlet's neckline a rounded U, the strap /
+-- armhole notch fixed, every piece centred on its body, materials.json "CartoonGear09_<Build>". Version 8, 2026-11-16: version 7 rebuilt on the longer legs, knee 1.00,
 -- the shorts ending above the knee sleeves, materials.json "CartoonGear08_<Build>", export_cartoon_08.py. Version 7, 2026-11-15: the singlet redesigned from the user's reference
 -- and the knee sleeves rebuilt on the skin, art/scripts/build_cartoon_gear_07.py; the approved rigid lever belt at the
 -- navel; suits, bench shirt, knee wraps and tilted wrist wraps as v5, build_cartoon_gear_05.py; put together by
@@ -28,8 +29,8 @@ WornGearConfig.AssetId = 130216457283907
 -- like the clothes (WornGearFit.dressCartoon). 0 = not uploaded yet: a cartoon body then wears nothing rather than the
 -- block-body pieces (they float off it).
 WornGearConfig.CartoonAssetIds = {
-	Skinny = 87981689532076, SkinnyFat = 98049189140592, Fat = 107255763090235, Fit = 105929007280971,
-	Muscular = 124551978504954, BigBuff = 109710136813307,
+	Skinny = 88671609395545, SkinnyFat = 140487444103304, Fat = 101718270996233, Fit = 97427784604307,
+	Muscular = 86426561361975, BigBuff = 79643326990603,
 } :: { [string]: number }
 
 -- The CENTRAL logo on the cartoon gear (art/logos/CentralGearLogo_03_White.png: white letters on clear, materials.json

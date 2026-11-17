@@ -171,6 +171,40 @@ rework's pictures: "STOP guessing"). PROTOTYPE ON FIT IN PROGRESS, NOTHING UPLOA
     Celebration / Emote / Entrance / LocalMeet / StationAnimation configs). No old body / gear / clothes id left in src.
   - ClothesConfig.LiveEnabled still FALSE (Studio only). NEXT: the user's Studio play test (each build, lifts, squat
     depth with the new knee, celebrations, gear on/off), then the user decides LiveEnabled.
+- 2026-11-16 BUG in the 08 uploads (found by the redesign session in Studio): on every build but Skinny the v7 pieces
+  (Tee/TeeWhite, WornSinglet_*, WornLeverBelt_*, WornKneeSleeve_*) sat 4.6 x the build's index studs off the body
+  (the coach, referees and spotters, all Fat, had floating shirts). Cause: export_cartoon_08.py kept the pieces' world
+  matrix from CartoonGear_07.blend, where the builds stand side by side. FIXED in export_cartoon_08.py (each piece put
+  in its own rig's space, then on this file's rig) + a check that stops the export if any piece's centre is more than
+  0.6 (x) off the body part it's worn on (trial export from the old file: all six pass). NOT re-uploaded yet: goes up
+  with the neckline fix below. (export_cartoon_07.py had the same code: the 07 uploads were likely off the same way.)
+- 2026-11-16 SINGLET NECKLINE + TEAR (user, Studio, via the redesign session: "there still what seems to be a little
+  tear in the singlet. and the chest and back area seems overexposed ... a straight line across the chest, instead of
+  a oval like"; SBD reference front/back). build_cartoon_gear_07.py:
+  - neck: a rounded U (a parabola, NECK_K 2) front and back, its sides running into the straps' inner edges (soft
+    maximum NECK_ROUND 0.06); the U's top 0.12 narrower than the old strap inner edge (front; back 0.04): wider straps,
+    the opening down to the tee's collar; front bottom SH - 0.26 (was 0.34, superellipse 2.4: flat with square
+    corners); back bottom SH + 0.10, 0.25 tall (was 0.24 BELOW SH: a box of tee across the upper back).
+  - tear: the notch where the strap meets the armhole on the front was ARM_BLEND 0.04 (yesterday's blend of the
+    armhole with the arm-seam cut) pulling the edge in where the two lines run close: now 0.015.
+  - unfold7: folded triangles along the edges (dark notches up close; 4-23 per build) smoothed out before and after
+    thickening: 0 left on five builds, BigBuff 2 borderline (-0.30, at a part split). colour_islands7 (lone body faces
+    in the piping).
+  - CartoonGear_07.blend rebuilt (all six; the previous file, source of the live 08 gear, kept at
+    D:\ClaudeScratch\gear08n\CartoonGear_07.v8live.blend). CHECK PASSED. Layer check quick: tee under singlet 21-82
+    points, deepest 0.019-0.039 (Skinny / SkinnyFat a few more shallow points than before).
+  - Pictures: art/previews/Gear07_Neckline_BeforeAfter.png, Gear07_FrontStraps_BeforeAfter.png,
+    Gear07_Armhole_BeforeAfter.png. Left: a speck the size of one triangle on Fat's back armhole piping, only in an
+    extreme close-up.
+  - APPROVED by the user ("Looks good, upload"), EXPORTED, UPLOADED (group), WIRED 2026-11-16. NOT COMMITTED (the
+    redesign session commits), NOT PLAY-TESTED. export_cartoon_08.py with GEAR_EXPORT_NUM 09 (default now 09):
+    art/exports/CartoonGear09_<Build>.glb / CartoonClothes09_<Build>.glb, centring check passed on all six. Ids
+    (materials.json, build order Skinny, SkinnyFat, Fat, Fit, Muscular, BigBuff): gear CartoonGear09_* 88671609395545 /
+    140487444103304 / 101718270996233 / 97427784604307 / 86426561361975 / 79643326990603; clothes CartoonClothes09_*
+    108740516612854 / 99089485229486 / 111962683322893 / 116108165042681 / 138513051247712 / 124030235873477. Wired:
+    WornGearConfig.CartoonAssetIds, ClothesConfig.Bodies[*].clothesAssetId (each 08 id replaced once). Bodies unchanged
+    (CartoonBody08_*). Studio (Edit, read-only GetObjects): all 12 load; every piece within 0.54 (x) of its body part
+    (worst: v5 suit panels on the outer thigh), singlet 18 pieces per build.
 
 **SINGLET OVER THE TEE REWORK (2026-11-16, user's Studio test via the animation session: "singlets are accessories
 ... it should not delete or make something underneath disappear"; tee through the singlet, torn 3-colour straps, skin

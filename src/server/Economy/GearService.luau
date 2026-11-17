@@ -329,6 +329,24 @@ function GearService.takeForcedDrop(player: Player): string?
 end
 
 -- Dresses the character again after something else changed what is worn (the suit test).
+--[[
+	Puts worn gear (slot id -> ShopConfig item id) on a figure with the lifter body: a computer lifter (user 2026-11-12:
+	"Computer lifter yes they can have random gear"). Same refitted models and fitting as a player's gear. Returns how
+	many pieces it made (0 when the figure has no lifter body or its build's gear isn't loaded).
+]]
+function GearService.dressFigure(figure: Model, worn: { [string]: string }): number
+	local build = figure:GetAttribute("LifterBodyBuild")
+	if not LifterBodyService.hasBody(figure) or typeof(build) ~= "string" or next(worn) == nil then
+		return 0
+	end
+	local model = cartoonGear(build)
+	local rest = LifterBodyService.restFor(build)
+	if model == nil or rest == nil then
+		return 0
+	end
+	return WornGearFit.dressCartoon(figure, worn, model, rest)
+end
+
 function GearService.redress(player: Player)
 	dress(player)
 end

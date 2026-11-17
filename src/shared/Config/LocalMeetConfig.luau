@@ -143,6 +143,14 @@ LocalMeetConfig.ComputerLifters = {
 		2956239660, 451220849, 63690008, 9244021842, 9243992729, 3814476174, 3814474927, 9244111257, 9244095135,
 		7193442167, 376526888, 9174355709 },
 	NoHairChance = 0.12,
+	--[[
+		THEIR GEAR (user 2026-11-12: "Computer lifter yes they can have random gear"; Studio 2026-11-16: "none of the
+		npcs had gear"): random items from the shop (ShopConfig, all CENTRAL), worn like a player's. A singlet always
+		(a meet's rule), the rest by chance. Over a tee, as players wear it (user's SBD reference).
+	]]
+	GearChances = { Singlet = 1.0, Belt = 0.85, KneeSleeves = 0.75, WristWraps = 0.6 },
+	TeeColours = { Color3.fromRGB(28, 28, 32), Color3.fromRGB(236, 236, 232), Color3.fromRGB(70, 74, 82),
+		Color3.fromRGB(28, 40, 78) },
 	Glasses = { 376527500, 376526673 },
 	GlassesChance = 0.15,
 	-- Their build: how much wider/deeper (lifters are broad) and taller or shorter than a standard avatar.
