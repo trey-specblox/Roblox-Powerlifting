@@ -13,8 +13,8 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**PERFORMANCE PASS (2026-11-16, user: "Shadows + audit tool"). TESTED IN STUDIO (play test, one player), NOT COMMITTED,
-NOT MEASURED ON A PHONE.** Audit findings: the world total is over budget only because the server holds every area at
+**PERFORMANCE PASS (2026-11-16, user: "Shadows + audit tool"). TESTED IN STUDIO (play test, one player), COMMITTED
+2026-11-16 as 5dbe87c (not pushed), NOT MEASURED ON A PHONE.** Audit findings: the world total is over budget only because the server holds every area at
 once; streaming (min 64, target 1024) means a player loads only where they are. The 110 combo racks (30 gym + 80 in
 the halls, 26 pieces each, every piece casting a shadow) were ~65% of all shadow casters.
 - `src/server/Training/RackConfigurator.luau`: profile field `noShadow` (pins, bolts, rubber liners, foot caps, lock
