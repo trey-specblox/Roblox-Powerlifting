@@ -14,7 +14,7 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **NATIONALS STEP 1: THE GATHERING (2026-11-17, GAME_DESIGN §39 "Built (2026-11-17): step 1"). BUILT AND TESTED IN STUDIO
-(one player, one server, API services off). NOT COMMITTED (last commit 68b2d0d). NOT LIVE: `NationalsConfig.Live = false`
+(one player, one server, API services off). COMMITTED as bdfbe82 (not pushed). NOT LIVE: `NationalsConfig.Live = false`
 (admins only in live servers). THE REAL CROSS-SERVER PART (MemoryStore list, reserved server, teleports) IS UNTESTED:
 Studio can't do it. NEXT: the user commits, publishes and runs the live admin test (`References/Nationals step 1 - test
 guide.md`), then step 2 (the meet itself) or step 3 (the arena from the user's photos; the
