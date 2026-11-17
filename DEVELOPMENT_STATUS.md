@@ -14,7 +14,7 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **THE NATIONALS SPOT (2026-11-17; the second item on the State list, GAME_DESIGN §36.4 "The Nationals spot"). BUILT AND
-TESTED IN STUDIO (one player, API services off, so nothing saved). NOT COMMITTED (last commit 8c5890d). NATIONALS ITSELF
+TESTED IN STUDIO (one player, API services off, so nothing saved). COMMITTED as f35b17e (not pushed). NATIONALS ITSELF
 WAS THEN DESIGNED WITH THE USER (GAME_DESIGN §39: every 2 hours across all servers into one Nationals server, a new
 arena from the user's photos, per-class National Champions who qualify for Worlds, x5 pot). NOT BUILT. NEXT: the user
 sends arena photos; build step 1 (cross-server sign-up + teleport, with the State arena as a stand-in venue).**
