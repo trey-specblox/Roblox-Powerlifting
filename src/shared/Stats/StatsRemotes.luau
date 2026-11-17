@@ -29,6 +29,9 @@ export type TechniqueView = {
 	effective: number,
 }
 
+-- One State Champion badge: its game-wide number (0 = on its way) and its season as players read it ("NOV 2026").
+export type ChampionBadgeView = { number: number, seasonLabel: string }
+
 export type StatsSnapshot = {
 	classLabel: string,
 	bodyweightKg: number,
@@ -45,6 +48,8 @@ export type StatsSnapshot = {
 	coins: number,
 	-- The meet titles earned, best first ("State Champion x2"; GAME_DESIGN §35.8).
 	titles: { string }?,
+	-- The numbered State Champion badges, newest first (GAME_DESIGN §36.4; at most 24).
+	championBadges: { ChampionBadgeView }?,
 	-- This season's ladder toward State in the player's current class (GAME_DESIGN §35.8, §36.3): points of
 	-- target, qualified, and when the season ends (Unix seconds).
 	ladder: { points: number, target: number, qualified: boolean, seasonEndsAt: number }?,

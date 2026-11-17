@@ -62,6 +62,42 @@ MeetLevelConfig.Titles = {
 	StateThird = "State 3rd Place",
 } :: { [string]: string }
 
+--[[
+	THE NUMBERED STATE CHAMPION BADGE (user 2026-11-16, GAME_DESIGN §36.4; it replaced the planned "finisher badge for
+	everyone"). Only the State meet's WINNER (1st place, in a meet that pays in full) earns one: "#1001 STATE CHAMPION",
+	"NOV 2026". The number comes from ONE counter for the whole game (every server), never reset: the 1001st badge ever
+	given is #1001. One badge per season (calendar month): a second win in the same month gives no new badge or number.
+	Saved in the player's career (PlayerProfileSchema version 26); numbered by the server's ChampionBadges.
+]]
+MeetLevelConfig.ChampionBadge = {
+	-- The game-wide counter's DataStore and key. NEVER RENAME: the count would start again at 1.
+	CounterStore = "StateChampionCounter",
+	CounterKey = "Count",
+	-- Studio counts on its own key, so test wins never use up live numbers (Studio numbers can repeat live ones).
+	StudioCounterKey = "StudioCount",
+	-- What the badge says under its number.
+	Name = "STATE CHAMPION",
+}
+
+-- "2026-11" -> "NOV 2026" (a badge's season as players read it); anything else comes back as it is.
+local MONTHS = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" }
+function MeetLevelConfig.seasonLabel(season: string): string
+	local year, month = string.match(season, "^(%d%d%d%d)-(%d%d)$")
+	local name = month and MONTHS[tonumber(month) :: number]
+	return if year and name then name .. " " .. year else season
+end
+
+--[[
+	Roblox profile badges for winning a meet (user 2026-11-16): 1st place in a meet that counts as a win (enough real
+	players, not a solo or Mock Meet), one badge per level, given once. Made on the Creator Dashboard (Engagement ->
+	Badges); 0 = not made yet, so nothing is given. Never change an id once players have it.
+]]
+MeetLevelConfig.WinnerBadgeIds = {
+	Local = 0,
+	Regional = 0,
+	State = 0,
+} :: { [string]: number }
+
 -- The trophy model the top 3 hold on the podium at a level with titles (art/blender/Trophy_01.blend; 0 = not
 -- uploaded yet: no trophies; materials.json "Trophy_01") and its metal's colour by place.
 MeetLevelConfig.TrophyAssetId = 96903806374655

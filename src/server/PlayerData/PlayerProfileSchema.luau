@@ -61,9 +61,10 @@ local PlayerProfileSchema = {}
 	the coach's tests for rare suits; version 21: meet entrances; version 22:
 	the player's celebration; version 23: the fail style and the emotes won;
 	version 24: walk-outs, celebrations and fail styles collected, with a slot
-	for each attempt).
+	for each attempt; version 25: clothes and the gear toggle; version 26: the
+	numbered State Champion badges).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 25
+PlayerProfileSchema.CURRENT_VERSION = 26
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -234,6 +235,14 @@ export type MeetAllowance = {
 		            State needs only MeetLevelConfig.Ladder.FirstStateTarget
 		            points (user 2026-11-01). Only
 		            ProfileOperations.addLadderPoints adds to it.
+		stateChampionBadges
+		            (version 26) the numbered State Champion badges (GAME_DESIGN
+		            §36.4, MeetLevelConfig.ChampionBadge): season ("2026-11") ->
+		            the badge's game-wide number (#1001), or 0 = won, number on
+		            its way (the game-wide counter could not be reached yet;
+		            ChampionBadges fills it in). At most one per season. Only
+		            ProfileOperations.addStateChampionBadge adds one and only
+		            fillStateChampionNumber fills a 0.
 
 	localWins is a lifetime statistic now: ladder points decide State.
 ]]
@@ -242,6 +251,7 @@ export type Career = {
 	titles: { [string]: number },
 	ladders: { [string]: Ladder },
 	stateQualifications: number,
+	stateChampionBadges: { [string]: number },
 }
 
 --[[
@@ -583,12 +593,14 @@ local template: ProfileData = {
 		Lockout = StartingValuesConfig.Technique.Lockout,
 	},
 
-	-- A new lifter has won nothing, has no ladder points in any class and has never qualified for State.
+	-- A new lifter has won nothing, has no ladder points in any class, has never qualified for State and has no
+	-- State Champion badge.
 	career = {
 		localWins = 0,
 		titles = {},
 		ladders = {},
 		stateQualifications = 0,
+		stateChampionBadges = {},
 	},
 
 	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
@@ -1819,6 +1831,42 @@ migrations[24] = function(data: ProfileData)
 	end
 	if typeof(inventory.gearOn) ~= "boolean" then
 		inventory.gearOn = true
+	end
+end
+
+--[[
+	Version 25 -> 26: the numbered State Champion badges (user 2026-11-16, GAME_DESIGN §36.4).
+
+	A player who ALREADY WON STATE (career.titles.StateChampion) gets their badge for the season they won it in, with its
+	number on its way (0): ChampionBadges numbers it when they next join, in the order they come back. Every State meet so
+	far ran in November 2026 (the arena opened 2026-11-01, the meet 2026-11-06), so that is the season. Everyone else gets
+	an empty list.
+
+	REPAIRS, NEVER OVERWRITES: a usable stored map is kept (only broken entries go); a missing career is created.
+	IDEMPOTENT: a second run finds the badge already there and changes nothing.
+]]
+local FIRST_STATE_SEASON = "2026-11"
+migrations[25] = function(data: ProfileData)
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0, stateChampionBadges = {} }
+		return
+	end
+	local badges = career.stateChampionBadges
+	if typeof(badges) ~= "table" then
+		badges = {}
+		career.stateChampionBadges = badges
+	end
+	for season, number in pairs(badges) do
+		if typeof(season) ~= "string" or not string.match(season, "^%d%d%d%d%-%d%d$") or typeof(number) ~= "number"
+			or number ~= number or number < 0 or number ~= math.floor(number) or number == math.huge then
+			badges[season] = nil
+		end
+	end
+	local titles = career.titles
+	local wins = if typeof(titles) == "table" then titles.StateChampion else nil
+	if typeof(wins) == "number" and wins >= 1 and next(badges) == nil then
+		badges[FIRST_STATE_SEASON] = 0
 	end
 end
 

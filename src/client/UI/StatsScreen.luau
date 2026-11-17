@@ -11,7 +11,10 @@
 	Opening: press OPEN_KEY (not while typing), or the STATS tab on the left edge
 	of the screen (phones). OPEN_KEY again, BACK, or the tab closes it.
 
-		left    the player's avatar, name, weight class, bodyweight and coins
+		left    the player's avatar, name, weight class, bodyweight and coins; a
+		        gold medal on the avatar's corner for the newest numbered State
+		        Champion badge (GAME_DESIGN §36.4), "x3" for more, and pressing it
+		        lists every season's badge
 		middle  COMPETITION NUMBER per lift and the total; PROVEN (Competition
 		        Scale) per lift, or UNPROVEN, and the BEST TOTAL; all for the
 		        build of the current weight class
@@ -30,6 +33,7 @@ local CoinConfig = require(Shared:WaitForChild("Config"):WaitForChild("CoinConfi
 local StatsRemotes = require(Shared:WaitForChild("Stats"):WaitForChild("StatsRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local ChampionBadge = require(script.Parent:WaitForChild("ChampionBadge"))
 local MenuKeys = require(script.Parent:WaitForChild("MenuKeys"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
@@ -140,6 +144,109 @@ function StatsScreen.start()
 		C.white, UIStyle.heading(), Enum.TextXAlignment.Center)
 	titlesText.TextWrapped = true
 
+	-- The newest State Champion badge, pinned on the avatar's top-right corner; pressing it lists them all.
+	local MEDAL_SIZE = 120
+	local medalButton = Instance.new("TextButton")
+	medalButton.Name = "ChampionBadge"
+	medalButton.AnchorPoint = Vector2.new(0.5, 0.5)
+	medalButton.Position = UDim2.fromOffset(34 + 200 - 28, 44 + 52)
+	medalButton.Size = UDim2.fromOffset(MEDAL_SIZE, MEDAL_SIZE)
+	medalButton.BackgroundTransparency = 1
+	medalButton.Text = ""
+	medalButton.ZIndex = 5
+	medalButton.Visible = false
+	medalButton.Parent = body
+	local medalCount = UIStyle.frame(body, "BadgeCount", UDim2.fromOffset(34 + 200 + 8, 44 + 104), UDim2.fromOffset(46, 28),
+		C.ink)
+	medalCount.AnchorPoint = Vector2.new(0.5, 0.5)
+	medalCount.ZIndex = 8
+	medalCount.Visible = false
+	UIStyle.stroke(medalCount, C.yellow, 2)
+	local medalCountText = UIStyle.text(medalCount, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), SIZES.small, C.yellow,
+		UIStyle.heading(), Enum.TextXAlignment.Center)
+	medalCountText.ZIndex = 9
+	-- The list of every badge, over the avatar.
+	local badgeList = UIStyle.frame(body, "BadgeList", UDim2.fromOffset(24, 30), UDim2.fromOffset(250, 270), C.navyDeep)
+	badgeList.ZIndex = 10
+	badgeList.Visible = false
+	UIStyle.stroke(badgeList, C.yellow, 2)
+	local listHead = UIStyle.text(badgeList, "Head", UDim2.fromOffset(12, 8), UDim2.new(1, -56, 0, 30), SIZES.body, C.yellow,
+		UIStyle.heading())
+	listHead.ZIndex = 11
+	listHead.Text = "CHAMPION BADGES"
+	-- Its close button (the list covers the medal that opened it).
+	local listClose = Instance.new("TextButton")
+	listClose.Name = "Close"
+	listClose.AnchorPoint = Vector2.new(1, 0)
+	listClose.Position = UDim2.new(1, -6, 0, 6)
+	listClose.Size = UDim2.fromOffset(32, 32)
+	listClose.BackgroundColor3 = C.ink
+	listClose.BorderSizePixel = 0
+	listClose.Text = "X"
+	listClose.TextColor3 = C.yellow
+	listClose.TextSize = SIZES.body
+	listClose.FontFace = UIStyle.heading()
+	listClose.ZIndex = 12
+	listClose.Parent = badgeList
+	UIStyle.stroke(listClose, C.yellow, 2)
+	listClose.Activated:Connect(function()
+		badgeList.Visible = false
+	end)
+	local listRows = Instance.new("ScrollingFrame")
+	listRows.Name = "Rows"
+	listRows.Position = UDim2.fromOffset(12, 42)
+	listRows.Size = UDim2.new(1, -24, 1, -54)
+	listRows.BackgroundTransparency = 1
+	listRows.BorderSizePixel = 0
+	listRows.ScrollBarThickness = 4
+	listRows.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	listRows.CanvasSize = UDim2.new()
+	listRows.ZIndex = 11
+	listRows.Parent = badgeList
+	local rowsLayout = Instance.new("UIListLayout")
+	rowsLayout.Padding = UDim.new(0, 4)
+	rowsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	rowsLayout.Parent = listRows
+	medalButton.Activated:Connect(function()
+		badgeList.Visible = not badgeList.Visible
+	end)
+	local shownMedal: Frame? = nil
+	local function drawBadges(badges: { StatsRemotes.ChampionBadgeView })
+		if shownMedal then
+			shownMedal:Destroy()
+			shownMedal = nil
+		end
+		for _, row in ipairs(listRows:GetChildren()) do
+			if row:IsA("TextLabel") then
+				row:Destroy()
+			end
+		end
+		local newest = badges[1]
+		medalButton.Visible = newest ~= nil
+		medalCount.Visible = #badges > 1
+		medalCountText.Text = "x" .. tostring(#badges)
+		if newest == nil then
+			badgeList.Visible = false
+			return
+		end
+		local medal = ChampionBadge.medal(medalButton, UDim2.fromScale(0.5, 0.5), MEDAL_SIZE, newest.number, newest.seasonLabel)
+		for _, piece in ipairs(medal:GetDescendants()) do
+			if piece:IsA("GuiObject") then
+				piece.ZIndex += 5
+			end
+		end
+		shownMedal = medal
+		for index, badge in ipairs(badges) do
+			local row = UIStyle.text(listRows, "Row", UDim2.new(), UDim2.new(1, -8, 0, 28), SIZES.body, C.white, UIStyle.heading())
+			row.LayoutOrder = index
+			row.ZIndex = 12
+			row.RichText = true
+			row.Text = if badge.number > 0
+				then string.format('%s  <font color="#FACE24">%s</font>', badge.seasonLabel, ChampionBadge.numberText(badge.number))
+				else string.format('%s  <font color="#9AA0C0">NUMBER COMING</font>', badge.seasonLabel)
+		end
+	end
+
 	-- Middle: Competition Number and Scale.
 	local middleX = 290
 	UIStyle.sectionHead(body, "CNHead", "COMPETITION NUMBER", UDim2.fromOffset(middleX, 40), 236, 300, "bar")
@@ -209,6 +316,7 @@ function StatsScreen.start()
 
 	UIStyle.exitButton(holder, "Back", "BACK", UDim2.new(1, -150, 1, 20), function()
 		holder.Visible = false
+		badgeList.Visible = false
 	end)
 
 	-- The radar's fixed grid: pentagon rings at 25/50/75/100 and the spokes.
@@ -237,6 +345,7 @@ function StatsScreen.start()
 		coinsText.Text = string.format("%s %s", CoinConfig.format(snapshot.coins or 0), CoinConfig.Name)
 		local titles = snapshot.titles or {}
 		titlesText.Text = if #titles > 0 then string.upper(table.concat(titles, "  ·  ")) else ""
+		drawBadges(snapshot.championBadges or {})
 		local ladder = snapshot.ladder
 		if ladder then
 			local daysLeft = math.max(1, math.ceil((ladder.seasonEndsAt - os.time()) / 86400))
@@ -327,6 +436,7 @@ function StatsScreen.start()
 		end
 	end
 	local function toggle()
+		badgeList.Visible = false
 		if holder.Visible then
 			holder.Visible = false
 		else

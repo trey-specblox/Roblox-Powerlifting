@@ -82,6 +82,11 @@ RackSpawner.spawnAll()
 -- before the gateway is listening for joins.
 PlayerDataService.start()
 
+-- The numbered State Champion badges and the Roblox badges for meet wins (GAME_DESIGN §36.4): numbers any badge still
+-- waiting and catches up the Roblox badges when a player joins.
+local ChampionBadges = require(MeetFolder:WaitForChild("ChampionBadges"))
+ChampionBadges.start()
+
 -- The stats screen's read-only answer: a player's own stats, never written.
 local PlayerStatsService = require(PlayerDataFolder:WaitForChild("PlayerStatsService"))
 PlayerStatsService.start()

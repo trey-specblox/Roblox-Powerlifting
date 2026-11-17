@@ -120,6 +120,7 @@ local LocalMeetWarmUp = require(script.Parent:WaitForChild("LocalMeetWarmUp"))
 local GymRecords = require(script.Parent:WaitForChild("GymRecords"))
 local MeetPayout = require(script.Parent:WaitForChild("MeetPayout"))
 local Trophies = require(script.Parent:WaitForChild("Trophies"))
+local ChampionBadges = require(script.Parent:WaitForChild("ChampionBadges"))
 local ComputerLifters = require(script.Parent:WaitForChild("ComputerLifters"))
 local MeetLiftAnimation = require(script.Parent:WaitForChild("MeetLiftAnimation"))
 local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
@@ -200,6 +201,11 @@ type Lifter = {
 	stateQualified: boolean,
 	-- Their meet titles (career.titles, GAME_DESIGN §35.8): id -> count.
 	titles: { [string]: number },
+	-- Their numbered State Champion badges, newest first (GAME_DESIGN §36.4; number 0 = on its way), the one won at
+	-- this meet included once it is saved.
+	championBadges: { ProfileOperations.ChampionBadgeView },
+	-- The State Champion badge won at this meet, for the awards ceremony's reveal (nil = none).
+	newBadge: ProfileOperations.ChampionBadgeView?,
 	-- Gym records set at this meet ("Squat", "Total", ...), first on the big screen's facts.
 	gymRecords: { string },
 	-- What the big screen last showed (redrawn when a gym record comes back from the save).
@@ -751,6 +757,11 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		perfect = false -- no 9/9 ladder bonus to mention
 	end
 	local perfectNote = if perfect then " (9/9 bonus)" else ""
+	-- A win that counts (1st place among the real lifters, in a meet that pays in full) earns the level's Roblox badge,
+	-- and at State the numbered State Champion badge for this season (GAME_DESIGN §36.4).
+	local wonIt = current.rewards and totalKg ~= nil and place == 1
+	local championSeason = if wonIt and current.level == "State" then MeetLevelConfig.seasonFor(nowUnix) else nil
+	local badgeOutcome: ProfileOperations.ChampionBadgeOutcome? = nil
 	local ladderOutcome: ProfileOperations.LadderOutcome? = nil
 	local ladder: ProfileOperations.LadderView? = nil
 	local saved = PlayerDataService.update(player, function(data)
@@ -783,6 +794,10 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 			if titleId then
 				titleCount = ProfileOperations.addTitle(data, titleId)
 			end
+			if championSeason then
+				-- Its number comes from the game-wide counter just after this save (ChampionBadges.numberPending).
+				badgeOutcome = ProfileOperations.addStateChampionBadge(data, championSeason, 0)
+			end
 		end
 		if ladderPoints > 0 then
 			ladderOutcome, ladder = ProfileOperations.addLadderPoints(data, lifter.classLabel, ladderPoints, nowUnix)
@@ -807,6 +822,24 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	if titleId and titleCount then
 		local title = MeetLevelConfig.Titles[titleId]
 		table.insert(lines, if titleCount > 1 then string.format("%s x%d", title, titleCount) else "New title: " .. title)
+	end
+	if wonIt then
+		ChampionBadges.awardWin(player, current.level)
+	end
+	if championSeason and badgeOutcome == "Added" then
+		local number = ChampionBadges.numberPending(player)[championSeason]
+		local badge = { season = championSeason, number = number or 0 }
+		table.insert(lifter.championBadges, 1, badge)
+		lifter.newBadge = badge
+		table.insert(lines, if number
+			then string.format("New badge: #%d %s · %s", number, MeetLevelConfig.ChampionBadge.Name,
+				MeetLevelConfig.seasonLabel(championSeason))
+			else string.format("New badge: %s · %s (your number is on its way)", MeetLevelConfig.ChampionBadge.Name,
+				MeetLevelConfig.seasonLabel(championSeason)))
+	elseif badgeOutcome == "AlreadyThisSeason" then
+		table.insert(lines, "You already have this month's State Champion badge")
+	elseif badgeOutcome == "Rejected" then
+		warn(string.format("[LocalMeetService] %s's State Champion badge was not saved", player.Name))
 	end
 	if ladder and ladderOutcome == "Qualified" then
 		table.insert(lines, string.format("+%d ladder points%s: QUALIFIED FOR STATE (%s)!", ladderPoints, perfectNote,
@@ -891,6 +924,14 @@ local function factsFor(lifter: Lifter): { string }
 		table.insert(facts, string.format("GYM %s RECORD HOLDER", recordName(held[1])))
 	elseif #held > 1 then
 		table.insert(facts, string.format("HOLDS %d GYM RECORDS", #held))
+	end
+	-- Their newest numbered State Champion badge (GAME_DESIGN §36.4), before the titles.
+	local badge = lifter.championBadges[1]
+	if badge then
+		local more = #lifter.championBadges - 1
+		table.insert(facts, string.format("%s%s · %s%s", if badge.number > 0 then string.format("#%d ", badge.number) else "",
+			MeetLevelConfig.ChampionBadge.Name, MeetLevelConfig.seasonLabel(badge.season),
+			if more > 0 then string.format(" (+%d MORE)", more) else ""))
 	end
 	-- The best titles first: State over Regional, champion over runner-up.
 	for _, id in ipairs({ "StateChampion", "StateRunnerUp", "StateThird", "RegionalChampion", "RegionalRunnerUp",
@@ -2655,11 +2696,24 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 	-- The theme and celebration are a real winner's; a computer lifter in 1st gets the stage without them.
 	local winner: Player? = nil
 	local winnerName: string? = nil
+	local badge: ProfileOperations.ChampionBadgeView? = nil
 	for _, lifter in ipairs(current.lifters) do
 		local placing = current.places[lifter.key]
 		local player = lifter.player
 		if placing and placing.place == 1 and not lifter.withdrawn and player and visits[player] then
 			winner, winnerName = player, lifter.name
+			badge = lifter.newBadge
+		end
+	end
+	-- A new State Champion badge: the caller of every rack in use says it over the speakers (each screen hears one).
+	if badge and winnerName then
+		local aloud = if badge.number > 0
+			then string.format("Please welcome State Champion number %d, %s!", badge.number, winnerName)
+			else string.format("Please welcome your State Champion, %s!", winnerName)
+		local bubble = string.format("%s%s: %s!", if badge.number > 0 then string.format("#%d ", badge.number) else "",
+			MeetLevelConfig.ChampionBadge.Name, string.upper(winnerName))
+		for _, lifter in ipairs(current.lifters) do
+			callerSays(lifter.platform, bubble, aloud)
 		end
 	end
 	local moment: LocalMeetRemotes.AwardsMoment = {
@@ -2670,6 +2724,8 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 		stageFacing = gold.LookVector,
 		themeSoundId = winner and themeFor(winner),
 		celebrationAnimationId = winner and celebrationFor(winner),
+		championBadge = badge and { number = badge.number, seasonLabel = MeetLevelConfig.seasonLabel(badge.season),
+			name = MeetLevelConfig.ChampionBadge.Name },
 		seconds = LocalMeetConfig.DoneSeconds,
 	}
 	for player, visit in pairs(visits) do
@@ -3077,7 +3133,8 @@ end
 
 -- Reads a signed-up player's weigh-in, or nil and why they cannot lift.
 local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: string, competitionNumber: { [string]: number },
-	bestTotalKg: number?, localWins: number, titles: { [string]: number }, stateQualified: boolean }?, string?)
+	bestTotalKg: number?, localWins: number, titles: { [string]: number }, stateQualified: boolean,
+	championBadges: { ProfileOperations.ChampionBadgeView } }?, string?)
 	local data = PlayerDataService.getData(player)
 	if data == nil then
 		return nil, "your data is still loading"
@@ -3101,7 +3158,8 @@ local function weighIn(player: Player): ({ bodyweightKg: number, classLabel: str
 	return { bodyweightKg = data.bodyweight.currentKg, classLabel = classKey, competitionNumber = competitionNumber,
 		bestTotalKg = if typeof(best) == "number" and best > 0 then best else nil, localWins = wins,
 		titles = ProfileOperations.getTitles(data),
-		stateQualified = ProfileOperations.getLadder(data, classKey, os.time()).qualified }, nil
+		stateQualified = ProfileOperations.getLadder(data, classKey, os.time()).qualified,
+		championBadges = ProfileOperations.getStateChampionBadges(data) }, nil
 end
 
 -- Moves a player into the venue. Set below, with the rest of the way in and out.
@@ -3247,6 +3305,7 @@ local function tryStartMeet(hall: Hall)
 			localWins = weigh.localWins,
 			stateQualified = weigh.stateQualified,
 			titles = weigh.titles,
+			championBadges = weigh.championBadges,
 			gymRecords = {},
 			boardLines = nil,
 			boardMood = nil,
@@ -3315,6 +3374,7 @@ local function tryStartMeet(hall: Hall)
 				localWins = 0,
 				stateQualified = false,
 				titles = {},
+				championBadges = {},
 				gymRecords = {},
 				boardLines = nil,
 				boardMood = nil,

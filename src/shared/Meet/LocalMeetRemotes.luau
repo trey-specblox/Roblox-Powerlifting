@@ -221,6 +221,9 @@ export type AwardsMoment = {
 	-- The winner's theme song and celebration (rbxassetid://...), the defaults until custom ones exist.
 	themeSoundId: string?,
 	celebrationAnimationId: string?,
+	-- A numbered State Champion badge the winner earned at this meet (GAME_DESIGN §36.4), for the reveal on every screen
+	-- in the hall; nil = none. number 0 = its number is still on its way (the card shows no number).
+	championBadge: { number: number, seasonLabel: string, name: string }?,
 	-- How long the ceremony lasts.
 	seconds: number,
 }

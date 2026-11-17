@@ -732,6 +732,78 @@ function ProfileOperations.getTitles(data: ProfileData): { [string]: number }
 end
 
 --[[
+	THE NUMBERED STATE CHAMPION BADGES (schema 26; GAME_DESIGN §36.4, MeetLevelConfig.ChampionBadge). season
+	("2026-11") -> the badge's game-wide number, or 0 while its number is on its way. One per season. The number itself
+	comes from the server's game-wide counter (ChampionBadges); these rules only keep the map tidy and never make one up.
+]]
+export type ChampionBadgeOutcome = "Added" | "AlreadyThisSeason" | "Rejected"
+export type ChampionBadgeView = { season: string, number: number }
+
+local function championBadgesOf(data: ProfileData): { [string]: number }?
+	local career = (data :: any).career
+	local badges = if typeof(career) == "table" then career.stateChampionBadges else nil
+	return if typeof(badges) == "table" then badges else nil
+end
+
+local function isSeason(season: any): boolean
+	return typeof(season) == "string" and string.match(season, "^%d%d%d%d%-%d%d$") ~= nil
+end
+
+-- A usable badge number: 0 (on its way) or a whole number from 1 up.
+local function isBadgeNumber(number: any): boolean
+	return isFiniteNumber(number) and number >= 0 and number == math.floor(number)
+end
+
+-- Gives the State Champion badge for `season` with `number` (0 = on its way), unless that season already has one.
+function ProfileOperations.addStateChampionBadge(data: ProfileData, season: string, number: number): ChampionBadgeOutcome
+	local badges = championBadgesOf(data)
+	if badges == nil or not isSeason(season) or not isBadgeNumber(number) then
+		return "Rejected"
+	end
+	if badges[season] ~= nil then
+		return "AlreadyThisSeason"
+	end
+	badges[season] = number
+	return "Added"
+end
+
+-- Fills in the number of a badge whose number was on its way (0). Never changes a number already given.
+function ProfileOperations.fillStateChampionNumber(data: ProfileData, season: string, number: number): boolean
+	local badges = championBadgesOf(data)
+	if badges == nil or not isSeason(season) or not isBadgeNumber(number) or number < 1 or badges[season] ~= 0 then
+		return false
+	end
+	badges[season] = number
+	return true
+end
+
+-- The player's badges, newest season first (only usable entries; number 0 = on its way).
+function ProfileOperations.getStateChampionBadges(data: ProfileData): { ChampionBadgeView }
+	local list: { ChampionBadgeView } = {}
+	for season, number in pairs(championBadgesOf(data) or {}) do
+		if isSeason(season) and isBadgeNumber(number) then
+			table.insert(list, { season = season, number = number })
+		end
+	end
+	table.sort(list, function(a, b)
+		return a.season > b.season
+	end)
+	return list
+end
+
+-- The seasons whose badge still waits for its number, oldest first (numbers go out in the order the wins came).
+function ProfileOperations.pendingStateChampionSeasons(data: ProfileData): { string }
+	local seasons: { string } = {}
+	for season, number in pairs(championBadgesOf(data) or {}) do
+		if isSeason(season) and number == 0 then
+			table.insert(seasons, season)
+		end
+	end
+	table.sort(seasons)
+	return seasons
+end
+
+--[[
 	LADDER POINTS (schema 16, per weight class since 17; GAME_DESIGN §35.8,
 	§36.3, MeetLevelConfig.Ladder). Each class has its own ladder: points
 	earned in a class count only toward State in that class. Seasons turn

@@ -12,6 +12,8 @@
 		  then back out to the stage (LocalMeetConfig.Awards)
 		- the crowd cheers and the winner's theme song plays
 		- if THIS player won, their character does the winner's celebration
+		- a new numbered State Champion badge (GAME_DESIGN §36.4) is revealed low on
+		  the screen as the camera reaches the winner (ChampionBadge.reveal)
 	The camera goes back to normal when the ceremony ends or the player leaves
 	the venue. Display only: it decides and saves nothing.
 ]]
@@ -25,6 +27,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
 local LocalMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("LocalMeetRemotes"))
+local ChampionBadge = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("ChampionBadge"))
 
 local LocalMeetAwards = {}
 
@@ -40,6 +43,8 @@ local current: {
 	track: AnimationTrack?,
 	tween: Tween?,
 	leaving: RBXScriptConnection?,
+	-- Ends the badge reveal, if one is showing.
+	endReveal: (() -> ())?,
 }? = nil
 local nextId = 0
 
@@ -78,6 +83,9 @@ function LocalMeetAwards.stop()
 	if ceremony.leaving then
 		ceremony.leaving:Disconnect()
 	end
+	if ceremony.endReveal then
+		ceremony.endReveal()
+	end
 	local camera = Workspace.CurrentCamera
 	local character = Players.LocalPlayer.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -97,7 +105,7 @@ function LocalMeetAwards.play(moment: LocalMeetRemotes.AwardsMoment)
 	nextId += 1
 	local id = nextId
 	local ceremony = { id = id, sounds = {} :: { Sound }, track = nil :: AnimationTrack?, tween = nil :: Tween?,
-		leaving = nil :: RBXScriptConnection? }
+		leaving = nil :: RBXScriptConnection?, endReveal = nil :: (() -> ())? }
 	current = ceremony
 	local function stillRunning(): boolean
 		return current ~= nil and current.id == id
@@ -174,6 +182,16 @@ function LocalMeetAwards.play(moment: LocalMeetRemotes.AwardsMoment)
 		task.delay(SETTINGS.WideShotSeconds + SETTINGS.CloseUpSeconds, function()
 			glide(wide, SETTINGS.GlideSeconds * 1.5)
 		end)
+		-- A new State Champion badge: shown as the camera reaches the winner, through the close-up and the glide back.
+		local badge = moment.championBadge
+		if badge and typeof(badge.number) == "number" and typeof(badge.seasonLabel) == "string"
+			and typeof(badge.name) == "string" then
+			task.delay(SETTINGS.WideShotSeconds + SETTINGS.GlideSeconds * 0.6, function()
+				if stillRunning() then
+					ceremony.endReveal = ChampionBadge.reveal(badge, moment.winnerName or "", SETTINGS.CloseUpSeconds + SETTINGS.GlideSeconds)
+				end
+			end)
+		end
 	end
 	task.delay(moment.seconds, function()
 		if stillRunning() then

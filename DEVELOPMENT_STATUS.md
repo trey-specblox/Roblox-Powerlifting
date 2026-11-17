@@ -13,6 +13,29 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**NUMBERED STATE CHAMPION BADGE + ROBLOX WIN BADGES (2026-11-16; the first item on the State list, changed by the user
+from "finisher badge for everyone" to "#1001 State Champion" for winners only, GAME_DESIGN §36.4). BUILT AND TESTED IN
+STUDIO (one player; API services off, so nothing saved and the counter counted in memory). NOT COMMITTED. A REAL STATE
+MEET WITH TWO PLAYERS HAS NOT BEEN RUN WITH IT.**
+- Save version 26: `career.stateChampionBadges` (month -> game-wide number, 0 = on its way). Players who already won
+  State get a Nov 2026 badge, numbered on their next join. ProfileOperations: addStateChampionBadge,
+  fillStateChampionNumber, getStateChampionBadges, pendingStateChampionSeasons.
+- NEW `src/server/Meet/ChampionBadges.luau`: the game-wide counter (DataStore "StateChampionCounter", key "Count";
+  Studio "StudioCount"; memory in Studio without API access), retries, numbering on join; Roblox win badges (awardWin +
+  catch-up on join) from `MeetLevelConfig.WinnerBadgeIds`, ALL 0 = OFF until the user makes them on the Creator
+  Dashboard and sends the ids.
+- LocalMeetService: the State winner's save adds the badge and numbers it; result line; fun-facts strip; the awards
+  moment carries the badge and the rack callers announce it. Client: NEW `src/client/UI/ChampionBadge.luau` (gold
+  medal + reveal card, UI kit glow/shine/gloss/rays, GearStatsConfig.Sounds.Big), LocalMeetAwards shows the reveal at
+  the close-up, StatsScreen medal on the avatar corner + badge list. StatsRemotes/PlayerStatsService send the badges.
+- Tests: PlayerDataProbe 609/609 (new section 61; the old "migrated 24 to 25" check now expects the current version;
+  probe switched back OFF). NEW dev tool `src/server/Dev/ChampionBadgeProbe.server.luau` (Studio only; workspace
+  attribute ChampionBadgeTest = give / older / clear): two badges numbered #1 (Oct) then #2 (Nov), oldest first, same
+  month refused. Screenshots checked: STATS medal and list, the reveal card. luau-lsp: 0 errors in the changed files.
+- Not verified: the awards reveal and the caller's line during a real State meet (needs 2 qualified players), the meet
+  screens' fun-facts line, the reveal on a phone, a live DataStore counter. Sound reuses the rare-drop reveal sound (a
+  dedicated ElevenLabs sting would need the user's go-ahead).
+
 **NEW BODIES GO LIVE (2026-11-16, user: "lets just go live", after watching a full meet in Studio: "it looks good";
 the phone test was skipped by the user's choice). `ClothesConfig.LiveEnabled = true`: every player and every meet NPC
 gets the cartoon body of their build (CartoonBody08), gear 09 / clothes 09 and the re-made animations. Studio's synced
@@ -20,8 +43,9 @@ scripts were checked against disk (byte counts match) before publishing. PUBLISH
 to Roblox); not committed or pushed at the time of writing.**
 - Before this, in Studio: a full Local meet with three computer lifters, the coach, referees and spotters, sampled for
   ~2 minutes (walk-outs, hype, squat, celebration, sitting): body sizes exact, every clothes/gear piece on its weld.
-- Watch after publishing: frame rate on phones (not measured), player avatars with unusual body scales (now forced to
-  the build's exact size), and the known small body folds (arms overhead, seat in deep bends).
+- 2026-11-16 after publishing, user: "Mobile ran smoothly" (the user's own phone test of the live game).
+- Still watch: player avatars with unusual body scales (now forced to the build's exact size), and the known small body
+  folds (arms overhead, seat in deep bends).
 
 **PERFORMANCE PASS (2026-11-16, user: "Shadows + audit tool"). TESTED IN STUDIO (play test, one player), COMMITTED
 2026-11-16 as 5dbe87c (not pushed), NOT MEASURED ON A PHONE.** Audit findings: the world total is over budget only because the server holds every area at

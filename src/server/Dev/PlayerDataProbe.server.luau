@@ -2593,7 +2593,8 @@ do
 	inventory.clothes = nil
 	inventory.gearOn = nil
 	data.version = 24
-	check("migrated 24 to 25", PlayerProfileSchema.migrate(data, 24) == 25 and data.version == 25)
+	check("migrated 24 to the current version", PlayerProfileSchema.migrate(data, 24) == PlayerProfileSchema.CURRENT_VERSION
+		and data.version == PlayerProfileSchema.CURRENT_VERSION)
 	check("gear stays on for everyone, nothing owned, the default outfit", inventory.gearOn == true
 		and typeof(inventory.clothes) == "table" and typeof(inventory.outfit) == "table"
 		and ProfileOperations.getGearOn(data) == true)
@@ -2615,6 +2616,55 @@ do
 	check("it survives a save and reload", reloaded.inventory.outfit.Shirt.colour == "Navy" and reloaded.inventory.gearOn == false)
 	PlayerProfileSchema.migrate(reloaded, 24)
 	check("a re-run changes nothing", reloaded.inventory.gearOn == false and reloaded.inventory.outfit.Shirt.item == "LongSleeve")
+end
+
+--------------------------------------------------------------------------------
+print("")
+print("61. version 25 to 26: the numbered State Champion badges (one per month, numbers never changed)")
+do
+	check("a new profile has no badges", next(newProfile().career.stateChampionBadges) == nil)
+	local champion = newProfile()
+	champion.career.titles = { StateChampion = 2 }
+	;(champion.career :: any).stateChampionBadges = nil
+	champion.version = 25
+	check("migrated 25 to 26", PlayerProfileSchema.migrate(champion, 25) == 26 and champion.version == 26)
+	check("an earlier State Champion gets the November 2026 badge, number on its way",
+		champion.career.stateChampionBadges["2026-11"] == 0)
+	PlayerProfileSchema.migrate(champion, 25)
+	check("a re-run changes nothing", champion.career.stateChampionBadges["2026-11"] == 0)
+	local other = newProfile()
+	other.career.titles = { RegionalChampion = 1, StateRunnerUp = 1 }
+	PlayerProfileSchema.migrate(other, 25)
+	check("no State win, no badge", next(other.career.stateChampionBadges) == nil)
+	local broken = newProfile()
+	;(broken.career :: any).stateChampionBadges = { ["2026-10"] = 7, nonsense = 3, ["2026-12"] = -1, ["2027-01"] = 2.5 }
+	PlayerProfileSchema.migrate(broken, 25)
+	local kept = broken.career.stateChampionBadges
+	check("broken entries are dropped, good ones kept", kept["2026-10"] == 7 and kept.nonsense == nil and kept["2026-12"] == nil
+		and kept["2027-01"] == nil)
+
+	local data = newProfile()
+	check("a State win this month gives a badge, number on its way",
+		ProfileOperations.addStateChampionBadge(data, "2026-11", 0) == "Added")
+	check("a second win the same month gives no new badge",
+		ProfileOperations.addStateChampionBadge(data, "2026-11", 0) == "AlreadyThisSeason")
+	check("bad seasons and numbers are refused", ProfileOperations.addStateChampionBadge(data, "Nov", 0) == "Rejected"
+		and ProfileOperations.addStateChampionBadge(data, "2026-12", -1) == "Rejected"
+		and ProfileOperations.addStateChampionBadge(data, "2026-12", 0 / 0) == "Rejected")
+	check("it waits for its number", ProfileOperations.pendingStateChampionSeasons(data)[1] == "2026-11")
+	check("the number is filled in", ProfileOperations.fillStateChampionNumber(data, "2026-11", 1001)
+		and data.career.stateChampionBadges["2026-11"] == 1001)
+	check("a given number never changes", ProfileOperations.fillStateChampionNumber(data, "2026-11", 5) == false
+		and data.career.stateChampionBadges["2026-11"] == 1001)
+	ProfileOperations.addStateChampionBadge(data, "2027-02", 0)
+	ProfileOperations.addStateChampionBadge(data, "2026-12", 0)
+	local waiting = ProfileOperations.pendingStateChampionSeasons(data)
+	check("waiting badges are numbered oldest first", waiting[1] == "2026-12" and waiting[2] == "2027-02")
+	local list = ProfileOperations.getStateChampionBadges(data)
+	check("the list is newest first", list[1].season == "2027-02" and list[3].season == "2026-11" and list[3].number == 1001)
+	local reloaded = saveAndReload(data)
+	check("badges survive a save and reload", reloaded.career.stateChampionBadges["2026-11"] == 1001
+		and reloaded.career.stateChampionBadges["2027-02"] == 0)
 end
 
 --------------------------------------------------------------------------------

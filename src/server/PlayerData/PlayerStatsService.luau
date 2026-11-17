@@ -30,6 +30,8 @@ local ProfileOperations = require(script.Parent:WaitForChild("ProfileOperations"
 local PlayerStatsService = {}
 
 local MIN_SECONDS_BETWEEN_ASKS = 0.5
+-- The most State Champion badges sent to the STATS screen (two years of monthly wins).
+local MAX_BADGES = 24
 local lastAsked: { [Player]: number } = {}
 local started = false
 
@@ -86,6 +88,15 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		end
 	end
 
+	-- The numbered State Champion badges, newest first (GAME_DESIGN §36.4), at most MAX_BADGES of them.
+	local championBadges: { StatsRemotes.ChampionBadgeView } = {}
+	for _, badge in ipairs(ProfileOperations.getStateChampionBadges(data)) do
+		if #championBadges >= MAX_BADGES then
+			break
+		end
+		table.insert(championBadges, { number = badge.number, seasonLabel = MeetLevelConfig.seasonLabel(badge.season) })
+	end
+
 	local nowUnix = os.time()
 	-- The ladder of the class the player is in now (points are per class, GAME_DESIGN §36.3).
 	local ladder = ProfileOperations.getLadder(data, WeightClass.resolve(bodyweight.currentKg).label, nowUnix)
@@ -100,6 +111,7 @@ local function snapshotFor(player: Player): StatsRemotes.StatsSnapshot?
 		technique = technique,
 		coins = ProfileOperations.getCoins(data),
 		titles = titles,
+		championBadges = championBadges,
 		ladder = { points = ladder.points, target = ladder.target, qualified = ladder.qualified,
 			seasonEndsAt = MeetLevelConfig.seasonEndsAt(nowUnix) },
 	}

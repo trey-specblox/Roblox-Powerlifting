@@ -5984,7 +5984,7 @@ in their weight class and stay in it. This reopens the ladder points
 |---|---|
 | **When State runs** | **On a timer:** a State meet starts every **20 minutes** if at least **2 qualified players** signed up at the State arena's sign-up desk, like the Local meet (§29.10). Fewer than 2: no meet, and sign-ups carry to the next start. **[PROVISIONAL]** times |
 | **Placing** | **One ranking by IPF GL points** for everyone, as at Local and Regional (§37.4 "Points", changed by the user 2026-11-06), ties by more good lifts, then lighter bodyweight. The **top 3 overall** get the State titles. Class winners are shown too. Lifters still enter only in the class they qualified in (§36.3) |
-| **What State pays** | All four: the **bigger coin pot** (×3 the Local pot, `MeetLevelConfig`); **titles and trophies** for the top 3 (already built); a **Nationals spot** for the top 3 (the details come with the Nationals design); and a **State finisher badge** for everyone who finishes with a total, for that season |
+| **What State pays** | All four: the **bigger coin pot** (×3 the Local pot, `MeetLevelConfig`); **titles and trophies** for the top 3 (already built); a **Nationals spot** for the top 3 (the details come with the Nationals design); and a **State finisher badge** for everyone who finishes with a total, for that season. **[CHANGED BY THE USER, 2026-11-16]:** no finisher badge; instead a **numbered State Champion badge** for the **winner** only (see "Built (2026-11-16)" below) |
 | **The format ("slower, big stage")** | **4 racks, one lifter at a time** (user, 2026-11-01, settling "one main platform" vs §36.1's 4 racks): each of the 4 lifters has **their own rack**, with its live screen above and its spectate zone, and they lift **in turn**, lightest bar first in each round as in real meets, with the camera and the big screens on each lift. **At most 4 lifters** per meet, about 20 minutes. **[PROVISIONAL]**: with more than 4 sign-ups, the first 4 lift and the rest carry to the next meet |
 
 > **Built (2026-11-01): the arena, step 1 (visits).** The State arena
@@ -6008,7 +6008,39 @@ in their weight class and stay in it. This reopens the ladder points
 > out, then walks back and sits down. So the choice is locked in before the turn, rather than made on the turn as first asked for
 > (memory of 2026-11-06). It pays the x3 pot, titles and trophies for the top 3 as already built. Each rack's screen shows its
 > lifter's name, lift, weight and result. **Not built yet, in this order:** the finisher badge, the Nationals spot, then show-off items
-> and spectator help (§36.5).
+> and spectator help (§36.5). **[Update 2026-11-16]:** the badge is built (as the numbered State Champion badge, below); next is the
+> Nationals spot.
+
+> **[DECIDED BY THE USER, 2026-11-16] The numbered State Champion badge (replaces the finisher badge).** Asked about the badge's
+> look and where it shows, the user changed it: "instead of State finisher Nov 2026, it should be ... the number of total state's ...
+> so if the game has 1000 state meets ever played, the next player would be, '#1001 State Champion'", then "No finishers, just state
+> champions, people who win state." Picked from options:
+> - **Who:** only the State meet's **winner** (1st place, in a meet that pays in full). Runners-up and finishers get no badge.
+> - **The number:** **one counter for the whole game** (every server), **never reset**: every badge ever given takes the next number.
+> - **Seasons:** **one badge per season** (calendar month), collected: "NOV 2026 · #1001 STATE CHAMPION". A second win in the same
+>   month gives **no new badge or number** (the title still counts up as before).
+> - **Where it shows:** the **STATS screen** and the **meet screens' fun-facts strip**. No name tag over heads.
+> - **Roblox profile badges (user's addition):** "Local meet winner", "Regional meet winner", "State meet winner", for **1st place in
+>   a meet that counts as a win** (enough real players, not solo or the Mock Meet), one per level, given once.
+
+> **Built (2026-11-16): the numbered State Champion badge and the win badges.**
+> - **Saved** in the career (save version 26, `career.stateChampionBadges`: month -> number). The winner's meet save adds this
+>   month's badge, then the server takes the next number from the game-wide counter (a DataStore `IncrementAsync`, which Roblox runs
+>   one at a time across servers, so no two winners share a number). If the counter can't be reached the badge waits ("number on
+>   its way") and is numbered a minute later or when the player next joins; the count can skip a number, never repeat one.
+>   **Players who already won State** got their November 2026 badge in the save change; it is numbered when they next join, in the
+>   order they come back. Studio counts on its own key, so tests never use up live numbers. Server-side only: no client can ask for a
+>   badge or a number (`ChampionBadges`).
+> - **The awards:** as the camera reaches the winner, a gold medal pops up low on everyone's screen in the hall over turning rays,
+>   "STATE CHAMPION #1001", their name and "NOV 2026 · the 1001st State Champion ever", with the big reveal sound, and the rack callers
+>   say "Please welcome State Champion number 1001, NAME!" over the speakers. The result line reads "New badge: #1001 STATE CHAMPION ·
+>   NOV 2026".
+> - **STATS:** the newest badge is a gold medal (number, month, red STATE CHAMPION ribbon) pinned on the avatar's corner, "x3" when
+>   there are more; pressing it lists every month's badge. **Meet screens:** "#1001 STATE CHAMPION · NOV 2026 (+2 MORE)" in the
+>   fun-facts strip.
+> - **Roblox badges:** the code gives them after a counting win and, on joining, for wins a player already had. They switch on when
+>   their ids are filled in `MeetLevelConfig.WinnerBadgeIds` (0 = not made yet); the badges themselves are made on the Creator
+>   Dashboard.
 
 > **Built (2026-11-07): the live minigame on the rack screens.** While a lifter lifts at the State meet, their rack's screen shows their
 > minigame as they play it: the squat's track and marker, the bench's closing ring with MASH! and HOLD!, the deadlift's letters, and the
@@ -6319,7 +6351,8 @@ in their weight class and stay in it. This reopens the ladder points
 - **The build order** (Claude recommends): the arena and the meet itself
   first, then the rewards (badge, Nationals spot), then the show-off items,
   crates and spectator help.
-- The badge's look and where it shows (nameplate, STATS, both).
+- ~~The badge's look and where it shows (nameplate, STATS, both).~~ Decided and built 2026-11-16 (§36.4, the numbered State
+  Champion badge).
 - The open questions in §36.2 (voice cheering, music, crates).
 
 ## 37. Meets as the main strength source, and meets that always run (user, 2026-11-01)
