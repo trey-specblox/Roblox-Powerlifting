@@ -78,8 +78,9 @@ ClothesConfig.StudioBuildAttribute = "LifterBodyBuild"
 -- (The realistic body's clothes, 122615782726867, are no longer used.)
 ClothesConfig.ClothesShown = true
 
--- On in the live game only once the bodies are tested with the lifts in Studio.
-ClothesConfig.LiveEnabled = false
+-- On in the live game: the user watched a full meet in Studio and approved going live (2026-11-16: "lets just go live",
+-- skipping the phone test).
+ClothesConfig.LiveEnabled = true
 ClothesConfig.StudioEnabled = true
 ClothesConfig.StudioAttribute = "LifterBody"
 

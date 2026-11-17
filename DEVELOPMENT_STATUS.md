@@ -13,6 +13,16 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**NEW BODIES GO LIVE (2026-11-16, user: "lets just go live", after watching a full meet in Studio: "it looks good";
+the phone test was skipped by the user's choice). `ClothesConfig.LiveEnabled = true`: every player and every meet NPC
+gets the cartoon body of their build (CartoonBody08), gear 09 / clothes 09 and the re-made animations. Studio's synced
+scripts were checked against disk (byte counts match) before publishing. PUBLISHING IS THE USER'S STEP (File > Publish
+to Roblox); not committed or pushed at the time of writing.**
+- Before this, in Studio: a full Local meet with three computer lifters, the coach, referees and spotters, sampled for
+  ~2 minutes (walk-outs, hype, squat, celebration, sitting): body sizes exact, every clothes/gear piece on its weld.
+- Watch after publishing: frame rate on phones (not measured), player avatars with unusual body scales (now forced to
+  the build's exact size), and the known small body folds (arms overhead, seat in deep bends).
+
 **PERFORMANCE PASS (2026-11-16, user: "Shadows + audit tool"). TESTED IN STUDIO (play test, one player), COMMITTED
 2026-11-16 as 5dbe87c (not pushed), NOT MEASURED ON A PHONE.** Audit findings: the world total is over budget only because the server holds every area at
 once; streaming (min 64, target 1024) means a player loads only where they are. The 110 combo racks (30 gym + 80 in
