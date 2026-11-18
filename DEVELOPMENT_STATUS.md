@@ -13,8 +13,15 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**ALL OF THE BLOCKS BELOW, DOWN TO "NATIONALS ARENA FIXES (2026-11-17)", ARE COMMITTED in 2a0211c (2026-11-18, not
+pushed): Nationals step 2, the flow state, chants and shouts, the curtain walk-through and cinematic, the camera fix, the
+closed curtain line, arena v08, the floating signs with live timers and MeetHall_03. (Their "NOT COMMITTED" lines are
+from before that commit.) NEXT: a two-player Studio test (Test > Clients and Servers, 2 players: lift-off, per-class
+awards, two platforms at once); the user listens to the Nationals chants/shouts
+(`D:\Powerlifting Roblox Extras\Sounds\ChantListen\`) and tries the walk-out on a phone.**
+
 **SIGNS HIGH OVER THE MIDDLE + LIVE MEET TIMERS + BIGGER LOCAL MEET BUILDING (2026-11-18). BUILT, UPLOADED, TESTED IN
-STUDIO. NOT COMMITTED.**
+STUDIO. COMMITTED (2a0211c).**
 - New model MeetHall_03 (item MeetHallBig, `art/scripts/build_meet_hall_02.py` -> `art/blender/MeetHall_02.blend`,
   `art/exports/MeetHall_03.glb`, CHECK PASSED, 1,366 tris) rbxassetid://76335862835551: MeetHall's design at 60 x 44,
   walls 22, ridge 33, no wall sign. (MeetHall_02 75881658373417 is unusable: item names must be letters only before the
