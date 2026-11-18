@@ -316,6 +316,11 @@ function AdminPanel.start()
 
 	local meetsTitle = UIStyle.text(toolsPage, "MeetsTitle", UDim2.fromOffset(MARGIN, 548), UDim2.new(1, -2 * MARGIN, 0, 28), SIZES.body, C.white, UIStyle.heading())
 	meetsTitle.Text = "START A MEET NOW  (SIGNED UP)"
+	-- Nationals (GAME_DESIGN §39): starts the next one soon, for everyone signed up in every server.
+	UIStyle.button(toolsPage, "StartNationals", "START NATIONALS NOW", UDim2.new(1, -MARGIN - 230, 0, 546),
+		UDim2.fromOffset(230, 28), "outline", function()
+			ask("StartNationals", nil)
+		end)
 	makeMeetButtons = function(meets)
 		for index, meet in ipairs(meets) do
 			-- Three to a row.

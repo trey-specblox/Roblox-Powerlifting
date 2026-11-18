@@ -71,6 +71,13 @@ end
 -- Whether `player` is on the admin list (for systems open only to admins while being tested live, e.g. Nationals).
 AdminService.isAdmin = isAdmin
 
+-- START NATIONALS NOW's work, handed over by NationalsService when it starts (it requires this module, so this one can't
+-- require it back). Returns whether it starts and what to tell the admin.
+local nationalsStarter: (() -> (boolean, string))? = nil
+function AdminService.setNationalsStarter(starter: () -> (boolean, string))
+	nationalsStarter = starter
+end
+
 -- The player in this server with this UserId, or nil. Safe with anything a client sends.
 local function playerFor(userId: any): Player?
 	if typeof(userId) ~= "number" or userId ~= userId then
@@ -190,6 +197,13 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 	-- Starts meet `value` (its number, the State meet last) now, with whoever has signed up.
 	StartMeet = function(_player: Player, value: any): (boolean, string)
 		return LocalMeetService.adminStartNow(value)
+	end,
+	-- START NATIONALS NOW (GAME_DESIGN §39): NationalsService hands over how (setNationalsStarter), as it requires this module.
+	StartNationals = function(_player: Player, _value: any): (boolean, string)
+		if nationalsStarter == nil then
+			return false, "Nationals isn't running in this server."
+		end
+		return nationalsStarter()
 	end,
 	-- PLAYER STATS: one typed stat for any player here.
 	SetStat = function(_player: Player, value: any): (boolean, string)

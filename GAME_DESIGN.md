@@ -7277,3 +7277,8 @@ pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, th
 >   reads "YOU ARE AT NATIONALS · 74 kg · 3 LIFTERS" with LEAVE, which teleports back to a public server.
 > - **Not yet:** the meet itself (step 2: per class, titles, x5 pot, Worlds spot, `markNationalsCompeted`), the arena
 >   from the user's photos (step 3).
+> - **Added the same day (user's first live test: "mobile players cannot enter", "no start nationals immediately"):**
+>   the phone player was another account, hidden by the admin-only lock, so **testers** were added
+>   (`NationalsConfig.TesterUserIds`: listed accounts see and join it too while not Live), and the admin panel got
+>   **START NATIONALS NOW**: the next Nationals starts 30 s after the press **in every server** (each server with someone
+>   signed up looks for it every 5 s and moves its sign-ups to it); the timetable carries on after it.

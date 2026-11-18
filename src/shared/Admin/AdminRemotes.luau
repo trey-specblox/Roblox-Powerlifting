@@ -20,6 +20,7 @@
 			"RefillDaily", "GiveCoinsTo" with `id` (a coin button id; coins are never an amount), and
 			"GiveEntrance" with `id` (an EntranceConfig id: gives it and puts it on).
 			"StartMeet" with a meet's number (AdminView.meets) starts it now, with whoever signed up.
+			"StartNationals" (no value) starts the next Nationals in NationalsConfig.ForceLeadSeconds, in every server.
 ]]
 
 local AdminRemotes = {}

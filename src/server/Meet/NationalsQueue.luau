@@ -62,6 +62,9 @@ export type Queue = {
 	outcome: (round: number) -> Outcome?,
 	registerServer: (privateServerId: string, info: ServerInfo) -> boolean,
 	serverInfo: (privateServerId: string) -> ServerInfo?,
+	-- START NATIONALS NOW: an early start every server picks up (its start time), and reading it back (nil = none).
+	setForced: (round: number) -> boolean,
+	forced: () -> number?,
 }
 
 local function warnOnce(seen: { [string]: boolean }, what: string, problem: any)
@@ -216,6 +219,25 @@ local function memoryStoreQueue(prefix: string, serverId: string): Queue
 		end
 		return nil
 	end
+	queue.setForced = function(round)
+		local ok, problem = pcall(function()
+			rounds:SetAsync("forced", round, keepFor(round, 120))
+		end)
+		if not ok then
+			warnOnce(seen, "setForced", problem)
+		end
+		return ok
+	end
+	queue.forced = function()
+		local ok, value = pcall(function()
+			return rounds:GetAsync("forced")
+		end)
+		if not ok then
+			warnOnce(seen, "forced", value)
+			return nil
+		end
+		return if typeof(value) == "number" then value else nil
+	end
 	return queue
 end
 
@@ -279,6 +301,14 @@ local function localQueue(serverId: string): Queue
 	end
 	queue.serverInfo = function(privateServerId)
 		return servers[privateServerId]
+	end
+	local forcedRound: number? = nil
+	queue.setForced = function(round)
+		forcedRound = round
+		return true
+	end
+	queue.forced = function()
+		return forcedRound
 	end
 	return queue
 end

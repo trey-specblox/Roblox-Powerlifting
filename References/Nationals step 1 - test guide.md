@@ -2,7 +2,7 @@
 
 What step 1 does: every 2 hours, every player holding a Nationals spot who signed up, **in any server**, is sent into **one Nationals server**. For now they arrive in the **State arena with NATIONALS written on it**. That arena is a **temporary stand-in**: your own Nationals arena, built from your photos, replaces it later. The meet itself (classes, titles, x5 pot, Worlds spot) is step 2.
 
-It is **not live for players yet** (`NationalsConfig.Live = false` in `src/shared/Config/NationalsConfig.luau`). In the real game, **only you (admin)** see the NATIONALS row, and test Nationals come **every 10 minutes** and need only **1 lifter**.
+It is **not live for players yet** (`NationalsConfig.Live = false` in `src/shared/Config/NationalsConfig.luau`). In the real game, **only you (admin) and the accounts in `NationalsConfig.TesterUserIds`** see the NATIONALS row. Everyone else (for example a friend on a phone) sees nothing: that is the lock, not a phone bug. Test Nationals come **every 10 minutes** and need only **1 lifter**. Your admin panel's **START NATIONALS NOW** (MY TOOLS, on the right of "START A MEET NOW") starts one 30 seconds later, in every server.
 
 ## What I already tested in Studio (passed)
 
@@ -24,12 +24,12 @@ It is **not live for players yet** (`NationalsConfig.Live = false` in `src/share
 4. Press **M** (MEETS). The last row should say **NATIONALS · x5 · TEST** with a countdown. Press **SIGN UP**.
    - Expected: "You're signed up for Nationals (your class)…", and the row turns yellow.
 5. Optional, to test the pull-out: sign up for a Local meet and start it from ADMIN > START A MEET NOW.
-6. Wait for the countdown (at most 10 minutes). 30 seconds before: "Nationals starts in 30 seconds!"
+6. Press **ADMIN > START NATIONALS NOW**, or wait for the countdown (at most 10 minutes). You get a warning 30 seconds before the start.
 7. At the start: "GATHERING LIFTERS…", then "Taking you there now", then **Roblox's teleport loading screen**.
 8. You should arrive **in the State arena with NATIONALS banners**, and the row should say **YOU ARE AT NATIONALS**.
 9. Press **LEAVE** on that row. You should be teleported back into a normal server.
 
-If two of you test (a second account also needs NATIONALS PLACINGS 10, set from your admin panel while they're in your server), sign up **in different servers**. You should both land in the **same** Nationals server.
+If two of you test: the second account must be **in `NationalsConfig.TesterUserIds`** (ask Claude to add it), and it also needs NATIONALS PLACINGS 10 (set from your admin panel while they're in your server). Then sign up **in different servers**, and press START NATIONALS NOW. You should both land in the **same** Nationals server.
 
 ## If something goes wrong
 

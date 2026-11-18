@@ -27,6 +27,21 @@ local NationalsConfig = {}
 ]]
 NationalsConfig.Live = false
 
+--[[
+	TESTERS (user 2026-11-17: other accounts, e.g. on a phone, couldn't see Nationals): while not Live, these accounts
+	see and join Nationals too, like the admins. Their UserIds (Roblox profile link: roblox.com/users/<UserId>/profile).
+	They still need a Nationals spot (the admin panel's NATIONALS PLACINGS can give it while they're in your server).
+]]
+NationalsConfig.TesterUserIds = {
+	[1126689936] = true, -- Vietnames_e (user 2026-11-17)
+} :: { [number]: boolean }
+
+-- The admin panel's START NATIONALS NOW: the next Nationals starts this long after the press, in every server (so each
+-- server sees it, warns its lifters and moves their sign-ups in time). Servers with someone signed up look every
+-- ForcePollSeconds.
+NationalsConfig.ForceLeadSeconds = 30
+NationalsConfig.ForcePollSeconds = 5
+
 -- ------------------------------------------------ the timetable
 
 -- A Nationals starts every this many seconds, on the same clock in every server (UTC: 00:00, 02:00, ...).

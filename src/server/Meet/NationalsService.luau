@@ -95,6 +95,7 @@ local calledFor = 0
 local globalCount: number? = nil
 local countRound = 0
 local nextCountAt = 0
+local nextForcedPollAt = 0
 local here: Here? = nil
 -- The lifters who are at Nationals in this server: their class.
 local atNationals: { [Player]: string } = {}
@@ -139,9 +140,10 @@ local function nextStartAfter(t: number): number
 	return (math.floor(t / cycle) + 1) * cycle
 end
 
--- Whether Nationals is open to this player yet (Live, Studio, or an admin while it is tested live).
+-- Whether Nationals is open to this player yet (Live, Studio, or an admin or listed tester while it is tested live).
 local function openTo(player: Player): boolean
 	return IS_STUDIO or NationalsConfig.Live or AdminService.isAdmin(player)
+		or NationalsConfig.TesterUserIds[player.UserId] == true
 end
 
 -- "1:59:30", or "1:30" under an hour.
@@ -657,6 +659,73 @@ local function refreshCount()
 	end
 end
 
+-- ---------------------------------------------------------------- START NATIONALS NOW (the admin panel)
+
+--[[
+	The next Nationals moves up to `round` (an early start, sooner than the timetable's): this server's sign-ups move to it
+	(off the old round's shared list, onto the new one) and its lifters are told. After it, the timetable carries on.
+]]
+local function applyForced(round: number)
+	local q = queue
+	if q == nil or IS_RESERVED or round <= now() or round >= upcoming then
+		return
+	end
+	local old = upcoming
+	upcoming = round
+	-- (The notice below is the warning: the usual 30-second one would repeat it.)
+	calledFor = round
+	globalCount = nil
+	log("Nationals moved up from %d to %d by the admin panel", old, round)
+	for player, signUp in pairs(signUps) do
+		if signUp.round == old then
+			signUp.round = round
+			task.spawn(function()
+				q.remove(old, player.UserId)
+				q.add(round, { userId = player.UserId, name = player.Name, classKey = signUp.classKey, signedAt = signUp.signedAt })
+			end)
+			notify(player, string.format("An admin started Nationals early: it starts in %d seconds! You'll be taken there "
+				.. "from wherever you are, even out of a meet.", math.ceil(round - now())))
+		end
+	end
+	nextCountAt = 0
+	broadcast()
+end
+
+-- START NATIONALS NOW: whether it starts and what to tell the admin. SERVER-ONLY: AdminService checks the admin list first.
+local function adminStartNow(): (boolean, string)
+	local q = queue
+	if q == nil then
+		return false, "Nationals is still starting up in this server."
+	end
+	if IS_RESERVED then
+		return false, "This is a Nationals server: start it from a normal server."
+	end
+	local round = math.ceil(now() + NationalsConfig.ForceLeadSeconds)
+	if upcoming <= round then
+		return false, string.format("The next Nationals starts in %s anyway.", clockText(upcoming - now()))
+	end
+	if not q.setForced(round) then
+		return false, "Couldn't reach the Nationals list. Try again in a moment."
+	end
+	applyForced(round)
+	return true, string.format("Nationals starts in %d seconds for everyone signed up, in every server.", NationalsConfig.ForceLeadSeconds)
+end
+
+-- Servers with someone signed up look now and then for an early start set in another server.
+local polling = false
+local function pollForced()
+	local q = queue
+	if q == nil or polling or IS_RESERVED or next(signUps) == nil then
+		return
+	end
+	polling = true
+	local round = q.forced()
+	polling = false
+	if round then
+		applyForced(round)
+	end
+end
+
 -- ---------------------------------------------------------------- starting
 
 local function buildDesk()
@@ -694,6 +763,7 @@ function NationalsService.start()
 	local set = NationalsRemotes.createOnServer(ReplicatedStorage)
 	remotes = set
 	upcoming = nextStartAfter(now())
+	AdminService.setNationalsStarter(adminStartNow)
 
 	set.signUp.OnServerEvent:Connect(function(player)
 		if pressAllowed(player) then
@@ -797,6 +867,10 @@ function NationalsService.start()
 				if os.clock() >= nextCountAt then
 					nextCountAt = os.clock() + NationalsConfig.CountRefreshSeconds
 					task.spawn(refreshCount)
+				end
+				if os.clock() >= nextForcedPollAt then
+					nextForcedPollAt = os.clock() + NationalsConfig.ForcePollSeconds
+					task.spawn(pollForced)
 				end
 			end
 			task.wait(0.5)

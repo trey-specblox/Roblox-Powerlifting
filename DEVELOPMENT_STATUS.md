@@ -19,6 +19,13 @@ CURRENT MILESTONE block).
 Studio can't do it. NEXT: the user commits, publishes and runs the live admin test (`References/Nationals step 1 - test
 guide.md`), then step 2 (the meet itself) or step 3 (the arena from the user's photos; the
 user has the photos ready and said the re-dressed State arena must not stay).**
+- FOLLOW-UP after the user's first live test (2026-11-17, COMMITTED right after 80a248f, not pushed): "mobile players cannot enter" = another
+  account, hidden by the admin-only lock (not a phone bug) -> `NationalsConfig.TesterUserIds` (Vietnames_e = 1126689936,
+  added at the user's request); admin panel MY TOOLS "START NATIONALS NOW" -> next Nationals in 30 s in every server (NationalsQueue
+  setForced/forced, key "forced"; servers with sign-ups poll every 5 s; AdminService.setNationalsStarter avoids a require
+  loop). Studio test: press -> "starts in 30 seconds", second press "starts in 0:29 anyway", landed at Nationals 30 s
+  later, the timetable resumed; button seen in the panel. The merged warning text (one notice instead of two) was synced
+  but not seen in play. Rojo had missed NationalsService's edits once (fixed by a real edit; check char counts).
 - User decisions (picked 2026-11-17): sign up in the MEETS list AND at a desk; a spot-holder mid-meet elsewhere is PULLED
   OUT (withdraws) and sent; needs 2 lifters across all servers, else every sign-up carries over.
 - NEW `src/shared/Config/NationalsConfig.luau` (Live switch, 2 h cycle / 10 min test / 120 s Studio, minimums, MemoryStore
