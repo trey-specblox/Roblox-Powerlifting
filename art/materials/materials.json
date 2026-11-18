@@ -1932,6 +1932,14 @@
    "ids": {
     "model": "rbxassetid://94343850079984"
    }
+  },
+  "NationalsArena_02": {
+   "about": "The Nationals arena (GAME_DESIGN 39 step 3, from the user's photos and video, approved 2026-11-17): the plaza building (NatBay x6, NatBayEnd, NatPorch, NatEndLeft/Right, NatWalkway) and the hall (NatFloor, NatStandMain, NatStandEnd, NatWall, NatRoofBay, NatTruss, NatHighBay, NatDrape, NatStageSet, NatBanner, NatCrowdMainA/B, NatCrowdEnd). Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (115 meshes, 29,040 triangles).",
+   "file": "art/exports/NationalsArena_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://72716651059879"
+   }
   }
  },
  "images": {

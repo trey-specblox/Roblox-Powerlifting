@@ -93,7 +93,7 @@ NationalsConfig.TeleportRetrySeconds = 4
 -- In the Nationals server: how long it keeps trying to read who it is for.
 NationalsConfig.ServerInfoTries = 10
 
--- ------------------------------------------------ the stand-in venue (the State arena re-dressed)
+-- ------------------------------------------------ the arena (NationalsArenaVenue, GAME_DESIGN §39 step 3)
 
 -- Workspace attribute set in a Nationals server (and in Studio while its stand-in runs): the Nationals' start time.
 NationalsConfig.ServerAttribute = "NationalsServer"
@@ -103,8 +103,19 @@ NationalsConfig.AtNationalsAttribute = "AtNationals"
 NationalsConfig.EventTitle = "NATIONALS"
 NationalsConfig.EventSub = "NATIONAL CHAMPIONSHIP"
 
--- The NATIONALS desk in the State arena's lobby, left of the State desk (arena frame), and its prompt.
-NationalsConfig.DeskAt = Vector3.new(-42, 0, -40)
+-- The building on the plaza (every server, user 2026-11-17): the middle of its glass front, left of the gym's front and
+-- opposite the State arena's entrance; it faces the gym's doors (+Z). It spans about x -236..-80, z -200..-117.
+NationalsConfig.BuildingOrigin = Vector3.new(-158, 0, -130)
+-- The hall, far from the gym like the State arena (0, 1000, 4000), the Local meet (-4000, 1000, 0) and the Mock Meet (+4000).
+NationalsConfig.HallOrigin = Vector3.new(0, 1000, -4000)
+-- The 4 platforms across the hall (the hall's own x, as the build script).
+NationalsConfig.PlatformXs = { -60, -20, 20, 60 }
+-- The point in front of the porch's doors carrying the "Go inside" prompt; the hall model's tag (NationalsHallLights).
+NationalsConfig.EntranceTag = "NationalsEntrance"
+NationalsConfig.HallTag = "NationalsHall"
+-- Player attribute while they are inside the hall.
+NationalsConfig.InHallAttribute = "InNationalsHall"
+-- The doors' and the desk's prompts.
 NationalsConfig.PromptHoldSeconds = 0.5
 NationalsConfig.PromptDistanceStuds = 8
 

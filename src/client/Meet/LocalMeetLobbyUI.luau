@@ -319,9 +319,9 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 			local untilStart = meet.nextStartAt - serverNow
 			local closesIn = meet.signUpClosesAt - serverNow
 			local lifters = string.format("%d/%d", meet.signedUpCount, meet.maxLifters)
-			-- The arena is hosting Nationals (GAME_DESIGN §39; the server refuses State sign-ups meanwhile).
+			-- A Nationals server runs no State meet (GAME_DESIGN §39; the server refuses State sign-ups there).
 			if meet.state and Workspace:GetAttribute(NationalsConfig.ServerAttribute) ~= nil then
-				row.status.Text = "HOSTING NATIONALS"
+				row.status.Text = "NOT AT NATIONALS"
 				row.status.TextColor3 = C.muted
 				row.signUp.Visible = false
 			elseif meet.notQualified and not meet.running then

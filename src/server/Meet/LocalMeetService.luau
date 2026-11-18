@@ -565,10 +565,7 @@ local function rollLevel(hall: Hall)
 	if hall.state then
 		-- Always State, with nothing to announce: it comes round on its own timetable.
 		hall.nextLevel = "State"
-		-- (While the arena hosts Nationals its desk and backdrop say so: StateArenaVenue.dressAsNationals.)
-		if Workspace:GetAttribute(NationalsConfig.ServerAttribute) == nil then
-			LocalMeetVenue.setLevel(hall.venue, MeetLevelConfig.Levels.State.label, perksOf("State"), hall.index)
-		end
+		LocalMeetVenue.setLevel(hall.venue, MeetLevelConfig.Levels.State.label, perksOf("State"), hall.index)
 		return
 	end
 	local forced = if RunService:IsStudio() then Workspace:GetAttribute("ForceMeetLevel") else nil
@@ -3271,7 +3268,7 @@ local function tryStartMeet(hall: Hall)
 	if hall.meet ~= nil then
 		return
 	end
-	-- The arena is hosting Nationals (GAME_DESIGN §39, NationalsService): no State meet in it; the list carries over.
+	-- A Nationals server (GAME_DESIGN §39, NationalsService) runs no State meet; the list carries over.
 	if hall.state and Workspace:GetAttribute(NationalsConfig.ServerAttribute) ~= nil then
 		return
 	end
@@ -3645,7 +3642,7 @@ local function toggleSignUp(player: Player, hall: Hall)
 		removeSignUp(player)
 		notify(player, "You took your name off the list.")
 	elseif hall.state and Workspace:GetAttribute(NationalsConfig.ServerAttribute) ~= nil then
-		notify(player, "The arena is hosting Nationals right now, so there is no State meet here.")
+		notify(player, "This is a Nationals server, so there is no State meet here.")
 		return
 	else
 		local untilStart = hall.nextStartAt - now()
@@ -3781,40 +3778,17 @@ function LocalMeetService.pullOutForNationals(player: Player)
 end
 
 --[[
-	Into the State arena (the Nationals stand-in venue) from anywhere in this server: off a rack, a
-	machine or a lift first, as a meet's call does. Returns whether they are there now, and why not.
+	Out of the meet venue without sending them back (a lifter going to Nationals is moved on by NationalsService): off a
+	rack, a machine or a lift too. Nothing when they aren't in it.
 ]]
-function LocalMeetService.bringToStateArena(player: Player): (boolean, string?)
-	local stateHall: Hall? = nil
-	for _, hall in ipairs(halls) do
-		if hall.state then
-			stateHall = hall
-		end
-	end
-	if stateHall == nil then
-		return false, "The arena is still being built."
-	end
-	local visit = visits[player]
-	if visit and visit.hall == stateHall.index then
-		return true, nil
-	end
+function LocalMeetService.leaveForNationals(player: Player)
 	if LiftAttemptService.isAttemptActive(player) then
 		LiftAttemptService.abandon(player)
 	end
 	TrainingStationService.letGo(player, "You are going to Nationals.")
 	CardioMachineService.hopOff(player)
-	if visit then
-		spectate(player, stateHall)
-		local arrived = visits[player]
-		return arrived ~= nil and arrived.hall == stateHall.index, nil
-	end
-	return enterVenue(player, nil, stateHall)
-end
-
--- Out of the venue, back to where they came from (the venue's EXIT). Nothing when they aren't in it.
-function LocalMeetService.leaveToGym(player: Player)
 	if visits[player] then
-		leaveVenue(player, true)
+		leaveVenue(player, false)
 	end
 end
 

@@ -88,6 +88,9 @@ MeetSpotterAnimator.start()
 -- The dark State arena with its racks spotlit, while a State meet runs and you are inside. Visual only.
 local StateArenaLights = require(MeetFolder:WaitForChild("StateArenaLights"))
 StateArenaLights.start()
+-- The Nationals hall as a dark room, while you are inside it (GAME_DESIGN §39). Visual only.
+local NationalsHallLights = require(MeetFolder:WaitForChild("NationalsHallLights"))
+NationalsHallLights.start()
 -- The State arena crowd's stomp-clap chant, on third attempts from chalking up to the lift's result. Sound only.
 local MeetChant = require(MeetFolder:WaitForChild("MeetChant"))
 MeetChant.start()

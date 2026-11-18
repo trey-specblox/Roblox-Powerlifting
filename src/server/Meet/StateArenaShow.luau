@@ -49,8 +49,6 @@ local RESULT_SECONDS = 5
 local SWAP_SECONDS = 6
 -- (A broken record's screen flashes once a tick.)
 local TICK_SECONDS = 0.5
--- The event the screens name between lifts: STATE, or NATIONALS while the arena stands in for it (setEventName).
-local eventName = "STATE"
 
 -- What a rack's screen shows, as LocalMeetService hands it over.
 export type RackView = {
@@ -234,10 +232,10 @@ local function lookFor(rack: number, entry: Entry, kind: string): Look
 			stripInk = if good then S.ink else S.white }
 	end
 	return { background = S.navyDeep, tag = string.format("PLATFORM %d", rack), tagColour = S.ink, title = view.name,
-		line = status, strip = view.stakesLine or (eventName .. " CHAMPIONSHIP"), stripColour = S.yellow, stripInk = S.ink }
+		line = status, strip = view.stakesLine or "STATE CHAMPIONSHIP", stripColour = S.yellow, stripInk = S.ink }
 end
 
-local IDLE: Look = { background = S.navyDeep, tag = "CENTRAL", tagColour = S.ink, title = eventName, line = "",
+local IDLE: Look = { background = S.navyDeep, tag = "CENTRAL", tagColour = S.ink, title = "STATE", line = "",
 	strip = "CHAMPIONSHIP", stripColour = S.yellow, stripInk = S.ink }
 
 local function tick()
@@ -318,19 +316,6 @@ function StateArenaShow.addWideScreen(part: BasePart, outward: Vector3)
 	table.insert(faces, buildFace(part, StyledScreen.faceToward(part, outward), true))
 	lastKey = ""
 	draw(IDLE)
-end
-
---[[
-	The event the screens name (GAME_DESIGN §39 step 1: the arena stands in for Nationals): "NATIONALS", or nil
-	for STATE again. Redraws them now.
-]]
-function StateArenaShow.setEventName(name: string?)
-	eventName = name or "STATE"
-	IDLE.title = eventName
-	lastKey = ""
-	if #faces > 0 then
-		pcall(tick)
-	end
 end
 
 -- The State meet started (true) or ended (false): the arena goes dark with its racks spotlit, or back to normal.

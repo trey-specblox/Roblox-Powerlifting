@@ -13,12 +13,63 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**NATIONALS ARENA (GAME_DESIGN §39 step 3; user's photos, video and words in `References/Nationals Arena/`). BLOCKOUT and
+DETAIL approved ("Approve, upload it", 2026-11-17). UPLOADED (rbxassetid://72716651059879, group) AND PLACED IN THE GAME;
+TESTED IN STUDIO (one player). COMMITTED right after 109b753 (not pushed). NOT seen live or on a phone. NEXT: the user publishes and looks at
+it in the real game (especially the spotlights from the top rows, see below); then step 2 (the Nationals meet itself).**
+- STAGE 3 (2026-11-17): exported `art/exports/NationalsArena_02.glb` (115 meshes, 19 items, CHECK PASSED), materials.json
+  entry, uploaded with upload_group_images.py. StarterGymConfig: PropAssets entry, 11 Nat* PropPaints, PropColourways for
+  all 19 items (crowd = the Local crowd's 4 colourways), cloth pieces. NEW `src/server/Meet/NationalsArenaVenue.luau`
+  (builds the building at NationalsConfig.BuildingOrigin (-158,0,-130) facing the gym and the hall at HallOrigin
+  (0,1000,-4000); Blender (x,y,z) -> Roblox (-x,z,y), same turn angle; pivots from the BOUNDS table; hidden solids
+  (building body, porch, columns, hall floor/walls/roof, a walking slope + front wall + concourse per stand section,
+  stages, backdrops, desk); reused game props: competition rack, plate trees and 3 referee chairs per stage, 3 judges'
+  tables, 8 warm-up racks; 4 stage spotlights + 8 purple drape washes + banner spotlight + 3 warm-up lights, no shadows;
+  video walls "PLATFORM n / NATIONALS / CENTRAL" (StyledScreen); porch sign "NATIONAL CHAMPIONSHIP / Next one in h:mm"
+  (or "Coming soon" while not Live); door prompt "Go inside" -> concourse; EXIT -> outside the porch; the NATIONALS desk
+  on the concourse (its prompt only while Live / Studio). NEW client `NationalsHallLights` (dark tinted room while inside,
+  sky light turned down; init.client starts it). NationalsService now uses it: lifters at Nationals land OUTSIDE the
+  porch and walk in (user's pick); the desk and sign are the venue's. The State arena's Nationals dressing and desk were
+  REMOVED (StateArenaVenue/StateArenaShow back to their pre-Nationals versions); LocalMeetService: bringToStateArena and
+  leaveToGym replaced by leaveForNationals; a Nationals server still runs no State meet ("NOT AT NATIONALS").
+- Studio tests (play, one player): built with no errors (building 105 parts, hall 1,153); building seen on the plaza
+  facing the gym, sign readable with the countdown; door prompt -> concourse, walked down the main stand to the rail and
+  back up, EXIT -> outside the porch; a Studio Nationals (START NATIONALS NOW) landed the lifter outside the porch facing
+  the doors, one merged warning. Audit: outside 5,632 parts, 699 unique meshes (WARN: was already 664 before; the
+  building adds 35), 1,694 shadow casters, 144 lights; inside the hall (gym streamed out) 1,204 parts, 179 unique meshes,
+  113 shadow casters, 16 lights: all OK. Screenshots checked: exterior, entrance, platforms close (lit, screens on).
+- Known: in Studio's capture the stage spotlights and video walls fade from the TOP rows (~110 studs; fine from the front
+  rows ~70) - Roblox draws fewer far lights at lower graphics quality; check in the real game / on a phone. The hall is
+  open to visit in every server even while Nationals isn't Live (an empty dark hall with the crowd).
+- User decisions 2026-11-17: 4 platforms; the building stands in every server (plaza, left side, opposite the State
+  entrance: x about -236..-80, z -200..-130, front toward the gym); lifters arrive outside and walk in; simple crowd figures.
+- Blockout: `art/scripts/build_nationals_arena_01.py` -> `art/blender/NationalsArena_01.blend`, previews
+  `art/previews/NationalsArena_01/`.
+- Detail: `art/scripts/build_nationals_arena_02.py` -> `art/blender/NationalsArena_02.blend` (19 items, 115 meshes, 29,040
+  unique triangles; CHECK PASSED). Placed as previewed: building 4,600 triangles, hall about 165,000 (stands ~57k, crowd
+  ~52k, trusses ~9k, stage sets ~12k). Items: NatBay (x6, Column/Lamp/LampArm left out at the porch), NatBayEnd,
+  NatPorch (SignScreen for the game's text), NatEndLeft/Right, NatWalkway, NatFloor, NatStandMain (x10), NatStandEnd
+  (x3 each end, y -40..20, each with NatCrowdEnd: user 2026-11-17 removed the end-stand rows behind the backdrops'
+  line, "spectators that are just watching nothing"), NatWall (x26), NatRoofBay (x8), NatTruss (x15), NatHighBay (none between the main stand and the banner),
+  NatDrape (x8), NatStageSet (x4, Screen for the video wall), NatBanner (hall z 34: under the middle truss, above every
+  sight line), NatCrowdMainA/B, NatCrowdEnd (Skin/Shirt/Pants/Hair/Eyes pieces; eyes are flat faces). Each item's bounds
+  are printed as BOUNDS lines. Reused game props (not modelled): competition rack, referee chairs, plate trees, judges'
+  tables, barricades, benches, chalk stands, awards podium, camera tripods.
+- Previews `art/previews/NationalsArena_02/` (01-09 scene views, items_1-7 every item close up from front and back with
+  back faces culled; `art/scripts/make_preview_sheets.py` joins the tiles). The racks, chairs and people in the scene
+  views are preview-only stand-ins for the reused game props.
+- Notes for placing: the warm-up area needs its own working light; the banner needs a spotlight; video walls and the porch
+  sign are dark Screen parts for SurfaceGuis; the night glow needs see-through Glass with the lit Inside piece behind.
+
 **NATIONALS STEP 1: THE GATHERING (2026-11-17, GAME_DESIGN §39 "Built (2026-11-17): step 1"). BUILT AND TESTED IN STUDIO
 (one player, one server, API services off). COMMITTED as bdfbe82 (not pushed). NOT LIVE: `NationalsConfig.Live = false`
-(admins only in live servers). THE REAL CROSS-SERVER PART (MemoryStore list, reserved server, teleports) IS UNTESTED:
-Studio can't do it. NEXT: the user commits, publishes and runs the live admin test (`References/Nationals step 1 - test
-guide.md`), then step 2 (the meet itself) or step 3 (the arena from the user's photos; the
+(admins only in live servers). THE CROSS-SERVER PART WORKS LIVE (user's two-server test, see below). NEXT: step 2 (the meet itself) or step 3 (the arena from the user's photos; the
 user has the photos ready and said the re-dressed State arena must not stay).**
+- LIVE TEST PASSED (user, 2026-11-17, published game, user + tester Vietnames_e): first in one server ("it teleported
+  us"), then in two different servers (user's private server + a public one): "yup the Tps work". So the shared
+  MemoryStore list, the start hand-shake, START NATIONALS NOW across servers and the reserved-server teleport work live
+  (as reported by the user; the details of each screen weren't reported). Private servers were switched on for this test
+  (Creator Dashboard > Audience > Access Settings, free); the user may switch them off again.
 - FOLLOW-UP after the user's first live test (2026-11-17, COMMITTED right after 80a248f, not pushed): "mobile players cannot enter" = another
   account, hidden by the admin-only lock (not a phone bug) -> `NationalsConfig.TesterUserIds` (Vietnames_e = 1126689936,
   added at the user's request); admin panel MY TOOLS "START NATIONALS NOW" -> next Nationals in 30 s in every server (NationalsQueue

@@ -5,12 +5,12 @@
 
 	NATIONALS, STEP 1: THE GATHERING (GAME_DESIGN.md §39, user 2026-11-17). Every NationalsConfig
 	cycle (2 hours, on the same UTC clock in every server), every spot-holder who signed up, in any
-	server, is sent into ONE Nationals server (a reserved server), where they arrive in the stand-in
-	venue: the State arena dressed as NATIONALS (StateArenaVenue.dressAsNationals). The meet itself
+	server, is sent into ONE Nationals server (a reserved server), where they arrive outside the Nationals
+	building (NationalsArenaVenue, step 3: the arena from the user's photos) and walk in. The meet itself
 	(per class, titles, x5 pot, the Worlds spot) is step 2 and is NOT here.
 
-	SIGNING UP: the NATIONALS row of the MEETS list (NationalsRemotes.SIGN_UP) or the NATIONALS desk in
-	the State arena's lobby. The server checks the spot: ProfileOperations.getNationals(...).qualified
+	SIGNING UP: the NATIONALS row of the MEETS list (NationalsRemotes.SIGN_UP) or the NATIONALS desk on
+	the Nationals hall's concourse. The server checks the spot: ProfileOperations.getNationals(...).qualified
 	in the class the player weighs in at now (the class their spot must be in). A press takes the name
 	off again. Sign-ups close SignUpClosesSeconds before the start. The list is shared by every server
 	(NationalsQueue: MemoryStore live).
@@ -55,7 +55,7 @@ local NationalsRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("Natio
 local ServerFolder = script.Parent.Parent
 local NationalsQueue = require(script.Parent:WaitForChild("NationalsQueue"))
 local LocalMeetService = require(script.Parent:WaitForChild("LocalMeetService"))
-local StateArenaVenue = require(script.Parent:WaitForChild("StateArenaVenue"))
+local NationalsArenaVenue = require(script.Parent:WaitForChild("NationalsArenaVenue"))
 local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
@@ -96,6 +96,9 @@ local globalCount: number? = nil
 local countRound = 0
 local nextCountAt = 0
 local nextForcedPollAt = 0
+-- The porch sign's countdown, redrawn this often (it shows minutes).
+local SIGN_REFRESH_SECONDS = 5
+local nextSignAt = 0
 local here: Here? = nil
 -- The lifters who are at Nationals in this server: their class.
 local atNationals: { [Player]: string } = {}
@@ -316,10 +319,10 @@ end
 
 local function waitForArena(): boolean
 	local deadline = os.clock() + ARENA_WAIT_SECONDS
-	while StateArenaVenue.current() == nil and os.clock() < deadline do
+	while NationalsArenaVenue.current() == nil and os.clock() < deadline do
 		task.wait(1)
 	end
-	return StateArenaVenue.current() ~= nil
+	return NationalsArenaVenue.current() ~= nil
 end
 
 -- This server is now the Nationals server for `info` (live: a reserved server; Studio: the stand-in in this one).
@@ -331,18 +334,15 @@ local function becomeNationals(info: NationalsQueue.ServerInfo)
 	here = { round = info.round, lifters = info.lifters, count = count }
 	Workspace:SetAttribute(NationalsConfig.ServerAttribute, info.round)
 	log("this server is Nationals %d, for %d lifters", info.round, count)
-	if waitForArena() then
-		StateArenaVenue.dressAsNationals(true, NationalsConfig.EventTitle, NationalsConfig.EventSub)
-	else
-		warn("[NationalsService] the arena wasn't built, so Nationals has no venue")
+	if not waitForArena() then
+		warn("[NationalsService] the Nationals arena wasn't built, so Nationals has no venue")
 	end
 end
 
--- Studio's stand-in is over (its last lifter left): the arena is the State arena again.
+-- Studio's stand-in is over (its last lifter left).
 local function endStandIn()
 	here = nil
 	Workspace:SetAttribute(NationalsConfig.ServerAttribute, nil)
-	StateArenaVenue.dressAsNationals(false, NationalsConfig.EventTitle, NationalsConfig.EventSub)
 	log("Studio's Nationals stand-in is over")
 	broadcast()
 end
@@ -358,7 +358,8 @@ local function sendHome(player: Player)
 	end
 end
 
--- A player in the Nationals server: a listed lifter is walked into the arena; anyone else is sent back.
+-- A player in the Nationals server: a listed lifter lands outside the building's doors (user 2026-11-17: "Outside, walk
+-- in"); anyone else is sent back.
 local function admit(player: Player)
 	local h = here
 	if h == nil or atNationals[player] then
@@ -379,11 +380,13 @@ local function admit(player: Player)
 	player:SetAttribute(NationalsConfig.AtNationalsAttribute, classKey)
 	sendView(player)
 	local deadline = os.clock() + ADMIT_WAIT_SECONDS
-	local arrived, why = false, nil :: string?
+	local arrived = false
 	while player.Parent and os.clock() < deadline do
 		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if humanoid and humanoid.Health > 0 and StateArenaVenue.current() then
-			arrived, why = LocalMeetService.bringToStateArena(player)
+		if humanoid and humanoid.Health > 0 and NationalsArenaVenue.current() then
+			-- (Out of a meet venue first, where Studio's stand-in may find them.)
+			LocalMeetService.leaveForNationals(player)
+			arrived = NationalsArenaVenue.goOutside(player)
 			if arrived then
 				break
 			end
@@ -394,12 +397,12 @@ local function admit(player: Player)
 		return
 	end
 	if not arrived then
-		warn(string.format("[NationalsService] %s could not be brought into the arena: %s", player.Name, tostring(why)))
-		notify(player, "Couldn't walk you into the arena: " .. (why or "try the arena's doors outside the gym") .. ".")
+		warn(string.format("[NationalsService] %s could not be brought to the Nationals building", player.Name))
+		notify(player, "Couldn't take you to the Nationals building: find it on the plaza, left of the gym's doors.")
 	else
-		notify(player, string.format("Welcome to NATIONALS (%s class)! %d %s made it here. The Nationals meet itself "
-			.. "comes in the next update: look round, then press LEAVE on the NATIONALS row of MEETS to go back.", classKey, h.count,
-			if h.count == 1 then "lifter" else "lifters"))
+		notify(player, string.format("Welcome to NATIONALS (%s class)! %d %s made it here. Walk in through the doors. The "
+			.. "Nationals meet itself comes in the next update; press LEAVE on the NATIONALS row of MEETS to go back.", classKey,
+			h.count, if h.count == 1 then "lifter" else "lifters"))
 	end
 	log("%s is at Nationals %d (%s), in the arena: %s", player.Name, h.round, classKey, tostring(arrived))
 	broadcast()
@@ -416,7 +419,7 @@ local function leaveNationals(player: Player)
 	end
 	atNationals[player] = nil
 	player:SetAttribute(NationalsConfig.AtNationalsAttribute, nil)
-	LocalMeetService.leaveToGym(player)
+	NationalsArenaVenue.goOutside(player)
 	notify(player, "You left Nationals.")
 	sendView(player)
 	if next(atNationals) == nil then
@@ -728,14 +731,37 @@ end
 
 -- ---------------------------------------------------------------- starting
 
-local function buildDesk()
-	if not (IS_STUDIO or NationalsConfig.Live) or not waitForArena() then
+-- Open to everyone (Live or Studio), so the building's desk and sign speak to everyone: else they say "coming soon".
+local function openToAll(): boolean
+	return IS_STUDIO or NationalsConfig.Live
+end
+
+-- The porch sign and the desk's screen: when the next Nationals is, or that it's coming soon.
+local function refreshSigns()
+	local v = NationalsArenaVenue.current()
+	if v == nil then
 		return
 	end
-	local lines = if IS_RESERVED then { "Welcome to", "Nationals" } else { "Spot holders sign up", everyText() }
-	local point = StateArenaVenue.addNationalsDesk(NationalsConfig.DeskAt, NationalsConfig.EventTitle, lines)
-	if point == nil then
-		warn("[NationalsService] the Nationals desk could not be built (the MEETS list still signs up)")
+	local line = if IS_RESERVED then "Welcome to Nationals"
+		elseif openToAll() then "Next one in " .. clockText(upcoming - now())
+		else "Coming soon"
+	if v.sign then
+		v.sign.setLines({ NationalsConfig.EventSub, line })
+	end
+	if v.deskScreen then
+		v.deskScreen.setLines(if openToAll() and not IS_RESERVED then { "Spot holders sign up", everyText() } else { line, "" })
+	end
+end
+
+-- The desk on the hall's concourse (user 2026-11-17: "MEETS list + a desk"): its prompt, while Nationals is open to all.
+local function buildDesk()
+	if not waitForArena() then
+		return
+	end
+	refreshSigns()
+	local v = NationalsArenaVenue.current() :: NationalsArenaVenue.Venue
+	local point = v.deskPoint
+	if point == nil or not openToAll() then
 		return
 	end
 	local proximity = Instance.new("ProximityPrompt")
@@ -816,6 +842,9 @@ function NationalsService.start()
 		end
 	end)
 
+	-- The Nationals building and hall (every server). Built in the background so the server's start is not held up.
+	task.spawn(NationalsArenaVenue.build)
+
 	task.spawn(function()
 		-- MemoryStore live; Studio uses the in-server list unless StudioNationalsMemoryStore is on (Studio keys).
 		local useMemoryStore = not IS_STUDIO or Workspace:GetAttribute("StudioNationalsMemoryStore") == true
@@ -872,6 +901,10 @@ function NationalsService.start()
 					nextForcedPollAt = os.clock() + NationalsConfig.ForcePollSeconds
 					task.spawn(pollForced)
 				end
+			end
+			if os.clock() >= nextSignAt then
+				nextSignAt = os.clock() + SIGN_REFRESH_SECONDS
+				refreshSigns()
 			end
 			task.wait(0.5)
 		end

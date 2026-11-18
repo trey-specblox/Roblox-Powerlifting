@@ -7259,6 +7259,36 @@ pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, th
 > - **The arena (user, 2026-11-17, during step 1):** "i dont want nationals to be another arena, i have my reference
 >   photos". The State arena re-dressed is **only the step-1 stand-in**; Nationals gets its own arena from the user's photos.
 
+> **[DECIDED BY THE USER, 2026-11-17] The Nationals arena (step 3)** (references and study: `References/Nationals Arena/
+> Nationals Arena Study.md`):
+> - **The building** is based on the user's exterior photos: a long hall with a row of repeated pitched roof bays, exposed
+>   steel truss frames in front, a glass front, teal roofs and a brick base. **The inside** follows the user's civic-center
+>   photos (tiered blue seats along the sides behind a rail, exposed blue roof trusses, a wide lifters' floor), **lit as a
+>   dark room with the platforms spotlit** (the user's two lighting photos), and **each platform looks like the user's
+>   YouTube meet**: a low raised stage, a tall backdrop, a big video wall above it, side drapes, matching loaders, the head
+>   referee in front. Branding says CENTRAL / NATIONALS, never the real logos.
+> - **4 platforms** (Claude had recommended 2, as in the video).
+> - **The building stands in every server too** (Claude had recommended the Nationals server only): a landmark on the
+>   plaza anyone can visit; the meet itself only happens in the Nationals server.
+> - **Lifters arrive outside and walk in** (Claude's recommendation): they land in front of the glass front and go in.
+> - **Simple crowd figures** fill the stands (the Nationals server holds only the lifters, so the stands would be empty);
+>   kept cheap, with the crowd sounds.
+
+> **Built (2026-11-17): step 3, the arena** (after the user approved the blockout and the detail previews). The building
+> stands on the plaza in every server, left of the gym's front and facing it; hold E at the porch's doors to go in (you
+> arrive on the main stand's concourse, by the NATIONALS desk; EXIT takes you back out). Inside: the dark hall with 4 lit
+> platforms, the crowd in the main and end stands (the end stands stop at the backdrops' line: user, "spectators that
+> are just watching nothing"), the banner, the officials' tables and a warm-up area. At Nationals, lifters land outside
+> the porch and walk in. The porch sign counts down to the next Nationals ("Coming soon" while it isn't Live). The State
+> arena is no longer dressed as Nationals and its Nationals desk is gone.
+
+> **[IDEA, NOT TO BUILD YET: the user's planned first update after release, 2026-11-17] Spectating Nationals from a
+> server list.** When a Nationals begins, other players can join its server **to spectate only** (so the cheer bar still
+> works), from a **server list** any player can open. Each server shows its **own name**, **region**, **player count**
+> and a **"Kg Total"**: the server adds up every player's total (5 players with 100 kg totals = 500 kg), so players can
+> see whether a server has a lot of competition. The user will say when to start it ("once i say the game is ready to
+> release") and welcomes better ideas then.
+
 > **Built (2026-11-17): step 1, the gathering. NOT LIVE YET** (`NationalsConfig.Live = false`: in a live server only admins
 > see the NATIONALS row, test Nationals come every 10 minutes and need 1 lifter; the desk is only built when Live).
 > - **The timetable:** a Nationals every **2 hours** on one clock for every server (00:00, 02:00 ... UTC) **[PROVISIONAL]**;

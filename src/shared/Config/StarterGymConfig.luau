@@ -606,6 +606,8 @@ StarterGymConfig.PropAssets = {
 	-- StateArenaVenue)
 	{ id = 73272782464755 }, -- Crowd_01: the fake spectators in the Local meet's stands (placed by LocalMeetVenue)
 	{ id = 106669210036999 }, -- WeighBooth_01: the State arena's weigh-in booth by the sign-up desk (placed by StateArenaVenue)
+	{ id = 72716651059879 }, -- NationalsArena_02: the Nationals building on the plaza and its hall (GAME_DESIGN §39, placed by
+	-- NationalsArenaVenue; art/scripts/build_nationals_arena_02.py)
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -673,6 +675,18 @@ StarterGymConfig.PropPaints = {
 	SkinTan = { color = Color3.fromRGB(190, 136, 96) },
 	SkinDark = { color = Color3.fromRGB(112, 72, 50) },
 	HairBrown = { color = Color3.fromRGB(110, 74, 40) },
+	-- The Nationals arena (NationalsArena_02, GAME_DESIGN §39: the user's photos of a civic-center hall, a dark room).
+	NatRoofTeal = { color = Color3.fromRGB(64, 150, 140), material = Enum.Material.Metal },
+	NatGlass = { color = Color3.fromRGB(70, 100, 125), transparency = 0.35, reflectance = 0.15 },
+	NatStepGrey = { color = Color3.fromRGB(100, 102, 108), material = Enum.Material.Concrete },
+	NatSeatBlue = { color = Color3.fromRGB(34, 64, 140) },
+	NatRailBlue = { color = Color3.fromRGB(40, 96, 190), material = Enum.Material.Metal },
+	NatTrussBlue = { color = Color3.fromRGB(36, 84, 168), material = Enum.Material.Metal },
+	NatHallCream = { color = Color3.fromRGB(206, 200, 188) },
+	NatRoofInside = { color = Color3.fromRGB(52, 54, 62) },
+	NatDrapeWhite = { color = Color3.fromRGB(214, 214, 218) },
+	NatDrapeDark = { color = Color3.fromRGB(40, 16, 22) },
+	NatBackdrop = { color = Color3.fromRGB(74, 36, 120) },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -700,6 +714,10 @@ StarterGymConfig.PropFabricPieces = {
 	Pouf_Body = true,
 	Pouf_Piping = true,
 	FoldingScreen_Panel = true,
+	NatDrape_Cloth = true,
+	NatStageSet_Drapes = true,
+	NatBanner_Cloth = true,
+	NatFloor_Rubber = true,
 }
 
 --[[
@@ -1316,6 +1334,38 @@ StarterGymConfig.PropColourways = {
 		cardio("White", "Orange", "Black", "White", "Sky"),
 		cardio("Charcoal", "Green", "Black", "Black", "Lime"),
 	},
+	-- The Nationals arena (NationalsArena_02, art/scripts/build_nationals_arena_02.py). The game writes on the dark screens.
+	NatBay = { {
+		Roof = "NatRoofTeal", Trim = "White", Truss = "White", Column = "White", Glass = "NatGlass", Frames = "Charcoal",
+		Inside = "Cream", Walls = "White", Brick = "Brick", Lamp = "WarmGlow", LampArm = "Black", Gutter = "Charcoal",
+	} },
+	NatBayEnd = { { Column = "White", Lamp = "WarmGlow", LampArm = "Black" } },
+	NatPorch = { {
+		Roof = "NatRoofTeal", Trim = "White", Piers = "Brick", Gable = "White", Glass = "NatGlass", Frames = "Charcoal",
+		Handles = "Silver", SignFrame = "Navy", SignScreen = "Black", Inside = "Cream",
+	} },
+	NatEndLeft = { { Wall = "White", Wood = "Oak", Brick = "Brick", Windows = "NatGlass" } },
+	NatEndRight = { { Wall = "White", Wood = "Oak", Brick = "Brick", Windows = "NatGlass" } },
+	NatWalkway = { { Roof = "NatRoofTeal", Posts = "White" } },
+	NatFloor = { { Concrete = "Concrete", Rubber = "Charcoal", Lines = "White" } },
+	NatStandMain = { { Steps = "NatStepGrey", Aisle = "Concrete", SeatsLower = "NatSeatBlue", SeatsUpper = "NatSeatBlue",
+		Rails = "NatRailBlue" } },
+	NatStandEnd = { { Steps = "NatStepGrey", Aisle = "Concrete", Seats = "NatSeatBlue", Rails = "NatRailBlue" } },
+	NatWall = { { Band = "Charcoal", Wall = "NatHallCream", Pilaster = "Charcoal" } },
+	NatRoofBay = { { Plates = "NatRoofInside", Purlins = "Silver", Gables = "NatHallCream" } },
+	NatTruss = { { Steel = "NatTrussBlue" } },
+	-- The high bays stay unlit (LightGrey, not Neon): the hall is a dark room.
+	NatHighBay = { { Dish = "Black", Lens = "LightGrey" } },
+	NatDrape = { { Cloth = "NatDrapeWhite", Pipe = "Silver" } },
+	NatStageSet = { {
+		Riser = "Black", Top = "Charcoal", Edge = "Navy", EdgeLogo = "White", Steps = "Black", Backdrop = "NatBackdrop",
+		FlashGold = "Yellow", FlashOrange = "Orange", Logo = "White", VideoFrame = "Black", Screen = "Black",
+		Drapes = "NatDrapeDark", Pipe = "Silver",
+	} },
+	NatBanner = { { Cloth = "Navy", Trim = "Yellow", Text = "White", TextBack = "White", Rods = "Silver" } },
+	NatCrowdMainA = CROWD_COLOURWAYS,
+	NatCrowdMainB = CROWD_COLOURWAYS,
+	NatCrowdEnd = CROWD_COLOURWAYS,
 } :: { [string]: { { [string]: string } } }
 
 -- `variant` names one of the MaterialVariants below; `material` must then be that variant's base material.
