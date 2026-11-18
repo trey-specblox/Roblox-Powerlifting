@@ -642,8 +642,9 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 			sub.RichText = state.lights ~= nil
 			sub.Text = kgText(state.declaredKg or 0) .. " kg" .. (if state.lights then "     " .. lightDots(state.lights) else "")
 		elseif state.phase == "Waiting" then
-			stepTag.Text = attemptText
-			setBanner(if state.declaredKg then kgText(state.declaredKg) .. " KG DECLARED" else "PASSED", C.white, C.ink)
+			stepTag.Text = state.stepTag or attemptText
+			setBanner(state.banner or (if state.declaredKg then kgText(state.declaredKg) .. " KG DECLARED" else "PASSED"),
+				C.white, C.ink)
 			sub.Text = state.note or "Waiting for the other lifters."
 		elseif state.phase == "Done" then
 			stepTag.Text = state.stepTag or "MEET OVER"

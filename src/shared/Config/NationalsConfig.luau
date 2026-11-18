@@ -109,7 +109,7 @@ NationalsConfig.BuildingOrigin = Vector3.new(-158, 0, -130)
 -- The hall, far from the gym like the State arena (0, 1000, 4000), the Local meet (-4000, 1000, 0) and the Mock Meet (+4000).
 NationalsConfig.HallOrigin = Vector3.new(0, 1000, -4000)
 -- The 4 platforms across the hall (the hall's own x, as the build script).
-NationalsConfig.PlatformXs = { -60, -20, 20, 60 }
+NationalsConfig.PlatformXs = { -78, -26, 26, 78 }
 -- The point in front of the porch's doors carrying the "Go inside" prompt; the hall model's tag (NationalsHallLights).
 NationalsConfig.EntranceTag = "NationalsEntrance"
 NationalsConfig.HallTag = "NationalsHall"
@@ -122,7 +122,64 @@ NationalsConfig.PromptDistanceStuds = 8
 -- A press of SIGN UP / LEAVE, at most this often per player.
 NationalsConfig.ButtonCooldownSeconds = 0.75
 
--- The prize pot multiplier shown on the list (§39: 5x the Local pot). Paid in step 2.
+-- The prize pot multiplier shown on the list (§39: 5x the Local pot), paid per weight class (MeetLevelConfig.Levels.Nationals).
 NationalsConfig.PotMultiplier = 5
+
+-- ---------------------------------------------------------------- the meet (step 2, user 2026-11-17)
+-- After the lifters land, the meet starts once every listed lifter is inside the hall, or this long after the first one
+-- landed (Studio: StudioArriveSeconds). Lifters still outside then are walked in. [PROVISIONAL]
+NationalsConfig.ArriveSeconds = 120
+NationalsConfig.StudioArriveSeconds = 20
+-- The fewest lifters there for the meet to run (fewer: everyone is told and sent back). Studio: 1.
+NationalsConfig.MeetMinimumLifters = 2
+-- Each class's awards stay up this long (the classes go one after another). [PROVISIONAL]
+NationalsConfig.AwardsClassSeconds = 14
+-- After the awards, lifters are sent back to the game this long after the meet's end (live; Studio: out of the hall).
+NationalsConfig.SendHomeSeconds = 45
+-- A lift-off's lift choice: this long to pick (then their strongest lift).
+NationalsConfig.LiftOffChooseSeconds = 15
+-- The "flow state" behind the curtain: a 4 s loop, rocking slowly forward and back on planted feet, head bowed, a slow
+-- breath, the hands shaken out loose halfway (Blender, art/scripts/nationals_flow_animation.py; anim_qa PASS on Skinny,
+-- Fat, Muscular, BigBuff in the meet outfit). Empty: the lifter just stands there.
+NationalsConfig.FlowAnimationId = "rbxassetid://89830873511612"
+-- The hall model's attribute naming what the crowd chants now ("ForTheWin", "Squat", "Bench", "Deadlift"; nil = quiet).
+NationalsConfig.ChantAttribute = "NationalsChant"
+
+-- ---------------------------------------------------------------- the curtain and the camera (user 2026-11-18)
+-- Hidden walls that stop the camera in the hall (the backdrops with their curtains, the hall's walls and roof), so it
+-- never ends up behind a screen or outside the building (HallCameraGuard; MeetLiftMoment's shots too).
+NationalsConfig.CameraBlockTag = "NationalsCameraBlock"
+-- The lifter's curtain: the two panels beside each split (they swing apart as someone walks through, NationalsCurtains)
+-- and the stage's light showing through the split.
+NationalsConfig.CurtainFlapTag = "NationalsCurtainFlap"
+NationalsConfig.CurtainGlowTag = "NationalsCurtainGlow"
+-- Figures that aren't players but walk through the curtain too (the platforms' coaches); it parts for them as well.
+NationalsConfig.CurtainWalkerTag = "NationalsCurtainWalker"
+-- Parting the curtain: both hands come up together, push the two halves apart and hold them while stepping through,
+-- then drop (arms, chest and head only, over the walk; art/scripts/nationals_flow_animation.py; anim_qa PASS on Skinny,
+-- Fat, Muscular, BigBuff in the meet outfit). Empty: they just walk.
+NationalsConfig.CurtainPartAnimationId = "rbxassetid://77278447505588"
+-- After the click, how long they stand reaching into the split before the walk starts (the hands meet the cloth first).
+NationalsConfig.CurtainPartLeadSeconds = 0.3
+-- How the curtain swings (NationalsCurtains): the most each half turns aside (bottom outward) and forward (the way they
+-- walk), in degrees; how near (studs, across the curtain) a body opens it, nearer with the parting hands out; how fast it
+-- follows (share a second).
+NationalsConfig.Curtain = {
+	SwingDegrees = 5.5,
+	TiltDegrees = 3.5,
+	OpenFrom = 1.1,
+	-- (first test: from 2.3 the hands were already in the cloth before it moved)
+	OpenFromReaching = 3,
+	SideReach = 2.4,
+	FollowRate = 12,
+	SettleRate = 3.2,
+}
+-- The cinematic behind the curtain, on the waiting lifter's own screen (NationalsCurtainScene): its shots in turn, each
+-- this long; then on the click (or the time running out), the reveal from the stage side for RevealSeconds.
+NationalsConfig.CurtainScene = {
+	ShotSeconds = 4.2,
+	RevealSeconds = 2.2,
+	FieldOfView = 42,
+}
 
 return NationalsConfig

@@ -167,6 +167,8 @@ local FLAG_AT = Vector3.new(0, 72, 42)
 local GYM_FRONT_Z = -37
 local ENTRANCE_GAP = 53 -- from the gym's front to the entrance building's brick front
 local ENTRANCE_X = 150
+-- The entrance building's floating sign (STATE ARENA and the next State meet's timer, written by LocalMeetService).
+local entranceSign: StyledScreen.FloatingHandle? = nil
 local ENTRANCE_R = 55
 
 local looks = StarterGymConfig.Looks
@@ -814,6 +816,14 @@ end
 	sign, and returns the invisible point in front of its middle doors (tagged
 	StateArenaConfig.EntranceTag), or nil when the model did not load.
 ]]
+-- The entrance building's floating sign's lines (the event, the next State meet's timer).
+function StateArenaVenue.setEntranceLines(lines: { string })
+	local sign = entranceSign
+	if sign then
+		sign.setLines(lines)
+	end
+end
+
 function StateArenaVenue.buildEntrance(): BasePart?
 	local existing = Workspace:FindFirstChild(ENTRANCE_NAME)
 	if existing then
@@ -853,9 +863,20 @@ function StateArenaVenue.buildEntrance(): BasePart?
 	local frontHalf = ENTRANCE_R * math.sin(1.5 * WEDGE)
 	solid("Front_Solid", Vector3.new(2 * frontHalf, 24, 3), CFrame.new(0, 12, -frontLocal + 1.5))
 
-	-- The sign: big heavy italic STATE ARENA in the game's style, readable from the gym's doors.
-	-- (here turns the building round, so its LookVector is the arches' outward direction, toward the gym.)
-	LocalMeetVenue.writeSign(sign, here.LookVector, "STATE ARENA", "STATE CHAMPIONSHIP  //  HOLD E AT THE DOORS", 30)
+	-- The sign: STATE ARENA and the next State meet's timer as big floating text high over the MIDDLE of the building,
+	-- in the game's style (user 2026-11-18: "make it float on top the building and make the text bigger, Same with ...
+	-- state meet", then "put it higher and put it in the middle, and put the timers for the meets like nationals"). Its
+	-- board on the front comes off. LocalMeetService writes the timer every second.
+	for _, piece in ipairs({ "ArenaEntrance_SignScreen", "ArenaEntrance_SignFrame" }) do
+		local part = building:FindFirstChild(piece, true)
+		if part then
+			part:Destroy()
+		end
+	end
+	local _, buildingSize = building:GetBoundingBox()
+	entranceSign = StyledScreen.floatAbove(model, here.Position, building:GetBoundingBox().Position.Y + buildingSize.Y / 2,
+		-- (26 over its top: well above the Local meet's sign, which floats 126 studs behind it from the south.)
+		"STATE ARENA", { "State Championship", "" }, "chevron", 56, 22, 26, 1200)
 
 	-- The point in front of the middle doors that carries the "Go to the State arena" prompt.
 	local doorPoint = BuildParts.placed(model, "DoorPoint", Vector3.new(3, 4, 3), here * CFrame.new(0, 2.3, -frontLocal - 2.5),

@@ -94,4 +94,80 @@ function MeetPlacing.rank(entries: { Entry }): { Placing }
 	return placings
 end
 
+--[[
+	NATIONALS (GAME_DESIGN §39, user 2026-11-17): ONE WEIGHT CLASS ranked by its TOTAL in kilograms, best first, as real
+	meets place a class. Equal totals: `liftOff` first (key -> its finish in a lift-off, 1 = won; the lift-off decides tied
+	medal places), then more good lifts, the lighter bodyweight, the earlier entry. `points` are still worked out (shown).
+]]
+function MeetPlacing.rankByTotal(entries: { Entry }, liftOff: { [number]: number }?): { Placing }
+	local sorted = table.clone(entries)
+	local finish = liftOff or {}
+	table.sort(sorted, function(a, b)
+		if (a.totalKg ~= nil) ~= (b.totalKg ~= nil) then
+			return a.totalKg ~= nil
+		end
+		if a.totalKg and b.totalKg then
+			if math.abs(a.totalKg - b.totalKg) > 1e-9 then
+				return a.totalKg > b.totalKg
+			end
+			local aFinish, bFinish = finish[a.key] or math.huge, finish[b.key] or math.huge
+			if aFinish ~= bFinish then
+				return aFinish < bFinish
+			end
+			if a.goodLifts ~= b.goodLifts then
+				return a.goodLifts > b.goodLifts
+			end
+			if math.abs(a.bodyweightKg - b.bodyweightKg) > 1e-9 then
+				return a.bodyweightKg < b.bodyweightKg
+			end
+		end
+		return a.order < b.order
+	end)
+	local placings: { Placing } = {}
+	local place = 0
+	for _, entry in ipairs(sorted) do
+		if entry.totalKg then
+			place += 1
+		end
+		table.insert(placings, { key = entry.key, points = MeetPlacing.points(entry.bodyweightKg, entry.totalKg),
+			place = if entry.totalKg then place else nil })
+	end
+	return placings
+end
+
+--[[
+	The ties a lift-off decides (Nationals, user 2026-11-17: "only for medal places"): groups of two or more keys in one
+	class with the same total where the group reaches into the top `medalPlaces`, best total first. `entries` is one class.
+]]
+function MeetPlacing.medalTies(entries: { Entry }, medalPlaces: number): { { number } }
+	local placings = MeetPlacing.rankByTotal(entries)
+	local totals: { [number]: number } = {}
+	for _, entry in ipairs(entries) do
+		if entry.totalKg then
+			totals[entry.key] = entry.totalKg
+		end
+	end
+	local groups: { { number } } = {}
+	local index = 1
+	while index <= #placings do
+		local first = placings[index]
+		local total = totals[first.key]
+		if total == nil or (first.place or math.huge) > medalPlaces then
+			break
+		end
+		local group = { first.key }
+		local nextIndex = index + 1
+		while nextIndex <= #placings and totals[placings[nextIndex].key]
+			and math.abs((totals[placings[nextIndex].key] :: number) - total) <= 1e-9 do
+			table.insert(group, placings[nextIndex].key)
+			nextIndex += 1
+		end
+		if #group >= 2 then
+			table.insert(groups, group)
+		end
+		index = nextIndex
+	end
+	return groups
+end
+
 return MeetPlacing

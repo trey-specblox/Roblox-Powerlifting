@@ -154,6 +154,43 @@ MeetSoundConfig.Cues = {
 	BigShout3 = shout("rbxassetid://103825655529490", "ElevenLabs Sound Effects: New gym record!"),
 	BigShout4 = shout("rbxassetid://132348431572583", "ElevenLabs Sound Effects: Yes! Still in it!"),
 	BigShout5 = shout("rbxassetid://94374920564013", "ElevenLabs Sound Effects: You took the lead!"),
+	-- Nationals (GAME_DESIGN §39, user 2026-11-17: "add more n not reuse the same ones"): its own voices, none of the
+	-- Local/State takes. On the walk out (walkOutShouts at Nationals).
+	NatWalkShout1 = shout("rbxassetid://88051571876734", "ElevenLabs Sound Effects: This is your moment!"),
+	NatWalkShout2 = shout("rbxassetid://99194073347452", "ElevenLabs Sound Effects: Make it count!"),
+	NatWalkShout3 = shout("rbxassetid://93367272417025", "ElevenLabs Sound Effects: Own that platform!"),
+	NatWalkShout4 = shout("rbxassetid://105639400414168", "ElevenLabs Sound Effects: Lock in!"),
+	NatWalkShout5 = shout("rbxassetid://136122612820275", "ElevenLabs Sound Effects: Bring it home!"),
+	NatWalkShout6 = shout("rbxassetid://130069451627142", "ElevenLabs Sound Effects: You trained for this!"),
+	NatWalkShout7 = shout("rbxassetid://83044561946790", "ElevenLabs Sound Effects: Big stage, big lift!"),
+	NatWalkShout8 = shout("rbxassetid://72661847599662", "ElevenLabs Sound Effects: LET'S GO!"),
+	-- Nationals: during the lift (liftShouts at Nationals).
+	NatLiftShout1 = shout("rbxassetid://116486355238611", "ElevenLabs Sound Effects: DRIVE! DRIVE!"),
+	NatLiftShout2 = shout("rbxassetid://114308128695462", "ElevenLabs Sound Effects: STAND UP!"),
+	NatLiftShout3 = shout("rbxassetid://132378915777342", "ElevenLabs Sound Effects: COME ON, COME ON!"),
+	NatLiftShout4 = shout("rbxassetid://75828470500681", "ElevenLabs Sound Effects: SQUEEZE! SQUEEZE!"),
+	NatLiftShout5 = shout("rbxassetid://121243430682783", "ElevenLabs Sound Effects: DON'T STOP!"),
+	NatLiftShout6 = shout("rbxassetid://113526900747068", "ElevenLabs Sound Effects: ALL THE WAY!"),
+	NatLiftShout7 = shout("rbxassetid://113882252163022", "ElevenLabs Sound Effects: KEEP GRINDING!"),
+	NatLiftShout8 = shout("rbxassetid://138576991082778", "ElevenLabs Sound Effects: PUSH THROUGH!"),
+	NatLiftShout9 = shout("rbxassetid://120408263673058", "ElevenLabs Sound Effects: UP! UP! UP!"),
+	NatLiftShout10 = shout("rbxassetid://139725780632492", "ElevenLabs Sound Effects: YES! YES! YES!"),
+	-- Nationals: after a good lift (goodShouts at Nationals).
+	NatGoodShout1 = shout("rbxassetid://84831321180095", "ElevenLabs Sound Effects: THAT'S THE ONE!"),
+	NatGoodShout2 = shout("rbxassetid://95152937789186", "ElevenLabs Sound Effects: UNREAL!"),
+	NatGoodShout3 = shout("rbxassetid://86312495191126", "ElevenLabs Sound Effects: HUGE LIFT!"),
+	NatGoodShout4 = shout("rbxassetid://129476826431077", "ElevenLabs Sound Effects: NAILED IT!"),
+	NatGoodShout5 = shout("rbxassetid://121320419357719", "ElevenLabs Sound Effects: MASSIVE!"),
+	NatGoodShout6 = shout("rbxassetid://92682520407472", "ElevenLabs Sound Effects: a happy cheering WOOOOO!"),
+	NatGoodShout7 = shout("rbxassetid://104639578706340", "ElevenLabs Sound Effects: THAT'S A CHAMPION!"),
+	NatGoodShout8 = shout("rbxassetid://94007079970693", "ElevenLabs Sound Effects: TEXTBOOK!"),
+	-- Nationals: after a miss (missShouts at Nationals).
+	NatMissShout1 = shout("rbxassetid://111900279375748", "ElevenLabs Sound Effects: Ohh, so close!"),
+	NatMissShout2 = shout("rbxassetid://107421567171628", "ElevenLabs Sound Effects: Next one's yours!"),
+	NatMissShout3 = shout("rbxassetid://73019588573452", "ElevenLabs Sound Effects: Keep your head up!"),
+	NatMissShout4 = shout("rbxassetid://130340241579930", "ElevenLabs Sound Effects: Unlucky, champ!"),
+	NatMissShout5 = shout("rbxassetid://89029877433003", "ElevenLabs Sound Effects: Aww, man!"),
+	NatMissShout6 = shout("rbxassetid://98149385923146", "ElevenLabs Sound Effects: You almost had it!"),
 } :: { [string]: Cue }
 
 --[[
@@ -230,6 +267,9 @@ export type Background = {
 MeetSoundConfig.Backgrounds = {
 	{ place = "LocalMeetVenue", id = "rbxassetid://93797393745230", volume = 0.5, source = "Sonniss crowds with far-off weights, made by make_meet_sounds.py" },
 	{ place = "StateArenaVenue", id = "rbxassetid://105086233520753", volume = 0.4, source = "Sonniss: volleyball match crowd in a made big room, made by make_meet_sounds.py" },
+	-- The Nationals hall (GAME_DESIGN §39): the arena crowd too; its chants are mixed against this bed at this level
+	-- (make_nationals_chant_mix.py).
+	{ place = "NationalsHall", id = "rbxassetid://105086233520753", volume = 0.4, source = "The State arena's crowd bed (a big arena crowd), the same recording" },
 	{ place = "MockMeetRooms", id = "rbxassetid://99057894405433", volume = 0.25, source = "The gym's background, quieter: a Mock Meet is a closed room in the gym" },
 	{ place = "StarterGym", id = "rbxassetid://99057894405433", volume = 0.35, source = "Sonniss: ventilation, far voices, weights in other rooms, made by make_meet_sounds.py" },
 } :: { Background }
@@ -275,6 +315,31 @@ MeetSoundConfig.Chant = {
 	FadeOutSeconds = 0.9,
 }
 
+--[[
+	The Nationals hall crowd's chant (GAME_DESIGN §39, user 2026-11-17: "chants building up", "Remake more but for Nationals
+	... different voices ... you can hear more people"). Made as the State chants (art/scripts/make_nationals_chant_mix.py),
+	with new voices, two phrases each and twice the people, at the same level over the crowd. While a lifter waits behind a
+	curtain and until their lift's result (the hall model's NationalsConfig.ChantAttribute, set by the server), each player
+	inside the hall hears the loop BUILD: from BuildFrom of its volume up to all of it over BuildSeconds (NationalsChant).
+	"ForTheWin" when making it wins the lifter their class.
+]]
+MeetSoundConfig.NationalsChant = {
+	Mixes = {
+		-- (LIFT OR LOSE, then LET'S GO.)
+		ForTheWin = { id = "rbxassetid://101829221359786", volume = 0.41 },
+		-- (SQUAT IT UP, then STAND IT UP.)
+		Squat = { id = "rbxassetid://104224299630196", volume = 0.51 },
+		-- (PRESS IT UP, then LOCK IT OUT.)
+		Bench = { id = "rbxassetid://81212795486043", volume = 0.5 },
+		-- (LIFT IT UP, then PICK IT UP.)
+		Deadlift = { id = "rbxassetid://122422533517454", volume = 0.58 },
+	} :: { [string]: { id: string, volume: number } },
+	BuildFrom = 0.3,
+	BuildSeconds = 12,
+	FadeInSeconds = 1.5,
+	FadeOutSeconds = 0.9,
+}
+
 -- Those of these cues that have a sound.
 local function withSounds(cues: { string }): { string }
 	local names = {}
@@ -300,22 +365,34 @@ end
 	The shouts during a lift: anyone can yell these at any lift, plus the lift's own, what people really yell at
 	that lift (user 2026-11-05: "Just add more to the rotation and mix").
 ]]
-function MeetSoundConfig.liftShouts(lift: string): { string }
-	return numbered("LiftShout", 21, numbered(lift .. "Shout", 3))
+-- At Nationals (`level` "Nationals", GAME_DESIGN §39) every list is the Nationals voices' own (Nat*Shout), never the Local
+-- and State takes (user 2026-11-17: "not reuse the same ones"); a list with none uploaded falls back to the usual one.
+local function nationalsOr(level: string?, prefix: string, count: number, usual: { string }): { string }
+	if level == "Nationals" then
+		local own = numbered(prefix, count)
+		if #own > 0 then
+			return own
+		end
+	end
+	return usual
+end
+
+function MeetSoundConfig.liftShouts(lift: string, level: string?): { string }
+	return nationalsOr(level, "NatLiftShout", 10, numbered("LiftShout", 21, numbered(lift .. "Shout", 3)))
 end
 
 -- The shouts on the walk out to the bar (user 2026-11-05: "You got this", "easy weight", "Lets go", "Easy").
-function MeetSoundConfig.walkOutShouts(): { string }
-	return numbered("WalkShout", 11, { "LiftShout3", "LiftShout5" })
+function MeetSoundConfig.walkOutShouts(level: string?): { string }
+	return nationalsOr(level, "NatWalkShout", 8, numbered("WalkShout", 11, { "LiftShout3", "LiftShout5" }))
 end
 
 -- After the lights (user 2026-11-05): someone yells for a good lift, and someone laughs or says nice try at a miss.
-function MeetSoundConfig.goodShouts(): { string }
-	return numbered("GoodShout", 10)
+function MeetSoundConfig.goodShouts(level: string?): { string }
+	return nationalsOr(level, "NatGoodShout", 8, numbered("GoodShout", 10))
 end
 
-function MeetSoundConfig.missShouts(): { string }
-	return numbered("MissShout", 12)
+function MeetSoundConfig.missShouts(level: string?): { string }
+	return nationalsOr(level, "NatMissShout", 6, numbered("MissShout", 12))
 end
 
 -- The voice that goes first after a big moment (LocalMeetService momentAfter). Others use goodShouts.

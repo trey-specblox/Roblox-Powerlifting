@@ -91,9 +91,24 @@ StateArenaLights.start()
 -- The Nationals hall as a dark room, while you are inside it (GAME_DESIGN §39). Visual only.
 local NationalsHallLights = require(MeetFolder:WaitForChild("NationalsHallLights"))
 NationalsHallLights.start()
+-- The Nationals meet on the lifter's own screen: the click to step out from behind the curtain, a lift-off's pick.
+local NationalsMeetUI = require(MeetFolder:WaitForChild("NationalsMeetUI"))
+task.spawn(NationalsMeetUI.start)
+-- The cinematic behind the Nationals curtain and the reveal as they push through it, on their own screen. Display only.
+local NationalsCurtainScene = require(MeetFolder:WaitForChild("NationalsCurtainScene"))
+task.spawn(NationalsCurtainScene.start)
+-- The Nationals curtains swinging apart as lifters walk through them, on every screen. Visual only.
+local NationalsCurtains = require(MeetFolder:WaitForChild("NationalsCurtains"))
+NationalsCurtains.start()
+-- In the Nationals hall the camera stays this side of the backdrops and inside the building. Display only.
+local HallCameraGuard = require(MeetFolder:WaitForChild("HallCameraGuard"))
+HallCameraGuard.start()
 -- The State arena crowd's stomp-clap chant, on third attempts from chalking up to the lift's result. Sound only.
 local MeetChant = require(MeetFolder:WaitForChild("MeetChant"))
 MeetChant.start()
+-- The Nationals hall crowd's chant, building while a lifter waits behind the curtain, until the lift's result. Sound only.
+local NationalsChant = require(MeetFolder:WaitForChild("NationalsChant"))
+NationalsChant.start()
 
 -- The celebrations' effects for everyone near, and a Legendary one's cinematic on the celebrating player's own screen
 -- (GAME_DESIGN §36.4).

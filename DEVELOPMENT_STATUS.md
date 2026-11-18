@@ -13,6 +13,153 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**SIGNS HIGH OVER THE MIDDLE + LIVE MEET TIMERS + BIGGER LOCAL MEET BUILDING (2026-11-18). BUILT, UPLOADED, TESTED IN
+STUDIO. NOT COMMITTED.**
+- New model MeetHall_03 (item MeetHallBig, `art/scripts/build_meet_hall_02.py` -> `art/blender/MeetHall_02.blend`,
+  `art/exports/MeetHall_03.glb`, CHECK PASSED, 1,366 tris) rbxassetid://76335862835551: MeetHall's design at 60 x 44,
+  walls 22, ridge 33, no wall sign. (MeetHall_02 75881658373417 is unusable: item names must be letters only before the
+  first "_", RoomProps.) LocalMeetVenue.buildEntrance places it (solids resized) and floats LOCAL MEET over its middle;
+  LocalMeetVenue.setEntranceLines. StateArenaVenue: sign over the building's middle, 26 above its top,
+  setEntranceLines. NationalsArenaVenue: sign over the building's middle. StyledScreen: floating setLines takes
+  per-line colours (labels reused, only changed text written), the tag is ~7 studs tall whatever the sign's height.
+- LocalMeetService.refreshEntranceSigns (each timetable tick): "MEET n · m:ss" white, "MEET n · REGIONAL · m:ss"
+  yellow, "MEET n · LIFTING NOW" green; State "Next State meet in m:ss" / "State meet LIFTING NOW".
+- Studio: all four signs with live text, no errors; captures of the Local (one-line tag, 5 meets, Regional yellow),
+  State and gym signs; no overlaps. There are 5 Local meets (HallCount), not 8.
+
+**FLOATING BUILDING SIGNS + CLOSED CURTAIN LINE (2026-11-18). BUILT, TESTED IN STUDIO (one player). NOT COMMITTED.**
+- Signs (GAME_DESIGN "Building signs float on top of their buildings"): new `StyledScreen.floating` (BillboardGui in the
+  game's style; tag alone when there are no lines) and `StyledScreen.floatAbove` (anchor over a front point, above a
+  roof height). Gym: haloSign board + 2 flood lamps removed, "ELITE PREP GYM" now 120x24 high over the gym's MIDDLE
+  (centre y 85, z 35; user "in the sky in the middle of the gym"), seen from 1500 studs (StarterGymConfig FrontSign* now
+  unused). Captures: gym name over the middle; State (y 63) and Local (y 35) names don't overlap. Local meet: MeetHall_SignScreen/Frame/Trim destroyed, 40x17 above its top. State: 
+  ArenaEntrance_SignScreen/Frame destroyed, 46x17 above its top. Nationals: NatPorch SignFrame/SignScreen left out,
+  46x17 above the building's top, NationalsService still writes its countdown (Venue.sign is a FloatingHandle). Studio:
+  all four seen in captures, old boards gone, no errors.
+- Arena v08 (`NationalsArena_08.blend/.glb`, CHECK PASSED, 124 meshes, 29,892 tris) rbxassetid://123515201004163:
+  curtain runs NatCurtainGap x3 + NatCurtainEndL/R (black, pleated, own pipe) close the curtain line to the side
+  barricades; hidden walls with CameraBlockTag. Coach now goes through the split (coachWay); coaches tagged
+  NationalsConfig.CurtainWalkerTag so NationalsCurtains parts the curtain for them (tested: it swings as they pass).
+
+**CURTAIN GLOW MADE IN BLENDER (2026-11-18, user "Yes, move them"). UPLOADED, TESTED IN STUDIO. NOT COMMITTED.** Arena
+v07 (`NationalsArena_07.blend/.glb`, CHECK PASSED, 118 meshes, 29,156 tris) uploaded rbxassetid://128919812028471
+(PropAssets swapped): new item NatCurtainGlow (Split: the line in the split; Hem: the strip under the hem), paint
+NatStageLeak (Neon, 0.25 see-through). NationalsArenaVenue places it per stage (no more code-made neon parts), tags the
+Split piece for NationalsCurtains, keeps the leak SpotLight on the Hem piece, CanQuery off on both. Studio: 4 glow
+models, 0 code-made strips; the line shows behind the black curtain, hides while it is parted, comes back once closed;
+no new errors. (Rojo missed one StarterGymConfig edit until the file changed again: check sync before testing.)
+
+**NATIONALS WALK FROM BEHIND THE STAGE + BLACK CURTAINS (2026-11-18, user: "I see the character walking through the rack,
+make curtains a black, design ... walking from the curtain, to behind the platform. Not with the stairs on the right
+side"). BUILT, UPLOADED, TESTED IN STUDIO (one player). NOT COMMITTED.**
+- Arena v06 (`NationalsArena_06.blend/.glb`, CHECK PASSED, 116 meshes, 29,132 tris) uploaded rbxassetid://87733481257371
+  (PropAssets swapped): NatStageSet's steps moved from its -X side to the middle of its back edge (STEPS_W 5).
+- NatDrapeDark 104,20,34 -> 26,26,30 (black). walkOut: split (zone side) -> split (stage side, y BACKDROP_Y-2.6) ->
+  along the walkway behind the stage -> foot of the back steps -> top of them -> the bar (approachFor: the rack's open
+  side faces the back). The reveal camera now waits on that walkway, the lifter walks toward and past it.
+- Studio test: recorded path split -> (x -1.2, y 22.4) -> up the steps (height 3.0 -> 4.2) -> straight along the middle
+  to the squat approach (y 10.2), no crossing of the rack; set up under the bar; black curtain in the shots; no new
+  errors. NOT seen: the reveal as a picture; the wide shot with the black curtain (folds show only faintly on black).
+
+**NATIONALS CURTAIN WALK-THROUGH, CINEMATIC AND CAMERA FIX (2026-11-18; GAME_DESIGN §39 "The curtain, the cinematic and
+the camera"). BUILT, UPLOADED, TESTED IN STUDIO (one player). NOT COMMITTED (last commit e560b2e). NEXT: the user looks
+at it in Studio (the shots, the curtain parting, the after-lift camera); a phone; two players.**
+- Arena v05: `build_nationals_arena_02.py` -> `art/blender/NationalsArena_05.blend` / `art/exports/NationalsArena_05.glb`
+  (CHECK PASSED, 116 meshes, 29,132 tris), uploaded rbxassetid://122896682956726 (PropAssets swapped; v04
+  116718498126356 was the same with flat-backed panels, its glb overwritten). Backdrop y 20 -> 25; the -X drape replaced
+  by the new item NatCurtainPanel (2.5 wide, pleated both faces) x4 per stage; pipe asymmetric; white line 34 -> 41.
+  NatDrapeDark 40,16,22 -> 104,20,34 (deep stage red; light never showed on the old colour).
+- NationalsArenaVenue: BACKDROP_Y 25, SET_LEFT_W/SET_RIGHT_W, the 4 panels (the middle two tagged
+  NationalsConfig.CurtainFlapTag with Hinge/Rest/Split/TowardStage/StageCentre), split + hem neon glows
+  (CurtainGlowTag) with a leak SpotLight, a top SpotLight over the wait spot lit by the behindCurtain hook (brightness 5),
+  wait spot at the split 4.6 behind the backdrop, walkOut through the split, coach round the outer end, benches y 36,
+  caller y 31, warm-up rows 52/66/80. CameraBlockTag on each Backdrop_Solid and the hall's wall/roof solids.
+- Animation `Nationals_CurtainPart` (nationals_flow_animation.py: arms, chest and head only, 1.8 s; 4 tries: belly-high
+  paws, hands-up, a guard, then hands together into the split -> swept apart -> held wide), anim_qa PASS on 4 builds,
+  rbxassetid://77278447505588 = NationalsConfig.CurtainPartAnimationId (preloaded). LocalMeetService.waitBehindCurtain
+  plays it on the click and starts the walk CurtainPartLeadSeconds (0.3) later; Studio-only workspace attribute
+  StudioCurtainWaitSeconds lengthens the wait for screenshots.
+- New clients: `HallCameraGuard` (Custom camera pulled in front of tagged walls; `clear` used by MeetLiftMoment's walk and
+  after-lift shots), `NationalsCurtains` (flaps swing from body positions, earlier while the part animation plays; glow
+  hidden while open), `NationalsCurtainScene` (MeetCinema film look + 4 shots + lights + grade, reveal from the stage
+  side; MeetCinema.curtainShot holds MeetLiftMoment off; MeetCinema.line added).
+- Studio tests (START NATIONALS NOW, one player): scene + bars + caption + click line; shots captured (wide, profile,
+  face, low) and reframed after captures showed the stands past the curtain's end and the coach in front; lights tuned
+  (created lights show dark for the first moment, then lit); the click -> part track 0..1.8 s, flaps open from 2.4 studs
+  before the plane, peak 6 deg, close after; reveal camera at +6.4 on the stage side, lifter passes 4.1 studs beside it;
+  after the lift the release shot stopped at the backdrop (10.4 from the lifter, was 13.5 behind the board); walk back
+  through the split with the curtain opening, camera held on the lifter's side until they pass; all scene lights and
+  the grade removed after; no new errors. NOT seen: the reveal shot as a picture (captures land 10-40 s late), a phone.
+
+**NATIONALS FLOW STATE + CHANTS + SHOUTS (2026-11-18, user "Yes, do both"). MADE, UPLOADED, TESTED IN STUDIO (one
+player). NOT COMMITTED. The user has NOT listened yet (Claude can't hear): listening files in
+`D:\Powerlifting Roblox Extras\Sounds\ChantListen\Nat_*.wav`. NEXT: the user's look (behind the curtain) and listen; then a
+two-player test (lift-off, per-class awards).**
+- Flow state: `art/scripts/nationals_flow_animation.py` (celebration rig, clothed solve) -> `art/animations/
+  Nationals_FlowState.rbxmx`, 4 s loop (rock 7 deg / 0.14 at the hips, two a loop; head -24; breath; hands shaken out
+  1.2-2.6 s). anim_qa PASS on Skinny/Fat/Muscular/BigBuff in the meet outfit (worst pop 455 deg/s, nothing in body or
+  clothes, no foot slide); first try's 3.5 deg rock was too small to read and was doubled. Uploaded
+  rbxassetid://89830873511612 -> NationalsConfig.FlowAnimationId; preloaded (MeetAnimationPreload).
+- ElevenLabs flow "Nationals chants and crowd shouts": 16 chant takes (8 phrases x2) + 32 shouts + 10 retakes, ~400
+  credits. Word checks with a LOCAL faster-whisper small.en (free): all chants right; 5 shouts misread and were reworded
+  and retaken (SQUEEZE! SQUEEZE!, KEEP GRINDING!, You almost had it!, LET'S GO!, STAND UP!). Raw takes in
+  `Sounds\Shouts\Raw\Nat*`; manifest entries in art/sounds/elevenlabs_shouts.json (chant takes marked skip).
+- `art/scripts/make_nationals_chant_mix.py` (make_chant_mix's method; both takes of a phrase as two crowds, 18 copies
+  each, two phrases a loop) -> NatChantMix_ForTheWin/Squat/Bench/Deadlift, uploaded; MeetSoundConfig.NationalsChant
+  (volumes 0.41/0.51/0.5/0.58, the same 5 dB over the bed as State; BuildFrom 0.3, BuildSeconds 12). New client
+  `NationalsChant` (plays the hall's NationalsChant attribute while InNationalsHall, building). The Nationals hall gets
+  the State arena's crowd bed (MeetSoundConfig.Backgrounds "NationalsHall").
+- 32 cues NatWalkShout1-8 / NatLiftShout1-10 / NatGoodShout1-8 / NatMissShout1-6; walkOutShouts/liftShouts/goodShouts/
+  missShouts take the meet level and use only these at Nationals (LocalMeetService passes current.level).
+- Studio test (START NATIONALS NOW, one player): behind the curtain the flow track loops (Looped true, 4.0 s), the
+  Squat chant plays and builds 0.10 -> 0.51 over 12 s then holds, stops at the result (attribute nil); every shout heard
+  was a Nat* cue; no new errors. NOT seen: how the flow state LOOKS in game (Studio's capture draws 3D white).
+
+**NATIONALS STEP 2, THE MEET (2026-11-17; GAME_DESIGN §39 "Built: step 2"). CODE BUILT, TESTED IN STUDIO WITH ONE PLAYER
+(a full meet start to finish, no errors). NOT COMMITTED (last commit e560b2e; the arena fixes v03 above are also still
+uncommitted). The flow state and the chants/shouts are now made (block above).**
+- LocalMeetService: the Nationals hall (index 99, `nationals = true`, also `state`): setNationalsVenue, visitNationals,
+  leaveNationalsVisit, nationalsMeetRunning, startNationalsMeet (weigh-in must match the spot's class; sorted by class and
+  dealt onto the 4 platforms in blocks; markNationalsCompeted at the start). Turn flow: chalk -> waitBehindCurtain (walk to
+  platform.curtainSpot, chant hook, "Waiting" state with `curtain`, waits for READY or 30 s) -> walk out. Placing per class
+  by total (rankFor / MeetPlacing.rankByTotal), live race and "FOR THE WIN" per class (areRivals), payouts per class x5,
+  awards class by class (podiumAndAwards / nationalsAwards / finishCleanUp split out of finishMeet), National Champion
+  call, Worlds spot in saveLifter, lift-offs before the final ranking (runLiftOffs / liftOff / liftOffAttempt; attempts
+  flagged `liftOffRound` record nothing). StateArenaShow calls guarded off for Nationals; stopWarmUps covers the hall's racks.
+- Save schema 28: career.worlds (WorldsSpot {earnedSeason, competedSeason}); ProfileOperations getWorlds / addWorldsSpot /
+  markWorldsCompeted. PlayerDataProbe 644 passed, 0 failed (14 new Worlds checks).
+- NationalsService: runTheMeet (waits for everyone inside or ArriveSeconds, walks the rest in, starts, sends everyone back
+  SendHomeSeconds after). NationalsArenaVenue: chant + behindCurtain hooks. New remote LocalMeetLiftOffChoose. New client
+  NationalsMeetUI (the click line, the lift-off pick). MockMeetUI's Waiting step takes stepTag/banner.
+- Studio test (one player, StudioNationalsAnyone + StudioForcePhaseResult Pass): START NATIONALS NOW -> landed outside ->
+  walked in after 20 s -> weigh-in -> 9 attempts, each chalk -> curtain (line shown, READY honoured after 25 s) -> lift ->
+  result -> "1ST PLACE of 1 IN 59 KG", +1,065 coins (pot 750 x5 class pot), "59 kg National Champion", WORLDS SPOT EARNED
+  -> sent back. NOT tested: two or more players, a lift-off, per-class awards with several classes, the look behind the
+  curtain (Studio's capture draws 3D white), a phone.
+
+**NATIONALS ARENA FIXES (2026-11-17, after the user saw it in Studio; GAME_DESIGN §39 "Arena fixes ... and the Nationals
+meet's look"). BUILT AND TESTED IN STUDIO (one player). NOT COMMITTED (last commit e560b2e). NEXT: step 2, the Nationals
+meet itself, with the lifting-order screens and live screens, the new walk-out (chalk, wait behind the curtain rocking,
+"click anywhere to step onto the platform", chant building) and new ElevenLabs chants/cheers ("same quality as the other
+AI generated voices") - the user's order: arena first, then the meet. Suits Fable (animation + meet flow).**
+- Models v03: `build_nationals_arena_02.py` -> `art/blender/NationalsArena_03.blend` / `art/exports/NationalsArena_03.glb`
+  (CHECK PASSED, 115 meshes, 29,112 tris), uploaded rbxassetid://81304095031113 (supersedes 72716651059879; materials.json
+  entry, PropAssets id swapped). Hall now 336 x 210 (WALL_X 168, WALL_Y_BACK 100, PANEL_W 42, FLOOR_X 120, 12 main stand
+  sections), platforms at x -78/-26/26/78 (NationalsConfig.PlatformXs; was 40 apart -> ~16-stud walk-through gaps), the
+  stage set's curtains now in the backdrop's plane right beside the screen's edges, the white floor line at y 34.
+- NationalsArenaVenue: the officials' JudgesTables removed; Barricade props along the front (y -16) and both sides
+  (x +-106) to the white line, each line plus the white line with a hidden 60-stud wall in StateArenaConfig.MeetBarrierGroup
+  (competing lifters will pass via StateArenaVenue.setCompetitor in step 2). Lifters' zone per platform: MeetChalkStand,
+  2 MeetBench with disabled Seats, a Caller figure (attribute Platform), a lifting order board (MeetBoard on the backdrop's
+  back, "LIFTING ORDER / WAITING FOR THE ROUND"); Stage gains waitSpot (behind the -X curtain), chalkSpot, seats,
+  callerLine, orderBoard for step 2. 30 warm-up racks (3 rows x 10) usable by ANYONE in the hall (InNationalsHall attr):
+  its own LocalMeetWarmUp like GymPractice, practice only; 5 warm-up lights.
+- Studio tests: built with no errors (hall 2,665 parts, 30 racks); screenshots: wide gaps, curtains aligned, barricade line,
+  boards/callers/benches/chalk stands, racks; walking + jumping at the white line from the warm-up side stayed out; same at
+  the front barricade; door prompt -> hall; stepped up to a warm-up rack, started a 20 kg practice squat (lifting=true),
+  LEAVE freed it. Client audit inside the hall: 2,706 parts, 222 unique meshes, 183 shadow casters, 18 lights, all OK.
+- Not verified: the side barricades by walking (same code as the front), how it looks live/on a phone.
+
 **NATIONALS ARENA (GAME_DESIGN §39 step 3; user's photos, video and words in `References/Nationals Arena/`). BLOCKOUT and
 DETAIL approved ("Approve, upload it", 2026-11-17). UPLOADED (rbxassetid://72716651059879, group) AND PLACED IN THE GAME;
 TESTED IN STUDIO (one player). COMMITTED right after 109b753 (not pushed). NOT seen live or on a phone. NEXT: the user publishes and looks at

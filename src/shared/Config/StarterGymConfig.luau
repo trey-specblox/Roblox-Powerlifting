@@ -606,8 +606,13 @@ StarterGymConfig.PropAssets = {
 	-- StateArenaVenue)
 	{ id = 73272782464755 }, -- Crowd_01: the fake spectators in the Local meet's stands (placed by LocalMeetVenue)
 	{ id = 106669210036999 }, -- WeighBooth_01: the State arena's weigh-in booth by the sign-up desk (placed by StateArenaVenue)
-	{ id = 72716651059879 }, -- NationalsArena_02: the Nationals building on the plaza and its hall (GAME_DESIGN §39, placed by
-	-- NationalsArenaVenue; art/scripts/build_nationals_arena_02.py)
+	{ id = 76335862835551 }, -- MeetHall_03: the Local meet's bigger entrance building (item MeetHallBig, placed by
+	-- LocalMeetVenue.buildEntrance; art/scripts/build_meet_hall_02.py), user 2026-11-18. The old MeetHall stays in
+	-- LocalMeet_01, unused.
+	{ id = 123515201004163 }, -- NationalsArena_08: the Nationals building on the plaza and its hall (GAME_DESIGN §39, placed by
+	-- NationalsArenaVenue; art/scripts/build_nationals_arena_02.py). Supersedes 128919812028471 (v07: the curtain line open
+	-- between the sets), 87733481257371 (v06), 122896682956726 (v05), 116718498126356 (v04), 81304095031113 (v03),
+	-- 72716651059879 (v02).
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -685,7 +690,11 @@ StarterGymConfig.PropPaints = {
 	NatHallCream = { color = Color3.fromRGB(206, 200, 188) },
 	NatRoofInside = { color = Color3.fromRGB(52, 54, 62) },
 	NatDrapeWhite = { color = Color3.fromRGB(214, 214, 218) },
-	NatDrapeDark = { color = Color3.fromRGB(40, 16, 22) },
+	-- (2026-11-18, user: "make curtains a black, design": black stage curtains; a lifted black, not pure black, so the walk-
+	--  out's lights still show the folds. Was a deep red 104, 20, 34 for a moment, and 40, 16, 22 before.)
+	NatDrapeDark = { color = Color3.fromRGB(26, 26, 30) },
+	-- The stage's light leaking past the lifter's curtain (NatCurtainGlow).
+	NatStageLeak = { color = Color3.fromRGB(255, 226, 180), material = Enum.Material.Neon, transparency = 0.25 },
 	NatBackdrop = { color = Color3.fromRGB(74, 36, 120) },
 } :: { [string]: PropPaint }
 
@@ -716,6 +725,11 @@ StarterGymConfig.PropFabricPieces = {
 	FoldingScreen_Panel = true,
 	NatDrape_Cloth = true,
 	NatStageSet_Drapes = true,
+	NatCurtainPanel_Cloth = true,
+	-- (the curtain runs closing the curtain line)
+	NatCurtainGap_Cloth = true,
+	NatCurtainEndL_Cloth = true,
+	NatCurtainEndR_Cloth = true,
 	NatBanner_Cloth = true,
 	NatFloor_Rubber = true,
 }
@@ -989,6 +1003,11 @@ StarterGymConfig.PropColourways = {
 		Facade = "Navy", DoorFrame = "Black", Inside = "Black", Doors = "Glass", Handles = "Silver", DoorLight = "GlowWhite",
 		Landing = "LightGrey", Lamps = "WarmGlow", Windows = "Glass", SignFrame = "Black", SignScreen = "Black",
 		SignTrim = "Yellow", Slashes = "Yellow", CornerLights = "GlowWhite",
+	} },
+	MeetHallBig = { {
+		Walls = "Charcoal", Roof = "Black", RoofTrim = "Yellow", GableLogo = "White", Stripe = "Red", Pinstripe = "White",
+		Facade = "Navy", DoorFrame = "Black", Inside = "Black", Doors = "Glass", Handles = "Silver", DoorLight = "GlowWhite",
+		Landing = "LightGrey", Lamps = "WarmGlow", Windows = "Glass", CornerLights = "GlowWhite",
 	} },
 	-- The redesigned venue (LocalMeet_02, art/scripts/build_local_meet_02.py). The game writes on the dark screens.
 	Barricade = { { Frame = "Silver", Feet = "Black", Banner = "Navy", Stripe = "Yellow", Logo = "White" } },
@@ -1362,6 +1381,13 @@ StarterGymConfig.PropColourways = {
 		FlashGold = "Yellow", FlashOrange = "Orange", Logo = "White", VideoFrame = "Black", Screen = "Black",
 		Drapes = "NatDrapeDark", Pipe = "Silver",
 	} },
+	NatCurtainPanel = { { Cloth = "NatDrapeDark" } },
+	-- (the split's line and the hem's strip, both glowing)
+	NatCurtainGlow = { { Split = "NatStageLeak", Hem = "NatStageLeak" } },
+	-- The curtain runs closing the curtain line between the stage sets and out to the side barricades.
+	NatCurtainGap = { { Cloth = "NatDrapeDark", Pipe = "Silver" } },
+	NatCurtainEndL = { { Cloth = "NatDrapeDark", Pipe = "Silver" } },
+	NatCurtainEndR = { { Cloth = "NatDrapeDark", Pipe = "Silver" } },
 	NatBanner = { { Cloth = "Navy", Trim = "Yellow", Text = "White", TextBack = "White", Rods = "Silver" } },
 	NatCrowdMainA = CROWD_COLOURWAYS,
 	NatCrowdMainB = CROWD_COLOURWAYS,

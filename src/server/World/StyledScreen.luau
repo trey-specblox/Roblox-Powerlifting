@@ -208,4 +208,124 @@ function StyledScreen.build(part: BasePart, face: Enum.NormalId, tag: string, li
 	return handle
 end
 
+export type FloatingHandle = {
+	gui: BillboardGui,
+	setTag: (text: string) -> (),
+	-- `colours`: each line's colour (then every line is bold, none heavy: a list such as the meets' timers); without it
+	-- the first line is white and heavy, the rest yellow.
+	setLines: (lines: { string }, colours: { Color3 }?) -> (),
+}
+
+--[[
+	Floating text in the same style, with no board behind it (user 2026-11-18: "replace them [the signs] with floating
+	text UI with the same names and timers"): the slanted black tag with its white edge and mark, and under it white
+	lines with yellow markers, outlined dark so they read against the sky or a wall. Always faces the camera. `anchor`
+	carries it (its middle is the text's middle); `widthStuds` x `heightStuds` is its size in the world; it fades out
+	past `maxDistance` (studs). Returns a handle like build's.
+]]
+function StyledScreen.floating(anchor: BasePart, tag: string, lines: { string }, mark: string?, widthStuds: number,
+	heightStuds: number, maxDistance: number?): FloatingHandle
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "FloatingSign"
+	gui.Size = UDim2.fromScale(widthStuds, heightStuds)
+	gui.LightInfluence = 0
+	gui.Brightness = 1.3
+	gui.MaxDistance = maxDistance or 300
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	gui.Parent = anchor
+
+	local function outline(label: TextLabel, thickness: number)
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = S.ink
+		stroke.Thickness = thickness
+		stroke.Transparency = 0.15
+		stroke.Parent = label
+	end
+
+	-- The tag, centred at the top (with no lines, the tag alone, as big as the sign: a building's name). Its height
+	-- is about 7 studs whatever the sign's height, so on a tall sign (the meets' timers) it stays one wide line.
+	local alone = #lines == 0
+	local tagShare = math.clamp(7 / heightStuds, 0.16, 0.3)
+	local tagSlab = box(gui, "Tag", UDim2.fromScale(0.5, if alone then 0.1 else 0.02),
+		if alone then UDim2.fromScale(0.9, 0.8) else UDim2.fromScale(0.5, tagShare), S.ink, -4)
+	tagSlab.AnchorPoint = Vector2.new(0.5, 0)
+	local tagEdge = Instance.new("UIStroke")
+	tagEdge.Color = S.white
+	tagEdge.Thickness = 4
+	tagEdge.Parent = tagSlab
+	local tagText = text(tagSlab, "Text", UDim2.fromScale(0.05, 0.12), UDim2.fromScale(0.72, 0.76), S.white, true)
+	tagText.Text = tag
+	local markHolder = Instance.new("Frame")
+	markHolder.Name = "Mark"
+	markHolder.BackgroundTransparency = 1
+	markHolder.Position = UDim2.fromScale(0.8, 0.14)
+	markHolder.Size = UDim2.fromScale(0.15, 0.72)
+	markHolder.Parent = tagSlab
+	StyledScreen.mark(markHolder, mark)
+
+	local linesHolder = Instance.new("Frame")
+	linesHolder.Name = "Lines"
+	linesHolder.BackgroundTransparency = 1
+	linesHolder.Position = UDim2.fromScale(0, tagShare + 0.06)
+	linesHolder.Size = UDim2.fromScale(1, 1 - tagShare - 0.06)
+	linesHolder.Parent = gui
+
+	local handle = {} :: FloatingHandle
+	handle.gui = gui
+	handle.setTag = function(newTag: string)
+		tagText.Text = newTag
+	end
+	-- (A countdown rewrites the same lines every second: the labels are reused while their count stays the same.)
+	local labels: { TextLabel } = {}
+	handle.setLines = function(newLines: { string }, colours: { Color3 }?)
+		if #labels ~= #newLines then
+			linesHolder:ClearAllChildren()
+			table.clear(labels)
+			local share = 1 / math.max(1, #newLines)
+			for index = 1, #newLines do
+				local y = (index - 1) * share
+				local label = text(linesHolder, "Line_" .. index, UDim2.fromScale(0.03, y + share * 0.06),
+					UDim2.fromScale(0.94, share * 0.88), S.white, false, Enum.TextXAlignment.Center)
+				outline(label, 3)
+				labels[index] = label
+			end
+		end
+		for index, line in ipairs(newLines) do
+			local label = labels[index]
+			-- Centred; without colours the first line white and heavy (the event's name), the rest yellow (the countdown).
+			local heavy = colours == nil and index == 1
+			label.FontFace = Font.new(FAMILY, if heavy then Enum.FontWeight.Heavy else Enum.FontWeight.Bold,
+				if heavy then Enum.FontStyle.Italic else Enum.FontStyle.Normal)
+			label.TextColor3 = if colours then colours[index] or S.white elseif index == 1 then S.white else S.yellow
+			if label.Text ~= line then
+				label.Text = line
+			end
+		end
+	end
+	handle.setLines(lines)
+	return handle
+end
+
+--[[
+	A building's floating sign ON TOP of it (user 2026-11-18: "make it float on top the building and make the text
+	bigger, Same with the gym and local meet, and state meet"): `floating` text whose bottom sits `gap` studs above
+	`roofY`, over `front` (a point on the building's front; only its X and Z are used). The invisible anchor goes in
+	`parent`. Sized `widthStuds` x `heightStuds`, seen from up to `maxDistance` (studs, 600 by default).
+]]
+function StyledScreen.floatAbove(parent: Instance, front: Vector3, roofY: number, tag: string, lines: { string },
+	mark: string?, widthStuds: number, heightStuds: number, gap: number?, maxDistance: number?): FloatingHandle
+	local anchor = Instance.new("Part")
+	anchor.Name = "FloatingSignAnchor"
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanQuery = false
+	anchor.CanTouch = false
+	anchor.CastShadow = false
+	anchor.Transparency = 1
+	anchor.Size = Vector3.new(1, 1, 1)
+	anchor.Position = Vector3.new(front.X, roofY + (gap or 2) + heightStuds / 2, front.Z)
+	anchor.Parent = parent
+	return StyledScreen.floating(anchor, tag, lines, mark, widthStuds, heightStuds, maxDistance or 600)
+end
+
 return StyledScreen

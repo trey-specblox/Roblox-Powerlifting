@@ -40,6 +40,9 @@ local SETTINGS = LocalMeetConfig.Ritual
 MeetCinema.ritualCamera = false
 -- The walk out gets the ritual's shots (MeetLiftMoment); false once skipped.
 MeetCinema.walkShots = false
+-- Nationals: the curtain's cinematic owns the camera (NationalsCurtainScene), so the walk out's camera (MeetLiftMoment)
+-- waits until its reveal from the stage side is over.
+MeetCinema.curtainShot = false
 
 type Screen = {
 	gui: ScreenGui,
@@ -264,6 +267,14 @@ function MeetCinema.subtitle(line: string?)
 	local current = screen
 	if current then
 		current.subtitle.Text = if line then "COACH:  " .. line else ""
+	end
+end
+
+-- A line of its own in the bottom bar (no "COACH:"), e.g. what to press; nil: nothing.
+function MeetCinema.line(text: string?)
+	local current = screen
+	if current then
+		current.subtitle.Text = text or ""
 	end
 end
 

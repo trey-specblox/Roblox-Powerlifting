@@ -27,9 +27,15 @@
 #     NatHighBay    a high-bay light (a dish and its lens). The game dims them: the hall is a dark room.
 #     NatDrape      one 37-wide panel of white curtain folds for the back wall (the photos). x8.
 #     NatStageSet   one platform's set, like the user's YouTube meet: a low stage (rubber top, navy edge with CENTRAL),
-#                   steps at the side the lifter walks on from, a tall purple backdrop with gold and orange flashes and the
-#                   NATIONALS / CENTRAL logo, a big video wall above it (its dark Screen the game draws the lifter on), dark
-#                   drapes at both sides on a pipe. x4.
+#                   steps in the middle of its back edge (v05), a tall purple backdrop with gold and orange flashes and the
+#                   NATIONALS / CENTRAL logo, a big video wall above it (its dark Screen the game draws the lifter on), a
+#                   dark drape at the +X side and the pipe over both sides. x4. (v04: the backdrop 7 behind the stage.)
+#     NatCurtainPanel  one 2.5-wide dark curtain panel (v04): 4 hang side by side at each stage's -X side, the lifter's
+#                   way through onto the stage; the game swings the middle two apart as someone walks through. x16.
+#     NatCurtainGlow   the stage's light leaking past that curtain (v07): a glowing line in the split, a glowing strip
+#                   under the hem. x4.
+#     NatCurtainGap / NatCurtainEndL / NatCurtainEndR   plain black curtain runs on a pipe (v08) closing the curtain line
+#                   between the stage sets (x3) and out to the side barricades (one each end).
 #     NatBanner     the big NATIONALS banner hung over the officials' area: navy cloth, yellow trim, rods and cables.
 #     NatCrowdMainA / NatCrowdMainB   seated figures for one main-stand section (blocky, the game's character style,
 #                   about 70 triangles a figure, fuller near the front). NatCrowdEnd for an end-stand section. Colour
@@ -106,7 +112,8 @@ ROOF_IN = mat("RoofInside", (52, 54, 62), 0.0, 0.8)
 STEEL = mat("Steel", (170, 172, 178), 0.9, 0.3)
 HIGHBAY = mat("HighBayLens", (240, 240, 235), 0.0, 0.3, emission=(1.0, 1.0, 0.95), strength=0.4)
 DRAPE_WHITE = mat("DrapeWhite", (214, 214, 218), 0.0, 0.9)
-DRAPE_DARK = mat("DrapeDark", (40, 16, 22), 0.0, 0.95)
+DRAPE_DARK = mat("DrapeDark", (26, 26, 30), 0.0, 0.95)
+LEAK = mat("StageLeak", (255, 226, 180), 0.0, 0.5, emission=(1.0, 0.88, 0.7), strength=6.0)
 BACKDROP = mat("Backdrop", (74, 36, 120), 0.0, 0.6)
 FLASH_GOLD = mat("FlashGold", (230, 176, 40), 0.0, 0.4)
 FLASH_ORANGE = mat("FlashOrange", (236, 110, 30), 0.0, 0.4)
@@ -441,10 +448,16 @@ def build_walkway():
 
 # ================================================================ THE HALL
 
-WALL_X, WALL_Y_FRONT, WALL_Y_BACK, WALL_Z = 148.0, -110.0, 75.0, 50.0
-PANEL_W = 37.0
+# The hall (version 03, user 2026-11-17: "make the shell bigger", wider gaps between the platforms): 336 x 210.
+WALL_X, WALL_Y_FRONT, WALL_Y_BACK, WALL_Z = 168.0, -110.0, 100.0, 50.0
+PANEL_W = 42.0
 ROOF_BAYS, HALL_RIDGE = 8, 62.0
-FLOOR_X, RAIL_Y = 100.0, -42.0
+FLOOR_X, RAIL_Y = 120.0, -42.0
+MAIN_SECTIONS = 12
+SIDE_PANELS = 5  # 5 x 42 = the hall's 210 depth
+# The white line between the lifters' zone (behind the backdrops) and the warm-up area; spectators stay on the far side.
+# (v04, 2026-11-18: 7 further back with the backdrops, which moved back 5 from the stages.)
+WHITE_LINE_Y = 41.0
 SECTION_W = 20.0
 ROW_D, ROW_RISE, ROW_BASE = 3.0, 1.6, 2.5
 MAIN_ROWS, END_ROWS = 18, 12
@@ -455,7 +468,7 @@ SEAT_SLOT = (SECTION_W - AISLE_W) / SEATS
 MAIN_CONCOURSE, END_CONCOURSE = 10.0, 6.0
 # End-stand sections a side, from the floor's front (y -40) to the backdrops' line (y 20).
 END_SECTIONS = 3
-PLATFORM_XS = (-60.0, -20.0, 20.0, 60.0)
+PLATFORM_XS = (-78.0, -26.0, 26.0, 78.0)
 
 
 def seat_xs():
@@ -481,7 +494,7 @@ def build_floor():
         y0, y1 = RAIL_Y + 2, WALL_Y_BACK - 5
         for x in (-FLOOR_X + 2, FLOOR_X - 2):
             H.span(bm, (x - w / 2, y0, 0.06), (x + w / 2, y1, 0.09))
-        for y in (y0, y1, 24.0):
+        for y in (y0, y1, WHITE_LINE_Y):
             H.span(bm, (-FLOOR_X + 2, y - w / 2, 0.06), (FLOOR_X - 2, y + w / 2, 0.09))
 
     piece(item, "Lines", LINE_WHITE, lines)
@@ -599,8 +612,24 @@ def build_drape():
 
 
 STAGE_W, STAGE_D, STAGE_H = 24.0, 18.0, 1.2
-BACKDROP_Y, BACKDROP_W, BACKDROP_H = 20.0, 28.0, 15.0
+STEPS_W = 5.0                # the steps up at the middle of the stage's back edge
+# (v04, user 2026-11-18: "you might want to place the banner farther back": the backdrop and its video wall 5 further back
+#  from the stage, 7 behind its back edge, so the camera behind a lifter at the bar has room in front of it.)
+BACKDROP_Y, BACKDROP_W, BACKDROP_H = 25.0, 28.0, 15.0
 VIDEO_Z0, VIDEO_Z1 = 15.5, 29.0
+# The curtains' top (the pipe hangs just above it).
+CURTAIN_TOP = VIDEO_Z1 + 0.4
+# The +X curtain: one narrow fixed drape beside the backdrop, as before.
+CURTAIN_R_W = 3.55
+# The -X curtain, the lifter's way onto the stage (v04, user 2026-11-18: "extend the curtain farther, so ... the lifter can
+# be waiting with the flow state animation then once the user clicks, they are seen using their arms and moving the
+# curtain to enter the platform"): 4 panels of NatCurtainPanel side by side, 10 wide. The middle two hang either side of
+# the split the lifter pushes through; the game swings them apart (NationalsCurtains) as someone walks through.
+CURTAIN_PANEL_W, CURTAIN_PANELS = 2.5, 4
+CURTAIN_HEM = 0.3            # the panels stop this far off the floor: the stage's light shows under them
+CURTAIN_L_EDGE = -(BACKDROP_W / 2 + 0.05 + CURTAIN_PANEL_W * CURTAIN_PANELS)
+CURTAIN_SPLIT_X = -(BACKDROP_W / 2 + 0.05 + CURTAIN_PANEL_W * CURTAIN_PANELS / 2)
+CURTAIN_R_EDGE = BACKDROP_W / 2 + 0.05 + CURTAIN_R_W
 
 
 def build_stage_set():
@@ -624,9 +653,12 @@ def build_stage_set():
             text(bm, "CENTRAL", 0.75, -0.02, STAGE_H / 2, x, 0.03)
 
     def steps(bm):
-        # Two steps at the -X side, where the lifter walks on from the wing.
+        # Two steps at the middle of the BACK edge (v05, user 2026-11-18: "when im entering the platform, i need to be
+        # walking from the curtain, to behind the platform. Not with the stairs on the right side in the middle"): the
+        # lifter comes through the curtain, along behind the stage and up here, then straight in to the bar (the rack's
+        # open side faces the back; from the side they walked through the rack's frame).
         for k, h in enumerate((STAGE_H / 3 * 2, STAGE_H / 3)):
-            H.span(bm, (-hw - 1.2 * (k + 1), 9.0, 0), (-hw - 1.2 * k, 14.0, h))
+            H.span(bm, (-STEPS_W / 2, STAGE_D + 1.2 * k, 0), (STEPS_W / 2, STAGE_D + 1.2 * (k + 1), h))
 
     def backdrop(bm):
         H.span(bm, (-BACKDROP_W / 2, BACKDROP_Y, 0), (BACKDROP_W / 2, BACKDROP_Y + 1, BACKDROP_H))
@@ -650,17 +682,21 @@ def build_stage_set():
     def screen(bm):
         H.span(bm, (-BACKDROP_W / 2 + 1.1, BACKDROP_Y - 0.02, VIDEO_Z0 + 0.2), (BACKDROP_W / 2 - 1.1, BACKDROP_Y + 0.1, VIDEO_Z1 - 0.2))
 
+    # The curtains stand in line with the backdrop and the video wall (user 2026-11-17: "the curtain stands need to line up
+    # with the platform screens"): right beside their edges, in the same plane, as tall as the video wall. Here only the
+    # +X one; the -X one (the lifter's way through, v04) is 4 NatCurtainPanel copies the game places and swings.
     def drapes(bm):
-        for sx in (-1, 1):
-            x0 = sx * BACKDROP_W / 2
-            x1 = sx * (BACKDROP_W / 2 + 3.4)
-            folds(bm, min(x0, x1), max(x0, x1), STAGE_D - 1.6, 1.2, 0, VIDEO_Z1 + 1, 5)
+        x0 = BACKDROP_W / 2 + 0.05
+        folds(bm, x0, CURTAIN_R_EDGE, BACKDROP_Y - 0.4, 1.2, 0, CURTAIN_TOP, 5)
 
     def pipe(bm):
-        H.cylinder(bm, (0, STAGE_D - 0.6, VIDEO_Z1 + 1.3), 0.2, BACKDROP_W + 7.4, axis="X", segments=8)
-        for sx in (-1, 1):
-            H.box(bm, (sx * (BACKDROP_W / 2 + 3.6), STAGE_D - 0.6, (VIDEO_Z1 + 1.3) / 2), (0.4, 0.4, VIDEO_Z1 + 1.3))
-            H.box(bm, (sx * (BACKDROP_W / 2 + 3.6), STAGE_D - 0.6, 0.1), (2.4, 2.4, 0.2))
+        left, right = CURTAIN_L_EDGE - 0.2, CURTAIN_R_EDGE + 0.2
+        # (the pipe runs a little behind the curtains' backs: y + 0.2 is inside their 1.2 depth, so the swung panels'
+        #  tops stay hidden behind it)
+        H.cylinder(bm, ((left + right) / 2, BACKDROP_Y + 0.2, VIDEO_Z1 + 0.7), 0.2, right - left, axis="X", segments=8)
+        for x in (left, right):
+            H.box(bm, (x, BACKDROP_Y + 0.2, (VIDEO_Z1 + 0.7) / 2), (0.4, 0.4, VIDEO_Z1 + 0.7))
+            H.box(bm, (x, BACKDROP_Y + 0.2, 0.1), (2.4, 2.4, 0.2))
 
     piece(item, "Riser", BLACK, riser)
     piece(item, "Top", RUBBER, top)
@@ -675,6 +711,87 @@ def build_stage_set():
     piece(item, "Screen", SCREEN, screen)
     piece(item, "Drapes", DRAPE_DARK, drapes)
     piece(item, "Pipe", STEEL, pipe)
+
+
+def pleats(bm, x0, x1, y_front, depth, thick, z0, z1, count):
+    """A hanging cloth folded both sides: the same zigzag front and back, `thick` apart (a curtain seen from behind
+    shows its folds too), closed."""
+    tmp = bmesh.new()
+    zig = []
+    for k in range(count * 2 + 1):
+        x = x0 + (x1 - x0) * k / (count * 2)
+        zig.append((x, y_front + (depth if k % 2 else 0.0)))
+    outline = zig + [(x, y + thick) for x, y in reversed(zig)]
+    lo = [tmp.verts.new((x, y, z0)) for x, y in outline]
+    hi = [tmp.verts.new((x, y, z1)) for x, y in outline]
+    n = len(outline)
+    tmp.faces.new(lo)
+    tmp.faces.new(list(reversed(hi)))
+    for i in range(n):
+        j = (i + 1) % n
+        tmp.faces.new((lo[i], lo[j], hi[j], hi[i]))
+    bmesh.ops.recalc_face_normals(tmp, faces=tmp.faces[:])
+    H._merge(bm, tmp)
+
+
+def build_curtain_panel():
+    """One 2.5-wide panel of the lifter's curtain (v04): 4 folds on BOTH faces (the walk-out's cinematic looks at its
+    back), its front at y = 0, hanging from the pipe's height to CURTAIN_HEM off the floor. The game hangs 4 side by side
+    at each stage's -X side and swings the middle two apart."""
+    item = "NatCurtainPanel"
+    piece(item, "Cloth", DRAPE_DARK, lambda bm: pleats(bm, -CURTAIN_PANEL_W / 2, CURTAIN_PANEL_W / 2, 0, 0.75, 0.18,
+                                                        CURTAIN_HEM, CURTAIN_TOP, 4))
+
+
+CURTAIN_BACK = 0.93          # NatCurtainPanel's depth (its folds' backs)
+# The stage sets' outer edges (with the pipe's uprights) and the meet area's side barricades (the game's MEET_SIDE_X).
+SET_LEFT, SET_RIGHT, MEET_SIDE_X = CURTAIN_L_EDGE - 0.4, CURTAIN_R_EDGE + 0.4, 106.0
+CURTAIN_RUNS = {
+    # (user 2026-11-18: "you need to place a curtain that coveres these open areas"): the curtain line closed all the
+    # way across, so nobody sees past the stage sets into the lifters' zone and the warm-up area.
+    "NatCurtainGap": (PLATFORM_XS[1] - PLATFORM_XS[0]) + SET_LEFT - SET_RIGHT,   # between two stage sets
+    "NatCurtainEndL": (PLATFORM_XS[0] + SET_LEFT) + MEET_SIDE_X,                 # the -X end set to the side barricade
+    "NatCurtainEndR": MEET_SIDE_X - (PLATFORM_XS[-1] + SET_RIGHT),               # the +X end set to the side barricade
+}
+
+
+def build_curtain_runs():
+    """Plain black curtain runs (pleated both faces, the lifter's curtain's folds) on their own pipe, closing the curtain
+    line between the stage sets and out to the side barricades. Each item's frame: x centred, its front at y 0. The end
+    runs carry an upright at their outer end (the gaps' ends are the sets' own uprights)."""
+    for item, width in CURTAIN_RUNS.items():
+        count = max(1, round(width / (CURTAIN_PANEL_W / 4)))
+        piece(item, "Cloth", DRAPE_DARK, lambda bm, w=width, n=count: pleats(bm, -w / 2, w / 2, 0, 0.75, 0.18, CURTAIN_HEM,
+                                                                               CURTAIN_TOP, n))
+
+        def pipe(bm, w=width, it=item):
+            H.cylinder(bm, (0, 0.6, VIDEO_Z1 + 0.7), 0.2, w, axis="X", segments=8)
+            if it != "NatCurtainGap":
+                x = (w / 2 - 0.2) * (-1 if it == "NatCurtainEndL" else 1)
+                H.box(bm, (x, 0.6, (VIDEO_Z1 + 0.7) / 2), (0.4, 0.4, VIDEO_Z1 + 0.7))
+                H.box(bm, (x, 0.6, 0.1), (2.4, 2.4, 0.2))
+
+        piece(item, "Pipe", STEEL, pipe)
+
+
+def curtain_run_spots():
+    """(item, centre x) for every curtain run in the hall (the game places them the same way: NationalsArenaVenue)."""
+    spots = [("NatCurtainEndL", (-MEET_SIDE_X + PLATFORM_XS[0] + SET_LEFT) / 2)]
+    for a, b in zip(PLATFORM_XS, PLATFORM_XS[1:]):
+        spots.append(("NatCurtainGap", (a + SET_RIGHT + b + SET_LEFT) / 2))
+    spots.append(("NatCurtainEndR", (PLATFORM_XS[-1] + SET_RIGHT + MEET_SIDE_X) / 2))
+    return spots
+
+
+def build_curtain_glow():
+    """The stage's light leaking past the lifter's curtain, seen from behind it (v07, user 2026-11-18: every model made in
+    Blender): a thin glowing line in the split and a glowing strip on the floor under the hem. Its frame: x 0 at the
+    split, y 0 at the curtain's front, the floor at z 0. The game fades the split's line while the curtain is parted."""
+    item = "NatCurtainGlow"
+    half = CURTAIN_PANEL_W * CURTAIN_PANELS / 2
+    piece(item, "Split", LEAK, lambda bm: H.span(bm, (-0.06, CURTAIN_BACK + 0.03, CURTAIN_HEM),
+                                                 (0.06, CURTAIN_BACK + 0.07, CURTAIN_HEM + 11.0)))
+    piece(item, "Hem", LEAK, lambda bm: H.span(bm, (-half, CURTAIN_BACK + 0.03, 0.09), (half, CURTAIN_BACK + 0.93, 0.13)))
 
 
 def build_banner():
@@ -788,6 +905,9 @@ def build_all():
     build_highbay()
     build_drape()
     build_stage_set()
+    build_curtain_panel()
+    build_curtain_glow()
+    build_curtain_runs()
     build_banner()
     build_crowd("NatCrowdMainA", MAIN_ROWS, 11, 0.72, 0.38)
     build_crowd("NatCrowdMainB", MAIN_ROWS, 29, 0.66, 0.30)
@@ -871,7 +991,7 @@ def assemble():
     # The hall, far away (its frame: the floor's middle; the stages face -Y toward the main stand).
     hall = Matrix.Translation((1000, 0, 0))
     place("NatFloor", hall, "hall")
-    for k in range(10):
+    for k in range(MAIN_SECTIONS):
         x = -FLOOR_X + SECTION_W * (k + 0.5)
         place("NatStandMain", hall @ T(x, RAIL_Y, 0, 180), "hall")
         place("NatCrowdMainA" if k % 2 == 0 else "NatCrowdMainB", hall @ T(x, RAIL_Y, 0, 180), "hall")
@@ -882,17 +1002,17 @@ def assemble():
             y = -40.0 + SECTION_W * (k + 0.5)
             place("NatStandEnd", hall @ T(s * (FLOOR_X + 2), y, 0, -90 * s), "hall")
             place("NatCrowdEnd", hall @ T(s * (FLOOR_X + 2), y, 0, -90 * s), "hall")
-    for k in range(8):
+    for k in range(ROOF_BAYS):
         x = -WALL_X + PANEL_W * (k + 0.5)
         place("NatWall", hall @ T(x, WALL_Y_FRONT, 0, 180), "hall")
         place("NatWall", hall @ T(x, WALL_Y_BACK, 0), "hall")
         place("NatRoofBay", hall @ T(x, 0, 0), "hall")
         place("NatDrape", hall @ T(x, WALL_Y_BACK - 3, 0), "hall")
     for s in (-1, 1):
-        for k in range(5):
+        for k in range(SIDE_PANELS):
             y = WALL_Y_FRONT + PANEL_W * (k + 0.5)
             place("NatWall", hall @ T(s * WALL_X, y, 0, -90 * s), "hall")
-    for k in range(1, 16):
+    for k in range(1, ROOF_BAYS * 2):
         x = -WALL_X + PANEL_W / 2 * k
         ridge = k % 2 == 1
         z = (HALL_RIDGE - 2.2) if ridge else (WALL_Z - 1.2)
@@ -904,6 +1024,12 @@ def assemble():
             place("NatHighBay", hall @ T(x, y, z - 7.5), "hall")
     for x in PLATFORM_XS:
         place("NatStageSet", hall @ T(x, 0, 0), "hall")
+        for k in range(CURTAIN_PANELS):
+            px = -(BACKDROP_W / 2 + 0.05) - CURTAIN_PANEL_W * (k + 0.5)
+            place("NatCurtainPanel", hall @ T(x + px, BACKDROP_Y - 0.4, 0), "hall")
+        place("NatCurtainGlow", hall @ T(x + CURTAIN_SPLIT_X, BACKDROP_Y - 0.4, 0), "hall")
+    for item, cx in curtain_run_spots():
+        place(item, hall @ T(cx, BACKDROP_Y - 0.4, 0), "hall")
     # Under the middle valley truss (its bottom chord at 42.8; the cloth's top at 42) and still above every seat's line of
     # sight to the video walls (top 29): from the top row (eye about 34) that line passes the banner at about 31.
     place("NatBanner", hall @ T(0, -26, 34), "hall")
@@ -959,14 +1085,16 @@ def preview_stand_ins(hall):
         person(x, -6.0, 0, "Loader", seated=True)
         for s in (-1, 1):
             chair(x + s * 11, -1.5)
-    H.span(shapes["Black"], (-30, -18.5, 0), (30, -15.5, 2.6))
-    for row_y in (34.0, 48.0):
-        x = -84.0
-        while x <= 84.0:
+    for row_y in (52.0, 66.0, 80.0):
+        x = -81.0
+        while x <= 81.0:
             rack(x, row_y, 0)
-            x += 12.0
-    for x, y in ((-70, 38), (-40, 41), (-10, 36), (25, 39), (55, 42), (80, 37), (-50, 52), (10, 54), (32, 30)):
+            x += 18.0
+    for x, y in ((-70, 45), (-40, 48), (-10, 43), (25, 46), (55, 49), (80, 44), (-50, 58), (10, 60), (32, 37)):
         person(x, y, 0, "Lifter" if (x // 10) % 2 else "Loader")
+    # A lifter waiting behind each -X curtain's split (the Nationals walk-out), for the curtain previews.
+    for x in PLATFORM_XS:
+        person(x + CURTAIN_SPLIT_X, BACKDROP_Y + 4.6, 0, "Lifter")
     for key, bm in shapes.items():
         mesh = bpy.data.meshes.new("PreviewStandIns_" + key)
         bm.to_mesh(mesh)
@@ -1087,10 +1215,10 @@ def previews():
     for x in PLATFORM_XS:
         sp = light("Spot%d" % x, "SPOT", hall + Vector((x, -4, 44)), power=320000, colour=(1, 0.97, 0.92), spot=math.radians(30))
         aim(sp, hall + Vector((x, 9, 0)))
-        for s in (-1, 1):
-            d = light("Drape%d_%d" % (x, s), "SPOT", hall + Vector((x + s * 15.7, 10, 2)), power=40000, colour=(0.55, 0.25, 1.0),
-                      spot=math.radians(25))
-            aim(d, hall + Vector((x + s * 15.7, STAGE_D, 24)))
+        for cx in (CURTAIN_SPLIT_X, (BACKDROP_W / 2 + CURTAIN_R_EDGE) / 2):
+            d = light("Drape%d_%d" % (x, cx), "SPOT", hall + Vector((x + cx, 10, 2)), power=40000, colour=(0.55, 0.25, 1.0),
+                      spot=math.radians(32))
+            aim(d, hall + Vector((x + cx, BACKDROP_Y, 22)))
         wash = light("Wash%d" % x, "AREA", hall + Vector((x, 2, 22)), power=12000, colour=(0.6, 0.45, 1.0), size=26)
         aim(wash, hall + Vector((x, BACKDROP_Y, 8)))
     house = light("House", "AREA", hall + Vector((0, -30, 48)), power=26000, colour=(0.35, 0.42, 0.9), size=260)
@@ -1111,6 +1239,12 @@ def previews():
            os.path.join(PREVIEW_DIR, "08_hall_warmup.png"))
     render(camera("CamHallEnd", hall + Vector((-120, 10, 18)), hall + Vector((0, 0, 8)), 20),
            os.path.join(PREVIEW_DIR, "09_hall_from_end_stand.png"))
+    # (v04) The lifter's curtain: from the lifters' zone behind it, and from the stage side.
+    split = hall + Vector((-26 + CURTAIN_SPLIT_X, BACKDROP_Y, 0))
+    render(camera("CamCurtainBack", split + Vector((3, 14, 7)), split + Vector((0, 0, 6)), 24),
+           os.path.join(PREVIEW_DIR, "10_curtain_from_behind.png"))
+    render(camera("CamCurtainFront", split + Vector((10, -14, 5)), split + Vector((0, 0, 7)), 24),
+           os.path.join(PREVIEW_DIR, "11_curtain_from_stage.png"))
 
     # Every item alone, close up, flat-lit with back faces culled (a hole = an inside-out face), front and back views.
     tiles = os.path.join(PREVIEW_DIR, "tiles")

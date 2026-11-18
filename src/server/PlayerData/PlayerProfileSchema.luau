@@ -62,9 +62,10 @@ local PlayerProfileSchema = {}
 	the player's celebration; version 23: the fail style and the emotes won;
 	version 24: walk-outs, celebrations and fail styles collected, with a slot
 	for each attempt; version 25: clothes and the gear toggle; version 26: the
-	numbered State Champion badges; version 27: the Nationals spots).
+	numbered State Champion badges; version 27: the Nationals spots; version
+	28: the Worlds spots).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 27
+PlayerProfileSchema.CURRENT_VERSION = 28
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -249,6 +250,11 @@ export type MeetAllowance = {
 		            with no entry has 0 placings. Only
 		            ProfileOperations.addNationalsPlacing and
 		            markNationalsCompeted write it.
+		worlds      (version 28) the Worlds spots, PER WEIGHT CLASS (GAME_DESIGN
+		            §39, user 2026-11-17): class key -> WorldsSpot. Earned by
+		            winning the class at Nationals. Only
+		            ProfileOperations.addWorldsSpot and markWorldsCompeted
+		            write it.
 
 	localWins is a lifetime statistic now: ladder points decide State.
 ]]
@@ -259,6 +265,7 @@ export type Career = {
 	stateQualifications: number,
 	stateChampionBadges: { [string]: number },
 	nationals: { [string]: NationalsSpot },
+	worlds: { [string]: WorldsSpot },
 }
 
 --[[
@@ -277,6 +284,20 @@ export type Career = {
 export type NationalsSpot = {
 	placings: number,
 	qualified: boolean,
+	competedSeason: string,
+}
+
+--[[
+	One class's Worlds spot (version 28; user 2026-11-17, GAME_DESIGN §39: "like the Nationals spot").
+
+		earnedSeason    the season ("2026-11") of the Nationals win that earned it
+		competedSeason  "" = has not competed at Worlds on it yet; otherwise the
+		                season of the first Worlds meet lifted on it. When that
+		                season is over the spot is gone (won again at Nationals).
+	A class with an entry holds its spot until then, however long.
+]]
+export type WorldsSpot = {
+	earnedSeason: string,
 	competedSeason: string,
 }
 
@@ -628,6 +649,7 @@ local template: ProfileData = {
 		stateQualifications = 0,
 		stateChampionBadges = {},
 		nationals = {},
+		worlds = {},
 	},
 
 	-- A new lifter has no coins: they are earned at official meets (GAME_DESIGN 30.6).
@@ -1877,7 +1899,7 @@ migrations[25] = function(data: ProfileData)
 	local career = (data :: any).career
 	if typeof(career) ~= "table" then
 		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0, stateChampionBadges = {},
-			nationals = {} }
+			nationals = {}, worlds = {} }
 		return
 	end
 	local badges = career.stateChampionBadges
@@ -1910,7 +1932,7 @@ migrations[26] = function(data: ProfileData)
 	local career = (data :: any).career
 	if typeof(career) ~= "table" then
 		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0, stateChampionBadges = {},
-			nationals = {} }
+			nationals = {}, worlds = {} }
 		return
 	end
 	local spots = career.nationals
@@ -1923,6 +1945,35 @@ migrations[26] = function(data: ProfileData)
 		if typeof(classKey) ~= "string" or typeof(spot) ~= "table" or typeof(placings) ~= "number" or placings ~= placings
 			or placings < 0 or placings ~= math.floor(placings) or placings == math.huge
 			or typeof(spot.qualified) ~= "boolean" or typeof(spot.competedSeason) ~= "string" then
+			spots[classKey] = nil
+		end
+	end
+end
+
+--[[
+	Version 27 -> 28: the Worlds spots (user 2026-11-17, GAME_DESIGN §39). Nobody has one yet (Nationals is new).
+
+	REPAIRS, NEVER OVERWRITES: a usable stored map is kept (only broken entries go); a missing career is created.
+	IDEMPOTENT: a second run finds the map there and changes nothing.
+]]
+local function isSeasonText(value: any): boolean
+	return typeof(value) == "string" and string.match(value, "^%d%d%d%d%-%d%d$") ~= nil
+end
+migrations[27] = function(data: ProfileData)
+	local career = (data :: any).career
+	if typeof(career) ~= "table" then
+		(data :: any).career = { localWins = 0, titles = {}, ladders = {}, stateQualifications = 0, stateChampionBadges = {},
+			nationals = {}, worlds = {} }
+		return
+	end
+	local spots = career.worlds
+	if typeof(spots) ~= "table" then
+		career.worlds = {}
+		return
+	end
+	for classKey, spot in pairs(spots) do
+		if typeof(classKey) ~= "string" or typeof(spot) ~= "table" or not isSeasonText(spot.earnedSeason)
+			or not (spot.competedSeason == "" or isSeasonText(spot.competedSeason)) then
 			spots[classKey] = nil
 		end
 	end

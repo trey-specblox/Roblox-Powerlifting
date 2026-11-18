@@ -1,5 +1,5 @@
 {
-  "about": "Shouts people yell at a meet, the sounds of chalking up of opening a gear crate and of a lifter's celebration (CelebrationConfig.Sounds) (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment; and the State arena crowd's chants (GAME_DESIGN 36.4, MeetSoundConfig.Chant; the ChantMix_ loops are mixed by art/scripts/make_chant_mix.py). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig.",
+  "about": "Shouts people yell at a meet, the sounds of chalking up of opening a gear crate and of a lifter's celebration (CelebrationConfig.Sounds) (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment; and the State arena crowd's chants (GAME_DESIGN 36.4, MeetSoundConfig.Chant; the ChantMix_ loops are mixed by art/scripts/make_chant_mix.py). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig. Nationals (GAME_DESIGN 39, 2026-11-17): the Nat*Shout voices (word-checked with a local speech-to-text model) and the NatChantMix_ loops mixed by art/scripts/make_nationals_chant_mix.py from the NatChant_ takes; none of the State or Local takes is reused there.",
   "sounds": {
     "LiftShout_1": {
       "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
@@ -799,6 +799,438 @@
       "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
       "ids": {
         "audio": "rbxassetid://115953996885187"
+      }
+    },
+    "NatWalkShout_1": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"This is your moment!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://88051571876734"
+      }
+    },
+    "NatWalkShout_2": {
+      "about": "Powerlifting meet, Nationals: a single older man with a deep gravelly voice in the stands of a big national powerlifting championship arena: \"Make it count!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://99194073347452"
+      }
+    },
+    "NatWalkShout_3": {
+      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"Own that platform!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://93367272417025"
+      }
+    },
+    "NatWalkShout_4": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Lock in!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://105639400414168"
+      }
+    },
+    "NatWalkShout_5": {
+      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"Bring it home!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://136122612820275"
+      }
+    },
+    "NatWalkShout_6": {
+      "about": "Powerlifting meet, Nationals: a single teenage girl in the stands of a big national powerlifting championship arena: \"You trained for this!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_6.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://130069451627142"
+      }
+    },
+    "NatWalkShout_7": {
+      "about": "Powerlifting meet, Nationals: a single big man with a very deep voice in the stands of a big national powerlifting championship arena: \"Big stage, big lift!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_7.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://83044561946790"
+      }
+    },
+    "NatWalkShout_8": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"LET'S GO!\" as the powerlifter walks out to the bar, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_8.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://72661847599662"
+      }
+    },
+    "NatLiftShout_1": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"DRIVE! DRIVE!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://116486355238611"
+      }
+    },
+    "NatLiftShout_2": {
+      "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"STAND UP!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://114308128695462"
+      }
+    },
+    "NatLiftShout_3": {
+      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"COME ON, COME ON!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://132378915777342"
+      }
+    },
+    "NatLiftShout_4": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"SQUEEZE! SQUEEZE!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://75828470500681"
+      }
+    },
+    "NatLiftShout_5": {
+      "about": "Powerlifting meet, Nationals: a single older man in the stands of a big national powerlifting championship arena: \"DON'T STOP!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://121243430682783"
+      }
+    },
+    "NatLiftShout_6": {
+      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"ALL THE WAY!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_6.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://113526900747068"
+      }
+    },
+    "NatLiftShout_7": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"KEEP GRINDING!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_7.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://113882252163022"
+      }
+    },
+    "NatLiftShout_8": {
+      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"PUSH THROUGH!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_8.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://138576991082778"
+      }
+    },
+    "NatLiftShout_9": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"UP! UP! UP!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_9.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://120408263673058"
+      }
+    },
+    "NatLiftShout_10": {
+      "about": "Powerlifting meet, Nationals: a single big man with a very deep voice in the stands of a big national powerlifting championship arena: \"YES! YES! YES!\" during a heavy lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_10.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://139725780632492"
+      }
+    },
+    "NatGoodShout_1": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"THAT'S THE ONE!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://84831321180095"
+      }
+    },
+    "NatGoodShout_2": {
+      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"UNREAL!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://95152937789186"
+      }
+    },
+    "NatGoodShout_3": {
+      "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"HUGE LIFT!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://86312495191126"
+      }
+    },
+    "NatGoodShout_4": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"NAILED IT!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://129476826431077"
+      }
+    },
+    "NatGoodShout_5": {
+      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"MASSIVE!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://121320419357719"
+      }
+    },
+    "NatGoodShout_6": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"a happy cheering WOOOOO!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_6.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://92682520407472"
+      }
+    },
+    "NatGoodShout_7": {
+      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"THAT'S A CHAMPION!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_7.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://104639578706340"
+      }
+    },
+    "NatGoodShout_8": {
+      "about": "Powerlifting meet, Nationals: a single older man in the stands of a big national powerlifting championship arena: \"TEXTBOOK!\" right after a good lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_8.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://94007079970693"
+      }
+    },
+    "NatMissShout_1": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Ohh, so close!\" right after a missed lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_1.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://111900279375748"
+      }
+    },
+    "NatMissShout_2": {
+      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"Next one's yours!\" right after a missed lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_2.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://107421567171628"
+      }
+    },
+    "NatMissShout_3": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Keep your head up!\" right after a missed lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_3.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://73019588573452"
+      }
+    },
+    "NatMissShout_4": {
+      "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"Unlucky, champ!\" right after a missed lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_4.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://130340241579930"
+      }
+    },
+    "NatMissShout_5": {
+      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"Aww, man!\" right after a missed lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_5.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://89029877433003"
+      }
+    },
+    "NatMissShout_6": {
+      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"You almost had it!\" right after a missed lift, arena room echo",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_6.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://98149385923146"
+      }
+    },
+    "NatChant_LiftOrLose_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT OR LOSE!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftOrLose_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_LiftOrLose_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT OR LOSE!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftOrLose_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_LetsGo_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LET'S GO!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LetsGo_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_LetsGo_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LET'S GO!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LetsGo_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_SquatItUp_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"SQUAT IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_SquatItUp_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_SquatItUp_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"SQUAT IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_SquatItUp_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_StandItUp_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"STAND IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_StandItUp_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_StandItUp_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"STAND IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_StandItUp_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_PressItUp_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PRESS IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PressItUp_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_PressItUp_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PRESS IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PressItUp_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_LockItOut_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LOCK IT OUT!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LockItOut_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_LockItOut_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LOCK IT OUT!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LockItOut_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_LiftItUp_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftItUp_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_LiftItUp_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftItUp_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_PickItUp_A": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PICK IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PickItUp_A.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChant_PickItUp_B": {
+      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PICK IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PickItUp_B.mp3",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "skip": true,
+      "ids": {
+        "audio": "not uploaded alone"
+      }
+    },
+    "NatChantMix_ForTheWin": {
+      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of LIFT OR LOSE and then LET'S GO stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_ForTheWin.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://101829221359786"
+      }
+    },
+    "NatChantMix_Squat": {
+      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of SQUAT IT UP and then STAND IT UP stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Squat.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://104224299630196"
+      }
+    },
+    "NatChantMix_Bench": {
+      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of PRESS IT UP and then LOCK IT OUT stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Bench.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://81212795486043"
+      }
+    },
+    "NatChantMix_Deadlift": {
+      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of LIFT IT UP and then PICK IT UP stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Deadlift.wav",
+      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+      "ids": {
+        "audio": "rbxassetid://122422533517454"
       }
     }
   }

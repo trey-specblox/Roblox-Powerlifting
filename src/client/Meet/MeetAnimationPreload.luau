@@ -19,6 +19,7 @@ local LocalMeetConfig = require(Config:WaitForChild("LocalMeetConfig"))
 local CelebrationConfig = require(Config:WaitForChild("CelebrationConfig"))
 local EntranceConfig = require(Config:WaitForChild("EntranceConfig"))
 local EmoteConfig = require(Config:WaitForChild("EmoteConfig"))
+local NationalsConfig = require(Config:WaitForChild("NationalsConfig"))
 
 local MeetAnimationPreload = {}
 
@@ -67,6 +68,9 @@ local function allIds(): { string }
 		add(entrance.hypeAnimationId)
 	end
 	add(EntranceConfig.QuickTouch.animationId)
+	-- (Nationals: the flow state behind the curtain, and parting it.)
+	add(NationalsConfig.FlowAnimationId)
+	add(NationalsConfig.CurtainPartAnimationId)
 	for _, celebration in ipairs(CelebrationConfig.List) do
 		add(celebration.animationId)
 	end

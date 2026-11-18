@@ -2088,6 +2088,20 @@ multiplayer-only, not because progression requires it.
   white card behind, a red tag across the top, heavy italic type; an original design,
   not a copy of the examples. **[SUPERSEDED the same day by the game-wide style
   below.]**
+- **[DECIDED BY THE USER, 2026-11-18] Building signs float on top of their buildings** ("replace them with floating
+  text UI with the same names and timers", "make it float on top the building and make the text bigger, Same with the
+  gym and local meet, and state meet"): the gym (ELITE PREP GYM), the Local meet, the State arena and the Nationals
+  building show their names (and Nationals its countdown) as big floating text above the roof over the entrance, in the
+  game's style (slanted black tag, white and yellow lines), no board on the wall. **The gym's name is huge and high in
+  the sky over the middle of the gym** (user: "make it bigger with the ui in the sky in the middle of the gym, like high
+  up in the air. Just make sure floating names, dont overlap"): 120 x 24 studs, about 25 above the ridge; the four names
+  are 150+ studs apart and at different heights, so they never overlap. **[DECIDED BY THE USER, 2026-11-18] The other
+  three float high over the middle of their buildings too, with live timers** ("put the timers for the meets like
+  nationals, for local meet building, expand the model/shell and make the meet timer stack up ... if there is a regional
+  meet you can change it"): the Local meet building (now bigger, 60 x 44) lists every meet, one line each, "MEET 1 ·
+  1:23" in white, "MEET 3 · REGIONAL · 1:18" in yellow, "MEET 2 · LIFTING NOW" in green; the State arena says "Next
+  State meet in m:ss"; Nationals keeps "Next one in". (There are 5 Local meets, LocalMeetConfig.HallCount; the list
+  grows by itself if that changes.)
 - **One UI style for the whole game** (user, 2026-10-28: "MAKE SURE everything that
   requires a ui has the same style", with screenshots of another game's menus as
   direction only; picked from options): **yellow, white and dark navy** with a faint
@@ -7281,6 +7295,102 @@ pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, th
 > are just watching nothing"), the banner, the officials' tables and a warm-up area. At Nationals, lifters land outside
 > the porch and walk in. The porch sign counts down to the next Nationals ("Coming soon" while it isn't Live). The State
 > arena is no longer dressed as Nationals and its Nationals desk is gone.
+
+> **[DECIDED BY THE USER, 2026-11-17] Arena fixes after seeing it in Studio, and the Nationals meet's look** (user's
+> words, then picks):
+> - **Barricades** where the officials' "CENTRAL desks" stood (the desks go), and **barricaded all around** the meet
+>   area, with walls nobody can jump over. **Spectators may walk round into the warm-up area** (its racks usable by
+>   **anyone in the hall**), but **cannot cross the white line** between the warm-up area and the stages; lifters pass.
+> - **More warm-up racks**; **callers, benches and chalk stands** as at State.
+> - **A bigger hall** (the plaza building stays its size) with **wider gaps between the platforms** for the lifters to
+>   walk through; **the curtain stands line up with the platform screens**.
+> - **Screens:** the lifting order (**up, on deck, in the hole**...) and **the live screen** (the lifter's minigame), as
+>   at State.
+> - **A new Nationals walk-out** (in place of the lifter and coach at the chalk stand): the lifter chalks up, then waits
+>   **right behind the curtain** in a "flow state", rocking back and forth, while the crowd's chant builds; a small text
+>   says **"click anywhere to step onto the platform"**, and a click anywhere starts the walk out.
+> - **New chants for Nationals** in the same style as State's, with **different voices**, **not louder but more people**;
+>   and **new crowd cheers**, none reused. **"The same quality as the other AI generated voices"** (ElevenLabs, as
+>   before).
+> - **Order (user's pick):** the arena fixes now; then the Nationals meet itself (step 2), with the screens, the walk-out
+>   and the chants built into it.
+>
+> **[DECIDED BY THE USER, 2026-11-17] The Nationals meet (step 2)** (picked from options unless quoted):
+> - **Format:** the lifters' classes are shared out across the **4 platforms, which all run at the same time**, each
+>   lifting its own lifters in turn (lightest bar first), like real Nationals. About 30-45 minutes.
+> - **The Worlds spot** (each class's National Champion): **like the Nationals spot**: kept until the player competes at
+>   Worlds, reset when the month of that Worlds meet ends.
+> - **Rare-suit chance: 1%** (State's 0.5% doubled) **[PROVISIONAL]**.
+> - **Ties: a lift-off** (user's own idea: "sudden death type game, where the lifter is invited into the platform, they
+>   get to choose their lift of choice, the number gets bumped up by 2.5kgs"). Only for ties for **1st, 2nd or 3rd** in a
+>   class (lower ties share the place). Each tied lifter is called onto the platform and **picks squat, bench or
+>   deadlift**; their weight is **their best in that lift + 2.5 kg**. **They keep going until one misses:** everyone
+>   makes it -> +2.5 kg again; everyone misses -> again at the same weight; some make and some miss -> those who missed
+>   are out; until one is left. The lift-off **only decides the place**: totals and saved bests don't change. (Claude's
+>   guard, not the user's: an attempt nobody starts in time is a miss, and after 5 rounds where everyone missed, the
+>   lighter lifter wins, so a lift-off can't run forever.)
+
+> **Built (2026-11-17): the arena fixes.** A bigger hall with the platforms 52 studs apart (wide gaps between the
+> curtains), the curtains in line with the screens, barricades in place of the officials' desks and along both sides,
+> walls nobody can jump, the white line as the spectators' limit, and each platform's lifters' zone behind it: chalk
+> stand, benches, caller and lifting order board (the board fills in with the meet). 30 warm-up racks anyone in the hall
+> can practise on. The screens' live content, the walk-out and the chants come with the meet (step 2).
+
+> **Built (2026-11-17): step 2, the meet itself (code; NOT LIVE YET, `NationalsConfig.Live = false`).**
+> - **Start:** once every lifter sent to the Nationals server is inside the hall, or 2 minutes after the first landed
+>   (Studio 20 s; anyone still outside is walked in). Each lifter must weigh in at the class their spot is in. Every
+>   lifter uses up their spot as the meet starts (it resets once that month is over).
+> - **Platforms:** the lifters are sorted by class, lightest first, and dealt onto the 4 platforms in blocks; all 4 run at
+>   once, each with its own benches, caller and order board (UP, ON DECK, IN THE HOLE).
+> - **The walk-out:** called up, chalk at the stand, then walk round to stand **right behind the curtain** while the
+>   crowd's chant builds; a small line says **"CLICK ANYWHERE TO STEP ONTO THE PLATFORM"** (TAP on a phone). After 30 s
+>   they step out anyway. Behind the curtain they are in a **"flow state"**: a 4 s loop, rocking slowly forward and back
+>   on planted feet, head bowed, a slow breath, the hands shaken out loose halfway.
+> - **Chants (new for Nationals):** new ElevenLabs voices (a national crowd of men and women, deep and high voices), two
+>   phrases per lift (LIFT OR LOSE / LET'S GO when making it wins the class; SQUAT IT UP / STAND IT UP; PRESS IT UP /
+>   LOCK IT OUT; LIFT IT UP / PICK IT UP), mixed like State's but with twice the people, at the same level over the
+>   crowd (more people, not louder). The chant **builds** while the lifter waits behind the curtain (30% to full over
+>   12 s) and stops at the lift's result. The hall also has the arena crowd in the background now.
+> - **Crowd shouts (new for Nationals):** 32 new voices for the walk-out (8), during the lift (10), after a good lift
+>   (8) and after a miss (6); Nationals never plays the Local/State takes.
+> - **[DECIDED BY THE USER, 2026-11-18] The curtain, the cinematic and the camera** (user: "for the 'flow state' i was
+>   looking for more of a cinematic animation with camera angles and lighting, also i told you to extend the curtain
+>   farther, so ... once the user clicks, they are seen using their arms and moving the curtain to enter the platform";
+>   "Once you finish your lift, you camera is seen going behind the screen ... you might want to place the banner
+>   farther back"; their reference: a performer from behind before a lit red stage curtain). Built:
+>   - **The curtain:** the lifter's side of each stage set is now a **10-wide stage curtain** (4 panels, folded on both
+>     faces, **black**, user 2026-11-18: "make curtains a black, design") with a **split** in the middle that the lifter
+>     waits behind and **walks through** (no longer round the end). **[DECIDED BY THE USER, 2026-11-18]** From the split
+>     they walk **along behind the stage** to **steps in the middle of its back edge**, up them and straight in to the bar
+>     ("walking from the curtain, to behind the platform. Not with the stairs on the right side"; from the side they
+>     walked through the rack's frame); the walk back is the same way. The two middle panels **swing apart** as anyone walks through (an upside-down V, the bottoms
+>     trailing the way they walk) and fall closed after, on every screen. The stage's light shows through the split and
+>     under the hem while it is closed. The coach goes round the curtain's outer end. The other side keeps its narrow
+>     drape.
+>   - **Waiting behind it (the lifter's own screen):** the film look (black bars, soft background, the attempt and weight
+>     as a caption, "CLICK ANYWHERE TO STEP ONTO THE PLATFORM" in the bottom bar), a warm top light over them, warm pools
+>     of light on the curtain and on their face, a cool fill from behind, and four slow shots in turn: wide from behind
+>     looking across the curtain, their profile, their face from low in front, and a low shot past their legs to the light
+>     under the curtain. The flow-state rocking plays throughout.
+>   - **The click:** their hands come up together into the split, push the halves apart and hold them wide as they step
+>     through (an arms-only move over the walk). The camera cuts to the stage side, low, as the curtain parts and they
+>     come through toward it, then the usual walk-out camera follows them to the bar.
+>   - **[DECIDED BY THE USER, 2026-11-18] The curtain line is closed all the way across** ("place a curtain that coveres
+>     these open areas"): black curtain runs fill the gaps between the stage sets and out to the side barricades, so
+>     nobody sees past the sets into the lifters' zone or the warm-up area. The coach follows the lifter through the
+>     split (the curtain parts for them too) to watch from beside the stage.
+>   - **The camera:** in the Nationals hall the camera never goes behind a backdrop/curtain or outside the building's
+>     walls and roof (zooming out stops at them); after a lift it stays on the lifter's side. The **backdrops moved 5 studs
+>     further back** from the stages (7 behind each stage's back edge), and the lifters' area, white line (y 41) and
+>     warm-up rows moved back with them.
+> - **Placing:** per weight class by **total in kg** (not GL points), live and final. The race, "FOR THE WIN" and the
+>   standings all go by class.
+> - **Pay:** each class has its own prize pot, **x5**. Titles per class ("59 kg National Champion"), trophies, 1% suit.
+>   The class winner earns that class's **Worlds spot** (saved, schema 28; Worlds itself is not built).
+> - **Lift-off** as decided above, with a small 3-button pick (each lift and its weight); 15 s to pick, else their
+>   strongest. It never adds to totals, bests or records.
+> - **Awards:** class by class, lightest first, each class's top 3 on the podium for 14 s; the callers announce each
+>   National Champion. Then everyone is sent back to the game 45 s later.
 
 > **[IDEA, NOT TO BUILD YET: the user's planned first update after release, 2026-11-17] Spectating Nationals from a
 > server list.** When a Nationals begins, other players can join its server **to spectate only** (so the cheer bar still

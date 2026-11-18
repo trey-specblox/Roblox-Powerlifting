@@ -1940,6 +1940,79 @@
    "ids": {
     "model": "rbxassetid://72716651059879"
    }
+  },
+  "NationalsArena_03": {
+   "about": "The Nationals arena v03 (user 2026-11-17: bigger hall 336 x 210, platforms 52 apart, curtains in line with the screens, white line at y 34). Same 19 items as v02. Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (115 meshes, 29,112 triangles).",
+   "file": "art/exports/NationalsArena_03.glb",
+   "license": "own work",
+   "supersedes": "NationalsArena_02",
+   "ids": {
+    "model": "rbxassetid://81304095031113"
+   }
+  },
+  "NationalsArena_04": {
+   "about": "The Nationals arena v04 (user 2026-11-18: the backdrops 5 further back from the stages, the white line at y 41; the lifter's curtain at each stage's -X side extended to 10 wide as the new item NatCurtainPanel x4, whose middle two the game swings apart as the lifter pushes through). 20 items. Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (116 meshes, 29,104 triangles).",
+   "file": "art/exports/NationalsArena_04.glb",
+   "license": "own work",
+   "supersedes": "NationalsArena_03",
+   "ids": {
+    "model": "rbxassetid://116718498126356"
+   },
+   "note": "Its .glb was replaced by v05's the same day (only the curtain panel changed); the .blend stays."
+  },
+  "NationalsArena_05": {
+   "about": "The Nationals arena v05 (2026-11-18): v04 with NatCurtainPanel folded on BOTH faces (the walk-out's cinematic looks at the curtain's back; v04's back was flat). 20 items. Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (116 meshes, 29,132 triangles).",
+   "file": "art/exports/NationalsArena_05.glb",
+   "license": "own work",
+   "supersedes": "NationalsArena_04",
+   "ids": {
+    "model": "rbxassetid://122896682956726"
+   }
+  },
+  "NationalsArena_06": {
+   "about": "The Nationals arena v06 (user 2026-11-18: 'when im entering the platform, i need to be walking from the curtain, to behind the platform. Not with the stairs on the right side'): each NatStageSet's steps moved from its -X side to the middle of its back edge. 20 items. Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (116 meshes, 29,132 triangles).",
+   "file": "art/exports/NationalsArena_06.glb",
+   "license": "own work",
+   "supersedes": "NationalsArena_05",
+   "ids": {
+    "model": "rbxassetid://87733481257371"
+   }
+  },
+  "NationalsArena_07": {
+   "about": "The Nationals arena v07 (user 2026-11-18, every model made in Blender): v06 plus the new item NatCurtainGlow (the stage's light past each lifter's curtain: a glowing line in the split, a glowing strip under the hem), which the game had been making as plain neon parts. 21 items. Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (118 meshes, 29,156 triangles).",
+   "file": "art/exports/NationalsArena_07.glb",
+   "license": "own work",
+   "supersedes": "NationalsArena_06",
+   "ids": {
+    "model": "rbxassetid://128919812028471"
+   }
+  },
+  "NationalsArena_08": {
+   "about": "The Nationals arena v08 (user 2026-11-18: 'place a curtain that coveres these open areas'): v07 plus the curtain runs NatCurtainGap (between stage sets, x3), NatCurtainEndL and NatCurtainEndR (out to the side barricades), black, pleated, on their own pipe, closing the curtain line. 24 items. Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (124 meshes, 29,892 triangles).",
+   "file": "art/exports/NationalsArena_08.glb",
+   "license": "own work",
+   "supersedes": "NationalsArena_07",
+   "ids": {
+    "model": "rbxassetid://123515201004163"
+   }
+  },
+  "MeetHall_02": {
+   "about": "The Local meet's entrance building, bigger (user 2026-11-18: 'expand the model/shell'): MeetHall's design at 60 x 44, walls 22, ridge 33, porch 24 x 6; no wall sign (the name and every meet's timer float above the roof). One item, MeetHall2. Built by art/scripts/build_meet_hall_02.py. CHECK PASSED (16 meshes, 1,366 triangles).",
+   "file": "art/exports/MeetHall_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://75881658373417"
+   },
+   "note": "Unusable: its item name MeetHall2 has a digit (the game reads an item's name as the letters before the first '_'). Replaced by MeetHall_03; this .glb was re-exported with the new name."
+  },
+  "MeetHall_03": {
+   "about": "The Local meet's entrance building, bigger (user 2026-11-18: 'expand the model/shell'): MeetHall's design at 60 x 44, walls 22, ridge 33, porch 24 x 6; no wall sign (the name and every meet's timer float above the roof). One item, MeetHallBig. Built by art/scripts/build_meet_hall_02.py. CHECK PASSED (16 meshes, 1,366 triangles).",
+   "file": "art/exports/MeetHall_03.glb",
+   "license": "own work",
+   "supersedes": "MeetHall_02",
+   "ids": {
+    "model": "rbxassetid://76335862835551"
+   }
   }
  },
  "images": {

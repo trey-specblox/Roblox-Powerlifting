@@ -233,6 +233,9 @@ export type Platform = {
 	caller: Model?,
 	-- The State meet's lifting order board behind the rack (heading, then one line per lifter coming up), when it has one.
 	orderBoard: ((heading: string, lines: { string }) -> ())?,
+	-- Nationals (GAME_DESIGN §39): the spot right behind the curtain where the lifter waits, after chalking up, until they
+	-- click to step out (the walkOut starts from there).
+	curtainSpot: CFrame?,
 }
 
 export type Venue = {
@@ -888,19 +891,27 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 	return built, nil
 end
 
+-- MeetHall_03's numbers (art/scripts/build_meet_hall_02.py): the hall 60 wide, 44 deep, its walls 22 and the ridge
+-- 33 high; the porch 24 wide, 11 high; the doors' glass 6.25 in front of the hall's front wall.
+local HALL2_W, HALL2_D, HALL2_EAVE, HALL2_RIDGE = 60, 44, 22, 33
+local PORCH2_W, PORCH2_H, DOORS_TO_FRONT = 24, 11, 6.25
+
+-- The entrance building's floating sign: LOCAL MEET and every meet's timer (LocalMeetService writes them).
+local entranceSign: StyledScreen.FloatingHandle? = nil
+
 --[[
-	Builds the venue's ENTRANCE BUILDING outside the gym (LocalMeet_01's MeetHall: a
-	pitched gable roof and an entrance porch), on hidden solid blocks, with its sign,
-	and returns the invisible point in front of its doors (tagged
-	LocalMeetConfig.EntranceTag), or nil when the model did not load. Its front
-	wall lines up with the gym's front.
+	Builds the venue's ENTRANCE BUILDING outside the gym (MeetHall_03's MeetHallBig: a
+	pitched gable roof and an entrance porch, user 2026-11-18: "expand the model/shell"),
+	on hidden solid blocks, with its floating sign, and returns the invisible point in
+	front of its doors (tagged LocalMeetConfig.EntranceTag), or nil when the model did
+	not load. Its front wall lines up with the gym's front.
 ]]
 function LocalMeetVenue.buildEntrance(): BasePart?
 	local existing = Workspace:FindFirstChild(ENTRANCE_NAME)
 	if existing then
 		return existing:FindFirstChild("DoorPoint") :: BasePart?
 	end
-	local hall = RoomProps.propCopy("MeetHall", 1)
+	local hall = RoomProps.propCopy("MeetHallBig", 1)
 	if hall == nil then
 		warn("[LocalMeetVenue] the entrance building's model did not load")
 		return nil
@@ -909,18 +920,17 @@ function LocalMeetVenue.buildEntrance(): BasePart?
 	model.Name = ENTRANCE_NAME
 	hall.Name = "MeetHall"
 	hall.Parent = model
-	-- Place it facing -Z like the gym, then slide it so the sign's wall sits at the gym's front line.
+	-- Place it facing -Z like the gym, then slide it so its front wall sits at the gym's front line.
 	hall:PivotTo(CFrame.new(ENTRANCE_X, 0, ENTRANCE_FRONT_Z))
-	local sign = hall:FindFirstChild("MeetHall_SignScreen", true) :: BasePart?
-	local doors = hall:FindFirstChild("MeetHall_Doors", true) :: BasePart?
-	if sign == nil or doors == nil then
+	local doors = hall:FindFirstChild("MeetHallBig_Doors", true) :: BasePart?
+	if doors == nil then
 		model:Destroy()
-		warn("[LocalMeetVenue] the entrance building's model is missing its sign or doors")
+		warn("[LocalMeetVenue] the entrance building's model is missing its doors")
 		return nil
 	end
-	hall:PivotTo(hall:GetPivot() + Vector3.new(0, 0, ENTRANCE_FRONT_Z - sign.Position.Z))
-	local frontZ = sign.Position.Z
+	hall:PivotTo(hall:GetPivot() + Vector3.new(0, 0, ENTRANCE_FRONT_Z - (doors.Position.Z + DOORS_TO_FRONT)))
 	local doorZ = doors.Position.Z
+	local frontZ = doorZ + DOORS_TO_FRONT
 
 	-- Hidden solids: the hall (with its gable as a block up to the ridge's middle), and the porch.
 	local function solid(name: string, low: Vector3, high: Vector3)
@@ -928,12 +938,18 @@ function LocalMeetVenue.buildEntrance(): BasePart?
 		part.Transparency = 1
 		part.CastShadow = false
 	end
-	solid("Hall_Solid", Vector3.new(ENTRANCE_X - 20, 0, frontZ), Vector3.new(ENTRANCE_X + 20, 20, frontZ + 30))
-	solid("Porch_Solid", Vector3.new(ENTRANCE_X - 9, 0, doorZ + 0.1), Vector3.new(ENTRANCE_X + 9, 9, frontZ))
-	solid("Landing_Solid", Vector3.new(ENTRANCE_X - 10, 0, doorZ - 5.2), Vector3.new(ENTRANCE_X + 10, 0.3, doorZ + 0.1))
+	solid("Hall_Solid", Vector3.new(ENTRANCE_X - HALL2_W / 2, 0, frontZ),
+		Vector3.new(ENTRANCE_X + HALL2_W / 2, (HALL2_EAVE + HALL2_RIDGE) / 2, frontZ + HALL2_D))
+	solid("Porch_Solid", Vector3.new(ENTRANCE_X - PORCH2_W / 2, 0, doorZ + 0.1),
+		Vector3.new(ENTRANCE_X + PORCH2_W / 2, PORCH2_H, frontZ))
+	solid("Landing_Solid", Vector3.new(ENTRANCE_X - PORCH2_W / 2 - 1.5, 0, doorZ - 6),
+		Vector3.new(ENTRANCE_X + PORCH2_W / 2 + 1.5, 0.3, doorZ + 0.1))
 
-	-- The sign: big heavy italic LOCAL MEET in the game's style, readable from across the plaza.
-	writeSign(sign, -Vector3.zAxis, "LOCAL MEET", "MEETS AGAINST OTHER PLAYERS  //  HOLD E AT THE DOORS", 30)
+	-- The sign: LOCAL MEET and every meet's timer stacked under it, as big floating text high over the MIDDLE of the
+	-- building, in the game's style (user 2026-11-18: "put it higher and put it in the middle, and put the timers for
+	-- the meets like nationals ... make the meet timer stack up"). LocalMeetService writes the timers every second.
+	entranceSign = StyledScreen.floatAbove(model, Vector3.new(ENTRANCE_X, 0, frontZ + HALL2_D / 2), HALL2_RIDGE + 1,
+		"LOCAL MEET", { "Meets against other players" }, "star", 56, 34, 14, 1200)
 
 	-- The point in front of the doors that carries the "Go to the Local Meet" prompt.
 	local doorPoint = BuildParts.box(model, "DoorPoint", Vector3.new(ENTRANCE_X - 1.5, 0.3, doorZ - 4),
@@ -945,6 +961,14 @@ function LocalMeetVenue.buildEntrance(): BasePart?
 	doorPoint:AddTag(LocalMeetConfig.EntranceTag)
 	model.Parent = Workspace
 	return doorPoint
+end
+
+-- The entrance building's floating sign's lines (each meet's timer), with their colours (nil: the default).
+function LocalMeetVenue.setEntranceLines(lines: { string }, colours: { Color3 }?)
+	local sign = entranceSign
+	if sign then
+		sign.setLines(lines, colours)
+	end
 end
 
 -- The lobby spot spread out a little for lifter `index`, so lifters leaving the platforms do not stack.

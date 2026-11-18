@@ -158,7 +158,7 @@ EntranceConfig.StyleWalkStuds = 16
 -- get the entrances too, "no flashy cinematic, just to keep local and regionals quick but still a little styleish"; it was
 -- State only, user 2026-11-08). The coach's ritual and its film-look walk-out shots stay State only. Keyed by the meet's
 -- level name, as CheerConfig.MeetLevels.
-EntranceConfig.HypeMeetLevels = { Local = true, Regional = true, State = true } :: { [string]: boolean }
+EntranceConfig.HypeMeetLevels = { Local = true, Regional = true, State = true, Nationals = true } :: { [string]: boolean }
 
 -- (Now only for a walk-out with no hype move, at a meet without them; every meet has them since 2026-11-12.)
 -- Local and Regional meets, where no hype move plays: everyone's quick "game face" over the last steps of the walk out

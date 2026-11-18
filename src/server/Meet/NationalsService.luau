@@ -3,11 +3,13 @@
 	NationalsService
 	Server / Meet
 
-	NATIONALS, STEP 1: THE GATHERING (GAME_DESIGN.md §39, user 2026-11-17). Every NationalsConfig
-	cycle (2 hours, on the same UTC clock in every server), every spot-holder who signed up, in any
-	server, is sent into ONE Nationals server (a reserved server), where they arrive outside the Nationals
-	building (NationalsArenaVenue, step 3: the arena from the user's photos) and walk in. The meet itself
-	(per class, titles, x5 pot, the Worlds spot) is step 2 and is NOT here.
+	NATIONALS (GAME_DESIGN.md §39, user 2026-11-17). Every NationalsConfig cycle (2 hours, on the same
+	UTC clock in every server), every spot-holder who signed up, in any server, is sent into ONE Nationals
+	server (a reserved server), where they arrive outside the Nationals building (NationalsArenaVenue: the
+	arena from the user's photos) and walk in. Once they are all inside (or NationalsConfig.ArriveSeconds
+	after the first landed, when the rest are walked in) the meet runs (step 2, LocalMeetService.
+	startNationalsMeet: per class, titles, x5 pot, the Worlds spot, lift-offs); after the awards everyone
+	is sent back to the game.
 
 	SIGNING UP: the NATIONALS row of the MEETS list (NationalsRemotes.SIGN_UP) or the NATIONALS desk on
 	the Nationals hall's concourse. The server checks the spot: ProfileOperations.getNationals(...).qualified
@@ -325,6 +327,9 @@ local function waitForArena(): boolean
 	return NationalsArenaVenue.current() ~= nil
 end
 
+-- The meet itself, once the lifters are here (below).
+local runTheMeet: (round: number) -> ()
+
 -- This server is now the Nationals server for `info` (live: a reserved server; Studio: the stand-in in this one).
 local function becomeNationals(info: NationalsQueue.ServerInfo)
 	local count = 0
@@ -336,7 +341,9 @@ local function becomeNationals(info: NationalsQueue.ServerInfo)
 	log("this server is Nationals %d, for %d lifters", info.round, count)
 	if not waitForArena() then
 		warn("[NationalsService] the Nationals arena wasn't built, so Nationals has no venue")
+		return
 	end
+	task.spawn(runTheMeet, info.round)
 end
 
 -- Studio's stand-in is over (its last lifter left).
@@ -400,9 +407,8 @@ local function admit(player: Player)
 		warn(string.format("[NationalsService] %s could not be brought to the Nationals building", player.Name))
 		notify(player, "Couldn't take you to the Nationals building: find it on the plaza, left of the gym's doors.")
 	else
-		notify(player, string.format("Welcome to NATIONALS (%s class)! %d %s made it here. Walk in through the doors. The "
-			.. "Nationals meet itself comes in the next update; press LEAVE on the NATIONALS row of MEETS to go back.", classKey,
-			h.count, if h.count == 1 then "lifter" else "lifters"))
+		notify(player, string.format("Welcome to NATIONALS (%s class)! %d %s made it here. Walk in through the doors: the "
+			.. "meet starts once everyone is inside.", classKey, h.count, if h.count == 1 then "lifter" else "lifters"))
 	end
 	log("%s is at Nationals %d (%s), in the arena: %s", player.Name, h.round, classKey, tostring(arrived))
 	broadcast()
@@ -425,6 +431,103 @@ local function leaveNationals(player: Player)
 	if next(atNationals) == nil then
 		endStandIn()
 	end
+end
+
+-- ---------------------------------------------------------------- the meet (step 2)
+
+-- The lifters at Nationals here who are inside the hall, and those still outside.
+local function insideAndOut(): ({ Player }, { Player })
+	local inside, outside = {}, {}
+	for player in pairs(atNationals) do
+		if player.Parent then
+			table.insert(if player:GetAttribute(NationalsConfig.InHallAttribute) == true then inside else outside, player)
+		end
+	end
+	return inside, outside
+end
+
+-- After the awards: everyone goes back to the game (live: a public server; Studio: out of the stand-in).
+local function sendEveryoneBack()
+	local players: { Player } = {}
+	for player in pairs(atNationals) do
+		table.insert(players, player)
+	end
+	for _, player in ipairs(players) do
+		if player.Parent then
+			if IS_STUDIO then
+				leaveNationals(player)
+			else
+				task.spawn(sendHome, player)
+			end
+		end
+	end
+end
+
+--[[
+	The meet (user 2026-11-17, "Outside, walk in"): waits for the first lifter to land, then until every listed lifter here
+	is inside or ArriveSeconds have passed (lifters still outside are walked in), then starts it. When it is over, everyone
+	is told and sent back SendHomeSeconds later.
+]]
+runTheMeet = function(round: number)
+	local landDeadline = os.clock() + ADMIT_WAIT_SECONDS * 2
+	while next(atNationals) == nil and os.clock() < landDeadline do
+		task.wait(1)
+	end
+	local h = here
+	if h == nil or h.round ~= round or next(atNationals) == nil then
+		log("Nationals %d: nobody arrived, so no meet", round)
+		return
+	end
+	local arriveSeconds = if IS_STUDIO then NationalsConfig.StudioArriveSeconds else NationalsConfig.ArriveSeconds
+	local startAt = os.clock() + arriveSeconds
+	local nextReminder = 0
+	while os.clock() < startAt do
+		local inside, outside = insideAndOut()
+		local arrived = #inside + #outside
+		if #outside == 0 and arrived >= h.count then
+			break
+		end
+		if os.clock() >= nextReminder then
+			nextReminder = os.clock() + 30
+			for _, player in ipairs(outside) do
+				notify(player, string.format("Walk in through the doors: the Nationals meet starts in %s.",
+					clockText(startAt - os.clock())))
+			end
+		end
+		task.wait(1)
+	end
+	local _, outside = insideAndOut()
+	for _, player in ipairs(outside) do
+		NationalsArenaVenue.goInside(player)
+	end
+	local entries: { { player: Player, classKey: string } } = {}
+	for player, classKey in pairs(atNationals) do
+		if player.Parent then
+			table.insert(entries, { player = player, classKey = classKey })
+		end
+	end
+	local started, why = LocalMeetService.startNationalsMeet(entries, function(places: { [number]: number? })
+		for player in pairs(atNationals) do
+			local place = places[player.UserId]
+			notify(player, string.format("Nationals is over%s. Taking you back to the game in %d seconds.",
+				if place then string.format(": you placed %s in your class", if place == 1 then "1st"
+					elseif place == 2 then "2nd" elseif place == 3 then "3rd" else tostring(place) .. "th") else "",
+				NationalsConfig.SendHomeSeconds))
+		end
+		log("Nationals %d is over", round)
+		task.wait(NationalsConfig.SendHomeSeconds)
+		sendEveryoneBack()
+	end)
+	if not started then
+		warn("[NationalsService] the Nationals meet could not start: " .. tostring(why))
+		for player in pairs(atNationals) do
+			notify(player, string.format("The Nationals meet couldn't start (%s). Taking you back to the game.", tostring(why)))
+		end
+		task.wait(8)
+		sendEveryoneBack()
+		return
+	end
+	log("Nationals %d: the meet started with %d entries", round, #entries)
 end
 
 -- ---------------------------------------------------------------- the start

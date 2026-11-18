@@ -2737,6 +2737,49 @@ end
 
 --------------------------------------------------------------------------------
 print("")
+print("--- version 27 to 28: the Worlds spots (GAME_DESIGN §39) ---")
+do
+	-- Unix times in UTC: 2026-11-17, 2027-01-02.
+	local NOV_17, JAN_2 = 1794873600, 1798848000
+	local CLASS = classOf(newProfile())
+	check("a new profile has no Worlds spots", next(newProfile().career.worlds) == nil)
+	local old = newProfile()
+	;(old.career :: any).worlds = nil
+	check("migrated 27 to the current version", PlayerProfileSchema.migrate(old, 27) == PlayerProfileSchema.CURRENT_VERSION
+		and old.version == PlayerProfileSchema.CURRENT_VERSION and typeof(old.career.worlds) == "table")
+	local broken = newProfile()
+	;(broken.career :: any).worlds = { ["74 kg"] = { earnedSeason = "2026-11", competedSeason = "" },
+		["83 kg"] = { earnedSeason = "soon", competedSeason = "" }, ["93 kg"] = true }
+	PlayerProfileSchema.migrate(broken, 27)
+	check("broken entries are dropped, good ones kept", broken.career.worlds["74 kg"] ~= nil
+		and broken.career.worlds["83 kg"] == nil and broken.career.worlds["93 kg"] == nil)
+	PlayerProfileSchema.migrate(broken, 27)
+	check("a re-run changes nothing", broken.career.worlds["74 kg"].earnedSeason == "2026-11")
+
+	local data = newProfile()
+	check("no spot to start", not ProfileOperations.getWorlds(data, CLASS, NOV_17).qualified)
+	local outcome, view = ProfileOperations.addWorldsSpot(data, CLASS, NOV_17)
+	check("a National Champion earns it", outcome == "Earned" and view.qualified and view.earnedSeason == "2026-11")
+	check("winning again keeps the first", ProfileOperations.addWorldsSpot(data, CLASS, JAN_2) == "AlreadyHeld"
+		and data.career.worlds[CLASS].earnedSeason == "2026-11")
+	check("kept months later", ProfileOperations.getWorlds(data, CLASS, JAN_2 + 200 * 86400).qualified)
+	check("no build for the class: refused", ProfileOperations.addWorldsSpot(data, "120+ kg", JAN_2) == "Rejected")
+	local spent = deepCopy(data)
+	check("competing at Worlds stamps the month", ProfileOperations.markWorldsCompeted(spent, CLASS, JAN_2)
+		and spent.career.worlds[CLASS].competedSeason == "2027-01")
+	check("the spot holds through that month", ProfileOperations.getWorlds(spent, CLASS, JAN_2 + 20 * 86400).qualified)
+	local feb = JAN_2 + 31 * 86400
+	check("after that month it is gone", not ProfileOperations.getWorlds(spent, CLASS, feb).qualified
+		and not ProfileOperations.markWorldsCompeted(spent, CLASS, feb))
+	outcome = ProfileOperations.addWorldsSpot(spent, CLASS, feb)
+	check("and is won again at Nationals", outcome == "Earned" and spent.career.worlds[CLASS].earnedSeason == "2027-02"
+		and spent.career.worlds[CLASS].competedSeason == "")
+	local reloaded = saveAndReload(data)
+	check("the spot survives a save and reload", reloaded.career.worlds[CLASS].earnedSeason == "2026-11")
+end
+
+--------------------------------------------------------------------------------
+print("")
 print(string.format("=== %d passed, %d failed ===", passed, failed))
 
 if failed > 0 then

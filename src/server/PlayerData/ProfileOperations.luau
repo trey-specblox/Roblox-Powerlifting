@@ -1052,6 +1052,101 @@ function ProfileOperations.markNationalsCompeted(data: ProfileData, classKey: st
 end
 
 --[[
+	THE WORLDS SPOT (schema 28; user 2026-11-17, GAME_DESIGN §39: "like the Nationals spot"). Per weight class: winning
+	the class at Nationals earns it. It is kept until the player competes at Worlds; once the season (month) of that first
+	Worlds meet is over, the class has no spot (won again at Nationals). Worlds itself is not built yet.
+]]
+export type WorldsView = {
+	classKey: string,
+	qualified: boolean,
+	-- The season of the Nationals win that earned it, and of the first Worlds meet on it ("" = none yet).
+	earnedSeason: string,
+	competedSeason: string,
+}
+
+export type WorldsOutcome = "Earned" | "AlreadyHeld" | "Rejected"
+
+local function worldsOf(data: ProfileData): { [string]: PlayerProfileSchema.WorldsSpot }?
+	local career = (data :: any).career
+	local spots = if typeof(career) == "table" then career.worlds else nil
+	return if typeof(spots) == "table" then spots else nil
+end
+
+local function isSeasonText(value: any): boolean
+	return typeof(value) == "string" and string.match(value, "^%d%d%d%d%-%d%d$") ~= nil
+end
+
+local function isUsableWorlds(spot: any): boolean
+	return typeof(spot) == "table" and isSeasonText(spot.earnedSeason)
+		and (spot.competedSeason == "" or isSeasonText(spot.competedSeason))
+end
+
+-- Whether a usable spot was used at Worlds in a season that is now over (so it is gone).
+local function worldsSpent(spot: any, season: string): boolean
+	return spot.competedSeason ~= "" and spot.competedSeason < season
+end
+
+-- The player's Worlds spot in `classKey` at `nowUnix` (none when there is no usable one, or it was used in a season that
+-- is over). Read only.
+function ProfileOperations.getWorlds(data: ProfileData, classKey: string, nowUnix: number): WorldsView
+	local spots = worldsOf(data)
+	local spot: any = if spots and typeof(classKey) == "string" then spots[classKey] else nil
+	if not isFiniteNumber(nowUnix) or not isUsableWorlds(spot) or worldsSpent(spot, MeetLevelConfig.seasonFor(nowUnix)) then
+		return { classKey = classKey, qualified = false, earnedSeason = "", competedSeason = "" }
+	end
+	return { classKey = classKey, qualified = true, earnedSeason = spot.earnedSeason, competedSeason = spot.competedSeason }
+end
+
+--[[
+	A National Champion in `classKey` at `nowUnix`: the class's Worlds spot (a spot used in a season that is over is
+	replaced). Returns:
+		"Earned"       the class holds its Worlds spot now
+		"AlreadyHeld"  the class already held one that is still good: nothing changed
+		"Rejected"     no worlds map, no build for the class, or an unusable stored entry; nothing changed
+	and that class's view afterwards. SECURITY BOUNDARY: the caller (LocalMeetService) decides from the Nationals meet's
+	result that this player won the class; the class comes from the weigh-in.
+]]
+function ProfileOperations.addWorldsSpot(data: ProfileData, classKey: string, nowUnix: number): (WorldsOutcome, WorldsView)
+	local spots = worldsOf(data)
+	local safeNow = if isFiniteNumber(nowUnix) then nowUnix else 0
+	if spots == nil or typeof(classKey) ~= "string" or ProfileOperations.getBuild(data, classKey) == nil
+		or not isFiniteNumber(nowUnix) then
+		return "Rejected", ProfileOperations.getWorlds(data, classKey, safeNow)
+	end
+	local season = MeetLevelConfig.seasonFor(nowUnix)
+	local spot: any = spots[classKey]
+	if spot ~= nil and not isUsableWorlds(spot) then
+		return "Rejected", ProfileOperations.getWorlds(data, classKey, nowUnix)
+	end
+	if spot ~= nil and not worldsSpent(spot, season) then
+		return "AlreadyHeld", ProfileOperations.getWorlds(data, classKey, nowUnix)
+	end
+	spots[classKey] = { earnedSeason = season, competedSeason = "" }
+	return "Earned", ProfileOperations.getWorlds(data, classKey, nowUnix)
+end
+
+--[[
+	For the Worlds meet (not built yet): the player competed at Worlds in `classKey` at `nowUnix`. Stamps the season of the
+	FIRST Worlds meet on this spot; later ones that season change nothing. Returns false, changing nothing, when the class
+	holds no spot now.
+]]
+function ProfileOperations.markWorldsCompeted(data: ProfileData, classKey: string, nowUnix: number): boolean
+	local spots = worldsOf(data)
+	local spot: any = if spots and typeof(classKey) == "string" then spots[classKey] else nil
+	if not isFiniteNumber(nowUnix) or not isUsableWorlds(spot) then
+		return false
+	end
+	local season = MeetLevelConfig.seasonFor(nowUnix)
+	if worldsSpent(spot, season) then
+		return false
+	end
+	if spot.competedSeason == "" then
+		spot.competedSeason = season
+	end
+	return true
+end
+
+--[[
 	=========================================================================
 	COINS  (GAME_DESIGN.md 30.6, the money system's first build; schema 12)
 	=========================================================================

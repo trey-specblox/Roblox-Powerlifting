@@ -29,7 +29,9 @@
 	          side balconies (upstairs is now reachable).
 	STAGE 4:
 	  Reception the reception desk and the gym-name wall in the lobby, and
-	          the name sign outside above the entrance ("ELITE PREP GYM").
+	          the name floating on top of the building over the entrance
+	          ("ELITE PREP GYM", StyledScreen.floatAbove; 2026-11-18, was a
+	          board on the wall: the FrontSign* settings are unused now).
 	  Doors   automatic sliding glass doors (2026-10-23) in the entrance and
 	          in the lobby's opening into the hall, moved by the client's
 	          AutoDoorAnimator.
@@ -915,38 +917,13 @@ local function buildReception(model: Model, plan: StarterGymConfig.Footprint)
 	end
 
 	-- ---------------------------------------------------------------- outside
-	-- The name sign on the front wall above the entrance, with its halo and two spotlights.
-	local outsideZ = plan.frontZ - t
-	local signY = floorY + cfg.FrontSignBottomStuds + cfg.FrontSignHeightStuds / 2
-	haloSign(reception, "FrontSign", Vector3.new(cx, signY, outsideZ), -Vector3.zAxis, Vector3.xAxis,
-		cfg.FrontSignWidthStuds, cfg.FrontSignHeightStuds, Enum.NormalId.Front, cfg.FrontSignArt,
-		cfg.FrontSignArtHeightPixels)
-	for index, x in ipairs({ cx - cfg.FrontSignWidthStuds / 4, cx + cfg.FrontSignWidthStuds / 4 }) do
-		local lampY = signY + cfg.FrontSignHeightStuds / 2 + 1.4
-		local lampName = string.format("FrontSign_Lamp_%d", index)
-		-- Tilted so its bottom face looks down and back onto the sign.
-		local aim = CFrame.new(x, lampY, outsideZ - 2.4) * CFrame.Angles(math.rad(-35), 0, 0)
-		local lamp: BasePart
-		-- The Reception_01 flood lamp: its arm at lampY, 2.84 out from the wall and 0.41 down to the head's
-		-- lowest corner. Its lens is not square to the model, so the light sits on a hidden part aimed like the
-		-- old block lamp.
-		if RoomProps.fitting(reception, lampName, "FloodLamp", "Lens", CFrame.new(x, lampY - 0.406, outsideZ - 1.421)) then
-			lamp = decor(placed(reception, lampName .. "_Aim", Vector3.new(0.2, 0.2, 0.2), aim * CFrame.new(0, -0.3, 0),
-				looks.Gadget))
-			lamp.Transparency = 1
-		else
-			decor(box(reception, string.format("FrontSign_LampArm_%d", index), Vector3.new(x - 0.08, lampY - 0.08, outsideZ - 2.2),
-				Vector3.new(x + 0.08, lampY + 0.08, outsideZ), looks.Stainless))
-			lamp = decor(placed(reception, lampName, Vector3.new(0.8, 0.5, 0.8), aim, looks.Gadget))
-		end
-		local spot = Instance.new("SpotLight")
-		spot.Face = Enum.NormalId.Bottom
-		spot.Angle = 70
-		spot.Range = 14
-		spot.Brightness = 2
-		spot.Color = cfg.LightColor
-		spot.Parent = lamp
-	end
+	-- The gym's name as huge floating text high in the sky over the MIDDLE of the gym (user 2026-11-18: "make it bigger
+	-- with the ui in the sky in the middle of the gym, like high up in the air. Just make sure floating names dont
+	-- overlap"; it was a board on the front wall, then floated just over the front edge). Its bottom is 45 above the
+	-- roof's eaves (about 25 over the ridge); the other buildings' names float over their own roofs, 150+ studs away and
+	-- lower, so none overlap. Seen from far across the plaza.
+	StyledScreen.floatAbove(reception, Vector3.new(cx, 0, (plan.frontZ + plan.hallBackZ) / 2), plan.roofY, cfg.GymName, {},
+		"slashes", 120, 24, 45, 1500)
 end
 
 --[[

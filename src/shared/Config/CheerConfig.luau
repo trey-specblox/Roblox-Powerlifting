@@ -19,7 +19,7 @@
 local CheerConfig = {}
 
 -- The meet levels with cheering: State and up (user 2026-11-08). Nationals and the rest join here when they exist.
-CheerConfig.MeetLevels = { State = true } :: { [string]: boolean }
+CheerConfig.MeetLevels = { State = true, Nationals = true } :: { [string]: boolean }
 
 -- A lifter with less stat gear than this on the lift counts as having this much (user's pick: +5).
 CheerConfig.MinimumGearTechnique = 5

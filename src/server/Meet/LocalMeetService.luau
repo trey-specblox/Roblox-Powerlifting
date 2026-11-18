@@ -269,6 +269,11 @@ type Lifter = {
 	onScreen: boolean?,
 	-- It's their turn: they can't practise.
 	onTurn: boolean?,
+	-- A Nationals lift-off (GAME_DESIGN §39): picking its lift now, the lift picked, and an attempt in it under way (it
+	-- saves nothing: no history, best or record).
+	liftOffChoosing: boolean?,
+	liftOffPick: string?,
+	liftOffRound: boolean?,
 }
 
 type Meet = {
@@ -288,6 +293,8 @@ type Meet = {
 	level: string,
 	-- The final placing, by UserId (set when the meet ends).
 	places: { [number]: MeetPlacing.Placing },
+	-- Nationals: each lift-off lifter's finish in it (key -> 1 = won), which breaks their tie (GAME_DESIGN §39).
+	liftOff: { [number]: number },
 }
 
 -- One of the five meets: its hall, sign-up list, running meet and timetable.
@@ -304,6 +311,9 @@ type Hall = {
 	-- The State arena (GAME_DESIGN §36.4), not one of the five halls: its own timetable, qualified lifters only, no computer
 	-- lifters, one lifter at a time.
 	state: boolean,
+	-- The Nationals hall (GAME_DESIGN §39; also `state`, as it runs the same way: racks on their own, turns, benches): no
+	-- timetable (NationalsService starts its meet), placed per weight class, its own walk-out from behind the curtain.
+	nationals: boolean,
 }
 
 -- Filled when the venue is built; empty until then.
@@ -323,9 +333,42 @@ local suitRandom = Random.new()
 local stateArena: StateArenaVenue.Venue? = nil
 local stateRackSet: { [LocalMeetVenue.WarmUpRack]: boolean } = {}
 local lastPress: { [Player]: number } = {}
+-- The Nationals hall (setNationalsVenue): not in `halls` (no timetable, no MEETS row, no SPECTATE), but a hall like the
+-- others for visits, sounds, standings and its meet. Its number is out of the halls' range.
+local NATIONALS_HALL_INDEX = 99
+local nationalsHall: Hall? = nil
+-- Where leaving the Nationals hall lands a player (outside the porch), and what the arena wants to hear.
+local nationalsOutside: CFrame? = nil
+export type NationalsHooks = {
+	-- A player left the hall (EXIT, death, leaving the game, the meet screen's EXIT).
+	onLeft: (player: Player) -> (),
+	-- Off the hall's own warm-up racks (a lifter called up, the meet starting).
+	stopWarmUp: (player: Player) -> (),
+	-- The crowd's chant for platform `rack`'s lifter, building while they wait behind the curtain until their lift's
+	-- result (nil: their lift is over). `forFirst`: making it wins them their class.
+	chant: (rack: number, lift: string?, forFirst: boolean?) -> (),
+	-- The lifter behind platform `rack`'s curtain (their name and class), or nobody: the platform's screens say who is up.
+	behindCurtain: (rack: number, name: string?, classLabel: string?) -> (),
+}
+local nationalsHooks: NationalsHooks? = nil
+-- Told when the Nationals meet is over (NationalsService), with each lifter's class place (UserId -> place or nil).
+local nationalsOnFinished: ((places: { [number]: number? }) -> ())? = nil
+-- A Nationals lifter waiting behind the curtain clicks to step out within this long, or steps out anyway.
+local CURTAIN_WAIT_SECONDS = 30
 
 local function log(message: string, ...: any)
 	print("[LocalMeetService] " .. string.format(message, ...))
+end
+
+-- Off any warm-up rack: the five halls' and the State arena's, and the Nationals hall's own.
+local function stopWarmUps(player: Player)
+	if warmUp then
+		warmUp.stop(player, false)
+	end
+	local hooks = nationalsHooks
+	if hooks then
+		hooks.stopWarmUp(player)
+	end
 end
 
 local function notify(player: Player, message: string)
@@ -361,7 +404,7 @@ end
 
 -- How a message names a meet.
 local function meetName(hall: Hall): string
-	return if hall.state then "the State meet" else "meet " .. hall.index
+	return if hall.nationals then "Nationals" elseif hall.state then "the State meet" else "meet " .. hall.index
 end
 
 local function rewardMinimumLifters(): number
@@ -465,6 +508,12 @@ local function activeLifter(player: Player): (Meet?, Lifter?)
 			return current, lifter
 		end
 	end
+	local nationals = nationalsHall
+	local current = nationals and nationals.meet
+	local lifter = current and current.byPlayer[player]
+	if current and lifter and not lifter.withdrawn then
+		return current, lifter
+	end
 	return nil, nil
 end
 
@@ -502,6 +551,50 @@ local function stateLadder(player: Player): (boolean, string?)
 		return true, nil
 	end
 	return false, string.format("LADDER %d/%d IN %s", ladder.points, ladder.target, classKey)
+end
+
+--[[
+	The entrance buildings' floating signs (user 2026-11-18: "put the timers for the meets like nationals, for local meet
+	building ... make the meet timer stack up, like meet 1 - 8 timer and if there is a regional meet you can change it"):
+	the Local meet building lists every meet, one line each, "MEET 1  ·  1:23" (white), "MEET 2  ·  REGIONAL  ·  0:45"
+	(yellow) or "MEET 3  ·  LIFTING NOW"; the State arena says when its next State meet starts. Written as the timetable
+	ticks (only changed text goes out).
+]]
+local SIGN_WHITE, SIGN_YELLOW, SIGN_GREEN = Color3.fromRGB(248, 248, 244), Color3.fromRGB(250, 206, 36),
+	Color3.fromRGB(90, 220, 120)
+
+local function clockFor(seconds: number): string
+	local whole = math.max(0, math.ceil(seconds))
+	return string.format("%d:%02d", whole // 60, whole % 60)
+end
+
+local function refreshEntranceSigns()
+	local lines: { string } = {}
+	local colours: { Color3 } = {}
+	local t = now()
+	for _, hall in ipairs(halls) do
+		if hall.nationals then
+			continue
+		end
+		local level = MeetLevelConfig.Levels[hall.nextLevel]
+		local levelWord = if level then (string.gsub(level.label, " MEET$", "")) else ""
+		if hall.state then
+			StateArenaVenue.setEntranceLines({ "State Championship",
+				if hall.meet then "State meet LIFTING NOW" else "Next State meet in " .. clockFor(hall.nextStartAt - t) })
+		elseif hall.meet then
+			table.insert(lines, string.format("MEET %d  ·  LIFTING NOW", hall.index))
+			table.insert(colours, SIGN_GREEN)
+		elseif hall.nextLevel ~= "Local" then
+			table.insert(lines, string.format("MEET %d  ·  %s  ·  %s", hall.index, levelWord, clockFor(hall.nextStartAt - t)))
+			table.insert(colours, SIGN_YELLOW)
+		else
+			table.insert(lines, string.format("MEET %d  ·  %s", hall.index, clockFor(hall.nextStartAt - t)))
+			table.insert(colours, SIGN_WHITE)
+		end
+	end
+	if #lines > 0 then
+		LocalMeetVenue.setEntranceLines(lines, colours)
+	end
 end
 
 local function sendLobby(player: Player)
@@ -660,6 +753,48 @@ local function sendState(lifter: Lifter, phase: string, extra: { [string]: any }
 end
 
 -- The standings: everyone's bests, subtotal, live (or final) score and place, best first.
+-- The weight classes in order, lightest first ("59 kg" ... "120+ kg").
+local function classOrder(a: string, b: string): boolean
+	local aKg, bKg = tonumber(string.match(a, "^%d+")) or 0, tonumber(string.match(b, "^%d+")) or 0
+	if aKg ~= bKg then
+		return aKg < bKg
+	end
+	return a < b
+end
+
+--[[
+	Ranks a meet's entries: one ranking by GL points (MeetPlacing.rank), or at Nationals each weight class by its total
+	(MeetPlacing.rankByTotal, its lift-offs breaking ties; GAME_DESIGN §39), the classes lightest first, each with its own
+	places 1, 2, 3...
+]]
+local function rankFor(current: Meet, entries: { MeetPlacing.Entry }): { MeetPlacing.Placing }
+	if not current.hall.nationals then
+		return MeetPlacing.rank(entries)
+	end
+	local classOf: { [number]: string } = {}
+	for _, lifter in ipairs(current.lifters) do
+		classOf[lifter.key] = lifter.classLabel
+	end
+	local byClass: { [string]: { MeetPlacing.Entry } } = {}
+	local classes: { string } = {}
+	for _, entry in ipairs(entries) do
+		local label = classOf[entry.key] or "?"
+		if byClass[label] == nil then
+			byClass[label] = {}
+			table.insert(classes, label)
+		end
+		table.insert(byClass[label], entry)
+	end
+	table.sort(classes, classOrder)
+	local placings: { MeetPlacing.Placing } = {}
+	for _, label in ipairs(classes) do
+		for _, placing in ipairs(MeetPlacing.rankByTotal(byClass[label], current.liftOff)) do
+			table.insert(placings, placing)
+		end
+	end
+	return placings
+end
+
 local function buildStandings(current: Meet): LocalMeetRemotes.Standings
 	local entries: { MeetPlacing.Entry } = {}
 	local rowsByKey: { [number]: LocalMeetRemotes.StandingRow } = {}
@@ -691,14 +826,15 @@ local function buildStandings(current: Meet): LocalMeetRemotes.Standings
 		}
 	end
 	local rows: { LocalMeetRemotes.StandingRow } = {}
-	for _, placing in ipairs(MeetPlacing.rank(entries)) do
+	for _, placing in ipairs(rankFor(current, entries)) do
 		local row = rowsByKey[placing.key]
 		row.points = placing.points
 		row.place = placing.place
 		table.insert(rows, row)
 	end
 	return { meetIndex = if current.hall.state then nil else current.hall.index,
-		heading = if current.hall.state then "STATE  ·  " .. current.heading else current.heading, final = current.final, rows = rows }
+		heading = if current.hall.nationals then "NATIONALS  ·  " .. current.heading
+			elseif current.hall.state then "STATE  ·  " .. current.heading else current.heading, final = current.final, rows = rows }
 end
 
 -- Sends the standings to everyone in the meet's hall and writes them on its scoreboard.
@@ -784,6 +920,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	local nationals: ProfileOperations.NationalsView? = nil
 	local ladderOutcome: ProfileOperations.LadderOutcome? = nil
 	local ladder: ProfileOperations.LadderView? = nil
+	-- A National Champion (1st in their class at Nationals, GAME_DESIGN §39) earns that class's Worlds spot.
+	local worldsOutcome: ProfileOperations.WorldsOutcome? = nil
+	local earnsWorlds = wonIt and current.level == "Nationals"
 	local saved = PlayerDataService.update(player, function(data)
 		if totalKg then
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -821,6 +960,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 			if nationalsCounts then
 				nationalsOutcome, nationals = ProfileOperations.addNationalsPlacing(data, lifter.classLabel, nowUnix)
 			end
+			if earnsWorlds then
+				worldsOutcome = ProfileOperations.addWorldsSpot(data, lifter.classLabel, nowUnix)
+			end
 		end
 		if ladderPoints > 0 then
 			ladderOutcome, ladder = ProfileOperations.addLadderPoints(data, lifter.classLabel, ladderPoints, nowUnix)
@@ -844,7 +986,18 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	end
 	if titleId and titleCount then
 		local title = MeetLevelConfig.Titles[titleId]
+		-- At Nationals the class goes with it ("74 kg National Champion", §39).
+		if current.level == "Nationals" then
+			title = lifter.classLabel .. " " .. title
+		end
 		table.insert(lines, if titleCount > 1 then string.format("%s x%d", title, titleCount) else "New title: " .. title)
+	end
+	if worldsOutcome == "Earned" then
+		table.insert(lines, string.format("WORLDS SPOT EARNED (%s)!", lifter.classLabel))
+	elseif worldsOutcome == "AlreadyHeld" then
+		table.insert(lines, string.format("You already hold a Worlds spot (%s)", lifter.classLabel))
+	elseif worldsOutcome == "Rejected" then
+		warn(string.format("[LocalMeetService] %s's Worlds spot was not saved", player.Name))
 	end
 	if wonIt then
 		ChampionBadges.awardWin(player, current.level)
@@ -901,6 +1054,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		tostring(cnOutcomes.Squat), tostring(cnOutcomes.Bench), tostring(cnOutcomes.Deadlift), tostring(totalOutcome),
 		tostring(wins), ladderPoints, tostring(ladderOutcome), tostring(nationalsOutcome),
 		if nationals then string.format(" %d/%d", nationals.placings, nationals.target) else "")
+	if worldsOutcome then
+		log("%s's Worlds spot (%s): %s", player.Name, lifter.classLabel, tostring(worldsOutcome))
+	end
 	return lines
 end
 
@@ -1022,7 +1178,7 @@ local function boardFor(lifter: Lifter, lines: { string }, mood: ("good" | "bad"
 	end
 	local player = lifter.player
 	-- The State arena's centre cube follows every rack's screen and shows the biggest moment (StateArenaShow).
-	if lifter.hall.state then
+	if lifter.hall.state and not lifter.hall.nationals then
 		StateArenaShow.show(lifter.platform.index, {
 			name = if player then player.Name else lifter.name,
 			status = lines,
@@ -1243,9 +1399,7 @@ local function bringBack(lifter: Lifter)
 	if player == nil then
 		return
 	end
-	if warmUp then
-		warmUp.stop(player, false)
-	end
+	stopWarmUps(player)
 	if LiftAttemptService.isAttemptActive(player) then
 		LiftAttemptService.abandon(player)
 	end
@@ -1905,7 +2059,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		end
 	end
 
-	crowdBehind(lifter, MeetSoundConfig.liftShouts(lift))
+	crowdBehind(lifter, MeetSoundConfig.liftShouts(lift, current.level))
 	if player == nil then
 		-- A computer lifter (§37.2): the same stages as a player's minigames, over its lift time; the server decides.
 		lifter.liftsStarted += 1
@@ -1993,8 +2147,10 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	-- The attempt is over: the sign comes down (a record it set shows in the facts once saved).
 	lifter.recordAttempt = nil
 	-- The crowd's chant for it stops (the cheer or the groan takes over).
-	if lifter.hall.state then
+	if lifter.hall.state and not lifter.hall.nationals then
 		StateArenaShow.chant(lifter.platform.index, nil)
+	elseif lifter.hall.nationals and nationalsHooks then
+		(nationalsHooks :: NationalsHooks).chant(lifter.platform.index, nil)
 	end
 	local good = result == "GoodLift"
 	if player then
@@ -2002,17 +2158,21 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		-- Everyone who filled the crowd's bar for a good lift gets its points in coins (§36.4).
 		MeetCheering.result(player, good, weightKg)
 	end
-	table.insert(lifter.lifts[lift].history, { weightKg = weightKg, result = result })
+	-- A lift-off attempt (Nationals, §39) only decides a tie: it never counts toward the total, a best or a record.
+	local liftOff = lifter.liftOffRound == true
+	if not liftOff then
+		table.insert(lifter.lifts[lift].history, { weightKg = weightKg, result = result })
+	end
 	lifter.lastResult, lifter.lastKg = result, weightKg
 	local barLandsIn = finishLift(lifter, lift, good, failedPart, weightKg, attemptNumber)
 	-- A lift over the normal limit counts for the total and the place, and pays coins at the end of the meet, but sets
 	-- no best or record (§37.5).
 	local overLimit = AttemptChoice.isOverLimit(lifter.competitionNumber[lift], weightKg)
-	if good and not overLimit then
+	if good and not overLimit and not liftOff then
 		saveOfficialBest(current, lifter, lift, weightKg)
 	end
-	local moment = if good
-		then momentAfter(current, lifter, wasRecordAttempt, wasMustMake, weightKg, bestBefore, placeBefore, overLimit)
+	local moment = if liftOff then (if good then "MADE IT!" else nil)
+		elseif good then momentAfter(current, lifter, wasRecordAttempt, wasMustMake, weightKg, bestBefore, placeBefore, overLimit)
 		else nil
 	-- The minigames decide; the three referees show it.
 	lifter.lights = if good then { "White", "White", "White" } else { "Red", "Red", "Red" }
@@ -2030,7 +2190,7 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	end
 	-- Then single voices over it (user 2026-11-05): the more hung on it, the more of them. A big moment gets its own first.
 	local level = lifter.stakesLevel or 1
-	local bag = table.clone(if good then MeetSoundConfig.goodShouts() else MeetSoundConfig.missShouts())
+	local bag = table.clone(if good then MeetSoundConfig.goodShouts(current.level) else MeetSoundConfig.missShouts(current.level))
 	cpuRandom:Shuffle(bag)
 	local fitting = if moment then MeetSoundConfig.momentShouts(moment) else {}
 	if #fitting > 0 then
@@ -2096,16 +2256,23 @@ end
 
 type LiveScore = { lifter: Lifter, score: number, place: number }
 
--- Everyone's live points (on their best lifts so far), best first, with their place.
-local function liveScores(current: Meet): { LiveScore }
+-- Whether two lifters race each other: everyone does, but at Nationals only within a weight class (GAME_DESIGN §39).
+local function areRivals(current: Meet, a: Lifter, b: Lifter): boolean
+	return not current.hall.nationals or a.classLabel == b.classLabel
+end
+
+-- Everyone's live points (on their best lifts so far), best first, with their place; at Nationals the subtotal in
+-- kilograms within `classLabel`'s class.
+local function liveScores(current: Meet, classLabel: string?): { LiveScore }
 	local list: { LiveScore } = {}
 	for _, lifter in ipairs(current.lifters) do
-		if not lifter.withdrawn and not bombed(lifter) then
+		if not lifter.withdrawn and not bombed(lifter) and (classLabel == nil or lifter.classLabel == classLabel) then
 			local subtotal = 0
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
 				subtotal += bestOf(lifter, lift) or 0
 			end
-			local score = if subtotal > 0 then MeetPlacing.points(lifter.bodyweightKg, subtotal) else nil
+			local score = if subtotal <= 0 then nil elseif current.hall.nationals then subtotal
+				else MeetPlacing.points(lifter.bodyweightKg, subtotal)
 			if score then
 				table.insert(list, { lifter = lifter, score = score, place = 0 })
 			end
@@ -2121,7 +2288,7 @@ local function liveScores(current: Meet): { LiveScore }
 end
 
 placeOf = function(current: Meet, lifter: Lifter): number?
-	for _, entry in ipairs(liveScores(current)) do
+	for _, entry in ipairs(liveScores(current, if current.hall.nationals then lifter.classLabel else nil)) do
 		if entry.lifter == lifter then
 			return entry.place
 		end
@@ -2158,12 +2325,14 @@ local function raceFor(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 	local bestHere = bestOf(lifter, lift) or 0
 	local rivals: { MockMeetRemotes.RaceRival } = {}
 	for _, other in ipairs(current.lifters) do
-		if other ~= lifter and not other.withdrawn and not bombed(other) then
+		if other ~= lifter and not other.withdrawn and not bombed(other) and areRivals(current, lifter, other) then
 			local subtotal = subtotalIfMade(other, lift)
 			local points = if subtotal > 0 then MeetPlacing.points(other.bodyweightKg, subtotal) else nil
 			if points then
-				-- My points beat theirs once my subtotal passes the total that gives their points at my bodyweight.
-				local needSubtotal = MeetPlacing.totalForPoints(lifter.bodyweightKg, points)
+				-- My points beat theirs once my subtotal passes the total that gives their points at my bodyweight. At
+				-- Nationals a class goes by kilograms: past their subtotal (an equal one is a tie, for a lift-off).
+				local needSubtotal = if current.hall.nationals then subtotal
+					else MeetPlacing.totalForPoints(lifter.bodyweightKg, points)
 				local needKg = 0
 				if others + bestHere <= needSubtotal + 1e-6 then
 					needKg = (math.floor((needSubtotal - others) / step + 1e-6) + 1) * step
@@ -2344,6 +2513,65 @@ end
 -- The State meet's lifting order board shows at most this many lifters.
 local ORDER_BOARD_LINES = 5
 
+--[[
+	Nationals (GAME_DESIGN §39, user 2026-11-17): a chalked-up lifter walks round to stand right behind their platform's
+	curtain, in a "flow state", rocking (NationalsConfig.FlowAnimationId), while the crowd's chant builds, until they click
+	anywhere on the screen to step onto the platform (the ready remote), or CURTAIN_WAIT_SECONDS run out. Then the walk
+	out (liftGroup) starts from there.
+]]
+local function waitBehindCurtain(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number)
+	local platform = lifter.platform
+	local spot = platform.curtainSpot
+	local hooks = nationalsHooks
+	if spot == nil or not stillLifting(lifter) then
+		return
+	end
+	stopChalk(lifter)
+	MeetFigures.showClipboard(LocalMeetVenue.coachFigure(platform), true)
+	lifter.coachHere = false
+	LocalMeetVenue.coachSays(platform, nil)
+	walkLifter(lifter, {}, spot, true)
+	waitUntil(WALK_BACK_TIMEOUT_SECONDS, function()
+		return not lifter.walking or not stillLifting(lifter)
+	end)
+	if not stillLifting(lifter) then
+		return
+	end
+	if hooks then
+		hooks.behindCurtain(platform.index, lifter.name, lifter.classLabel)
+		hooks.chant(platform.index, lift, liftForFirst(current, lifter, lift, attemptNumber, weightKg))
+	end
+	local flow = MeetChalk.play(characterOf(lifter), NationalsConfig.FlowAnimationId)
+	lifter.readyPressed = false
+	-- (STUDIO TEST ONLY: the workspace attribute "StudioCurtainWaitSeconds" holds them there longer, to look at the
+	-- cinematic's shots; Studio's screen capture lands seconds late.)
+	local studioWait = if RunService:IsStudio() then Workspace:GetAttribute("StudioCurtainWaitSeconds") else nil
+	local waitSeconds = if typeof(studioWait) == "number" then studioWait else CURTAIN_WAIT_SECONDS
+	sendState(lifter, "Waiting", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
+		note = "Behind the curtain. Get in the zone.", curtain = { secondsLeft = waitSeconds } })
+	waitUntil(waitSeconds, function()
+		return lifter.readyPressed or not stillLifting(lifter)
+	end)
+	MeetChalk.stop(flow)
+	if hooks then
+		hooks.behindCurtain(platform.index, nil, nil)
+	end
+	-- Parting the curtain (user 2026-11-18: "they are seen using their arms and moving the curtain to enter the platform"):
+	-- the hands go into the split, then the walk out starts underneath (arms, chest and head only), pushing through it.
+	-- The curtain's halves swing apart on every screen as they go (NationalsCurtains).
+	if stillLifting(lifter) then
+		local part = MeetChalk.play(characterOf(lifter), NationalsConfig.CurtainPartAnimationId)
+		if part then
+			part.Looped = false
+			-- (Length is 0 until the animation has loaded: the clip is 1.8 s.)
+			task.delay(math.max(part.Length, 1.8) + 1, function()
+				part:Destroy()
+			end)
+		end
+		task.wait(NationalsConfig.CurtainPartLeadSeconds)
+	end
+end
+
 local function runRound(current: Meet, lift: string, attemptNumber: number, group: { Lifter }?)
 	current.heading = string.format("%s  ·  ROUND %d", string.upper(lift), attemptNumber)
 	updateStandings(current)
@@ -2516,7 +2744,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				-- At State, on a third attempt, the arena's crowd stomps, claps and chants until the lift's result (§36.4,
 				-- MeetChant, user 2026-11-10): LIFT OR LOSE when making it puts them first, else the lift's own chant. At a
 				-- meet with turns it started already while they chalked up (below); here it starts for a meet without turns.
-				if current.hall.state and attemptNumber >= MeetConfig.AttemptsPerLift then
+				if current.hall.state and not current.hall.nationals and attemptNumber >= MeetConfig.AttemptsPerLift then
 					StateArenaShow.chant(lifter.platform.index, lift,
 						liftForFirst(current, lifter, lift, attemptNumber, weightKg))
 				end
@@ -2534,7 +2762,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 					end
 				end)
 				-- The crowd starts as they step out (user 2026-11-05), with its own lines until the lift starts.
-				crowdBehind(lifter, MeetSoundConfig.walkOutShouts())
+				crowdBehind(lifter, MeetSoundConfig.walkOutShouts(current.level))
 				local approach = lifter.platform.rack and MeetLiftAnimation.approachFor(lifter.platform.rack, lift)
 				local final = approach or lifter.platform.liftSpot
 				-- Their entrance (§36.4): their walk style out to the bar, then at State and up their hype move there; at
@@ -2686,7 +2914,9 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 			end
 			LocalMeetVenue.staffFor(platform, lifter.player)
 			-- Their rack is spotlit in the dark arena, from now until they sit back down (StateArenaShow).
-			StateArenaShow.rackActive(platform.index, true)
+			if not current.hall.nationals then
+				StateArenaShow.rackActive(platform.index, true)
+			end
 			lifter.moment = nil
 			-- The crowd can cheer them on from this rack's watching zones (§36.4), from now until their lift is over. A full
 			-- bar gets a roar from the crowd.
@@ -2695,7 +2925,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				MeetCheering.openTurn(platform.index, cheered, lifter.name, lift, lifter.bodyweightKg, current.rewards, function()
 					if stillLifting(lifter) then
 						soundCue(lifter, "CrowdCheer", MeetSoundConfig.LiftCrowd.RoarVolume)
-						local shouts = MeetSoundConfig.liftShouts(lift)
+						local shouts = MeetSoundConfig.liftShouts(lift, current.level)
 						if #shouts > 0 then
 							task.delay(0.4, soundCue, lifter, pick(shouts), MeetSoundConfig.LiftCrowd.RoarVolume)
 						end
@@ -2713,7 +2943,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				local withRitual = ritual.MeetLevels[current.level] == true
 				startChalk(lifter, lift, withRitual)
 				-- On a third attempt the State crowd starts its chant as they chalk up (user 2026-11-10), until the result.
-				if current.hall.state and attemptNumber >= MeetConfig.AttemptsPerLift then
+				if current.hall.state and not current.hall.nationals and attemptNumber >= MeetConfig.AttemptsPerLift then
 					StateArenaShow.chant(platform.index, lift, liftForFirst(current, lifter, lift, attemptNumber, weightKg))
 				end
 				coachTell(lifter, pick(COACH_READY))
@@ -2726,6 +2956,11 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				sendState(lifter, "Waiting", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg,
 					note = "You're up. Chalk your hands.", chalk = chalkView(lifter), ritual = ritualView })
 				task.wait(if withRitual then ritual.Seconds else LocalMeetConfig.Chalk.MinSeconds)
+				-- Nationals (GAME_DESIGN §39, user 2026-11-17): chalked up, they wait right behind the curtain while the
+				-- crowd's chant builds, until they click to step onto the platform.
+				if current.hall.nationals then
+					waitBehindCurtain(current, lifter, lift, attemptNumber, weightKg)
+				end
 				liftGroup({ lifter })
 				lifter.onTurn = false
 				sitLifter(lifter, true)
@@ -2733,13 +2968,16 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 			if cheered then
 				MeetCheering.closeTurn(cheered)
 			end
-			StateArenaShow.rackActive(platform.index, false)
+			if not current.hall.nationals then
+				StateArenaShow.rackActive(platform.index, false)
+			end
 		end
 	end
 end
 
--- Tells everyone in the venue the awards ceremony has started (the camera shots, the cheer, the theme song).
-local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
+-- Tells everyone in the venue the awards ceremony has started (the camera shots, the cheer, the theme song). At Nationals
+-- one weight class's (`classLabel`), for `seconds`.
+local function announceAwards(current: Meet, v: LocalMeetVenue.Venue, classLabel: string?, seconds: number?)
 	local gold: CFrame? = v.podiumSpots[1]
 	if remotes == nil or gold == nil then
 		return
@@ -2751,9 +2989,18 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 	for _, lifter in ipairs(current.lifters) do
 		local placing = current.places[lifter.key]
 		local player = lifter.player
-		if placing and placing.place == 1 and not lifter.withdrawn and player and visits[player] then
+		if placing and placing.place == 1 and not lifter.withdrawn and player and visits[player]
+			and (classLabel == nil or lifter.classLabel == classLabel) then
 			winner, winnerName = player, lifter.name
 			badge = lifter.newBadge
+		end
+	end
+	-- A National Champion: every platform's caller says it over the speakers (GAME_DESIGN §39).
+	if current.hall.nationals and classLabel and winnerName then
+		local aloud = string.format("Please welcome your %s National Champion, %s!", classLabel, winnerName)
+		local bubble = string.format("%s NATIONAL CHAMPION: %s!", string.upper(classLabel), string.upper(winnerName))
+		for _, platform in ipairs(current.hall.venue.platforms) do
+			callerSays(platform, bubble, aloud)
 		end
 	end
 	-- A new State Champion badge: the caller of every rack in use says it over the speakers (each screen hears one).
@@ -2777,7 +3024,7 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue)
 		celebrationAnimationId = winner and celebrationFor(winner),
 		championBadge = badge and { number = badge.number, seasonLabel = MeetLevelConfig.seasonLabel(badge.season),
 			name = MeetLevelConfig.ChampionBadge.Name },
-		seconds = LocalMeetConfig.DoneSeconds,
+		seconds = seconds or LocalMeetConfig.DoneSeconds,
 	}
 	-- A placing toward Nationals at this meet: a card on that lifter's own screen only.
 	local news: { [Player]: LocalMeetRemotes.NationalsNews } = {}
@@ -2867,12 +3114,278 @@ local function rollSuit(current: Meet, lifter: Lifter, player: Player): string?
 	return nil
 end
 
+-- ---------------------------------------------------------------- the Nationals lift-off (GAME_DESIGN §39)
+
+local runLiftOffs: (current: Meet) -> ()
+
+--[[
+	One lift-off attempt (user 2026-11-17): from wherever they are to the chalk stand, behind the curtain (the click to step
+	out), out to the bar at `weightKg` and the lift itself (liftOne), then back. Returns whether it was a good lift. An
+	attempt not started in time is a miss (Claude's guard).
+]]
+local function liftOffAttempt(current: Meet, lifter: Lifter, lift: string, weightKg: number, stakes: string): boolean
+	if not stillLifting(lifter) then
+		return false
+	end
+	local platform = lifter.platform
+	lifter.liftOffRound = true
+	lifter.roundDone, lifter.lights, lifter.readyPressed, lifter.lastResult = false, nil, false, nil
+	lifter.currentLift, lifter.chosenKg, lifter.recordAttempt, lifter.moment = lift, weightKg, nil, nil
+	lifter.onTurn = true
+	lifter.onScreen = true
+	LocalMeetVenue.staffFor(platform, lifter.player)
+	LocalMeetVenue.rackFor(platform, lift)
+	LocalMeetVenue.loadBar(platform, weightKg)
+	LocalMeetVenue.setLights(platform, nil)
+	callerSays(platform, string.format("LIFT-OFF: %s, %s %s KG", lifter.name, string.upper(lift), kgText(weightKg)),
+		string.format("Lift-off. %s, you're up.", lifter.name))
+	boardFor(lifter, { "LIFT-OFF", string.format("%s  ·  %s KG", string.upper(lift), kgText(weightKg)) })
+	bringBack(lifter)
+	if stillLifting(lifter) then
+		startChalk(lifter, lift, false)
+		sendState(lifter, "Waiting", { lift = lift, attemptNumber = MeetConfig.AttemptsPerLift, declaredKg = weightKg,
+			note = "Lift-off: you're up. Chalk your hands." })
+		task.wait(LocalMeetConfig.Chalk.MinSeconds)
+		waitBehindCurtain(current, lifter, lift, MeetConfig.AttemptsPerLift, weightKg)
+	end
+	if not stillLifting(lifter) then
+		lifter.liftOffRound, lifter.onTurn = false, false
+		return false
+	end
+	stopChalk(lifter)
+	lifter.outOnPlatform = true
+	lifter.stakesLevel, lifter.stakesLine = #LocalMeetConfig.StakesBuild.StageLight, stakes
+	LocalMeetVenue.setStageLight(platform, LocalMeetConfig.StakesBuild.StageLight[lifter.stakesLevel])
+	crowdBehind(lifter, MeetSoundConfig.walkOutShouts(current.level))
+	local approach = platform.rack and MeetLiftAnimation.approachFor(platform.rack, lift)
+	local final = approach or platform.liftSpot
+	local character = characterOf(lifter)
+	local route = { if character then ComputerLifters.positionOf(character).Position else final.Position }
+	for _, point in ipairs(platform.walkOut) do
+		table.insert(route, point)
+	end
+	table.insert(route, final.Position)
+	lifter.walkOutSeconds = math.max(WALK_OUT_TIMEOUT_SECONDS, MeetEntrance.walkOutSeconds(route, nil,
+		LocalMeetConfig.ComputerLifters.WalkSpeed, 0) + 3)
+	LocalMeetVenue.clearSpotters(platform, lifter.walkOutSeconds, "StateWalkOut")
+	walkLifter(lifter, platform.walkOut, final, true, function()
+		if lifter.liftAnim == nil and stillLifting(lifter) then
+			setUpLift(lifter, lift)
+		end
+	end)
+	sendState(lifter, "Ready", { lift = lift, attemptNumber = MeetConfig.AttemptsPerLift, declaredKg = weightKg,
+		autoLift = true, stakes = stakes, stakesLevel = lifter.stakesLevel, walkOutShot = true })
+	liftOne(current, lifter, lift, MeetConfig.AttemptsPerLift, weightKg)
+	local good = lifter.lastResult == "GoodLift"
+	task.wait(LocalMeetConfig.ResultSeconds)
+	waitUntil(WALK_BACK_TIMEOUT_SECONDS, function()
+		return not lifter.outOnPlatform or not stillLifting(lifter)
+	end)
+	LocalMeetVenue.coachSays(platform, nil)
+	lifter.liftOffRound, lifter.onTurn = false, false
+	sitLifter(lifter, true)
+	return good and stillLifting(lifter)
+end
+
+-- After this many rounds in a row where everyone missed, the lighter lifter wins (Claude's guard: never endless).
+local LIFT_OFF_ALL_MISS_LIMIT = 5
+
+--[[
+	The lift-off for lifters tied on total for a medal place in one class (user 2026-11-17, "sudden death"): each picks a
+	lift (squat, bench or deadlift) and lifts their best in it + 2.5 kg, one at a time, lightest bar first. Everyone makes
+	it: +2.5 kg each and again. Everyone misses: again at the same weights. Those who miss while others make it are out.
+	Until one is left. Returns each lifter's finish (key -> 1 = won; lifters out in the same round share one).
+]]
+local function liftOff(current: Meet, group: { Lifter }, forPlace: number): { [number]: number }
+	local label = group[1].classLabel
+	local finish: { [number]: number } = {}
+	local remote = remotes
+	-- Their lifts: their pick, or else their strongest (the heaviest best of the three).
+	local options: { [Lifter]: { { lift: string, weightKg: number } } } = {}
+	for _, lifter in ipairs(group) do
+		options[lifter] = {}
+		for _, lift in ipairs(MeetConfig.LiftOrder) do
+			table.insert(options[lifter], { lift = lift, weightKg = (bestOf(lifter, lift) or 0) + LocalMeetConfig.WeightStepKg })
+		end
+		lifter.liftOffPick, lifter.liftOffChoosing = nil, true
+		sendState(lifter, "Waiting", { note = "Tied for a medal: a lift-off! Pick your lift.", stepTag = "LIFT-OFF",
+			banner = "TIED FOR " .. string.upper(placeText(forPlace)),
+			liftOff = { place = forPlace, classLabel = label, secondsLeft = NationalsConfig.LiftOffChooseSeconds,
+				options = options[lifter] } })
+	end
+	for _, platform in ipairs(current.hall.venue.platforms) do
+		callerSays(platform, string.format("LIFT-OFF FOR %s PLACE IN %s!", string.upper(placeText(forPlace)), label),
+			string.format("Ladies and gentlemen, we have a tie. A lift-off for %s place in the %s class!", placeText(forPlace),
+				label))
+	end
+	current.heading = string.format("LIFT-OFF  ·  %s  ·  %s PLACE", label, string.upper(placeText(forPlace)))
+	updateStandings(current)
+	waitUntil(NationalsConfig.LiftOffChooseSeconds, function()
+		for _, lifter in ipairs(group) do
+			if stillLifting(lifter) and lifter.liftOffPick == nil then
+				return false
+			end
+		end
+		return true
+	end)
+	local liftOf: { [Lifter]: string } = {}
+	local kgOf: { [Lifter]: number } = {}
+	for _, lifter in ipairs(group) do
+		lifter.liftOffChoosing = false
+		local pick = lifter.liftOffPick
+		if pick == nil then
+			local heaviest = 0
+			for _, option in ipairs(options[lifter]) do
+				if option.weightKg > heaviest then
+					heaviest, pick = option.weightKg, option.lift
+				end
+			end
+		end
+		for _, option in ipairs(options[lifter]) do
+			if option.lift == pick then
+				liftOf[lifter], kgOf[lifter] = option.lift, option.weightKg
+			end
+		end
+		log("lift-off (%s, %s place): %s picks %s at %s kg", label, placeText(forPlace), lifter.name, tostring(liftOf[lifter]),
+			kgText(kgOf[lifter] or 0))
+	end
+	local alive = table.clone(group)
+	local outRounds: { { Lifter } } = {}
+	local allMissed = 0
+	local round = 0
+	while #alive > 1 do
+		round += 1
+		table.sort(alive, function(a: Lifter, b: Lifter)
+			local aKg, bKg = kgOf[a] or 0, kgOf[b] or 0
+			return if aKg ~= bKg then aKg < bKg else a.order < b.order
+		end)
+		local made: { Lifter } = {}
+		local missed: { Lifter } = {}
+		for _, lifter in ipairs(alive) do
+			local stakes = string.format("LIFT-OFF  ·  ROUND %d", round)
+			if liftOffAttempt(current, lifter, liftOf[lifter] or "Deadlift", kgOf[lifter] or 0, stakes) then
+				table.insert(made, lifter)
+			else
+				table.insert(missed, lifter)
+			end
+		end
+		if #made == 0 then
+			allMissed += 1
+			if allMissed >= LIFT_OFF_ALL_MISS_LIMIT then
+				-- Never endless: the lighter lifter wins, then the earlier entry.
+				table.sort(alive, function(a: Lifter, b: Lifter)
+					if math.abs(a.bodyweightKg - b.bodyweightKg) > 1e-9 then
+						return a.bodyweightKg < b.bodyweightKg
+					end
+					return a.order < b.order
+				end)
+				log("lift-off (%s): %d rounds all missed, the lighter lifter wins", label, allMissed)
+				break
+			end
+		else
+			allMissed = 0
+			if #missed > 0 then
+				table.insert(outRounds, missed)
+				alive = made
+			end
+			if #alive > 1 then
+				for _, lifter in ipairs(alive) do
+					kgOf[lifter] = (kgOf[lifter] or 0) + LocalMeetConfig.WeightStepKg
+				end
+			end
+		end
+	end
+	local place = 0
+	for _, lifter in ipairs(alive) do
+		place += 1
+		finish[lifter.key] = place
+	end
+	for index = #outRounds, 1, -1 do
+		place += 1
+		for _, lifter in ipairs(outRounds[index]) do
+			finish[lifter.key] = place
+		end
+	end
+	local winner = alive[1]
+	if winner then
+		for _, platform in ipairs(current.hall.venue.platforms) do
+			callerSays(platform, string.format("%s WINS THE LIFT-OFF!", string.upper(winner.name)),
+				string.format("%s wins the lift-off!", winner.name))
+		end
+		log("lift-off (%s, %s place) won by %s", label, placeText(forPlace), winner.name)
+	end
+	if remote then
+		task.wait(2)
+	end
+	return finish
+end
+
+--[[
+	Every tie for a medal place at Nationals (per class: the same total in the top 3, user 2026-11-17: "only for medal
+	places"), settled one lift-off at a time. A lift-off only orders the tied lifters: totals and saved bests don't change.
+]]
+runLiftOffs = function(current: Meet)
+	local byClass: { [string]: { MeetPlacing.Entry } } = {}
+	local byKey: { [number]: Lifter } = {}
+	for _, lifter in ipairs(current.lifters) do
+		local result = MeetTotal.resolve(meetAttempts(lifter))
+		byKey[lifter.key] = lifter
+		byClass[lifter.classLabel] = byClass[lifter.classLabel] or {}
+		table.insert(byClass[lifter.classLabel], { key = lifter.key, bodyweightKg = lifter.bodyweightKg,
+			totalKg = if lifter.withdrawn then nil else result.total, goodLifts = goodLiftCount(lifter), order = lifter.order })
+	end
+	local classes: { string } = {}
+	for label in pairs(byClass) do
+		table.insert(classes, label)
+	end
+	table.sort(classes, classOrder)
+	for _, label in ipairs(classes) do
+		local placings = MeetPlacing.rankByTotal(byClass[label])
+		local placeOfKey: { [number]: number } = {}
+		for _, placing in ipairs(placings) do
+			if placing.place then
+				placeOfKey[placing.key] = placing.place
+			end
+		end
+		for _, keys in ipairs(MeetPlacing.medalTies(byClass[label], MeetLevelConfig.Nationals.TopPlaces)) do
+			local group: { Lifter } = {}
+			local forPlace = math.huge
+			for _, key in ipairs(keys) do
+				local lifter = byKey[key]
+				if lifter and stillLifting(lifter) then
+					table.insert(group, lifter)
+					forPlace = math.min(forPlace, placeOfKey[key] or math.huge)
+				end
+			end
+			if #group >= 2 then
+				local finish = liftOff(current, group, forPlace)
+				for key, at in pairs(finish) do
+					current.liftOff[key] = at
+				end
+			end
+		end
+	end
+end
+
+local podiumAndAwards: (current: Meet, v: LocalMeetVenue.Venue, classLabel: string?, seconds: number) -> ()
+local nationalsAwards: (current: Meet, v: LocalMeetVenue.Venue) -> ()
+local finishCleanUp: (current: Meet, v: LocalMeetVenue.Venue) -> ()
+
 local function finishMeet(current: Meet)
+	-- Nationals: tied medal places in a class are settled by a lift-off first (GAME_DESIGN §39), which only orders them.
+	if current.hall.nationals then
+		local ok, problem = pcall(runLiftOffs, current)
+		if not ok then
+			warn("[LocalMeetService] a Nationals lift-off failed: " .. tostring(problem))
+		end
+	end
 	current.final = true
 	current.heading = "FINAL"
 	if current.hall.state then
 		MeetCheering.closeAll()
-		StateArenaShow.meetOn(false)
+		if not current.hall.nationals then
+			StateArenaShow.meetOn(false)
+		end
 	end
 	-- Any walk back from the last round ends here: the awards place everyone.
 	for _, lifter in ipairs(current.lifters) do
@@ -2894,9 +3407,12 @@ local function finishMeet(current: Meet)
 		end
 	end
 	local realPlace = 0
-	for _, placing in ipairs(MeetPlacing.rank(entries)) do
+	for _, placing in ipairs(rankFor(current, entries)) do
 		current.places[placing.key] = placing
-		if placing.place and realKeys[placing.key] then
+		if current.hall.nationals then
+			-- Real players only, and placed per class: the class place is the reward place.
+			current.rewardPlaces[placing.key] = placing.place
+		elseif placing.place and realKeys[placing.key] then
 			realPlace += 1
 			current.rewardPlaces[placing.key] = realPlace
 		end
@@ -2940,9 +3456,29 @@ local function finishMeet(current: Meet)
 			settings.PerQualifiedLifter = 0
 		end
 		local multiplier = MeetLevelConfig.Levels[current.level].potMultiplier
-		payouts = MeetPayout.forMeet(results, settings, multiplier)
-		log("prize pot %d coins (%s, x%d, solo %s)", MeetPayout.pot(results, settings, multiplier), current.level, multiplier,
-			tostring(current.solo))
+		if current.hall.nationals then
+			-- Each weight class is its own meet's pot (GAME_DESIGN §39: x5), shared by its own places.
+			local classOf: { [number]: string } = {}
+			for _, lifter in ipairs(current.lifters) do
+				classOf[lifter.key] = lifter.classLabel
+			end
+			local byClass: { [string]: { MeetPayout.Lifter } } = {}
+			for _, result in ipairs(results) do
+				local label = classOf[result.key] or "?"
+				byClass[label] = byClass[label] or {}
+				table.insert(byClass[label], result)
+			end
+			for label, classResults in pairs(byClass) do
+				for key, items in pairs(MeetPayout.forMeet(classResults, settings, multiplier)) do
+					payouts[key] = items
+				end
+				log("Nationals %s prize pot %d coins (x%d)", label, MeetPayout.pot(classResults, settings, multiplier), multiplier)
+			end
+		else
+			payouts = MeetPayout.forMeet(results, settings, multiplier)
+			log("prize pot %d coins (%s, x%d, solo %s)", MeetPayout.pot(results, settings, multiplier), current.level, multiplier,
+				tostring(current.solo))
+		end
 	end
 	-- Each State rack's screen ends on the best finisher on it.
 	if current.hall.state then
@@ -2988,7 +3524,19 @@ local function finishMeet(current: Meet)
 			table.insert(saved, 1, string.format("+%s %s", CoinConfig.format(lifter.coinsEarned), CoinConfig.Name))
 		end
 		local note: string
-		if placing and placing.place and placing.points then
+		if placing and placing.place and placing.points and current.hall.nationals then
+			local inClass = 0
+			for _, other in ipairs(current.lifters) do
+				if other.classLabel == lifter.classLabel then
+					inClass += 1
+				end
+			end
+			note = string.format("%s PLACE of %d IN %s  ·  TOTAL %s KG%s", string.upper(placeText(placing.place)), inClass,
+				string.upper(lifter.classLabel), kgText(result.total or 0),
+				if #saved > 0 then "  ·  " .. table.concat(saved, "  ·  ") else "")
+			boardFor(lifter, { string.format("%s PLACE  ·  %s", string.upper(placeText(placing.place)), lifter.classLabel),
+				string.format("TOTAL %s KG", kgText(result.total or 0)) })
+		elseif placing and placing.place and placing.points then
 			note = string.format("%s PLACE of %d  ·  %.2f POINTS%s", string.upper(placeText(placing.place)),
 				#current.lifters, placing.points, if #saved > 0 then "  ·  " .. table.concat(saved, "  ·  ") else "")
 			boardFor(lifter, { string.format("%s PLACE", string.upper(placeText(placing.place))),
@@ -3017,9 +3565,25 @@ local function finishMeet(current: Meet)
 			-- Off the benches and the practice racks, and only the winners' names on the screens are left to draw (below).
 			stopChalk(lifter)
 			offSeat(lifter)
-			if warmUp then
-				warmUp.stop(player, false)
-			end
+			stopWarmUps(player)
+		end
+	end
+	if current.hall.nationals then
+		nationalsAwards(current, v)
+	else
+		podiumAndAwards(current, v, nil, LocalMeetConfig.DoneSeconds)
+	end
+	finishCleanUp(current, v)
+end
+
+--[[
+	The awards for `current`'s lifters (only `classLabel`'s at Nationals, nil = everyone): the top three on the podium
+	holding their trophies, the moment for everyone in the hall, then `seconds` before the next.
+]]
+podiumAndAwards = function(current: Meet, v: LocalMeetVenue.Venue, classLabel: string?, seconds: number)
+	for _, lifter in ipairs(current.lifters) do
+		if classLabel and lifter.classLabel ~= classLabel then
+			continue
 		end
 		local placing = current.places[lifter.key]
 		local spot = placing and placing.place and v.podiumSpots[placing.place]
@@ -3037,17 +3601,52 @@ local function finishMeet(current: Meet)
 			end
 		end
 	end
-	announceAwards(current, v)
-
-	task.wait(LocalMeetConfig.DoneSeconds)
+	announceAwards(current, v, classLabel, seconds)
+	task.wait(seconds)
 	local characters: { Model } = {}
 	for _, lifter in ipairs(current.lifters) do
 		local character = lifter.player and lifter.player.Character
-		if character then
+		if character and (classLabel == nil or lifter.classLabel == classLabel) then
 			table.insert(characters, character)
 		end
 	end
 	Trophies.clearFrom(characters)
+end
+
+--[[
+	Nationals' awards (GAME_DESIGN §39): class by class, lightest first, each class's top three on the podium in turn.
+	Those off the podium wait at the front of the stage.
+]]
+nationalsAwards = function(current: Meet, v: LocalMeetVenue.Venue)
+	local classes: { string } = {}
+	for _, lifter in ipairs(current.lifters) do
+		if not table.find(classes, lifter.classLabel) then
+			table.insert(classes, lifter.classLabel)
+		end
+	end
+	table.sort(classes, classOrder)
+	for _, label in ipairs(classes) do
+		local placed = false
+		for _, lifter in ipairs(current.lifters) do
+			local placing = current.places[lifter.key]
+			if lifter.classLabel == label and placing and placing.place and not lifter.withdrawn then
+				placed = true
+			end
+		end
+		if placed then
+			podiumAndAwards(current, v, label, NationalsConfig.AwardsClassSeconds)
+			for index, lifter in ipairs(current.lifters) do
+				local player = lifter.player
+				if lifter.classLabel == label and player and visits[player] and not lifter.withdrawn then
+					standAt(player, LocalMeetVenue.lobbySpotFor(v, index), true)
+				end
+			end
+		end
+	end
+end
+
+-- After the awards: the platforms cleared, every lifter free again, the hall's meet over.
+finishCleanUp = function(current: Meet, v: LocalMeetVenue.Venue)
 	LocalMeetVenue.showAwards(v, false)
 	for index, lifter in ipairs(current.lifters) do
 		local player = lifter.player
@@ -3078,11 +3677,24 @@ local function finishMeet(current: Meet)
 	end
 	current.hall.meet = nil
 	-- The State arena's floor goes back to the sign-up desk and booths, and the wait for the next meet starts now (user 2026-11-06).
-	if current.hall.state and stateArena then
+	if current.hall.state and not current.hall.nationals and stateArena then
 		stateArena.setFloor(0, 0)
 		current.hall.nextStartAt = startAfter(now(), current.hall)
 	end
 	broadcastLobby()
+	-- Nationals is over: NationalsService sends everyone on.
+	local onFinished = nationalsOnFinished
+	if current.hall.nationals and onFinished then
+		nationalsOnFinished = nil
+		local places: { [number]: number? } = {}
+		for _, lifter in ipairs(current.lifters) do
+			local placing = current.places[lifter.key]
+			if lifter.player then
+				places[lifter.player.UserId] = placing and placing.place
+			end
+		end
+		task.spawn(onFinished, places)
+	end
 end
 
 local function runMeet(current: Meet)
@@ -3093,9 +3705,7 @@ local function runMeet(current: Meet)
 		local plan = lifter.cpu
 		if player then
 			player:SetAttribute(LocalMeetConfig.PlatformAttribute, lifter.platform.index)
-			if warmUp then
-				warmUp.stop(player, false)
-			end
+			stopWarmUps(player)
 			LiftAttemptService.setFreeAttemptsBlocked(player, true)
 			-- Now in this meet's hall. Held still from here until the meet ends or they withdraw (user 2026-11-04), so
 			-- they can't fall while the hall loads around them.
@@ -3142,7 +3752,9 @@ local function runMeet(current: Meet)
 	-- The State meet: each rack runs on its own (user 2026-11-06), and the meet ends when they all have. The arena goes
 	-- dark, its racks spotlit as lifters come up (StateArenaShow, user 2026-11-10).
 	if hall.state then
-		StateArenaShow.meetOn(true)
+		if not hall.nationals then
+			StateArenaShow.meetOn(true)
+		end
 		local racks: { [LocalMeetVenue.Platform]: { Lifter } } = {}
 		for _, lifter in ipairs(current.lifters) do
 			racks[lifter.platform] = racks[lifter.platform] or {}
@@ -3298,7 +3910,7 @@ local function tryStartMeet(hall: Hall)
 	end
 
 	local current: Meet = { hall = hall, lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, rewards = false,
-		solo = false, rewardPlaces = {}, places = {}, level = hall.nextLevel }
+		solo = false, rewardPlaces = {}, places = {}, level = hall.nextLevel, liftOff = {} }
 	-- The State arena's floor is set up for this many lifters now: one rack per LiftersPerRack (user 2026-11-06).
 	local stateRacks = 0
 	local statePerRack = 0
@@ -3470,9 +4082,7 @@ end
 
 -- Takes a player out of the venue (EXIT, death, leaving the game), back to the gym when `sendBack`.
 local function leaveVenue(player: Player, sendBack: boolean)
-	if warmUp then
-		warmUp.stop(player, false)
-	end
+	stopWarmUps(player)
 	local _, leaving = activeLifter(player)
 	withdraw(player, "left the venue")
 	-- Their sign-up stays: they can go and do something else, and are brought back for the meet (user 2026-11-06).
@@ -3490,6 +4100,10 @@ local function leaveVenue(player: Player, sendBack: boolean)
 	if player.Parent then
 		player:SetAttribute(LocalMeetConfig.VenueAttribute, nil)
 		player:SetAttribute(LocalMeetConfig.HallAttribute, nil)
+	end
+	local hooks = nationalsHooks
+	if visit.hall == NATIONALS_HALL_INDEX and hooks then
+		hooks.onLeft(player)
 	end
 	local body = bodyOf(player)
 	if sendBack and body and body.character == visit.character and body.humanoid.Health > 0 then
@@ -3792,6 +4406,192 @@ function LocalMeetService.leaveForNationals(player: Player)
 	end
 end
 
+--[[
+	The Nationals hall (NationalsArenaVenue.build, every server): its venue `v` (4 platforms, benches, callers, boards,
+	screens), where leaving it by the meet screen's EXIT lands a player (`outside`, in front of the porch), and what the arena
+	wants to hear. It is a hall like the others for visits, sounds, standings and its meet, but has no timetable, MEETS row
+	or SPECTATE: NationalsService starts its meet (startNationalsMeet).
+]]
+function LocalMeetService.setNationalsVenue(v: LocalMeetVenue.Venue, outside: CFrame, hooks: NationalsHooks)
+	nationalsOutside = outside
+	nationalsHooks = hooks
+	nationalsHall = { index = NATIONALS_HALL_INDEX, venue = v, signUps = {}, meet = nil, nextStartAt = math.huge,
+		nextLevel = "Nationals", calledFor = nil, state = true, nationals = true }
+	log("the Nationals hall is ready: %d platforms", #v.platforms)
+end
+
+--[[
+	A player walked into the Nationals hall (NationalsArenaVenue.goInside, which moved them): a visitor of the hall now,
+	for its sounds, standings, awards and the meet screen. Nothing when they are a visitor already. Out of any other hall
+	first (Studio's stand-in, where the Local halls are in the same server).
+]]
+function LocalMeetService.visitNationals(player: Player)
+	local hall = nationalsHall
+	local outside = nationalsOutside
+	local body = bodyOf(player)
+	if hall == nil or outside == nil or body == nil or body.humanoid.Health <= 0 then
+		return
+	end
+	local old = visits[player]
+	if old and old.hall == NATIONALS_HALL_INDEX and old.character == body.character then
+		return
+	elseif old then
+		leaveVenue(player, false)
+	end
+	local visit: Visit = { character = body.character, returnTo = outside, connections = {}, hall = NATIONALS_HALL_INDEX }
+	visits[player] = visit
+	player:SetAttribute(LocalMeetConfig.VenueAttribute, true)
+	player:SetAttribute(LocalMeetConfig.HallAttribute, NATIONALS_HALL_INDEX)
+	table.insert(visit.connections, body.humanoid.Died:Connect(function()
+		leaveVenue(player, false)
+	end))
+	table.insert(visit.connections, body.character.AncestryChanged:Connect(function(_, parent)
+		if parent == nil then
+			leaveVenue(player, false)
+		end
+	end))
+	log("%s is in the Nationals hall", player.Name)
+	sendLobby(player)
+	local current = hall.meet
+	if current and remotes then
+		remotes.standings:FireClient(player, buildStandings(current))
+	end
+end
+
+-- A player left the Nationals hall by its doors (NationalsArenaVenue.goOutside, which moves them): no longer a visitor;
+-- a lifter in its meet withdraws. Nothing when they weren't in it.
+function LocalMeetService.leaveNationalsVisit(player: Player)
+	local visit = visits[player]
+	if visit and visit.hall == NATIONALS_HALL_INDEX then
+		leaveVenue(player, false)
+	end
+end
+
+-- Whether the Nationals meet is running now.
+function LocalMeetService.nationalsMeetRunning(): boolean
+	local hall = nationalsHall
+	return hall ~= nil and hall.meet ~= nil
+end
+
+--[[
+	Starts the Nationals meet (GAME_DESIGN §39, NationalsService) for `entries`: each player with the class their spot is in.
+	Only players inside the Nationals hall who still weigh in at that class lift (anyone else is told why). The lifters
+	are sorted by class, lightest first, and dealt in turn onto the 4 platforms (each platform's lifters on its own benches),
+	which all run at once, each lifting its own lifters in turn (user 2026-11-17). Every lifter competes on their spot
+	(markNationalsCompeted, saved now). `onFinished` hears each lifter's class place when it is over. Returns whether it
+	started, and why not.
+]]
+function LocalMeetService.startNationalsMeet(entries: { { player: Player, classKey: string } },
+	onFinished: (places: { [number]: number? }) -> ()): (boolean, string?)
+	local hall = nationalsHall
+	if hall == nil then
+		return false, "the Nationals hall isn't built"
+	end
+	if hall.meet ~= nil then
+		return false, "the Nationals meet is already running"
+	end
+	type Ready = { player: Player, classKey: string, weigh: any, signed: number }
+	local ready: { Ready } = {}
+	for index, entry in ipairs(entries) do
+		local player = entry.player
+		local visit = visits[player]
+		local body = bodyOf(player)
+		if player.Parent == nil or visit == nil or visit.hall ~= NATIONALS_HALL_INDEX or body == nil
+			or body.character ~= visit.character or body.humanoid.Health <= 0 then
+			continue
+		end
+		local weigh, problem = weighIn(player)
+		if weigh == nil then
+			notify(player, "You cannot lift at Nationals: " .. (problem or "unknown problem") .. ".")
+		elseif weigh.classLabel ~= entry.classKey then
+			notify(player, string.format("You weigh in at %s now, but your Nationals spot is in %s. Weigh in at %s to lift.",
+				weigh.classLabel, entry.classKey, entry.classKey))
+		else
+			table.insert(ready, { player = player, classKey = entry.classKey, weigh = weigh, signed = index })
+		end
+	end
+	local minimum = if RunService:IsStudio() then 1 else NationalsConfig.MeetMinimumLifters
+	if #ready < minimum then
+		return false, string.format("only %d %s could lift (%d needed)", #ready, if #ready == 1 then "lifter" else "lifters",
+			minimum)
+	end
+	table.sort(ready, function(a: Ready, b: Ready)
+		if a.classKey ~= b.classKey then
+			return classOrder(a.classKey, b.classKey)
+		end
+		return a.signed < b.signed
+	end)
+	local v = hall.venue
+	local platforms = #v.platforms
+	local perPlatform = math.ceil(#ready / platforms)
+	local current: Meet = { hall = hall, lifters = {}, byPlayer = {}, heading = "WEIGH-IN", final = false, rewards = true,
+		solo = false, rewardPlaces = {}, places = {}, level = "Nationals", liftOff = {} }
+	local onPlatform: { [number]: number } = {}
+	for index, entry in ipairs(ready) do
+		local player = entry.player
+		local weigh = entry.weigh
+		removeSignUp(player)
+		local lifts: { [string]: LiftRecord } = {}
+		for _, lift in ipairs(MeetConfig.LiftOrder) do
+			lifts[lift] = { history = {}, passed = 0 }
+		end
+		local platformIndex = math.min((index - 1) // perPlatform + 1, platforms)
+		onPlatform[platformIndex] = (onPlatform[platformIndex] or 0) + 1
+		local platform = v.platforms[platformIndex]
+		local seats = platform.seats
+		local lifter: Lifter = {
+			hall = hall,
+			player = player,
+			key = player.UserId,
+			cpu = nil,
+			body = nil,
+			name = player.DisplayName,
+			platform = platform,
+			seat = if seats then seats[onPlatform[platformIndex]] else nil,
+			order = index,
+			bodyweightKg = weigh.bodyweightKg,
+			classLabel = weigh.classLabel,
+			competitionNumber = weigh.competitionNumber,
+			lifts = lifts,
+			withdrawn = false,
+			choice = nil,
+			chosenKg = nil,
+			defaultKg = nil,
+			readyPressed = false,
+			roundDone = false,
+			lights = nil,
+			currentLift = nil,
+			bestTotalKg = weigh.bestTotalKg,
+			localWins = weigh.localWins,
+			stateQualified = weigh.stateQualified,
+			nationalsPlacings = weigh.nationals.placings,
+			nationalsQualified = weigh.nationals.qualified,
+			nationalsNews = nil,
+			titles = weigh.titles,
+			championBadges = weigh.championBadges,
+			gymRecords = {},
+			boardLines = nil,
+			boardMood = nil,
+			liftsStarted = 0,
+			coinsEarned = 0,
+		}
+		table.insert(current.lifters, lifter)
+		current.byPlayer[player] = lifter
+		-- They compete on their spot now: it resets once this month is over (GAME_DESIGN §36.4 "The Nationals spot").
+		local classKey = entry.classKey
+		local marked = false
+		PlayerDataService.update(player, function(data)
+			marked = ProfileOperations.markNationalsCompeted(data, classKey, os.time())
+		end)
+		log("Nationals: %s (%s) on platform %d, spot used: %s", player.Name, classKey, platformIndex, tostring(marked))
+	end
+	hall.meet = current
+	nationalsOnFinished = onFinished
+	log("the Nationals meet starts: %d lifters on %d platforms", #current.lifters, math.min(platforms, #current.lifters))
+	task.spawn(runMeet, current)
+	return true, nil
+end
+
 -- How often one player may ask for the meets list, and when each last did.
 local LOBBY_REQUEST_GAP_SECONDS = 0.5
 local lastLobbyRequest: { [Player]: number } = {}
@@ -3885,6 +4685,13 @@ function LocalMeetService.start()
 		local _, lifter = activeLifter(player)
 		if lifter and typeof(weightKg) == "number" then
 			lifter.choice = weightKg
+		end
+	end)
+	-- A Nationals lift-off's lift (GAME_DESIGN §39): only while this lifter is picking one, and only one of the three.
+	set.liftOffChoose.OnServerEvent:Connect(function(player, lift)
+		local _, lifter = activeLifter(player)
+		if lifter and lifter.liftOffChoosing and typeof(lift) == "string" and table.find(MeetConfig.LiftOrder, lift) then
+			lifter.liftOffPick = lift
 		end
 	end)
 	-- The lifter's live minigame progress (MeetLiftProgress): VISUAL ONLY, it moves their character's lift and
@@ -3991,7 +4798,7 @@ function LocalMeetService.start()
 				continue
 			end
 			table.insert(builtHalls, { index = #builtHalls + 1, venue = built, signUps = {}, meet = nil, nextStartAt = 0,
-				nextLevel = "Local", state = false })
+				nextLevel = "Local", state = false, nationals = false })
 			for _, rack in ipairs(built.warmUpRacks) do
 				table.insert(allRacks, rack)
 			end
@@ -4005,7 +4812,7 @@ function LocalMeetService.start()
 		if arena then
 			stateArena = arena
 			table.insert(builtHalls, { index = #builtHalls + 1, venue = arena.meet, signUps = {}, meet = nil, nextStartAt = 0,
-				nextLevel = "State", state = true })
+				nextLevel = "State", state = true, nationals = false })
 			for _, rack in ipairs(arena.meet.warmUpRacks) do
 				stateRackSet[rack] = true
 				table.insert(allRacks, rack)
@@ -4082,6 +4889,7 @@ function LocalMeetService.start()
 					broadcastLobby()
 				end
 			end
+			refreshEntranceSigns()
 			task.wait(0.5)
 		end
 	end)

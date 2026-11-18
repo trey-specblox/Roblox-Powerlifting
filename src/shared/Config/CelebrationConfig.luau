@@ -63,9 +63,9 @@ export type Celebration = {
 -- Where a good lift gets a celebration: every meet (user 2026-11-12: "i want local and regionals to have these
 -- celebration, fails, entrances etc. but no flashy cinematic, just to keep local and regionals quick but still a little
 -- styleish"; before, State only).
-CelebrationConfig.MeetLevels = { Local = true, Regional = true, State = true } :: { [string]: boolean }
+CelebrationConfig.MeetLevels = { Local = true, Regional = true, State = true, Nationals = true } :: { [string]: boolean }
 -- Where a celebration's own camera shots (`cinematic`, client CelebrationCinema) play on the lifter's screen: State only.
-CelebrationConfig.CinematicMeetLevels = { State = true } :: { [string]: boolean }
+CelebrationConfig.CinematicMeetLevels = { State = true, Nationals = true } :: { [string]: boolean }
 
 -- Everyone's, until crates hand out the others.
 CelebrationConfig.Default = "ChalkClapPump"

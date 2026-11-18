@@ -38,6 +38,7 @@ local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("Loca
 local MockMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("MockMeetRemotes"))
 
 local MeetCinema = require(script.Parent:WaitForChild("MeetCinema"))
+local HallCameraGuard = require(script.Parent:WaitForChild("HallCameraGuard"))
 local MeetSoundController = require(script.Parent:WaitForChild("MeetSoundController"))
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 local C = UIStyle.Colours
@@ -181,7 +182,8 @@ local function clearOf(from: Vector3, to: Vector3, params: RaycastParams): Vecto
 		if hit == nil then
 			return to
 		end
-		if hit.Instance.Transparency < CLEAR_PART then
+		-- (The Nationals hall's hidden camera walls stop it too: HallCameraGuard.)
+		if hit.Instance.Transparency < CLEAR_PART or HallCameraGuard.blocks(hit.Instance) then
 			return hit.Position + (from - to).Unit * 0.5
 		end
 		table.insert(ignored, hit.Instance)
@@ -254,6 +256,10 @@ local function step(dt: number)
 	end
 	local atBar = character:GetAttribute(LIFT_ATTRIBUTE) ~= nil
 	local elapsed = os.clock() - current.stageStart
+	-- Nationals: the curtain's reveal still has the camera (NationalsCurtainScene); the walk's camera follows after.
+	if MeetCinema.curtainShot and current.stage == "Walk" then
+		return
+	end
 
 	if current.ritualWalk and not MeetCinema.walkShots then
 		endRitual(current)
@@ -314,6 +320,8 @@ local function step(dt: number)
 		local ahead = flatLook(root, camera)
 		eye = root.Position - ahead * SETTINGS.ReleaseBack + Vector3.new(0, SETTINGS.ReleaseUp, 0)
 		look = root.Position + Vector3.new(0, 1.5, 0)
+		-- Never behind a Nationals backdrop (user 2026-11-18: "your camera is seen going behind the screen").
+		eye = HallCameraGuard.clear(look, eye)
 		rate = SETTINGS.ReleaseRate
 	else
 		look = current.look :: Vector3

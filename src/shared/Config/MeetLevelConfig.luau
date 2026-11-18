@@ -44,6 +44,11 @@ MeetLevelConfig.Levels = {
 	-- player's first meet must not be a State meet. State gets its own arena; until then it only happens when
 	-- forced in Studio (workspace attribute ForceMeetLevel). Its titles stay for the arena.
 	State = { id = "State", label = "STATE MEET", suitDropChance = 0.005, chance = 0, potMultiplier = 3, ladderMultiplier = 3, titles = true },
+	-- Nationals (GAME_DESIGN §39): its own server and arena, never rolled. Placed per weight class; each class's top 3
+	-- earn the titles, and the x5 pot is paid per class. No ladder points (the ladder leads to State). Suit chance 1%
+	-- (user 2026-11-17, State's doubled).
+	Nationals = { id = "Nationals", label = "NATIONALS", suitDropChance = 0.01, chance = 0, potMultiplier = 5, ladderMultiplier = 0,
+		titles = true },
 } :: { [LevelId]: Level }
 
 -- Rolled in this order (the rarest first); Local when none comes up.
@@ -60,6 +65,10 @@ MeetLevelConfig.Titles = {
 	StateChampion = "State Champion",
 	StateRunnerUp = "State Runner-up",
 	StateThird = "State 3rd Place",
+	-- Per weight class at Nationals (§39): the class is said with it ("74 kg National Champion").
+	NationalsChampion = "National Champion",
+	NationalsRunnerUp = "National Runner-up",
+	NationalsThird = "National 3rd Place",
 } :: { [string]: string }
 
 --[[
