@@ -14,8 +14,9 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **GAINING AND LOSING WEIGHT BUILT (2026-11-18, same session; GAME_DESIGN §38.3 "The design", user picked: goal
-class, FAST 2 kg per full training day, spots stay in their class). TESTED IN STUDIO (one player). NOT COMMITTED.
-NEXT: the user tries the GOAL button on STATS in Studio, then decides on a commit/publish.**
+class, FAST 2 kg per full training day, spots stay in their class). TESTED IN STUDIO (one player). COMMITTED in
+33d581a (with the live body, the logo fix, the gear check and the emote fix below; not pushed, not published).
+NEXT: publish and test on a phone and with two players.**
 - `src/shared/Config/BodyweightConfig.luau` (NEW): KgPerFullTrainingDay 2 -> KgPerEV 0.5 (DailyCapEV 4), goal = class
   limit - 0.5 (120+: 125), Studio-only workspace attribute StudioWeightSpeed multiplies the speed for tests.
 - `ProfileOperations.setWeightGoal` (Maintain or a class; "NeedsConfirm" when leaving a class that holds a Nationals or
@@ -52,7 +53,7 @@ NEXT: the user tries the GOAL button on STATS in Studio, then decides on a commi
   has DataStores off).
 
 **COMPUTER LIFTERS' GEAR CHECKED + THE SINGLET/SUIT LOGO FIX (2026-11-18, the session "Computer lifters wear gear,
-then gaining and losing weight"; GAME_DESIGN §37.2 "What they wear", §38.4 step 4). NOT COMMITTED (the user commits).
+then gaining and losing weight"; GAME_DESIGN §37.2 "What they wear", §38.4 step 4). COMMITTED in 33d581a.
 NEXT: the user looks at art/previews/ComputerLifterGear_Standing.jpg and _Lifting.jpg (and their own singlet in Studio).**
 - The gear itself was already built on 2026-11-16 (commit 23420eb: `ComputerLifters.spawnBody` -> `randomGear` ->
   `GearService.dressFigure`; picked once per body, so the look holds for the whole meet). This session checked it in
