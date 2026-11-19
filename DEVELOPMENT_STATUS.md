@@ -26,7 +26,7 @@ again and test Nationals on the phone; the user's two-player test of the benches
 - NATIONALS IS LIVE IN THE CODE (2026-11-18, after commit ca21194 was pushed and published; the user: "I live checked 1.
   Everything is good, 2 is tested too its good"): `NationalsConfig.Live = true` (every spot-holder sees it, a Nationals
   every 2 hours, 2 lifters to gather and to run the meet; the desk on the Nationals concourse is built for everyone).
-  NOT COMMITTED, NOT PUBLISHED yet. THE USER must also set the place's Max Players to 40 or more (Creator Dashboard >
+  COMMITTED in 4d1fbd0 (not pushed, not published yet). THE USER must also set the place's Max Players to 40 or more (Creator Dashboard >
   the experience > Places > the place > Configure / Settings > Server Fill / Max Players), so a full Nationals fits.
   The computer lifters' gear and weight gain/loss went to their own session (task "Computer lifters wear gear, then
   gaining and losing weight").
