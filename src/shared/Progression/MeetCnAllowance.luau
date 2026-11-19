@@ -24,7 +24,7 @@
 
 	In a meet with only one real player (computer lifters fill the rest,
 	§37.2) the caller passes SoloCostMultiplier: every raise and every miss
-	costs that many times the days, so strength counts half there.
+	costs that many times the days (1 since 2026-11-19: full strength there).
 
 	A MEET IS SETTLED ONE LIFT AT A TIME, attempts in the order they were taken
 	(settle): a GOOD lift above what is raised so far uses the allowance its

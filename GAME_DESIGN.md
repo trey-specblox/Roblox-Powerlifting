@@ -6464,7 +6464,7 @@ way:
 | **The split** | **About 2/3 of a player's strength comes from meets, 1/3 from gym training**, for a player who does both fully. Training stays as the steady source for days without meets |
 | **The rule** | **A day's meet allowance for a lift is worth 2× what a full day of gym training gives that lift.** In kg: `2 × the lift's Progression Reference × BaseProgressRate × (DailyCapEV ÷ 3) × Hill(PP)`, the training formula of §29.3 / §34 for one lift's share of the daily EV cap. This replaces §33.3b's flat "+4% of CN per day". Because it follows the training formula, it follows any retune of `BaseProgressRate` automatically, and it shrinks near the world-record level on the same curve as before. **[PROVISIONAL]** factor 2 |
 | **Unchanged from §33.3b** | Strength comes only from a **good lift above the lift's CN**, up to the weight lifted. A miss above CN uses the allowance it would have used. A bomb-out saves nothing. The allowance stacks for up to **3 days**. Mock Meets (alone, §29.10) raise no CN. Training keeps its own 4.00 EV daily cap; the two do not share a limit |
-| **Meets with only one real player** (§37.2) | **Count half:** a raise there **uses twice the allowance**, so a player alone gets about a 50/50 split with training. Playing with real people is the faster way up. **[PROVISIONAL]** |
+| **Meets with only one real player** (§37.2) | ~~Count half: a raise there uses twice the allowance.~~ **[CHANGED BY THE USER, 2026-11-19: "for computer lifters we can do the fully meet gains", "I want players to be able to grind local meets for stats"]** **Full strength**, the same as with real players (`SoloCostMultiplier` 1). The other reduced rewards of §37.2 stay (no prize pot, no gym record, no titles, no Local win) |
 
 ### 37.2 Meets always run: computer lifters fill empty spots (user, picked from options)
 
@@ -6474,7 +6474,7 @@ way:
 | **What a computer lifter is** | A lifter the server runs. It weighs in, chooses its attempts and lifts on its own platform alongside everyone else (everyone lifts together, §29.10, so the meet takes no longer), with judges' lights and a place on the board. The server decides its results; no client is involved |
 | **How strong they are** | **Near the real lifters' level:** their scores land a bit below to a bit above the real lifters' expected scores, so placing is a real race every meet. **[PROVISIONAL]** spread |
 | **Computer lifters never take a reward from a real player** | Prize-pot shares, ladder place points, titles and Local wins go by the **real lifters' order among themselves**. The pot counts real lifters only. The board still shows the full placing, computer lifters included. **[PROVISIONAL]** (follows from the decisions above) |
-| **What a meet with only 1 real player pays** | **Reduced**, so nobody farms an empty server: **coins for finishing and for 9/9**, **ladder points for finishing** (times the level), Competition Scale, and strength at half (§37.1). **No prize pot, no gym record bonus or wall entry, no titles, no Local win:** those still need **2 or more real players** |
+| **What a meet with only 1 real player pays** | **Reduced**, so nobody farms an empty server: **coins for finishing and for 9/9**, **ladder points for finishing** (times the level), Competition Scale, and **full strength** (§37.1, changed by the user 2026-11-19; was half). **No prize pot, no gym record bonus or wall entry, no titles, no Local win:** those still need **2 or more real players** |
 | **Meets with 2 or more real players** | Pay in full as before (§29.10, §30.6, §35.8), whether or not computer lifters fill the rest |
 | **What they wear** (user, 2026-11-01 idea, approved 2026-11-12: "Computer lifter yes they can have random gear") | **Random shop gear over a tee**, fitted to their own body build exactly like a player's: always a singlet, a belt 85% of the time, knee sleeves 75%, wrist wraps 60% (`LocalMeetConfig.ComputerLifters.GearChances`). Any colour from the shop, CENTRAL on every logo. **Never a rare suit or knee wraps** (meet drops only, §35.12). Picked once when the body is made, so the look stays the same for the whole meet |
 | **What they do: celebrations, fails, emotes** (user, 2026-11-01: "have the same animations. and emotes n stuff"; built 2026-11-19 with Claude's defaults on how often and which, **approved by the user 2026-11-19: "It looks good"**) | The game's own moves, nothing new made. Each computer lifter gets its own **celebration, fail style and emotes**, picked once when its body is made (like its gear), so it keeps the same style all meet. **Celebration** after a good lift: a rarity by weight (free one 30%, Common 25%, Uncommon 20%, Rare 15%, Epic 10%), then one of that rarity at random, with its own sound track; **never a Legendary** (the rare prizes players chase, and the longest). **Fail style:** Standard 40%, Bail-out 25%, Grinder 20%, Dramatic 15% (miss reactions were already shared with players). **Emotes:** the free ones (Wave, Chalk Clap), Belt Tighten only when it wears a belt, plus 2 more at random (Double Biceps, Trap Slap, Point & Laugh, Most Muscular); never Catch Your Breath (it sits on the floor). An emote plays only while it stands still at its waiting spot, never walking, chalking, lifting, celebrating or seated, and only while another lifter is still out for longer than the emote lasts (a round's chalk-up starts the moment the last lifter is back and would cut it off); about one every 14-32 s at most (70% chance each time, never the same twice in a row), so in practice about one in each wait. **On the podium** (before: Roblox's stock cheer for 20 s): a wave, each at its own moment, then now and then one of its emotes. Numbers in `LocalMeetConfig.ComputerLifters` (CelebrationRarityWeights, FailStyleWeights, IdleEmotes) |
@@ -7578,3 +7578,70 @@ pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, th
 >   (`NationalsConfig.TesterUserIds`: listed accounts see and join it too while not Live), and the admin panel got
 >   **START NATIONALS NOW**: the next Nationals starts 30 s after the press **in every server** (each server with someone
 >   signed up looks for it every 5 s and moves its sign-ups to it); the timetable carries on after it.
+
+## 40. Strength boosts, the gain display and unboxing (user, 2026-11-19)
+
+The user, after a live test ("how low stats you gain from training"): gains must feel faster without killing
+longevity. These are the user's decisions; the numbers are **[TBD]** until each part is designed and built.
+
+### 40.1 Decisions
+
+| Topic | Decision |
+|---|---|
+| **Pacing target** | **A dedicated player starts breaking records in about 2 months** (user: "three is too much specially for the state of Roblox right now"). Boosts count **inside** that target: the base rates get set so a player who uses the boosts lands near 2 months, not far under it. **Measured with a normal set of boosts on** (user 2026-11-19, picking Claude's suggestion). **No Robux "2.0x" gain boost:** daily quests give enough that players won't need one (user) |
+| **Meets with computer lifters** | **Full strength** (built 2026-11-19, §37.1): "I want players to be able to grind local meets for stats" |
+| **The gain display** | **Every gain shows on screen**, of any kind (user: "gains as a whole should be on a screen gain display. Any sort of gains"): training, meets, quests, boosts, technique. **BUILT 2026-11-19 (§40.4)** |
+| **Meets** | The best way to grind strength. **Meet gain boost** items raise what a meet gives |
+| **Training** | **AFK-able** (already: §34's stations). **Training gain boost** items raise what training gives |
+| **Cooking: steaks** | The **training** gain boost. **Infinite stacking** stays (§25's table: 1 steak +1% ... 500 steaks +250%; more steaks cook longer into one bigger steak). The user's reasons: it trades real training for cooking, and steaks are bought **with coins only, never Robux**. Steaks let you gain **more**, not only faster |
+| **Cooking: meet meals** | The **meet** gain boost: raises the strength a completed meet gives |
+| **Monetization: cooking** | A Robux item that **skips the cooking time** (the steaks themselves stay coins only) |
+| **The strongman gym's rare NPC** | Not called steroids. A **rare NPC** spawns at the strongman gym and sells **stat gain boosters** (any stat gained is boosted). A **"TP" notification** to every player when it spawns (the user sees this as monetization). **Limited stock: only half the player count can buy one**. **Boosters cost coins** (user 2026-11-19: "NPC boosters will be for coins. Like The steroid guy") |
+| **Daily quests** | Given by NPCs; **a huge stat gain**, so players come back daily and get stronger even without playing a lot. **Free** (user 2026-11-19) |
+| **Crates** | **Never bought with Robux** (user 2026-11-19), so Roblox's paid random item rule doesn't apply. Robux stays for convenience: the cook skip, the unboxing skip pass (§40.3). The user may look at monetizing **celebrations** later |
+| **Gear** | A **huge part of the game**: technique gear, stat gain gear, and fun designs (e.g. **a duck floaty as a belt**) |
+| **Unboxing** | Must be **extremely exciting**: an unbox animation, and a **Legendary puts you in a cutscene**, e.g. a blacksmith hammering a belt whose latch and leather are squeezed out of molten lava: over the top on purpose, so players laugh ("is it really this serious"). Study big Roblox games' unlock animations first. **The user's detailed design (character opens the crate, crate pulls you into a volcano dimension, a giant powerlifter forges a Lava Belt, an 80 Robux skip for basic animations): §40.3** |
+
+### 40.2 Claude's notes to settle while designing (2026-11-19)
+
+- **How boosts combine** decides whether the 2-month target holds. Several boosts at once (steak, booster, gear,
+  quest) multiplied together grow very fast. Recommended: **added together** (steak +50% and booster +30% = +80%),
+  and the 2-month target measured with a normal set of boosts on.
+- **Infinite steaks:** the coin price and the cooking time are the only limits, so steaks must cost more per % as
+  the stack grows (§25's table already does: 0.5% per steak at 500) and coin income must stay bounded. The
+  cook-skip item then turns Robux into speed only; it never buys a steak.
+- **The rare NPC:** ~~coins or Robux?~~ coins (user, 2026-11-19). "Half the player count" still needs a rule for a
+  server of 1-3 players (e.g. at least 1).
+- **Paid unboxing:** settled: crates are never bought with Robux (user, 2026-11-19). If that ever changes, Roblox
+  requires the odds to be shown before buying.
+- Ties in with §35's crates and rare suits (memory: crate types, rarity looks) and §38's gear fitting.
+
+### 40.3 Unboxing: the user's design (user, 2026-11-19; NOT BUILT, design study in References/Unboxing Study.md)
+
+The user's decisions after reading the first unboxing study. Numbers and details are **[TBD]** until it is designed.
+
+| Topic | Decision |
+|---|---|
+| **The opening, for every crate** | The same for every crate: **you buy it, your character lifts the crate up, puts it down and unlocks it** (a character animation in the world). **[WOULD CHANGE §35.12]:** today's intro is a crate dropping onto a platform inside the Shop panel, then the reel |
+| **A rare item: the cinematic** | Only when the item is rare, a cinematic plays straight out of the opening. The user's example for a **Lava Belt**: **the crate pulls you in**; you're in **a new dimension**, staring at **a huge volcano**; it **erupts**, and **a gigantic, very buff powerlifter blocks the eruption** from hitting you; the eruption dies away and he says something like **"stay safe kid"**; he **grabs molten lava and rocks and smashes them together into a powerlifting belt**; **you get thrown out of the chest with the belt on your waist**; then the unlock screen: **"You unlocked LAVA BELT, LEGENDARY"**. This replaces the blacksmith example in §40.1 |
+| **Skip pass (monetization)** | A cheap Robux purchase (**about 80 Robux**, the user's figure) that skips **only the basic animations**: the crate opening and the celebration reroll spin. **It never skips a rare cinematic the first time**: a player's first time always gets the full cinematic. |
+| **Rare cinematic length afterwards** | After the first time, **players choose the length** themselves (the study suggested Full / Short / Off) |
+
+**Claude's notes (2026-11-19):** the skip pass isn't random and doesn't change odds, so Roblox's paid random item rule
+doesn't cover it. To settle while designing:
+- Does the free tap-to-skip (§35.12) go away for players without the pass?
+- Which rarities get a cinematic: Legendary only (§40.1), or Epic too?
+- With no pass, the basic opening should stay short: Blade Ball's 5-10 s unskippable spin is the reason its players buy
+  a skip, and it annoys everyone who doesn't.
+
+### 40.4 The gain display (built 2026-11-19)
+
+Only on the player's own screen (memory: no screen clutter). Display only: the server saves each gain first, then
+tells that one player (`GainNews` -> `GainRemotes.Gained` -> client `GainDisplay`).
+
+| Part | What it does |
+|---|---|
+| **SESSION GAINS panel** | Right edge, middle. One row per thing that grew since you joined (SQUAT, BENCH SCALE, SQUAT CONTROL...), in the lift's colour, counting up with a little pop each time. Small totals show three decimals so a training tick (about 0.004 kg every 10 s at the start) visibly moves the number. Fades out 20 s after the last gain and comes back with the next. Up to 9 rows |
+| **Floating numbers** | Big outlined numbers in the lift's colour rising just left of the panel; a newer one pushes the older ones up. **Training:** "+0.1 kg SQUAT" each time a row passes another 0.1 (kg, or technique points). **Meets:** each gain's full amount, one after another. Not over the head: the training menu covers that spot (tested) |
+| **Sounds** | The game's own crate sounds: the Tick, quietly, for a training pop; the Big sting when a meet's gains land |
+| **What sends gains today** | Rack training (strength every tick), technique training, the end of every meet against others (Local to Nationals: strength raises and Competition Scale), the Mock Meet (Scale). Quests, boosts and food will send through the same path |

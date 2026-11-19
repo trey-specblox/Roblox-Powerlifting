@@ -13,8 +13,41 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**PUBLISHED 2026-11-18 (the user, that evening): the live game is commit b1cd602; commits 33d581a..b1cd602 are pushed
-(main = origin/main). The user set Max Players to 40.**
+**PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
+Max Players 40.**
+
+**GAIN DISPLAY BUILT (2026-11-19, GAME_DESIGN §40.4; user: "gains as a whole should be on a screen gain display. Any
+sort of gains"). TESTED IN STUDIO (one player). COMMITTED (the commit after 03a2883), not pushed, not published.**
+- NEW `src/shared/Progression/GainRemotes.luau` (remote GainRemotes/Gained), `src/server/PlayerData/GainNews.luau`
+  (send/strength/scale/technique; display only, requires nothing from PlayerData; started in init.server),
+  `src/client/UI/GainDisplay.luau` (started in init.client).
+- Hooks: PlayerDataService.awardTrainingProgression (deltaCN) and awardTechniqueTraining (effective technique change),
+  LocalMeetService.saveLifter (CN raises + Scale raised, after the save), MockMeetService.saveMeetResult (Scale).
+- Look: SESSION GAINS panel on the right edge (rows per stat, lift colours, 3 decimals under 1 kg, fades 20 s after
+  the last gain); floating numbers rising left of it, newer ones push older up; training pops every +0.1; meets pop
+  every gain. Sounds reused: GearStatsConfig.Sounds.Tick (training pop, quiet) and Big (meet gains).
+- Tested in Studio: real rack training showed +0.004 kg per tick counting up (25.000 -> 25.035 CN in the log);
+  test sends through the real remote showed the training pop, a 6-gain meet pop sequence and a technique row
+  (pictures checked). Found and fixed: a BillboardGui inside a ScreenGui never draws; over-the-head pops were hidden
+  by the training menu, so pops moved beside the panel; pops overlapped, so newer ones push older up; a full panel
+  dropped a row, so 9 rows. Studio-only workspace attribute StudioGainPopSeconds slows pops for screenshots.
+- Real Local meet in Studio (forced good lifts, 1 player + 3 computer lifters): saved and sent SQUAT/BENCH/DEADLIFT
+  +2.5 kg and each SCALE +27.5 kg to the screen; no errors.
+- NOT TESTED: a phone screen; two players.
+
+**STRENGTH BOOST PLAN (2026-11-19, user's decisions after a live test; GAME_DESIGN §40). NOTHING BUILT YET except
+the first item and the gain display. COMMITTED with the gain display.**
+- BUILT: meets with only computer lifters give FULL strength (`ProgressionConfig.MeetCnAllowance.SoloCostMultiplier`
+  2 -> 1; the meet summary no longer says "half strength"; GAME_DESIGN §37.1/§37.2 marked changed). Checked: synced
+  to Studio, the config loads with 1. Not run in a meet (one number; the settle code already multiplies by it).
+- PLANNED (§40.1): 2-month target to start breaking records, boosts counted inside it; an on-screen display for every
+  gain; meet gain boosts; training gain boosts; steaks (training, infinite stacking, coins only) and meet meals
+  (meets); a Robux cook-skip item; the strongman gym's rare NPC selling stat boosters (TP notification, stock = half
+  the player count); daily NPC quests (big gains); much more gear (technique, stat gain, fun designs like a duck
+  floaty belt); exciting unboxing with Legendary cutscenes (a lava-forged belt). §40.2 lists what to settle.
+- Measured (live numbers, 59 kg starter): a full training day ~+5.4 kg over the three lifts; meets up to 2x that per
+  day, saved 3 days; record level ~2-2.5 months with full meets, 5-7 months training only. BaseProgressRate is
+  still 0.00482389 (the 0.01113418 candidate was never switched on; §37.1's meets made up the difference).
 
 **WEIGHT GOAL RULES CHANGED BY THE USER (2026-11-19, after their live phone test; GAME_DESIGN §38.3 "How the lifter
 chooses" and the new "The class lines" row). TESTED IN STUDIO, COMMITTED in db69817, PUSHED 2026-11-19 (not published yet).**
@@ -37,8 +70,8 @@ chooses" and the new "The class lines" row). TESTED IN STUDIO, COMMITTED in db69
 **COMPUTER LIFTERS CELEBRATE, FAIL AND EMOTE LIKE PLAYERS (2026-11-19, overnight session while the user slept;
 GAME_DESIGN §37.2 "What they do"; user 2026-11-01: "the same animations. and emotes n stuff"). TESTED IN STUDIO
 (3 Local meets, 1 player + 3 computer lifters each). The user reviewed it and approved Claude's how-often and
-which-ones numbers (2026-11-19: "It looks good you can commit"). COMMITTED (see the commit after db69817), not
-pushed, not published.**
+which-ones numbers (2026-11-19: "It looks good you can commit"). COMMITTED in 03a2883, PUSHED 2026-11-19
+(not published yet).**
 - Only the game's existing animations and sounds: no Blender work, no uploads, no new audio.
 - Found already built before this session: computer lifters did the free celebration (ChalkClapPump) after a good
   lift at every meet and the shared miss reactions; the stock Roblox cheer was left only on the podium (and as a dead

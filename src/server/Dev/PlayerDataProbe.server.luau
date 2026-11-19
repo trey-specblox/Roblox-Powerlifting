@@ -1830,12 +1830,12 @@ do
 	settle(d6, { { weightKg = 105, result = "GoodLift" }, { weightKg = 125, result = "NoLift" } }, true)
 	check("in order: good 105 then a miss at 125 uses the rest", near(squat(d6), 105) and near(daysLeft(d6), 0))
 
-	-- A meet with one real player (§37.1): every raise costs twice the days.
+	-- A meet with one real player (§37.1): every raise costs SoloCostMultiplier times the days (1 since 2026-11-19).
 	local solo = ProgressionConfig.MeetCnAllowance.SoloCostMultiplier
 	local d8 = freshData()
 	outcome, cn, used = ProfileOperations.settleMeetCompetitionNumber(d8, "83 kg", "Squat", 100,
 		{ { weightKg = 102.5, result = "GoodLift" } }, true, NOW, solo)
-	check("alone with computer lifters: the same raise costs twice the days", outcome == "Raised"
+	check("alone with computer lifters: the same raise costs SoloCostMultiplier times the days", outcome == "Raised"
 		and near(squat(d8), 102.5) and near(used, solo * 0.025 / daily), tostring(used))
 
 	local d7 = freshData()

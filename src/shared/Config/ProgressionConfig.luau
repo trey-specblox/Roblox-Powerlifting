@@ -142,11 +142,12 @@ ProgressionConfig.MeetCnAllowance = {
 	]]
 	TrainingDaysPerDay = 2,
 	--[[
-		[PROVISIONAL] In a meet with only ONE real player (computer lifters fill
-		the rest, §37.2) a raise uses this many times the allowance: strength
-		counts half there.
+		In a meet with only ONE real player (computer lifters fill the rest,
+		§37.2) a raise uses this many times the allowance. 1 = full strength
+		(user 2026-11-19: "for computer lifters we can do the fully meet gains",
+		so players can grind Local meets; it was 2, half strength).
 	]]
-	SoloCostMultiplier = 2,
+	SoloCostMultiplier = 1,
 	-- [PROVISIONAL] Days that can be saved up (3 days).
 	MaxDays = 3,
 }

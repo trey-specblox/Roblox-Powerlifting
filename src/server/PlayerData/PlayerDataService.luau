@@ -65,6 +65,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
 local ProfileOperations = require(script.Parent.ProfileOperations)
+local GainNews = require(script.Parent.GainNews)
 
 --[[
 	ProfileStore ships with Luau type annotations that the current type solver
@@ -697,6 +698,11 @@ function PlayerDataService.awardTrainingProgression(
 
 	local result = ProfileOperations.applyTrainingProgression(data, lift, os.time(), elapsedSeconds)
 
+	-- The gain display (GAME_DESIGN §40.1): what this award really added.
+	if result.outcome == "Awarded" and result.deltaCN > 0 then
+		GainNews.send(player, "Training", { GainNews.strength(lift, result.deltaCN) })
+	end
+
 	-- Gaining or losing weight toward the lifter's goal (GAME_DESIGN §38.3): only with EV this award really granted.
 	if result.outcome == "Awarded" and result.earnedEV > 0 then
 		local speed = 1
@@ -765,6 +771,19 @@ function PlayerDataService.awardTechniqueTraining(
 	end
 
 	local result = ProfileOperations.applyTechniqueTraining(data, lift, primary, elapsedSeconds)
+
+	-- The gain display (GAME_DESIGN §40.1): each stat this award raised, as its effective value moved.
+	if result.outcome == "Awarded" then
+		local gains = {}
+		for _, gain in ipairs(result.gains) do
+			local after = result.after[gain.stat]
+			local shown = if typeof(after) == "number" then GainNews.technique(gain.stat, result.lift, after - gain.raw, after) else nil
+			if shown then
+				table.insert(gains, shown)
+			end
+		end
+		GainNews.send(player, "Training", gains)
+	end
 
 	if result.outcome == "Rejected" then
 		warn(string.format(

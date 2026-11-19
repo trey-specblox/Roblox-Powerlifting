@@ -99,6 +99,8 @@ PlayerStatsService.start()
 -- Each player's coins on their screen (the counter and the "+150 COINS" pop-ups). Display only.
 local CoinDisplayService = require(PlayerDataFolder:WaitForChild("CoinDisplayService"))
 CoinDisplayService.start()
+local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
+GainNews.start()
 
 -- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
 local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))

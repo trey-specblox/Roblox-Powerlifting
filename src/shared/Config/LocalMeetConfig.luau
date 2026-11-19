@@ -80,7 +80,7 @@ LocalMeetConfig.StudioMinimumLifters = 1
 	speed, the prize pot, gym records, titles, a win) only when it STARTED
 	with at least this many REAL players. With one real player it pays the
 	reduced rewards of §37.2 (finishing and 9/9 coins, finishing ladder points,
-	Scale, CN at half speed). In Studio a one-player meet pays in full, so the
+	Scale, CN at full speed since 2026-11-19). In Studio a one-player meet pays in full, so the
 	full rewards can be tested alone; set the workspace attribute
 	"ForceSoloMeet" to true to test the reduced ones. A live server never uses
 	that.

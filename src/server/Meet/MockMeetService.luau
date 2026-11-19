@@ -77,6 +77,7 @@ local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 -- For the two meet-only raises (Scale, best Total); see their security notes.
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
+local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
@@ -315,12 +316,14 @@ local function saveMeetResult(player: Player, visit: Visit, result: MeetTotal.Me
 	end
 	local scaleOutcomes: { [string]: ProfileOperations.ScaleRaiseOutcome } = {}
 	local scaleKgs: { [string]: number? } = {}
+	local scaleBefore: { [string]: number } = {}
 	local totalOutcome: ProfileOperations.ScaleRaiseOutcome = "Rejected"
 	PlayerDataService.update(player, function(data)
 		for _, lift in ipairs(MeetConfig.LiftOrder) do
 			-- A lift over the normal limit counts for the total, not for Scale (GAME_DESIGN §37.5).
 			local provenKg = AttemptChoice.bestWithinLimit(visit.competitionNumber[lift], visit.lifts[lift].history)
 			if provenKg then
+				scaleBefore[lift] = ProfileOperations.getCompetitionScale(data, lift, visit.classLabel) or 0
 				scaleOutcomes[lift], scaleKgs[lift] =
 					ProfileOperations.raiseCompetitionScale(data, visit.classLabel, lift, provenKg)
 			else
@@ -329,6 +332,15 @@ local function saveMeetResult(player: Player, visit: Visit, result: MeetTotal.Me
 		end
 		totalOutcome = ProfileOperations.raiseBestTotal(data, visit.classLabel, totalKg)
 	end)
+	-- The gain display (GAME_DESIGN §40.1): the Scale this Mock Meet really saved.
+	local gains = {}
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		local scaleKg = scaleKgs[lift]
+		if scaleOutcomes[lift] == "Raised" and scaleKg then
+			table.insert(gains, GainNews.scale(lift, scaleKg - (scaleBefore[lift] or 0)))
+		end
+	end
+	GainNews.send(player, "MockMeet", gains)
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
 		local outcome = scaleOutcomes[lift] or "Rejected"
 		local scaleKg = scaleKgs[lift]

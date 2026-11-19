@@ -28,7 +28,7 @@
 	anyone, but never take a reward from a real player: prizes, ladder place
 	points, titles and wins go by the real lifters' order among themselves
 	(Meet.rewardPlaces). A meet with only ONE real player pays the reduced
-	rewards (Meet.solo): Scale, CN at half speed (SoloCostMultiplier),
+	rewards (Meet.solo): Scale, CN at full speed (SoloCostMultiplier 1),
 	finishing and 9/9 coins, finishing ladder points; no prize pot, gym
 	records, titles or win.
 
@@ -137,6 +137,7 @@ local PlayerDataFolder = ServerFolder:WaitForChild("PlayerData")
 local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataService"))
 local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
+local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local TrainingStationService = require(ServerFolder:WaitForChild("Training"):WaitForChild("TrainingStationService"))
 local CardioMachineService = require(ServerFolder:WaitForChild("World"):WaitForChild("CardioMachineService"))
@@ -884,7 +885,7 @@ end
 	when the meet rewards. `totalKg` nil = no total (a bomb-out, or withdrawn):
 	nothing is raised and only the misses above CN use the meet allowance.
 	`place` is the lifter's place among the REAL lifters (§37.2). A meet with
-	one real player (`current.solo`) settles CN at half speed and pays only the
+	one real player (`current.solo`) settles CN at full speed and pays only the
 	finishing ladder points: no win, title, or place points. A computer lifter
 	saves nothing. Returns short lines for the lifter's result screen.
 ]]
@@ -892,7 +893,7 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	place: number?): { string }
 	local lines: { string } = {}
 	local player = lifter.player
-	-- CN is settled in full meets and, at half speed, in a meet with one real player (§37.1).
+	-- CN is settled in full meets and in a meet with one real player (§37.1; full speed since 2026-11-19).
 	local settlesCn = current.rewards or current.solo
 	if player == nil or (totalKg == nil and not settlesCn) then
 		return lines
@@ -900,6 +901,8 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	local cnCost = if current.rewards then 1 else ProgressionConfig.MeetCnAllowance.SoloCostMultiplier
 	local nowUnix = os.time()
 	local scaleOutcomes: { [string]: ProfileOperations.ScaleRaiseOutcome } = {}
+	-- How much each lift's Competition Scale rose (for the gain display, GAME_DESIGN §40.1).
+	local scaleGained: { [string]: number } = {}
 	local cnOutcomes: { [string]: string } = {}
 	local cnAfter: { [string]: number } = {}
 	local totalOutcome: ProfileOperations.ScaleRaiseOutcome? = nil
@@ -949,7 +952,12 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 					then AttemptChoice.bestWithinLimit(lifter.competitionNumber[lift], lifter.lifts[lift].history)
 					else nil
 				if kg then
-					scaleOutcomes[lift] = ProfileOperations.raiseCompetitionScale(data, lifter.classLabel, lift, kg)
+					local scaleBefore = ProfileOperations.getCompetitionScale(data, lift, lifter.classLabel) or 0
+					local scaleOutcome, scaleNow = ProfileOperations.raiseCompetitionScale(data, lifter.classLabel, lift, kg)
+					scaleOutcomes[lift] = scaleOutcome
+					if scaleOutcome == "Raised" and scaleNow then
+						scaleGained[lift] = scaleNow - scaleBefore
+					end
 				end
 			end
 			totalOutcome = ProfileOperations.raiseBestTotal(data, lifter.classLabel, totalKg)
@@ -990,6 +998,19 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		warn(string.format("[LocalMeetService] %s's meet result was not saved", player.Name))
 		return { "Your result could not be saved." }
 	end
+	-- The gain display (GAME_DESIGN §40.1): the strength and Scale this meet really saved.
+	local gains = {}
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		if cnOutcomes[lift] == "Raised" and cnAfter[lift] then
+			table.insert(gains, GainNews.strength(lift, cnAfter[lift] - lifter.competitionNumber[lift]))
+		end
+	end
+	for _, lift in ipairs(MeetConfig.LiftOrder) do
+		if scaleGained[lift] then
+			table.insert(gains, GainNews.scale(lift, scaleGained[lift]))
+		end
+	end
+	GainNews.send(player, "Meet", gains)
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
 		if cnOutcomes[lift] == "Raised" and cnAfter[lift] then
 			table.insert(lines, string.format("%s CN %.1f → %.1f kg", lift, lifter.competitionNumber[lift], cnAfter[lift]))
@@ -3880,7 +3901,7 @@ local function finishMeet(current: Meet)
 				end
 			end
 			if current.solo and result.total then
-				table.insert(saved, "Alone with computer lifters: half strength, no prize pot")
+				table.insert(saved, "Alone with computer lifters: no prize pot")
 			end
 			if result.total and player.Parent then
 				local suitName = rollSuit(current, lifter, player)
