@@ -97,6 +97,12 @@ LocalMeetRemotes.WALK = "LocalMeetWalk"
 -- Client -> server, at a Nationals lift-off (GAME_DESIGN §39): the lift this lifter picks ("Squat", "Bench" or
 -- "Deadlift"). The server checks it is one of the three and that this lifter is choosing in a lift-off now.
 LocalMeetRemotes.LIFT_OFF_CHOOSE = "LocalMeetLiftOffChoose"
+-- Server -> the lifters in it, display only: a Nationals cinematic starts (GAME_DESIGN §39; NationalsScenes): which one
+-- ("LiftOff" or "Opening"), when (server time), who and what is in it, and the lines said. The server moves the figures;
+-- each client only runs its own camera, lights and text from this.
+-- Client -> server, timing only: "HallReady" once the Nationals hall has finished arriving on this screen (a place just
+-- walked into shows its lights late, so the opening waits for it, never for long).
+LocalMeetRemotes.SCENE = "LocalMeetScene"
 
 export type RemoteSet = {
 	leave: RemoteEvent,
@@ -125,6 +131,7 @@ export type RemoteSet = {
 	cheerChoose: RemoteEvent,
 	walk: RemoteEvent,
 	liftOffChoose: RemoteEvent,
+	scene: RemoteEvent,
 }
 
 local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemotes.READY, LocalMeetRemotes.STATE,
@@ -132,7 +139,7 @@ local NAMES = { LocalMeetRemotes.LEAVE, LocalMeetRemotes.CHOOSE, LocalMeetRemote
 	LocalMeetRemotes.STANDINGS, LocalMeetRemotes.AWARDS, LocalMeetRemotes.WARM_UP_LIFT, LocalMeetRemotes.WARM_UP_LEAVE,
 	LocalMeetRemotes.WARM_UP_STATE, LocalMeetRemotes.LEVEL_NEWS, LocalMeetRemotes.LIFT_PROGRESS, LocalMeetRemotes.SOUND,
 	LocalMeetRemotes.SPECTATE, LocalMeetRemotes.LOBBY_REQUEST, LocalMeetRemotes.LIVE_EVENT, LocalMeetRemotes.CHEER_STATE,
-	LocalMeetRemotes.CHEER_CHOOSE, LocalMeetRemotes.WALK, LocalMeetRemotes.LIFT_OFF_CHOOSE }
+	LocalMeetRemotes.CHEER_CHOOSE, LocalMeetRemotes.WALK, LocalMeetRemotes.LIFT_OFF_CHOOSE, LocalMeetRemotes.SCENE }
 -- Allowed to lose an update now and then.
 local UNRELIABLE_NAMES = { LocalMeetRemotes.LIVE_REPORT, LocalMeetRemotes.LIVE_SHOW, LocalMeetRemotes.CHEER_REPORT }
 
@@ -342,6 +349,7 @@ function LocalMeetRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		cheerChoose = get(LocalMeetRemotes.CHEER_CHOOSE),
 		walk = get(LocalMeetRemotes.WALK),
 		liftOffChoose = get(LocalMeetRemotes.LIFT_OFF_CHOOSE),
+		scene = get(LocalMeetRemotes.SCENE),
 	}
 end
 
@@ -381,6 +389,7 @@ function LocalMeetRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		cheerChoose = get(LocalMeetRemotes.CHEER_CHOOSE),
 		walk = get(LocalMeetRemotes.WALK),
 		liftOffChoose = get(LocalMeetRemotes.LIFT_OFF_CHOOSE),
+		scene = get(LocalMeetRemotes.SCENE),
 	}
 end
 

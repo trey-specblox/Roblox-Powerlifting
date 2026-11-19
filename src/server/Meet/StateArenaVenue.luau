@@ -105,7 +105,8 @@ local MEET_SIDE_END_Z = 49 -- where the side lines meet the floor's wall
 -- The warm-up area behind the gantries (user 2026-11-01: "a warm up area, with tons of racks"): rows of the gym's
 -- competition rack facing the platforms, as many as fit inside the floor's round wall, and plate trees at the back.
 -- (A row at z = 30 went, user 2026-11-06, for the lifters' benches and the caller.)
-local WARMUP_ROWS = { { z = 44, halfWidth = 54 }, { z = 58, halfWidth = 42 } }
+-- (Both rows moved back, 2026-11-18, for the benches' second row: they were at z 44 and 58. Nothing was taken out.)
+local WARMUP_ROWS = { { z = 52, halfWidth = 54 }, { z = 62, halfWidth = 42 } }
 local WARMUP_RACK_SPACING = 12
 local PLATE_TREES = { Vector3.new(-24, 0, 69), Vector3.new(-8, 0, 69), Vector3.new(8, 0, 69), Vector3.new(24, 0, 69) }
 local JUDGES_IN_FRONT = 17
@@ -141,7 +142,8 @@ local BENCH_SCREEN_Y = 9.5
 local BACK_SCREEN_BEHIND = 0.62
 -- The lifting order board is laid out for this many rows (LocalMeetService fills at most this many).
 local ORDER_BOARD_ROWS = 5
-local CALLER_Z = 29.5
+-- (Half a stud nearer the banner than at first, 2026-11-18: clear of a wide lifter turning onto the benches' front lane.)
+local CALLER_Z = 29
 -- The invisible cheering zones (GAME_DESIGN §36.4, user 2026-11-08; MeetCheering). The spectators': for each rack, the stands in
 -- front of it from the barricade out to the outer wall and this high, as wide as its side referees (their chairs, 10 studs from the
 -- middle, and a body more) and never past the gap a lifter walks out of, so nobody stands in two racks' zones. The lifters': the
@@ -149,10 +151,25 @@ local CALLER_Z = 29.5
 local STANDS_ZONE_TOP = 70
 local STANDS_ZONE_HALF_WIDTH = math.min(10 + 2, LIFTER_LINE_FROM_RACK)
 local CALLER_ASIDE = 9
-local BENCH_Z = 34
-local BENCH_LENGTH = 10
-local BENCH_SEAT_TOP = 1.8
-local SEATS_PER_BENCH = 4
+-- THE BENCHES, nobody inside anybody (user 2026-11-18, after Nationals: "Yes, fix State"; the seats were 2.4 apart, 4 to
+-- a 10-stud bench, and the slimmest body is 2.74 wide). The seats are SEAT_GAP apart: the widest body build (4.31 hand
+-- to hand, NationalsConfig.LiftOffScene.BodyWidths) with a little air. A rack has up to 10 lifters and only 34 studs
+-- of width (StateArenaConfig.RackSpacingStuds), so they sit in TWO ROWS of up to SEATS_PER_ROW, both facing the
+-- lifting order board: the front row first, the back row only when a rack has more than 5. Each row is MeetBench copies
+-- end to end, each BENCH_SCALE as big (11 long: one for 1 or 2 seats, two for 3 to 5).
+-- THE LANES (as at Nationals, LocalMeetVenue.Platform.seatLane): a lifter walks along a line SEAT_TO_LANE in front of
+-- their row's seats, the one line clear of the sitting lifters' hands and feet (2.01 in front of a seat's middle) for a
+-- walker up to 2.16 wide either side. The front row's lane (z 32.6) is clear of the caller and of the coach behind the
+-- chalk stand; the back row's lane (z 40.5) is the aisle between the rows, and its lifters go round the end of the
+-- front row (ROW_END_X from the rack's middle) onto the front lane (seatAround).
+local BENCH_SCALE = 1.1
+local BENCH_LENGTH, BENCH_DEPTH, BENCH_SEAT_TOP = 10 * BENCH_SCALE, 2 * BENCH_SCALE, 1.8 * BENCH_SCALE
+local SEATS_PER_ROW, SEAT_GAP = 5, 4.4
+local SEAT_STAND, SEAT_LANE = 1.3, 3.0
+local SEAT_TO_LANE = SEAT_STAND + SEAT_LANE
+local BENCH_ROW_ZS = { 36.9, 44.8 }
+local BENCH_Z = BENCH_ROW_ZS[1]
+local ROW_END_X = 13.5
 -- The sign-up desk and the weigh-in booths beside it, there between meets; and where a lifter ends up after the meet: on the floor, on
 -- the spectators' side of the barricades.
 local DESK_Z = -40
@@ -492,8 +509,10 @@ function StateArenaVenue.build(): (Venue?, string?)
 	-- a sign on the upper tier's front wall over a hidden point carrying the prompt.
 	local arrivalAt = frame * Vector3.new(0, WALK_Y, -(WALK_R0 + WALK_R1) / 2)
 	local arrival = CFrame.lookAt(arrivalAt, arrivalAt - frame.LookVector)
-	local exitSign = BuildParts.placed(model, "ExitSign", Vector3.new(6, 2.6, 0.3),
-		frame * CFrame.new(6, WALK_Y + 3.4, -(WALK_R1 - 0.4)), looks.Glass)
+	-- (Twice the size it was, user 2026-11-18: "make the exit sign in the back bigger"; on a phone it is the only way out.)
+	-- (Its top stays under the upper tier's railing.)
+	local exitSign = BuildParts.placed(model, "ExitSign", Vector3.new(12, 3.6, 0.3),
+		frame * CFrame.new(6, WALK_Y + 3.1, -(WALK_R1 - 0.4)), looks.Glass)
 	exitSign.Transparency = 0
 	exitSign.CanCollide = false
 	LocalMeetVenue.writeSign(exitSign, frame:VectorToWorldSpace(Vector3.zAxis), "EXIT", "BACK TO THE GYM", 40)
@@ -668,17 +687,41 @@ function StateArenaVenue.build(): (Venue?, string?)
 			Vector3.new(2 * STANDS_ZONE_HALF_WIDTH, STANDS_ZONE_TOP + 4, standsNear - standsFar))
 		-- The benches behind the stand and real seats on them, enough for this rack's lifters: a lifter gets up by jumping.
 		local seats: { Seat } = {}
-		local benches = math.clamp(math.ceil(perRack / SEATS_PER_BENCH), 1, 3)
-		for bench = 1, benches do
-			local benchX = x + (bench - (benches + 1) / 2) * (BENCH_LENGTH + 1)
-			prop(rack, "WaitBench_" .. bench, "MeetBench", Vector3.new(benchX, 0, BENCH_Z), -Vector3.zAxis)
-			solid("WaitBench_" .. bench .. "_Solid", Vector3.new(BENCH_LENGTH, BENCH_SEAT_TOP, 2), CFrame.new(benchX, BENCH_SEAT_TOP / 2, BENCH_Z)).Parent = rack
-			for k = 1, SEATS_PER_BENCH do
+		local seatAround: { [Seat]: { Vector3 } } = {}
+		local benchCount = 0
+		local seatsLeft = math.clamp(perRack, 1, SEATS_PER_ROW * #BENCH_ROW_ZS)
+		for row, rowZ in ipairs(BENCH_ROW_ZS) do
+			local inRow = math.min(seatsLeft, SEATS_PER_ROW)
+			seatsLeft -= inRow
+			if inRow <= 0 then
+				break
+			end
+			-- The benches under the row: one for 1 or 2 lifters, two for more.
+			local benches = if inRow <= 2 then 1 else 2
+			for bench = 1, benches do
+				benchCount += 1
+				local benchX = x + (bench - (benches + 1) / 2) * BENCH_LENGTH
+				local copy = prop(rack, "WaitBench_" .. benchCount, "MeetBench", Vector3.new(benchX, 0, rowZ), -Vector3.zAxis)
+				if copy then
+					copy:ScaleTo(BENCH_SCALE)
+				end
+				solid("WaitBench_" .. benchCount .. "_Solid", Vector3.new(BENCH_LENGTH, BENCH_SEAT_TOP, BENCH_DEPTH),
+					CFrame.new(benchX, BENCH_SEAT_TOP / 2, rowZ)).Parent = rack
+			end
+			-- The row's seats, handed out from the caller's side outward (a small field sits together, by the caller).
+			local offsets: { number } = {}
+			for k = 1, inRow do
+				table.insert(offsets, (k - (inRow + 1) / 2) * SEAT_GAP)
+			end
+			table.sort(offsets, function(a: number, b: number)
+				return math.abs(a - side * CALLER_ASIDE) < math.abs(b - side * CALLER_ASIDE)
+			end)
+			for _, offset in ipairs(offsets) do
 				local seat = Instance.new("Seat")
 				seat.Name = "BenchSeat"
 				seat.Size = Vector3.new(2, 0.2, 1.6)
-				seat.CFrame = CFrame.lookAt(frame * Vector3.new(benchX + (k - (SEATS_PER_BENCH + 1) / 2) * 2.4, BENCH_SEAT_TOP - 0.1, BENCH_Z),
-					frame * Vector3.new(benchX + (k - (SEATS_PER_BENCH + 1) / 2) * 2.4, BENCH_SEAT_TOP - 0.1, BENCH_Z - 1))
+				seat.CFrame = CFrame.lookAt(frame * Vector3.new(x + offset, BENCH_SEAT_TOP - 0.1, rowZ),
+					frame * Vector3.new(x + offset, BENCH_SEAT_TOP - 0.1, rowZ - 1))
 				seat.Anchored = true
 				seat.CanCollide = false
 				seat.CanTouch = false
@@ -687,6 +730,12 @@ function StateArenaVenue.build(): (Venue?, string?)
 				seat.CastShadow = false
 				seat.Parent = rack
 				table.insert(seats, seat)
+				if row > 1 then
+					-- Round the nearer end of the front row (its own side of the rack; the middle seat by the caller's side).
+					local endX = x + (if offset ~= 0 then math.sign(offset) else side) * ROW_END_X
+					seatAround[seat] = { frame * Vector3.new(endX, 0, rowZ - SEAT_TO_LANE),
+						frame * Vector3.new(endX, 0, BENCH_ROW_ZS[1] - SEAT_TO_LANE) }
+				end
 			end
 		end
 		-- The caller (user 2026-11-06), behind the banner where the lifters wait: who is up, on deck and in the hole.
@@ -738,6 +787,8 @@ function StateArenaVenue.build(): (Venue?, string?)
 			spotters = {},
 			spotterLift = nil,
 			seats = seats,
+			seatLane = SEAT_LANE,
+			seatAround = seatAround,
 			callerLine = callerLine,
 			caller = if caller and caller:IsA("Model") then caller else nil,
 			orderBoard = showOrder,

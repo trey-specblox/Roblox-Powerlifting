@@ -36,6 +36,8 @@
 #                   under the hem. x4.
 #     NatCurtainGap / NatCurtainEndL / NatCurtainEndR   plain black curtain runs on a pipe (v08) closing the curtain line
 #                   between the stage sets (x3) and out to the side barricades (one each end).
+#     NatLiveScreen a hanging live screen (v09): a platform's lifter and live minigame, one per platform facing the warm-up
+#                   area and one facing the stands. x8. (v09 also narrows NatBanner from 68 to 34 for the front screens.)
 #     NatBanner     the big NATIONALS banner hung over the officials' area: navy cloth, yellow trim, rods and cables.
 #     NatCrowdMainA / NatCrowdMainB   seated figures for one main-stand section (blocky, the game's character style,
 #                   about 70 triangles a figure, fuller near the front). NatCrowdEnd for an end-stand section. Colour
@@ -794,21 +796,42 @@ def build_curtain_glow():
     piece(item, "Hem", LEAK, lambda bm: H.span(bm, (-half, CURTAIN_BACK + 0.03, 0.09), (half, CURTAIN_BACK + 0.93, 0.13)))
 
 
+# The live screens (v09, user 2026-11-18: "We need a screen at the warm up area that shows the lifters live game. same
+# thing for the front"): one per platform over the white line facing the warm-up area, and one per platform at the front
+# facing the stands, hung in the banner's band (above every seat's line of sight to the video walls).
+LIVE_W, LIVE_H, LIVE_CABLE = 17.0, 10.0, 14.0
+WARMUP_SCREEN_Z, FRONT_SCREEN_Y, FRONT_SCREEN_Z = 24.0, -26.0, 32.0
+# The banner narrower (was 68) so the two middle front screens fit beside it.
+BANNER_W = 34.0
+
+
+def build_live_screen():
+    """One live screen: a black frame round a dark screen the game draws the platform's lifter and their live minigame on
+    (LifterDisplay), a yellow strip under it, hanging on two cables. Its front toward -Y, standing on z = 0."""
+    item = "NatLiveScreen"
+    hw = LIVE_W / 2
+    piece(item, "Frame", BLACK, lambda bm: H.span(bm, (-hw, 0, 0), (hw, 0.6, LIVE_H)))
+    piece(item, "Screen", SCREEN, lambda bm: H.span(bm, (-hw + 0.6, -0.04, 0.7), (hw - 0.6, 0.02, LIVE_H - 0.6)))
+    piece(item, "Trim", YELLOW, lambda bm: H.span(bm, (-hw + 2.0, -0.06, 0.18), (hw - 2.0, 0.0, 0.42)))
+    piece(item, "Cables", STEEL, lambda bm: (beam(bm, (-hw + 1.5, 0.3, LIVE_H), (-hw + 1.5, 0.3, LIVE_H + LIVE_CABLE), 0.08),
+                                             beam(bm, (hw - 1.5, 0.3, LIVE_H), (hw - 1.5, 0.3, LIVE_H + LIVE_CABLE), 0.08)))
+
+
 def build_banner():
     item = "NatBanner"
-    w, h = 68.0, 8.0
+    w, h = BANNER_W, 8.0
     piece(item, "Cloth", NAVY, lambda bm: H.span(bm, (-w / 2, 0, 0), (w / 2, 0.6, h)))
     piece(item, "Trim", YELLOW, lambda bm: (H.span(bm, (-w / 2, -0.05, 0.4), (w / 2, 0.0, 0.9)),
                                             H.span(bm, (-w / 2, -0.05, h - 0.9), (w / 2, 0.0, h - 0.4))))
     def banner_text(bm):
-        text(bm, "NATIONALS", 4.2, -0.06, 4.6, 0, 0.05)
-        text(bm, "CENTRAL", 1.3, -0.06, 1.7, 0, 0.04)
+        text(bm, "NATIONALS", 3.4, -0.06, 4.7, 0, 0.05)
+        text(bm, "CENTRAL", 1.2, -0.06, 1.8, 0, 0.04)
 
     def banner_text_back(bm):
         # The same words on the back, for the lifters on the platforms (read correctly from behind).
         tmp = bmesh.new()
-        text(tmp, "NATIONALS", 4.2, -0.06, 4.6, 0, 0.05)
-        text(tmp, "CENTRAL", 1.3, -0.06, 1.7, 0, 0.04)
+        text(tmp, "NATIONALS", 3.4, -0.06, 4.7, 0, 0.05)
+        text(tmp, "CENTRAL", 1.2, -0.06, 1.8, 0, 0.04)
         bmesh.ops.rotate(tmp, verts=tmp.verts[:], cent=(0, 0.3, 0), matrix=Matrix.Rotation(math.pi, 3, "Z"))
         H._merge(bm, tmp)
 
@@ -908,6 +931,7 @@ def build_all():
     build_curtain_panel()
     build_curtain_glow()
     build_curtain_runs()
+    build_live_screen()
     build_banner()
     build_crowd("NatCrowdMainA", MAIN_ROWS, 11, 0.72, 0.38)
     build_crowd("NatCrowdMainB", MAIN_ROWS, 29, 0.66, 0.30)
@@ -1030,6 +1054,9 @@ def assemble():
         place("NatCurtainGlow", hall @ T(x + CURTAIN_SPLIT_X, BACKDROP_Y - 0.4, 0), "hall")
     for item, cx in curtain_run_spots():
         place(item, hall @ T(cx, BACKDROP_Y - 0.4, 0), "hall")
+    for x in PLATFORM_XS:
+        place("NatLiveScreen", hall @ T(x, WHITE_LINE_Y, WARMUP_SCREEN_Z, 180), "hall")
+        place("NatLiveScreen", hall @ T(x, FRONT_SCREEN_Y, FRONT_SCREEN_Z), "hall")
     # Under the middle valley truss (its bottom chord at 42.8; the cloth's top at 42) and still above every seat's line of
     # sight to the video walls (top 29): from the top row (eye about 34) that line passes the banner at about 31.
     place("NatBanner", hall @ T(0, -26, 34), "hall")

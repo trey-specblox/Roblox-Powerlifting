@@ -8,7 +8,10 @@
 	Standings, deciding nothing. LocalMeetController owns it.
 
 		top right    EXIT (back to the gym); hidden while lifting, where the meet
-		             screen's LEAVE takes its place
+		             screen's LEAVE takes its place. NOT ON A PHONE (user 2026-11-18:
+		             "mobile players can easily press it on accident. Just make the
+		             exit sign in the back bigger"): there, the way out is the venue's
+		             EXIT sign and its prompt
 		left, top    the MEETS list (user 2026-11-05): one row for each of the five
 		             meets with its number, level, countdown and sign-ups, a SIGN UP
 		             button and a SPECTATE button that teleports there, and how far a
@@ -60,7 +63,7 @@ export type Ui = {
 	drawNationals: (view: NationalsRemotes.View?, serverNow: number) -> (),
 }
 
--- Below the meet screen's notice (24..130 from the top), which also carries the venue's notices, and right
+-- Below the meet screen's title (24..130 from the top; its notices are lines of the top pop-up now), and right
 -- of the tabs on the left edge (150 wide).
 local CARD_TOP = 168
 local LEFT = 172
@@ -267,7 +270,7 @@ function LocalMeetLobbyUI.build(handlers: Handlers): Ui
 		end
 		liftingNow = lifting
 		inVenueNow = inVenue
-		exit.Visible = inVenue and not lifting
+		exit.Visible = inVenue and not lifting and not ON_PHONE
 		cardHolder.Visible = not lifting
 		standingsHolder.Visible = inVenue and not clearView
 		-- In the lobby on the right (under EXIT), so short screens fit it beside the card; while lifting in the

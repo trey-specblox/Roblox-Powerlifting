@@ -219,8 +219,9 @@ export type Platform = {
 	-- The referees and coach while a meet runs (cleared after it).
 	staff: Folder,
 	coachLine: TextLabel?,
-	-- The head referee's speech bubble: the commands.
+	-- The head referee's speech bubble: the commands. And the head referee (the middle chair), while a meet runs.
 	headRefLine: TextLabel?,
+	headRef: Model?,
 	-- The three spotters while a meet runs (left, right, back; GAME_DESIGN §37.5), and which lift they stand for.
 	-- Off the platform (no parent) for deadlift.
 	spotters: { Model },
@@ -229,6 +230,14 @@ export type Platform = {
 	-- speech bubble and figure.
 	gearHome: Instance?,
 	seats: { Seat }?,
+	-- Where the seats stand in a row (the Nationals hall): a walk to or from a seat goes by the point this far out in
+	-- front of where its lifter stands up, so nobody walks through the knees of the lifters sitting beside. Nil: straight.
+	seatLane: number?,
+	-- For a seat in a row BEHIND another row (the State arena's second row): the floor points of the way from its own
+	-- lane (the aisle between the rows) round the end of the row in front and onto that row's lane, where every walk
+	-- off the benches goes on from. The way back to the seat is the same, backward. Nil or no entry: the seat's own lane
+	-- is the front one.
+	seatAround: { [Seat]: { Vector3 } }?,
 	callerLine: TextLabel?,
 	caller: Model?,
 	-- The State meet's lifting order board behind the rack (heading, then one line per lifter coming up), when it has one.
@@ -236,7 +245,18 @@ export type Platform = {
 	-- Nationals (GAME_DESIGN §39): the spot right behind the curtain where the lifter waits, after chalking up, until they
 	-- click to step out (the walkOut starts from there).
 	curtainSpot: CFrame?,
+	-- Nationals: the head referee's way from in front of their chair, round the stage, to the curtain's split (its stage
+	-- side, then its lifters' side): the lift-off's judge walks it (NationalsScenes).
+	judgeWay: { Vector3 }?,
+	-- Nationals: where the head referee stands as the opening's announcer (a floor point between the chair and the
+	-- stands, facing the stands), the way there round the chair, and the spotlight on that spot (off until then).
+	announceSpot: CFrame?,
+	announceWay: { Vector3 }?,
+	announceLight: SpotLight?,
 }
+
+-- One point of a camera fly-through: where the camera is and what it looks at.
+export type TourPoint = { eye: Vector3, look: Vector3 }
 
 export type Venue = {
 	model: Model,
@@ -260,6 +280,10 @@ export type Venue = {
 	podiumSpots: { CFrame },
 	-- The warm-up room's working racks.
 	warmUpRacks: { WarmUpRack },
+	-- Nationals: the opening's camera tour of the hall, ending in front of platform `platformIndex`'s announcer, and the
+	-- announcer's welcome over the hall's speakers (NationalsScenes).
+	tour: ((platformIndex: number) -> { TourPoint })?,
+	announcerVoice: Sound?,
 }
 
 -- A warm-up rack: where its lifter stands (in front of it, facing the hall) and the point carrying its prompt.
@@ -786,8 +810,9 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 
 	-- The way out: a dark doorway in the front wall with a board over it, and the exit prompt in front of it.
 	decor("ExitDoorway", Vector3.new(-5, 0, Z_FRONT), Vector3.new(5, 10, Z_FRONT + 0.08), looks.FrontCharcoal)
-	wallBoard("ExitBoard", "MeetBoard", "MeetBoard_Screen", 0.35, Vector3.new(0, 0, Z_FRONT + 0.06), Vector3.zAxis,
-		Vector3.new(0, 13, Z_FRONT), "EXIT", { "Back to the gym" }, "bar", 30)
+	-- (Twice the size it was, user 2026-11-18: "make the exit sign in the back bigger"; on a phone it is the only way out.)
+	wallBoard("ExitBoard", "MeetBoard", "MeetBoard_Screen", 0.7, Vector3.new(0, 0, Z_FRONT + 0.06), Vector3.zAxis,
+		Vector3.new(0, 16, Z_FRONT), "EXIT", { "Back to the gym" }, "bar", 30)
 	local exitPoint = point("ExitPoint", Vector3.new(0, 0, Z_FRONT + 2))
 	-- Boards over the openings: into the hall, and down the corridor to the warm-up room.
 	wallBoard("HallBoard", "MeetBoard", "MeetBoard_Screen", 0.35, Vector3.new(0, 0, Z_LOBBY - WALL - 0.06), -Vector3.zAxis,
@@ -1062,11 +1087,12 @@ function LocalMeetVenue.staffPlatform(platform: Platform)
 	local liftAt = platform.liftSpot.Position
 	for index, seat in ipairs(platform.refSeats) do
 		local hips = seat.Position
-		local line = MeetFigures.build(platform.staff, "Referee", Vector3.new(hips.X, hips.Y - CHAIR_SEAT_TOP, hips.Z),
+		local line, figure = MeetFigures.build(platform.staff, "Referee", Vector3.new(hips.X, hips.Y - CHAIR_SEAT_TOP, hips.Z),
 			liftAt, hips.Y)
 		-- The head referee (the middle chair) gives the commands (refereeSays).
 		if index == 2 then
 			platform.headRefLine = line
+			platform.headRef = figure
 		end
 	end
 	platform.coachLine = MeetFigures.build(platform.staff, "Coach", platform.coachSpot, liftAt)
@@ -1145,6 +1171,7 @@ function LocalMeetVenue.clearStaff(platform: Platform)
 	table.clear(platform.spotters)
 	platform.coachLine = nil
 	platform.headRefLine = nil
+	platform.headRef = nil
 end
 
 -- What the head referee says ("SQUAT!", "RACK!", GAME_DESIGN §37.5); nil hides it. Only the lifter sees it.

@@ -1209,6 +1209,22 @@
         "audio": "rbxassetid://101829221359786"
       }
     },
+    "NatWelcome_A": {
+      "about": "Nationals opening announcer (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', 2026-11-18), shouted with excitement to a huge packed powerlifting arena: \"Welcome, ladies and gentlemen... to CENTRAL NATIONALS! Where these lifters will be in an ALL or NOTHING battle... competing for the WORLDS invitation! This meet will begin shortly!\" Take A (the one the game uses until the user picks). Words checked locally (faster-whisper): all right.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/NatWelcome_A.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://80969960609874"
+      }
+    },
+    "NatWelcome_B": {
+      "about": "Nationals opening announcer, take B (same line, voice and model as NatWelcome_A). Words checked locally: all right.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/NatWelcome_B.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://107631807856915"
+      }
+    },
     "NatChantMix_Squat": {
       "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of SQUAT IT UP and then STAND IT UP stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
       "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Squat.wav",
@@ -1231,6 +1247,38 @@
       "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
       "ids": {
         "audio": "rbxassetid://122422533517454"
+      }
+    },
+    "LiftOffJudge_First": {
+      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. First place goes to a lift-off.\" One take (5.09 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_First.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://109357897168685"
+      }
+    },
+    "LiftOffJudge_Second": {
+      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. Second place goes to a lift-off.\" One take (5.13 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Second.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://87394996343198"
+      }
+    },
+    "LiftOffJudge_Third": {
+      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. Third place goes to a lift-off.\" One take (5.02 s; the take said its last sentence twice, the repeat was cut off). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Third.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://127909988397691"
+      }
+    },
+    "LiftOffJudge_Rules": {
+      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"One lift each, your choice: your best plus two and a half kilos. Miss while another makes it, and you are out.\" One take (7.57 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Rules.wav",
+      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+      "ids": {
+        "audio": "rbxassetid://136963528084285"
       }
     }
   }

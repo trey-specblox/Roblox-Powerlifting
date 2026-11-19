@@ -18,6 +18,8 @@
 	and the card comes up at the bar. Skipped, the walk out gets the plain camera.
 	The crowd yelling during the lift comes from the server, for every lifter
 	(LocalMeetService crowdBehind).
+	The side menus (GEAR, TELEPORT, STATS...) are hidden and their keys do nothing from the walk out until the walk back
+	is over (MenuKeys.setOnTurn, user 2026-11-18).
 
 	LocalMeetController passes it the meet's state. Display only: it decides and
 	saves nothing, and takes no part in the lift. The shots and timings are in
@@ -41,6 +43,7 @@ local MeetCinema = require(script.Parent:WaitForChild("MeetCinema"))
 local HallCameraGuard = require(script.Parent:WaitForChild("HallCameraGuard"))
 local MeetSoundController = require(script.Parent:WaitForChild("MeetSoundController"))
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local MenuKeys = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("MenuKeys"))
 local C = UIStyle.Colours
 
 local MeetLiftMoment = {}
@@ -218,6 +221,7 @@ local function finish(restore: boolean)
 	run = nil
 	RunService:UnbindFromRenderStep(RENDER_NAME)
 	hideCard()
+	MenuKeys.setOnTurn(false)
 	if current.ritualWalk then
 		MeetCinema.close()
 	end
@@ -359,6 +363,8 @@ local function begin(state: MockMeetRemotes.MeetState)
 	local camera = Workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
 	RunService:BindToRenderStep(RENDER_NAME, Enum.RenderPriority.Camera.Value + 1, step)
+	-- The side menus go, and their keys do nothing, until the walk back is over (finish).
+	MenuKeys.setOnTurn(true)
 	if not ritualWalk then
 		showCard(state)
 	end

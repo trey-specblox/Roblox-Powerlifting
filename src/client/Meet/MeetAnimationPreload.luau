@@ -71,6 +71,7 @@ local function allIds(): { string }
 	-- (Nationals: the flow state behind the curtain, and parting it.)
 	add(NationalsConfig.FlowAnimationId)
 	add(NationalsConfig.CurtainPartAnimationId)
+	add(NationalsConfig.Opening.AnnounceAnimationId)
 	for _, celebration in ipairs(CelebrationConfig.List) do
 		add(celebration.animationId)
 	end

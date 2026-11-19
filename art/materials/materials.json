@@ -1996,6 +1996,15 @@
     "model": "rbxassetid://123515201004163"
    }
   },
+  "NationalsArena_09": {
+   "about": "The Nationals arena v09 (user 2026-11-18: live screens 'at the warm up area ... same thing for the front'): v08 plus NatLiveScreen (x8: one per platform over the white line facing the warm-up area, one per platform at the front facing the stands, in the banner's band) and NatBanner narrowed from 68 to 34. 25 items. Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (128 meshes, 29,952 triangles).",
+   "file": "art/exports/NationalsArena_09.glb",
+   "license": "own work",
+   "supersedes": "NationalsArena_08",
+   "ids": {
+    "model": "rbxassetid://78592412560833"
+   }
+  },
   "MeetHall_02": {
    "about": "The Local meet's entrance building, bigger (user 2026-11-18: 'expand the model/shell'): MeetHall's design at 60 x 44, walls 22, ridge 33, porch 24 x 6; no wall sign (the name and every meet's timer float above the roof). One item, MeetHall2. Built by art/scripts/build_meet_hall_02.py. CHECK PASSED (16 meshes, 1,366 triangles).",
    "file": "art/exports/MeetHall_02.glb",
@@ -2012,6 +2021,14 @@
    "supersedes": "MeetHall_02",
    "ids": {
     "model": "rbxassetid://76335862835551"
+   }
+  },
+  "AnnouncerMic_01": {
+   "about": "The Nationals announcer's hand-held microphone (GAME_DESIGN 39, user 2026-11-18): black handle, yellow collar, silver grille head with a dark band; about one stud long, standing on its butt. One item, AnnouncerMic, welded into the announcer's right hand by MeetFigures.giveMicrophone. Built by art/scripts/build_announcer_mic_01.py. CHECK PASSED (4 meshes, 560 triangles).",
+   "file": "art/exports/AnnouncerMic_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://110593831900615"
    }
   }
  },

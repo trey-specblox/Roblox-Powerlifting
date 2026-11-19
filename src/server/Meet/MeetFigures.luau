@@ -26,6 +26,7 @@
 local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local StarterGymConfig = require(Shared:WaitForChild("Config"):WaitForChild("StarterGymConfig"))
@@ -37,6 +38,7 @@ local RoomProps = require(WorldFolder:WaitForChild("RoomProps"))
 local StyledScreen = require(WorldFolder:WaitForChild("StyledScreen"))
 local LifterBodyService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("LifterBodyService"))
 local ClothesConfig = require(Shared:WaitForChild("Config"):WaitForChild("ClothesConfig"))
+local HandShapeConfig = require(Shared:WaitForChild("Config"):WaitForChild("HandShapeConfig"))
 local LifterBuild = require(Shared:WaitForChild("Economy"):WaitForChild("LifterBuild"))
 
 local MeetFigures = {}
@@ -74,6 +76,9 @@ end
 
 export type Kind = "Coach" | "Referee" | "Caller"
 
+-- (defined further down)
+local sitFigure: (figure: Model, at: Vector3, seatTop: number) -> ()
+
 local looks = StarterGymConfig.Looks
 local WHITE = Color3.fromRGB(255, 255, 255)
 -- The coach's speech bubble: big enough for a whole sentence (GAME_DESIGN §37.5).
@@ -104,14 +109,272 @@ local OUTFITS: { [Kind]: { skin: Color3, top: Color3, trousers: Color3, tag: str
 	},
 }
 
+-- ---------------------------------------------------------------- sitting, getting up and sitting back down
+
+--[[
+	A seated figure (the referees on their chairs): how its legs are bent and where it is, kept so it can get up and sit
+	back down (the Nationals judge and announcer, GAME_DESIGN §39). `share` 1 = seated, 0 = standing just in front of
+	the chair, its feet where they were while it sat.
+]]
+type Joint = { attachment: Attachment?, attachmentBase: CFrame?, motor: Motor6D?, motorBase: CFrame?, sign: number }
+type Seated = {
+	joints: { Joint },
+	-- The chair's floor point under the hips, the way the figure faces, and how far ahead of the hips the feet are.
+	at: Vector3,
+	forward: Vector3,
+	feetAhead: number,
+	-- The root part's height standing, and seated.
+	standY: number,
+	seatY: number,
+	share: number,
+}
+local seatedFigures: { [Model]: Seated } = {}
+
+-- A leg joint's turn goes on the joint's attachment on the body side (an AnimationConstraint's, or a Motor6D's on an
+-- older rig), which the limb follows.
+local function jointOf(joint: Instance?, sign: number): Joint?
+	if joint and joint:IsA("AnimationConstraint") then
+		local attachment = joint.Attachment0
+		if attachment then
+			return { attachment = attachment, attachmentBase = attachment.CFrame, motor = nil, motorBase = nil, sign = sign }
+		end
+	elseif joint and joint:IsA("Motor6D") then
+		local part0 = joint.Part0
+		local found = part0 and part0:FindFirstChild(joint.Name .. "RigAttachment")
+		local attachment = if found and found:IsA("Attachment") then found else nil
+		return { attachment = attachment, attachmentBase = if attachment then attachment.CFrame else nil, motor = joint,
+			motorBase = joint.C0, sign = sign }
+	end
+	return nil
+end
+
+-- Poses a figure `share` of the way down onto its chair: the thighs swing forward (a quarter turn at the hips when
+-- seated) and the lower legs stay hanging straight down (the knees turn back by as much), so the feet stay where they
+-- are while the hips go back and down onto the seat.
+local function poseSeated(figure: Model, seat: Seated, share: number)
+	seat.share = share
+	local angle = math.rad(90) * share
+	for _, joint in ipairs(seat.joints) do
+		local turn = CFrame.Angles(angle * joint.sign, 0, 0)
+		if joint.motor and joint.motorBase then
+			joint.motor.C0 = joint.motorBase * turn
+		end
+		if joint.attachment and joint.attachmentBase then
+			joint.attachment.CFrame = joint.attachmentBase * turn
+		end
+	end
+	local floor = seat.at + seat.forward * seat.feetAhead * (1 - math.sin(angle))
+	local y = seat.standY - (seat.standY - seat.seatY) * (1 - math.cos(angle))
+	local here = Vector3.new(floor.X, y, floor.Z)
+	figure:PivotTo(CFrame.lookAt(here, here + seat.forward))
+end
+
+-- Seats a figure standing over `at` (the chair's floor point under its hips), its thighs resting on `seatTop`.
+sitFigure = function(figure: Model, at: Vector3, seatTop: number)
+	local pivot = figure:GetPivot()
+	local forward = Vector3.new(pivot.LookVector.X, 0, pivot.LookVector.Z).Unit
+	local joints: { Joint } = {}
+	local thigh, thickness = 1.2, 0.5
+	local hipDrop: number? = nil
+	for _, side in ipairs({ "Left", "Right" }) do
+		local hip = jointOf(figure:FindFirstChild(side .. "Hip", true), 1)
+		local knee = jointOf(figure:FindFirstChild(side .. "Knee", true), -1)
+		if hip then
+			table.insert(joints, hip)
+		end
+		if knee then
+			table.insert(joints, knee)
+		end
+		local upper = figure:FindFirstChild(side .. "UpperLeg")
+		if hip and hip.attachment and upper and upper:IsA("BasePart") then
+			-- (standing still: how far the hip joint is below the root, and the thigh's length down to the knee)
+			hipDrop = pivot.Position.Y - hip.attachment.WorldPosition.Y
+			thickness = math.min(upper.Size.X, upper.Size.Z) / 2
+			if knee and knee.attachment then
+				thigh = (hip.attachment.WorldPosition - knee.attachment.WorldPosition).Magnitude
+			end
+		end
+	end
+	local standY = pivot.Position.Y
+	-- Seated, the hip joints are half a thigh's thickness above the seat: the thighs rest on it.
+	local seatY = if hipDrop then seatTop + thickness + hipDrop else standY - thigh
+	local seat: Seated = { joints = joints, at = at, forward = forward, feetAhead = thigh, standY = standY, seatY = seatY,
+		share = 1 }
+	seatedFigures[figure] = seat
+	figure.Destroying:Once(function()
+		seatedFigures[figure] = nil
+	end)
+	poseSeated(figure, seat, 1)
+end
+
+-- Whether the figure has a chair (it was built seated), and whether it is sitting on it now.
+function MeetFigures.hasSeat(figure: Model?): boolean
+	return figure ~= nil and seatedFigures[figure] ~= nil
+end
+
+function MeetFigures.isSeated(figure: Model?): boolean
+	local seat = if figure then seatedFigures[figure] else nil
+	return seat ~= nil and seat.share >= 1
+end
+
+-- Where a figure with a chair stands once it has got up: a floor point just in front of the chair, facing the way the
+-- chair faces. A walk back to the chair ends here, before sitDown.
+function MeetFigures.standSpot(figure: Model?): CFrame?
+	local seat = if figure then seatedFigures[figure] else nil
+	if seat == nil then
+		return nil
+	end
+	local floor = seat.at + seat.forward * seat.feetAhead
+	return CFrame.lookAt(floor, floor + seat.forward)
+end
+
+-- Eases a figure between seated and standing over `seconds` (yields). The server moves it: a short move, seen from a
+-- distance or off camera.
+local function easeSeat(figure: Model, to: number, seconds: number)
+	local seat = seatedFigures[figure]
+	if seat == nil or seat.share == to then
+		return
+	end
+	local from = seat.share
+	local startedAt = os.clock()
+	while figure.Parent do
+		local u = math.clamp((os.clock() - startedAt) / math.max(seconds, 0.01), 0, 1)
+		poseSeated(figure, seat, from + (to - from) * (u * u * (3 - 2 * u)))
+		if u >= 1 then
+			break
+		end
+		RunService.Heartbeat:Wait()
+	end
+end
+
+-- Gets a seated figure up off its chair, onto its feet in front of it (yields `seconds`). Nothing without a chair.
+function MeetFigures.standUp(figure: Model?, seconds: number?)
+	if figure and seatedFigures[figure] then
+		easeSeat(figure, 0, seconds or 0.8)
+	end
+end
+
+-- Sits a figure back down on its chair (yields `seconds`). It should be standing at its standSpot.
+function MeetFigures.sitDown(figure: Model?, seconds: number?)
+	if figure and seatedFigures[figure] then
+		easeSeat(figure, 1, seconds or 0.8)
+	end
+end
+
+--[[
+	A clipboard carried in the left hand, gripped by its top and hanging at the figure's side, its face outward (the
+	talking animation holds it up in this hand). Welded to the hand, so it follows the arm (user 2026-11-06: it used to
+	float in front of the chest). The Coach front's Blender clipboard, or blocks. Nothing when it already has one.
+]]
+function MeetFigures.giveClipboard(figure: Model)
+	if figure:FindFirstChild("Clipboard") then
+		return
+	end
+	local hand = figure:FindFirstChild("LeftHand")
+	if hand == nil or not hand:IsA("BasePart") then
+		return
+	end
+	local held = hand.CFrame * CFrame.new(0, 0.15, 0) * CFrame.Angles(0, math.rad(90), 0)
+	local function carried(part: BasePart)
+		BuildParts.decor(part)
+		part.Anchored = false
+		part.Massless = true
+		part.CanQuery = false
+		-- (never in anyone's way, like the hand that holds it: makeGhost may already have run)
+		part.CollisionGroup = hand.CollisionGroup
+		local weld = Instance.new("Weld")
+		weld.Part0 = hand
+		weld.Part1 = part
+		weld.C0 = hand.CFrame:ToObjectSpace(part.CFrame)
+		weld.Parent = part
+	end
+	local clipboard = RoomProps.propCopy("Clipboard", 1)
+	if clipboard then
+		clipboard.Name = "Clipboard"
+		clipboard:ScaleTo(CLIPBOARD_HEIGHT / clipboard:GetExtentsSize().Y)
+		clipboard:PivotTo(held * CFrame.new(0, -CLIPBOARD_HEIGHT, 0)) -- its pivot is its bottom middle
+		for _, part in ipairs(clipboard:GetDescendants()) do
+			if part:IsA("BasePart") then
+				carried(part)
+			end
+		end
+		clipboard.Parent = figure
+	else
+		local middle = held * CFrame.new(0, -CLIPBOARD_HEIGHT / 2, 0)
+		carried(BuildParts.placed(figure, "Clipboard", Vector3.new(0.85, CLIPBOARD_HEIGHT, 0.08), middle, looks.Wood))
+		carried(BuildParts.placed(figure, "Clipboard_Paper", Vector3.new(0.7, CLIPBOARD_HEIGHT - 0.2, 0.02),
+			middle * CFrame.new(0, -0.05, -0.05), looks.LaneWhite))
+	end
+end
+
+--[[
+	A microphone held in the right hand (the Nationals announcer, GAME_DESIGN §39): the hand closes round its handle (the
+	Grip hand shape, kept while it is held: HandShapeConfig.HeldAttributes), the head at the thumb's end, so it comes up
+	to the mouth when the forearm does. Welded to the hand. Blender's AnnouncerMic (art/scripts/build_announcer_mic_01.py);
+	nothing when the model did not load, and shown again when the figure already has one.
+]]
+local MIC_NAME = "Microphone"
+-- Where the handle sits in the closed hand, in the hand's own space at hand size 1 (the middle of the fingers' curl),
+-- and how far up the handle from its butt the hand holds it (studs).
+local MIC_GRIP = Vector3.new(-0.2, -0.06, 0)
+local MIC_HELD_AT = 0.42
+
+function MeetFigures.showMicrophone(figure: Model?, show: boolean)
+	local mic = figure and figure:FindFirstChild(MIC_NAME)
+	if figure == nil or mic == nil then
+		return
+	end
+	for _, part in ipairs(mic:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Transparency = if show then 0 else 1
+		end
+	end
+	figure:SetAttribute(HandShapeConfig.HeldAttributes.Right, if show then HandShapeConfig.Grip else nil)
+end
+
+function MeetFigures.giveMicrophone(figure: Model)
+	if figure:FindFirstChild(MIC_NAME) then
+		MeetFigures.showMicrophone(figure, true)
+		return
+	end
+	local hand = figure:FindFirstChild("RightHand")
+	local mic = if hand and hand:IsA("BasePart") then RoomProps.propCopy("AnnouncerMic", 1) else nil
+	if hand == nil or not hand:IsA("BasePart") or mic == nil then
+		return
+	end
+	mic.Name = MIC_NAME
+	local size = HandShapeConfig.HandSize[LifterBuild.BuildRules.Spotter] or 1
+	-- The model stands upright on its butt (its pivot): its up goes along the hand's forward (the thumb's way with the
+	-- arm hanging), through the middle of the closed fingers.
+	local inHand = CFrame.fromMatrix(MIC_GRIP * size, Vector3.xAxis, -Vector3.zAxis, Vector3.yAxis) * CFrame.new(0, -MIC_HELD_AT, 0)
+	mic:PivotTo(hand.CFrame * inHand)
+	for _, part in ipairs(mic:GetDescendants()) do
+		if part:IsA("BasePart") then
+			BuildParts.decor(part)
+			part.Anchored = false
+			part.Massless = true
+			part.CanQuery = false
+			part.CollisionGroup = hand.CollisionGroup
+			local weld = Instance.new("Weld")
+			weld.Part0 = hand
+			weld.Part1 = part
+			weld.C0 = hand.CFrame:ToObjectSpace(part.CFrame)
+			weld.Parent = part
+		end
+	end
+	mic.Parent = figure
+	figure:SetAttribute(HandShapeConfig.HeldAttributes.Right, HandShapeConfig.Grip)
+end
+
 --[[
 	Builds a `kind` figure in `parent`, standing at `at` (on the floor) and
 	looking at `watching`. With `seatTop` (the height of a chair's seat) the
 	figure SITS instead: thighs forward on the seat, lower legs down, its hips
 	over `at`. Returns the speech bubble's text label (MeetFigures.say shows a
-	line in it), or nil when no figure could be made (a meet works without one).
+	line in it) and the figure, or nils when no figure could be made (a meet
+	works without one).
 ]]
-function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: Vector3, seatTop: number?): TextLabel?
+function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: Vector3, seatTop: number?): (TextLabel?, Model?)
 	local outfit = OUTFITS[kind]
 	local description = Instance.new("HumanoidDescription")
 	description.HeadColor = outfit.skin
@@ -125,7 +388,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	end)
 	if not ok or result == nil then
 		warn("[MeetFigures] no " .. kind .. " figure: " .. tostring(result))
-		return nil
+		return nil, nil
 	end
 	local figure = result :: Model
 	figure.Name = kind
@@ -133,7 +396,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	local root = figure:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if humanoid == nil or root == nil then
 		figure:Destroy()
-		return nil
+		return nil, nil
 	end
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	-- The cartoon body (§38.1: staff get the same bodies; open hands when talking or relaxed, user 2026-11-12), in
@@ -156,77 +419,14 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	figure.Parent = parent
 
 	if seatTop then
-		-- Swing both thighs forward (a quarter turn at the hips) and the lower legs back down (at the knees), then
-		-- lower the figure until the thighs rest on the seat. The joints are AnimationConstraints (or Motor6Ds on an
-		-- older rig); either way the turn goes on the joint's attachment on the body side, which the limb follows.
-		local function bend(joint: Instance?, angle: number): Attachment?
-			local turn = CFrame.Angles(math.rad(angle), 0, 0)
-			local attachment: Attachment? = nil
-			if joint and joint:IsA("AnimationConstraint") then
-				attachment = joint.Attachment0
-			elseif joint and joint:IsA("Motor6D") then
-				local part0 = joint.Part0
-				local found = part0 and part0:FindFirstChild(joint.Name .. "RigAttachment")
-				attachment = if found and found:IsA("Attachment") then found else nil
-				joint.C0 = joint.C0 * turn
-			end
-			if attachment then
-				attachment.CFrame = attachment.CFrame * turn
-			end
-			return attachment
-		end
-		local hipY: number? = nil
-		local thickness = 0.5
-		for _, side in ipairs({ "Left", "Right" }) do
-			local hip = bend(figure:FindFirstChild(side .. "Hip", true), 90)
-			bend(figure:FindFirstChild(side .. "Knee", true), -90)
-			local thigh = figure:FindFirstChild(side .. "UpperLeg")
-			if hip and thigh and thigh:IsA("BasePart") then
-				hipY = hip.WorldPosition.Y
-				thickness = math.min(thigh.Size.X, thigh.Size.Z) / 2
-			end
-		end
-		if hipY then
-			figure:PivotTo(figure:GetPivot() - Vector3.new(0, hipY - thickness - seatTop, 0))
-		end
+		-- Seated (sitFigure): thighs forward on the seat, lower legs down. Remembered, so the figure can get up and sit
+		-- back down (MeetFigures.standUp / sitDown: the Nationals judge and announcer, GAME_DESIGN §39).
+		sitFigure(figure, at, seatTop)
 	end
 
 	if kind ~= "Referee" then
-		-- A clipboard carried in the left hand, gripped by its top and hanging at the coach's side, its face outward (the
-		-- talking animation holds it up in this hand). Welded to the hand, so it follows the arm (user 2026-11-06: it used
-		-- to float in front of the chest). The Coach front's Blender clipboard, or blocks.
-		local hand = figure:FindFirstChild("LeftHand")
-		if hand and hand:IsA("BasePart") then
-			local held = hand.CFrame * CFrame.new(0, 0.15, 0) * CFrame.Angles(0, math.rad(90), 0)
-			local function carried(part: BasePart)
-				BuildParts.decor(part)
-				part.Anchored = false
-				part.Massless = true
-				part.CanQuery = false
-				local weld = Instance.new("Weld")
-				weld.Part0 = hand
-				weld.Part1 = part
-				weld.C0 = hand.CFrame:ToObjectSpace(part.CFrame)
-				weld.Parent = part
-			end
-			local clipboard = RoomProps.propCopy("Clipboard", 1)
-			if clipboard then
-				clipboard.Name = "Clipboard"
-				clipboard:ScaleTo(CLIPBOARD_HEIGHT / clipboard:GetExtentsSize().Y)
-				clipboard:PivotTo(held * CFrame.new(0, -CLIPBOARD_HEIGHT, 0)) -- its pivot is its bottom middle
-				for _, part in ipairs(clipboard:GetDescendants()) do
-					if part:IsA("BasePart") then
-						carried(part)
-					end
-				end
-				clipboard.Parent = figure
-			else
-				local middle = held * CFrame.new(0, -CLIPBOARD_HEIGHT / 2, 0)
-				carried(BuildParts.placed(figure, "Clipboard", Vector3.new(0.85, CLIPBOARD_HEIGHT, 0.08), middle, looks.Wood))
-				carried(BuildParts.placed(figure, "Clipboard_Paper", Vector3.new(0.7, CLIPBOARD_HEIGHT - 0.2, 0.02),
-					middle * CFrame.new(0, -0.05, -0.05), looks.LaneWhite))
-			end
-		end
+		-- (A referee gets one only when they have something to read out: the Nationals judge's lift-off.)
+		MeetFigures.giveClipboard(figure)
 	end
 
 	-- Never in anyone's way, whatever its Humanoid does to collision.
@@ -305,7 +505,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	line.TextScaled = true
 	line.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
 	line.Parent = bubble
-	return line
+	return line, figure
 end
 
 --[[

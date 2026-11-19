@@ -170,6 +170,7 @@ function MockMeetController.attach(remotes: ScreenRemotes, attribute: string, op
 			local child = ui.gui:FindFirstChild(name)
 			if child and child:IsA("GuiObject") then
 				child.Visible = inMeet and (name ~= "Action" or (state ~= nil and state.phase ~= "Lifting"))
+					and child:GetAttribute("HiddenOnPhone") ~= true
 			end
 		end
 	end

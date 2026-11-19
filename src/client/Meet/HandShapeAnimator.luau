@@ -110,7 +110,9 @@ local function step()
 			grip = nil
 		end
 		for _, side in ipairs(SIDES) do
-			show(w, side, wanted[side] or (if grip then grip.shape else nil))
+			-- (a hand that holds something keeps its shape: the announcer's microphone)
+			local held = character:GetAttribute(HandShapeConfig.HeldAttributes[side])
+			show(w, side, wanted[side] or (if grip then grip.shape else nil) or (if typeof(held) == "string" then held else nil))
 		end
 	end
 end

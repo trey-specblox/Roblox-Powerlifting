@@ -42,6 +42,9 @@ HandShapeConfig.Shapes = { "Fist", "Point", "ThumbsUp", "Grip", "SquatGrip" }
 -- the bar in the heel of the palm (user 2026-11-14, Character Animation Quality.md §4.1b).
 HandShapeConfig.Grip = "Grip"
 HandShapeConfig.SquatGrip = "SquatGrip"
+-- A body's attributes naming the shape a hand keeps while it HOLDS something (the announcer's microphone: "Grip"), until
+-- the attribute is cleared. An animation's own hand timeline and a lift's grip still come first.
+HandShapeConfig.HeldAttributes = { Left = "HandHeldLeft", Right = "HandHeldRight" } :: { [string]: string }
 
 function HandShapeConfig.gripFor(lift: any): string
 	return if lift == "Squat" then HandShapeConfig.SquatGrip else HandShapeConfig.Grip

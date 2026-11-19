@@ -13,6 +13,221 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**NATIONALS: THE TWO CINEMATICS (2026-11-18, the Fable session; GAME_DESIGN §39 "Lift-off cinematic" and "Opening
+cinematic"). BUILT, TESTED IN STUDIO (one player, pictures and numbers, no errors). NOT COMMITTED (last commit c1ee9d8).
+THE THREE UPLOADS ARE DONE AND IN (user: "Yes, upload all"): the announcer's microphone, his speaking animation and
+the lift-off judge's four voice lines. The user then tested with two players: "the voice is good", and asked for the
+three fixes in the next bullet (DONE, tested in Studio with one player + the game's walk maths; NOT with two players).
+Then "Yes, fix State": the State arena's benches got the same fix (the bullet after next; DONE, tested in Studio
+with one player in a real State meet + the walk maths). Then the user published and tested on their phone: Nationals
+kept teleporting them back, and the EXIT button was easy to tap by accident (both fixed, next bullet). NEXT: publish
+again and test Nationals on the phone; the user's two-player test of the benches, walks and notices.**
+- SIDE MENUS OFF ON THE TURN (2026-11-18, user after the phone test: "Mobile is good, a update for all platforms,
+  when someone is walking to the platform to lift, make sure the UI's disappear like the gear, teleport etc. and make
+  sure keyboard players cant press a short cut-key to pop it up"; GAME_DESIGN §31.6). `src/client/UI/MenuKeys.luau`
+  (already every side menu's key check) gained `setOnTurn(on)` / `isOnTurn()`: on the turn it switches off the
+  ScreenGuis AdminPanel, MeetsTab, Coins, Stats, Teleport, Gear, EmoteWheel, Shop (remembering each one's state, and
+  holding off anything that switches one back on meanwhile, e.g. MeetCinema.close), and `allowed()` refuses every hot
+  key. `MeetLiftMoment` calls setOnTurn(true) as the turn starts (the Ready state, the walk out) and false in `finish`
+  (end of the walk back, death, the awards taking over). Studio, a real Local meet, one player, real key presses
+  (Studio's keyboard input): before the meet C opened STATS; during the turn all eight off and C T Y B M opened
+  nothing; after the walk back all back (MEETS stays off inside a venue, as designed) and C opened STATS. No errors.
+  NOT tested: State/Nationals/lift-off turns (the same MeetLiftMoment path), a phone (the tabs are taps there).
+- PHONE FIXES (2026-11-18, user: "Fix the exit button, mobile players can easily press it on accident. Just make the
+  exit sign in the back bigger. also mobile is not working. everytime i join nationals, it just teleports me back."):
+  1. THE NATIONALS BOUNCE (live only; Studio cannot teleport, so it never showed). While not Live the gathering sends a
+     lone tester (TestMinimumLifters 1), but the Nationals server's meet needed MeetMinimumLifters 2 live: walk in ->
+     "The Nationals meet couldn't start (only 1 lifter could lift (2 needed))" -> sendEveryoneBack 8 s later. That
+     notice was never seen: it went to the old boxed notice inside the meet screen, which is switched off outside a
+     meet (now a top pop-up line, so a reason will show). FIX: NationalsConfig.TestMeetMinimumLifters = 1;
+     LocalMeetService.startNationalsMeet's minimum is Studio 1 / Live MeetMinimumLifters / else TestMeetMinimumLifters
+     (the same split as the gathering). NOT TESTED: needs a publish and a live test (reserved servers don't exist in
+     Studio). A second way to be sent back, also fixed below: at Nationals the venue screen's EXIT and the meet
+     screen's LEAVE both withdraw the lifter, and a meet left with nobody lifting ends and sends everyone home.
+  2. NO EXIT / LEAVE BAR ON A PHONE (UIStyle.isTouchOnly: touch, no keyboard). LocalMeetLobbyUI hides EXIT; MockMeetUI
+     Options.leaveOnPhone = false (passed by LocalMeetController for the Local/State/Nationals meet screen) hides LEAVE
+     and marks it "HiddenOnPhone", which MockMeetController.refresh honours (it re-showed it at every meet start; caught
+     in the test). The Mock Meet keeps LEAVE. Studio (workspace ForcePhoneScreens, set before Play, removed after):
+     phone mode, in meet 1's hall EXIT hidden, in the meet LEAVE hidden; computer mode, EXIT shown, LEAVE shown.
+  3. BIGGER EXIT SIGNS: LocalMeetVenue ExitBoard scale 0.35 -> 0.7 at height 16 (19.6 x 8.4, bottom 11.8 over the floor,
+     the doorway is 10 high); StateArenaVenue ExitSign 6 x 2.6 -> 12 x 3.6 at WALK_Y + 3.1 (a 12 x 4.6 one reached the
+     upper tier's railing); NationalsArenaVenue ExitSign 6 x 2.6 -> 13 x 5.4 at concourse + 7. Checked by measurement
+     only: each stands where the old one did (the hall board on its wall, State's on the walkway wall, Nationals' a
+     free-standing panel as before), nothing new in front of it. NO PICTURES: Studio's 3D view captured blank white for
+     the rest of the session (even right after Play; the window may be minimized), so the user should look at them.
+- USER'S THREE FIXES (2026-11-18, second round; GAME_DESIGN §31.6 "the meets' notices are lines up here too" and §39
+  "Benches for 40", "Nobody walks through anybody"):
+  1. NOTICES AT THE TOP. The small boxed notice under the meet's title (MockMeetUI `Notice`, fed by LocalMeetService
+     .notify / MockMeetService notify) is gone; `ui.notice` now calls the new `GymRecordAnnouncer.note(text)`: one white
+     outlined line in the top pop-up (same place and look as the Regional and gym record news), one notice at a time, 4
+     to 9 s by length, safe before `start`. Seen in Studio: "An admin started Nationals early..." under the Regional line.
+  2. BENCHES. Measured (Studio, a player's body in the tee, standing, hand to hand): Skinny 2.74, SkinnyFat 2.94, Fit
+     3.36, Fat 3.69, Muscular 3.97, BigBuff 4.31 studs; sitting BigBuff 4.29 wide, reaching 2.01 in front of the seat's
+     middle and 1.18 behind. The seats were 1.95 apart. NationalsArenaVenue now: per platform ONE ROW of 10 seats 4.4
+     apart (SEAT_GAP), on 4 MeetBench copies end to end each ScaleTo 1.1 (11 long), local x -20..24, y 39.2 (was two
+     benches at y 36); seats handed out from the caller's side outward. Studio numbers: 40 seats in the hall, nearest
+     two 4.40 apart, benches 44.0 long exactly under the lifters, on the floor, seat top 1.98, 8.1 studs open between
+     one platform's row and the next, nothing else in the row's space (its back is 0.2 short of the white line's wall).
+     Cost: 16 bench copies in the hall instead of 8 (one mesh, no shadows).
+  3. WALKS. New `LocalMeetVenue.Platform.seatLane` (Nationals: 3.0): THE LANE, a line along the row 4.3 in front of the
+     seats (local y 34.9), the one line clear of sitting lifters' hands and feet (to y 37.2), the chalk stand (from
+     32.3), the caller and the coach. LocalMeetService: `seatLane`, `laneNear`, `offSeatWay(lifter, to)`; `bringBack`
+     and the lift-off's `gather` leave a seat out to the lane and along it; `sitLifter` comes along the lane and steps
+     BACK to the bench (MeetWalkPath.isBackStep). The coach's rest spot moved 1.5 nearer the backdrop (coachSpot y 31:
+     at 32.5 a wide lifter on the lane put an arm through him). LIFT-OFF: new pure module
+     `src/shared/Meet/LiftOffLineUp.luau` (spots from body widths: each lifter their own width + ShoulderGapStuds 0.3;
+     the line moves outward when long); `NationalsScenes.bodyWidth(character)` (the build's width from
+     NationalsConfig.LiftOffScene.BodyWidths, wider for a wide accessory); the line now stands ON the lane
+     (LiftersBehindStuds 5.3, was 4.2); spots handed out in the order the lifters sit, so walks never cross; they get up
+     one after another (GatherStaggerSeconds 0.6), the same on the way back. NationalsScenes.liftOff takes `spots`,
+     `judgeSpot`, `widths` (LifterGapStuds and spotCount are gone) and sends `between` (the gap the Tell shot looks
+     through) to the client; Tell shot 5.2 back, Through shot 0.1 back.
+     CHECKED with the game's own LiftOffLineUp + MeetWalkPath on the real seats (a Studio script, bodies as boxes:
+     shoulders width x 1.3, head and hat 1.9 x 2.1): every pair of seats, slimmest and widest, there and back (98
+     walks), plus from every seat the lift-off walk and the turn walk to the chalk spot and back: nobody inside anybody
+     (closest two tied lifters 0.04 = two of the widest sitting side by side; closest to a sitting lifter 0.04; to the
+     coach or caller 0.35; lift-off walk to the chalk stand 0.35; standing 0.30 of air). Real lift-off run as BigBuff,
+     one player: all seven shots, both voice lines playing, pick panel after, no errors; pictures with a frozen test
+     copy of the body on the next seat and on the 2nd spot (D:\ClaudeScratch\NationalsCinematics\
+     Bench_Walk_Notice_Fix.jpg). NOT tested: two real players; the turn walk and the walk back to the bench in a real
+     meet (only by the maths); a phone.
+  - Seen in passing, NOT changed: the walk back from the platform ends at the chalk spot along a line that cuts the
+    chalk stand's corner (LocalMeetService.walkBack: walkOut reversed, then straight to waitSpot).
+- STATE ARENA BENCHES (2026-11-18, user: "Yes, fix State"; GAME_DESIGN §36.4 "Benches where nobody sits or walks
+  inside anybody"). The seats were 2.4 apart, 4 to a 10-stud bench. A rack has up to 10 lifters and only 34 studs of
+  width (RackSpacingStuds), so one row cannot hold them (10 x 4.4 = 44). StateArenaVenue now: TWO ROWS of up to 5
+  seats 4.4 apart, both facing the order board, at z 36.9 and 44.8 (BENCH_ROW_ZS; was one row at z 34), on MeetBench
+  copies ScaleTo 1.1 (one for 1 or 2 seats, two for 3 to 5); the back row only when a rack has more than 5; seats
+  handed out front row first, from the caller's side. `seatLane` 3.0 as at Nationals (front lane z 32.6, the aisle
+  between the rows z 40.5) and the new `LocalMeetVenue.Platform.seatAround` (a back-row seat's way round the end of
+  the front row, 13.5 from the rack's middle, onto the front lane); LocalMeetService `seatAround`, used by
+  `offSeatWay`, `laneNear` and `sitLifter`. To make the room: WARMUP_ROWS z 44 -> 52 and 58 -> 62 (still 18 racks,
+  the furthest corner 79.2 from the middle, the wall at 80; nearest lifting spot z 48, 2 behind the back row's backs);
+  the caller half a stud nearer the banner (CALLER_Z 29). Cost: up to 4 benches a rack (16 in a full arena, was 12).
+  STUDIO TEST ONLY attributes: `StudioStateSeats` (builds each rack's benches for at least that many lifters) and
+  `StudioStateSeatIndex` (sits the first lifter on that seat of the rack).
+  CHECKED in a real State meet started from the admin panel (one player, BigBuff, sat on back-row seat 8, benches
+  built for 10): 10 seats, nearest two in a row 4.40; benches 11.00 long on the floor; from every seat to the chalk
+  spot and back, widest and slimmest (MeetWalkPath, bodies as boxes): closest to a sitting lifter 0.04, to the caller
+  or the resting coach 0.39, nobody inside anybody. THE REAL WALK, recorded from the player's screen on two turns:
+  seat (0, 44.8) -> aisle (0, 40.5) -> row end (-13.5, 40.5) -> front lane (-13.5, 32.6) -> along it to (-2.8, 32.6)
+  -> chalk spot (0, 28); back the same way and a step back onto the seat. No errors. Pictures (9 frozen test copies
+  on the other seats, one view from straight above): D:\ClaudeScratch\NationalsCinematics\State_Benches_Fix.jpg.
+  NOT tested: two real players; more than one rack (the next rack's row is 12 studs away by the sums); a phone.
+  Seen in passing, NOT changed: on the way out and back, the lifter's line between the chalk spot and the gap beside
+  the banner passes within half a stud of the coach's resting spot (the coach is not resting there at that moment).
+- UPLOADED 2026-11-18 and pasted in: AnnouncerMic_01 rbxassetid://110593831900615 (StarterGymConfig.PropAssets);
+  Nationals_Announce rbxassetid://81351484139860 (NationalsConfig.Opening.AnnounceAnimationId, also preloaded);
+  LiftOffJudge_First 109357897168685, _Second 87394996343198, _Third 127909988397691, _Rules 136963528084285
+  (NationalsConfig.LiftOffScene FirstLines / SecondLine voiceId). Studio run of the opening after it: the announcer has
+  the microphone (4 of 4 pieces shown, right hand Grip), the announce track at 0.7 s as the voice starts, 4.4 s and 9.4 s
+  at the two cuts (in step), microphone hidden and hand open again once seated; pictures show it at the mouth.
+- OPENING TITLE CARD + CAMERA FOCUS (same day): the tour's first 5 s were UNLIT in 3 Studio runs of 5 although the
+  hall was "ready" (all platforms dark, then all lit at once). What it was NOT (each tested): the lights themselves
+  (nudging them did nothing), the black cover (unlit behind a solid one and a see-through one), distance or graphics
+  quality (after the opening, a camera held at the tour's start was lit at quality 21 and 8 with any focus). What it
+  was: a scripted camera's `Camera.Focus` is not moved for it, so it stayed on the lifter's bench, and after the trip
+  into the hall the engine worked out the light near the bench first and the far platforms last. FIX in
+  NationalsOpeningScene.step: `camera.Focus = CFrame.new(look)` every frame; plus Opening.LeadSeconds 4.2 behind a
+  black title card ("NATIONAL CHAMPIONSHIP / CENTRAL NATIONALS", its own ScreenGui, put up AFTER MeetCinema.open, which
+  hides every screen already there; 3% see-through as a precaution), fading over TitleFadeSeconds 1.1 into the tour.
+  RESULT: 2 Studio runs of 2 (one the rivals version) came up LIT as the title faded and stayed lit, at graphics
+  level 4; every shot played, microphone and announce track in step, no errors. Two runs is not proof on a fault
+  that came and went: if a real device ever shows a dark start, raise Opening.LightsSeconds (8). The lift-off scene does not set Focus (its shots are close to the lifter and it comes at
+  the end of a meet; lit in every run) - if a scripted camera elsewhere ever shows unlit things far from the player,
+  this is the first thing to try.
+- STUDIO SETTING CHANGED BY A TEST, NOT PUT BACK: the lighting test set `settings().Rendering.QualityLevel` (21, then
+  8). That moved Studio's play-test graphics slider from Automatic to manual level 4, and a script cannot set it back
+  (SavedQualityLevel needs a capability scripts lack; QualityLevel = Automatic reverts within 2 s). THE USER puts it
+  back: in a Studio play test, Esc > Settings > Graphics Mode > Automatic. The editor's own quality (EditQualityLevel)
+  was not touched. Never set QualityLevel from a test again.
+- LIFT-OFF RESTAGED + VOICED (same day, user: "i see both people just get up then wait at the curtain. Make it where the
+  ref comes through, looks at the two lifters, then they go to him, then he says what he has to say, also tell
+  elevenlabs to generate the same voice for the text"). Now: the tied lifters stay on their bench (LocalMeetService
+  .liftOff seats anyone who is up); the judge walks through the curtain and stops FACING them (NationalsScenes.liftOff:
+  arriveSpot) for LookSeconds 1.6; `gather` (a callback into LocalMeetService) walks them to the spots while the judge
+  turns with them (TurnRate); then a second message "LiftOffLines" carries the lines and the end time. Client shots:
+  Tie (on the bench), Chair, Side, Through (judge steps through and looks), Look (beside the judge, the lifters walk
+  over), Tell, Verdict; controls off; callers' tags hidden; each line's sound played on that screen as the line starts.
+  Lines are now the same on screen and aloud (no class, total or name): NationalsConfig.LiftOffScene.FirstLines[place]
+  + SecondLine, each { text, voiceId, seconds }. Studio run (one player): Tie 3.3 s, Chair 2.2, Side 2.3, Through 2.5,
+  Look 3.7 (seated until then, then walked 16 studs), Tell 6.3, Verdict 8.7, about 29 s; pick panel after; judge
+  seated again; no errors. (That run was text only; after the upload, a second run: both sounds loaded, the place line
+  playing as its words came up and for its 5.1 s, the rules line the same on the Verdict shot, about 29 s, pick panel
+  after, judge seated again, no errors.)
+- Judge voice: ElevenLabs flow "Nationals lift-off judge lines", eleven_v4, "David - Sports Arena Announcer", one take
+  each, 701 credits. Word check (local faster-whisper): First and Rules right; Second heard as "You finish dead level"
+  (listen); Third said its last sentence twice, the repeat was cut off (5.02 s). Files: `D:\Powerlifting Roblox Extras\
+  Sounds\Announcer\LiftOffJudge_First / _Second / _Third / _Rules.wav` (raw MP3s in Raw\), listed in
+  art/sounds/elevenlabs_shouts.json (the uploader rewrites that file with a 1-space indent: it was re-saved with 2).
+  Uploaded, ids above. Only the First and Rules lines have been played in Studio (a one-player test is a 1st-place
+  tie); Second and Third are uploaded the same way but unplayed in the game.
+- How to see them in Studio (Play, admin panel, tools page): START NATIONALS NOW after signing up on the MEETS list
+  (workspace attribute StudioNationalsAnyone = true lets anyone sign up) plays the OPENING after the weigh-in; the new
+  button TEST LIFT-OFF SCENE (Studio only) signs you up, starts Nationals and plays the LIFT-OFF judge right after the
+  weigh-in (it sets StudioNationalsAnyone and StudioLiftOffAtStart for that play session; the opening is left out then).
+- Lift-off, first version (about 21 s; restaged above): `src/server/Meet/NationalsScenes.luau` (liftOffSpots, liftOff: the head referee stands up,
+  takes the coach's clipboard as the score sheet, walks Platform.judgeWay through the curtain's split, CoachTalk
+  animation while the lines show, `back` walks him to the chair and sits) called from LocalMeetService.liftOff before
+  the pick; `src/client/Meet/NationalsLiftOffScene.luau` (shots Tie, Chair, Side, Arrive, Verdict; lights; words via the
+  new MeetCinema.says). MeetFigures: sitFigure / standUp / sitDown / standSpot / giveClipboard (a seated figure keeps
+  how it sits and can get up; build now also returns the figure). LocalMeetVenue.Platform: headRef, judgeWay.
+  New remote LocalMeetRemotes.SCENE (server -> client the scene; client -> server "HallReady"). The crowd cheers as
+  the tie is called (CrowdCheer). Studio run: Tie 3.6 s, Chair 2.2, Side 2.3, Arrive 7.7, Verdict 5.1; both lines;
+  pick panel up 1.2 s after; judge seated again (hips 90 deg, clipboard hidden); lights and grade removed.
+- Opening (about 35 s + the wait for the hall): NationalsScenes.opening from LocalMeetService.runMeet AFTER the weigh-in
+  (order changed: benches, weigh-in, opening, round 1); `src/client/Meet/NationalsOpeningScene.luau` (Tour, Announce1-3,
+  Back, Coach1, Rivals, Coach2; SKIP; controls off meanwhile; the coach stood in front of the lifter's own seat on their
+  screen only; Highlight on rivals; callers' tags hidden). NationalsArenaVenue: per platform announceSpot / announceWay /
+  announceLight (AnnouncerSpot_i, off until then), venue.tour(platform) (5 camera points) and venue.announcerVoice (one
+  Sound over the floor, heard hall-wide; played by the server so spectators hear it). NationalsConfig.Opening (times,
+  the voice's subtitle lines from a word-by-word reading, cheers at 3.1 and 10.3 s, the coach's lines).
+- THE HALL'S LIGHTS SHOW LATE: in Studio the platforms' spotlights (and any new light) appeared 10 to 25 s after first
+  walking into the hall; the first opening test flew through a black hall. Fix: each client says "HallReady" once
+  nothing new has arrived in the hall model for 2.5 s; the opening starts 8 s after the last lifter's, or after 35 s
+  (NationalsConfig.Opening HallQuietSeconds / LightsSeconds / ReadyWaitSeconds). Later runs: lit from the first frame
+  (waited 1 to 5 s on top of the weigh-in). Not known: how long real devices take. The Studio lift-off test waits 12 s
+  for the same reason (a real lift-off comes at the end of a meet). (The "10 to 25 s" was partly the camera jumping:
+  see OPENING TITLE CARD above.)
+- Announcer assets (made, checked, uploaded, see the ids above): `art/scripts/build_announcer_mic_01.py` ->
+  `art/blender/AnnouncerMic_01.blend`, `art/exports/AnnouncerMic_01.glb` (CHECK PASSED, 4 meshes, 560 triangles; entry
+  in art/materials/materials.json; PropColourways.AnnouncerMic added). `art/scripts/
+  nationals_announce_animation.py` -> `art/animations/Nationals_Announce.rbxmx` (12.35 s, starts 0.7 s before the
+  voice; anim_qa PASS on Skinny, Fat, Muscular in the tee, after the raised arm was moved out of Muscular's head).
+  Previewed in Studio from the file (KeyframeSequenceProvider) on a referee with a stand-in microphone placed by
+  giveMicrophone's own numbers: the closed hand (Grip shape, new HandShapeConfig.HeldAttributes) wraps the handle, the
+  head is at the mouth. Then uploaded and seen in the real opening (above).
+- Also: LifterDisplay.build takes an idle text (the Nationals screens say CENTRAL NATIONALS, not the Local meet's
+  "OPEN / SIGN UP AT THE DESK"); AdminService/NationalsService TestLiftOff; AdminPanel button.
+- NOT tested: two players (a real tie from totals; three-way ties; rivals framed on a real bench; a class split over
+  two platforms); a phone; the user's ear on the voice level (Opening.VoiceVolume 1) and the crowd cheer.
+- Tooling note: this session's Roblox Studio link failed to connect ("protocol version not supported"); tests ran
+  through a small local bridge to Studio's own StudioMCP.exe (scripts in the session's scratch folder, not in the repo).
+  The StudioMCP processes other sessions were using went away during those tests: if another session's Studio tools
+  stop answering, reconnect them (restart that session's Roblox Studio connector).
+
+**NATIONALS: SAME CLASS SAME PLATFORM, POINTS MODE, LIVE SCREENS (2026-11-18; GAME_DESIGN §39 "Platforms, points,
+screens and two cinematics"). BUILT, UPLOADED, TESTED IN STUDIO (one player). NOT COMMITTED (last commit c1ee9d8).
+The two cinematics that were NEXT here are the block above.**
+- Announcer welcome line DONE: ElevenLabs eleven_v4, voice "David - Sports Arena Announcer", shouted with excitement to a
+  packed arena (user: realistic voices with emotion, never robotic). 2 takes, 438 credits; words checked with local
+  faster-whisper (both right). `D:\Powerlifting Roblox Extras\Sounds\Announcer\NatWelcome_A.wav` / `_B.wav` (10.8 s),
+  uploaded A rbxassetid://80969960609874, B 107631807856915 (manifest art/sounds/elevenlabs_shouts.json).
+  NationalsConfig.WelcomeVoiceId (A), WelcomeVoiceSeconds, WelcomeLine. The user hasn't listened yet.
+- LocalMeetService.startNationalsMeet: classes kept together per platform (own platform each when <= 4 classes, else
+  packed to ~even counts; withRoom spills a class over the benches' capacity); Meet.pointsMode when any class has one
+  lifter. groupOf(current, lifter) = class or "ALL CLASSES": rankFor (MeetPlacing.rank in points mode), areRivals,
+  liveScores/placeOf, announceAwards (plain "National Champion"), payouts (one pot), notes, podiumAndAwards,
+  nationalsAwards; runLiftOffs skipped in points mode; title without class in points mode.
+- Arena v09 (`NationalsArena_09.blend/.glb`, CHECK PASSED, 128 meshes, 29,952 tris) rbxassetid://78592412560833:
+  NatLiveScreen x8 (warm-up: over the white line, bottom z 24, facing +Y; front: y -26, bottom z 32, facing the stands),
+  NatBanner 68 -> 34 wide. NationalsArenaVenue builds a LifterDisplay on each and joins them to the platform's video
+  wall (LifterDisplay.together now merges any number of screens).
+- Studio: 8 live screens, 12 lifter displays; during a lift the live minigame panel appeared on platform 1's two new
+  screens; "1 lifter in 1 class on 1 platform, placed on points"; result "1ST PLACE of 1 · 14.46 POINTS", pot "ALL
+  CLASSES 750 (x5)", "New title: National Champion", Worlds spot 59 kg; no errors. NOT tested: two players (same class
+  on one platform, points between classes), a look at the screens.
+
 **ALL OF THE BLOCKS BELOW, DOWN TO "NATIONALS ARENA FIXES (2026-11-17)", ARE COMMITTED in 2a0211c (2026-11-18, not
 pushed): Nationals step 2, the flow state, chants and shouts, the curtain walk-through and cinematic, the camera fix, the
 closed curtain line, arena v08, the floating signs with live timers and MeetHall_03. (Their "NOT COMMITTED" lines are

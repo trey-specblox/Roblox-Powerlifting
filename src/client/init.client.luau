@@ -97,6 +97,12 @@ task.spawn(NationalsMeetUI.start)
 -- The cinematic behind the Nationals curtain and the reveal as they push through it, on their own screen. Display only.
 local NationalsCurtainScene = require(MeetFolder:WaitForChild("NationalsCurtainScene"))
 task.spawn(NationalsCurtainScene.start)
+-- The lift-off's judge walking through the curtain to the tied lifters, as a cinematic on their own screens. Display only.
+local NationalsLiftOffScene = require(MeetFolder:WaitForChild("NationalsLiftOffScene"))
+task.spawn(NationalsLiftOffScene.start)
+-- The Nationals opening: the camera tour, the announcer's welcome and the coach's words, on each lifter's screen. Display only.
+local NationalsOpeningScene = require(MeetFolder:WaitForChild("NationalsOpeningScene"))
+task.spawn(NationalsOpeningScene.start)
 -- The Nationals curtains swinging apart as lifters walk through them, on every screen. Visual only.
 local NationalsCurtains = require(MeetFolder:WaitForChild("NationalsCurtains"))
 NationalsCurtains.start()

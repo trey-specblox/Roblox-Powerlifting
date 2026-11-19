@@ -27,6 +27,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
@@ -321,6 +322,16 @@ function AdminPanel.start()
 		UDim2.fromOffset(230, 28), "outline", function()
 			ask("StartNationals", nil)
 		end)
+	-- STUDIO ONLY: the lift-off's judge (the tie cinematic) without tying a whole meet: signs you up, starts Nationals
+	-- and plays it right after the weigh-in.
+	if RunService:IsStudio() then
+		-- (the title shortened to make room for it)
+		meetsTitle.Text = "START A MEET NOW"
+		UIStyle.button(toolsPage, "TestLiftOff", "TEST LIFT-OFF SCENE", UDim2.new(1, -MARGIN - 230 - 6 - 172, 0, 546),
+			UDim2.fromOffset(172, 28), "outline", function()
+				ask("TestLiftOff", nil)
+			end)
+	end
 	makeMeetButtons = function(meets)
 		for index, meet in ipairs(meets) do
 			-- Three to a row.

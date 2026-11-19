@@ -58,6 +58,8 @@ function LocalMeetController.start()
 		tag = "LOCAL MEET",
 		sub = "REFEREES  ·  COACH WATCHING",
 		liftMoment = true,
+		-- (on a phone, no LEAVE bar: a stray tap withdrew the lifter; the venue's EXIT sign is the way out)
+		leaveOnPhone = false,
 	})
 	-- Chalking up while they choose: the camera beside the panel, the puffs of chalk and their sounds.
 	remotes.state.OnClientEvent:Connect(MeetChalkShot.onState)

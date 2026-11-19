@@ -25,6 +25,13 @@
 
 		The next meet is a STATE MEET: prize pot x3, titles for the top 3. Sign up within 8:30  [GO]
 
+	GymRecordAnnouncer.note: a plain notice from the meets ("Nationals starts in 30
+	seconds!", "You are already signed up"...). User 2026-11-18: "make any text
+	that pops up here ... change it to a pop up on top the screen, like the
+	regional, and gym record text ui pop up": it used to be a small boxed line
+	under the meet's title (MockMeetUI). One notice at a time: a newer one takes
+	the older one's place, and it stays longer the longer it is to read.
+
 	At most MAX_LINES at once (the oldest goes). While the lift banner is up
 	(LiftAttemptController), the lines move below it so a lifter still sees it.
 	Display only.
@@ -66,12 +73,17 @@ local ATTEMPT_SECONDS = 12
 local LEVEL_SECONDS = 14
 local NOTE_SECONDS = 4
 local FADE_SECONDS = 0.4
+-- A notice (GymRecordAnnouncer.note) stays this long: a base, plus reading time for its letters, within these limits.
+local NOTICE_BASE_SECONDS, NOTICE_LETTERS_PER_SECOND, NOTICE_MIN_SECONDS, NOTICE_MAX_SECONDS = 2.5, 16, 4, 9
 
 -- Each level's colour in a line. Only GYM records exist so far.
 local LEVEL_COLOURS: { [string]: string } = { GYM = "#FACE24", NATIONAL = "#4692FF", WORLD = "#E22E38" }
 local LIFT_COLOURS: { [string]: string } = { Squat = "#FACE24", Bench = "#FF6A72", Deadlift = "#6FB0FF", Total = "#FFFFFF" }
 
 local started = false
+-- Shows a notice, once the lines exist (start); one that came before that waits here.
+local showNote: ((text: string) -> ())? = nil
+local waitingNote: string? = nil
 
 local function kgText(kg: number): string
 	return if kg == math.floor(kg) then string.format("%d", kg) else string.format("%.1f", kg)
@@ -188,7 +200,7 @@ function GymRecordAnnouncer.start()
 		`seconds`. It wraps to stay on screen with the button beside it (user 2026-11-05: on a phone a line ran
 		off the edge, so its time and GO button couldn't be seen).
 	]]
-	local function show(text: string, seconds: number, watch: string?, buttonText: string?, watchHall: number?)
+	local function show(text: string, seconds: number, watch: string?, buttonText: string?, watchHall: number?): Frame
 		while #lines >= MAX_LINES do
 			remove(lines[1])
 		end
@@ -280,6 +292,26 @@ function GymRecordAnnouncer.start()
 				remove(line)
 			end
 		end)
+		return line
+	end
+
+	-- A meet's notice, as a line up here. One at a time, as the box it replaces showed them.
+	local noteLine: Frame? = nil
+	local function note(text: string)
+		if noteLine and noteLine.Parent then
+			remove(noteLine)
+		end
+		-- (plain words: nothing in them is rich text)
+		local plain = string.gsub(text, "&", "&amp;")
+		plain = string.gsub(plain, "<", "&lt;")
+		plain = string.gsub(plain, ">", "&gt;")
+		noteLine = show(plain, math.clamp(NOTICE_BASE_SECONDS + #text / NOTICE_LETTERS_PER_SECOND, NOTICE_MIN_SECONDS,
+			NOTICE_MAX_SECONDS), nil)
+	end
+	showNote = note
+	if waitingNote then
+		note(waitingNote)
+		waitingNote = nil
 	end
 
 	brokenRemote.OnClientEvent:Connect(function(news: GymRecordRemotes.Announcement)
@@ -351,6 +383,18 @@ function GymRecordAnnouncer.start()
 			levelText(news.records[1].level), recordsText(news.records), news.classLabel, place),
 			ATTEMPT_SECONDS, watch, nil, news.hall)
 	end)
+end
+
+-- A plain notice at the top of the screen (see the header). Safe to call before `start`: the latest one waits.
+function GymRecordAnnouncer.note(text: string)
+	if typeof(text) ~= "string" or text == "" then
+		return
+	end
+	if showNote then
+		showNote(text)
+	else
+		waitingNote = text
+	end
 end
 
 return GymRecordAnnouncer

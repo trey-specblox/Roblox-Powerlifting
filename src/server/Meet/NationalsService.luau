@@ -798,6 +798,9 @@ local function applyForced(round: number)
 end
 
 -- START NATIONALS NOW: whether it starts and what to tell the admin. SERVER-ONLY: AdminService checks the admin list first.
+-- (defined below)
+local adminTestLiftOff: (player: Player) -> (boolean, string)
+
 local function adminStartNow(): (boolean, string)
 	local q = queue
 	if q == nil then
@@ -815,6 +818,28 @@ local function adminStartNow(): (boolean, string)
 	end
 	applyForced(round)
 	return true, string.format("Nationals starts in %d seconds for everyone signed up, in every server.", NationalsConfig.ForceLeadSeconds)
+end
+
+--[[
+	STUDIO TEST ONLY: the admin panel's TEST LIFT-OFF SCENE. Signs `player` up (anyone may, as with the workspace
+	attribute StudioNationalsAnyone), starts Nationals now, and has the meet play the lift-off's judge for its lifters
+	right after the weigh-in (the workspace attribute StudioLiftOffAtStart, LocalMeetService), so the cinematic can be
+	looked at with one player and without tying a whole meet. Both attributes last only for this play session.
+]]
+adminTestLiftOff = function(player: Player): (boolean, string)
+	if not IS_STUDIO then
+		return false, "This test only runs in Studio."
+	end
+	Workspace:SetAttribute("StudioNationalsAnyone", true)
+	Workspace:SetAttribute("StudioLiftOffAtStart", true)
+	if signUps[player] == nil then
+		toggleSignUp(player)
+	end
+	if signUps[player] == nil then
+		return false, "Couldn't sign you up for Nationals (sign-ups may have just closed): press it again in a moment."
+	end
+	local _, message = adminStartNow()
+	return true, "The lift-off's judge plays right after the weigh-in. " .. message
 end
 
 -- Servers with someone signed up look now and then for an early start set in another server.
@@ -893,6 +918,7 @@ function NationalsService.start()
 	remotes = set
 	upcoming = nextStartAfter(now())
 	AdminService.setNationalsStarter(adminStartNow)
+	AdminService.setNationalsLiftOffTester(adminTestLiftOff)
 
 	set.signUp.OnServerEvent:Connect(function(player)
 		if pressAllowed(player) then

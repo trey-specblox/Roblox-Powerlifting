@@ -86,6 +86,7 @@ local BOTTOM: { [string]: Vector3 } = {
 	NatCurtainGap = Vector3.new(0, 0.47, 0.30),
 	NatCurtainEndL = Vector3.new(-0.50, 0.60, 0),
 	NatCurtainEndR = Vector3.new(0.50, 0.60, 0),
+	NatLiveScreen = Vector3.new(0, 0.27, 0),
 	NatBanner = Vector3.new(0, 0.30, 0),
 	NatCrowdMainA = Vector3.new(1.21, 27.54, 2.50),
 	NatCrowdMainB = Vector3.new(1.18, 27.54, 2.50),
@@ -123,6 +124,9 @@ local SET_RIGHT_W = BACKDROP_W / 2 + 3.9
 -- the LIFTERS' ZONE: each platform's chalk stand, the spot behind its curtain where the lifter waits, its benches, its
 -- caller and its lifting order board on the backdrop's back.
 local MEET_FRONT_Y, MEET_SIDE_X, WHITE_LINE_Y = -16, 106, 41
+-- The live screens (NatLiveScreen, build script v09): over the white line facing the warm-up area, and at the front in the
+-- banner's band facing the stands; their bottoms this high.
+local WARMUP_SCREEN_Z, FRONT_SCREEN_Y, FRONT_SCREEN_Z = 24, -26, 32
 local BARRIER_HEIGHT = 60
 local BARRICADE_W = 7
 -- Per platform, toward its -X side (where the stage's steps are and the lifter walks out through the curtain's split):
@@ -135,8 +139,29 @@ local CHALK_AT = { x = -(BACKDROP_W / 2 + 1.8), y = BACKDROP_Y + 6.5 }
 -- its back edge, up them, then straight in to the bar (the rack's open side faces the back).
 local THROUGH_BACK_Y, THROUGH_FRONT_Y = BACKDROP_Y + 2.2, BACKDROP_Y - 2.6
 local STEPS_FOOT_Y, STEPS_TOP_Y = STAGE_D + 2.6, STAGE_D - 0.2
--- 2 benches of 5 seats: a platform's 10 lifters at most (40 at Nationals / 4 platforms).
-local BENCH_Y, BENCH_XS, BENCH_LENGTH, BENCH_SEAT_TOP, SEATS_PER_BENCH, SEAT_GAP = 36, { 1, 12.5 }, 10, 1.8, 5, 1.95
+-- The judge's way round the stage to the curtain (the lift-off's cinematic): along the stage's front at this y, behind
+-- the -X side referee's chair (-11, -1.5), then down the stage's side at this x (its edge is -12).
+local JUDGE_FRONT_Y, JUDGE_SIDE_X = -5.4, -15.5
+-- The opening's announcer (the head referee) stands here, between the chair and the barricades, facing the stands; the
+-- spotlight on the spot hangs this far toward the stands and this high.
+local ANNOUNCE_Y, ANNOUNCE_LIGHT_Y, ANNOUNCE_LIGHT_Z = -11.5, -27, 38
+-- ONE ROW OF 10 SEATS PER PLATFORM (40 at Nationals / 4 platforms), nobody inside anybody (user 2026-11-18: "the bench
+-- ... big enough for 40 people to fit on them, without phasing through each others body"; it was 2 benches of 5 seats
+-- 1.95 apart, and the slimmest body is 2.74 wide). The seats are SEAT_GAP apart: the widest body build (BigBuff, 4.31
+-- hand to hand, NationalsConfig.LiftOffScene.BodyWidths) with a little air. The row is 4 MeetBench copies end to end,
+-- each BENCH_SCALE as big (11 long: 44 of bench for 10 x 4.4 of lifters), from 20 on the stage's -X side to 24 on its
+-- +X side, so 8 stay open between one platform's row and the next. It stands back from the chalk stand's spot and the
+-- coach behind it (y 33.2 and 35.2), its back clear of the white line's wall.
+local BENCH_Y, BENCH_XS, BENCH_SCALE = 39.2, { -14.5, -3.5, 7.5, 18.5 }, 1.1
+local BENCH_LENGTH, BENCH_DEPTH, BENCH_SEAT_TOP = 10 * BENCH_SCALE, 2 * BENCH_SCALE, 1.8 * BENCH_SCALE
+local SEATS_PER_PLATFORM, SEAT_GAP, SEAT_FIRST_X = 10, 4.4, -17.8
+-- A walk to or from a seat goes by the point this far out in front of where its lifter stands up (LocalMeetVenue
+-- .Platform.seatLane), 4.3 from the seat's middle: THE LANE, a line along the row at y 34.9. Measured in Studio
+-- 2026-11-18: a sitting lifter reaches 2.01 in front of the seat's middle (hands and feet), a walking one is up to
+-- 2.16 wide either side of their middle (they walk the lane sideways-on to the bench), so the lane is the one line
+-- clear of both the sitting lifters (to y 37.2) and the chalk stand (from y 32.3) and the caller. The lift-off's
+-- lifters stand on the same line (NationalsConfig.LiftOffScene.LiftersBehindStuds: the curtain's spot is at y 29.6).
+local SEAT_LANE = 3.0
 -- A referee chair's seat (as LocalMeetVenue).
 local CHAIR_SEAT_TOP = 1.84
 local CALLER_AT = { x = 6.5, y = 31 }
@@ -499,7 +524,22 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 		-- the live minigame over it on each player's device, as on a State rack's screen).
 		local screen = set and set:FindFirstChild("NatStageSet_Screen", true) :: BasePart?
 		local displayPart = screen or marker(holder, "VideoWallScreen", at(origin, x, BACKDROP_Y, 22), Vector3.new(25, 13, 0.2))
-		local display = LifterDisplay.build(displayPart, dirOf(origin, 0, -1, 0), i, MeetConfig.LiftOrder)
+		-- (While nobody is on them the screens say where this is: before, the Local meet's "OPEN / SIGN UP AT THE DESK".)
+		local idle: LifterDisplay.Idle = { name = "CENTRAL " .. NationalsConfig.EventTitle, line = NationalsConfig.EventSub,
+			facts = { "CENTRAL " .. NationalsConfig.EventTitle, "ONE CHAMPION IN EVERY CLASS", "THE ROAD TO WORLDS" } }
+		local display = LifterDisplay.build(displayPart, dirOf(origin, 0, -1, 0), i, MeetConfig.LiftOrder, nil, idle)
+		-- The same on this platform's two live screens (user 2026-11-18: "a screen at the warm up area that shows the
+		-- lifters live game. same thing for the front"): one high over the white line facing the warm-up area, one at the
+		-- front facing the stands (NatLiveScreen; the live minigame is drawn on every one of them, MeetLiveScreens).
+		for _, spot in ipairs({ { at = at(origin, x, WHITE_LINE_Y, WARMUP_SCREEN_Z, 180), out = dirOf(origin, 0, 1, 0) },
+			{ at = at(origin, x, FRONT_SCREEN_Y, FRONT_SCREEN_Z), out = dirOf(origin, 0, -1, 0) } }) do
+			local live = place(holder, "NatLiveScreen", spot.at)
+			local livePart = live and live:FindFirstChild("NatLiveScreen_Screen", true)
+			if livePart and livePart:IsA("BasePart") then
+				display = LifterDisplay.together(display, LifterDisplay.build(livePart, spot.out, i, MeetConfig.LiftOrder, true,
+					idle))
+			end
+		end
 
 		-- The lifters' zone (as at State): the chalk stand, then the spot right behind the curtain where the lifter waits
 		-- before stepping out (the Nationals walk-out, step 2), the benches facing the backdrop, the caller, the order board.
@@ -510,26 +550,37 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 		solid(zone, "ChalkStand_Solid", origin, Vector3.new(x + CHALK_AT.x, CHALK_AT.y, 2), Vector3.new(1.6, 1.6, 4))
 		local seats: { Seat } = {}
 		for b, bx in ipairs(BENCH_XS) do
-			place(zone, "MeetBench", at(origin, x + bx, BENCH_Y, 0))
-			solid(zone, "Bench_Solid_" .. b, origin, Vector3.new(x + bx, BENCH_Y, BENCH_SEAT_TOP / 2),
-				Vector3.new(BENCH_LENGTH, 2, BENCH_SEAT_TOP))
-			for k = 1, SEATS_PER_BENCH do
-				local sx = x + bx + (k - (SEATS_PER_BENCH + 1) / 2) * SEAT_GAP
-				local seat = Instance.new("Seat")
-				seat.Name = "BenchSeat"
-				seat.Size = Vector3.new(2, 0.2, 1.6)
-				seat.CFrame = CFrame.lookAt(at(origin, sx, BENCH_Y, BENCH_SEAT_TOP - 0.1).Position,
-					at(origin, sx, BENCH_Y - 1, BENCH_SEAT_TOP - 0.1).Position)
-				seat.Anchored = true
-				seat.CanCollide = false
-				seat.CanTouch = false
-				-- (Step 2 sits the waiting lifters here.)
-				seat.Disabled = true
-				seat.Transparency = 1
-				seat.CastShadow = false
-				seat.Parent = zone
-				table.insert(seats, seat)
+			local bench = place(zone, "MeetBench", at(origin, x + bx, BENCH_Y, 0))
+			if bench then
+				bench:ScaleTo(BENCH_SCALE)
 			end
+			solid(zone, "Bench_Solid_" .. b, origin, Vector3.new(x + bx, BENCH_Y, BENCH_SEAT_TOP / 2),
+				Vector3.new(BENCH_LENGTH, BENCH_DEPTH, BENCH_SEAT_TOP))
+		end
+		-- The seats along the row, handed out from the caller's side outward (a small field sits together, by the caller).
+		local seatXs: { number } = {}
+		for k = 1, SEATS_PER_PLATFORM do
+			table.insert(seatXs, SEAT_FIRST_X + (k - 1) * SEAT_GAP)
+		end
+		table.sort(seatXs, function(a: number, b: number)
+			return math.abs(a - CALLER_AT.x) < math.abs(b - CALLER_AT.x)
+		end)
+		for _, seatX in ipairs(seatXs) do
+			local sx = x + seatX
+			local seat = Instance.new("Seat")
+			seat.Name = "BenchSeat"
+			seat.Size = Vector3.new(2, 0.2, 1.6)
+			seat.CFrame = CFrame.lookAt(at(origin, sx, BENCH_Y, BENCH_SEAT_TOP - 0.1).Position,
+				at(origin, sx, BENCH_Y - 1, BENCH_SEAT_TOP - 0.1).Position)
+			seat.Anchored = true
+			seat.CanCollide = false
+			seat.CanTouch = false
+			-- (Step 2 sits the waiting lifters here.)
+			seat.Disabled = true
+			seat.Transparency = 1
+			seat.CastShadow = false
+			seat.Parent = zone
+			table.insert(seats, seat)
 		end
 		local callerLine = MeetFigures.build(zone, "Caller", at(origin, x + CALLER_AT.x, CALLER_AT.y, 0).Position,
 			at(origin, x + CALLER_AT.x, BENCH_Y, 0).Position)
@@ -594,7 +645,9 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 			lamps = lamps,
 			refSeats = refSeats,
 			stageLight = nil,
-			coachSpot = floorSpot(-11, CHALK_AT.y + 1),
+			-- (1.5 nearer the backdrop than at first, y 31: clear of the lifters' lane along the benches, SEAT_LANE; at
+			-- y 32.5 a wide lifter walking the lane put an arm through the coach, Studio 2026-11-18.)
+			coachSpot = floorSpot(-11, CHALK_AT.y - 0.5),
 			coachDoorSpot = CFrame.lookAt(floorSpot(coachX, 4), floorSpot(0, 15.2)),
 			coachWay = { floorSpot(CURTAIN_SPLIT_X, THROUGH_BACK_Y), floorSpot(CURTAIN_SPLIT_X, THROUGH_FRONT_Y) },
 			coachBackVia = nil,
@@ -611,8 +664,9 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 				staff.Name = "Staff"
 				staff.Parent = holder
 				-- The coach walks through the curtain's split too: the curtain parts for them (NationalsCurtains).
+				-- So does the head referee, as the lift-off's judge (the other two never leave their chairs).
 				staff.ChildAdded:Connect(function(child)
-					if child:IsA("Model") and child.Name == "Coach" then
+					if child:IsA("Model") and (child.Name == "Coach" or child.Name == "Referee") then
 						CollectionService:AddTag(child, NationalsConfig.CurtainWalkerTag)
 					end
 				end)
@@ -623,10 +677,24 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 			spotters = {},
 			spotterLift = nil,
 			seats = seats,
+			seatLane = SEAT_LANE,
 			callerLine = callerLine,
 			caller = if caller and caller:IsA("Model") then caller else nil,
 			orderBoard = showOrder,
 			curtainSpot = CFrame.lookAt(curtainAt, curtainAt + facingStands),
+			-- The head referee's way to the lifters' zone (the lift-off's judge, user 2026-11-18): from in front of the
+			-- chair, behind the -X side referee's chair, down the stage's -X side to the walkway behind it, and through the
+			-- curtain's split.
+			judgeWay = { floorSpot(-7, JUDGE_FRONT_Y), floorSpot(JUDGE_SIDE_X, JUDGE_FRONT_Y + 0.6),
+				floorSpot(JUDGE_SIDE_X, STAGE_D + 2.2), floorSpot(CURTAIN_SPLIT_X, THROUGH_FRONT_Y),
+				floorSpot(CURTAIN_SPLIT_X, THROUGH_BACK_Y) },
+			-- The opening's announcer (user 2026-11-18: "pans to the announcer (a judge), talking to the crowd under a
+			-- spotlight"): the head referee walks round the chair to stand between it and the barricades, facing the
+			-- stands, under a spotlight of their own (off until then).
+			announceSpot = CFrame.lookAt(floorSpot(0, ANNOUNCE_Y), floorSpot(0, ANNOUNCE_Y - 1)),
+			announceWay = { floorSpot(2.7, JUDGE_FRONT_Y - 0.2), floorSpot(2.7, ANNOUNCE_Y + 2.4) },
+			announceLight = spot(model, "AnnouncerSpot_" .. i, at(origin, x, ANNOUNCE_LIGHT_Y, ANNOUNCE_LIGHT_Z),
+				floorSpot(0, ANNOUNCE_Y, 3.6), 0, 60, 13, Color3.fromRGB(255, 250, 240)):FindFirstChildOfClass("SpotLight"),
 		}
 		table.insert(platforms, platform)
 		table.insert(stages, {
@@ -799,7 +867,8 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 	local concourseZ = rowTop(MAIN_ROWS - 1) + 0.6
 	local inside = at(origin, 0, concourseY, concourseZ, 180)
 	local exitPoint = marker(model, "ExitPoint", at(origin, 10, concourseY, concourseZ + 2), Vector3.new(3, 4, 3))
-	local exitSign = BuildParts.placed(model, "ExitSign", Vector3.new(6, 2.6, 0.3), at(origin, 10, concourseY - 4.6, concourseZ + 6),
+	-- (Twice the size it was, user 2026-11-18: "make the exit sign in the back bigger"; on a phone it is the only way out.)
+	local exitSign = BuildParts.placed(model, "ExitSign", Vector3.new(13, 5.4, 0.3), at(origin, 10, concourseY - 4.6, concourseZ + 7),
 		looks.Glass)
 	exitSign.Transparency = 0
 	exitSign.CanCollide = false
@@ -826,6 +895,35 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 
 	-- The hall as a meet venue (LocalMeetVenue.Venue), for the Nationals meet (LocalMeetService): the awards stage in the
 	-- middle gap between platforms 2 and 3 with its podium in front, and the spectators' floor where lifters end up.
+	-- The announcer's welcome, over the hall's speakers: one sound high over the middle of the floor, heard at much the
+	-- same level everywhere in the hall (NationalsScenes plays it; made once so every screen has it loaded).
+	local speakers = marker(model, "AnnouncerSpeakers", at(origin, 0, -10, 30))
+	local voice = Instance.new("Sound")
+	voice.Name = "AnnouncerVoice"
+	voice.SoundId = NationalsConfig.WelcomeVoiceId
+	voice.Volume = NationalsConfig.Opening.VoiceVolume
+	voice.RollOffMode = Enum.RollOffMode.Linear
+	voice.RollOffMinDistance = 220
+	voice.RollOffMaxDistance = 420
+	voice.Parent = speakers
+	-- The opening's camera tour (NationalsScenes): from high over the far end of the main stand, down across the crowd
+	-- and along the lit platforms, to a spot on the spectators' floor in front of platform `platformIndex`'s announcer.
+	-- It flies between the hanging lamps' rows and under the banner.
+	local function tourFor(platformIndex: number): { LocalMeetVenue.TourPoint }
+		local a = NationalsConfig.PlatformXs[platformIndex] or 0
+		local s = if a < 0 then -1 else 1
+		local far = -s * 96
+		local function point(ex: number, ey: number, ez: number, lx: number, ly: number, lz: number): LocalMeetVenue.TourPoint
+			return { eye = at(origin, ex, ey, ez).Position, look = at(origin, lx, ly, lz).Position }
+		end
+		return {
+			point(far, -84, 42, far * 0.3, 0, 6),
+			point(far + (a - far) * 0.35, -66, 34, far * 0.3 + (a - far * 0.3) * 0.45, 6, 8),
+			point(far + (a - far) * 0.7, -46, 24, far * 0.3 + (a - far * 0.3) * 0.8, 8, 8),
+			point(a - s * 14, -31, 12, a, -6, 6),
+			point(a - s * 5, -22.5, 5.2, a, ANNOUNCE_Y, 4.6),
+		}
+	end
 	local awards, backdropTitle, podiumSpots = LocalMeetVenue.awardsStage(at(origin, 0, 6, 0).Position)
 	local lobbyAt = at(origin, 0, -26, 0).Position
 	local meetVenue: LocalMeetVenue.Venue = {
@@ -843,6 +941,8 @@ local function buildHall(origin: CFrame): (Model, { Stage }, CFrame, BasePart, B
 		podiumSpots = podiumSpots,
 		-- (Its warm-up racks run on their own warm-up, for anyone in the hall: build.)
 		warmUpRacks = {},
+		tour = tourFor,
+		announcerVoice = voice,
 	}
 	LocalMeetVenue.setLevel(meetVenue, NationalsConfig.EventTitle, {}, 0)
 	return model, stages, inside, exitPoint, deskPoint, deskScreen, meetVenue
@@ -858,7 +958,7 @@ function NationalsArenaVenue.build(): Venue?
 	end
 	local probe = RoomProps.propCopy("NatBay", 1)
 	if probe == nil then
-		warn("[NationalsArenaVenue] NationalsArena_08 did not load: no Nationals building")
+		warn("[NationalsArenaVenue] NationalsArena_09 did not load: no Nationals building")
 		return nil
 	end
 	probe:Destroy()

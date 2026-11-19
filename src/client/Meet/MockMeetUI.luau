@@ -9,7 +9,8 @@
 	UIStyle, the game's one look. The Local meet uses the same screen with its
 	own title (Options), plus a "Waiting" step, the referees' lights and a note.
 
-		top left       the MOCK MEET tag; notices under it
+		top left       the MOCK MEET tag
+		top middle     notices, as a line of the top pop-up (GymRecordAnnouncer.note, user 2026-11-18)
 		top right      LEAVE
 		right          the SCORECARD panel: 3 lifts x 3 attempts, the class, the total
 		bottom middle  the action panel: the weigh-in, the weight choice, LIFT,
@@ -42,6 +43,7 @@ local MockMeetConfig = require(ConfigFolder:WaitForChild("MockMeetConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
+local GymRecordAnnouncer = require(script.Parent:WaitForChild("GymRecordAnnouncer"))
 local C = UIStyle.Colours
 
 local MockMeetUI = {}
@@ -63,6 +65,9 @@ export type Options = {
 	sub: string,
 	-- The lifter's turn runs as MeetLiftMoment: no scorecard or bottom panel over the view until the verdict.
 	liftMoment: boolean?,
+	-- False: no LEAVE bar on a phone (the meets in a venue, where LEAVE withdraws the lifter and the venue's EXIT sign is
+	-- the way out; user 2026-11-18, accidental taps). The Mock Meet's private room keeps it: LEAVE is its only way out.
+	leaveOnPhone: boolean?,
 }
 
 local MOCK_MEET_OPTIONS: Options = { guiName = "MockMeet", tag = "MOCK MEET", sub = "PRIVATE ROOM  ·  COACH WATCHING" }
@@ -119,12 +124,12 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	UIStyle.label(title, "Sub", UDim2.fromOffset(16, 48), UDim2.fromOffset(200, 18), C.yellow, UIStyle.heading()).Text =
 		look.sub
 
-	local notice = UIStyle.frame(gui, "Notice", UDim2.fromOffset(24, 96), UDim2.fromOffset(420, 34), C.ink, -1)
-	UIStyle.stroke(notice, C.yellow, 2)
-	notice.Visible = false
-	local noticeText = UIStyle.label(notice, "Text", UDim2.new(0, 12, 0.16, 0), UDim2.new(1, -24, 0.68, 0), C.white)
-
-	UIStyle.exitButton(gui, "Leave", "LEAVE", UDim2.new(1, -194, 0, 22), handlers.leave)
+	local leave = UIStyle.exitButton(gui, "Leave", "LEAVE", UDim2.new(1, -194, 0, 22), handlers.leave)
+	if look.leaveOnPhone == false and UIStyle.isTouchOnly() then
+		leave.Visible = false
+		-- (MockMeetController shows the screen's pieces as a meet starts: this one it leaves hidden)
+		leave:SetAttribute("HiddenOnPhone", true)
+	end
 
 	-- ------------------------------------------------ scorecard
 	local scoreHolder, score = UIStyle.panel(gui, "Scorecard", UDim2.new(1, -350, 0.5, -130), UDim2.fromOffset(320, 252))
@@ -299,17 +304,10 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	local ui = {} :: Ui
 	ui.gui = gui
 
-	local noticeToken = 0
+	-- A notice is a line of the pop-up at the top of the screen, like the Regional and gym record news (user 2026-11-18;
+	-- it was a small boxed line under the title here).
 	ui.notice = function(message: string)
-		noticeToken += 1
-		local token = noticeToken
-		noticeText.Text = message
-		notice.Visible = true
-		task.delay(4, function()
-			if noticeToken == token then
-				notice.Visible = false
-			end
-		end)
+		GymRecordAnnouncer.note(message)
 	end
 
 	ui.setTimer = function(secondsLeft: number?)

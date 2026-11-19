@@ -609,10 +609,12 @@ StarterGymConfig.PropAssets = {
 	{ id = 76335862835551 }, -- MeetHall_03: the Local meet's bigger entrance building (item MeetHallBig, placed by
 	-- LocalMeetVenue.buildEntrance; art/scripts/build_meet_hall_02.py), user 2026-11-18. The old MeetHall stays in
 	-- LocalMeet_01, unused.
-	{ id = 123515201004163 }, -- NationalsArena_08: the Nationals building on the plaza and its hall (GAME_DESIGN §39, placed by
-	-- NationalsArenaVenue; art/scripts/build_nationals_arena_02.py). Supersedes 128919812028471 (v07: the curtain line open
-	-- between the sets), 87733481257371 (v06), 122896682956726 (v05), 116718498126356 (v04), 81304095031113 (v03),
-	-- 72716651059879 (v02).
+	{ id = 78592412560833 }, -- NationalsArena_09: the Nationals building on the plaza and its hall (GAME_DESIGN §39, placed by
+	-- NationalsArenaVenue; art/scripts/build_nationals_arena_02.py). Supersedes 123515201004163 (v08: no live screens, the
+	-- banner 68 wide), 128919812028471 (v07), 87733481257371 (v06), 122896682956726 (v05), 116718498126356 (v04),
+	-- 81304095031113 (v03), 72716651059879 (v02).
+	{ id = 110593831900615 }, -- AnnouncerMic_01: the Nationals announcer's hand-held microphone (item AnnouncerMic, welded
+	-- into the right hand by MeetFigures.giveMicrophone; art/scripts/build_announcer_mic_01.py, CHECK PASSED, 560 triangles).
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -1013,6 +1015,8 @@ StarterGymConfig.PropColourways = {
 	Barricade = { { Frame = "Silver", Feet = "Black", Banner = "Navy", Stripe = "Yellow", Logo = "White" } },
 	RefChair = { { Frame = "Black", Cushion = "Red", Logo = "White" } },
 	MeetChalkStand = { { Frame = "Black", Collar = "Yellow", Bowl = "Silver", Chalk = "White", Logo = "White" } },
+	-- The Nationals announcer's hand-held microphone (AnnouncerMic_01, MeetFigures.giveMicrophone).
+	AnnouncerMic = { { Handle = "Black", Collar = "Yellow", Head = "Silver", Band = "Charcoal" } },
 	-- The Shop's menu colours the Body and Lid for the crate being opened and keeps only its labels (GearStatsConfig.Crates).
 	GearCrate = { {
 		Body = "Navy", Lid = "Navy", Steel = "Silver", LidSteel = "Silver", Yellow = "Yellow", LidYellow = "Yellow",
@@ -1388,6 +1392,8 @@ StarterGymConfig.PropColourways = {
 	NatCurtainGap = { { Cloth = "NatDrapeDark", Pipe = "Silver" } },
 	NatCurtainEndL = { { Cloth = "NatDrapeDark", Pipe = "Silver" } },
 	NatCurtainEndR = { { Cloth = "NatDrapeDark", Pipe = "Silver" } },
+	-- The live screens (the game draws the platform's lifter and live minigame on the Screen).
+	NatLiveScreen = { { Frame = "Black", Screen = "Black", Trim = "Yellow", Cables = "Silver" } },
 	NatBanner = { { Cloth = "Navy", Trim = "Yellow", Text = "White", TextBack = "White", Rods = "Silver" } },
 	NatCrowdMainA = CROWD_COLOURWAYS,
 	NatCrowdMainB = CROWD_COLOURWAYS,

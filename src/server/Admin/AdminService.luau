@@ -77,6 +77,11 @@ local nationalsStarter: (() -> (boolean, string))? = nil
 function AdminService.setNationalsStarter(starter: () -> (boolean, string))
 	nationalsStarter = starter
 end
+-- TEST LIFT-OFF SCENE's work (Studio only), handed over by NationalsService the same way.
+local nationalsLiftOffTester: ((player: Player) -> (boolean, string))? = nil
+function AdminService.setNationalsLiftOffTester(tester: (player: Player) -> (boolean, string))
+	nationalsLiftOffTester = tester
+end
 
 -- The player in this server with this UserId, or nil. Safe with anything a client sends.
 local function playerFor(userId: any): Player?
@@ -204,6 +209,14 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 			return false, "Nationals isn't running in this server."
 		end
 		return nationalsStarter()
+	end,
+	-- TEST LIFT-OFF SCENE (Studio only): signs this player up, starts Nationals now, and plays the lift-off's judge right
+	-- after the weigh-in (NationalsService.adminTestLiftOff), to look at the cinematic without tying a whole meet.
+	TestLiftOff = function(player: Player, _value: any): (boolean, string)
+		if nationalsLiftOffTester == nil then
+			return false, "Nationals isn't running in this server."
+		end
+		return nationalsLiftOffTester(player)
 	end,
 	-- PLAYER STATS: one typed stat for any player here.
 	SetStat = function(_player: Player, value: any): (boolean, string)

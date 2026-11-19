@@ -3175,6 +3175,29 @@ sum-of-bests Total.
 > "treylicious1 broke builderman's GYM RECORD: 190 KG SQUAT + 540 KG TOTAL
 > (83 kg)". The chat line stays.
 >
+> **[DECIDED BY THE USER, 2026-11-18]: the meets' notices are lines up here too.** With a picture of the small boxed
+> notice under the meet's title ("An admin started Nationals early: it starts in 31 seconds! ..."): "make any text that
+> pops up here with this font, change it to a pop up on top the screen, like the regional, and gym record text ui pop
+> up". Every notice a meet sends a player (Mock Meet and Local meet venues, Nationals: refusals, "starts in 30 seconds",
+> ...) is now one white outlined line at the top, in the same place and look as the record news. One notice at a time (a
+> newer one takes the older one's place); it stays 4 to 9 seconds, longer the longer it is to read. The boxed line is
+> gone.
+>
+> **[DECIDED BY THE USER, 2026-11-18]: the side menus go on the lifter's turn, every platform.** "When someone is
+> walking to the platform to lift, make sure the UI's disappear like the gear, teleport etc. and make sure keyboard
+> players cant press a short cut-key to pop it up." From the walk out to the platform until the walk back is over, the
+> side menus (ADMIN, MEETS, coins, STATS, TELEPORT, GEAR, EMOTES, and the shop, with any of their panels that was open)
+> are hidden and their keys (M, C, T, Y, B) do nothing. Then they come back as they were. The meet's own screen (the
+> scorecard, the turn's card) stays. At every meet with a walk out (Local, State, Nationals, lift-offs).
+>
+> **[DECIDED BY THE USER, 2026-11-18]: no EXIT button on a phone; bigger EXIT signs.** "Fix the exit button, mobile
+> players can easily press it on accident. Just make the exit sign in the back bigger." On a phone (touch screen, no
+> keyboard) the meet venues show **no EXIT bar** (top right of the venue screen) and, during a meet, **no LEAVE bar**
+> (which withdraws the lifter): the way out is the venue's **EXIT sign and its prompt**. On a computer both stay as they
+> were. The Mock Meet's private room keeps its LEAVE (it has no other way out). The EXIT signs are about twice the
+> size: the Local meet halls' board over the doorway (now 19.6 x 8.4), the State arena's sign on the walkway (12 x 3.6,
+> was 6 x 2.6, kept under the upper tier's railing), the Nationals sign on the concourse (13 x 5.4, was 6 x 2.6).
+>
 > **Record attempts** (user, same day: "if a player confirms a number and its a
 > gym record/national record/world record. then it gets announced + a tiny
 > option to tp to watch"): when a lifter at an official meet confirms a weight
@@ -6141,6 +6164,14 @@ in their weight class and stay in it. This reopens the ladder points
 >   a time on that rack; everyone is ranked together (user's pick). A full rack takes about 37 minutes.
 > - **Waiting lifters are free:** after a lift they celebrate and walk to the bench and sit, but they can get up and roam, and practise at the
 >   warm-up racks. **When their turn comes they are brought back automatically**, so nobody loses an attempt by being away (user's pick).
+> - **Benches where nobody sits or walks inside anybody. [DECIDED BY THE USER, 2026-11-18]** (after the same fix at
+>   Nationals, §39: "Yes, fix State"). The seats were 2.4 studs apart and the slimmest body is 2.74 wide. Now the seats
+>   are **4.4 apart** (the widest body, 4.31). A rack has up to 10 lifters but only 34 studs of width, so they sit in
+>   **two rows of up to 5, both facing the lifting order board**: the front row first, the back row only when a rack has
+>   more than 5 lifters. Each row has a **walking lane** in front of it (as at Nationals); the back row's lane is the
+>   aisle between the rows, and its lifters walk **round the end of the front row**, never through it. To make room,
+>   **both rows of warm-up racks moved back** (8 and 4 studs); none was taken out. (Claude's layout, for the user to
+>   change.)
 > - **A new worker at each rack** calls out who is up, who is on deck and who is in the hole. **Out loud too (user 2026-11-07), with each lifter's own name**, by Roblox's
 >   text to speech; a screen hears only its own rack's caller, or the nearest. If Roblox gives no voice for a line, the speech bubble still says it.
 > - **The lifter walks up first and the coach follows behind to watch (user 2026-11-07),** at every meet (§37.5).
@@ -7391,6 +7422,108 @@ pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, th
 >   strongest. It never adds to totals, bests or records.
 > - **Awards:** class by class, lightest first, each class's top 3 on the podium for 14 s; the callers announce each
 >   National Champion. Then everyone is sent back to the game 45 s later.
+>
+> **[DECIDED BY THE USER, 2026-11-18] Platforms, points, screens and two cinematics** (after the user's first two-player
+> lift-off test: "if there is two people in the same weight class ... they are split into two different platforms"):
+> - **Same class, same platform. BUILT.** A weight class stays together on one platform; with more classes than platforms,
+>   whole classes are packed onto them evenly; only a class bigger than a platform's benches spills over.
+> - **Everyone on points when a class has one lifter. BUILT.** ("If there is two people at nationals and they are in
+>   different weightclasses, they will compete off the point system"; the user picked "Everyone on points".) If any class
+>   has only one lifter, the WHOLE meet is placed together by GL points, as a Local meet: one podium, one x5 pot, the
+>   title is plain "National Champion" (no class), no lift-offs (the points ranking settles ties). Claude's defaults, for
+>   the user to confirm: the points winner still earns the Worlds spot in their own class; classes of 2+ in that meet are
+>   placed on points too. Otherwise, unchanged: each class by total.
+> - **Live screens. BUILT.** One per platform hanging over the white line facing the warm-up area, and one per platform at
+>   the front facing the stands (in the banner's band, the banner narrowed to fit), each showing that platform's lifter
+>   and their live minigame like its video wall.
+> - **Benches for 40, nobody inside anybody. [DECIDED BY THE USER, 2026-11-18]** ("the tied lifters spawn extremely
+>   close together, make sure for the bench it will always be big enough for 40 people to fit on them, without phasing
+>   through each others body, or being inside each other"). The seats were 1.95 studs apart and the slimmest body is
+>   2.74 wide. Now each platform has **one row of 10 seats, 4.4 studs apart** (the widest body build, 4.31 hand to
+>   hand, with a little air): 4 platforms x 10 = 40, Nationals' most. The row is four of the meet benches end to end
+>   (each a tenth bigger), set back from the chalk stand, with 8 studs open between one platform's row and the next. A
+>   small field sits together, by the caller. (Claude read "40 people" as the hall's 40 lifters, 10 a platform; say if
+>   it meant 40 on every platform.)
+> - **Nobody walks through anybody. [DECIDED BY THE USER, 2026-11-18]** ("every frame you can see the characters
+>   phasing through each other even when they are walking. fix that make sure they are shoulder to shoulder not inside
+>   each other, and make sure their is a separation between the walk"):
+>   - **A lane** runs along each bench row, clear of the knees of the lifters sitting and of the chalk stand, the caller
+>     and the coach (the coach rests 1.5 studs nearer the backdrop for it). A lifter leaving their seat steps straight
+>     out to the lane, walks along it, and only then turns off; one coming back walks the lane to the spot in front of
+>     their seat and **steps back** to the bench.
+>   - **At a lift-off the tied lifters stand on that lane, shoulder to shoulder**: each takes their own body's width
+>     with 0.3 of air to the next, in the order they sit along the bench, so no two walks cross. They **get up one
+>     after another** (0.6 s apart, the one nearest the curtain first) and walk in a file; the same back to the bench.
+>   - Checked with the game's own walk maths on every pair of seats and both the slimmest and widest bodies (98 walks):
+>     nobody is ever inside anybody; the closest is two of the widest bodies sitting side by side (0.04 of air).
+> - **Lift-off cinematic. BUILT (2026-11-18), tested in Studio with one player; two players not yet.** For every medal
+>   tie: both tied lifters are put in a cinematic where the judge walks through the curtain to tell them together that
+>   they must lift off for that place; then they pick their lift. How it plays (about 28 s, on the tied lifters' screens
+>   only; everyone else in the hall just sees the judge walk):
+>   - **[DECIDED BY THE USER, 2026-11-18, after seeing the first version]** ("i see both people just get up then wait at
+>     the curtain. Make it where the ref comes through, looks at the two lifters, then they go to him, then he says what
+>     he has to say"): the tied lifters **stay on their bench** (anyone up and about is walked back to their seat first).
+>     The judge comes through the curtain, **stops and looks over at them**; they **get up and walk over** to stand side
+>     by side in front of the judge, who turns with them as they come; **then** the judge speaks. The crowd comes up as
+>     the tie is called.
+>   - **The judge is the platform's head referee**: gets up off the chair with the **score sheet** (the coach's
+>     clipboard, in the left hand), walks along the stage's front behind the side referee, down the stage's side, along
+>     the walkway behind it and **through the curtain's split** (the curtain parts, as for a lifter).
+>   - **Seven shots:** the tied lifters on their bench from in front ("74 KG · LEVEL ON 512.5 KG / TIED FOR 1ST PLACE");
+>     the judge standing at the chair with the packed stands behind, turning to go; the judge coming down the stage's
+>     side toward the camera; in the lifters' zone as the curtain parts and the judge steps through, stops and looks
+>     over; from beside the judge as the lifters get up and walk across to them; from behind and above the lifters,
+>     between their shoulders, as the judge tells them; past the judge's shoulder onto the lifters' faces for the rules.
+>   - **What the judge says, shown in the bottom bar and SPOKEN** (user 2026-11-18: "tell elevenlabs to generate the
+>     same voice for the text": the announcer's own voice, since the announcer is the head judge; ElevenLabs "David -
+>     Sports Arena Announcer", firm, raising his voice over the packed arena). The words on screen and aloud are the
+>     same, so they carry no class, total or name (those are in the caption): "You finished dead level on total. First
+>     place goes to a lift-off." (a take each for First, Second and Third) then "One lift each, your choice: your best
+>     plus two and a half kilos. Miss while another makes it, and you are out." (Claude's wording, for the user to
+>     change.) Only the tied lifters hear it. The four recordings are uploaded and in the game (user 2026-11-18: "Yes,
+>     upload all").
+>   - Then the film look ends and the **3-button pick** comes up, the judge waiting in front of them. Once everyone has
+>     picked (or the 15 s run out) the lifters walk back to their benches and the judge walks back through the curtain
+>     and **sits down again** before the first lift-off attempt (the lift-off needs its head referee).
+>   - No lift-off, no cinematic: a meet placed on points has none. Nothing here changes a total or a place.
+> - **Opening cinematic. BUILT (2026-11-18), tested in Studio with one player, the announcer's microphone and speaking
+>   move uploaded and in (user: "Yes, upload all").** When the
+>   lifters enter the meet area: a flying camera tour of the venue; then a pan to the announcer (a judge) talking to the
+>   crowd under a spotlight, in a real voice: "Welcome ladies and gentlemen, to Central Nationals! Where these lifters will
+>   be in an all or nothing battle, competing for the Worlds invitation! This meet will begin shortly!"; he walks back to
+>   his seat; then back to the lifter, whose coach says (text only, no voice yet) either "Alright, no one is competing in
+>   your weight class today, so you will be judged based off points" or "Alright, there is your competition [the
+>   competitors highlighted]. We are going to play it smart, win this meet and get you your invitation". How it plays
+>   (about 35 s, on every lifter's own screen, with SKIP in the corner; spectators see and hear the announcer in the hall):
+>   - **When:** the lifters sit down on their benches, the weigh-in shows (6 s), then the opening, then the first round.
+>     (Claude's order: "This meet will begin shortly!" then runs straight into the meet.) It waits until the hall has
+>     fully arrived on every lifter's screen: a hall only just walked into shows its lights late, and the tour would fly
+>     through a black room. A lifter who walked in early waits for nothing; at most 35 s.
+>   - **A title card (4 s):** black, "NATIONAL CHAMPIONSHIP / CENTRAL NATIONALS", fading into the tour. (Claude's
+>     addition, and it has a job: the camera waits at the tour's start behind it while the hall's light settles, so the
+>     picture comes up on lit platforms.)
+>   - **The tour (10 s):** one flying move, from high over the far end of the main stand, down across the crowd and along
+>     the lit platforms, landing on the spectators' floor in front of the announcer.
+>   - **The announcer** is the head referee of the platform nearest the middle that has lifters: gets up, walks round the
+>     chair to stand between it and the barricades facing the stands, a spotlight comes on, and the recorded welcome plays
+>     over the hall's speakers for everyone in the hall (the words run in the bottom bar in step with it; the crowd
+>     cheers after "Central Nationals!" and at the end). Three shots: from the front with the lit platform behind; from
+>     behind him with the packed stands he is talking to (their lights up a little for it); close for the last line.
+>     He holds a **microphone** to his mouth in his closed right hand and talks with the open left arm in step with the
+>     words (wide to the crowd, up on "Nationals", back at the platforms on "these lifters", three beats on "all or
+>     nothing battle", up on "Worlds", an open palm and a nod on "begin shortly").
+>   - **Back to the seat:** he walks back to the chair and sits (the microphone goes away with him).
+>   - **The coach:** each lifter sees their platform's coach standing in front of THEIR seat, talking. Alone in the class
+>     on a points meet: the first line, over two shots. With rivals: "Alright, there is your competition." cuts to the
+>     rivals on the bench **outlined in yellow**, then back to the lifter's own face for "We are going to play it
+>     smart...". Rivals are the rest of their class, or everyone when the meet is on points.
+>   - **Claude's addition, for the user to change:** on a points meet a lifter whose class still has others in it hears
+>     "Alright, some classes are short today, so everyone here is judged on points. There is your competition." (the
+>     user's first line would be untrue for them).
+>   - Also changed with it: while nobody is on them the Nationals screens now say "CENTRAL NATIONALS / NATIONAL
+>     CHAMPIONSHIP" (they showed the Local meet's "OPEN / SIGN UP AT THE DESK / LOCAL MEET").
+> - **Voices** (user): every voice realistic, with emotion, in the context of a huge packed powerlifting meet; the Roblox
+>   text-to-speech caller is too robotic and can't say usernames.
 
 > **[IDEA, NOT TO BUILD YET: the user's planned first update after release, 2026-11-17] Spectating Nationals from a
 > server list.** When a Nationals begins, other players can join its server **to spectate only** (so the cheer bar still

@@ -65,6 +65,11 @@ export type Card = {
 	recordAttempt: { title: string, detail: string }?,
 }
 
+-- What a screen says while nobody is on it (the Local meet's words unless a venue gives its own: Nationals).
+export type Idle = { name: string, line: string, facts: { string } }
+local LOCAL_IDLE: Idle = { name = "OPEN", line = "SIGN UP AT THE DESK TO LIFT HERE",
+	facts = { "LOCAL MEET", "EVERYONE LIFTS TOGETHER", "MOST POINTS WIN" } }
+
 export type Handle = {
 	show: (card: Card?) -> (),
 	-- The screens themselves. A State meet's live minigame is drawn over them, on each player's device (MeetLiveScreen).
@@ -113,7 +118,8 @@ end
 
 -- Builds the display on `part`'s face looking along `out`, for platform `index`. `noSign`: leaves out the record attempt's
 -- floating sign, for a second screen of a rack that already has one.
-function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts: { string }, noSign: boolean?): Handle
+function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts: { string }, noSign: boolean?,
+	idle: Idle?): Handle
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "LifterDisplay"
 	gui.Face = StyledScreen.faceToward(part, out)
@@ -197,7 +203,7 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 	local factStart = 1
 	local function drawFacts()
 		if #factList == 0 then
-			facts.Text = "LOCAL MEET  //  GOOD LUCK"
+			facts.Text = (idle or LOCAL_IDLE).facts[1] .. "  //  GOOD LUCK"
 			return
 		end
 		local shown: { string } = {}
@@ -220,14 +226,15 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 	handle.guis = { gui }
 	function handle.show(card: Card?)
 		if card == nil then
-			name.Text = "OPEN"
-			classLine.Text = "SIGN UP AT THE DESK TO LIFT HERE"
+			local words = idle or LOCAL_IDLE
+			name.Text = words.name
+			classLine.Text = words.line
 			forecast.Text = ""
 			bests.Text = ""
 			statusBox.Visible = false
 			sign.Enabled = false
 			strip.BackgroundColor3, facts.TextColor3 = S.yellow, S.ink
-			factList = { "LOCAL MEET", "EVERYONE LIFTS TOGETHER", "MOST POINTS WIN" }
+			factList = table.clone(words.facts)
 			factStart = 1
 			drawFacts()
 			return
@@ -272,14 +279,18 @@ function LifterDisplay.build(part: BasePart, out: Vector3, index: number, lifts:
 	return handle
 end
 
--- Two screens that show the same thing.
+-- Two screens (or groups of screens) that show the same thing; every one of their screens gets the live minigame too.
 function LifterDisplay.together(first: Handle, second: Handle): Handle
+	local guis = table.clone(first.guis)
+	for _, gui in ipairs(second.guis) do
+		table.insert(guis, gui)
+	end
 	return {
 		show = function(card: Card?)
 			first.show(card)
 			second.show(card)
 		end,
-		guis = { first.guis[1], second.guis[1] },
+		guis = guis,
 	}
 end
 

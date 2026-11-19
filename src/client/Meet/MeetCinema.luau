@@ -270,6 +270,14 @@ function MeetCinema.subtitle(line: string?)
 	end
 end
 
+-- What someone else says, in the bottom bar: "HEAD JUDGE:  ..." (nil: nothing).
+function MeetCinema.says(who: string, line: string?)
+	local current = screen
+	if current then
+		current.subtitle.Text = if line then who .. ":  " .. line else ""
+	end
+end
+
 -- A line of its own in the bottom bar (no "COACH:"), e.g. what to press; nil: nothing.
 function MeetCinema.line(text: string?)
 	local current = screen
