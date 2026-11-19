@@ -7179,6 +7179,9 @@ Claude's four suggestions accepted (user: "I agree with one ... two as well ... 
   normal size.
 - Roblox can't morph a body gradually, so the look changes in steps. **For later polish (user):
   more than five set builds**, so players don't all share the same five.
+- **Idea for later (user, 2026-11-18, not designed):** after trying the weight goal: "make even more
+  fatter, bigger, wider, builds". Heavier, wider builds past Fat and Big and buff for the top of
+  the weight range (bodyweight now reaches 125 kg, §38.3).
 - Style: **one smooth body, no gaps at the joints** (user's pick over chunky pieces), made in
   Blender and uploaded.
 
