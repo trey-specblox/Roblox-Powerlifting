@@ -23,6 +23,13 @@ Then "Yes, fix State": the State arena's benches got the same fix (the bullet af
 with one player in a real State meet + the walk maths). Then the user published and tested on their phone: Nationals
 kept teleporting them back, and the EXIT button was easy to tap by accident (both fixed, next bullet). NEXT: publish
 again and test Nationals on the phone; the user's two-player test of the benches, walks and notices.**
+- NATIONALS IS LIVE IN THE CODE (2026-11-18, after commit ca21194 was pushed and published; the user: "I live checked 1.
+  Everything is good, 2 is tested too its good"): `NationalsConfig.Live = true` (every spot-holder sees it, a Nationals
+  every 2 hours, 2 lifters to gather and to run the meet; the desk on the Nationals concourse is built for everyone).
+  NOT COMMITTED, NOT PUBLISHED yet. THE USER must also set the place's Max Players to 40 or more (Creator Dashboard >
+  the experience > Places > the place > Configure / Settings > Server Fill / Max Players), so a full Nationals fits.
+  The computer lifters' gear and weight gain/loss went to their own session (task "Computer lifters wear gear, then
+  gaining and losing weight").
 - SIDE MENUS OFF ON THE TURN (2026-11-18, user after the phone test: "Mobile is good, a update for all platforms,
   when someone is walking to the platform to lift, make sure the UI's disappear like the gear, teleport etc. and make
   sure keyboard players cant press a short cut-key to pop it up"; GAME_DESIGN §31.6). `src/client/UI/MenuKeys.luau`

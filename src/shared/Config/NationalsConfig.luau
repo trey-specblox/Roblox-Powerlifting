@@ -20,12 +20,14 @@
 local NationalsConfig = {}
 
 --[[
-	LIVE = false until step 2 (the meet itself) is built: in a live server only admins (AdminService's
-	list) see the NATIONALS row and desk, so the cross-server teleport can be tested in the real game
-	without sending real players to an empty arena. In Studio it is always on. Turning it on is the
-	user's decision.
+	LIVE: true = open to every player who holds a spot: the NATIONALS row and the desk for everyone, a Nationals
+	every CycleSeconds (2 hours), MinimumLifters (2) to gather and MeetMinimumLifters (2) to run the meet.
+	false = the admins' and testers' test mode (only they see it, every TestCycleSeconds, 1 lifter is enough).
+	In Studio it is always on. TURNED ON by the user's decision, 2026-11-18, after their live phone test and
+	two-player test ("Everything is good, 2 is tested too its good"). Needs the place's Max Players at
+	MaxLifters (40) or more (Creator Dashboard), so a full Nationals fits in its one server.
 ]]
-NationalsConfig.Live = false
+NationalsConfig.Live = true
 
 --[[
 	TESTERS (user 2026-11-17: other accounts, e.g. on a phone, couldn't see Nationals): while not Live, these accounts

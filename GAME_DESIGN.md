@@ -7273,6 +7273,10 @@ after two shoulder fixes the user approved: **"Yes, looks good."** This replaces
 
 ## 39. Nationals (user, 2026-11-17, picked from options)
 
+> **LIVE FOR EVERYONE [DECIDED BY THE USER, 2026-11-18]** after their live phone test and a two-player test ("Everything
+> is good, 2 is tested too its good"): `NationalsConfig.Live = true`. Every spot-holder sees Nationals, one every 2
+> hours, at least 2 lifters. (The "NOT LIVE YET" notes below are history.)
+
 The step after State (§35.4): this settles §35.8's "Not decided here: Nationals itself". Entry is the **Nationals spot**
 (§36.4: 10 top-3 State placings in a class; built 2026-11-17). Real players only (§37, [FINAL]); cheering and the big
 presentation apply, as at State and up (§36.4). Numbers marked **[PROVISIONAL]** are starting values.
