@@ -14,7 +14,8 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **NATIONALS: THE TWO CINEMATICS (2026-11-18, the Fable session; GAME_DESIGN §39 "Lift-off cinematic" and "Opening
-cinematic"). BUILT, TESTED IN STUDIO (one player, pictures and numbers, no errors). NOT COMMITTED (last commit c1ee9d8).
+cinematic"). BUILT, TESTED IN STUDIO (one player, pictures and numbers, no errors). COMMITTED in a1a455d (2026-11-18,
+with everything below in this block: benches, walks, notices, phone screens, side menus on the turn).
 THE THREE UPLOADS ARE DONE AND IN (user: "Yes, upload all"): the announcer's microphone, his speaking animation and
 the lift-off judge's four voice lines. The user then tested with two players: "the voice is good", and asked for the
 three fixes in the next bullet (DONE, tested in Studio with one player + the game's walk maths; NOT with two players).
@@ -207,7 +208,7 @@ again and test Nationals on the phone; the user's two-player test of the benches
   stop answering, reconnect them (restart that session's Roblox Studio connector).
 
 **NATIONALS: SAME CLASS SAME PLATFORM, POINTS MODE, LIVE SCREENS (2026-11-18; GAME_DESIGN §39 "Platforms, points,
-screens and two cinematics"). BUILT, UPLOADED, TESTED IN STUDIO (one player). NOT COMMITTED (last commit c1ee9d8).
+screens and two cinematics"). BUILT, UPLOADED, TESTED IN STUDIO (one player). COMMITTED in a1a455d.
 The two cinematics that were NEXT here are the block above.**
 - Announcer welcome line DONE: ElevenLabs eleven_v4, voice "David - Sports Arena Announcer", shouted with excitement to a
   packed arena (user: realistic voices with emotion, never robotic). 2 takes, 438 credits; words checked with local
