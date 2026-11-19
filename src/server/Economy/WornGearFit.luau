@@ -300,7 +300,27 @@ function WornGearFit.dressCartoon(character: Model, worn: { [string]: string }, 
 			copy.CastShadow = false
 			local offset = at:ToObjectSpace(piece.CFrame)
 			copy.CFrame = bodyPart.CFrame * offset
-			if isLogo then
+			local bands = if isLogo then WornGearConfig.LogoBands[wornName :: string] else nil
+			if bands then
+				-- two patches in one piece (chest and back): one Texture per band, exactly one logo tile on it. A Texture's
+				-- tiles are counted from the middle of the piece's face, up and across (Studio 2026-11-18), so the tile is
+				-- moved by half its width (the band is centred) and up to the band's bottom edge.
+				copy.Transparency = 1
+				local logo = "rbxassetid://" .. tostring(WornGearConfig.LogoImageId)
+				local colour = item.colours[colourKey :: string] or Color3.new(1, 1, 1)
+				for _, band in ipairs(bands) do
+					local texture = Instance.new("Texture")
+					texture.Name = "Logo" .. band.face.Name
+					texture.Texture = logo
+					texture.Color3 = colour
+					texture.Face = band.face
+					texture.StudsPerTileU = band.width
+					texture.StudsPerTileV = band.height
+					texture.OffsetStudsU = band.width / 2
+					texture.OffsetStudsV = if band.top then copy.Size.Y / 2 - band.height else -copy.Size.Y / 2
+					texture.Parent = copy
+				end
+			elseif isLogo then
 				-- the patch itself is invisible; the CENTRAL logo goes on it tinted in the item's colour for this key
 				copy.Transparency = 1
 				local decal = Instance.new("Decal")

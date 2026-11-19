@@ -5,8 +5,10 @@
 
 	The PLAYER STATS screen (GAME_DESIGN "One UI style for the whole game",
 	user 2026-10-28: "the last photo should be the stat visual"; opened "a key
-	plus a button"). Built from UIStyle. It only shows what the server answers
-	(StatsRemotes.GET_MY_STATS, a read-only snapshot); it changes nothing.
+	plus a button"). Built from UIStyle. It shows what the server answers
+	(StatsRemotes.GET_MY_STATS, a read-only snapshot). The one thing it can ask
+	to change is the player's weight goal (GOAL button, StatsRemotes.
+	SET_WEIGHT_GOAL, GAME_DESIGN §38.3); the server decides.
 
 	Opening: press OPEN_KEY (not while typing), or the STATS tab on the left edge
 	of the screen (phones). OPEN_KEY again, BACK, or the tab closes it.
@@ -32,6 +34,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ProgressionConfig = require(Shared:WaitForChild("Config"):WaitForChild("ProgressionConfig"))
 local CoinConfig = require(Shared:WaitForChild("Config"):WaitForChild("CoinConfig"))
 local StatsRemotes = require(Shared:WaitForChild("Stats"):WaitForChild("StatsRemotes"))
+local BodyweightConfig = require(Shared:WaitForChild("Config"):WaitForChild("BodyweightConfig"))
+local WeightClass = require(Shared:WaitForChild("Progression"):WaitForChild("WeightClass"))
+local GymRecordAnnouncer = require(script.Parent.Parent:WaitForChild("Meet"):WaitForChild("GymRecordAnnouncer"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local ChampionBadge = require(script.Parent:WaitForChild("ChampionBadge"))
@@ -135,8 +140,14 @@ function StatsScreen.start()
 	nameText.Text = player.DisplayName
 	local classText = UIStyle.text(body, "Class", UDim2.fromOffset(24, 314), UDim2.fromOffset(230, 30), SIZES.heading,
 		C.yellow, UIStyle.heading(), Enum.TextXAlignment.Center)
-	local weightText = UIStyle.text(body, "Bodyweight", UDim2.fromOffset(24, 348), UDim2.fromOffset(230, 48), SIZES.body,
+	local weightText = UIStyle.text(body, "Bodyweight", UDim2.fromOffset(24, 346), UDim2.fromOffset(230, 26), SIZES.body,
 		C.white, nil, Enum.TextXAlignment.Center)
+	-- The weight goal (GAME_DESIGN §38.3): MAINTAIN, or bulk / cut to a class; pressing it opens the goal list.
+	local openGoals: () -> () = function() end
+	local goalButton = UIStyle.button(body, "WeightGoal", "GOAL: MAINTAIN", UDim2.fromOffset(34, 374), UDim2.fromOffset(210, 30),
+		"outline", function()
+			openGoals()
+		end)
 	-- The coins (GAME_DESIGN 30.6), under the bodyweight.
 	local coinsText = UIStyle.text(body, "Coins", UDim2.fromOffset(24, 410), UDim2.fromOffset(230, 30), SIZES.heading,
 		C.yellow, UIStyle.heading(), Enum.TextXAlignment.Center)
@@ -248,6 +259,118 @@ function StatsScreen.start()
 		end
 	end
 
+	-- The goal list (GAME_DESIGN §38.3), over the avatar like the badge list: MAINTAIN, then every class. The server
+	-- decides; a goal that leaves a class holding a Nationals/Worlds spot comes back asking to confirm.
+	local refreshStats: () -> () = function() end
+	local shownWeight, shownTarget = 0, 0
+	local goalList = UIStyle.frame(body, "GoalList", UDim2.fromOffset(16, 16), UDim2.fromOffset(266, 470), C.navyDeep)
+	goalList.ZIndex = 20
+	goalList.Visible = false
+	UIStyle.stroke(goalList, C.yellow, 2)
+	local goalHead = UIStyle.text(goalList, "Head", UDim2.fromOffset(12, 8), UDim2.new(1, -56, 0, 30), SIZES.body, C.yellow,
+		UIStyle.heading())
+	goalHead.ZIndex = 21
+	goalHead.Text = "WEIGHT GOAL"
+	local goalClose = UIStyle.button(goalList, "Close", "X", UDim2.new(1, -40, 0, 6), UDim2.fromOffset(32, 32), "outline",
+		function()
+			goalList.Visible = false
+		end)
+	goalClose.ZIndex = 22
+	local goalNote = UIStyle.text(goalList, "Note", UDim2.fromOffset(12, 362), UDim2.new(1, -24, 0, 62), SIZES.small, C.muted)
+	goalNote.ZIndex = 21
+	goalNote.TextWrapped = true
+	local GOAL_HINT = string.format("Moves about %d kg per full day of Competition Number training at a rack. "
+		.. "Your body's look updates when you respawn.", BodyweightConfig.KgPerFullTrainingDay)
+	local pendingGoal: string? = nil
+	local confirmButton: TextButton
+	local sending = false
+	local function sendGoal(goal: string, confirmed: boolean)
+		if sending then
+			return
+		end
+		sending = true
+		local ok, reply = pcall(function()
+			return remotes.setWeightGoal:InvokeServer(goal, confirmed)
+		end)
+		sending = false
+		local answer = if ok and typeof(reply) == "table" then reply :: StatsRemotes.WeightGoalReply else nil
+		if answer == nil then
+			goalNote.Text = "Couldn't reach the server. Try again."
+			goalNote.TextColor3 = C.red
+			return
+		end
+		if answer.outcome == "NeedsConfirm" then
+			pendingGoal = goal
+			goalNote.Text = answer.message
+			goalNote.TextColor3 = C.yellow
+			confirmButton.Visible = true
+			return
+		end
+		pendingGoal = nil
+		confirmButton.Visible = false
+		goalNote.Text = answer.message
+		goalNote.TextColor3 = if answer.outcome == "Set" then C.white else C.red
+		if answer.outcome == "Set" then
+			refreshStats()
+		end
+	end
+	confirmButton = UIStyle.button(goalList, "Confirm", "CHANGE CLASS ANYWAY", UDim2.fromOffset(12, 426),
+		UDim2.new(1, -24, 0, 34), "danger", function()
+			if pendingGoal then
+				sendGoal(pendingGoal, true)
+			end
+		end)
+	confirmButton.ZIndex = 22
+	confirmButton.Visible = false
+	local goalRows: { [string]: TextButton } = {}
+	local choices = { BodyweightConfig.Maintain }
+	for _, label in ipairs(BodyweightConfig.classLabels()) do
+		table.insert(choices, label)
+	end
+	for index, goal in ipairs(choices) do
+		local text = if goal == BodyweightConfig.Maintain then "MAINTAIN" else string.upper(goal) .. " CLASS"
+		local row = UIStyle.button(goalList, "Goal_" .. goal, text, UDim2.fromOffset(12, 44 + (index - 1) * 35),
+			UDim2.new(1, -24, 0, 31), "outline", function()
+				pendingGoal = nil
+				confirmButton.Visible = false
+				sendGoal(goal, false)
+			end)
+		row.ZIndex = 22
+		goalRows[goal] = row
+	end
+	-- Which row is the goal now: MAINTAIN when the target is the weight they have, else the class of the target.
+	local function goalNow(): string
+		if math.abs(shownTarget - shownWeight) < 0.05 then
+			return BodyweightConfig.Maintain
+		end
+		return WeightClass.resolve(shownTarget).label
+	end
+	local function markGoals()
+		local current = goalNow()
+		local here = WeightClass.resolve(math.max(shownWeight, 1)).label
+		for goal, row in pairs(goalRows) do
+			local picked = goal == current
+			row.BackgroundColor3 = if picked then C.yellow else C.navyDeep
+			row.TextColor3 = if picked then C.ink else (if goal == here then C.yellow else C.white)
+		end
+	end
+	openGoals = function()
+		badgeList.Visible = false
+		pendingGoal = nil
+		confirmButton.Visible = false
+		goalNote.Text = GOAL_HINT
+		goalNote.TextColor3 = C.muted
+		markGoals()
+		goalList.Visible = not goalList.Visible
+	end
+	-- The button's words: what the body is doing now.
+	local function goalText(): string
+		if math.abs(shownTarget - shownWeight) < 0.05 then
+			return "GOAL: MAINTAIN"
+		end
+		return string.format("GOAL: %s TO %.1f KG", if shownTarget > shownWeight then "BULK" else "CUT", shownTarget)
+	end
+
 	-- Middle: Competition Number and Scale.
 	local middleX = 290
 	UIStyle.sectionHead(body, "CNHead", "COMPETITION NUMBER", UDim2.fromOffset(middleX, 40), 236, 300, "bar")
@@ -354,7 +477,12 @@ function StatsScreen.start()
 
 	local function draw(snapshot: StatsRemotes.StatsSnapshot)
 		classText.Text = string.upper(snapshot.classLabel) .. " CLASS"
-		weightText.Text = string.format("Bodyweight %.1f kg\nTarget %.1f kg", snapshot.bodyweightKg, snapshot.targetKg)
+		weightText.Text = string.format("Bodyweight %.1f kg", snapshot.bodyweightKg)
+		shownWeight, shownTarget = snapshot.bodyweightKg, snapshot.targetKg
+		goalButton.Text = goalText()
+		if goalList.Visible then
+			markGoals()
+		end
 		coinsText.Text = string.format("%s %s", CoinConfig.format(snapshot.coins or 0), CoinConfig.Name)
 		local titles = snapshot.titles or {}
 		titlesText.Text = if #titles > 0 then string.upper(table.concat(titles, "  ·  ")) else ""
@@ -458,8 +586,12 @@ function StatsScreen.start()
 			loading.Text = "Stats are still loading. Try again in a moment."
 		end
 	end
+	refreshStats = function()
+		task.spawn(open)
+	end
 	local function toggle()
 		badgeList.Visible = false
+		goalList.Visible = false
 		if holder.Visible then
 			holder.Visible = false
 		else
@@ -468,6 +600,16 @@ function StatsScreen.start()
 	end
 
 	tab.Activated:Connect(toggle)
+	-- Training moved the weight into a new class or onto the goal (GAME_DESIGN §38.3): a line at the top of the screen,
+	-- and the panel catches up if it is open.
+	remotes.weightNews.OnClientEvent:Connect(function(text: any)
+		if typeof(text) == "string" then
+			GymRecordAnnouncer.note(text)
+			if holder.Visible then
+				refreshStats()
+			end
+		end
+	end)
 	UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		-- Not while typing in a box (chat, the meet's weight box, the deadlift typing).
 		if not MenuKeys.allowed(gameProcessed) then

@@ -6476,6 +6476,7 @@ way:
 | **Computer lifters never take a reward from a real player** | Prize-pot shares, ladder place points, titles and Local wins go by the **real lifters' order among themselves**. The pot counts real lifters only. The board still shows the full placing, computer lifters included. **[PROVISIONAL]** (follows from the decisions above) |
 | **What a meet with only 1 real player pays** | **Reduced**, so nobody farms an empty server: **coins for finishing and for 9/9**, **ladder points for finishing** (times the level), Competition Scale, and strength at half (§37.1). **No prize pot, no gym record bonus or wall entry, no titles, no Local win:** those still need **2 or more real players** |
 | **Meets with 2 or more real players** | Pay in full as before (§29.10, §30.6, §35.8), whether or not computer lifters fill the rest |
+| **What they wear** (user, 2026-11-01 idea, approved 2026-11-12: "Computer lifter yes they can have random gear") | **Random shop gear over a tee**, fitted to their own body build exactly like a player's: always a singlet, a belt 85% of the time, knee sleeves 75%, wrist wraps 60% (`LocalMeetConfig.ComputerLifters.GearChances`). Any colour from the shop, CENTRAL on every logo. **Never a rare suit or knee wraps** (meet drops only, §35.12). Picked once when the body is made, so the look stays the same for the whole meet |
 
 **[WOULD CHANGE, follows from the above]:**
 
@@ -6686,7 +6687,7 @@ at bench.
 | **Minigame panels** | **See-through**, so the lift behind them shows. |
 | **The weight-choosing panel** | **In the middle of the screen.** |
 | **Menu hot keys** | C, T and Y no longer open STATS, TELEPORT or GEAR **during a lift** (they hid the deadlift lockout while typing). |
-| **Computer lifters** | Do the same lift: the same setup, unrack and stages over their lift time, the same finish. Still to do: real avatars, emotes and random gear. |
+| **Computer lifters** | Do the same lift: the same setup, unrack and stages over their lift time, the same finish. Still to do: emotes. (Real avatars and random gear are built since: §37.2 "What they wear", §38.4.) |
 | **Fail animations** | Still to make. The user will send a video of a real meet's fail as the reference: a squat stuck at the bottom, a bench sinking, a deadlift's soft knees. Like all animations, they are made in Blender and published in Studio under the game's group. The squat's step-back and the bench unrack are approximations until their own animations are made the same way. |
 
 > **Built (2026-11-01): the changes above** (except the fail animations,
@@ -7171,9 +7172,8 @@ Claude's four suggestions accepted (user: "I agree with one ... two as well ... 
   with small per-part width/depth steps between them. Each is resized to the lifter's bodyweight.
 - **Two separate axes (user's pick, 2026-11-13):** muscle level from PP (Low under 0.35, Mid
   0.35-0.70, High from 0.70; the top looks held for PP 0.95-1.10+) and fat from bodyweight over
-  that muscle level's lean weight (about 66 / 83 / 105 kg). Until Bulk / Maintain / Cut (§38.3)
-  exists, bodyweight only moves through the admin panel, so the fat axis mostly shows on
-  computer lifters. The exact thresholds are tuned when the bodies are built (art doc §5).
+  that muscle level's lean weight (about 66 / 83 / 105 kg). Bodyweight moves through the weight
+  goal (§38.3, built 2026-11-18) and the admin panel. The exact thresholds are tuned when the bodies are built (art doc §5).
 - **Height in the torso (user's pick, 2026-11-13):** the R15 block rig's leg length (HipHeight
   2.0), the torso about x1.35 and the arms x1.2 of the block rig; the player's own head at its
   normal size.
@@ -7191,15 +7191,29 @@ Claude's four suggestions accepted (user: "I agree with one ... two as well ... 
 - **Being heavier never adds strength at once** (accepted). The heavy "buff" is the faster
   gains a heavier class already gives (§29.3's Hill curve: further from the reference, faster
   gains), so bulking, grabbing strength and cutting back can't be abused (§29.11).
-- Amounts per session: to be designed and approved before building.
+- ~~Amounts per session: to be designed and approved before building.~~ **Designed and approved below
+  (user, 2026-11-18, picked from options).**
+
+#### The design (user, 2026-11-18, picked from Claude's options)
+
+| Question | Decision |
+|---|---|
+| **How the lifter chooses** | **Pick a goal class** (Claude's recommendation, picked): on the STATS screen, MAINTAIN or a goal weight class. The body moves to **just under that class's limit** (the limit minus 0.5 kg: 73.5 kg for the 74 kg class; 125 kg for 120+, all of it cosmetic over 120, §29.11) and **stops there**, so nobody drifts into the wrong class or lands 0.1 kg over a limit at a weigh-in. Choosing the class you are in fills you out to its top. MAINTAIN holds the weight you have. Stored in the save's existing `bodyweight.targetKg` (no new player data) |
+| **How fast** | **Fast: 2 kg per full day of training** (user's pick over Claude's 1 kg; Claude warned it makes changing class cheap). Tied to **Competition Number training at the racks**: the weight moves 0.5 kg for each EV earned, and a full day is the daily cap of 4.00 EV (about 4 hours over the lifts), so the daily cap is also the weight cap. The same speed up and down. **Meets, technique training and practice lifts never change weight** (technique has no daily cap, so it can't carry a "per day" speed). One class (7-15 kg apart) is about 4-8 full training days |
+| **A spot in the class you leave** | **Stays in its class** (Claude's recommendation, picked): Nationals and Worlds spots, ladder points and State qualifications are kept per class (as saved since versions 17, 27, 28) and wait there. To use a spot, weigh in for that class (§32.7's weigh-in snapshot). **Before a goal would take you out of a class where you hold a Nationals or Worlds spot, the game warns you and asks you to confirm** |
+| **Records and bests** | Unchanged: gym records and each class's best Total stay in the class they were set in (§29.11, §31.6) |
+| **Strength** | Unchanged: §29.11's builds (moving up keeps your kilos, coming back restores that class exactly, every class you pass through gets a build). Weight never adds strength at once (above) |
+| **The body** | The look follows the new weight through the approved build rules (§38.1, §38.2: more weight without more strength looks softer). ~~A new build shows the next time the character spawns.~~ **Live (user, 2026-11-18: "Yes, make it live"):** when training moves the weight into another build, the character is remade on the spot with the new body (clothes and gear back on) **as soon as the lifter is free**: not lifting, not in a meet or Mock Meet, not posed at a rack, not on a cardio machine, not seated. In practice: the moment they step away from the rack. At most once every 20 s. (A change of build from strength alone still shows at the next spawn.) |
+| **News** | A line at the top of the screen when the lifter enters a new class and when they reach their goal (Claude's default while building) |
 
 ### 38.4 Order
 
 1. The bodies and the look formula (looks only), starting with one average body tested on a
    player and a computer lifter: gear fit, the bar in the hands, the head clear of the squat bar.
 2. The other four builds.
-3. Bulk / Maintain / Cut (§38.3).
-4. Random gear on computer lifters (user approved, 2026-11-12), fitted to the new bodies.
+3. Bulk / Maintain / Cut (§38.3). **Built 2026-11-18 as the weight goal on STATS, tested in Studio.**
+4. Random gear on computer lifters (user approved, 2026-11-12), fitted to the new bodies. **Built 2026-11-16,
+   checked on all six builds in a Studio meet 2026-11-18** (§37.2 "What they wear").
 
 ### 38.5 The realistic skeleton (user, 2026-11-12, picked from pictures)
 

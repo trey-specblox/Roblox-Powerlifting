@@ -8,8 +8,14 @@
 	Competition Number and Competition Scale per lift and the best meet Total
 	(all from the build of the current class), and every trainable
 	technique stat as its effective value (through TechniqueCurve, the one
-	curve). It never writes anything and never answers about another player.
-	A player may ask at most once every MIN_SECONDS_BETWEEN_ASKS.
+	curve). The snapshot never writes anything and never answers about another
+	player. A player may ask at most once every MIN_SECONDS_BETWEEN_ASKS.
+
+	The one thing the STATS screen may change is the player's own weight goal
+	(StatsRemotes.SET_WEIGHT_GOAL, GAME_DESIGN §38.3), through
+	PlayerDataService.setWeightGoal; never the weight itself. It also sends
+	the WEIGHT_NEWS lines when training moves the weight into a new class or
+	onto the goal.
 ]]
 
 local Players = game:GetService("Players")
@@ -20,6 +26,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 local TrainingStationConfig = require(ConfigFolder:WaitForChild("TrainingStationConfig"))
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
+local BodyweightConfig = require(ConfigFolder:WaitForChild("BodyweightConfig"))
 local TechniqueCurve = require(Shared:WaitForChild("Difficulty"):WaitForChild("TechniqueCurve"))
 local WeightClass = require(Shared:WaitForChild("Progression"):WaitForChild("WeightClass"))
 local StatsRemotes = require(Shared:WaitForChild("Stats"):WaitForChild("StatsRemotes"))
@@ -33,6 +40,8 @@ local MIN_SECONDS_BETWEEN_ASKS = 0.5
 -- The most State Champion badges sent to the STATS screen (two years of monthly wins).
 local MAX_BADGES = 24
 local lastAsked: { [Player]: number } = {}
+local MIN_SECONDS_BETWEEN_GOALS = 0.5
+local lastGoal: { [Player]: number } = {}
 local started = false
 
 local function isNumber(value: unknown): boolean
@@ -135,8 +144,39 @@ function PlayerStatsService.start()
 		lastAsked[player] = now
 		return snapshotFor(player)
 	end
+
+	-- The weight goal (GAME_DESIGN §38.3). The client only asks; the type, the class and the spot warning are checked here
+	-- and in ProfileOperations.setWeightGoal.
+	remotes.setWeightGoal.OnServerInvoke = function(player: Player, goal: any, confirmed: any): StatsRemotes.WeightGoalReply
+		local now = os.clock()
+		if now - (lastGoal[player] or -math.huge) < MIN_SECONDS_BETWEEN_GOALS then
+			return { outcome = "Rejected", message = "One moment…" }
+		end
+		lastGoal[player] = now
+		if typeof(goal) ~= "string" or (goal ~= BodyweightConfig.Maintain and BodyweightConfig.goalKgFor(goal) == nil) then
+			return { outcome = "Rejected", message = "That isn't a weight class." }
+		end
+		local agreed = typeof(confirmed) == "boolean" and confirmed
+		local outcome, message, targetKg = PlayerDataService.setWeightGoal(player, goal, agreed)
+		return { outcome = outcome, message = message, targetKg = targetKg }
+	end
+
+	-- Training moved someone's weight: a line when they enter a new class or reach their goal.
+	PlayerDataService.onBodyweightChanged(function(player, change)
+		if not player.Parent then
+			return
+		end
+		if change.classAfter ~= change.classBefore then
+			remotes.weightNews:FireClient(player, string.format("You weigh %.1f kg: you're a %s lifter now.", change.afterKg,
+				change.classAfter))
+		elseif change.afterKg == change.targetKg then
+			remotes.weightNews:FireClient(player, string.format("Goal reached: %.1f kg. Holding it there.", change.afterKg))
+		end
+	end)
+
 	Players.PlayerRemoving:Connect(function(player)
 		lastAsked[player] = nil
+		lastGoal[player] = nil
 	end)
 end
 

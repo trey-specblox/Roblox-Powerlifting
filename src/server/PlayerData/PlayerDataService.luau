@@ -60,6 +60,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CelebrationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CelebrationConfig"))
 local LoadoutConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("LoadoutConfig"))
+local BodyweightConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("BodyweightConfig"))
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
 local ProfileOperations = require(script.Parent.ProfileOperations)
 
@@ -641,6 +644,25 @@ end
 	magnitude is the caller's to justify.
 ]]
 
+-- Called after training moved a player's bodyweight (GAME_DESIGN §38.3): the STATS service tells them about a new class
+-- or a reached goal.
+local bodyweightListeners: { (Player, ProfileOperations.BodyweightChange) -> () } = {}
+function PlayerDataService.onBodyweightChanged(listener: (Player, ProfileOperations.BodyweightChange) -> ())
+	table.insert(bodyweightListeners, listener)
+end
+
+--[[
+	Sets the player's weight goal (GAME_DESIGN §38.3): BodyweightConfig.Maintain or a weight class label, already
+	type-checked by the caller (PlayerStatsService, from the STATS screen's request). See ProfileOperations.setWeightGoal.
+]]
+function PlayerDataService.setWeightGoal(player: Player, goal: string, confirmed: boolean): (ProfileOperations.WeightGoalOutcome, string, number?)
+	local data = activeData(player, "setWeightGoal")
+	if data == nil then
+		return "Rejected", "Your save hasn't loaded yet.", nil
+	end
+	return ProfileOperations.setWeightGoal(data, goal, confirmed, os.time())
+end
+
 --[[
 	Applies `elapsedSeconds` of gym-station training on `lift`: debits the
 	account's daily allowance and awards the Competition Number it paid for, in
@@ -674,6 +696,23 @@ function PlayerDataService.awardTrainingProgression(
 	end
 
 	local result = ProfileOperations.applyTrainingProgression(data, lift, os.time(), elapsedSeconds)
+
+	-- Gaining or losing weight toward the lifter's goal (GAME_DESIGN §38.3): only with EV this award really granted.
+	if result.outcome == "Awarded" and result.earnedEV > 0 then
+		local speed = 1
+		if RunService:IsStudio() then
+			local studio = Workspace:GetAttribute(BodyweightConfig.StudioSpeedAttribute)
+			if typeof(studio) == "number" and studio > 0 and studio < math.huge then
+				speed = studio
+			end
+		end
+		local change = ProfileOperations.applyBodyweightChange(data, result.earnedEV, speed)
+		if change then
+			for _, listener in ipairs(bodyweightListeners) do
+				task.spawn(listener, player, change)
+			end
+		end
+	end
 
 	if result.outcome == "Rejected" then
 		warn(string.format(

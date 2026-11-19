@@ -14,12 +14,25 @@
 			(StatsSnapshot), or nil when their data is not loaded yet or they
 			asked too often. Nothing is ever written; no other player's data
 			can be asked for.
+
+		SetWeightGoal  RemoteFunction, client -> server (goal, confirmed)
+			GAME_DESIGN §38.3: `goal` is BodyweightConfig.Maintain or a weight
+			class label, `confirmed` a boolean (the player agreed to leave a
+			class that holds their Nationals/Worlds spot). The server checks
+			both and decides; it returns a WeightGoalReply. It can only set the
+			asking player's own goal, never their weight.
+
+		WeightNews  RemoteEvent, server -> client (text)
+			A line for the top of the screen: a new weight class, a goal
+			reached.
 ]]
 
 local StatsRemotes = {}
 
 StatsRemotes.FOLDER_NAME = "StatsRemotes"
 StatsRemotes.GET_MY_STATS = "GetMyStats"
+StatsRemotes.SET_WEIGHT_GOAL = "SetWeightGoal"
+StatsRemotes.WEIGHT_NEWS = "WeightNews"
 
 export type TechniqueView = {
 	stat: string,
@@ -58,8 +71,16 @@ export type StatsSnapshot = {
 	nationals: { placings: number, target: number, qualified: boolean, competed: boolean }?,
 }
 
+export type WeightGoalReply = {
+	outcome: string, -- "Set", "NeedsConfirm" or "Rejected"
+	message: string,
+	targetKg: number?,
+}
+
 export type RemoteSet = {
 	getMyStats: RemoteFunction,
+	setWeightGoal: RemoteFunction,
+	weightNews: RemoteEvent,
 }
 
 -- Creates the remote under ReplicatedStorage. Server only, called once.
@@ -72,26 +93,39 @@ function StatsRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		folder = created
 	end
 	assert(folder ~= nil)
+	local wanted = { [StatsRemotes.GET_MY_STATS] = "RemoteFunction", [StatsRemotes.SET_WEIGHT_GOAL] = "RemoteFunction",
+		[StatsRemotes.WEIGHT_NEWS] = "RemoteEvent" }
 	for _, child in ipairs(folder:GetChildren()) do
-		if child.Name ~= StatsRemotes.GET_MY_STATS then
+		if wanted[child.Name] ~= child.ClassName then
 			child:Destroy()
 		end
 	end
-	local remote = folder:FindFirstChild(StatsRemotes.GET_MY_STATS)
-	if remote == nil then
-		local made = Instance.new("RemoteFunction")
-		made.Name = StatsRemotes.GET_MY_STATS
-		made.Parent = folder
-		remote = made
+	local function get(name: string): Instance
+		local remote = (folder :: Instance):FindFirstChild(name)
+		if remote == nil then
+			local made = Instance.new(wanted[name])
+			made.Name = name
+			made.Parent = folder
+			remote = made
+		end
+		return remote :: Instance
 	end
-	return { getMyStats = remote :: RemoteFunction }
+	return {
+		getMyStats = get(StatsRemotes.GET_MY_STATS) :: RemoteFunction,
+		setWeightGoal = get(StatsRemotes.SET_WEIGHT_GOAL) :: RemoteFunction,
+		weightNews = get(StatsRemotes.WEIGHT_NEWS) :: RemoteEvent,
+	}
 end
 
 -- Waits for the remote to replicate. Client only.
 function StatsRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 	-- No time limit: the server makes this after building the gym, which takes a while (no "infinite yield" warning).
 	local folder = replicatedStorage:WaitForChild(StatsRemotes.FOLDER_NAME, math.huge) :: Instance
-	return { getMyStats = folder:WaitForChild(StatsRemotes.GET_MY_STATS) :: RemoteFunction }
+	return {
+		getMyStats = folder:WaitForChild(StatsRemotes.GET_MY_STATS) :: RemoteFunction,
+		setWeightGoal = folder:WaitForChild(StatsRemotes.SET_WEIGHT_GOAL) :: RemoteFunction,
+		weightNews = folder:WaitForChild(StatsRemotes.WEIGHT_NEWS) :: RemoteEvent,
+	}
 end
 
 return StatsRemotes

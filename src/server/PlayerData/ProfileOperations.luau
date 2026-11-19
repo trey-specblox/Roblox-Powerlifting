@@ -54,6 +54,9 @@ local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig")
 local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
 local LoadoutConfig = require(ConfigFolder:WaitForChild("LoadoutConfig"))
 local ClothesConfig = require(ConfigFolder:WaitForChild("ClothesConfig"))
+local BodyweightConfig = require(ConfigFolder:WaitForChild("BodyweightConfig"))
+local StartingValuesConfig = require(ConfigFolder:WaitForChild("StartingValuesConfig"))
+local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -2239,6 +2242,129 @@ function ProfileOperations.applyTechniqueTraining(
 		gains = gains,
 		after = after,
 	}
+end
+
+--[[
+	=========================================================================
+	BODYWEIGHT  (gaining and losing weight, GAME_DESIGN §38.3 "The design",
+	user 2026-11-18)
+	=========================================================================
+
+	The lifter's goal is `bodyweight.targetKg` (in the save since version 1):
+	MAINTAIN = the weight they have; a goal class = just under that class's
+	limit (BodyweightConfig.goalKgFor). `bodyweight.currentKg` moves toward it
+	only through applyBodyweightChange, which only PlayerDataService's training
+	award calls, with the EV the training allowance itself granted. The class
+	is never stored (it is the class of currentKg, derived on every read);
+	each class entered gets its build through PlayerProfileSchema.ensureBuild
+	(§29.11: first entry copies the closest lighter build, a return restores).
+	No yield anywhere.
+]]
+
+export type WeightGoalOutcome = "Set" | "NeedsConfirm" | "Rejected"
+
+local function usableBodyweight(data: ProfileData): any?
+	local bodyweight = (data :: any).bodyweight
+	if typeof(bodyweight) ~= "table" or not isFiniteNumber(bodyweight.currentKg) or bodyweight.currentKg <= 0 then
+		return nil
+	end
+	return bodyweight
+end
+
+--[[
+	Sets the lifter's goal: BodyweightConfig.Maintain (hold the weight they have) or a weight class label. A goal that
+	would take them out of the class they are in while that class holds a Nationals or Worlds spot needs `confirmed`
+	(the spot stays in its class, GAME_DESIGN §38.3); without it nothing changes and "NeedsConfirm" says why. Returns
+	the outcome, a line for the player, and the goal weight now saved (nil when rejected).
+]]
+function ProfileOperations.setWeightGoal(data: ProfileData, goal: any, confirmed: boolean, nowUnix: number)
+	: (WeightGoalOutcome, string, number?)
+	local bodyweight = usableBodyweight(data)
+	if bodyweight == nil then
+		return "Rejected", "Your bodyweight hasn't loaded yet.", nil
+	end
+	local current = bodyweight.currentKg
+	local here = PlayerProfileSchema.classKeyFor(current)
+	if goal == BodyweightConfig.Maintain then
+		bodyweight.targetKg = current
+		return "Set", string.format("Maintaining %.1f kg.", current), current
+	end
+	local goalKg = BodyweightConfig.goalKgFor(goal)
+	if goalKg == nil or here == nil then
+		return "Rejected", "That isn't a weight class.", nil
+	end
+	if goal ~= here and not confirmed and isFiniteNumber(nowUnix) then
+		local held = {}
+		if ProfileOperations.getNationals(data, here, nowUnix).qualified then
+			table.insert(held, "Nationals")
+		end
+		if ProfileOperations.getWorlds(data, here, nowUnix).qualified then
+			table.insert(held, "Worlds")
+		end
+		if #held > 0 then
+			return "NeedsConfirm", string.format(
+				"You hold a %s spot in the %s class. It stays there: to use it you'll have to weigh in at %s again.",
+				table.concat(held, " and a "), here, here), nil
+		end
+	end
+	bodyweight.targetKg = goalKg
+	local verb = if goalKg > current + 0.05 then "Bulking" elseif goalKg < current - 0.05 then "Cutting" else "Holding"
+	return "Set", string.format("%s to %.1f kg (the %s class) as you train.", verb, goalKg, goal :: string), goalKg
+end
+
+export type BodyweightChange = {
+	beforeKg: number,
+	afterKg: number,
+	targetKg: number,
+	classBefore: string,
+	classAfter: string,
+}
+
+--[[
+	Moves the bodyweight toward the goal for `earnedEV` of Competition Number training (BodyweightConfig.KgPerEV per EV,
+	times `speed`, 1 outside a Studio test), never past the goal. Returns what changed, or nil when nothing did (no EV,
+	at the goal already, or no usable bodyweight). SERVER-ONLY: the only caller is PlayerDataService's training award,
+	with the EV the allowance granted.
+]]
+function ProfileOperations.applyBodyweightChange(data: ProfileData, earnedEV: number, speed: number?): BodyweightChange?
+	local bodyweight = usableBodyweight(data)
+	if bodyweight == nil or not isFiniteNumber(earnedEV) or earnedEV <= 0 then
+		return nil
+	end
+	local current = bodyweight.currentKg
+	local target = bodyweight.targetKg
+	if not isFiniteNumber(target) or target <= 0 then
+		return nil
+	end
+	-- Never past the open class's goal or under the starting weight (a target saved by hand, the admin panel).
+	target = math.clamp(target, math.min(current, StartingValuesConfig.BodyweightKg), BodyweightConfig.OpenClassGoalKg)
+	if current == target then
+		return nil
+	end
+	local step = earnedEV * BodyweightConfig.KgPerEV * (if isFiniteNumber(speed) and (speed :: number) > 0 then speed :: number else 1)
+	local after = if target > current then math.min(target, current + step) else math.max(target, current - step)
+	local classBefore = PlayerProfileSchema.classKeyFor(current)
+	local classAfter = PlayerProfileSchema.classKeyFor(after)
+	if classBefore == nil or classAfter == nil then
+		return nil
+	end
+	bodyweight.currentKg = after
+	-- Every class passed through gets its build (§29.11), lightest first, so each copies the one below it.
+	local fromIndex, toIndex = nil, nil
+	for index, class in ipairs(WeightClassConfig.Classes) do
+		if class.label == classBefore then
+			fromIndex = index
+		end
+		if class.label == classAfter then
+			toIndex = index
+		end
+	end
+	if fromIndex and toIndex then
+		for index = math.min(fromIndex, toIndex), math.max(fromIndex, toIndex) do
+			PlayerProfileSchema.ensureBuild(data, WeightClassConfig.Classes[index].label)
+		end
+	end
+	return { beforeKg = current, afterKg = after, targetKg = target, classBefore = classBefore, classAfter = classAfter }
 end
 
 --[[

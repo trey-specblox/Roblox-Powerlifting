@@ -114,6 +114,10 @@ EmoteService.start()
 local GearService = require(script:WaitForChild("Economy"):WaitForChild("GearService"))
 GearService.start()
 
+-- A new body as soon as training moves the weight into another build (GAME_DESIGN §38.3), once the lifter is free.
+local BodyRefreshService = require(script:WaitForChild("Economy"):WaitForChild("BodyRefreshService"))
+BodyRefreshService.start()
+
 -- The admin panel: the server checks the account on every use (only for the accounts listed in AdminService).
 local AdminService = require(script:WaitForChild("Admin"):WaitForChild("AdminService"))
 AdminService.start()

@@ -46,6 +46,23 @@ WornGearConfig.LogoFaces = {
 	WornBenchShirt = Enum.NormalId.Back, WornLeverBelt = Enum.NormalId.Back, WornKneeSleeve = Enum.NormalId.Front,
 } :: { [string]: Enum.NormalId }
 
+--[[
+	Logo pieces that are TWO patches joined in one mesh: the singlet and the suits have a small logo on the chest (the top
+	of the piece's box) and a wider one on the back (the bottom of the box) (art/scripts/build_cartoon_gear_07.py,
+	front_patch: 0.46 x 0.12 front, 0.62 x 0.15 back). A Decal stretches the logo over the whole box, so the word landed
+	in the empty middle and showed on neither patch (Studio 2026-11-18). These get one Texture per band instead, sized to
+	the band (in studs, the same on every build) and moved onto it. `top` = the band's top is the box's top; otherwise its
+	bottom is the box's bottom. Measured in Studio on all six builds.
+]]
+export type LogoBand = { face: Enum.NormalId, width: number, height: number, top: boolean }
+local CHEST_AND_BACK: { LogoBand } = {
+	{ face = Enum.NormalId.Front, width = 0.46, height = 0.12, top = true },
+	{ face = Enum.NormalId.Back, width = 0.62, height = 0.15, top = false },
+}
+WornGearConfig.LogoBands = {
+	WornSinglet = CHEST_AND_BACK, WornSquatSuit = CHEST_AND_BACK, WornDeadliftSuit = CHEST_AND_BACK,
+} :: { [string]: { LogoBand } }
+
 function WornGearConfig.logoFace(worn: string, partName: string): Enum.NormalId
 	if worn == "WornWristWrap" then
 		return if string.find(partName, "^Left") then Enum.NormalId.Left else Enum.NormalId.Right

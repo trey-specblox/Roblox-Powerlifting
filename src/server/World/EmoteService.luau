@@ -51,7 +51,9 @@ local function busyReason(player: Player): string?
 	if character == nil or humanoid == nil or humanoid.Health <= 0 or root == nil or not root:IsA("BasePart") then
 		return "No character to emote with."
 	end
-	if root.Anchored or humanoid.Sit or character:GetAttribute("StationBarKg") ~= nil then
+	-- Posed at a training rack: StationPose (cleared when they leave it). Not StationBarKg, which only picks the rep sound
+	-- and is never cleared, so it refused every emote for the rest of the life after any rack training (Studio 2026-11-18).
+	if root.Anchored or humanoid.Sit or character:GetAttribute("StationPose") ~= nil then
 		return "Not right now."
 	end
 	return nil

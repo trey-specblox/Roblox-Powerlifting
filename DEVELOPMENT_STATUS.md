@@ -13,6 +13,72 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**GAINING AND LOSING WEIGHT BUILT (2026-11-18, same session; GAME_DESIGN §38.3 "The design", user picked: goal
+class, FAST 2 kg per full training day, spots stay in their class). TESTED IN STUDIO (one player). NOT COMMITTED.
+NEXT: the user tries the GOAL button on STATS in Studio, then decides on a commit/publish.**
+- `src/shared/Config/BodyweightConfig.luau` (NEW): KgPerFullTrainingDay 2 -> KgPerEV 0.5 (DailyCapEV 4), goal = class
+  limit - 0.5 (120+: 125), Studio-only workspace attribute StudioWeightSpeed multiplies the speed for tests.
+- `ProfileOperations.setWeightGoal` (Maintain or a class; "NeedsConfirm" when leaving a class that holds a Nationals or
+  Worlds spot, unless confirmed) and `applyBodyweightChange` (moves currentKg toward targetKg by earnedEV x KgPerEV,
+  never past it; ensureBuild for every class passed, lightest first). NO SCHEMA CHANGE: the goal is the save's existing
+  `bodyweight.targetKg` (version stays 28).
+- `PlayerDataService.awardTrainingProgression` moves the weight after an "Awarded" result with EV > 0 (CN training at
+  a rack only; technique, practice and meets never), and calls `onBodyweightChanged` listeners; `setWeightGoal` wrapper.
+- `StatsRemotes`: SetWeightGoal (RemoteFunction, goal + confirmed, type-checked and rate-limited in PlayerStatsService)
+  and WeightNews (RemoteEvent: "You weigh 59.6 kg: you're a 66 kg lifter now." / "Goal reached: ..."), shown with
+  GymRecordAnnouncer.note at the top of the screen.
+- `StatsScreen`: "Bodyweight X kg" on one line, a GOAL button under it ("GOAL: MAINTAIN" / "GOAL: BULK TO 73.5 KG"),
+  and a WEIGHT GOAL list over the avatar (MAINTAIN + all 8 classes, the goal filled yellow, your class in yellow text,
+  a hint, and the spot warning with CHANGE CLASS ANYWAY).
+- LIVE BODY (user: "Yes, make it live"): `src/server/Economy/BodyRefreshService.luau` (NEW, started in
+  init.server.luau after GearService). On PlayerDataService.onBodyweightChanged it compares LifterBodyService.buildFor
+  with the character's LifterBodyBuild; a different build waits until the player is free (no PlatformAttribute,
+  MockMeetSlot, lift attempt, anchored root, Sit, CardioMachine, StationPose or MeetLift), then LoadCharacter and
+  PivotTo where they stood (GearService's spawn path gives the new body, clothes, gear). At most once per 20 s per
+  player; no retry for the same change (no respawn loop). NOTE: the character attribute StationBarKg is set by
+  TrainingStationService and NEVER cleared (sound only), so it must not be read as "busy". EMOTE BUG FIXED (user:
+  "Yes, fix it"): EmoteService `busyReason` read StationBarKg, so after any rack training every emote was refused ("Not
+  right now.") until a respawn (reproduced in Studio). It now reads StationPose. Studio after the fix: Wave refused
+  while posed at the rack, plays after Stop/Close. TESTED IN STUDIO: goal 74 kg, rack training (StudioWeightSpeed set in Edit) -> 73.5 kg, body stayed
+  Skinny while posed; Stop/Close -> remade 0.6 s later as SkinnyFat, standing by the rack (not at the spawn), outfit
+  on, no errors. NOT TESTED: a phone, two players, leaving the rack by walking off instead of Stop.
+- TESTED IN STUDIO (one player, real rack training started by a real E press, StudioWeightSpeed 2000): goal 66 kg ->
+  "Bulking to 65.5 kg"; 53.0 -> 53.99 -> 56.77 -> 59.55 (66 kg class, news line) -> stopped exactly at 65.50 ("Goal
+  reached"); the 66 kg build kept the kilos (CN 25.03/25/25). Admin-set Nationals spot in 66 kg: goal 74 kg ->
+  NeedsConfirm with the warning (target unchanged), goal 66 kg (same class) -> Set, 74 kg confirmed -> Set; at 73.5 kg
+  (74 kg class) Nationals shows not qualified, cut back to 65.5 kg -> QUALIFIED again. A junk request -> Rejected. The
+  screen and the warning seen in a capture. No errors. NOT TESTED: a real day at normal speed, a phone (the list is
+  inside the stats panel, which fitToScreen scales), the body's new look after a respawn, two players, saving (Studio
+  has DataStores off).
+
+**COMPUTER LIFTERS' GEAR CHECKED + THE SINGLET/SUIT LOGO FIX (2026-11-18, the session "Computer lifters wear gear,
+then gaining and losing weight"; GAME_DESIGN §37.2 "What they wear", §38.4 step 4). NOT COMMITTED (the user commits).
+NEXT: the user looks at art/previews/ComputerLifterGear_Standing.jpg and _Lifting.jpg (and their own singlet in Studio).**
+- The gear itself was already built on 2026-11-16 (commit 23420eb: `ComputerLifters.spawnBody` -> `randomGear` ->
+  `GearService.dressFigure`; picked once per body, so the look holds for the whole meet). This session checked it in
+  Studio: one computer lifter of each build (Skinny, SkinnyFat, Fit, Fat, Muscular, BigBuff) through the real
+  spawnBody, close-ups front/back/left/right, and a real Local meet (meet 3 via the admin START, 1 player + 3 computer
+  lifters in different gear) through squat, bench and into the deadlift with no errors. Lifting poses were checked by
+  holding each build at the meet animation's key frames on open floor (squat bottom, bench chest, deadlift start), since
+  a running lift can't be paused; there the bar is not drawn and the bench pose stands upright (no bench). Every piece
+  sits on its body part (furthest 0.96-1.33 studs from the part's centre), no gear through the body seen.
+- BUG FOUND AND FIXED (players too): the singlet's and both rare suits' CENTRAL never showed, front or back. Their logo
+  piece is the chest patch (0.46 x 0.12, the top of the piece's box) and the back lettering (0.62 x 0.15, the bottom)
+  joined in one mesh (build_cartoon_gear_07.py front_patch); a Decal stretches the logo over the whole box, so the word
+  landed in the empty middle. FIX: `WornGearConfig.LogoBands` (WornSinglet, WornSquatSuit, WornDeadliftSuit) and
+  `WornGearFit.dressCartoon` puts one Texture per band on such a piece, sized to the band and moved onto it (a
+  Texture's tiles count from the middle of the face, up and across: found by test). Bands measured by raycasts on all
+  six builds' uploaded pieces (the same on every build). Belt, knee sleeve, wrap and bench shirt logos were already
+  single patches and unchanged. Checked on all six builds: CENTRAL on the chest and on the back, readable, one copy.
+  NOT CHECKED: the two suits in Studio (same numbers measured, same code), the shop/gear menu previews (they use
+  their own models, not this code).
+- COST: `LocalMeetConfig.FillToLifters` is 4, so at most 3 computer lifters per hall, 15 over the five halls when each
+  has one real player. Each is about 70-75 parts (body, clothes, 29-35 gear pieces), no shadows, no collision, the
+  meshes shared with players' gear (no new uploads). Two Textures more per singlet.
+- Test tool: `tools/studio/ComputerLifterGear_Test.luau` (server, play test, Hall 3 idle): one computer lifter per
+  build, in a line or held in a lift. Files changed: src/server/Economy/WornGearFit.luau,
+  src/shared/Config/WornGearConfig.luau, GAME_DESIGN.md, DEVELOPMENT_STATUS.md; new: the test tool; the two previews (art/previews is git-ignored, so they stay local).
+
 **NATIONALS: THE TWO CINEMATICS (2026-11-18, the Fable session; GAME_DESIGN §39 "Lift-off cinematic" and "Opening
 cinematic"). BUILT, TESTED IN STUDIO (one player, pictures and numbers, no errors). COMMITTED in a1a455d (2026-11-18,
 with everything below in this block: benches, walks, notices, phone screens, side menus on the turn).
