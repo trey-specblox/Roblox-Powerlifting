@@ -9,7 +9,8 @@
 	dust), and the celebrating player's screen runs its cinematic, if it has one.
 
 	Which celebration a lifter does is decided HERE (forPlayer / forComputer): a player's is the one saved in their data
-	(the Default until they spin at the celebration NPC, CelebrationSpinService); a computer lifter does the Default.
+	(the Default until they spin at the celebration NPC, CelebrationSpinService); a computer lifter does its own, picked
+	at random when its body is made (ComputerLifters).
 
 	PERFORMANCE: one animation track and a few short Sounds, made for the celebration and removed after it (the effects
 	are drawn on each player's own device, client CelebrationFx).
@@ -55,9 +56,20 @@ function CelebrationService.forPlayer(player: Player, attempt: number?): string
 	return PlayerDataService.getCelebration(player, attempt)
 end
 
--- A computer lifter's: the same rules as players (user 2026-11-11).
-function CelebrationService.forComputer(_body: Model?): string
+-- A computer lifter's: the same rules as players (user 2026-11-11): its own one, picked when its body was made
+-- (ComputerLifters, attribute "ComputerCelebration"; user 2026-11-01 "the same animations"); the Default without one.
+function CelebrationService.forComputer(body: Model?): string
+	local id = body and body:GetAttribute("ComputerCelebration")
+	if typeof(id) == "string" and CelebrationConfig.byId[id] then
+		return id
+	end
 	return CelebrationConfig.Default
+end
+
+-- Whether a celebration or miss reaction is playing on `figure` now.
+function CelebrationService.isPlaying(figure: Model?): boolean
+	local track = figure and playing[figure]
+	return track ~= nil and track.IsPlaying
 end
 
 -- After a miss (user 2026-11-15): now and then (CelebrationConfig.MissReactionChance) a miss reaction at random, for any

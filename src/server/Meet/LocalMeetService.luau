@@ -106,6 +106,7 @@ local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
 local CheerConfig = require(ConfigFolder:WaitForChild("CheerConfig"))
 local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
+local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
@@ -270,6 +271,8 @@ type Lifter = {
 	onScreen: boolean?,
 	-- It's their turn: they can't practise.
 	onTurn: boolean?,
+	-- A computer lifter standing on the podium (its emotes go on there: runComputerEmotes).
+	onPodium: boolean?,
 	-- A Nationals lift-off (GAME_DESIGN §39): picking its lift now, the lift picked, and an attempt in it under way (it
 	-- saves nothing: no history, best or record).
 	liftOffChoosing: boolean?,
@@ -1537,6 +1540,10 @@ end
 ]]
 local function startChalk(lifter: Lifter, lift: string, ritual: boolean?)
 	stopChalk(lifter)
+	-- (A computer lifter's emote ends as it starts chalking up: runComputerEmotes.)
+	if lifter.player == nil then
+		ComputerLifters.stopEmote(lifter.body)
+	end
 	local chalk = LocalMeetConfig.Chalk
 	lifter.chalkTrack = MeetChalk.play(characterOf(lifter), chalk.LifterAnimationId)
 	-- With the ritual, the lifter's loop starts where it reaches the coach's slaps as the coach gets round to their back
@@ -1695,11 +1702,16 @@ end
 	The fail animation a lifter plays for missing `lift` in part `part` (1 or 2:
 	its first or second minigame; GAME_DESIGN §37.5 "The fail animations"): a
 	player's own fail style in this attempt's slot (`attemptNumber`; won at Hype
-	Man, LoadoutConfig, user 2026-11-12); a computer lifter's is the default set.
+	Man, LoadoutConfig, user 2026-11-12); a computer lifter's own, picked when its body was made (ComputerLifters,
+	LocalMeetConfig.ComputerLifters.FailStyleWeights).
 ]]
 local function failAnimationFor(lifter: Lifter, lift: string, part: number, attemptNumber: number): StationAnimationConfig.Fail?
 	local player = lifter.player
-	local style = if player then PlayerDataService.getFailStyle(player, attemptNumber) else nil
+	local cpuStyle = if player == nil and lifter.body then lifter.body:GetAttribute(ComputerLifters.FailStyleAttribute)
+		else nil
+	local style = if player then PlayerDataService.getFailStyle(player, attemptNumber)
+		elseif typeof(cpuStyle) == "string" then cpuStyle
+		else nil
 	return StationAnimationConfig.failFor(lift, part, style)
 end
 
@@ -1851,6 +1863,103 @@ local function walkBack(lifter: Lifter, celebrate: (() -> number)?, overWalk: ((
 	task.delay(clear, function()
 		if lifter.walkToken == token and stillLifting(lifter) then
 			leave()
+		end
+	end)
+end
+
+--[[
+	A computer lifter's emotes while it waits (GAME_DESIGN §37.2, user 2026-11-01 "the same animations. and emotes n
+	stuff"; LocalMeetConfig.ComputerLifters.IdleEmotes, Claude's defaults waiting for the user's OK): now and then one
+	of its own emotes, only while it stands still at its waiting spot (never walking, out on the platform, chalking,
+	lifting, celebrating or seated) or on the podium. Runs for as long as its body is in this meet. PERFORMANCE: one
+	check every half second per computer lifter (at most 3 per hall); an emote is one short track.
+]]
+local EMOTE_CHECK_SECONDS = 0.5
+-- On the podium each computer lifter waves this long or less after it has settled there (a random moment).
+local PODIUM_WAVE_STAGGER_SECONDS = 2.5
+-- An emote starts only when the round is held up this much longer than the emote lasts.
+local EMOTE_SPARE_SECONDS = 0.5
+local function runComputerEmotes(current: Meet, lifter: Lifter)
+	local settings = LocalMeetConfig.ComputerLifters.IdleEmotes
+	local body = lifter.body
+	if lifter.player ~= nil or body == nil then
+		return
+	end
+	local function between(range: { number }): number
+		return cpuRandom:NextNumber(range[1], range[2])
+	end
+	-- The next round can't start for at least `seconds`: someone is still out on a platform (lifting, celebrating: the
+	-- walk back still to come) or has that long left of their walk back. A round starts, and everyone chalks up, the
+	-- moment the last lifter is back (Studio 2026-11-19: emotes begun just before that were cut off after a second).
+	local function roundHeldUpFor(seconds: number): boolean
+		for _, other in ipairs(current.lifters) do
+			if other ~= lifter and stillLifting(other) and (other.outOnPlatform or other.walking) then
+				local left = ComputerLifters.walkSecondsLeft(characterOf(other))
+				if (left == nil and other.outOnPlatform) or (left ~= nil and left >= seconds) then
+					return true
+				end
+			end
+		end
+		return false
+	end
+	local function free(): boolean
+		local figure = lifter.body
+		return figure ~= nil and figure.Parent ~= nil and current.hall.meet == current and stillLifting(lifter)
+			and (lifter.onPodium == true or not current.final)
+			and not lifter.walking and not lifter.outOnPlatform and lifter.liftAnim == nil and lifter.chalkTrack == nil
+			and lifter.seat == nil and not ComputerLifters.isWalking(figure) and not CelebrationService.isPlaying(figure)
+	end
+	-- When emote `id` may START: on the podium, or in a wait while the others finish that lasts the whole emote. (Not the
+	-- weigh-in: 6 s, straight into round 1's chalking.)
+	local function mayStart(id: string): boolean
+		local emote = EmoteConfig.byId[id]
+		return emote ~= nil and (lifter.onPodium == true or roundHeldUpFor(emote.seconds + EMOTE_SPARE_SECONDS))
+	end
+	task.spawn(function()
+		local nextAt = os.clock() + between(settings.FirstDelaySeconds)
+		local stillSince: number? = nil
+		local last: string? = nil
+		local waved = false
+		local waveAt: number? = nil
+		while lifter.body == body and body.Parent and current.hall.meet == current do
+			task.wait(EMOTE_CHECK_SECONDS)
+			if not free() then
+				stillSince = nil
+				-- (Its walk, chalk or lift ends an emote at once in ComputerLifters; this catches anything else.)
+				if ComputerLifters.isEmoting(body) then
+					ComputerLifters.stopEmote(body)
+				end
+				continue
+			end
+			local now = os.clock()
+			stillSince = stillSince or now
+			if ComputerLifters.isEmoting(body) or now - (stillSince :: number) < settings.SettleSeconds then
+				continue
+			end
+			-- On the podium: a wave to the crowd first (players there stand with their trophy and emote as they like), each at
+			-- its own moment (Studio 2026-11-19: two waving in the same instant looked robotic).
+			if lifter.onPodium and not waved then
+				waveAt = waveAt or now + cpuRandom:NextNumber(0, PODIUM_WAVE_STAGGER_SECONDS)
+				if now >= (waveAt :: number) then
+					waved = true
+					last = "Wave"
+					ComputerLifters.emote(body, "Wave")
+					nextAt = now + between(settings.GapSeconds) * 0.5
+				end
+				continue
+			end
+			if now < nextAt then
+				continue
+			end
+			-- (One that wouldn't finish before the round's chalking waits: another pick next check.)
+			local id = ComputerLifters.pickEmote(body, last, cpuRandom)
+			if id == nil or not mayStart(id) then
+				continue
+			end
+			nextAt = now + between(settings.GapSeconds)
+			if cpuRandom:NextNumber() < settings.Chance and ComputerLifters.emote(body, id) then
+				last = id
+			end
 		end
 	end)
 end
@@ -3849,9 +3958,10 @@ podiumAndAwards = function(current: Meet, v: LocalMeetVenue.Venue, classLabel: s
 		local spot = placing and placing.place and v.podiumSpots[placing.place]
 		local player = lifter.player
 		if spot and not lifter.withdrawn and player == nil then
-			-- A computer lifter in the top 3 stands on the podium too, without a trophy, cheering.
+			-- A computer lifter in the top 3 stands on the podium too, without a trophy: a wave to the crowd, then now and
+			-- then one of its own emotes (runComputerEmotes), as a player would; before, Roblox's stock cheer for 20 s.
 			ComputerLifters.moveBody(lifter.body, spot)
-			ComputerLifters.cheer(lifter.body, LocalMeetConfig.DoneSeconds)
+			lifter.onPodium = true
 		elseif spot and not lifter.withdrawn and player and visits[player] then
 			standAt(player, spot, true)
 			-- A Regional or State meet's top 3 hold a trophy (GAME_DESIGN §35.8), in a meet that pays in full.
@@ -3989,6 +4099,8 @@ local function runMeet(current: Meet)
 			end
 		elseif plan then
 			lifter.body = ComputerLifters.spawnBody(plan, lifter.platform.waitSpot, cpuRandom)
+			-- Its emotes now and then while it waits (§37.2).
+			runComputerEmotes(current, lifter)
 		end
 		-- (A State rack's lifters share one set of staff.)
 		if not staffed[lifter.platform] then

@@ -130,6 +130,46 @@ local function play(player: Player, id: any): (boolean, string)
 	return true, emote.name
 end
 
+--[[
+	A computer lifter's emote (GAME_DESIGN §37.2, LocalMeetService decides when: only while it stands waiting): plays
+	emote `id` once on `figure` for everyone, and its sound on every screen like a player's. No owner or busy checks
+	(the meet's server code calls it, never a client). Returns the track (stopped by itself when the emote ends), or nil.
+]]
+function EmoteService.playOnFigure(figure: Model, id: string): AnimationTrack?
+	local emote = EmoteConfig.byId[id]
+	local humanoid = figure:FindFirstChildOfClass("Humanoid")
+	local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+	if emote == nil or animator == nil or figure.Parent == nil then
+		return nil
+	end
+	local animation = Instance.new("Animation")
+	animation.Name = "Emote"
+	animation.AnimationId = emote.animationId
+	local ok, loaded = pcall(function()
+		return (animator :: Animator):LoadAnimation(animation)
+	end)
+	if not ok then
+		return nil
+	end
+	local track = loaded :: AnimationTrack
+	track.Priority = Enum.AnimationPriority.Action
+	track.Looped = false
+	track:Play(FADE)
+	local set = remotes
+	if set and emote.soundtrack then
+		set.started:FireAllClients(id, Workspace:GetServerTimeNow(), figure)
+	end
+	task.delay(math.max(0, emote.seconds - FADE), function()
+		if track.IsPlaying then
+			track:Stop(FADE)
+		end
+		task.delay(FADE + 0.1, function()
+			track:Destroy()
+		end)
+	end)
+	return track
+end
+
 function EmoteService.start()
 	if started then
 		return

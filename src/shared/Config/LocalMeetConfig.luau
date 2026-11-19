@@ -156,11 +156,41 @@ LocalMeetConfig.ComputerLifters = {
 	-- Their build: how much wider/deeper (lifters are broad) and taller or shorter than a standard avatar.
 	WidthSpread = { 1.0, 1.25 },
 	HeightSpread = { 0.95, 1.05 },
-	-- Roblox's own R15 idle (standing about between lifts) and cheer (a good lift, and the podium).
+	-- Roblox's own R15 idle (standing about between lifts) and cheer (only a fallback now: a meet level without
+	-- celebrations, CelebrationConfig.MeetLevels, which today is none).
 	IdleAnimationId = "rbxassetid://507766388",
 	CheerAnimationId = "rbxassetid://507770677",
 	-- How long the cheer after a good lift lasts before they walk back.
 	GoodLiftCheerSeconds = 1.4,
+	--[[
+		THE SAME CELEBRATIONS, FAILS AND EMOTES AS PLAYERS (user 2026-11-01: "have the same animations. and emotes n
+		stuff"; GAME_DESIGN §37.2 "What they do"). CLAUDE'S DEFAULTS (2026-11-18), WAITING FOR THE USER'S OK. Each is
+		picked once when the body is made (like the gear), so a computer lifter keeps its own style all meet.
+	]]
+	-- Its celebration after a good lift: a rarity by these weights, then one celebration of that rarity at random
+	-- (CelebrationConfig.List). Never a Legendary: those are the rare prizes players chase, and the longest.
+	CelebrationRarityWeights = { Default = 30, Common = 25, Uncommon = 20, Rare = 15, Epic = 10 } :: { [string]: number },
+	-- Its fail style (StationAnimationConfig.FailStyles; "Default" = the standard set).
+	FailStyleWeights = { Default = 40, Bailout = 25, Grinder = 20, Dramatic = 15 } :: { [string]: number },
+	--[[
+		Its emotes while it stands waiting between lifts (EmoteConfig): the free ones, Belt Tighten when it wears a belt,
+		and `ExtraEmotes` more of `EmoteWeights`' others at random, like a player who has won a few. Never Catch Your
+		Breath (it sits on the floor). Each one plays only when it has stood still at its waiting spot for
+		`SettleSeconds` (never walking, chalking, lifting, celebrating or seated), and only on the podium or while another
+		lifter is still out for longer than the emote lasts (a round's chalking starts the moment the last one is back, and
+		would cut it off); then every `GapSeconds` (random in the
+		range) it plays one with `Chance`, weighted by `EmoteWeights`, never the same twice in a row. The first waits
+		`FirstDelaySeconds`. On the podium it waves, then now and then one of its others, the same way.
+	]]
+	IdleEmotes = {
+		EmoteWeights = { ChalkClap = 3, BeltTighten = 3, TrapSlap = 2, Wave = 1, DoubleBiceps = 1, PointLaugh = 1,
+			MostMuscular = 1 } :: { [string]: number },
+		ExtraEmotes = 2,
+		SettleSeconds = 1.0,
+		FirstDelaySeconds = { 4, 15 },
+		GapSeconds = { 14, 32 },
+		Chance = 0.7,
+	},
 }
 
 -- The timers of each round: everyone chooses, then everyone lifts (each presses LIFT when ready), then

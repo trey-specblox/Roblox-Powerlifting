@@ -17,7 +17,7 @@ CURRENT MILESTONE block).
 (main = origin/main). The user set Max Players to 40.**
 
 **WEIGHT GOAL RULES CHANGED BY THE USER (2026-11-19, after their live phone test; GAME_DESIGN §38.3 "How the lifter
-chooses" and the new "The class lines" row). TESTED IN STUDIO, NOT COMMITTED.**
+chooses" and the new "The class lines" row). TESTED IN STUDIO, COMMITTED in db69817, PUSHED 2026-11-19 (not published yet).**
 - Live phone test (user): the weight-change message came through and the move into the 83 class worked. It read
   "74 kg ... an 83 kg lifter" because the weight was a hair over 74 and shown with one decimal.
 - Goals now stop at the class limit EXACTLY (66.00, 74.00...), then the goal is MAINTAIN by itself (the target is the
@@ -33,6 +33,50 @@ chooses" and the new "The class lines" row). TESTED IN STUDIO, NOT COMMITTED.**
   safety stop held at 200.00. Play test: no errors; stats screen showed "Bodyweight 53.00 kg", "GOAL: BULK TO 66.00
   KG", "GOAL: BULK, 120+ KG" (fits). NOT tested: a real day of training, the phone.
 - The user confirmed (2026-11-19, "Yes, keep it"): a 120+ bulk keeps going until MAINTAIN.
+
+**COMPUTER LIFTERS CELEBRATE, FAIL AND EMOTE LIKE PLAYERS (2026-11-19, overnight session while the user slept;
+GAME_DESIGN §37.2 "What they do"; user 2026-11-01: "the same animations. and emotes n stuff"). TESTED IN STUDIO
+(3 Local meets, 1 player + 3 computer lifters each). The user reviewed it and approved Claude's how-often and
+which-ones numbers (2026-11-19: "It looks good you can commit"). COMMITTED (see the commit after db69817), not
+pushed, not published.**
+- Only the game's existing animations and sounds: no Blender work, no uploads, no new audio.
+- Found already built before this session: computer lifters did the free celebration (ChalkClapPump) after a good
+  lift at every meet and the shared miss reactions; the stock Roblox cheer was left only on the podium (and as a dead
+  fallback). Fails always used the Standard set.
+- `ComputerLifters.spawnBody` now picks, once per body (like its gear), stored as attributes on the body (visible in
+  Studio's Properties): `ComputerCelebration` (rarity by `CelebrationRarityWeights` 30/25/20/15/10 for
+  Default/Common/Uncommon/Rare/Epic, never Legendary), `ComputerFailStyle` (`FailStyleWeights`: Standard 40, Bail-out
+  25, Grinder 20, Dramatic 15) and `ComputerEmotes` (Wave + Chalk Clap, Belt Tighten only with a belt on, + 2 random
+  of Double Biceps / Trap Slap / Point & Laugh / Most Muscular; never Catch Your Breath). Numbers in
+  `LocalMeetConfig.ComputerLifters` (CelebrationRarityWeights, FailStyleWeights, IdleEmotes).
+- `CelebrationService.forComputer` reads the body's celebration; `LocalMeetService.failAnimationFor` its fail style.
+- Emotes: `LocalMeetService.runComputerEmotes` (one check every 0.5 s per computer lifter) plays one only while it
+  stands still at its waiting spot (not walking, out on the platform, chalking, lifting, celebrating, seated) AND
+  another lifter is still out for longer than the emote lasts (`roundHeldUpFor`: a round's chalk-up starts the moment
+  the last lifter is back and cut emotes off after ~1 s in the 2nd test meet); gap 14-32 s, 70% chance, never the same
+  twice in a row. Podium: replaces the stock cheer with a wave at a random moment (0-2.5 s apart), then its emotes.
+  `ComputerLifters.emote/stopEmote/pickEmote/walkSecondsLeft`; walks, moves and chalking stop an emote at once.
+  `EmoteService.playOnFigure` plays an emote on any figure and fires EmoteStarted so every screen plays its sound.
+- TESTED IN STUDIO: one test lifter per build (Skinny, SkinnyFat, Fit, Fat, Muscular, BigBuff) through the real
+  spawnBody: all 31 possible celebrations + 7 emotes played on all six builds with a joint-speed monitor on the
+  client (AnimationConstraint.Transform): no joint flips; biggest real-time step 60 deg in one frame (~875 deg/s, the
+  arm thrown up in the sky-point moves), under the 1100 limit. Hand shapes switch on computer lifters too (fists for
+  fist pumps, a pointing finger, open hands for clap/slap/wave), seen in captures. Meets: 3 Local meets ran to the
+  end, no errors (server or client; only Studio's usual DataStore lines). Seen: each lifter's own celebration (Lights
+  Then Relief, Exit Fist Pump, Chalk Clap & Pump), Bail-out / Grinder / Dramatic fails, miss reactions, emotes
+  only at the waiting spot with no walk/chalk/lift playing, none cut short after the fix, staggered podium waves.
+  Meet bodies were all Skinny (they copy the test player's 25 kg numbers); the other builds were checked in the posed
+  line-up only.
+- After the 3rd meet: `IdleEmotes.SettleSeconds` 2.5 -> 1.0 (emotes were rare: at a Local meet the computer
+  lifters chalk at the stand for the whole weight-choosing time, so their only waits are while others finish).
+  Synced to Studio; NOT run in a meet since (a one-number change).
+- NOT TESTED: two real players; a phone; a computer lifter in 1st place with a WalkLoop celebration (Thank-You Wave,
+  Crowd Pleaser) in a real meet (played on the test bodies only); Regional meets (same code).
+- WORTH A LOOK (pre-existing, players too, not changed): the Trap Slap emote crosses both arms in front of the face
+  mid-swing on the bigger builds (art/previews/ComputerLifterMoves_TrapSlapMidSwing_AllBuilds.jpg).
+- Files changed: src/server/Meet/ComputerLifters.luau, src/server/Meet/CelebrationService.luau,
+  src/server/Meet/LocalMeetService.luau, src/server/World/EmoteService.luau, src/shared/Config/LocalMeetConfig.luau,
+  GAME_DESIGN.md, DEVELOPMENT_STATUS.md; new pictures art/previews/ComputerLifterMoves_*.jpg.
 
 **GAINING AND LOSING WEIGHT BUILT (2026-11-18, same session; GAME_DESIGN §38.3 "The design", user picked: goal
 class, FAST 2 kg per full training day, spots stay in their class). TESTED IN STUDIO (one player). COMMITTED in

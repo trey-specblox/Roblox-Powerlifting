@@ -33,6 +33,9 @@ local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local ShopConfig = require(ConfigFolder:WaitForChild("ShopConfig"))
 local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
+local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
+local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
+local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local AttemptRules = require(MeetFolder:WaitForChild("AttemptRules"))
 local AttemptChoice = require(MeetFolder:WaitForChild("AttemptChoice"))
@@ -197,6 +200,88 @@ local function randomGear(random: Random): { [string]: string }
 	return worn
 end
 
+-- One key of `weights` ({ key = weight }) at random by weight, from those `allowed` says yes to (all when nil).
+local function weighted(random: Random, weights: { [string]: number }, allowed: ((string) -> boolean)?): string?
+	local keys: { string } = {}
+	for key, weight in pairs(weights) do
+		if weight > 0 and (allowed == nil or allowed(key)) then
+			table.insert(keys, key)
+		end
+	end
+	-- (A fixed order, so the same Random gives the same pick.)
+	table.sort(keys)
+	local total = 0
+	for _, key in ipairs(keys) do
+		total += weights[key]
+	end
+	if total <= 0 then
+		return nil
+	end
+	local roll = random:NextNumber() * total
+	for _, key in ipairs(keys) do
+		roll -= weights[key]
+		if roll <= 0 then
+			return key
+		end
+	end
+	return keys[#keys]
+end
+
+-- The attributes on a computer lifter's body that hold its picks (read by CelebrationService.forComputer,
+-- LocalMeetService's fail animation and idle emotes; also handy to see in Studio's Properties).
+ComputerLifters.CelebrationAttribute = "ComputerCelebration"
+ComputerLifters.FailStyleAttribute = "ComputerFailStyle"
+ComputerLifters.EmotesAttribute = "ComputerEmotes"
+
+-- Its celebration after a good lift (CONFIG.CelebrationRarityWeights): a rarity, then one of that rarity.
+local function randomCelebration(random: Random): string
+	local has: { [string]: { string } } = {}
+	for _, celebration in ipairs(CelebrationConfig.List) do
+		local list = has[celebration.rarity] or {}
+		has[celebration.rarity] = list
+		table.insert(list, celebration.id)
+	end
+	local rarity = weighted(random, CONFIG.CelebrationRarityWeights, function(key)
+		return has[key] ~= nil
+	end)
+	local pool = rarity and has[rarity]
+	if pool == nil or #pool == 0 then
+		return CelebrationConfig.Default
+	end
+	return pool[random:NextInteger(1, #pool)]
+end
+
+-- Its fail style (CONFIG.FailStyleWeights): "Default" or a StationAnimationConfig.FailStyles id.
+local function randomFailStyle(random: Random): string
+	return weighted(random, CONFIG.FailStyleWeights, function(key)
+		return key == "Default" or StationAnimationConfig.FailStyles[key] ~= nil
+	end) or "Default"
+end
+
+-- Its own emotes (CONFIG.IdleEmotes): the free ones, Belt Tighten with a belt on, and a few of the others.
+local function randomEmotes(random: Random, worn: { [string]: string }): { string }
+	local weights = CONFIG.IdleEmotes.EmoteWeights
+	local mine: { string } = {}
+	local others: { string } = {}
+	for _, emote in ipairs(EmoteConfig.List) do
+		if weights[emote.id] == nil then
+			continue
+		elseif EmoteConfig.isFree(emote.id) then
+			table.insert(mine, emote.id)
+		elseif emote.id == "BeltTighten" then
+			if worn.Belt then
+				table.insert(mine, emote.id)
+			end
+		else
+			table.insert(others, emote.id)
+		end
+	end
+	for _ = 1, math.min(CONFIG.IdleEmotes.ExtraEmotes, #others) do
+		table.insert(mine, table.remove(others, random:NextInteger(1, #others)) :: string)
+	end
+	return mine
+end
+
 -- Height of the root part's centre above the floor when the body stands.
 local function standingHeight(body: Model): number
 	local humanoid = body:FindFirstChildOfClass("Humanoid")
@@ -259,6 +344,10 @@ function ComputerLifters.spawnBody(plan: Plan, spot: CFrame, random: Random): Mo
 			Shoes = { item = "Sneakers", colour = Color3.fromRGB(40, 40, 46) },
 		})
 	end
+	-- Its own celebration, fail style and emotes, like a player's (§37.2), kept all meet.
+	model:SetAttribute(ComputerLifters.CelebrationAttribute, randomCelebration(random))
+	model:SetAttribute(ComputerLifters.FailStyleAttribute, randomFailStyle(random))
+	model:SetAttribute(ComputerLifters.EmotesAttribute, table.concat(randomEmotes(random, worn), ","))
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		humanoid.DisplayName = plan.name
@@ -288,8 +377,95 @@ function ComputerLifters.spawnBody(plan: Plan, spot: CFrame, random: Random): Mo
 	return model
 end
 
+-- ---------------------------------------------------------------- its emotes (§37.2)
+
+-- EmoteService, required on first use (like GearService above).
+local emoteService: any = nil
+local function EmoteService(): any
+	if emoteService == nil then
+		emoteService = require(script.Parent.Parent:WaitForChild("World"):WaitForChild("EmoteService"))
+	end
+	return emoteService
+end
+
+-- The emote playing on each body.
+local emoting: { [Model]: AnimationTrack } = {}
+
+-- Ends a computer lifter's emote now (it walks, chalks up, is moved...). Nothing when none is playing.
+function ComputerLifters.stopEmote(body: Model?)
+	local track = body and emoting[body]
+	if body and track then
+		emoting[body] = nil
+		if track.IsPlaying then
+			track:Stop(0.15)
+		end
+	end
+end
+
+-- Whether an emote is playing on `body`.
+function ComputerLifters.isEmoting(body: Model?): boolean
+	local track = body and emoting[body]
+	return track ~= nil and track.IsPlaying
+end
+
+-- Plays emote `id` once on a computer lifter's body (EmoteService: its sound on every screen). True if it started.
+function ComputerLifters.emote(body: Model?, id: string): boolean
+	if body == nil or body.Parent == nil then
+		return false
+	end
+	ComputerLifters.stopEmote(body)
+	local track = EmoteService().playOnFigure(body, id)
+	if track == nil then
+		return false
+	end
+	emoting[body] = track
+	track.Stopped:Once(function()
+		if emoting[body] == track then
+			emoting[body] = nil
+		end
+	end)
+	return true
+end
+
+-- This computer lifter's own emotes (picked when its body was made).
+function ComputerLifters.emotesOf(body: Model?): { string }
+	local list = body and body:GetAttribute(ComputerLifters.EmotesAttribute)
+	if typeof(list) ~= "string" or list == "" then
+		return {}
+	end
+	return string.split(list, ",")
+end
+
+-- One of its own emotes at random by CONFIG.IdleEmotes.EmoteWeights, never `last` again when it has others.
+function ComputerLifters.pickEmote(body: Model?, last: string?, random: Random): string?
+	local mine = ComputerLifters.emotesOf(body)
+	local weights: { [string]: number } = {}
+	for _, id in ipairs(mine) do
+		if id ~= last or #mine == 1 then
+			weights[id] = CONFIG.IdleEmotes.EmoteWeights[id] or 1
+		end
+	end
+	return weighted(random, weights)
+end
+
+-- Whether `body` is on a walk right now.
+function ComputerLifters.isWalking(body: Model?): boolean
+	return body ~= nil and walks[body] ~= nil
+end
+
+-- How many seconds are left of the walk `body` is on (a computer lifter's, or a player's walked by the server), or nil
+-- when it isn't walking.
+function ComputerLifters.walkSecondsLeft(body: Model?): number?
+	local walk = body and walks[body]
+	if walk == nil then
+		return nil
+	end
+	return math.max(0, walk.path.duration - (Workspace:GetServerTimeNow() - walk.startAt))
+end
+
 -- Stands a computer lifter's body at `spot` (a floor point facing its way), ending any walk it was on.
 function ComputerLifters.moveBody(body: Model?, spot: CFrame)
+	ComputerLifters.stopEmote(body)
 	if body and body.Parent then
 		if walks[body] then
 			walks[body] = nil
@@ -429,6 +605,8 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 		return
 	end
 	local style = options or {}
+	-- (An emote never plays over a walk: a computer lifter's ends as it sets off, like a player's.)
+	ComputerLifters.stopEmote(body)
 	-- A walk under way ends where it has got to, and this one starts there.
 	endWalk(body)
 	local height = standingHeight(body)
@@ -535,6 +713,7 @@ end
 
 function ComputerLifters.removeBody(body: Model?)
 	if body then
+		emoting[body] = nil
 		body:Destroy()
 	end
 end
