@@ -13,9 +13,30 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**PUBLISHED 2026-11-18 (the user, that evening): the live game is commit b1cd602; commits 33d581a..b1cd602 are pushed
+(main = origin/main). The user set Max Players to 40.**
+
+**WEIGHT GOAL RULES CHANGED BY THE USER (2026-11-19, after their live phone test; GAME_DESIGN §38.3 "How the lifter
+chooses" and the new "The class lines" row). TESTED IN STUDIO, NOT COMMITTED.**
+- Live phone test (user): the weight-change message came through and the move into the 83 class worked. It read
+  "74 kg ... an 83 kg lifter" because the weight was a hair over 74 and shown with one decimal.
+- Goals now stop at the class limit EXACTLY (66.00, 74.00...), then the goal is MAINTAIN by itself (the target is the
+  weight they have). The 125 kg stop is gone: a 120+ bulk goes on until MAINTAIN, with a 200 kg safety stop
+  (`BodyweightConfig.OpenClassCeilingKg`; `BelowLimitKg` and `OpenClassGoalKg` removed). Weights show with two
+  decimals (`BodyweightConfig.text`), and the server never leaves a weight between a limit and limit + 0.01.
+- The class lines already matched the user's table (inclusive upper bounds); unchanged.
+- Files: BodyweightConfig.luau, ProfileOperations.luau (setWeightGoal, applyBodyweightChange), PlayerStatsService.luau
+  (news lines), StatsScreen.luau (two decimals, goal button wording, hint text no longer says "when you respawn").
+- Tested in Studio 2026-11-19: on a made-up save, a bulk from 58 kg stopped at 66.00 kg and then stayed there; a cut
+  from 80 kg stopped at 74.00 kg (74 class); 73.999 + a tiny step went to 74.01 (83 class); 74.008 cutting went to
+  74.00; 118 kg bulking 10 full days reached 138.00 kg (no 125 cap); picking 74 at exactly 74 kg = maintain; the
+  safety stop held at 200.00. Play test: no errors; stats screen showed "Bodyweight 53.00 kg", "GOAL: BULK TO 66.00
+  KG", "GOAL: BULK, 120+ KG" (fits). NOT tested: a real day of training, the phone.
+- The user confirmed (2026-11-19, "Yes, keep it"): a 120+ bulk keeps going until MAINTAIN.
+
 **GAINING AND LOSING WEIGHT BUILT (2026-11-18, same session; GAME_DESIGN §38.3 "The design", user picked: goal
 class, FAST 2 kg per full training day, spots stay in their class). TESTED IN STUDIO (one player). COMMITTED in
-33d581a (with the live body, the logo fix, the gear check and the emote fix below; not pushed, not published).
+33d581a (with the live body, the logo fix, the gear check and the emote fix below; pushed and published 2026-11-18).
 NEXT: publish and test on a phone and with two players.**
 - `src/shared/Config/BodyweightConfig.luau` (NEW): KgPerFullTrainingDay 2 -> KgPerEV 0.5 (DailyCapEV 4), goal = class
   limit - 0.5 (120+: 125), Studio-only workspace attribute StudioWeightSpeed multiplies the speed for tests.

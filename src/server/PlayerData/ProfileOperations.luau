@@ -2251,8 +2251,10 @@ end
 	=========================================================================
 
 	The lifter's goal is `bodyweight.targetKg` (in the save since version 1):
-	MAINTAIN = the weight they have; a goal class = just under that class's
-	limit (BodyweightConfig.goalKgFor). `bodyweight.currentKg` moves toward it
+	MAINTAIN = the weight they have; a goal class = that class's limit exactly
+	(BodyweightConfig.goalKgFor; the open class has none, only a safety stop).
+	Reaching the goal makes it MAINTAIN by itself: the target then IS the
+	weight they have (user 2026-11-19). `bodyweight.currentKg` moves toward it
 	only through applyBodyweightChange, which only PlayerDataService's training
 	award calls, with the EV the training allowance itself granted. The class
 	is never stored (it is the class of currentKg, derived on every read);
@@ -2287,7 +2289,7 @@ function ProfileOperations.setWeightGoal(data: ProfileData, goal: any, confirmed
 	local here = PlayerProfileSchema.classKeyFor(current)
 	if goal == BodyweightConfig.Maintain then
 		bodyweight.targetKg = current
-		return "Set", string.format("Maintaining %.1f kg.", current), current
+		return "Set", string.format("Maintaining %s.", BodyweightConfig.text(current)), current
 	end
 	local goalKg = BodyweightConfig.goalKgFor(goal)
 	if goalKg == nil or here == nil then
@@ -2307,9 +2309,19 @@ function ProfileOperations.setWeightGoal(data: ProfileData, goal: any, confirmed
 				table.concat(held, " and a "), here, here), nil
 		end
 	end
+	-- Already at the goal (e.g. exactly 74 kg and picking 74): that is MAINTAIN.
+	if math.abs(goalKg - current) < 0.005 then
+		bodyweight.targetKg = current
+		return "Set", string.format("You're at the %s limit already: maintaining %s.", goal :: string,
+			BodyweightConfig.text(current)), current
+	end
 	bodyweight.targetKg = goalKg
-	local verb = if goalKg > current + 0.05 then "Bulking" elseif goalKg < current - 0.05 then "Cutting" else "Holding"
-	return "Set", string.format("%s to %.1f kg (the %s class) as you train.", verb, goalKg, goal :: string), goalKg
+	if goalKg > current and PlayerProfileSchema.classKeyFor(goalKg) == WeightClassConfig.Classes[#WeightClassConfig.Classes].label then
+		return "Set", string.format("Bulking into the %s class as you train, until you pick MAINTAIN.", goal :: string), goalKg
+	end
+	local verb = if goalKg > current then "Bulking" else "Cutting"
+	return "Set", string.format("%s to %s (the %s class) as you train. Then your goal is MAINTAIN.", verb,
+		BodyweightConfig.text(goalKg), goal :: string), goalKg
 end
 
 export type BodyweightChange = {
@@ -2336,13 +2348,26 @@ function ProfileOperations.applyBodyweightChange(data: ProfileData, earnedEV: nu
 	if not isFiniteNumber(target) or target <= 0 then
 		return nil
 	end
-	-- Never past the open class's goal or under the starting weight (a target saved by hand, the admin panel).
-	target = math.clamp(target, math.min(current, StartingValuesConfig.BodyweightKg), BodyweightConfig.OpenClassGoalKg)
+	-- Never past the safety stop or under the starting weight (a target saved by hand, the admin panel).
+	target = math.clamp(target, math.min(current, StartingValuesConfig.BodyweightKg),
+		math.max(current, BodyweightConfig.OpenClassCeilingKg))
 	if current == target then
 		return nil
 	end
 	local step = earnedEV * BodyweightConfig.KgPerEV * (if isFiniteNumber(speed) and (speed :: number) > 0 then speed :: number else 1)
-	local after = if target > current then math.min(target, current + step) else math.max(target, current - step)
+	local bulking = target > current
+	local after = if bulking then math.min(target, current + step) else math.max(target, current - step)
+	-- Never on the hair between a class limit and limit + 0.01 (e.g. 74.004): it would show as "74.00 kg" for an 83 kg
+	-- lifter (user 2026-11-19, the message "74kg ... 83kg lifter"). A bulk steps on to limit + 0.01, a cut back to the
+	-- limit: at most 0.01 kg.
+	for _, class in ipairs(WeightClassConfig.Classes) do
+		local limit = class.maximumBodyweight
+		if limit and after > limit and after < limit + 0.01 then
+			after = if bulking then limit + 0.01 else limit
+			break
+		end
+	end
+	after = if bulking then math.min(after, target) else math.max(after, target)
 	local classBefore = PlayerProfileSchema.classKeyFor(current)
 	local classAfter = PlayerProfileSchema.classKeyFor(after)
 	if classBefore == nil or classAfter == nil then

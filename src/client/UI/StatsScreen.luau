@@ -279,8 +279,8 @@ function StatsScreen.start()
 	local goalNote = UIStyle.text(goalList, "Note", UDim2.fromOffset(12, 362), UDim2.new(1, -24, 0, 62), SIZES.small, C.muted)
 	goalNote.ZIndex = 21
 	goalNote.TextWrapped = true
-	local GOAL_HINT = string.format("Moves about %d kg per full day of Competition Number training at a rack. "
-		.. "Your body's look updates when you respawn.", BodyweightConfig.KgPerFullTrainingDay)
+	local GOAL_HINT = string.format("About %d kg per full day of rack training. Stops at the class limit, then MAINTAIN. "
+		.. "120+ has no limit: it goes on until you pick MAINTAIN.", BodyweightConfig.KgPerFullTrainingDay)
 	local pendingGoal: string? = nil
 	local confirmButton: TextButton
 	local sending = false
@@ -340,7 +340,7 @@ function StatsScreen.start()
 	end
 	-- Which row is the goal now: MAINTAIN when the target is the weight they have, else the class of the target.
 	local function goalNow(): string
-		if math.abs(shownTarget - shownWeight) < 0.05 then
+		if math.abs(shownTarget - shownWeight) < 0.005 then
 			return BodyweightConfig.Maintain
 		end
 		return WeightClass.resolve(shownTarget).label
@@ -365,10 +365,17 @@ function StatsScreen.start()
 	end
 	-- The button's words: what the body is doing now.
 	local function goalText(): string
-		if math.abs(shownTarget - shownWeight) < 0.05 then
+		if math.abs(shownTarget - shownWeight) < 0.005 then
 			return "GOAL: MAINTAIN"
 		end
-		return string.format("GOAL: %s TO %.1f KG", if shownTarget > shownWeight then "BULK" else "CUT", shownTarget)
+		local goalClass = WeightClass.resolve(shownTarget).label
+		local classes = BodyweightConfig.classLabels()
+		if shownTarget > shownWeight and goalClass == classes[#classes] then
+			-- The open class has no limit: bulking until MAINTAIN is picked.
+			return "GOAL: BULK, " .. string.upper(goalClass)
+		end
+		return string.format("GOAL: %s TO %s", if shownTarget > shownWeight then "BULK" else "CUT",
+			string.upper(BodyweightConfig.text(shownTarget)))
 	end
 
 	-- Middle: Competition Number and Scale.
@@ -477,7 +484,7 @@ function StatsScreen.start()
 
 	local function draw(snapshot: StatsRemotes.StatsSnapshot)
 		classText.Text = string.upper(snapshot.classLabel) .. " CLASS"
-		weightText.Text = string.format("Bodyweight %.1f kg", snapshot.bodyweightKg)
+		weightText.Text = "Bodyweight " .. BodyweightConfig.text(snapshot.bodyweightKg)
 		shownWeight, shownTarget = snapshot.bodyweightKg, snapshot.targetKg
 		goalButton.Text = goalText()
 		if goalList.Visible then

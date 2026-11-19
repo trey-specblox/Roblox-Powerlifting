@@ -166,11 +166,14 @@ function PlayerStatsService.start()
 		if not player.Parent then
 			return
 		end
+		-- Reaching the goal makes it MAINTAIN by itself (the target is now the weight they have, GAME_DESIGN §38.3).
+		local reached = change.afterKg == change.targetKg
+		local weight = BodyweightConfig.text(change.afterKg)
 		if change.classAfter ~= change.classBefore then
-			remotes.weightNews:FireClient(player, string.format("You weigh %.1f kg: you're a %s lifter now.", change.afterKg,
-				change.classAfter))
-		elseif change.afterKg == change.targetKg then
-			remotes.weightNews:FireClient(player, string.format("Goal reached: %.1f kg. Holding it there.", change.afterKg))
+			remotes.weightNews:FireClient(player, string.format("You weigh %s: you're a %s lifter now.%s", weight,
+				change.classAfter, if reached then " Goal reached: your goal is MAINTAIN now." else ""))
+		elseif reached then
+			remotes.weightNews:FireClient(player, string.format("Goal reached: %s. Your goal is MAINTAIN now.", weight))
 		end
 	end)
 
