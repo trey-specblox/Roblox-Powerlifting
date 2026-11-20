@@ -7719,6 +7719,21 @@ the client `CoachDialogue` uses the rare-suit dialogue's look: "Can you coach me
 "I need a stronger squat" (today's quest and progress) and "Bye." Progress lines appear at the top of the screen after
 a meet; a finished quest's strength pops on the gain display. The bench and deadlift coaches' names are placeholders.
 
+**Quest tracker and phone dialogue (user 2026-11-19: "whenever we have a quest, Lets have the quest thing ui like
+this, on the right side", from their reference picture; and "make the mobile ui smaller, so the whole coach character
+can fit"):**
+- **Having a quest = asking the coach for it.** "I need a stronger squat" takes that coach's quest for today (save
+  version 30: `dailyQuests.taken`, cleared at the daily reset). Progress still counts whether or not it was taken (as
+  approved above); a quest a meet moved shows on the tracker too.
+- **The tracker** (right side, like the reference): a round "!" and **CURRENT QUESTS [n]**, each quest in white
+  ("Make 2 good squats in a meet! (1/2)") with the **time left until the daily reset** in yellow under it and a thin
+  line between quests. A finished quest says "Coach Olivera's quest done!" (timer "--:--") for 20 seconds, then
+  leaves. No quests = nothing on screen. Phones: top right corner, 30% bigger text. Computers: right side, below the
+  SESSION GAINS panel's space (the player list is top right there).
+- **Phone dialogue:** the portrait is smaller and shows the coach head to feet, standing just above the name bar; the
+  answer bubbles sit beside the coach, not over them. On any screen the portrait now shrinks to fit the window's height,
+  so the head is never under the Roblox buttons. Computers keep the close-up portrait.
+
 ### 40.4 The gain display (built 2026-11-19)
 
 Only on the player's own screen (memory: no screen clutter). Display only: the server saves each gain first, then

@@ -8,11 +8,12 @@
 		- puts the three coaches in the upstairs Coach room, at the points RoomProps tags QuestConfig.CoachSpotTag (each
 		  with a "Lift" attribute): a MeetFigures coach in that lift's colours, with a "Talk" prompt the client's
 		  CoachDialogue answers
-		- QuestRemotes.GET: today's quests, for the dialogue (reads only)
+		- QuestRemotes.GET: today's quests, for the dialogue and the quest tracker (reads only)
+		- QuestRemotes.TAKE: asking a coach for their quest puts it on the player's tracker (the one write here)
 		- tell(player, progress): after a meet's save (LocalMeetService), a line per quest it moved
 
 	The progress and the strength reward are saved by the meet itself (ProfileOperations.addQuestGoodLifts, in the
-	meet's one write); this service never changes player data.
+	meet's one write). This service writes only the "taken" flag (ProfileOperations.takeQuest), which changes no stat.
 
 	PERFORMANCE: three standing figures (about 16 parts each, anchored, no collision), built once.
 ]]
@@ -132,6 +133,25 @@ function QuestService.start()
 		lastAsked[player] = now
 		local data = PlayerDataService.getData(player)
 		if data == nil then
+			return nil
+		end
+		return ProfileOperations.getDailyQuests(data, os.time())
+	end
+	set.take.OnServerInvoke = function(player: Player, lift: any): { [string]: QuestRemotes.QuestView }?
+		if typeof(lift) ~= "string" or QuestConfig.Coaches[lift] == nil then
+			return nil
+		end
+		local now = os.clock()
+		if now - (lastAsked[player] or -math.huge) < MIN_SECONDS_BETWEEN_ASKS then
+			return nil
+		end
+		lastAsked[player] = now
+		local took = false
+		PlayerDataService.update(player, function(data)
+			took = ProfileOperations.takeQuest(data, lift, os.time())
+		end)
+		local data = PlayerDataService.getData(player)
+		if not took or data == nil then
 			return nil
 		end
 		return ProfileOperations.getDailyQuests(data, os.time())

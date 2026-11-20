@@ -25,6 +25,8 @@ local CoinCounter = require(UIFolder:WaitForChild("CoinCounter"))
 task.spawn(CoinCounter.start)
 local GainDisplay = require(UIFolder:WaitForChild("GainDisplay"))
 task.spawn(GainDisplay.start)
+local QuestTracker = require(UIFolder:WaitForChild("QuestTracker"))
+task.spawn(QuestTracker.start)
 local CoachDialogue = require(UIFolder:WaitForChild("CoachDialogue"))
 task.spawn(CoachDialogue.start)
 

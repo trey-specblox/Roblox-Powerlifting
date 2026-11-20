@@ -507,16 +507,28 @@ end
 local fullSizePositions: { [GuiObject]: UDim2 } = setmetatable({}, { __mode = "k" }) :: any
 local writtenPositions: { [GuiObject]: UDim2 } = setmetatable({}, { __mode = "k" }) :: any
 
+--[[
+	A top-level piece can shrink further than the screen scale: its "FitExtraScale" attribute (0 to 1) multiplies it,
+	size and position together. The coach dialogue uses it so its tall portrait fits a phone (user 2026-11-19).
+]]
+UIStyle.FitExtraAttribute = "FitExtraScale"
+local function pieceScale(piece: GuiObject): number
+	local extra = piece:GetAttribute(UIStyle.FitExtraAttribute)
+	local factor = if typeof(extra) == "number" and extra > 0 and extra <= 1 then extra else 1
+	return UIStyle.screenScale() * factor
+end
+
 local function placeScaled(piece: GuiObject)
 	local full = fullSizePositions[piece]
-	local scale = UIStyle.screenScale()
+	local scale = pieceScale(piece)
 	local placed = UDim2.new(full.X.Scale, full.X.Offset * scale, full.Y.Scale, full.Y.Offset * scale)
 	writtenPositions[piece] = placed
 	piece.Position = placed
 end
 
 function UIStyle.fitToScreen(gui: ScreenGui)
-	local function apply(child: Instance)
+	local apply: (Instance) -> ()
+	function apply(child: Instance)
 		if not child:IsA("GuiObject") then
 			return
 		end
@@ -535,8 +547,11 @@ function UIStyle.fitToScreen(gui: ScreenGui)
 					placeScaled(child)
 				end
 			end)
+			child:GetAttributeChangedSignal(UIStyle.FitExtraAttribute):Connect(function()
+				apply(child)
+			end)
 		end
-		(scale :: UIScale).Scale = UIStyle.screenScale()
+		(scale :: UIScale).Scale = pieceScale(child)
 		placeScaled(child)
 	end
 	local function applyAll()

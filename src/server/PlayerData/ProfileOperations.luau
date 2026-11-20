@@ -2407,7 +2407,8 @@ end
 	isn't today reads (and is rewritten) as a fresh, empty set. No yield.
 ]]
 
-export type QuestLiftView = { goodLifts: number, needed: number, done: boolean }
+-- `taken`: the player asked that coach for it today. `resetIn`: seconds until today's quests reset (the UTC day).
+export type QuestLiftView = { goodLifts: number, needed: number, done: boolean, taken: boolean, resetIn: number }
 export type QuestProgress = {
 	lift: string,
 	added: number,
@@ -2429,11 +2430,29 @@ local function usableQuests(data: ProfileData): any?
 	return quests
 end
 
+-- A stored day that isn't `today` becomes a fresh, empty one (writes).
+local function rollQuestDay(quests: any, today: string)
+	if quests.dayKey == today then
+		return
+	end
+	quests.dayKey = today
+	if typeof(quests.taken) ~= "table" then
+		quests.taken = {}
+	end
+	for _, lift in ipairs(QUEST_LIFTS) do
+		quests.goodLifts[lift] = 0
+		quests.done[lift] = false
+		quests.taken[lift] = false
+	end
+end
+
 -- Today's quests for the STATS screen and the coach's lines. Reads only.
 function ProfileOperations.getDailyQuests(data: ProfileData, nowUnix: number): { [string]: QuestLiftView }
 	local quests = usableQuests(data)
 	local today = if isFiniteNumber(nowUnix) and nowUnix >= 0 then DayKey.fromUnix(nowUnix) else nil
 	local fresh = quests == nil or today == nil or quests.dayKey ~= today
+	local taken = if not fresh and typeof(quests.taken) == "table" then quests.taken else {}
+	local resetIn = if isFiniteNumber(nowUnix) and nowUnix >= 0 then 86400 - math.floor(nowUnix) % 86400 else 86400
 	local view: { [string]: QuestLiftView } = {}
 	for _, lift in ipairs(QUEST_LIFTS) do
 		local count = if fresh then 0 else quests.goodLifts[lift]
@@ -2441,9 +2460,28 @@ function ProfileOperations.getDailyQuests(data: ProfileData, nowUnix: number): {
 			goodLifts = if isFiniteNumber(count) and count >= 0 then count else 0,
 			needed = QuestConfig.GoodLiftsNeeded,
 			done = not fresh and quests.done[lift] == true,
+			taken = taken[lift] == true,
+			resetIn = resetIn,
 		}
 	end
 	return view
+end
+
+--[[
+	The player asked `lift`'s coach for today's quest: it shows on their quest tracker from now until the daily reset.
+	Changes nothing else (progress counts whether or not it was taken). Returns whether `lift` is a quest lift.
+]]
+function ProfileOperations.takeQuest(data: ProfileData, lift: string, nowUnix: number): boolean
+	local quests = usableQuests(data)
+	if quests == nil or not table.find(QUEST_LIFTS, lift) or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return false
+	end
+	rollQuestDay(quests, DayKey.fromUnix(nowUnix))
+	if typeof(quests.taken) ~= "table" then
+		quests.taken = {}
+	end
+	quests.taken[lift] = true
+	return true
 end
 
 --[[
@@ -2459,14 +2497,7 @@ function ProfileOperations.addQuestGoodLifts(data: ProfileData, classKey: string
 	if quests == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 or typeof(goodByLift) ~= "table" then
 		return progress
 	end
-	local today = DayKey.fromUnix(nowUnix)
-	if quests.dayKey ~= today then
-		quests.dayKey = today
-		for _, lift in ipairs(QUEST_LIFTS) do
-			quests.goodLifts[lift] = 0
-			quests.done[lift] = false
-		end
-	end
+	rollQuestDay(quests, DayKey.fromUnix(nowUnix))
 	local build = ProfileOperations.getBuild(data, classKey)
 	for _, lift in ipairs(QUEST_LIFTS) do
 		local added = goodByLift[lift]

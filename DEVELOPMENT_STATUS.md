@@ -16,9 +16,24 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**QUEST TRACKER + PHONE COACH DIALOGUE BUILT (2026-11-19, GAME_DESIGN §40.6 "Quest tracker and phone dialogue").
+SAVE VERSION 30. TESTED IN STUDIO (one player). COMMITTED 2026-11-19 (not pushed, not published).**
+- NEW: `src/client/UI/QuestTracker.luau` (started in init.client before CoachDialogue).
+- CHANGED: PlayerProfileSchema (v30: `dailyQuests.taken`, migrations[29] repairs it), ProfileOperations (takeQuest,
+  rollQuestDay shared by both writers, views carry `taken` and `resetIn`), QuestRemotes (TakeQuest RemoteFunction),
+  QuestService (TAKE handler: checks the lift, rate-limited, writes only the flag), CoachDialogue (asking takes the
+  quest and updates the tracker; portrait fits the window height; phone: smaller, whole-body framing, bubbles beside
+  the coach), UIStyle.fitToScreen (optional "FitExtraScale" attribute per top-level piece).
+- Tested in Studio: save loaded at version 30; phone mode (ForcePhoneScreens, cleared after) shows the whole coach
+  with bubbles clear of it; taking each quest adds it to the top-right tracker with the reset countdown; all three
+  listed; TakeQuest("Coins") refused; done state checked with a test copy (fake numbers); computer mode keeps the
+  close-up and puts the tracker lower right. Previews: art/previews/QuestTracker_Phone.jpg, QuestTracker_Computer.jpg.
+- NOT tested: a real phone (Studio's window is not phone-sized), a real meet moving a tracked quest, the reset at
+  midnight UTC, two players.
+
 **DAILY QUESTS BUILT (2026-11-19, GAME_DESIGN §40.6; user picked: 3 coaches x 1 quest, 1 training day of strength
 per quest, good lifts at meets, fresh each day; "Strength directly" changes §34.2). SAVE VERSION 29. TESTED IN STUDIO
-(see below). COMMITTED (the commit after 0c5c9db), not pushed, not published.**
+(see below). COMMITTED in 2545ef0, PUSHED 2026-11-19 (not published yet).**
 - NEW: `src/shared/Config/QuestConfig.luau`, `src/shared/Progression/QuestRemotes.luau`,
   `src/server/PlayerData/QuestService.luau` (started in init.server), `src/client/UI/CoachDialogue.luau` (init.client).
 - CHANGED: PlayerProfileSchema (v29: `dailyQuests`, migrations[28] repairs/creates it), ProfileOperations

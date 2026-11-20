@@ -9,7 +9,8 @@
 	their words typed out, and the answers as speech bubbles beside the portrait.
 
 		"Can you coach me?"           coaching (§40.5) isn't open yet: the coach says so
-		"I need a stronger squat"     today's quest from QuestRemotes.GET: what to do and how far you are, or done
+		"I need a stronger squat"     takes today's quest (QuestRemotes.TAKE, it goes on the QuestTracker): what to do and
+		                              how far you are, or done
 		"Bye."                        closes it
 
 	Walking away from the coach, or nothing pressed for a while, closes it too. Display only: the server keeps the
@@ -28,6 +29,7 @@ local QuestConfig = require(Shared:WaitForChild("Config"):WaitForChild("QuestCon
 local QuestRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("QuestRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local QuestTracker = require(script.Parent:WaitForChild("QuestTracker"))
 local C = UIStyle.Colours
 
 local CoachDialogue = {}
@@ -40,6 +42,17 @@ local STAND_ANIMATION = "rbxassetid://507766388"
 local WALK_AWAY = 14
 -- Seconds with no answer before it closes by itself.
 local IDLE_SECONDS = 45
+-- Pixels of the screen left free above the portrait when it has to shrink to fit (the Roblox buttons sit above it).
+local TOP_ROOM = 8
+-- On a phone the portrait is this much smaller again, and shows the whole coach (user 2026-11-19: "make the mobile
+-- ui smaller, so the whole coach character can fit").
+local PHONE_SHRINK = 0.88
+-- How far the answer bubbles reach back over the portrait's right edge (design pixels): their tails touch the coach.
+-- A phone's whole-body coach is narrower, so the bubbles stay further out there.
+local TAB_OVERLAP = 220
+local PHONE_TAB_OVERLAP = 40
+-- Where the name bar's top sits above the screen's bottom (design pixels): the coach's feet stand just above it.
+local NAME_BAR_TOP = 172
 
 local started = false
 
@@ -95,7 +108,9 @@ function CoachDialogue.start()
 	portraitWorld.Parent = portrait
 	local portraitCamera = Instance.new("Camera")
 	portraitCamera.FieldOfView = 30
-	portraitCamera.CFrame = CFrame.lookAt(Vector3.new(-0.95, 0.9, -11.5), Vector3.new(-0.95, 0.5, 0))
+	-- The suit scene's framing (head to thighs); a phone frames the whole coach instead (wholeBody, below).
+	local CLOSE_UP = CFrame.lookAt(Vector3.new(-0.95, 0.9, -11.5), Vector3.new(-0.95, 0.5, 0))
+	portraitCamera.CFrame = CLOSE_UP
 	portraitCamera.Parent = portrait
 	portrait.CurrentCamera = portraitCamera
 
@@ -138,6 +153,48 @@ function CoachDialogue.start()
 		tabs[index] = tab
 	end
 	gui.Parent = playerGui
+
+	--[[
+		How big the portrait is (its FitExtraScale, UIStyle.fitToScreen): never taller than the screen, so the coach's
+		head stays in view under the Roblox buttons, and smaller again on a phone. The answer bubbles follow its right
+		edge. Words and the name bar keep their size so they stay readable.
+	]]
+	local portraitShrink = 1
+	local function fit()
+		local room = gui.AbsoluteSize.Y
+		local scale = UIStyle.screenScale()
+		local shrink = 1
+		if room > 0 then
+			shrink = math.clamp((room - TOP_ROOM) / (SPEAKER_SIZE * scale), 0.3, 1)
+		end
+		if UIStyle.isTouchOnly() then
+			shrink *= PHONE_SHRINK
+		end
+		portraitShrink = shrink
+		local overlap = if UIStyle.isTouchOnly() then PHONE_TAB_OVERLAP else TAB_OVERLAP
+		speaker:SetAttribute(UIStyle.FitExtraAttribute, shrink)
+		for index, tab in ipairs(tabs) do
+			tab.Position = UDim2.new(0, SPEAKER_SIZE * shrink - overlap, 0.5, SLOTS[index].y)
+		end
+	end
+	fit()
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+
+	-- A phone's portrait: the camera backs off until the whole coach, head to feet, stands above the name bar.
+	local function wholeBody(copy: Model)
+		local box, size = copy:GetBoundingBox()
+		local top = box.Position.Y + size.Y / 2
+		local height = size.Y
+		-- The part of the square the name bar and words leave free, from the top.
+		local free = math.clamp(1 - NAME_BAR_TOP / (SPEAKER_SIZE * portraitShrink) + 0.03, 0.55, 0.97)
+		local margin = 0.04
+		local view = height / (free - margin)
+		local distance = view / (2 * math.tan(math.rad(portraitCamera.FieldOfView / 2)))
+		local centreY = top + margin * view - view / 2
+		-- The coach a little left of the middle, as in the close-up, so the bubbles don't cover them.
+		local side = -0.154 * view
+		portraitCamera.CFrame = CFrame.lookAt(Vector3.new(side, centreY, -distance), Vector3.new(side, centreY, 0))
+	end
 
 	local open = false
 	local session = 0
@@ -232,7 +289,13 @@ function CoachDialogue.start()
 		local mine = session
 		local liftName = lift :: string
 		portraitWorld:ClearAllChildren()
-		portraitOf(figure)
+		fit()
+		local copy = portraitOf(figure)
+		if copy and UIStyle.isTouchOnly() then
+			wholeBody(copy)
+		else
+			portraitCamera.CFrame = CLOSE_UP
+		end
 		who.Text = string.upper(coach.name)
 		words.Text = ""
 		-- Just appears: no slide, no bounce (user 2026-11-19: the bounce "looks weird").
@@ -266,9 +329,13 @@ function CoachDialogue.start()
 			elseif choice == "Coach" then
 				say("It's gonna cost you... but I'm not taking new lifters yet. Come back soon.", mine)
 			elseif choice == "Quest" then
+				-- Asking for it takes it: the quest goes on the tracker (QuestService checks the lift).
 				local ok, quests = pcall(function()
-					return remotes.get:InvokeServer()
+					return remotes.take:InvokeServer(liftName)
 				end)
+				if ok and typeof(quests) == "table" then
+					QuestTracker.show(quests)
+				end
 				local mineToday = if ok and typeof(quests) == "table" then quests[liftName] else nil
 				local plural = QuestConfig.Plural[liftName] or liftName
 				if typeof(mineToday) ~= "table" then

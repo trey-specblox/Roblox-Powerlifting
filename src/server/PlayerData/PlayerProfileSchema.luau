@@ -65,7 +65,7 @@ local PlayerProfileSchema = {}
 	numbered State Champion badges; version 27: the Nationals spots; version
 	28: the Worlds spots).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 29
+PlayerProfileSchema.CURRENT_VERSION = 30
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -503,7 +503,8 @@ export type Technique = {
 	make QuestConfig.GoodLiftsNeeded good lifts of that lift in meets today. Account-wide, one day key (DayKey, the same
 	UTC day as the training cap): a different day means a fresh, empty set, so nothing carries over.
 
-	Written only by ProfileOperations.addQuestGoodLifts (a meet's save) and, later, a paid reset.
+	Written only by ProfileOperations.addQuestGoodLifts (a meet's save), ProfileOperations.takeQuest (asking the coach)
+	and, later, a paid reset. `taken` was added in version 30.
 ]]
 export type DailyQuests = {
 	-- The day these counts belong to (DayKey), or DayKey.UNSTAMPED before the first quest progress.
@@ -514,6 +515,8 @@ export type DailyQuests = {
 	done: { Squat: boolean, Bench: boolean, Deadlift: boolean },
 	-- The day the one paid reset was used (GAME_DESIGN §40.6, not sold yet), or unstamped.
 	paidResetDayKey: string,
+	-- Whether the player asked that coach for today's quest (it then shows on their quest tracker). Version 30.
+	taken: { Squat: boolean, Bench: boolean, Deadlift: boolean },
 }
 
 export type Bodyweight = {
@@ -718,6 +721,7 @@ local template: ProfileData = {
 		goodLifts = { Squat = 0, Bench = 0, Deadlift = 0 },
 		done = { Squat = false, Bench = false, Deadlift = false },
 		paidResetDayKey = "",
+		taken = { Squat = false, Bench = false, Deadlift = false },
 	},
 
 	meta = {
@@ -2040,6 +2044,28 @@ migrations[28] = function(data: ProfileData)
 		end
 		if typeof(quests.done[lift]) ~= "boolean" then
 			quests.done[lift] = false
+		end
+	end
+end
+
+--[[
+	Version 29 -> 30: which of today's quests the player took from a coach (user 2026-11-19: the quest tracker shows
+	"whenever we have a quest"). Nobody has taken one yet.
+
+	REPAIRS, NEVER OVERWRITES: a usable stored flag is kept; a missing or broken one is set to false. A missing quest
+	record is left to migration 28's repair (it already ran). IDEMPOTENT.
+]]
+migrations[29] = function(data: ProfileData)
+	local quests = (data :: any).dailyQuests
+	if typeof(quests) ~= "table" then
+		return
+	end
+	if typeof(quests.taken) ~= "table" then
+		quests.taken = {}
+	end
+	for _, lift in ipairs({ "Squat", "Bench", "Deadlift" }) do
+		if typeof(quests.taken[lift]) ~= "boolean" then
+			quests.taken[lift] = false
 		end
 	end
 end
