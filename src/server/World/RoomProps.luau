@@ -30,6 +30,7 @@ local StarterGymConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitFo
 local WeightClassConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("WeightClassConfig"))
 local CardioRhythmConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CardioRhythmConfig"))
 local MockMeetConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("MockMeetConfig"))
+local QuestConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("QuestConfig"))
 local GymRecordsConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("GymRecordsConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("ShopConfig"))
 local CelebrationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CelebrationConfig"))
@@ -2695,6 +2696,18 @@ FURNISH.Coach = function(kit)
 	chair(kit, "DeskChair", hw - 5, 13, "+a")
 	plant(kit, "Plant_1", -hw + 1.5, D - 1.5)
 	plant(kit, "Plant_2", -hw + 1.5, 1.5)
+	-- Where the daily-quest coaches stand (QuestService, GAME_DESIGN §40.6): the squat coach in front of the whiteboard,
+	-- bench and deadlift either side, all facing the chairs and the door.
+	for _, spot in ipairs({ { lift = "Bench", a = -12 }, { lift = "Squat", a = 0 }, { lift = "Deadlift", a = 12 } }) do
+		local point = kit.item("CoachSpot_" .. spot.lift, spot.a - 1, spot.a + 1, D - 5, D - 3, 0.06, 0.16, looks.Glass)
+		point.Transparency = 1
+		point.CanCollide = false
+		point.CanQuery = false
+		point.CanTouch = false
+		point:SetAttribute("Lift", spot.lift)
+		point:SetAttribute("Facing", kit.toward("-d"))
+		point:AddTag(QuestConfig.CoachSpotTag)
+	end
 end
 
 --[[

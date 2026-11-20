@@ -57,6 +57,7 @@ local ClothesConfig = require(ConfigFolder:WaitForChild("ClothesConfig"))
 local BodyweightConfig = require(ConfigFolder:WaitForChild("BodyweightConfig"))
 local StartingValuesConfig = require(ConfigFolder:WaitForChild("StartingValuesConfig"))
 local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig"))
+local QuestConfig = require(ConfigFolder:WaitForChild("QuestConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -65,6 +66,7 @@ local TechniqueTraining = require(ProgressionFolder:WaitForChild("TechniqueTrain
 local GearStats = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Economy"):WaitForChild("GearStats"))
 local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
 local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
+local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
 local AttemptRules = require(Shared:WaitForChild("Meet"):WaitForChild("AttemptRules"))
 
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
@@ -2390,6 +2392,110 @@ function ProfileOperations.applyBodyweightChange(data: ProfileData, earnedEV: nu
 		end
 	end
 	return { beforeKg = current, afterKg = after, targetKg = target, classBefore = classBefore, classAfter = classAfter }
+end
+
+--[[
+	=========================================================================
+	DAILY QUESTS  (GAME_DESIGN §40.6, user 2026-11-19)
+	=========================================================================
+
+	One quest per lift from its coach: QuestConfig.GoodLiftsNeeded good lifts of
+	that lift in today's meets. A finished quest pays strength directly
+	(§40.1): QuestConfig.RewardTrainingDays full training days of that lift,
+	through the training formula (CompetitionNumberReward), into the build of
+	the class the meet weighed in. Today is DayKey's UTC day; a stored day that
+	isn't today reads (and is rewritten) as a fresh, empty set. No yield.
+]]
+
+export type QuestLiftView = { goodLifts: number, needed: number, done: boolean }
+export type QuestProgress = {
+	lift: string,
+	added: number,
+	goodLifts: number,
+	needed: number,
+	-- True only for the save that finished it.
+	finished: boolean,
+	cnBefore: number?,
+	cnAfter: number?,
+}
+
+local QUEST_LIFTS = { "Squat", "Bench", "Deadlift" }
+
+local function usableQuests(data: ProfileData): any?
+	local quests = (data :: any).dailyQuests
+	if typeof(quests) ~= "table" or typeof(quests.goodLifts) ~= "table" or typeof(quests.done) ~= "table" then
+		return nil
+	end
+	return quests
+end
+
+-- Today's quests for the STATS screen and the coach's lines. Reads only.
+function ProfileOperations.getDailyQuests(data: ProfileData, nowUnix: number): { [string]: QuestLiftView }
+	local quests = usableQuests(data)
+	local today = if isFiniteNumber(nowUnix) and nowUnix >= 0 then DayKey.fromUnix(nowUnix) else nil
+	local fresh = quests == nil or today == nil or quests.dayKey ~= today
+	local view: { [string]: QuestLiftView } = {}
+	for _, lift in ipairs(QUEST_LIFTS) do
+		local count = if fresh then 0 else quests.goodLifts[lift]
+		view[lift] = {
+			goodLifts = if isFiniteNumber(count) and count >= 0 then count else 0,
+			needed = QuestConfig.GoodLiftsNeeded,
+			done = not fresh and quests.done[lift] == true,
+		}
+	end
+	return view
+end
+
+--[[
+	Adds a meet's good lifts (`goodByLift`, whole numbers per lift) to today's quests and pays every quest this
+	finishes: strength into the `classKey` build (the meet's weigh-in class). SERVER-ONLY: the only caller is a meet's
+	save, with good lifts the server judged. Returns one entry per lift with progress (empty when nothing counted).
+	A class with no Progression Reference (120+) finishes the quest but gains no strength, as training gives none.
+]]
+function ProfileOperations.addQuestGoodLifts(data: ProfileData, classKey: string, goodByLift: { [string]: number },
+	nowUnix: number): { QuestProgress }
+	local progress: { QuestProgress } = {}
+	local quests = usableQuests(data)
+	if quests == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 or typeof(goodByLift) ~= "table" then
+		return progress
+	end
+	local today = DayKey.fromUnix(nowUnix)
+	if quests.dayKey ~= today then
+		quests.dayKey = today
+		for _, lift in ipairs(QUEST_LIFTS) do
+			quests.goodLifts[lift] = 0
+			quests.done[lift] = false
+		end
+	end
+	local build = ProfileOperations.getBuild(data, classKey)
+	for _, lift in ipairs(QUEST_LIFTS) do
+		local added = goodByLift[lift]
+		if not isFiniteNumber(added) or added < 1 or quests.done[lift] == true then
+			continue
+		end
+		added = math.floor(added)
+		local before = if isFiniteNumber(quests.goodLifts[lift]) then quests.goodLifts[lift] else 0
+		local now = math.min(before + added, QuestConfig.GoodLiftsNeeded)
+		quests.goodLifts[lift] = now
+		local entry: QuestProgress = { lift = lift, added = now - before, goodLifts = now,
+			needed = QuestConfig.GoodLiftsNeeded, finished = false }
+		if now >= QuestConfig.GoodLiftsNeeded then
+			quests.done[lift] = true
+			entry.finished = true
+			local cn = build and (build.competitionNumber :: any)[lift]
+			if isFiniteNumber(cn) and cn > 0 then
+				local ev = QuestConfig.RewardTrainingDays * ProgressionConfig.DailyTraining.DailyCapEV / #QUEST_LIFTS
+				local award = CompetitionNumberReward.calculateTrainingAward(lift, classKey, cn, ev)
+				if award and isFiniteNumber(award.deltaCN) and award.deltaCN > 0 then
+					(build :: any).competitionNumber[lift] = award.competitionNumberAfter
+					entry.cnBefore = cn
+					entry.cnAfter = award.competitionNumberAfter
+				end
+			end
+		end
+		table.insert(progress, entry)
+	end
+	return progress
 end
 
 --[[

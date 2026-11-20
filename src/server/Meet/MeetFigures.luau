@@ -372,10 +372,19 @@ end
 	figure SITS instead: thighs forward on the seat, lower legs down, its hips
 	over `at`. Returns the speech bubble's text label (MeetFigures.say shows a
 	line in it) and the figure, or nils when no figure could be made (a meet
-	works without one).
+	works without one). `look` (optional) changes the outfit's top and trousers colours and the name tag (the gym's
+	quest coaches, GAME_DESIGN §40.6, each in their lift's colour).
 ]]
-function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: Vector3, seatTop: number?): (TextLabel?, Model?)
+export type Look = { top: Color3?, trousers: Color3?, tag: string? }
+function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: Vector3, seatTop: number?,
+	look: Look?): (TextLabel?, Model?)
 	local outfit = OUTFITS[kind]
+	if look then
+		outfit = table.clone(outfit)
+		outfit.top = look.top or outfit.top
+		outfit.trousers = look.trousers or outfit.trousers
+		outfit.tag = look.tag or outfit.tag
+	end
 	local description = Instance.new("HumanoidDescription")
 	description.HeadColor = outfit.skin
 	description.LeftArmColor = outfit.skin

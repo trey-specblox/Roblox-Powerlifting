@@ -65,7 +65,7 @@ local PlayerProfileSchema = {}
 	numbered State Champion badges; version 27: the Nationals spots; version
 	28: the Worlds spots).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 28
+PlayerProfileSchema.CURRENT_VERSION = 29
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -498,6 +498,24 @@ export type Technique = {
 	Lockout: number,
 }
 
+--[[
+	TODAY'S DAILY QUESTS, added in version 29 (GAME_DESIGN §40.6, user 2026-11-19). One quest per lift from its coach:
+	make QuestConfig.GoodLiftsNeeded good lifts of that lift in meets today. Account-wide, one day key (DayKey, the same
+	UTC day as the training cap): a different day means a fresh, empty set, so nothing carries over.
+
+	Written only by ProfileOperations.addQuestGoodLifts (a meet's save) and, later, a paid reset.
+]]
+export type DailyQuests = {
+	-- The day these counts belong to (DayKey), or DayKey.UNSTAMPED before the first quest progress.
+	dayKey: string,
+	-- Good lifts made in meets today, per lift.
+	goodLifts: { Squat: number, Bench: number, Deadlift: number },
+	-- Whether today's quest for that lift is finished and paid.
+	done: { Squat: boolean, Bench: boolean, Deadlift: boolean },
+	-- The day the one paid reset was used (GAME_DESIGN §40.6, not sold yet), or unstamped.
+	paidResetDayKey: string,
+}
+
 export type Bodyweight = {
 	currentKg: number,
 	-- What the player is eating toward. Equal to current means "maintain".
@@ -538,6 +556,9 @@ export type ProfileData = {
 
 	technique: Technique,
 	bodyweight: Bodyweight,
+
+	-- Today's coach quests (version 29).
+	dailyQuests: DailyQuests,
 
 	-- (competitionBudget, added in version 3, was removed in version 10: GAME_DESIGN 29.9.)
 	-- (trainingEnergy, added in version 3, was retired in version 8: GAME_DESIGN 29.8.)
@@ -689,6 +710,14 @@ local template: ProfileData = {
 			player makes, never a default the game makes for them.
 		]]
 		targetKg = StartingValuesConfig.BodyweightKg,
+	},
+
+	-- No quest progress yet; an unstamped day reads as a fresh day.
+	dailyQuests = {
+		dayKey = "",
+		goodLifts = { Squat = 0, Bench = 0, Deadlift = 0 },
+		done = { Squat = false, Bench = false, Deadlift = false },
+		paidResetDayKey = "",
 	},
 
 	meta = {
@@ -1975,6 +2004,42 @@ migrations[27] = function(data: ProfileData)
 		if typeof(classKey) ~= "string" or typeof(spot) ~= "table" or not isSeasonText(spot.earnedSeason)
 			or not (spot.competedSeason == "" or isSeasonText(spot.competedSeason)) then
 			spots[classKey] = nil
+		end
+	end
+end
+
+--[[
+	Version 28 -> 29: today's daily quests (user 2026-11-19, GAME_DESIGN §40.6). Nobody has progress yet.
+
+	REPAIRS, NEVER OVERWRITES: usable stored counts are kept; a missing or broken record or field is set to fresh.
+	IDEMPOTENT: a second run finds everything usable and changes nothing.
+]]
+migrations[28] = function(data: ProfileData)
+	local quests = (data :: any).dailyQuests
+	if typeof(quests) ~= "table" then
+		(data :: any).dailyQuests = { dayKey = "", goodLifts = { Squat = 0, Bench = 0, Deadlift = 0 },
+			done = { Squat = false, Bench = false, Deadlift = false }, paidResetDayKey = "" }
+		return
+	end
+	if typeof(quests.dayKey) ~= "string" then
+		quests.dayKey = ""
+	end
+	if typeof(quests.paidResetDayKey) ~= "string" then
+		quests.paidResetDayKey = ""
+	end
+	if typeof(quests.goodLifts) ~= "table" then
+		quests.goodLifts = {}
+	end
+	if typeof(quests.done) ~= "table" then
+		quests.done = {}
+	end
+	for _, lift in ipairs({ "Squat", "Bench", "Deadlift" }) do
+		local count = quests.goodLifts[lift]
+		if typeof(count) ~= "number" or count ~= count or count < 0 or count == math.huge or count ~= math.floor(count) then
+			quests.goodLifts[lift] = 0
+		end
+		if typeof(quests.done[lift]) ~= "boolean" then
+			quests.done[lift] = false
 		end
 	end
 end

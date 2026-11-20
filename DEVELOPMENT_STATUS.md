@@ -16,8 +16,35 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**DAILY QUESTS BUILT (2026-11-19, GAME_DESIGN §40.6; user picked: 3 coaches x 1 quest, 1 training day of strength
+per quest, good lifts at meets, fresh each day; "Strength directly" changes §34.2). SAVE VERSION 29. TESTED IN STUDIO
+(see below). COMMITTED (the commit after 0c5c9db), not pushed, not published.**
+- NEW: `src/shared/Config/QuestConfig.luau`, `src/shared/Progression/QuestRemotes.luau`,
+  `src/server/PlayerData/QuestService.luau` (started in init.server), `src/client/UI/CoachDialogue.luau` (init.client).
+- CHANGED: PlayerProfileSchema (v29: `dailyQuests`, migrations[28] repairs/creates it), ProfileOperations
+  (getDailyQuests, addQuestGoodLifts), LocalMeetService.saveLifter (counts good lifts with a total, same write; sends
+  Quest gains and QuestService.tell lines), MeetFigures.build (optional `look`: shirt/trousers/tag), RoomProps
+  FURNISH.Coach (three tagged CoachSpot points).
+- Paid reset: one a day (user), price TBD (user 800 vs Claude ~149); not built, needs a Developer Product from the user.
+- Bench/deadlift coach names are placeholders ("Bench Coach", "Deadlift Coach").
+- Tested in Studio: the test save migrated to version 29 on load; three coaches stand in the Coach room with Talk
+  prompts; a real E press opened the dialogue (COACH OLIVERA, portrait, three answers); "I need a stronger squat" said
+  "Make 2 good squats in a meet today... So far: 0 of 2"; "Can you coach me?" and "Bye." work.
+- Looked at in Studio (art/previews/QuestCoaches_Room.jpg, QuestCoach_Dialogue.jpg, QuestCoach_DialogueQuest.jpg):
+  first look showed the coaches with NO CLOTHES and name tags covered by their heads. Fixed: LifterBodyService
+  getClothes now waits for a clothes load in progress (the same race the hand shapes had: figures built together got
+  nil); the quest coaches' tags float 3.6 studs up. Now dressed (tees in lift colours, black joggers) with clear tags.
+  The three coaches share one face and body; only the shirt differs.
+- User 2026-11-19: the dialogue's slide-in and the answers' bounce "looks weird": it now just appears (panel and
+  answers, no tweens). Not re-checked in Studio (the user had a play test running, started before the change).
+- Real Local meet in Studio (forced good lifts): all three quests finished in one meet and paid one training day
+  each (Squat +1.89, Bench +1.30, Deadlift +2.15 kg on top of the meet's +2.5 kg), the three coach lines arrived, the
+  gain display got a "Quest" source, and GetQuests then said 2/2 done for all three. No errors.
+- NOT TESTED: the day rollover at UTC midnight (logic: a different day key reads and is rewritten as fresh), a phone,
+  two players, a bomb-out (code: counts only with a total).
+
 **GAIN DISPLAY BUILT (2026-11-19, GAME_DESIGN §40.4; user: "gains as a whole should be on a screen gain display. Any
-sort of gains"). TESTED IN STUDIO (one player). COMMITTED (the commit after 03a2883), not pushed, not published.**
+sort of gains"). TESTED IN STUDIO (one player). COMMITTED in 0c5c9db, PUSHED 2026-11-19 (not published yet).**
 - NEW `src/shared/Progression/GainRemotes.luau` (remote GainRemotes/Gained), `src/server/PlayerData/GainNews.luau`
   (send/strength/scale/technique; display only, requires nothing from PlayerData; started in init.server),
   `src/client/UI/GainDisplay.luau` (started in init.client).
@@ -45,6 +72,19 @@ the first item and the gain display. COMMITTED with the gain display.**
   (meets); a Robux cook-skip item; the strongman gym's rare NPC selling stat boosters (TP notification, stock = half
   the player count); daily NPC quests (big gains); much more gear (technique, stat gain, fun designs like a duck
   floaty belt); exciting unboxing with Legendary cutscenes (a lava-forged belt). §40.2 lists what to settle.
+- UNBOXING STUDY DONE, NOTHING BUILT (2026-11-19, research only, NOT COMMITTED): `References/Unboxing Study.md`
+  (web study of big Roblox games' reveals + Roblox's paid random item rule + a recommended design; Part 6 = the user's
+  10 videos studied every second with frame grids and measured sound, ~530 cutscenes; raw notes in
+  `References/Unboxing Study Notes/`). The user's decisions are in GAME_DESIGN §40.3: the character lifts, sets down
+  and unlocks every crate; a Legendary cinematic (crate pulls you into a volcano dimension, a giant lifter blocks
+  the eruption, "stay safe kid", smashes lava into the LAVA BELT, throws you out wearing it; shot list Study §6.2); a
+  shorter Epic cinematic (an old lifter's soul goes into his belt, Study §6.4); an ~80 Robux pass skipping the basic
+  animations (crate opening, celebration reroll); first Epic and first Legendary cinematic unskippable, repeats
+  skippable only with the pass (user: "Part of the pass"); Replay Cutscene button. Skipping the basic opening is pass only (the free "TAP TO SKIP" in ShopMenu goes when the
+  new opening is built; keep the opening ~3 s).
+- Coaching (§40.1, §40.5, 2026-11-19): coaches give daily quests and can be hired (Squat/Bench/Deadlift coach =
+  easier minigames; maybe an all-round coach = more gains). Coach Olivera's two trials are APPROVED (§40.5).
+  Open: price, how much easier, how long coaching lasts, whether Olivera is a real person (permission).
 - Measured (live numbers, 59 kg starter): a full training day ~+5.4 kg over the three lifts; meets up to 2x that per
   day, saved 3 days; record level ~2-2.5 months with full meets, 5-7 months training only. BaseProgressRate is
   still 0.00482389 (the 0.01113418 candidate was never switched on; §37.1's meets made up the difference).

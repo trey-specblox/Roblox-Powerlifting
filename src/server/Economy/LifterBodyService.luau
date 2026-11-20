@@ -72,6 +72,8 @@ local loading: { [string]: boolean } = {}
 -- One clothes model per build (the pieces are shaped over that build's body), and the hand shapes.
 local clothesModels: { [string]: Model } = {}
 local clothesTried: { [string]: boolean } = {}
+-- Builds whose clothes model is loading right now (getClothes).
+local clothesLoading: { [string]: boolean } = {}
 local handsModel: Model? = nil
 local handsTried = false
 local redress: ((Player) -> ())? = nil
@@ -190,15 +192,22 @@ local function getTemplates(build: string): Templates?
 	return templates[build]
 end
 
--- `build`'s clothes model (only while ClothesConfig.ClothesShown).
+-- `build`'s clothes model (only while ClothesConfig.ClothesShown). A figure dressed while another is still loading
+-- them waits for that load, like getHands (Studio 2026-11-19: the gym's three quest coaches were built at server start
+-- alongside the Mock Meet's coach, got nil during that first load and stood there with no clothes).
 local function getClothes(build: string): Model?
+	while clothesLoading[build] do
+		task.wait(0.1)
+	end
 	local spec = ClothesConfig.Bodies[build]
 	if clothesModels[build] or clothesTried[build] or not ClothesConfig.ClothesShown or spec == nil
 		or spec.clothesAssetId == 0 then
 		return clothesModels[build]
 	end
 	clothesTried[build] = true
+	clothesLoading[build] = true
 	local model = loadModel(spec.clothesAssetId)
+	clothesLoading[build] = false
 	if model then
 		model.Name = "Clothes_" .. build
 		model.Parent = templatesFolder()

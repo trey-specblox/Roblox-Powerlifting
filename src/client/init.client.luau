@@ -25,6 +25,8 @@ local CoinCounter = require(UIFolder:WaitForChild("CoinCounter"))
 task.spawn(CoinCounter.start)
 local GainDisplay = require(UIFolder:WaitForChild("GainDisplay"))
 task.spawn(GainDisplay.start)
+local CoachDialogue = require(UIFolder:WaitForChild("CoachDialogue"))
+task.spawn(CoachDialogue.start)
 
 -- The Shop's menu (hold E at the Shop's counter). It only asks; the server checks every purchase.
 local ShopMenu = require(UIFolder:WaitForChild("ShopMenu"))

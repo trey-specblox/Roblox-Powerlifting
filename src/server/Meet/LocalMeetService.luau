@@ -138,6 +138,7 @@ local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataServi
 local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
+local QuestService = require(PlayerDataFolder:WaitForChild("QuestService"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local TrainingStationService = require(ServerFolder:WaitForChild("Training"):WaitForChild("TrainingStationService"))
 local CardioMachineService = require(ServerFolder:WaitForChild("World"):WaitForChild("CardioMachineService"))
@@ -903,6 +904,8 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	local scaleOutcomes: { [string]: ProfileOperations.ScaleRaiseOutcome } = {}
 	-- How much each lift's Competition Scale rose (for the gain display, GAME_DESIGN §40.1).
 	local scaleGained: { [string]: number } = {}
+	-- Today's coach quests this meet moved (GAME_DESIGN §40.6).
+	local questProgress: { ProfileOperations.QuestProgress } = {}
 	local cnOutcomes: { [string]: string } = {}
 	local cnAfter: { [string]: number } = {}
 	local totalOutcome: ProfileOperations.ScaleRaiseOutcome? = nil
@@ -971,6 +974,21 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 					cnAfter[lift] = cnKg
 				end
 			end
+			-- The coaches' daily quests (GAME_DESIGN §40.6): this meet's good lifts count, only with a total (a bomb-out
+			-- saves nothing), after the meet's own strength raise.
+			if totalKg then
+				local goodByLift: { [string]: number } = {}
+				for _, lift in ipairs(MeetConfig.LiftOrder) do
+					local good = 0
+					for _, attempt in ipairs(lifter.lifts[lift].history) do
+						if attempt.result == "GoodLift" then
+							good += 1
+						end
+					end
+					goodByLift[lift] = good
+				end
+				questProgress = ProfileOperations.addQuestGoodLifts(data, lifter.classLabel, goodByLift, nowUnix)
+			end
 		end
 		if current.rewards then
 			if totalKg and place == 1 then
@@ -1011,6 +1029,15 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		end
 	end
 	GainNews.send(player, "Meet", gains)
+	-- The coaches' quests: finished ones pay strength (the gain display), and every step gets a line.
+	local questGains = {}
+	for _, step in ipairs(questProgress) do
+		if step.finished and step.cnBefore and step.cnAfter then
+			table.insert(questGains, GainNews.strength(step.lift, step.cnAfter - step.cnBefore))
+		end
+	end
+	GainNews.send(player, "Quest", questGains)
+	QuestService.tell(player, questProgress)
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
 		if cnOutcomes[lift] == "Raised" and cnAfter[lift] then
 			table.insert(lines, string.format("%s CN %.1f → %.1f kg", lift, lifter.competitionNumber[lift], cnAfter[lift]))

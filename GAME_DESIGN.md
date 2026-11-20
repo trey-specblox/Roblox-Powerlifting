@@ -1685,7 +1685,7 @@ Consequences, all verified:
 | Successful attempt | = intensity factor | **[OBSOLETE as a MEET reward]** — no longer a CN source. Retained as the EV *shape* a training event may reuse |
 | Failed attempt | = intensity factor x **0.20** | **[OBSOLETE]** — superseded by section 33.6. Zero EV, zero CN, no Scale increase |
 | Full 9-attempt meet (Normal strategy) | ~5.658 (~1.886 per lift) | **[OBSOLETE as a CN figure]** — historical reference only |
-| **Compete Daily** | ~~0.3948 to EACH active S/B/D lift~~ | **[OBSOLETE]** — superseded by §34.2. Daily quests award **no CN** |
+| **Compete Daily** | ~~0.3948 to EACH active S/B/D lift~~ | **[OBSOLETE]** — superseded by §34.2. ~~Daily quests award **no CN**~~ **Changed by the user 2026-11-19: daily quests give CN directly (§40.1)** |
 | **Daily Set completion** | ~~0.1974 to EACH active S/B/D lift~~ | **[OBSOLETE]** — superseded by §34.2. The bonus survives; its CN component does not |
 | AFK training | ~~0.2591 per hour~~ | **[OBSOLETE RATE]** — superseded by §34.4. The channel became the *only* channel, so the rate was re-derived from scratch rather than retuned |
 | **Gym station training** | **1.00 EV/hour x `H(t)`**, capped at **4.00 EV/day account-wide** | **[PROVISIONAL]** — the **only** CN source. §34.2, §34.3, §34.4 |
@@ -4390,6 +4390,10 @@ being tuned away.
 >
 > **⚠ CHANGED BY THE USER, 2026-11-01:** meets are now the **main** CN source,
 > about 2/3 of it for a player who does both (§37.1).
+>
+> **⚠ CHANGED BY THE USER, 2026-11-19:** **daily quests now give CN directly** (§40.1, "Strength directly"), a third
+> source; gain boosts (steaks, meet meals, the strongman NPC's boosters, coaches) multiply what training and meets
+> give rather than granting CN themselves (§40). Purchases still never grant CN.
 
 **[FINAL]** Competition Number is awarded **only** by training at an eligible gym
 training station.
@@ -7597,7 +7601,8 @@ longevity. These are the user's decisions; the numbers are **[TBD]** until each 
 | **Cooking: meet meals** | The **meet** gain boost: raises the strength a completed meet gives |
 | **Monetization: cooking** | A Robux item that **skips the cooking time** (the steaks themselves stay coins only) |
 | **The strongman gym's rare NPC** | Not called steroids. A **rare NPC** spawns at the strongman gym and sells **stat gain boosters** (any stat gained is boosted). A **"TP" notification** to every player when it spawns (the user sees this as monetization). **Limited stock: only half the player count can buy one**. **Boosters cost coins** (user 2026-11-19: "NPC boosters will be for coins. Like The steroid guy") |
-| **Daily quests** | Given by NPCs; **a huge stat gain**, so players come back daily and get stronger even without playing a lot. **Free** (user 2026-11-19) |
+| **Daily quests** | Given by NPCs; **a huge stat gain**, so players come back daily and get stronger even without playing a lot. **Free** (user 2026-11-19). **They give strength (Competition Number) directly** (user 2026-11-19, "Strength directly", picking Claude's recommendation over a gain boost). **[CHANGES §34.2's frozen rule]** that CN comes only from training and meets, and §29.5's "daily quests award no CN": quests are now a third source. The amounts count inside the 2-month target |
+| **Coaches** (answers §22's open question) | The coach NPCs (the upstairs Coach room) **give the daily quests**, and players can **get coached** by them (user 2026-11-19): a **Squat Coach, Bench Coach and Deadlift Coach** each **make that lift's minigames easier**, and maybe **an all-round coach (squat, bench and deadlift) gives more gains**. Another source of stat gains, so it counts inside the 2-month target. **[TBD]:** how you get one (coins? quests? for how long?), how many at once, how much easier |
 | **Crates** | **Never bought with Robux** (user 2026-11-19), so Roblox's paid random item rule doesn't apply. Robux stays for convenience: the cook skip, the unboxing skip pass (§40.3). The user may look at monetizing **celebrations** later |
 | **Gear** | A **huge part of the game**: technique gear, stat gain gear, and fun designs (e.g. **a duck floaty as a belt**) |
 | **Unboxing** | Must be **extremely exciting**: an unbox animation, and a **Legendary puts you in a cutscene**, e.g. a blacksmith hammering a belt whose latch and leather are squeezed out of molten lava: over the top on purpose, so players laugh ("is it really this serious"). Study big Roblox games' unlock animations first. **The user's detailed design (character opens the crate, crate pulls you into a volcano dimension, a giant powerlifter forges a Lava Belt, an 80 Robux skip for basic animations): §40.3** |
@@ -7615,6 +7620,11 @@ longevity. These are the user's decisions; the numbers are **[TBD]** until each 
 - **Paid unboxing:** settled: crates are never bought with Robux (user, 2026-11-19). If that ever changes, Roblox
   requires the odds to be shown before buying.
 - Ties in with §35's crates and rare suits (memory: crate types, rarity looks) and §38's gear fitting.
+- **Coaches (2026-11-19):** "easier minigames" is the same lever as technique stats and gear technique (the meet
+  difficulty already reads them), so a coach's help should add to that lever with a ceiling, so skill still decides
+  lifts. Suggested: **one coach at a time** (a specialist for one lift, or the all-round coach for more gains), so
+  picking one is a real choice; the coach you hire is the one who walks out with you at meets (§29.10's watching
+  coach).
 
 ### 40.3 Unboxing: the user's design (user, 2026-11-19; NOT BUILT, design study in References/Unboxing Study.md)
 
@@ -7626,13 +7636,88 @@ The user's decisions after reading the first unboxing study. Numbers and details
 | **A rare item: the cinematic** | Only when the item is rare, a cinematic plays straight out of the opening. The user's example for a **Lava Belt**: **the crate pulls you in**; you're in **a new dimension**, staring at **a huge volcano**; it **erupts**, and **a gigantic, very buff powerlifter blocks the eruption** from hitting you; the eruption dies away and he says something like **"stay safe kid"**; he **grabs molten lava and rocks and smashes them together into a powerlifting belt**; **you get thrown out of the chest with the belt on your waist**; then the unlock screen: **"You unlocked LAVA BELT, LEGENDARY"**. This replaces the blacksmith example in §40.1 |
 | **Skip pass (monetization)** | A cheap Robux purchase (**about 80 Robux**, the user's figure) that skips **only the basic animations**: the crate opening and the celebration reroll spin. **It never skips a rare cinematic the first time**: a player's first time always gets the full cinematic. |
 | **Rare cinematic length afterwards** | After the first time, **players choose the length** themselves (the study suggested Full / Short / Off) |
+| **Epic gets a shorter cinematic (user, 2026-11-19)** | **Legendary gets the big cinematic; Epic gets a small one** "to get players excited". The user's idea, open to anything: **an old great lifter passes away, his soul goes into his belt, and the belt somehow ends up in the mystery crate the player opens**. The study's shot list: References/Unboxing Study.md §6.4 |
+| **When a cinematic can be skipped (user, 2026-11-19)** | **Counted per rarity.** A player's **first Epic** plays its cinematic with **no skip**; any later Epic **can be skipped**. The same for Legendary, separately: a player who has had an Epic but never a Legendary **must watch** their first Legendary cinematic; later Legendaries can be skipped. The user expects players to want to pay to skip the extra cinematics. **Skipping a repeat cinematic is part of the ~80 Robux skip pass (user, 2026-11-19: "Part of the pass")**: without the pass a repeat plays (at the length the player chose) |
+| **Replay Cutscene (user, 2026-11-19: "yea you can do replay cutscene")** | Owned pieces get a **Replay Cutscene** button (e.g. in the gear menu), as Sol's RNG and Hot's RNG have |
 
 **Claude's notes (2026-11-19):** the skip pass isn't random and doesn't change odds, so Roblox's paid random item rule
 doesn't cover it. To settle while designing:
-- Does the free tap-to-skip (§35.12) go away for players without the pass?
-- Which rarities get a cinematic: Legendary only (§40.1), or Epic too?
+- ~~Does the free tap-to-skip go away?~~ **Settled (user, 2026-11-19: "Pass only"): skipping the basic crate opening
+  is pass only.** **[WOULD CHANGE §35.12]:** today a tap skips the crate intro and reel for everyone (ShopMenu's
+  "TAP TO SKIP"); that goes when the new opening is built. So the opening must stay short for players without the
+  pass (Claude's target: about 3 s for the opening itself).
+- ~~Is skipping a repeat cinematic free?~~ Settled: part of the pass (above). The pass therefore skips the crate
+  opening, the celebration reroll spin and repeat Epic/Legendary cinematics, never a first one.
+- "First time" is counted per rarity (the user's rule). If different gear pieces get different Legendary cinematics
+  (Lava Belt, sleeves...), a player would see only the first one in full; Claude recommends also playing each
+  *new* cinematic in full once, for the user to decide.
+- ~~Which rarities get a cinematic~~: settled above (Legendary big, Epic small).
 - With no pass, the basic opening should stay short: Blade Ball's 5-10 s unskippable spin is the reason its players buy
   a skip, and it annoys everyone who doesn't.
+
+### 40.5 Getting coached: Coach Olivera (user, 2026-11-19; NOT BUILT; trials APPROVED)
+
+| Step | The user's design |
+|---|---|
+| **The coaches** | Coaches stand around the gym. Example: **Coach Olivera**, the squat coach ("he has a really good squat") |
+| **Talking to one** | The **same dialogue screen as the coach handing over a rare suit** (§35.12: big portrait, name, line, answers). Two answers: **"Can you coach me?"** and **"I need a stronger squat"** |
+| **"Can you coach me?"** | The coach: **"It's gonna cost you..."**. Once the lifter pays, he **brings the lifter to a Mock Meet room** where the trials begin: **"I don't want you to waste your money or your time, show me what you got."** |
+| **The trials (user's first idea, asked whether it's too cruel)** | 1: **50 perfect squats in a row**, no misses. 2: **go 3/3 on squat in a meet, and win** |
+| **Retries (user, 2026-11-19)** | **Failing trial 1 resets everything: pay again.** **Trial 2 can be retried over and over** for free |
+| **THE APPROVED TRIALS** (user 2026-11-19: "Yes, lock them in"; replaces the first idea above) | **Trial 1, in the Mock Meet room:** **10 good squats in a row at 100% of Competition Number**; one miss fails it, and a fail means paying again. **Trial 2, in a real meet:** **3/3 squats, the third at 105% of Competition Number or more**, AND **a top-3 squat in that meet when other real players are in it, or the best squat of the meet when only computer lifters are** (ties broken the way the meet breaks them). Free retries; the coach walks out and watches every try. The notes below are how these were reached |
+
+**Claude's answer (2026-11-19), to settle with the user:**
+- Trial 1 as written is too cruel: a squat takes about 10-15 s, so 50 in a row is 10-12 minutes where one slip restarts
+  everything (worse on a phone), and the squat minigame has no "perfect" grade, only good lift or no lift.
+  Suggested: **10 good squats in a row at 100% of your Competition Number** (a few minutes, still tense).
+- Trial 2's "and win" depends on who else is in the meet: one strong player in the server makes it impossible.
+  Suggested: **3/3 squats in a meet, the third at 105% of your Competition Number or more**, the coach watching.
+  Entirely in the lifter's hands, and the same idea as the rare suit test (100/105/110%, §35.12).
+- ~~Paying first and then failing feels bad. Suggested: pay once; a failed trial can be retried after 24 hours for
+  free.~~ The user's retry rules (above) replace this. With them, Claude's suggestion (2026-11-19): trial 1 costs money
+  to fail, so it must be short and fair: **10 good squats in a row at 100% of Competition Number** (a weight the
+  lifter trains with; about 2-3 minutes, one miss and it's over). Trial 2 is free to retry, so it can be the hard
+  one, but still never blocked by other players: **3/3 squats in a meet with the third at 105% of Competition
+  Number or more**. The coach walks out and watches every try.
+- The user (2026-11-19): "what about place top 3? because i feel like coaches should be really good thing". Claude:
+  yes, with free retries a placing works, but make it **top 3 in the SQUAT** (the meet's best squats, computer lifters
+  counted), not the overall total: a squat coach shouldn't fail you for your bench or deadlift. Suggested trial 2:
+  **3/3 squats, the third at 105% of Competition Number or more, and a top-3 squat in that meet.**
+- The user (2026-11-19): "top 3 if facing against real players, but you have to win against computers". Claude
+  agrees: computer lifters are tuned to about your level, so beating them all is hard but always possible, while real
+  players can be much stronger. So the placing part becomes: **a meet with other real players: a top-3 squat; a meet
+  with only computer lifters: the best squat of the meet** (ties broken the way the meet already breaks them).
+- If Coach Olivera is a real person, get his permission before using his name or likeness (§22's note).
+
+### 40.6 Daily quests (user, 2026-11-19, picked from Claude's options; BUILT 2026-11-19)
+
+| Question | Decision |
+|---|---|
+| **Who gives them** | **Three coaches, one quest each:** the Squat Coach (Coach Olivera, §40.5), the Bench Coach and the Deadlift Coach each give one quest a day for their own lift, through the coach dialogue ("I need a stronger squat") |
+| **What a quest asks** | **Good lifts at a meet** (the user's only pick), e.g. "Make 2 good squats in a meet" |
+| **The reward** | **Strength directly** (§40.1): **one full training day for that lift**, the same amount a full day at the rack gives it (the training formula, so it shrinks near the world-record level like everything else). All three quests = a full training day: roughly double a casual player's daily progress |
+| **Missed days** | **Each day is fresh:** unfinished quests disappear at the daily reset (the same UTC day as the training cap) |
+
+**Claude's defaults to confirm while building (2026-11-19):**
+- Good lifts **add up over the day's meets** (a bad meet doesn't waste the quest); 2 good lifts of the coach's lift a day.
+  One meet can finish all three quests, which suits "stronger without playing a lot".
+- **Meets against others only** (Local, Regional, State, Nationals; computer lifters count since §37.1); the Mock
+  Meet doesn't count. A bomb-out saves nothing, as today, so its good lifts don't count either.
+- The reward lands the moment the meet saves, on the gain display (source "Quest").
+
+**Paid reset (user, 2026-11-19):** ~~an instant reset that doubles in price each time (800, 1,600, 3,200 Robux...)~~
+**one paid reset a day** (after Claude flagged that unlimited resets buy strength directly). **Price: [TBD]** (the user
+suggested 800 Robux; Claude suggested about 149, since a daily repeatable at 800 would rarely sell). Not built: it
+needs a Developer Product the user creates on the Creator Hub; the save already has a field for it
+(`dailyQuests.paidResetDayKey`).
+
+**How it's built (2026-11-19):** save version 29 adds `dailyQuests` (day key, good lifts and done per lift);
+`ProfileOperations.addQuestGoodLifts` adds a meet's good lifts in the meet's own save write (only with a total) and
+pays a finished quest through the training formula; `QuestService` puts the three coaches (MeetFigures coaches in the
+lift's colour: squat yellow, bench red, deadlift blue) on tagged spots in the upstairs Coach room, with a Talk prompt;
+the client `CoachDialogue` uses the rare-suit dialogue's look: "Can you coach me?" (says coaching isn't open yet),
+"I need a stronger squat" (today's quest and progress) and "Bye." Progress lines appear at the top of the screen after
+a meet; a finished quest's strength pops on the gain display. The bench and deadlift coaches' names are placeholders.
 
 ### 40.4 The gain display (built 2026-11-19)
 

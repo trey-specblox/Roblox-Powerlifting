@@ -101,6 +101,8 @@ local CoinDisplayService = require(PlayerDataFolder:WaitForChild("CoinDisplaySer
 CoinDisplayService.start()
 local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
 GainNews.start()
+local QuestService = require(PlayerDataFolder:WaitForChild("QuestService"))
+QuestService.start()
 
 -- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
 local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))
