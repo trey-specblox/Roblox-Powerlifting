@@ -1,0 +1,110 @@
+--!strict
+--[[
+	KitchenService
+	Server / Economy
+
+	Steaks and the Kitchen (GAME_DESIGN §40.7, user 2026-11-19):
+
+		- a "Cook" prompt on every cooker spot (parts tagged KitchenConfig.CookerSpotTag, placed by the Kitchen
+		  building); the client's KitchenMenu answers it
+		- KitchenRemotes: the cooker and the steak boost (GET), paying for and starting a cook (COOK), eating a
+		  finished meal (EAT)
+
+	The rules live in ProfileOperations (startCook, eatSteak) through PlayerDataService; this service only checks
+	what a client sent (a steak count), rate-limits it, and answers with the fresh view. The client never names a
+	price, a time or a boost.
+
+	PERFORMANCE: one prompt per cooker; no loop (cooks finish by the clock, read when asked).
+]]
+
+local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local KitchenConfig = require(Shared:WaitForChild("Config"):WaitForChild("KitchenConfig"))
+local KitchenRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("KitchenRemotes"))
+
+local PlayerDataService = require(script.Parent.Parent:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
+local KitchenPans = require(script.Parent:WaitForChild("KitchenPans"))
+
+local KitchenService = {}
+
+local MIN_SECONDS_BETWEEN_ASKS = 0.4
+
+local started = false
+local lastAsked: { [Player]: number } = {}
+
+local function tooSoon(player: Player): boolean
+	local now = os.clock()
+	if now - (lastAsked[player] or -math.huge) < MIN_SECONDS_BETWEEN_ASKS then
+		return true
+	end
+	lastAsked[player] = now
+	return false
+end
+
+-- The "Cook" prompt on a cooker spot.
+local function addPrompt(spot: Instance)
+	if not spot:IsA("BasePart") or spot:FindFirstChild("CookPrompt") then
+		return
+	end
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "CookPrompt"
+	prompt.ActionText = "Cook"
+	prompt.ObjectText = "Steak cooker"
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.HoldDuration = 0
+	prompt.MaxActivationDistance = 10
+	prompt.RequiresLineOfSight = false
+	prompt:AddTag(KitchenConfig.PromptTag)
+	prompt.Parent = spot
+end
+
+function KitchenService.start()
+	if started then
+		return
+	end
+	started = true
+	local set = KitchenRemotes.createOnServer(ReplicatedStorage)
+
+	set.get.OnServerInvoke = function(player: Player): any
+		if tooSoon(player) then
+			return nil
+		end
+		return PlayerDataService.getKitchen(player)
+	end
+
+	set.cook.OnServerInvoke = function(player: Player, steaks: any): any
+		if tooSoon(player) then
+			return { outcome = "Busy" }
+		end
+		if not KitchenConfig.isSteakCount(steaks) then
+			return { outcome = "Rejected" }
+		end
+		local outcome, balance = PlayerDataService.startCook(player, steaks)
+		-- The steak appears in the player's pan and the clock starts.
+		KitchenPans.refresh(player)
+		return { outcome = outcome or "Rejected", balance = balance, view = PlayerDataService.getKitchen(player) }
+	end
+
+	set.eat.OnServerInvoke = function(player: Player): any
+		if tooSoon(player) then
+			return { outcome = "NotReady" }
+		end
+		local outcome, percent = PlayerDataService.eatSteak(player)
+		KitchenPans.refresh(player)
+		return { outcome = outcome or "Rejected", percent = percent, view = PlayerDataService.getKitchen(player) }
+	end
+
+	for _, spot in ipairs(CollectionService:GetTagged(KitchenConfig.CookerSpotTag)) do
+		addPrompt(spot)
+	end
+	CollectionService:GetInstanceAddedSignal(KitchenConfig.CookerSpotTag):Connect(addPrompt)
+
+	Players.PlayerRemoving:Connect(function(player)
+		lastAsked[player] = nil
+	end)
+end
+
+return KitchenService

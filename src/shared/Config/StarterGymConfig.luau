@@ -615,6 +615,9 @@ StarterGymConfig.PropAssets = {
 	-- 81304095031113 (v03), 72716651059879 (v02).
 	{ id = 110593831900615 }, -- AnnouncerMic_01: the Nationals announcer's hand-held microphone (item AnnouncerMic, welded
 	-- into the right hand by MeetFigures.giveMicrophone; art/scripts/build_announcer_mic_01.py, CHECK PASSED, 560 triangles).
+	{ id = 133935733618984 }, -- KitchenPan_01: the Kitchen's pan zone, shared by all 40 zones: GiantPan, PanClock (Face carries
+	-- the countdown) and BigSteak (one steak, scaled per cook) (GAME_DESIGN §40.7; art/scripts/build_kitchen_pan_01.py,
+	-- CHECK PASSED, 5,384 triangles).
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -698,6 +701,13 @@ StarterGymConfig.PropPaints = {
 	-- The stage's light leaking past the lifter's curtain (NatCurtainGlow).
 	NatStageLeak = { color = Color3.fromRGB(255, 226, 180), material = Enum.Material.Neon, transparency = 0.25 },
 	NatBackdrop = { color = Color3.fromRGB(74, 36, 120) },
+	-- The Kitchen (KitchenPan_01).
+	KitIron = { color = Color3.fromRGB(26, 26, 30), material = Enum.Material.Metal },
+	KitBurner = { color = Color3.fromRGB(255, 120, 30), material = Enum.Material.Neon },
+	KitSteak = { color = Color3.fromRGB(120, 44, 26) },
+	KitSteakFat = { color = Color3.fromRGB(248, 232, 206) },
+	KitSteakSear = { color = Color3.fromRGB(58, 22, 12) },
+	KitSteakBone = { color = Color3.fromRGB(242, 232, 210) },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -1017,6 +1027,13 @@ StarterGymConfig.PropColourways = {
 	MeetChalkStand = { { Frame = "Black", Collar = "Yellow", Bowl = "Silver", Chalk = "White", Logo = "White" } },
 	-- The Nationals announcer's hand-held microphone (AnnouncerMic_01, MeetFigures.giveMicrophone).
 	AnnouncerMic = { { Handle = "Black", Collar = "Yellow", Head = "Silver", Band = "Charcoal" } },
+	-- The Kitchen's pan zone (KitchenPan_01, KitchenPans).
+	GiantPan = { {
+		Body = "KitIron", Grip = "Red", Label = "White", Stand = "Navy", StandLabel = "White", Grate = "Silver",
+		Burner = "KitBurner",
+	} },
+	PanClock = { { Post = "Silver", Body = "Yellow", Bells = "Navy", Face = "White", Ticks = "Black" } },
+	BigSteak = { { Meat = "KitSteak", Fat = "KitSteakFat", Sear = "KitSteakSear", Bone = "KitSteakBone" } },
 	-- The Shop's menu colours the Body and Lid for the crate being opened and keeps only its labels (GearStatsConfig.Crates).
 	GearCrate = { {
 		Body = "Navy", Lid = "Navy", Steel = "Silver", LidSteel = "Silver", Yellow = "Yellow", LidYellow = "Yellow",

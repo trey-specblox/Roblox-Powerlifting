@@ -16,8 +16,65 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**KITCHEN PART 2 STARTED (2026-11-19, GAME_DESIGN §40.7 "The Kitchen and the chef"). Models UPLOADED; COMMITTED 2026-11-20 (not pushed, not published).**
+- User's new design: a huge Kitchen in the front square (map design comes last, so it's placed from one point), an
+  NPC chef with a slider/typing screen, a short scene (bag or cow into a meat grinder, the chef lifts a steak mountain
+  sized by the cook, "Alright, I'll handle this for you", throws it onto your pan; skip = the ~80 Robux basic-animation
+  pass), one giant pan per player (up to 40) with a giant clock above it, talk to the chef again for meet meals or the
+  Robux skip. Future idea logged: collectable meat types from meets.
+- REMINDER FOR THE USER: redo the Kitchen screens (KitchenMenu, BoostBar) from the UI kit, not plain boxes (memory
+  kitchen-gui-redo-reminder).
+- Built: `art/scripts/build_kitchen_pan_01.py` -> `art/blender/KitchenPan_01.blend` (GiantPan_*, PanClock_* with a flat
+  Clock_Face for the countdown, BigSteak_*: ONE big T-bone steak that code scales per cook; user rejected a steak pile
+  for performance). check_models: CHECK PASSED, 16 meshes, 5,384 triangles for one full zone. Previews (backface
+  culling on): art/previews/KitchenPan_01_*.png. The user approved the pan; the big steak waits for their look
+  approval before export/upload. Scene detail (user): lifter dumps steaks into the meat grinder, it blends, the chef
+  lifts a meat mountain the size of the finished steak.
+- UPLOADED 2026-11-19: KitchenPan_01 rbxassetid://133935733618984 (materials.json; StarterGymConfig PropAssets, Kit*
+  PropPaints, PropColourways GiantPan / PanClock / BigSteak). User approved the pan and the steak's look; wants steaks
+  "hugee like a person size, maby multiple person size" (GAME_DESIGN §40.7).
+- PAN HALL CODE BUILT, TESTED IN STUDIO (one player), COMMITTED 2026-11-20: NEW `src/server/Economy/KitchenPans.luau`
+  (init.server, task.spawn after KitchenService): 40 zones (8 x 5, pitch 52 x 48) at KitchenConfig.HallOrigin (4000,
+  1000, 0), off the map like the meet venues; pans scaled 2.2 and sunk 4.5 into the floor (rim about chest height),
+  clocks scaled 1.4 behind; zone assigned on join / freed on leave (player attribute KitchenZone; zone attributes
+  Owner, Steaks, ReadyAt); one BigSteak per cooking zone, length KitchenConfig.steakLength (1 steak 5 studs, 180 about
+  21, 2,000 about 42: spills out of the pan); zones stream Atomic. A TEMPORARY plain floor part until the hall is
+  modelled. KitchenService refreshes the pan after cook/eat. NEW client `src/client/World/KitchenClocks.luau`
+  (SurfaceGui per clock face in PlayerGui: owner name, countdown, READY!, EMPTY, FREE; retries when a face streams in).
+  Tested: 40 zones built, the player got zone 1, cooking showed the steak and the clock counted down ("9:39"), other
+  clocks "FREE"; sizes 1 / 180 / 2,000 shown side by side (test-only copies). Previews: art/previews/KitchenHall_*.jpg.
+  NOTE for testing: the Studio MCP screen_capture with camera_position does NOT draw SurfaceGuis, and Studio's view
+  froze once; hold the client camera with a test BindToRenderStep instead.
+- NOT reachable by players yet: no entrance building or way into the hall, and no chef (the cooker prompt still only
+  appears on KitchenCookerSpot-tagged parts). Next: the chef (cartoon body + chef hat/apron) and his screen (redo from
+  the UI kit), the meat grinder, the bag and cow, the meat mountain, the hall and entrance building (pitched roof), the
+  chef scene, ElevenLabs sounds (sizzle, grinder, chef line), steam/sizzle on cooking pans.
+
+**STEAKS PART 1 BUILT (2026-11-19, GAME_DESIGN §40.7): the boost system, cooking, the cooker menu and the boost
+timer. SAVE VERSION 31. TESTED IN STUDIO (one player). COMMITTED 2026-11-20 (not pushed). NO KITCHEN BUILDING YET, so the cooker has no
+place in the game: the prompt appears only on parts tagged KitchenCookerSpot (the building, part 2, adds one).**
+- User's decisions: a meal boosts TRAINING (strength and technique, technique has no daily limit) for 24 hours; §25's
+  table with infinite stacking; 25 coins and 10 s per steak; cooks while away, even offline (Claude agreed); the
+  Kitchen is its own building outside the gym.
+- NEW: `src/shared/Config/KitchenConfig.luau` (prices, times, the % curve: table then a power curve past 500),
+  `src/shared/Progression/GainBoosts.luau` (the one boost reader; boosts add together),
+  `src/shared/Progression/KitchenRemotes.luau`, `src/server/Economy/KitchenService.luau` (init.server, after
+  QuestService), `src/client/UI/KitchenMenu.luau` and `src/client/UI/BoostBar.luau` (init.client).
+- CHANGED: PlayerProfileSchema (v31: `kitchen` {steaks, startedAt, readyAt} and `boosts.steak` {percent, endsAt,
+  steaks}; migrations[30] repairs/creates them), ProfileOperations (getKitchen, startCook, eatSteak; training award paid
+  for boosted EV while the daily allowance is debited the plain EV; applyTechniqueTraining takes an optional nowUnix
+  and adds the boost to gear speed), PlayerDataService (getKitchen/startCook/eatSteak; technique passes os.time()).
+- Tested in Studio: save loaded at v31; with a TEST-ONLY tagged part, the menu opens; cook 1 steak (-25 coins), the
+  cooking page counts down, the ready page and the bottom "meal ready" chip appear, EAT starts the 24 h boost and its
+  chip; the server refuses a negative count and a second cook while one is in; the bigger-boost warning shows.
+  Training maths on test saves: +80% gives exactly 1.8x strength and technique, +250% 3.5x strength, the daily
+  allowance used is unchanged, an ended boost counts as none. Previews: art/previews/Kitchen_Menu_*.jpg.
+- NOT DONE: the Kitchen building, cooker and growing steak models (Blender, part 2); ElevenLabs sounds (sizzle, eating;
+  the menu uses the crate's Tick/Big for now); the Robux cook skip (needs a Developer Product); a real training session
+  with a boost; offline cooking across a rejoin (Studio doesn't save).
+
 **QUEST TRACKER + PHONE COACH DIALOGUE BUILT (2026-11-19, GAME_DESIGN §40.6 "Quest tracker and phone dialogue").
-SAVE VERSION 30. TESTED IN STUDIO (one player). COMMITTED 2026-11-19 (not pushed, not published).**
+SAVE VERSION 30. TESTED IN STUDIO (one player). COMMITTED in 0f09491, PUSHED 2026-11-19 (not published yet).**
 - NEW: `src/client/UI/QuestTracker.luau` (started in init.client before CoachDialogue).
 - CHANGED: PlayerProfileSchema (v30: `dailyQuests.taken`, migrations[29] repairs it), ProfileOperations (takeQuest,
   rollQuestDay shared by both writers, views carry `taken` and `resetIn`), QuestRemotes (TakeQuest RemoteFunction),
@@ -30,6 +87,14 @@ SAVE VERSION 30. TESTED IN STUDIO (one player). COMMITTED 2026-11-19 (not pushed
   close-up and puts the tracker lower right. Previews: art/previews/QuestTracker_Phone.jpg, QuestTracker_Computer.jpg.
 - NOT tested: a real phone (Studio's window is not phone-sized), a real meet moving a tracked quest, the reset at
   midnight UTC, two players.
+- FOLLOW-UP (COMMITTED 2026-11-20): the user's phone test showed the shrunken panel "like a box". The panel is full
+  size again; only the portrait camera frames the whole coach in the on-screen part (CoachDialogue frameCoach). The
+  UIStyle "FitExtraScale" option is removed (UIStyle is back to 2545ef0). Checked in Studio phone mode
+  (art/previews/QuestCoach_PhoneFullPanel.jpg); not yet on a real phone.
+- FOLLOW-UP 2 (COMMITTED 2026-11-20): on the user's phone the panel stopped at the notch's safe-area strip (gym visible beside
+  the camera cutout). CoachDialogue fillNotch grows only the panel art left/up into that strip, measured with an empty
+  ScreenInsets.None helper gui (CoachDialogueScreenEdge; a normal gui always reports 0). Studio has no notch: checked
+  it changes nothing there and, with a 75-pixel strip forced by hand, that the art fills it. Needs the real phone.
 
 **DAILY QUESTS BUILT (2026-11-19, GAME_DESIGN §40.6; user picked: 3 coaches x 1 quest, 1 training day of strength
 per quest, good lifts at meets, fresh each day; "Strength directly" changes §34.2). SAVE VERSION 29. TESTED IN STUDIO

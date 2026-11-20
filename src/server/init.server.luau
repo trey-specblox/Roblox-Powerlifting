@@ -103,6 +103,11 @@ local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
 GainNews.start()
 local QuestService = require(PlayerDataFolder:WaitForChild("QuestService"))
 QuestService.start()
+local KitchenService = require(script:WaitForChild("Economy"):WaitForChild("KitchenService"))
+KitchenService.start()
+-- The pan hall waits for the prop models to load, so it builds without holding up the rest.
+local KitchenPans = require(script:WaitForChild("Economy"):WaitForChild("KitchenPans"))
+task.spawn(KitchenPans.start)
 
 -- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
 local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))

@@ -7730,9 +7730,66 @@ can fit"):**
   line between quests. A finished quest says "Coach Olivera's quest done!" (timer "--:--") for 20 seconds, then
   leaves. No quests = nothing on screen. Phones: top right corner, 30% bigger text. Computers: right side, below the
   SESSION GAINS panel's space (the player list is top right there).
-- **Phone dialogue:** the portrait is smaller and shows the coach head to feet, standing just above the name bar; the
-  answer bubbles sit beside the coach, not over them. On any screen the portrait now shrinks to fit the window's height,
-  so the head is never under the Roblox buttons. Computers keep the close-up portrait.
+- **Phone dialogue:** the yellow panel background stays full size, as in the suit scene (user 2026-11-19, after a
+  shrunken version looked "like a box": "return the background. but make sure the coach is fully in frame"). Only the
+  camera changes: it shows the coach head to feet inside the part of the panel that is on screen, below the top edge
+  and just above the name bar, with the answer bubbles beside the coach. On a phone with a notch the panel art also
+  fills the strip beside the camera cutout, right to the screen's edge. Computers keep the close-up portrait, unless
+  the window is so short the head would go off the top; then they frame the whole coach the same way.
+
+### 40.7 Steaks and the Kitchen (user, 2026-11-19; PART 1 BUILT: boosts, cooking, menu, timer; the building is next)
+
+| Question | Decision |
+|---|---|
+| **What a steak meal boosts** | **Training gains for 24 hours** (user: "24 hours"): the strength training buys (it still uses the same daily training limit, so steaks give **more** strength from the same training) **and technique** (the minigame stats), which has **no daily limit**, so players always have something to AFK (user: "i wanted stats that help technique to not be limited so people have something to afk") |
+| **How much** | §25's table, **infinite stacking** in one cook: 1 steak +1%, 2 +2%, 5 +5%, 10 +10%, 25 +24%, 50 +45%, 100 +80%, 250 +150%, 500 +250%; past 500 the curve keeps rising more slowly (1,000 steaks about +408%) |
+| **Price and cooking time** | **25 coins and 10 seconds per steak** (user's pick): 100 steaks = 2,500 coins and about 17 minutes; 500 steaks = 12,500 coins and about 83 minutes; big stacks take hours (user: "i want high boosting steaks to take hours"). Coins only, never Robux |
+| **Cooking** | **Cooks while you're away**, even offline (user leaned this way; Claude agreed: making players stand at the oven for hours would push them to leave or pay). Put steaks in, go train or compete, come back and eat when it's ready. **One cook at a time** |
+| **Where** | **The Kitchen: its own building outside the gym** (the first outdoor building), with the cooker; built in Blender (pitched roof), the steak getting bigger with more steaks |
+| **Robux** | A Robux item **skips the cooking time** (§40.1); not sold yet, it needs a Developer Product the user creates |
+
+**The Kitchen and the chef (user, 2026-11-19, after part 1):**
+- **A huge Kitchen** where the chef sells **steaks and meet meals** (and maybe more items later: buying several for more
+  interaction). The lifter **walks up to the NPC chef**; the chef's screen has a **slider or typing box** for how many
+  steaks (replaces part 1's cooker menu).
+- **The chef scene** after you confirm: the lifter **dumps the steaks (a huge bag, or a cow to be funny) into the meat
+  grinder (meat blender)**; it shows the grinder **blending**; the chef **picks up the mountain of meat that comes out,
+  the same size as the finished steak**, says **"Alright, I'll handle this for you"**, and throws it onto **your giant
+  pan**, where it cooks as **one big steak** (user 2026-11-19).
+- **One big steak, not a pile** (user 2026-11-19: a pile is "too much single things" and costs performance with 40
+  players): whatever number of steaks you buy becomes **one steak in your pan whose size scales with that number**.
+  One shared steak model for every pan, sized by code. **Huge** (user 2026-11-19: "hugee like a person size, maby
+  multiple person size"): about a person long for a small cook, several people long for a big one; the pans are giant
+  to match.
+- **Where the pans go (Claude, 2026-11-19, change if wanted):** 40 giant pans with person-sized steaks need a hall far
+  bigger than the front square, so the Kitchen works like the meet venues: **an entrance building in the front square,
+  and the huge pan hall off the map** (high up, like the Local meet venue and the Nationals hall); walking in takes you
+  there. Both are placed from one point each, so the map design (last) can move them. **Skipping it is part of the ~80 Robux
+  pass** that skips basic animations (§40.3); without the pass it always plays, kept short (about 6 seconds).
+- **Every player gets their own pan zone** (user: like games where each player has their own zone, but it's a huge
+  pan): **one per player in the server** (up to 40), handed out on joining. The steaks sit on **the giant pan**
+  (sizzling, steam), the pile sized by the cook, with **a giant clock above the pan** showing when it's done. Everyone
+  sees everyone's giant steaks.
+- **Talk to the chef again** to **start cooking meet meals**, or to **skip the cooking with Robux**.
+- **Where:** the **front square between the Nationals building and the State arena** for now; **the overall map and its
+  design come last** (user), so the Kitchen is placed from one point and can be moved.
+- **Claude's defaults:** a bag for small cooks and a cow for big ones (several cows for huge ones); the pan, the clock
+  and the big steak are one shared model each (40 pans stay cheap to draw).
+- **REMINDER (user):** the Kitchen's screens must not be the same plain box as the other panels; redo them from the UI kit
+  when the chef is built.
+
+**Future idea (user, 2026-11-19; NOT for now):** **collectable meat types** that drop from meets; once unlocked you can
+cook that meat instead of steaks, with its own buff (e.g. faster cooking, or a slight stat boost). Claude: good for a later
+update; keep each meat's buff small and different so steaks stay worth it and the 2-month pacing holds, and give drops a
+reveal like the rare suits.
+
+**Claude's defaults (2026-11-19, change any):**
+- Boosts **add together** (§40.2): a steak's % adds to gear's technique training speed and, later, the other boosts.
+- Eating a new meal **replaces** the current steak boost and starts a fresh 24 hours; the menu warns first if the
+  current one is bigger and still running.
+- A cook can't be cancelled once started (the coins are spent). Up to 10,000 steaks in one cook (about 28 hours,
+  250,000 coins), a safety limit only.
+- An on-screen timer shows the active boost and its time left; a line tells you when the steak is ready.
 
 ### 40.4 The gain display (built 2026-11-19)
 

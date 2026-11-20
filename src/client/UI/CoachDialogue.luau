@@ -42,15 +42,8 @@ local STAND_ANIMATION = "rbxassetid://507766388"
 local WALK_AWAY = 14
 -- Seconds with no answer before it closes by itself.
 local IDLE_SECONDS = 45
--- Pixels of the screen left free above the portrait when it has to shrink to fit (the Roblox buttons sit above it).
-local TOP_ROOM = 8
--- On a phone the portrait is this much smaller again, and shows the whole coach (user 2026-11-19: "make the mobile
--- ui smaller, so the whole coach character can fit").
-local PHONE_SHRINK = 0.88
--- How far the answer bubbles reach back over the portrait's right edge (design pixels): their tails touch the coach.
--- A phone's whole-body coach is narrower, so the bubbles stay further out there.
-local TAB_OVERLAP = 220
-local PHONE_TAB_OVERLAP = 40
+-- Pixels kept free between the coach's head and the top of the screen (the Roblox buttons sit above it).
+local TOP_ROOM = 10
 -- Where the name bar's top sits above the screen's bottom (design pixels): the coach's feet stand just above it.
 local NAME_BAR_TOP = 172
 
@@ -108,7 +101,7 @@ function CoachDialogue.start()
 	portraitWorld.Parent = portrait
 	local portraitCamera = Instance.new("Camera")
 	portraitCamera.FieldOfView = 30
-	-- The suit scene's framing (head to thighs); a phone frames the whole coach instead (wholeBody, below).
+	-- The suit scene's framing (head to thighs); a phone frames the whole coach instead (frameCoach, below).
 	local CLOSE_UP = CFrame.lookAt(Vector3.new(-0.95, 0.9, -11.5), Vector3.new(-0.95, 0.5, 0))
 	portraitCamera.CFrame = CLOSE_UP
 	portraitCamera.Parent = portrait
@@ -155,45 +148,63 @@ function CoachDialogue.start()
 	gui.Parent = playerGui
 
 	--[[
-		How big the portrait is (its FitExtraScale, UIStyle.fitToScreen): never taller than the screen, so the coach's
-		head stays in view under the Roblox buttons, and smaller again on a phone. The answer bubbles follow its right
-		edge. Words and the name bar keep their size so they stay readable.
+		The panel stays full size (user 2026-11-19: "return the background"), even where it runs off the top of a short
+		screen. Only the camera changes: on a phone, or whenever the close-up's head would be off the top, it backs off
+		until the whole coach, head to feet, stands in the part of the panel that is on screen, above the name bar
+		(user 2026-11-19: "make sure the coach is fully in frame").
 	]]
-	local portraitShrink = 1
-	local function fit()
+	-- How much of the panel's square is off the top of the screen, and where the name bar starts (shares of its height).
+	local function onScreenPart(): (number, number)
 		local room = gui.AbsoluteSize.Y
-		local scale = UIStyle.screenScale()
-		local shrink = 1
-		if room > 0 then
-			shrink = math.clamp((room - TOP_ROOM) / (SPEAKER_SIZE * scale), 0.3, 1)
-		end
-		if UIStyle.isTouchOnly() then
-			shrink *= PHONE_SHRINK
-		end
-		portraitShrink = shrink
-		local overlap = if UIStyle.isTouchOnly() then PHONE_TAB_OVERLAP else TAB_OVERLAP
-		speaker:SetAttribute(UIStyle.FitExtraAttribute, shrink)
-		for index, tab in ipairs(tabs) do
-			tab.Position = UDim2.new(0, SPEAKER_SIZE * shrink - overlap, 0.5, SLOTS[index].y)
-		end
+		local square = SPEAKER_SIZE * UIStyle.screenScale()
+		local top = if room > 0 then math.max(0, square - room) / square else 0
+		return top, 1 - NAME_BAR_TOP / SPEAKER_SIZE
 	end
-	fit()
-	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
 
-	-- A phone's portrait: the camera backs off until the whole coach, head to feet, stands above the name bar.
-	local function wholeBody(copy: Model)
+	local function wholeBody(copy: Model, topShare: number, bottomShare: number)
 		local box, size = copy:GetBoundingBox()
 		local top = box.Position.Y + size.Y / 2
 		local height = size.Y
-		-- The part of the square the name bar and words leave free, from the top.
-		local free = math.clamp(1 - NAME_BAR_TOP / (SPEAKER_SIZE * portraitShrink) + 0.03, 0.55, 0.97)
-		local margin = 0.04
-		local view = height / (free - margin)
+		local square = SPEAKER_SIZE * UIStyle.screenScale()
+		local headRoom = topShare + TOP_ROOM / square
+		local feet = math.min(bottomShare + 0.02, 0.98)
+		local view = height / math.max(feet - headRoom, 0.2)
 		local distance = view / (2 * math.tan(math.rad(portraitCamera.FieldOfView / 2)))
-		local centreY = top + margin * view - view / 2
-		-- The coach a little left of the middle, as in the close-up, so the bubbles don't cover them.
+		local centreY = top + headRoom * view - view / 2
+		-- The coach a little left of the middle, as in the close-up, so the answer bubbles don't cover them.
 		local side = -0.154 * view
 		portraitCamera.CFrame = CFrame.lookAt(Vector3.new(side, centreY, -distance), Vector3.new(side, centreY, 0))
+	end
+
+	--[[
+		A phone keeps menus out of its notch, so the gui starts a strip in from the screen's left edge and the gym showed
+		through beside the camera cutout (user's phone, 2026-11-19). The panel art alone grows left and up into that strip
+		(bottom right corner fixed, so it stays square); the coach, name and words stay in the safe area.
+	]]
+	-- An empty gui that ignores the safe area: it starts at the true screen edge, so its position (relative to the safe
+	-- area) is minus the notch strip. (A normal gui always reports 0; Studio 2026-11-19: the top bar showed as -58 here.)
+	local edge = Instance.new("ScreenGui")
+	edge.Name = "CoachDialogueScreenEdge"
+	edge.ResetOnSpawn = false
+	edge.ScreenInsets = Enum.ScreenInsets.None
+	edge.Parent = playerGui
+	local function fillNotch()
+		local strip = math.max(-edge.AbsolutePosition.X, 0)
+		local extra = if strip > 0 then (strip + 6) / UIStyle.screenScale() else 0
+		panel.Position = UDim2.fromOffset(-extra, -extra)
+		panel.Size = UDim2.new(1, extra, 1, extra)
+	end
+	fillNotch()
+	edge:GetPropertyChangedSignal("AbsolutePosition"):Connect(fillNotch)
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
+
+	local function frameCoach(copy: Model?)
+		local topShare, bottomShare = onScreenPart()
+		if copy and (UIStyle.isTouchOnly() or topShare > 0) then
+			wholeBody(copy, topShare, bottomShare)
+		else
+			portraitCamera.CFrame = CLOSE_UP
+		end
 	end
 
 	local open = false
@@ -289,13 +300,8 @@ function CoachDialogue.start()
 		local mine = session
 		local liftName = lift :: string
 		portraitWorld:ClearAllChildren()
-		fit()
-		local copy = portraitOf(figure)
-		if copy and UIStyle.isTouchOnly() then
-			wholeBody(copy)
-		else
-			portraitCamera.CFrame = CLOSE_UP
-		end
+		fillNotch()
+		frameCoach(portraitOf(figure))
 		who.Text = string.upper(coach.name)
 		words.Text = ""
 		-- Just appears: no slide, no bounce (user 2026-11-19: the bounce "looks weird").

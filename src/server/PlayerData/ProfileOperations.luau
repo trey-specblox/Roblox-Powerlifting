@@ -58,6 +58,7 @@ local BodyweightConfig = require(ConfigFolder:WaitForChild("BodyweightConfig"))
 local StartingValuesConfig = require(ConfigFolder:WaitForChild("StartingValuesConfig"))
 local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig"))
 local QuestConfig = require(ConfigFolder:WaitForChild("QuestConfig"))
+local KitchenConfig = require(ConfigFolder:WaitForChild("KitchenConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -67,6 +68,7 @@ local GearStats = require(game:GetService("ReplicatedStorage"):WaitForChild("Sha
 local WeightClass = require(ProgressionFolder:WaitForChild("WeightClass"))
 local MeetCnAllowance = require(ProgressionFolder:WaitForChild("MeetCnAllowance"))
 local DayKey = require(ProgressionFolder:WaitForChild("DayKey"))
+local GainBoosts = require(ProgressionFolder:WaitForChild("GainBoosts"))
 local AttemptRules = require(Shared:WaitForChild("Meet"):WaitForChild("AttemptRules"))
 
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
@@ -1972,11 +1974,17 @@ function ProfileOperations.applyTrainingProgression(
 	local award: CompetitionNumberReward.TrainingAward? = nil
 
 	if earnedEV > 0 then
+		--[[
+			GAIN BOOSTS (GAME_DESIGN §40.7, steaks): the award is paid for the boosted EV, so the same training buys more
+			strength, while the daily allowance above is debited by the plain earnedEV, so a boost never lets anyone
+			train past the daily limit. The formula still shrinks the award near the world-record level.
+		]]
+		local boostedEV = earnedEV * (1 + GainBoosts.trainingBonus((data :: any).boosts, nowUnix))
 		local calculated, _ = CompetitionNumberReward.calculateTrainingAward(
 			lift,
 			weightClassLabel,
 			competitionNumberBefore,
-			earnedEV
+			boostedEV
 		)
 
 		if calculated == nil then
@@ -2135,7 +2143,8 @@ function ProfileOperations.applyTechniqueTraining(
 	data: ProfileData,
 	lift: string,
 	primary: string,
-	elapsedSeconds: number
+	elapsedSeconds: number,
+	nowUnix: number?
 ): TechniqueResult
 	--------------------------------------------------------------------------
 	-- PHASE 1: VALIDATE. Nothing below writes until phase 3.
@@ -2180,7 +2189,10 @@ function ProfileOperations.applyTechniqueTraining(
 
 	-- Worn gear speeds up technique training (§35.12), and only technique: the CN award above never reads it.
 	local gearSpeed = GearStats.trainingSpeed(GearStats.wornRarities((data :: any).inventory), lift)
-	local totalRaw = TechniqueTraining.rawPointsFor(elapsedSeconds, gearSpeed)
+	-- Gain boosts (§40.7, steaks) add to it (boosts add together). `nowUnix` is the server clock, only for whether a
+	-- boost is still running; without it no boost applies.
+	local boost = if nowUnix ~= nil then GainBoosts.trainingBonus((data :: any).boosts, nowUnix) else 0
+	local totalRaw = TechniqueTraining.rawPointsFor(elapsedSeconds, gearSpeed + boost)
 
 	if not isFiniteNumber(totalRaw) or totalRaw < 0 then
 		return techniqueRejection(lift, primary, "InvariantViolated")
@@ -2527,6 +2539,125 @@ function ProfileOperations.addQuestGoodLifts(data: ProfileData, classKey: string
 		table.insert(progress, entry)
 	end
 	return progress
+end
+
+--[[
+	=========================================================================
+	THE KITCHEN  (GAME_DESIGN §40.7, user 2026-11-19)
+	=========================================================================
+
+	One cooker per player. startCook pays for the steaks and starts the cook in
+	one write; the cook finishes by the server clock (also while the player is
+	away or offline). eatSteak empties a finished cooker into the steak boost:
+	KitchenConfig.steakPercent(steaks) on TRAINING gains for BoostHours,
+	replacing any steak boost already running. Prices, times and the boost come
+	from KitchenConfig, never from a client. No yield.
+]]
+
+export type CookOutcome = "Started" | "NotEnough" | "Busy" | "Rejected"
+export type EatOutcome = "Eaten" | "NotReady" | "Empty" | "Rejected"
+export type KitchenView = {
+	-- The cooker: steaks in it (0 = empty), and seconds until ready (0 = ready to eat).
+	steaks: number,
+	readyIn: number,
+	cookSeconds: number,
+	-- The steak boost running now (percent 0 = none), its seconds left and the meal's size.
+	boostPercent: number,
+	boostLeft: number,
+	boostSteaks: number,
+}
+
+local function usableKitchen(data: ProfileData): (any?, any?)
+	local kitchen, boosts = (data :: any).kitchen, (data :: any).boosts
+	if typeof(kitchen) ~= "table" or typeof(boosts) ~= "table" or typeof(boosts.steak) ~= "table" then
+		return nil, nil
+	end
+	for _, field in ipairs({ "steaks", "startedAt", "readyAt" }) do
+		if not isFiniteNumber(kitchen[field]) or kitchen[field] < 0 then
+			return nil, nil
+		end
+	end
+	return kitchen, boosts
+end
+
+-- The cooker and the steak boost, for the Kitchen menu and the boost timer. Reads only.
+function ProfileOperations.getKitchen(data: ProfileData, nowUnix: number): KitchenView
+	local kitchen, boosts = usableKitchen(data)
+	local view: KitchenView = { steaks = 0, readyIn = 0, cookSeconds = 0, boostPercent = 0, boostLeft = 0, boostSteaks = 0 }
+	if kitchen == nil or not isFiniteNumber(nowUnix) then
+		return view
+	end
+	if kitchen.steaks >= 1 then
+		view.steaks = kitchen.steaks
+		view.readyIn = math.max(0, kitchen.readyAt - nowUnix)
+		view.cookSeconds = math.max(0, kitchen.readyAt - kitchen.startedAt)
+	end
+	local steak = GainBoosts.active(boosts.steak, nowUnix)
+	if steak then
+		view.boostPercent = steak.percent
+		view.boostLeft = steak.endsAt - nowUnix
+		view.boostSteaks = if isFiniteNumber(boosts.steak.steaks) then boosts.steak.steaks else 0
+	end
+	return view
+end
+
+--[[
+	Pays for `steaks` steaks and puts them in the cooker. "Busy" when something is already in it (cooking or waiting
+	to be eaten), "NotEnough" (with the balance) when the player can't afford it, "Rejected" for a bad count or broken
+	data. Nothing is written unless it returns "Started".
+]]
+function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix: number): (CookOutcome, number?)
+	local kitchen = usableKitchen(data)
+	local wallet = walletOf(data)
+	if kitchen == nil or wallet == nil or not KitchenConfig.isSteakCount(steaks) or not isFiniteNumber(nowUnix)
+		or nowUnix < 0 then
+		return "Rejected", nil
+	end
+	if kitchen.steaks >= 1 then
+		return "Busy", wallet.coins
+	end
+	local price = KitchenConfig.cost(steaks)
+	if not isWholeCoins(price) then
+		return "Rejected", nil
+	end
+	if wallet.coins < price then
+		return "NotEnough", wallet.coins
+	end
+	wallet.coins -= price
+	wallet.spentTotal += price
+	kitchen.steaks = steaks
+	kitchen.startedAt = math.floor(nowUnix)
+	kitchen.readyAt = kitchen.startedAt + KitchenConfig.cookSeconds(steaks)
+	return "Started", wallet.coins
+end
+
+--[[
+	Eats a finished meal: empties the cooker and sets the steak boost (replacing one already running). Returns the
+	boost's percent with "Eaten". Nothing is written otherwise.
+]]
+function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOutcome, number?)
+	local kitchen, boosts = usableKitchen(data)
+	if kitchen == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return "Rejected", nil
+	end
+	if kitchen.steaks < 1 then
+		return "Empty", nil
+	end
+	if nowUnix < kitchen.readyAt then
+		return "NotReady", nil
+	end
+	local steaks = kitchen.steaks
+	local percent = KitchenConfig.steakPercent(steaks)
+	if not isFiniteNumber(percent) or percent <= 0 then
+		return "Rejected", nil
+	end
+	boosts.steak.percent = percent
+	boosts.steak.endsAt = math.floor(nowUnix) + KitchenConfig.BoostHours * 3600
+	boosts.steak.steaks = steaks
+	kitchen.steaks = 0
+	kitchen.startedAt = 0
+	kitchen.readyAt = 0
+	return "Eaten", percent
 end
 
 --[[

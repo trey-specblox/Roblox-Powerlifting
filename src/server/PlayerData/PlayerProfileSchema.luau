@@ -65,7 +65,7 @@ local PlayerProfileSchema = {}
 	numbered State Champion badges; version 27: the Nationals spots; version
 	28: the Worlds spots).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 30
+PlayerProfileSchema.CURRENT_VERSION = 31
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -519,6 +519,31 @@ export type DailyQuests = {
 	taken: { Squat: boolean, Bench: boolean, Deadlift: boolean },
 }
 
+--[[
+	THE KITCHEN'S COOKER, added in version 31 (GAME_DESIGN §40.7, user 2026-11-19). One cook at a time; it cooks by the
+	server clock, so it finishes while the player is away or offline. `steaks` 0 = empty.
+
+	Written only by ProfileOperations.startCook (pays and starts it) and eatSteak (empties it).
+]]
+export type Kitchen = {
+	-- Steaks cooking (or cooked and waiting to be eaten); 0 when the cooker is empty.
+	steaks: number,
+	-- Server time the cook started, and when it is ready (0 when empty).
+	startedAt: number,
+	readyAt: number,
+}
+
+--[[
+	ACTIVE GAIN BOOSTS, added in version 31 (GAME_DESIGN §40.1, §40.7). Each entry: the boost in percent and the server
+	time it ends (an ended or zero entry is no boost). GainBoosts reads them; they add together.
+
+	Written only by ProfileOperations.eatSteak (steak). Meet meals and boosters will add their own entries.
+]]
+export type Boosts = {
+	-- The steak meal: a TRAINING gain boost (strength and technique). `steaks` is the meal's size, for screens.
+	steak: { percent: number, endsAt: number, steaks: number },
+}
+
 export type Bodyweight = {
 	currentKg: number,
 	-- What the player is eating toward. Equal to current means "maintain".
@@ -562,6 +587,8 @@ export type ProfileData = {
 
 	-- Today's coach quests (version 29).
 	dailyQuests: DailyQuests,
+	kitchen: Kitchen,
+	boosts: Boosts,
 
 	-- (competitionBudget, added in version 3, was removed in version 10: GAME_DESIGN 29.9.)
 	-- (trainingEnergy, added in version 3, was retired in version 8: GAME_DESIGN 29.8.)
@@ -722,6 +749,12 @@ local template: ProfileData = {
 		done = { Squat = false, Bench = false, Deadlift = false },
 		paidResetDayKey = "",
 		taken = { Squat = false, Bench = false, Deadlift = false },
+	},
+
+	-- An empty cooker and no boosts.
+	kitchen = { steaks = 0, startedAt = 0, readyAt = 0 },
+	boosts = {
+		steak = { percent = 0, endsAt = 0, steaks = 0 },
 	},
 
 	meta = {
@@ -2066,6 +2099,41 @@ migrations[29] = function(data: ProfileData)
 	for _, lift in ipairs({ "Squat", "Bench", "Deadlift" }) do
 		if typeof(quests.taken[lift]) ~= "boolean" then
 			quests.taken[lift] = false
+		end
+	end
+end
+
+--[[
+	Version 30 -> 31: the Kitchen's cooker and the gain boosts (user 2026-11-19, GAME_DESIGN §40.7). Nobody has cooked.
+
+	REPAIRS, NEVER OVERWRITES: usable stored numbers are kept; a missing or broken record or field is set to empty.
+	IDEMPOTENT: a second run finds everything usable and changes nothing.
+]]
+local function isTimeOrCount(value: any): boolean
+	return typeof(value) == "number" and value == value and value >= 0 and value ~= math.huge
+end
+migrations[30] = function(data: ProfileData)
+	local kitchen = (data :: any).kitchen
+	if typeof(kitchen) ~= "table" then
+		kitchen = {}
+		(data :: any).kitchen = kitchen
+	end
+	for _, field in ipairs({ "steaks", "startedAt", "readyAt" }) do
+		if not isTimeOrCount(kitchen[field]) then
+			kitchen[field] = 0
+		end
+	end
+	local boosts = (data :: any).boosts
+	if typeof(boosts) ~= "table" then
+		boosts = {}
+		(data :: any).boosts = boosts
+	end
+	if typeof(boosts.steak) ~= "table" then
+		boosts.steak = {}
+	end
+	for _, field in ipairs({ "percent", "endsAt", "steaks" }) do
+		if not isTimeOrCount(boosts.steak[field]) then
+			boosts.steak[field] = 0
 		end
 	end
 end

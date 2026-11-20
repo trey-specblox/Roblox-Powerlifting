@@ -61,6 +61,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CelebrationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("CelebrationConfig"))
 local LoadoutConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("LoadoutConfig"))
 local BodyweightConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("BodyweightConfig"))
+local KitchenConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("KitchenConfig"))
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
@@ -504,6 +505,45 @@ function PlayerDataService.openCrate(player: Player, price: number, piece: any, 
 end
 
 --[[
+	THE KITCHEN (GAME_DESIGN §40.7). The cooker and the steak boost; the clock is the server's, read here. The steak
+	count is checked by ProfileOperations (KitchenConfig.isSteakCount); price and times come from KitchenConfig.
+]]
+function PlayerDataService.getKitchen(player: Player): ProfileOperations.KitchenView?
+	local data = activeData(player, "getKitchen")
+	return if data then ProfileOperations.getKitchen(data, os.time()) else nil
+end
+
+function PlayerDataService.startCook(player: Player, steaks: number): (ProfileOperations.CookOutcome?, number?)
+	local data = activeData(player, "startCook")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome: ProfileOperations.CookOutcome, balance = ProfileOperations.startCook(data, steaks, os.time())
+	if outcome == "Started" then
+		local price = steaks * KitchenConfig.PricePerSteak
+		print(string.format("[PlayerDataService] %s put %d steaks in the cooker for %d coins: %d left", player.Name, steaks,
+			price, balance :: number))
+		coinsChanged(player, -price, balance :: number, "Steaks")
+	elseif outcome == "Rejected" then
+		warn(string.format("[PlayerDataService] %s: cooking %s steaks refused", player.Name, tostring(steaks)))
+	end
+	return outcome, balance
+end
+
+function PlayerDataService.eatSteak(player: Player): (ProfileOperations.EatOutcome?, number?)
+	local data = activeData(player, "eatSteak")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome: ProfileOperations.EatOutcome, percent = ProfileOperations.eatSteak(data, os.time())
+	if outcome == "Eaten" then
+		print(string.format("[PlayerDataService] %s ate a steak meal: +%.1f%% training for %d h", player.Name,
+			percent :: number, KitchenConfig.BoostHours))
+	end
+	return outcome, percent
+end
+
+--[[
 	Adds a free piece (ProfileOperations.grantPiece). SERVER-ONLY: a rare suit a meet dropped or the admin panel gave, chosen on
 	the server. Returns its id; nil with no active session or a bad piece.
 ]]
@@ -770,7 +810,8 @@ function PlayerDataService.awardTechniqueTraining(
 		return nil
 	end
 
-	local result = ProfileOperations.applyTechniqueTraining(data, lift, primary, elapsedSeconds)
+	-- The clock only decides whether a gain boost (a steak, §40.7) is still running.
+	local result = ProfileOperations.applyTechniqueTraining(data, lift, primary, elapsedSeconds, os.time())
 
 	-- The gain display (GAME_DESIGN §40.1): each stat this award raised, as its effective value moved.
 	if result.outcome == "Awarded" then

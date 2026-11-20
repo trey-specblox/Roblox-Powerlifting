@@ -2030,6 +2030,14 @@
    "ids": {
     "model": "rbxassetid://110593831900615"
    }
+  },
+  "KitchenPan_01": {
+   "about": "The Kitchen's pan zone (GAME_DESIGN \u00a740.7, user 2026-11-19), one shared set for all 40 zones: GiantPan (cast-iron pan with a CENTRAL grip on a navy CENTRAL burner stand with a glowing ring), PanClock (a giant yellow kitchen timer on a steel post; Face is the flat disc that carries the countdown) and BigSteak (ONE big T-bone steak, scaled by code to each cook; the user rejected a pile for performance). Built by art/scripts/build_kitchen_pan_01.py. CHECK PASSED (16 meshes, 5,384 triangles).",
+   "file": "art/exports/KitchenPan_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://133935733618984"
+   }
   }
  },
  "images": {
