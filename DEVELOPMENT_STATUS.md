@@ -16,6 +16,40 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**W CHEWS REDESIGN, STEP 8: THE BACK ROOM AND THE MAFIA BOSS COW. TESTED IN STUDIO (one player, pictures and
+numbers), 2026-11-21, the overnight run. COMMITTED with this step (see git log; before it 956f1fc the terrace,
+0b280c9 steps 1 to 6).**
+- MODELS (both CHECK PASSED, uploaded under the user's overnight OK "Upload after your checks"):
+  WChewsBack_01 (rbxassetid://128536049849365, art/scripts/build_wchews_back_01.py, 47 meshes, 11,604 triangles):
+  WcWheelWedge (one 18 degree wedge of the luck wheel; code places 20), WcWheelStand (A-frame, hub, red pointer,
+  glowing WHEEL OF LUCK), WcArmTable, WcShuffleTable, WcCloche, WcBossDesk, WcBossChair, WcBooth, WcMilkShelf (plain,
+  strawberry and chocolate milk: no alcohol), WcStool, WcRopeSpan, WcPortrait, WcNeonMoo (THE MOO ROOM), WcRug.
+  WChewsCowBoss_01 (rbxassetid://90852818389171, art/scripts/build_wchews_cow_boss_01.py, 20 meshes, 3,088
+  triangles): a big upright cartoon cow in a pinstripe suit and a fedora, horns through the brim, red tie, white
+  spats, hooves for hands, a yellow ear tag; no cigar, no weapon. His Head* pieces turn round the neck and his ArmR*
+  pieces round the right shoulder (rigid pieces moved by code; the joints are in WChewsLayout.CowNeck / CowShoulder).
+  Pictures art/previews/WChewsCowBoss_01_Preview.jpg, WChewsBack_Preview_01..04, WChewsBack_InGame_01..03.
+  New script art/scripts/preview_item_views.py renders any model file from six sides with backface culling.
+- LAYOUT: the back room's 35 placements are in art/scripts/wchews_layout.py (316 in all now), with the wheel, the
+  cow's spot and joints, both game tables and the cloches' places written into WChewsLayout.luau.
+- GAME: KitchenBuilding leaves the EMPLOYEES ONLY doorway out of the walls' hidden blocks, walls the back room in,
+  and gives its furniture blocks; NEW src/server/Economy/KitchenBackRoom.luau builds the wheel (model
+  KitchenHall.BackRoom.LuckWheel, pivot = its axis, wedges with attribute Index) and stands the cow beside it under a
+  THE BOSS tag (a hidden block so nobody walks through him), and puts his double in ReplicatedStorage.KitchenModels;
+  NEW src/client/World/KitchenBackDoor.luau swings the door open into the back room when any lifter is within 12
+  studs, on each screen (hold(true/false) keeps it open); KitchenScene's cow walk-on now uses that door and hides the
+  standing cow on this screen while his double walks; KitchenLights: 11 lights in the back room (64 in all).
+- STUDIO: 20 wedges, the cow (7.9 tall, on the floor at his spot), every furniture count as laid out; the lifter
+  walks through the doorway into the room and the door's leaf swings 100 degrees and shuts again; a real 120-steak
+  scene played to the end and the cow's double walked through the doorway (the door's hold was proved separately:
+  the test runs its own copy of the door module).
+- FINDINGS FOR THE USER: (1) from pans far from the back wall the cow's walk-on is a speck (the first pan is over
+  500 studs from the door): it only reads from the pans near the back; (2) the place file holds a stray loose default
+  Part at (86, 0.5, 11) inside the gym (Workspace.Part, 4 x 1 x 2, not anchored, not made by any script): it needs
+  the user's OK to delete; (3) the wheel's wedges are all one colour until the luck wheel is built (next).
+- NOT DONE: sounds for the room (door, wheel, cow), the luck wheel and the cow's games (next steps), a second
+  player, a phone.
+
 **W CHEWS REDESIGN, STEP 7: BOOST CHIPS REDONE, THE TERRACE REMODELLED AND UPLOADED. TESTED IN STUDIO (one player),
 2026-11-21, same session (the overnight run). COMMITTED: 0b280c9 holds steps 1 to 6 and the chips; the terrace is the
 next commit (see git log).**

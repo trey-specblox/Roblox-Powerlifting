@@ -642,6 +642,11 @@ StarterGymConfig.PropAssets = {
 	-- KitchenHouse. Version 02 (was 121517778514497, WChewsFront_01: the same pieces' names, so only one of the two
 	-- may be in this list): the terrace remodelled from one dark block into a sandstone terrace with a glass
 	-- balustrade, tables, parasols and plants. art/scripts/build_wchews_front_02.py, CHECK PASSED, 2,988 triangles.
+	{ id = 128536049849365 }, -- WChewsBack_01: W Chews' back room kit (GAME_DESIGN §40.7): the luck wheel's wedge and stand,
+	-- arm wrestling table, shuffle table, cloche, boss desk and chair, booth, milk shelf, stool, rope span, portrait,
+	-- THE MOO ROOM neon, rug. art/scripts/build_wchews_back_01.py, CHECK PASSED, 11,604 triangles.
+	{ id = 90852818389171 }, -- WChewsCowBoss_01: the mafia boss cow (item CowBoss): pinstripe suit, fedora, horns through the
+	-- brim. art/scripts/build_wchews_cow_boss_01.py, CHECK PASSED, 3,088 triangles.
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -781,6 +786,18 @@ StarterGymConfig.PropPaints = {
 	WcRoofSlate = { color = Color3.fromRGB(48, 56, 62), material = Enum.Material.Metal },
 	WcStripGlow = { color = Color3.fromRGB(255, 110, 60), material = Enum.Material.Neon },
 	WcSandstone = { color = Color3.fromRGB(214, 176, 132), material = Enum.Material.Sandstone }, -- (the terrace's body)
+	-- W Chews' back room (WChewsBack_01) and the mafia boss cow (WChewsCowBoss_01).
+	WcFelt = { color = Color3.fromRGB(22, 104, 62), material = Enum.Material.Fabric },
+	WcLeatherGreen = { color = Color3.fromRGB(26, 84, 60), material = Enum.Material.Leather },
+	WcLeatherBurgundy = { color = Color3.fromRGB(128, 30, 46), material = Enum.Material.Leather },
+	WcStrawberry = { color = Color3.fromRGB(246, 160, 184) },
+	WcChocolate = { color = Color3.fromRGB(104, 62, 40) },
+	WcGlowPink = { color = Color3.fromRGB(255, 110, 170), material = Enum.Material.Neon },
+	WcWedge = { color = Color3.fromRGB(236, 228, 208) },
+	CowSuit = { color = Color3.fromRGB(34, 36, 52), material = Enum.Material.Fabric },
+	CowStripe = { color = Color3.fromRGB(190, 194, 206) },
+	CowHat = { color = Color3.fromRGB(30, 30, 36), material = Enum.Material.Fabric },
+	CowHide = { color = Color3.fromRGB(240, 238, 230) },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -1190,6 +1207,38 @@ StarterGymConfig.PropColourways = {
 	WcBar = { { Body = "WcWalnut", Top = "WcStone", Trim = "Brass" } },
 	WcPlant = { { Pot = "Teal", Leaves = "WcLeaf" } },
 	WcStaffDoor = { { Frame = "WcWalnut", Door = "WcDoorGreen", DoorBrass = "Brass", DoorText = "Black" } },
+	-- W Chews' back room kit (WChewsBack_01). LuckService repaints each wheel wedge's Face by its prize.
+	WcWheelWedge = { { Face = "WcWedge", Rim = "Brass" } },
+	WcWheelStand = { { Frame = "WcWalnut", Brass = "Brass", Pointer = "Red", Sign = "WarmGlow", Bulbs = "WarmGlow" } },
+	WcArmTable = { { Wood = "WcWalnut", Pads = "WcLeatherBurgundy", Pins = "WcCushionMustard", Brass = "Brass" } },
+	WcShuffleTable = { { Wood = "WcWalnut", Felt = "WcFelt", Brass = "Brass" } },
+	WcCloche = { { Dome = "KitStainless" } },
+	WcBossDesk = { { Body = "WcWalnut", Leather = "WcLeatherGreen", Trim = "Brass", Lamp = "GlowGreen", White = "White" } },
+	WcBossChair = { { Leather = "WcLeatherBurgundy", Wood = "WcWalnut", Brass = "Brass" } },
+	WcBooth = {
+		{ Wood = "WcWalnut", Leather = "WcLeatherBurgundy", Brass = "Brass" },
+		{ Wood = "WcWalnut", Leather = "WcLeatherGreen", Brass = "Brass" },
+	},
+	WcMilkShelf = { {
+		Wood = "WcWalnut", Brass = "Brass", Milk = "White", Strawberry = "WcStrawberry", Chocolate = "WcChocolate",
+		Glow = "WarmGlow",
+	} },
+	WcStool = { { Brass = "Brass", Seat = "WcLeatherBurgundy" } },
+	WcRopeSpan = { { Posts = "Brass", Rope = "WcBurgundy" } },
+	WcPortrait = {
+		{ Frame = "Brass", Canvas = "Navy", Hide = "White", Snout = "KitCowPink", Dark = "Black", Tie = "Red" },
+		{ Frame = "Brass", Canvas = "WcDeepGreen", Hide = "White", Snout = "KitCowPink", Dark = "Black", Tie = "Red" },
+		{ Frame = "Brass", Canvas = "WcBurgundy", Hide = "White", Snout = "KitCowPink", Dark = "Black", Tie = "Yellow" },
+	},
+	WcNeonMoo = { { Words = "WcGlowPink", Line = "WarmGlow" } },
+	WcRug = { { Field = "Navy", Gold = "WcCushionMustard", Centre = "WcBurgundy" } },
+	-- The mafia boss cow (WChewsCowBoss_01): his Head* pieces and his ArmR* pieces are moved by code.
+	CowBoss = { {
+		Suit = "CowSuit", Lapels = "Black", Stripes = "CowStripe", White = "White", Tie = "Red", Brass = "Brass",
+		Hooves = "Black", Hide = "CowHide", ArmRSuit = "CowSuit", ArmRHoof = "Black", ArmRCuff = "White",
+		HeadHide = "CowHide", HeadSpots = "Black", HeadSnout = "KitCowPink", HeadEyes = "Black", HeadWhites = "White",
+		HeadHorns = "KitCream", HeadHat = "CowHat", HeadBand = "WcBurgundy", HeadTag = "Yellow",
+	} },
 	-- The Shop's menu colours the Body and Lid for the crate being opened and keeps only its labels (GearStatsConfig.Crates).
 	GearCrate = { {
 		Body = "Navy", Lid = "Navy", Steel = "Silver", LidSteel = "Silver", Yellow = "Yellow", LidYellow = "Yellow",

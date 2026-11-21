@@ -101,6 +101,9 @@ KitchenConfig.Sounds = {
 	Chute = "rbxassetid://100812110878986", -- 1.11 s: the bag or cow rumbling down the ceiling chute (the thud follows)
 	Tube = "rbxassetid://138689375274677", -- 3.17 s: the meat drawn up the funnel and rushing along the tube
 	Plop = "rbxassetid://84379172787367", -- 0.33 s: ONE lump landing on the pan (played for every lump after the first)
+	-- The back room (KitchenBackDoor): "" = no sound yet.
+	DoorOpen = "",
+	DoorClose = "",
 }
 
 -- What drops into the grinder for a cook of `steaks`: "Bag" or "Cow", and how many.

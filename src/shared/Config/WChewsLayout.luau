@@ -7,27 +7,42 @@ local WChewsLayout = {}
 
 -- From an item's own origin to the bottom centre of its bounds (where a copy's pivot is), plan space, scale 1.
 WChewsLayout.PivotOffset = {
+	CowBoss = Vector3.new(0.0000, 0.1300, 0.0000),
+	WcArmTable = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcBar = Vector3.new(0.0000, -0.0750, 0.0000),
 	WcBay = Vector3.new(0.0000, -0.0550, 0.0000),
+	WcBooth = Vector3.new(0.0000, 0.0500, 0.0000),
+	WcBossChair = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcBossDesk = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcButtonPanel = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcChair = Vector3.new(0.0000, 0.0050, 0.0000),
 	WcChandelier = Vector3.new(0.0000, 0.0000, -0.8500),
 	WcChute = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcCloche = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcCounter = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcFridge = Vector3.new(0.0000, -0.1450, 0.0000),
 	WcFryer = Vector3.new(0.0000, -0.2350, 0.0000),
 	WcHood = Vector3.new(0.0000, -0.0300, -0.1100),
 	WcHostStand = Vector3.new(0.0000, -0.0488, 0.0000),
 	WcIsland = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcMilkShelf = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcNeonMoo = Vector3.new(0.0000, -0.1000, -1.6900),
 	WcPendant = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcPlant = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcPortrait = Vector3.new(0.0000, -0.1750, -3.2000),
 	WcRange = Vector3.new(0.0000, -0.1200, 0.0000),
+	WcRopeSpan = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcRug = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcShuffleTable = Vector3.new(0.0000, -0.1550, 0.0000),
 	WcSink = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcStaffDoor = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcStool = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcTable = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcTubeBranch = Vector3.new(0.0000, 108.9125, -9.1000),
 	WcTubeIntake = Vector3.new(0.0000, -11.6000, 14.4000),
 	WcTubeTrunk = Vector3.new(118.1000, 0.0000, -2.1000),
+	WcWheelStand = Vector3.new(0.0000, 0.2000, 0.0000),
+	WcWheelWedge = Vector3.new(0.0423, -0.2500, 0.6914),
 } :: { [string]: Vector3 }
 
 -- The plan's key numbers (plan space).
@@ -43,6 +58,20 @@ WChewsLayout.GrinderScale = 2
 WChewsLayout.Chute = Vector2.new(0, 61.4)
 WChewsLayout.ChuteMouth = 24 -- the chute's mouth above the floor
 WChewsLayout.Chef = Vector2.new(0, -25.4) -- he faces the entrance (-y)
+-- The back room (plan x 195..285, y 267..337).
+WChewsLayout.BackHeight = 18
+WChewsLayout.Wheel = Vector2.new(248, 331) -- the luck wheel's stand, facing the door (-y)
+WChewsLayout.WheelAxis = 7.6 -- the wheel's axis above the floor
+WChewsLayout.WheelWedges = 20
+WChewsLayout.Cow = Vector2.new(262, 321) -- the mafia boss cow, facing the door (-y)
+-- His joints in his own model's space (x across, y front to back with his front at -y, z up): his head
+-- pieces (CowBoss_Head*) turn round the neck, his right arm's (CowBoss_ArmR*) round the shoulder.
+WChewsLayout.CowNeck = Vector3.new(0, 0, 5.1)
+WChewsLayout.CowShoulder = Vector3.new(-1.75, 0, 4.75)
+WChewsLayout.ArmTable = Vector2.new(216, 298)
+WChewsLayout.ShuffleTable = Vector2.new(271, 294)
+WChewsLayout.ClocheXs = { -2.7, 0, 2.7 } -- along the shuffle table
+WChewsLayout.TableTop = 3.33 -- the game tables' tops
 
 -- { item, colourway, x, y, z, turn (degrees anticlockwise from above), scale }
 WChewsLayout.Placements = {
@@ -327,6 +356,41 @@ WChewsLayout.Placements = {
 	{ "WcPlant", 1, 76, -26, 0, 0, 1.5 },
 	{ "WcPlant", 1, -12.5, -107, 0, 0, 1.5 },
 	{ "WcPlant", 1, 12.5, -107, 0, 0, 1.5 },
+	{ "WcWheelStand", 1, 248, 331, 0, 0, 1 },
+	{ "WcRopeSpan", 1, 241.5, 323, 0, 0, 1 },
+	{ "WcRopeSpan", 1, 254.5, 323, 0, 0, 1 },
+	{ "WcBossDesk", 1, 272, 319, 0, 0, 1 },
+	{ "WcBossChair", 1, 272, 323.6, 0, 0, 1 },
+	{ "WcArmTable", 1, 216, 298, 0, 0, 1 },
+	{ "WcShuffleTable", 1, 271, 294, 0, 0, 1 },
+	{ "WcCloche", 1, 268.3, 294, 3.33, 0, 1 },
+	{ "WcCloche", 1, 271, 294, 3.33, 0, 1 },
+	{ "WcCloche", 1, 273.7, 294, 3.33, 0, 1 },
+	{ "WcBooth", 1, 197, 284, 0, 90, 1 },
+	{ "WcBooth", 2, 197, 297, 0, 90, 1 },
+	{ "WcBooth", 2, 283, 277, 0, 270, 1 },
+	{ "WcPortrait", 1, 195.02, 284, 10.3, 90, 1 },
+	{ "WcPortrait", 2, 195.02, 297, 10.3, 90, 1 },
+	{ "WcPortrait", 3, 284.98, 277, 10.3, 270, 1 },
+	{ "WcPortrait", 1, 284.98, 303, 10.3, 270, 1 },
+	{ "WcPortrait", 2, 262, 267.32, 10.3, 180, 1 },
+	{ "WcPortrait", 3, 275, 267.32, 10.3, 180, 1 },
+	{ "WcMilkShelf", 1, 218, 268.4, 0, 180, 1 },
+	{ "WcBar", 1, 218, 274.6, 0, 180, 1 },
+	{ "WcStool", 1, 213.5, 278.6, 0, 0, 1 },
+	{ "WcStool", 1, 216.5, 278.6, 0, 0, 1 },
+	{ "WcStool", 1, 219.5, 278.6, 0, 0, 1 },
+	{ "WcStool", 1, 222.5, 278.6, 0, 0, 1 },
+	{ "WcNeonMoo", 1, 222, 336.95, 12.6, 0, 1 },
+	{ "WcRug", 1, 248, 298, 0, 0, 1 },
+	{ "WcChandelier", 1, 248, 298, 11.4, 0, 1 },
+	{ "WcPendant", 1, 216, 298, 11, 0, 1 },
+	{ "WcPendant", 1, 271, 294, 11, 0, 1 },
+	{ "WcPendant", 1, 272, 319, 11, 0, 1 },
+	{ "WcPendant", 1, 218, 276, 11, 0, 1 },
+	{ "WcPlant", 1, 199, 333, 0, 0, 1.5 },
+	{ "WcPlant", 1, 282, 334, 0, 0, 1.5 },
+	{ "WcPlant", 1, 200, 270.5, 0, 0, 1.5 },
 } :: { { any } }
 
 return WChewsLayout

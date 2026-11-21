@@ -7942,6 +7942,12 @@ can fit"):**
     and warm (a pool of light under every pendant, the chandelier, the wall lights), the kitchen bright and white
     (KitchenLights). **THE FURNITURE IS SOLID** ("Make furniture solid"): chairs, plants, the host stand, and the
     giant pans (a lifter can jump into a pan and stand on its floor).
+  - **[BUILT 2026-11-21, under the user's overnight OK] THE BACK ROOM AND THE MAFIA BOSS COW**: behind the EMPLOYEES
+    ONLY door (it swings open as a lifter walks up) is the cow's room: walnut and burgundy, the WHEEL OF LUCK at the
+    back with THE BOSS beside it, his desk, an arm wrestling table and a cloche shuffle table for his skill games, a
+    milk bar (plain, strawberry and chocolate milk), booths, his portraits, THE MOO ROOM in neon. The cow is a big
+    upright cartoon cow in a pinstripe suit and fedora, no cigar and no weapon. Nothing in the room is ever bet. His
+    name tag says THE BOSS: [CLAUDE'S CHOICE, for the user to rename].
   - **[USER, 2026-11-21] THE BOOST CHIPS FOLLOW THE UI KIT** (the bottom chips were the last plain Kitchen boxes): a
     steak-red pill with the gain in a yellow badge, the time left and a draining bar; a green breathing pill while a
     cooked meal waits. **THE BUILDING'S TERRACE** is a real restaurant terrace (WChewsFront_02: sandstone, a glass

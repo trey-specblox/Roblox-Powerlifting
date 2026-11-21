@@ -1,0 +1,159 @@
+--!strict
+--[[
+	KitchenBackRoom
+	Server / Economy
+
+	W Chews' back room behind the EMPLOYEES ONLY door (GAME_DESIGN §40.7, user 2026-11-21): the mafia boss cow's
+	room. Its furniture is placed by KitchenBuilding with the rest of the restaurant kit (WChewsLayout); this module
+	adds the two things that are not plain furniture:
+
+		- THE LUCK WHEEL: 20 copies of one wedge (WcWheelWedge) round the wheel's axis, in the model
+		  KitchenHall.BackRoom.LuckWheel, whose pivot is the axis (a client turns the whole wheel with PivotTo for its
+		  own spin). Wedge i (attribute Index) stands (i - 1) steps clockwise from the top, seen from the front.
+		- THE MAFIA BOSS COW (CowBoss) standing beside his wheel with his name tag, and a copy of him in
+		  ReplicatedStorage.KitchenModels for the chef scene's walk-on (KitchenScene).
+
+	Nothing in this room is ever bet (Roblox bans simulated gambling): the wheel is a free daily spin and the cow's
+	games are skill games (LuckService).
+
+	PERFORMANCE: 40 wedge parts of 2 shared meshes (1,280 triangles) and the cow's 20 parts (3,088 triangles), all
+	decor without shadows; one hidden block so nobody walks through him.
+]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local KitchenConfig = require(Shared:WaitForChild("Config"):WaitForChild("KitchenConfig"))
+local WChewsLayout = require(Shared:WaitForChild("Config"):WaitForChild("WChewsLayout"))
+
+local ServerFolder = script.Parent.Parent
+local RoomProps = require(ServerFolder:WaitForChild("World"):WaitForChild("RoomProps"))
+
+local KitchenBackRoom = {}
+
+KitchenBackRoom.CowName = "THE BOSS"
+
+local TAG_GAP = 0.45 -- studs of air between the top of his hat and his name tag (as MeetFigures)
+
+local function noShadows(model: Instance)
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CastShadow = false
+		end
+	end
+end
+
+-- From a model's own origin frame to where its copy's pivot goes (a copy is pivoted at the bottom centre of its bounds).
+local function pivotFrom(origin: CFrame, item: string): CFrame
+	local offset = WChewsLayout.PivotOffset[item]
+	return origin * CFrame.new(-offset.X, offset.Z, offset.Y)
+end
+
+-- The cow's name tag, in the look of every figure's (MeetFigures): a dark slab with white italic letters, sitting
+-- just above his hat at every distance.
+local function nameTag(cow: Model)
+	local hat = cow:FindFirstChild("CowBoss_HeadHat", true)
+	if hat == nil or not hat:IsA("BasePart") then
+		return
+	end
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "BossTag"
+	billboard.Size = UDim2.fromOffset(220, 90)
+	billboard.StudsOffset = Vector3.new(0, hat.Size.Y / 2 + TAG_GAP, 0)
+	billboard.SizeOffset = Vector2.new(0, 0.5)
+	billboard.LightInfluence = 0
+	billboard.MaxDistance = 80
+	billboard.Adornee = hat
+	billboard.Parent = cow
+	local tag = Instance.new("TextLabel")
+	tag.Name = "Name"
+	tag.AnchorPoint = Vector2.new(0.5, 1)
+	tag.Position = UDim2.fromScale(0.5, 1)
+	tag.Size = UDim2.fromOffset(110, 22)
+	tag.Rotation = -4
+	tag.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
+	tag.Text = KitchenBackRoom.CowName
+	tag.TextColor3 = Color3.new(1, 1, 1)
+	tag.TextScaled = true
+	tag.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
+	tag.Parent = billboard
+	local edge = Instance.new("UIStroke")
+	edge.Color = Color3.new(1, 1, 1)
+	edge.Thickness = 2
+	edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	edge.Parent = tag
+end
+
+--[[
+	Builds the wheel and the cow in `hallFolder` (the hall's origin is `hall0`). Returns the wheel model and the cow
+	(nil for one whose model didn't load).
+]]
+function KitchenBackRoom.build(hallFolder: Instance, hall0: CFrame): (Model?, Model?)
+	local folder = Instance.new("Folder")
+	folder.Name = "BackRoom"
+	folder.Parent = hallFolder
+
+	-- The wheel: its axis frame looks at the door (-Z), so turning round its Z turns the wheel in its own plane.
+	local axis = hall0 * KitchenConfig.planSpot(WChewsLayout.Wheel.X, WChewsLayout.Wheel.Y, WChewsLayout.WheelAxis)
+	local wedges = WChewsLayout.WheelWedges
+	local wheel: Model? = nil
+	if WChewsLayout.PivotOffset.WcWheelWedge then
+		local made = Instance.new("Model")
+		made.Name = "LuckWheel"
+		for index = 1, wedges do
+			local copy = RoomProps.propCopy("WcWheelWedge", 1)
+			if copy == nil then
+				break
+			end
+			copy.Name = string.format("Wedge_%02d", index)
+			copy:SetAttribute("Index", index)
+			noShadows(copy)
+			copy:PivotTo(pivotFrom(axis * CFrame.Angles(0, 0, 2 * math.pi * (index - 1) / wedges), "WcWheelWedge"))
+			copy.Parent = made
+		end
+		if #made:GetChildren() == wedges then
+			made.WorldPivot = axis
+			made:SetAttribute("Wedges", wedges)
+			made.Parent = folder
+			wheel = made
+		else
+			made:Destroy()
+			warn("[KitchenBackRoom] the luck wheel's wedge didn't load; no wheel")
+		end
+	end
+
+	-- The cow, facing the door.
+	local cow = if WChewsLayout.PivotOffset.CowBoss then RoomProps.propCopy("CowBoss", 1) else nil
+	if cow then
+		cow.Name = "CowBoss"
+		noShadows(cow)
+		-- A copy for the chef scene's walk-on (the scene's props live in KitchenModels: KitchenPans makes the folder).
+		task.spawn(function()
+			local shared = ReplicatedStorage:WaitForChild("KitchenModels", 120)
+			if shared then
+				local double = cow:Clone()
+				double.Name = "CowBoss"
+				double.Parent = shared
+			end
+		end)
+		local stand = hall0 * KitchenConfig.planSpot(WChewsLayout.Cow.X, WChewsLayout.Cow.Y, 0)
+		cow:PivotTo(pivotFrom(stand, "CowBoss"))
+		nameTag(cow)
+		cow.Parent = folder
+		local block = Instance.new("Part")
+		block.Name = "CowBlock"
+		block.Anchored = true
+		block.Transparency = 1
+		block.CanQuery = false
+		block.CanTouch = false
+		block.CastShadow = false
+		block.Size = Vector3.new(4.4, 7.6, 3.2)
+		block.CFrame = stand * CFrame.new(0, 3.8, 0)
+		block.Parent = folder
+	else
+		warn("[KitchenBackRoom] the mafia boss cow's model didn't load; the back room has no boss")
+	end
+	return wheel, cow
+end
+
+return KitchenBackRoom

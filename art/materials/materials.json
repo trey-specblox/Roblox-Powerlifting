@@ -2218,6 +2218,22 @@
    "ids": {
     "model": "rbxassetid://112316736547236"
    }
+  },
+  "WChewsBack_01": {
+   "about": "W Chews' back room kit (GAME_DESIGN \u00a740.7: the mafia boss cow's room behind the EMPLOYEES ONLY door; user 2026-11-21 approved uploads after Claude's own checks for the overnight session). One mesh per repeated object, placed from WChewsLayout: WcWheelWedge (one 18 degree wedge of the luck wheel with its piece of rim and peg; code places 20 round the axis and paints each by its prize), WcWheelStand (walnut A-frame, brass axle and hub, red pointer, glowing WHEEL OF LUCK sign), WcArmTable (arm wrestling table), WcShuffleTable (green felt, three brass marks), WcCloche (silver dish cover), WcBossDesk, WcBossChair, WcBooth, WcMilkShelf (plain, strawberry and chocolate milk bottles), WcStool, WcRopeSpan, WcPortrait (a cow in a hat), WcNeonMoo (THE MOO ROOM), WcRug. Nothing in the room is bet: the games are skill games. Built by art/scripts/build_wchews_back_01.py. CHECK PASSED (47 meshes, 11,604 triangles).",
+   "file": "art/exports/WChewsBack_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://128536049849365"
+   }
+  },
+  "WChewsCowBoss_01": {
+   "about": "The mafia boss cow, W Chews' back room boss (GAME_DESIGN \u00a740.7; user 2026-11-21: \"a cow on 2 legs\" seen slipping through the EMPLOYEES ONLY door during the chef scene; uploads approved after Claude's own checks for the overnight session). A big cartoon cow standing upright in a pinstripe suit and a fedora: white hide with black patches, a pink snout, cream horns through the hat's brim, a red tie and pocket square, white spats, hooves for hands, a yellow ear tag. No cigar, no weapon, no real brand. Item CowBoss, 20 pieces; the Head* pieces turn round the neck (0, 0, 5.1) and the ArmR* pieces round the right shoulder (-1.75, 0, 4.75) by code. 5.4 wide, 7.9 tall. Built by art/scripts/build_wchews_cow_boss_01.py. CHECK PASSED (20 meshes, 3,088 triangles).",
+   "file": "art/exports/WChewsCowBoss_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://90852818389171"
+   }
   }
  },
  "images": {

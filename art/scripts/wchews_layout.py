@@ -23,6 +23,18 @@ CHUTE_MOUTH = 24.0
 TRUNK_Y = 10.0
 CHEF = (0.0, -25.4)  # close behind his counter (its back edge is y -28.1): you talk to him across it
 BIG = 1.6  # the kitchen's wall equipment is built for the giant pans' world
+# The back room (x 195..285, y 267..337, 18 high; its door is at x 245..251 in the y 267 wall).
+BACK_HEIGHT = 18.0
+WHEEL = (248.0, 331.0)  # the luck wheel's stand; its axis is WHEEL_AXIS up
+WHEEL_AXIS = 7.6
+WHEEL_WEDGES = 20
+COW = (262.0, 321.0)  # the mafia boss cow stands here, beside his wheel, facing the door (-y)
+COW_NECK = (0.0, 0.0, 5.1)  # his joints in his own model's space (write_wchews_layout.py reads the real ones)
+COW_SHOULDER = (-1.75, 0.0, 4.75)
+ARM_TABLE = (216.0, 298.0)
+SHUFFLE_TABLE = (271.0, 294.0)
+CLOCHE_XS = (-2.7, 0.0, 2.7)  # the three cloches' places along the shuffle table
+TABLE_TOP = 3.33  # both game tables' tops
 
 P = []  # (item, colourway, x, y, z, turn, scale)
 
@@ -86,6 +98,41 @@ put("WcHostStand", -13, -101)
 for x, y in ((-76, -106), (76, -106), (-76, -26), (76, -26), (-12.5, -107), (12.5, -107)):
     put("WcPlant", x, y, 0, 0, 1.5)
 
+# ---- the back room (WChewsBack_01; the wheel's 20 wedges are placed by code: they turn and are painted by prize)
+put("WcWheelStand", WHEEL[0], WHEEL[1])
+put("WcRopeSpan", WHEEL[0] - 6.5, WHEEL[1] - 8)
+put("WcRopeSpan", WHEEL[0] + 6.5, WHEEL[1] - 8)
+put("WcBossDesk", 272, 319)
+put("WcBossChair", 272, 323.6)
+put("WcArmTable", ARM_TABLE[0], ARM_TABLE[1])
+put("WcShuffleTable", SHUFFLE_TABLE[0], SHUFFLE_TABLE[1])
+for dx in CLOCHE_XS:
+    put("WcCloche", SHUFFLE_TABLE[0] + dx, SHUFFLE_TABLE[1], TABLE_TOP)
+# Booths with their backs to the side walls (turn 90 = facing +x, 270 = facing -x), a portrait over each.
+put("WcBooth", 197.0, 284, 0, 90)
+put("WcBooth", 197.0, 297, 0, 90, 1.0, 2)
+put("WcBooth", 283.0, 277, 0, 270, 1.0, 2)
+put("WcPortrait", 195.02, 284, 10.3, 90)
+put("WcPortrait", 195.02, 297, 10.3, 90, 1.0, 2)
+put("WcPortrait", 284.98, 277, 10.3, 270, 1.0, 3)
+put("WcPortrait", 284.98, 303, 10.3, 270)
+put("WcPortrait", 262, 267.32, 10.3, 180, 1.0, 2)
+put("WcPortrait", 275, 267.32, 10.3, 180, 1.0, 3)
+# The milk bar against the kitchen-side wall, left of the door: the shelf, a counter module of the restaurant's,
+# four stools.
+put("WcMilkShelf", 218, 268.4, 0, 180)
+put("WcBar", 218, 274.6, 0, 180)
+for k in range(4):
+    put("WcStool", 213.5 + 3.0 * k, 278.6)
+put("WcNeonMoo", 222, 336.95, 12.6)
+put("WcRug", 248, 298)
+# Lights (the restaurant's own fittings) and plants.
+put("WcChandelier", 248, 298, BACK_HEIGHT - 6.6)
+for x, y in (ARM_TABLE, SHUFFLE_TABLE, (272, 319), (218, 276)):
+    put("WcPendant", x, y, BACK_HEIGHT - 7.0)
+for x, y in ((199, 333), (282, 334), (200, 270.5)):
+    put("WcPlant", x, y, 0, 0, 1.5)
+
 PLACEMENTS = tuple(P)
 
 
@@ -120,6 +167,20 @@ def write_luau(path, bounds):
               f"WChewsLayout.Chute = Vector2.new({CHUTE[0]:g}, {CHUTE[1]:g})",
               f"WChewsLayout.ChuteMouth = {CHUTE_MOUTH:g} -- the chute's mouth above the floor",
               f"WChewsLayout.Chef = Vector2.new({CHEF[0]:g}, {CHEF[1]:g}) -- he faces the entrance (-y)",
+              "-- The back room (plan x 195..285, y 267..337).",
+              f"WChewsLayout.BackHeight = {BACK_HEIGHT:g}",
+              f"WChewsLayout.Wheel = Vector2.new({WHEEL[0]:g}, {WHEEL[1]:g}) -- the luck wheel's stand, facing the door (-y)",
+              f"WChewsLayout.WheelAxis = {WHEEL_AXIS:g} -- the wheel's axis above the floor",
+              f"WChewsLayout.WheelWedges = {WHEEL_WEDGES:g}",
+              f"WChewsLayout.Cow = Vector2.new({COW[0]:g}, {COW[1]:g}) -- the mafia boss cow, facing the door (-y)",
+              "-- His joints in his own model's space (x across, y front to back with his front at -y, z up): his head",
+              "-- pieces (CowBoss_Head*) turn round the neck, his right arm's (CowBoss_ArmR*) round the shoulder.",
+              f"WChewsLayout.CowNeck = Vector3.new({COW_NECK[0]:g}, {COW_NECK[1]:g}, {COW_NECK[2]:g})",
+              f"WChewsLayout.CowShoulder = Vector3.new({COW_SHOULDER[0]:g}, {COW_SHOULDER[1]:g}, {COW_SHOULDER[2]:g})",
+              f"WChewsLayout.ArmTable = Vector2.new({ARM_TABLE[0]:g}, {ARM_TABLE[1]:g})",
+              f"WChewsLayout.ShuffleTable = Vector2.new({SHUFFLE_TABLE[0]:g}, {SHUFFLE_TABLE[1]:g})",
+              "WChewsLayout.ClocheXs = { " + ", ".join(f"{x:g}" for x in CLOCHE_XS) + " } -- along the shuffle table",
+              f"WChewsLayout.TableTop = {TABLE_TOP:g} -- the game tables' tops",
               "",
               "-- { item, colourway, x, y, z, turn (degrees anticlockwise from above), scale }",
               "WChewsLayout.Placements = {"]

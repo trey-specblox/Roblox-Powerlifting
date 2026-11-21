@@ -73,6 +73,8 @@ local KitchenWelcome = require(WorldFolder:WaitForChild("KitchenWelcome"))
 task.spawn(KitchenWelcome.start)
 local KitchenSignTimer = require(WorldFolder:WaitForChild("KitchenSignTimer"))
 task.spawn(KitchenSignTimer.start)
+local KitchenBackDoor = require(WorldFolder:WaitForChild("KitchenBackDoor"))
+task.spawn(KitchenBackDoor.start)
 local AutoDoorAnimator = require(WorldFolder:WaitForChild("AutoDoorAnimator"))
 AutoDoorAnimator.start()
 

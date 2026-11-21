@@ -22,7 +22,8 @@
 
 	PERFORMANCE: the shell (3,832 triangles) and 281 kit copies (862 parts, about 163,000 triangles if all were in view:
 	21 shared meshes), all decor (no collision, no touch, small pieces cast no shadow); about 165 hidden collision blocks
-	(60 for walls and big furniture, 104 for the chairs, plants, host stand and button stand).
+	(60 for walls and big furniture, 104 for the chairs, plants, host stand and button stand); the back room's furniture
+	(35 more copies of 14 meshes, about 11,600 triangles) with 20 more blocks, its wheel and the cow (KitchenBackRoom).
 	The building in the square: 20 parts, 2,988 triangles, 19 hidden collision blocks.
 ]]
 
@@ -37,6 +38,7 @@ local WChewsLayout = require(Shared:WaitForChild("Config"):WaitForChild("WChewsL
 local ServerFolder = script.Parent.Parent
 local RoomProps = require(ServerFolder:WaitForChild("World"):WaitForChild("RoomProps"))
 local KitchenLights = require(script.Parent:WaitForChild("KitchenLights"))
+local KitchenBackRoom = require(script.Parent:WaitForChild("KitchenBackRoom"))
 local StyledScreen = require(ServerFolder:WaitForChild("World"):WaitForChild("StyledScreen"))
 
 local KitchenBuilding = {}
@@ -50,6 +52,16 @@ local SOLID_FURNITURE: { [string]: { name: string, across: number, height: numbe
 	WcPlant = { name = "Plant", across = 1.6, height = 2.2, deep = 1.6 },
 	WcHostStand = { name = "HostStand", across = 3.8, height = 4.4, deep = 2.1 },
 	WcButtonPanel = { name = "ButtonPanel", across = 2.8, height = 4.1, deep = 1.9 },
+	-- The back room.
+	WcWheelStand = { name = "WheelStand", across = 8.6, height = 15, deep = 4.8 },
+	WcBossDesk = { name = "BossDesk", across = 12.2, height = 3.65, deep = 5.2 },
+	WcBossChair = { name = "BossChair", across = 3.2, height = 6.4, deep = 2.8 },
+	WcArmTable = { name = "ArmTable", across = 5, height = 3.4, deep = 3.2 },
+	WcShuffleTable = { name = "ShuffleTable", across = 9, height = 3.4, deep = 4.8 },
+	WcBooth = { name = "Booth", across = 10.7, height = 4.4, deep = 3.5 },
+	WcMilkShelf = { name = "MilkShelf", across = 14.2, height = 10, deep = 2.2 },
+	WcStool = { name = "Stool", across = 1.8, height = 3, deep = 1.8 },
+	WcRopeSpan = { name = "RopeSpan", across = 6.8, height = 3.3, deep = 0.7 },
 }
 
 local started = false
@@ -150,10 +162,17 @@ function KitchenBuilding.start()
 			hall0 * KitchenConfig.planSpot((x0 + x1) / 2, (y0 + y1) / 2, height / 2))
 	end
 	-- The kitchen's walls (x -285..285, y -20..265), the fancy front's (x -80..80, y -110..-20) with its glass doors
-	-- shut (the Leave prompt is the way out), and the back room's (x 195..285, y 267..337) with its door shut for now.
+	-- shut (the Leave prompt is the way out), and the back room's (x 195..285, y 267..337, 18 high). The EMPLOYEES ONLY
+	-- doorway (x 245..251, 9 high) in the kitchen's back wall is left open: the door itself swings out of the way on
+	-- each screen (KitchenBackDoor, client).
 	block("KitchenLeft", -287, -285, -22, 267, 40)
 	block("KitchenRight", 285, 287, -22, 267, 40)
-	block("KitchenBack", -287, 287, 265, 267, 40)
+	block("KitchenBack", -287, 245, 265, 267, 40)
+	block("KitchenBackRight", 251, 287, 265, 267, 40)
+	collider(blocks, "KitchenBackOverDoor", Vector3.new(6, 31, 2), hall0 * KitchenConfig.planSpot(248, 266, 24.5))
+	block("BackRoomLeft", 193, 195, 267, 339, 22)
+	block("BackRoomRight", 285, 287, 267, 339, 22)
+	block("BackRoomEnd", 193, 287, 337, 339, 22)
 	block("KitchenFrontLeft", -287, -80, -22, -20, 40)
 	block("KitchenFrontRight", 80, 287, -22, -20, 40)
 	block("FrontLeft", -82, -80, -112, -20, 26)
@@ -213,6 +232,11 @@ function KitchenBuilding.start()
 		warn(string.format("[KitchenBuilding] only %d of %d W Chews kit pieces placed (a model didn't load)", placed,
 			#WChewsLayout.Placements))
 	end
+
+	-- The milk bar's counter in the back room (a module of the restaurant's service counter, turned to face the room).
+	block("MilkBar", 212, 224, 272.6, 276.6, 4)
+	-- The back room's wheel and the mafia boss cow.
+	KitchenBackRoom.build(hallFolder, hall0)
 
 	-- The sun kept out, and the rooms' own lights (the pendants and the chandelier just placed carry theirs).
 	local lights = KitchenLights.build(hallFolder, kit, hall0)

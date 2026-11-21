@@ -16,7 +16,8 @@
 		  light a room this size more evenly, and more cheaply, than one small light under each of the 45 panels),
 		  plus one key light on the grinder from the side (the centre of the room and of the chef scene).
 
-	PERFORMANCE: 14 plain blocks and 53 lights, none of them casting shadows (the costly part of a light). The
+	PERFORMANCE: 14 plain blocks and 64 lights (53 in the restaurant, 11 in the back room: its four pendants, its
+	chandelier, five fills and a spot on the wheel), none of them casting shadows (the costly part of a light). The
 	world had 344 shadowless lights before this. The dining room's are small on purpose (each covers little of the
 	screen); on low graphics settings Roblox draws local lights the cheap way by itself.
 ]]
@@ -54,6 +55,10 @@ local PANEL_DROP = 6
 -- the chef scene's close-up: Studio). Plan space: where it hangs, and what it points at.
 local HERO = { range = 46, brightness = 0.9, angle = 60 }
 local HERO_FROM = Vector3.new(-26, 28, 30)
+-- The back room's fills (plan space: x, y, height).
+local BACK_FILL = { range = 38, brightness = 0.75 }
+local BACK_FILLS = { Vector3.new(212, 300, 13), Vector3.new(282, 300, 13), Vector3.new(248, 284, 14), Vector3.new(224, 328, 12),
+	Vector3.new(272, 326, 12) }
 local HERO_ONTO = Vector3.new(0, 52, 8)
 
 -- A hidden anchored point to carry a light.
@@ -182,6 +187,25 @@ function KitchenLights.build(hallFolder: Instance, kit: Instance, hall0: CFrame)
 	spot.Color = WHITE
 	spot.Shadows = false
 	spot.Parent = hero
+	lights += 1
+	-- The back room (its pendants and chandelier carry their own, above): five soft warm fills so the walnut walls
+	-- and the booths don't sink into black (with the fittings alone the room was a few pools in the dark: Studio),
+	-- and a warm spot on the luck wheel.
+	for _, at in ipairs(BACK_FILLS) do
+		pointLight(lightPoint(folder, "BackFill", hall0 * KitchenConfig.planSpot(at.X, at.Y, at.Z)), BACK_FILL, WARM)
+		lights += 1
+	end
+	local wheel = WChewsLayout.Wheel
+	local wheelFrom = (hall0 * KitchenConfig.planSpot(wheel.X, wheel.Y - 13, WChewsLayout.BackHeight - 1)).Position
+	local wheelOnto = (hall0 * KitchenConfig.planSpot(wheel.X, wheel.Y, WChewsLayout.WheelAxis)).Position
+	local wheelSpot = Instance.new("SpotLight")
+	wheelSpot.Face = Enum.NormalId.Front
+	wheelSpot.Range = 30
+	wheelSpot.Brightness = 1.0
+	wheelSpot.Angle = 58
+	wheelSpot.Color = Color3.fromRGB(255, 236, 200)
+	wheelSpot.Shadows = false
+	wheelSpot.Parent = lightPoint(folder, "WheelLight", CFrame.lookAt(wheelFrom, wheelOnto))
 	lights += 1
 	return lights
 end

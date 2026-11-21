@@ -73,8 +73,21 @@ def flat(name, colour):
 CUSHIONS = {2: {"WcChair_Cushion": flat("PreviewBurgundy", (0.42, 0.07, 0.12))},
             3: {"WcChair_Cushion": flat("PreviewMustard", (0.85, 0.60, 0.14))}}
 kit = group(append("WChewsKit_01.blend", ("Wc",)))
+kit.update(group(append("WChewsBack_01.blend", ("Wc",))))
 for item, colourway, x, y, z, turn, scale in L.PLACEMENTS:
     place(kit[item], turned(x, y, z, turn, scale), CUSHIONS.get(colourway) if item == "WcChair" else None)
+
+# The luck wheel's 20 wedges round its axis, as the game's code places them (three tints so the wheel reads).
+WEDGE_TINTS = [flat("PreviewWedgeCream", (0.92, 0.88, 0.76)), flat("PreviewWedgeRed", (0.72, 0.12, 0.12)),
+               flat("PreviewWedgeGreen", (0.07, 0.36, 0.22)), flat("PreviewWedgeGold", (0.92, 0.70, 0.18))]
+for k in range(L.WHEEL_WEDGES):
+    spin = Matrix.Rotation(math.radians(360.0 * k / L.WHEEL_WEDGES), 4, "Y")
+    place(kit["WcWheelWedge"], Matrix.Translation((L.WHEEL[0], L.WHEEL[1], L.WHEEL_AXIS)) @ spin,
+          {"WcWheelWedge_Face": WEDGE_TINTS[3 if k == 0 else k % 3]})
+
+# The mafia boss cow at his spot (when his model exists).
+if os.path.exists(os.path.join(ART, "WChewsCowBoss_01.blend")):
+    place(append("WChewsCowBoss_01.blend", ("CowBoss",)), turned(L.COW[0], L.COW[1], 0))
 
 # The grinder (GrinderScale 1.3) at its plan-02 spot, its outlet toward the entrance.
 grinder = append("KitchenGrinder_02.blend", ("MeatGrinder",))
@@ -152,6 +165,12 @@ VIEWS = {
     "09_SinksAndStaffDoor": ((168, 246, 8), (250, 266, 5)),
     "10_PansAndTube": ((56, 58, 16), (190, 150, 6)),
     "11_BackRoom": ((200, 330, 9), (275, 275, 5)),
+    "13_BackFromDoor": ((248, 270, 6.5), (248, 331, 7)),
+    "14_BackWheel": ((240, 306, 7), (252, 331, 7)),
+    "15_BackLeft": ((262, 312, 9), (200, 280, 4)),
+    "16_BackRight": ((228, 312, 9), (283, 285, 4)),
+    "17_BackDesk": ((252, 300, 8), (274, 322, 4)),
+    "18_BackMilkBar": ((236, 296, 8), (214, 268, 5)),
 }
 for name, (pos, target) in VIEWS.items():
     if ONLY and name not in ONLY:

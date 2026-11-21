@@ -39,6 +39,7 @@ local WChewsLayout = require(Shared:WaitForChild("Config"):WaitForChild("WChewsL
 local UIStyle = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIStyle"))
 local UIFancy = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("UIFancy"))
 local PromptController = require(script.Parent.Parent:WaitForChild("UI"):WaitForChild("PromptController"))
+local KitchenBackDoor = require(script.Parent:WaitForChild("KitchenBackDoor"))
 
 local KitchenScene = {}
 
@@ -406,40 +407,46 @@ end
 --[[
 	The mafia boss cow's walk-on (user 2026-11-21: "a small detail that if players just look down or something they see
 	a cow on 2 legs opening and walking through the door, so it raises suspicion"): he waddles to the EMPLOYEES ONLY
-	door, it swings open into the back room, he goes through, it shuts. On this screen only. Does nothing until his
-	model exists (ReplicatedStorage.KitchenModels.CowBoss, built with the back room).
+	door, it swings open into the back room (KitchenBackDoor), he goes through, it shuts. On this screen only. Does
+	nothing if his model didn't load (ReplicatedStorage.KitchenModels.CowBoss, KitchenBackRoom).
 ]]
-local function cowCameo(kit: Instance?, hall0: CFrame, made: { Instance })
+local function cowCameo(_kit: Instance?, hall0: CFrame, made: { Instance })
 	local cow = prop("CowBoss")
-	local door = kit and kit:FindFirstChild("WcStaffDoor")
-	local leaf = door and door:FindFirstChild("WcStaffDoor_Door", true)
-	if cow == nil or leaf == nil or not leaf:IsA("BasePart") then
+	if cow == nil then
 		return
 	end
 	table.insert(made, cow)
-	local pieces: { { part: BasePart, home: CFrame } } = {}
-	for _, name in ipairs({ "WcStaffDoor_Door", "WcStaffDoor_DoorBrass", "WcStaffDoor_DoorText" }) do
-		local part = (door :: Instance):FindFirstChild(name, true)
-		if part and part:IsA("BasePart") then
-			table.insert(pieces, { part = part, home = part.CFrame })
+	-- While his double walks, the cow standing in the back room isn't drawn on this screen (he can't be in two places
+	-- when the door opens), and the door is held open for him.
+	local hall = Workspace:FindFirstChild("KitchenHall")
+	local room = hall and hall:FindFirstChild("BackRoom")
+	local standing = room and room:FindFirstChild("CowBoss")
+	local hidden: { BasePart } = {}
+	if standing then
+		for _, part in ipairs(standing:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.LocalTransparencyModifier = 1
+				table.insert(hidden, part)
+			end
+		end
+	end
+	local holding = false
+	local function release()
+		if holding then
+			holding = false
+			KitchenBackDoor.hold(false)
 		end
 	end
 	table.insert(undo, function()
-		for _, piece in ipairs(pieces) do
-			piece.part.CFrame = piece.home
+		release()
+		for _, part in ipairs(hidden) do
+			part.LocalTransparencyModifier = 0
 		end
 	end)
-	-- The hinge is the leaf's +X edge here (the model's hinge side, plan -x, lands on Roblox +x).
-	local hinge = leaf.CFrame * CFrame.new(leaf.Size.X / 2, 0, 0)
-	local function swing(angle: number)
-		for _, piece in ipairs(pieces) do
-			piece.part.CFrame = hinge * CFrame.Angles(0, angle, 0) * hinge:ToObjectSpace(piece.home)
-		end
-	end
 	local function at(x: number, y: number): Vector3
 		return (hall0 * KitchenConfig.planSpot(x, y, 0)).Position
 	end
-	local from, doorway, inside = at(236, 250), at(248, 262), at(248, 276)
+	local from, doorway, inside = at(236, 250), at(248, 262), at(248, 277)
 	local function waddle(a: Vector3, b: Vector3, seconds: number)
 		animate(seconds, function(t)
 			local sway = math.sin(t * seconds * 9)
@@ -451,14 +458,12 @@ local function cowCameo(kit: Instance?, hall0: CFrame, made: { Instance })
 	cow.Parent = Workspace
 	local short = doorway - (doorway - from).Unit * 3
 	waddle(from, short, 0.9)
-	animate(0.35, function(t)
-		swing(math.rad(100) * t)
-	end)
-	waddle(short, inside, 0.8)
+	holding = true
+	KitchenBackDoor.hold(true)
+	wait(0.4)
+	waddle(short, inside, 0.9)
 	cow.Parent = nil
-	animate(0.35, function(t)
-		swing(math.rad(100) * (1 - t))
-	end)
+	release()
 end
 
 --[[
