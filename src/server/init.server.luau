@@ -112,6 +112,9 @@ local KitchenChef = require(script:WaitForChild("Economy"):WaitForChild("Kitchen
 task.spawn(KitchenChef.start)
 local KitchenBuilding = require(script:WaitForChild("Economy"):WaitForChild("KitchenBuilding"))
 task.spawn(KitchenBuilding.start)
+-- The mafia boss cow's wheel of luck and his games (GAME_DESIGN §40.7).
+local LuckService = require(script:WaitForChild("Economy"):WaitForChild("LuckService"))
+LuckService.start()
 
 -- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
 local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))

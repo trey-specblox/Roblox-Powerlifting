@@ -101,9 +101,15 @@ KitchenConfig.Sounds = {
 	Chute = "rbxassetid://100812110878986", -- 1.11 s: the bag or cow rumbling down the ceiling chute (the thud follows)
 	Tube = "rbxassetid://138689375274677", -- 3.17 s: the meat drawn up the funnel and rushing along the tube
 	Plop = "rbxassetid://84379172787367", -- 0.33 s: ONE lump landing on the pan (played for every lump after the first)
-	-- The back room (KitchenBackDoor): "" = no sound yet.
-	DoorOpen = "",
-	DoorClose = "",
+	-- The back room (KitchenBackDoor, LuckMenu; ElevenLabs, art/sounds/elevenlabs_shouts.json).
+	DoorOpen = "rbxassetid://121455606325815", -- 0.74 s: the EMPLOYEES ONLY door swinging open
+	DoorClose = "rbxassetid://127854702933697", -- 0.57 s: it shutting
+	WheelTick = "rbxassetid://91380274954058", -- 0.075 s: ONE peg passing the wheel's pointer
+	WheelWin = "rbxassetid://120346069633995", -- 0.99 s: a good result on the wheel, and a game won
+	WheelLow = "rbxassetid://79573852180728", -- 1.08 s: the 0.8x, and a game lost
+	ClocheLift = "rbxassetid://139106599155906", -- 0.41 s: a dish cover lifted off the table
+	ClocheSlide = "rbxassetid://101796474199152", -- 0.56 s: a dish cover sliding across the felt
+	BossMoo = "rbxassetid://127288719238376", -- 1.42 s: the boss's greeting
 }
 
 -- What drops into the grinder for a cook of `steaks`: "Bag" or "Cow", and how many.

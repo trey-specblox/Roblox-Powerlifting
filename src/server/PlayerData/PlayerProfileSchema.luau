@@ -64,9 +64,10 @@ local PlayerProfileSchema = {}
 	for each attempt; version 25: clothes and the gear toggle; version 26: the
 	numbered State Champion badges; version 27: the Nationals spots; version
 	28: the Worlds spots; version 31: the Kitchen and gain boosts; version 32:
-	whether the player has watched the chef scene once).
+	whether the player has watched the chef scene once; version 33: the luck
+	wheel's multiplier, spins and game tries).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 32
+PlayerProfileSchema.CURRENT_VERSION = 33
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -548,6 +549,25 @@ export type Boosts = {
 	steak: { percent: number, endsAt: number, steaks: number },
 }
 
+--[[
+	LUCK, added in version 33 (GAME_DESIGN §40.7, user 2026-11-21: the mafia boss cow's wheel). ONE multiplier at a
+	time on every rollable (crates, celebration spins, rare suit drops); a new spin replaces it.
+
+	Written only by ProfileOperations.spinLuckWheel, startCowGame, winCowGame and addLuckSpins.
+]]
+export type Luck = {
+	-- The wheel's result in force, and the server time it ends (1 and 0 = none).
+	multiplier: number,
+	endsAt: number,
+	-- The UTC day (DayKey) the free daily spin was last used ("" = never).
+	freeDayKey: string,
+	-- Spins won from the cow's games (or bought), not used yet.
+	spins: number,
+	-- The cow's games: the UTC day `gameTries` counts, and the tries used that day.
+	gameDayKey: string,
+	gameTries: number,
+}
+
 export type Bodyweight = {
 	currentKg: number,
 	-- What the player is eating toward. Equal to current means "maintain".
@@ -593,6 +613,7 @@ export type ProfileData = {
 	dailyQuests: DailyQuests,
 	kitchen: Kitchen,
 	boosts: Boosts,
+	luck: Luck,
 
 	-- (competitionBudget, added in version 3, was removed in version 10: GAME_DESIGN 29.9.)
 	-- (trainingEnergy, added in version 3, was retired in version 8: GAME_DESIGN 29.8.)
@@ -760,6 +781,8 @@ local template: ProfileData = {
 	boosts = {
 		steak = { percent = 0, endsAt = 0, steaks = 0 },
 	},
+	-- No luck from the wheel yet, the free spin unused, no spins won, no tries used.
+	luck = { multiplier = 1, endsAt = 0, freeDayKey = "", spins = 0, gameDayKey = "", gameTries = 0 },
 
 	meta = {
 		--[[
@@ -2158,6 +2181,35 @@ migrations[31] = function(data: ProfileData)
 	end
 	if typeof(kitchen.sceneSeen) ~= "boolean" then
 		kitchen.sceneSeen = false
+	end
+end
+
+--[[
+	Version 32 -> 33: luck (user 2026-11-21, GAME_DESIGN §40.7: the mafia boss cow's wheel). Nobody has spun: no
+	multiplier, the free spin unused, no spins waiting, no game tries used.
+
+	REPAIRS, NEVER OVERWRITES: usable stored values are kept; a missing or broken record or field is set to its empty
+	value. IDEMPOTENT: a second run finds everything usable and changes nothing.
+]]
+migrations[32] = function(data: ProfileData)
+	local luck = (data :: any).luck
+	if typeof(luck) ~= "table" then
+		luck = {}
+		(data :: any).luck = luck
+	end
+	if typeof(luck.multiplier) ~= "number" or luck.multiplier ~= luck.multiplier or luck.multiplier <= 0
+		or luck.multiplier == math.huge then
+		luck.multiplier = 1
+	end
+	for _, field in ipairs({ "endsAt", "spins", "gameTries" }) do
+		if not isTimeOrCount(luck[field]) then
+			luck[field] = 0
+		end
+	end
+	for _, field in ipairs({ "freeDayKey", "gameDayKey" }) do
+		if typeof(luck[field]) ~= "string" then
+			luck[field] = ""
+		end
 	end
 end
 

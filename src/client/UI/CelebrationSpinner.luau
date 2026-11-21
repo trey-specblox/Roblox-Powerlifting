@@ -40,6 +40,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 local TweenService = game:GetService("TweenService")
@@ -52,6 +53,7 @@ local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
+local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local LoadoutConfig = require(ConfigFolder:WaitForChild("LoadoutConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
@@ -218,11 +220,13 @@ local function oddsText(of: string): string
 	for _, entry in ipairs(GearStatsConfig.Rarities) do
 		table.insert(order, entry.id)
 	end
+	-- (with this player's luck from the cow's wheel applied: the odds shown are the odds rolled)
+	local lucky = LuckConfig.rarityOdds(GearStatsConfig.Rarities, LuckConfig.ofPlayer(Players.LocalPlayer, Workspace:GetServerTimeNow()))
 	local chance: { [string]: number } = {}
-	for _, entry in ipairs(GearStatsConfig.Rarities) do
+	for index, entry in ipairs(GearStatsConfig.Rarities) do
 		local landed = CelebrationConfig.landingRarity(entry.id, order, has)
 		if landed then
-			chance[landed] = (chance[landed] or 0) + entry.odds
+			chance[landed] = (chance[landed] or 0) + lucky[index]
 		end
 	end
 	local parts = {}
@@ -230,8 +234,8 @@ local function oddsText(of: string): string
 		local odds = chance[entry.id]
 		if odds then
 			local colour = entry.colour
-			table.insert(parts, string.format('<font color="rgb(%d,%d,%d)">%s %d%%</font>', math.round(colour.R * 255),
-				math.round(colour.G * 255), math.round(colour.B * 255), string.upper(entry.id), math.round(odds * 100)))
+			table.insert(parts, string.format('<font color="rgb(%d,%d,%d)">%s %s</font>', math.round(colour.R * 255),
+				math.round(colour.G * 255), math.round(colour.B * 255), string.upper(entry.id), LuckConfig.percentText(odds)))
 		end
 	end
 	return table.concat(parts, "   ")

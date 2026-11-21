@@ -39,6 +39,7 @@ local ConfigFolder = Shared:WaitForChild("Config")
 local ShopConfig = require(ConfigFolder:WaitForChild("ShopConfig"))
 local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
+local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 local EconomyFolder = Shared:WaitForChild("Economy")
 local ShopRemotes = require(EconomyFolder:WaitForChild("ShopRemotes"))
 local GearRemotes = require(EconomyFolder:WaitForChild("GearRemotes"))
@@ -150,12 +151,35 @@ function ShopMenu.start()
 			local y = 116 + (index - 1) * 27
 			local name = UIStyle.text(info, "Name_" .. rarity.id, UDim2.fromOffset(14, y), UDim2.fromOffset(120, 24), SIZES.body, rarity.colour, UIStyle.heading())
 			name.Text = string.upper(rarity.id)
-			local odds = UIStyle.text(info, "Odds_" .. rarity.id, UDim2.fromOffset(134, y), UDim2.fromOffset(50, 24), SIZES.body, C.white)
+			local odds = UIStyle.text(info, "Odds_" .. rarity.id, UDim2.fromOffset(130, y), UDim2.fromOffset(54, 24), SIZES.body, C.white)
 			odds.Text = string.format("%d%%", math.floor(rarity.odds * 100 + 0.5))
+			odds.TextScaled = true
+			local oddsLimit = Instance.new("UITextSizeConstraint")
+			oddsLimit.MaxTextSize = SIZES.body
+			oddsLimit.Parent = odds
 			local stats = UIStyle.text(info, "Stats_" .. rarity.id, UDim2.fromOffset(186, y), UDim2.fromOffset(232, 24), SIZES.small, C.muted)
 			stats.Text = GearStats.statText(rarity.id)
 			stats.TextScaled = true
 		end
+		-- The odds shown are the odds rolled: with this player's luck from the cow's wheel applied (GAME_DESIGN §40.7),
+		-- and a note beside the price while they have any.
+		local luckNote = UIStyle.text(info, "Luck", UDim2.fromOffset(220, 86), UDim2.fromOffset(196, 22), SIZES.small, C.yellow, UIStyle.heading())
+		luckNote.TextXAlignment = Enum.TextXAlignment.Right
+		local function showOdds()
+			local luck = LuckConfig.ofPlayer(player, workspace:GetServerTimeNow())
+			local real = LuckConfig.rarityOdds(GearStatsConfig.Rarities, luck)
+			for index, rarity in ipairs(GearStatsConfig.Rarities) do
+				local label = info:FindFirstChild("Odds_" .. rarity.id)
+				if label and label:IsA("TextLabel") then
+					label.Text = LuckConfig.percentText(real[index])
+				end
+			end
+			luckNote.Text = if luck ~= 1 then "YOUR LUCK: " .. LuckConfig.multiplierText(luck) else ""
+		end
+		showOdds()
+		player:GetAttributeChangedSignal(LuckConfig.MultiplierAttribute):Connect(showOdds)
+		player:GetAttributeChangedSignal(LuckConfig.EndsAtAttribute):Connect(showOdds)
+		holder:GetPropertyChangedSignal("Visible"):Connect(showOdds)
 		local helps = UIStyle.text(info, "Helps", UDim2.fromOffset(14, 256), UDim2.new(1, -28, 0, 24), SIZES.small, C.white)
 		local openButton: TextButton
 		local confirmUntil = 0

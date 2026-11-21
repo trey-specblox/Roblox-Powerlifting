@@ -15,8 +15,11 @@
 
 	Display only: the server keeps the boosts (KitchenService, ProfileOperations, GainBoosts).
 
-	PERFORMANCE: two small chips (about 25 instances); the text updates once a second; the ready chip's slow pulse is
-	one tween that runs only while that chip shows.
+	A third chip, in purple, is your LUCK from the mafia boss cow's wheel ("2x", the time left, the same draining bar):
+	it shows while a multiplier is in force.
+
+	PERFORMANCE: three small chips (about 40 instances); the text updates once a second; the ready chip's slow pulse
+	is one tween that runs only while that chip shows.
 ]]
 
 local Players = game:GetService("Players")
@@ -24,6 +27,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local KitchenConfig = require(Shared:WaitForChild("Config"):WaitForChild("KitchenConfig"))
+local LuckConfig = require(Shared:WaitForChild("Config"):WaitForChild("LuckConfig"))
 local KitchenRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("KitchenRemotes"))
 
 local TweenService = game:GetService("TweenService")
@@ -42,6 +46,7 @@ local STEAK_TOP, STEAK_BOTTOM = Color3.fromRGB(150, 44, 30), Color3.fromRGB(58, 
 local YELLOW_TOP, YELLOW_BOTTOM = Color3.fromRGB(255, 226, 92), Color3.fromRGB(232, 160, 24)
 local GREEN_TOP, GREEN_BOTTOM = Color3.fromRGB(132, 240, 110), Color3.fromRGB(38, 150, 52)
 local INSET = Color3.fromRGB(24, 10, 8)
+local LUCK_TOP, LUCK_BOTTOM = Color3.fromRGB(122, 70, 200), Color3.fromRGB(44, 22, 84)
 
 local started = false
 local showView: ((any) -> ())? = nil
@@ -59,6 +64,17 @@ local remotes: KitchenRemotes.RemoteSet? = nil
 function BoostBar.show(view: any)
 	if showView and typeof(view) == "table" then
 		(showView :: (any) -> ())(view)
+	end
+end
+
+-- Keeps the luck chip as it is (true) until released (false): a spin's result must not show on the chip before the
+-- wheel has stopped (LuckMenu).
+local luckHeld = false
+local drawLuckNow: (() -> ())? = nil
+function BoostBar.holdLuck(hold: boolean)
+	luckHeld = hold
+	if not hold and drawLuckNow then
+		(drawLuckNow :: () -> ())()
 	end
 end
 
@@ -101,7 +117,7 @@ function BoostBar.start()
 	holder.Name = "Chips"
 	holder.AnchorPoint = Vector2.new(0.5, 1)
 	holder.Position = UDim2.new(0.5, 0, 1, -10)
-	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 2 + 10)
+	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 3 + 20)
 	holder.BackgroundTransparency = 1
 	holder.Parent = gui
 	local layout = Instance.new("UIListLayout")
@@ -143,40 +159,68 @@ function BoostBar.start()
 	local readyPulse = TweenService:Create(readyScale,
 		TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.05 })
 
-	-- The boost that is running: the gain in a yellow badge, its name, the time left in a dark inset, a draining bar.
-	local steakChip, steakFill = pill("Steak", 2, STEAK_TOP, STEAK_BOTTOM, Color3.fromRGB(255, 140, 90))
-	local badge = make("Frame", {
-		Name = "Gain", BackgroundColor3 = UIFancy.White, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 6, 0.5, -2), Size = UDim2.fromOffset(84, 28), Parent = steakFill,
-	})
-	corner(badge, PILL)
-	outline(badge, 2)
-	make("UIGradient", { Rotation = 90, Color = ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM), Parent = badge })
-	local gainText = words(badge, "Text", UDim2.fromOffset(6, 2), UDim2.new(1, -12, 1, -4), 17, 2.5)
-	gainText.TextWrapped = false
-	gainText.TextScaled = true
-	make("UITextSizeConstraint", { MaxTextSize = 17, MinTextSize = 10, Parent = gainText })
-	local nameText = words(steakFill, "Name", UDim2.new(0, 96, 0, -2), UDim2.new(1, -96 - 112, 1, 0), 18, 3)
-	nameText.TextWrapped = false
-	nameText.TextXAlignment = Enum.TextXAlignment.Left
-	nameText.Text = "STEAK BOOST"
-	local clock = make("Frame", {
-		Name = "Clock", BackgroundColor3 = INSET, BackgroundTransparency = 0.1, BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -7, 0.5, -2), Size = UDim2.fromOffset(102, 26), Parent = steakFill,
-	})
-	corner(clock, PILL)
-	local clockText = words(clock, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 18, 2, YELLOW_TOP)
-	clockText.TextWrapped = false
-	local track = make("Frame", {
-		Name = "Left", BackgroundColor3 = INSET, BackgroundTransparency = 0.2, BorderSizePixel = 0,
-		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, -40, 0, 4), Parent = steakFill,
-	})
-	corner(track, PILL)
-	local drain = make("Frame", {
-		Name = "Fill", BackgroundColor3 = UIFancy.White, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), Parent = track,
-	})
-	corner(drain, PILL)
-	make("UIGradient", { Color = ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM), Parent = drain })
+	-- A running boost: its amount in a yellow badge, its name, the time left in a dark inset, a draining bar.
+	local function boostChip(name: string, order: number, top: Color3, bottom: Color3, glowColour: Color3, title: string)
+		local chip, fill = pill(name, order, top, bottom, glowColour)
+		local badge = make("Frame", {
+			Name = "Gain", BackgroundColor3 = UIFancy.White, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 6, 0.5, -2), Size = UDim2.fromOffset(84, 28), Parent = fill,
+		})
+		corner(badge, PILL)
+		outline(badge, 2)
+		make("UIGradient", { Rotation = 90, Color = ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM), Parent = badge })
+		local amount = words(badge, "Text", UDim2.fromOffset(6, 2), UDim2.new(1, -12, 1, -4), 17, 2.5)
+		amount.TextWrapped = false
+		amount.TextScaled = true
+		make("UITextSizeConstraint", { MaxTextSize = 17, MinTextSize = 10, Parent = amount })
+		local nameText = words(fill, "Name", UDim2.new(0, 96, 0, -2), UDim2.new(1, -96 - 112, 1, 0), 18, 3)
+		nameText.TextWrapped = false
+		nameText.TextXAlignment = Enum.TextXAlignment.Left
+		nameText.Text = title
+		local clock = make("Frame", {
+			Name = "Clock", BackgroundColor3 = INSET, BackgroundTransparency = 0.1, BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -7, 0.5, -2), Size = UDim2.fromOffset(102, 26), Parent = fill,
+		})
+		corner(clock, PILL)
+		local time = words(clock, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 18, 2, YELLOW_TOP)
+		time.TextWrapped = false
+		local track = make("Frame", {
+			Name = "Left", BackgroundColor3 = INSET, BackgroundTransparency = 0.2, BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -4), Size = UDim2.new(1, -40, 0, 4), Parent = fill,
+		})
+		corner(track, PILL)
+		local left = make("Frame", {
+			Name = "Fill", BackgroundColor3 = UIFancy.White, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), Parent = track,
+		})
+		corner(left, PILL)
+		make("UIGradient", { Color = ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM), Parent = left })
+		return chip, amount, time, left
+	end
+	local steakChip, gainText, clockText, drain = boostChip("Steak", 2, STEAK_TOP, STEAK_BOTTOM, Color3.fromRGB(255, 140, 90),
+		"STEAK BOOST")
+	-- Luck from the mafia boss cow's wheel (GAME_DESIGN §40.7): read from this player's attributes, which the server
+	-- keeps current (LuckService).
+	local luckChip, luckText, luckClock, luckDrain = boostChip("Luck", 3, LUCK_TOP, LUCK_BOTTOM, Color3.fromRGB(190, 130, 255),
+		"LUCK")
+	local function drawLuck()
+		if luckHeld then
+			return
+		end
+		local now = workspace:GetServerTimeNow()
+		local luck = LuckConfig.ofPlayer(player, now)
+		local endsAt = player:GetAttribute(LuckConfig.EndsAtAttribute)
+		if luck ~= 1 and typeof(endsAt) == "number" then
+			luckText.Text = LuckConfig.multiplierText(luck)
+			luckClock.Text = KitchenConfig.clockText(endsAt - now)
+			luckDrain.Size = UDim2.fromScale(math.clamp((endsAt - now) / (LuckConfig.LuckHours * 3600), 0.02, 1), 1)
+			luckChip.Visible = true
+		else
+			luckChip.Visible = false
+		end
+	end
+	drawLuckNow = drawLuck
+	player:GetAttributeChangedSignal(LuckConfig.MultiplierAttribute):Connect(drawLuck)
+	player:GetAttributeChangedSignal(LuckConfig.EndsAtAttribute):Connect(drawLuck)
 
 	gui.Parent = player:WaitForChild("PlayerGui")
 
@@ -269,12 +313,14 @@ function BoostBar.start()
 	end
 
 	BoostBar.refresh()
+	drawLuck()
 	task.spawn(function()
 		while true do
 			task.wait(1)
 			if view then
 				draw()
 			end
+			drawLuck()
 		end
 	end)
 end

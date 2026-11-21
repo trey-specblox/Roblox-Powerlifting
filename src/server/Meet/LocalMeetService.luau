@@ -98,6 +98,7 @@ local CoinConfig = require(ConfigFolder:WaitForChild("CoinConfig"))
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
 local NationalsConfig = require(ConfigFolder:WaitForChild("NationalsConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
+local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
 local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
@@ -3357,7 +3358,9 @@ local function rollSuit(current: Meet, lifter: Lifter, player: Player): string?
 	local suitId: string? = nil
 	if typeof(forced) == "string" then
 		suitId = forced
-	elseif current.rewards and suitRandom:NextNumber() < suitChance(current.level) then
+	-- (the lifter's luck from the cow's wheel raises or lowers the chance, up to LuckConfig.SuitLuckCap times it)
+	elseif current.rewards and suitRandom:NextNumber() < LuckConfig.applyToChance(suitChance(current.level),
+		PlayerDataService.luckMultiplier(player), LuckConfig.SuitLuckCap) then
 		suitId = GearStatsConfig.Suits[suitRandom:NextInteger(1, #GearStatsConfig.Suits)].id
 	end
 	if suitId == nil then

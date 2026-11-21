@@ -20,6 +20,7 @@
 local Shared = script.Parent.Parent
 local ConfigFolder = Shared:WaitForChild("Config")
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
+local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 local ShopConfig = require(ConfigFolder:WaitForChild("ShopConfig"))
 local WornGearConfig = require(ConfigFolder:WaitForChild("WornGearConfig"))
 local ModifiersFolder = Shared:WaitForChild("Modifiers")
@@ -86,8 +87,9 @@ function GearStats.crate(id: any): GearStatsConfig.Crate?
 	return nil
 end
 
--- What this crate gives: its rarity by the odds, with one of its item's looks.
-function GearStats.roll(random: Random, crate: GearStatsConfig.Crate): Piece
+-- What this crate gives: its rarity by the odds (with the opener's `luck` applied, LuckConfig.rarityOdds: the server
+-- passes the player's; 1 or nil = the plain odds), with one of its item's looks.
+function GearStats.roll(random: Random, crate: GearStatsConfig.Crate, luck: number?): Piece
 	local slotId = crate.slot
 	local category: string? = crate.category
 	if category == nil then
@@ -105,9 +107,10 @@ function GearStats.roll(random: Random, crate: GearStatsConfig.Crate): Piece
 	end
 	local pick = random:NextNumber()
 	local rarity = GearStatsConfig.Rarities[1].id
+	local odds = LuckConfig.rarityOdds(GearStatsConfig.Rarities, luck or 1)
 	local upTo = 0
-	for _, entry in ipairs(GearStatsConfig.Rarities) do
-		upTo += entry.odds
+	for index, entry in ipairs(GearStatsConfig.Rarities) do
+		upTo += odds[index]
 		if pick < upTo then
 			rarity = entry.id
 			break

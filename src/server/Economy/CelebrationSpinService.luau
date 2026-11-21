@@ -32,6 +32,7 @@ local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
 local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 local ServerStorage = game:GetService("ServerStorage")
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
+local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("CelebrationRemotes"))
 local LoadoutConfig = require(ConfigFolder:WaitForChild("LoadoutConfig"))
@@ -165,20 +166,22 @@ local function ofRarity(kind: string, rarity: string): { string }
 	return out
 end
 
--- The roll: a rarity with the gear crates' odds (or `forced`), then one of its celebrations at random.
-local function roll(kind: string, forced: string?): string
+-- The roll: a rarity with the gear crates' odds under the spinner's `luck` (or `forced`), then one of its celebrations
+-- at random.
+local function roll(kind: string, forced: string?, luck: number): string
 	local rarity: string? = nil
 	if typeof(forced) == "string" then
 		-- (Studio's forced rarity; one this kind has none of lands like a rolled one, below.)
 		rarity = forced
 	else
+		local odds = LuckConfig.rarityOdds(GearStatsConfig.Rarities, luck)
 		local total = 0
-		for _, entry in ipairs(GearStatsConfig.Rarities) do
-			total += entry.odds
+		for index in ipairs(GearStatsConfig.Rarities) do
+			total += odds[index]
 		end
 		local pick = random:NextNumber() * total
-		for _, entry in ipairs(GearStatsConfig.Rarities) do
-			pick -= entry.odds
+		for index, entry in ipairs(GearStatsConfig.Rarities) do
+			pick -= odds[index]
 			if pick <= 0 then
 				rarity = entry.id
 				break
@@ -212,7 +215,7 @@ local function spin(player: Player, kind: string): (boolean, string, Celebration
 	if RunService:IsStudio() then
 		forced = Workspace:GetAttribute("StudioCelebrationRarity")
 	end
-	local resultId = roll(kind, forced)
+	local resultId = roll(kind, forced, PlayerDataService.luckMultiplier(player))
 	local spinOf = if kind == "Entrance" then PlayerDataService.spinEntrance
 		elseif kind == "Fail" then PlayerDataService.spinFailStyle
 		elseif kind == "Emote" then PlayerDataService.spinEmote

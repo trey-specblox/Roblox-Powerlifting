@@ -16,6 +16,47 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**W CHEWS REDESIGN, STEP 9: THE WHEEL OF LUCK, THE CLOCHE SHUFFLE, LUCK ON EVERY ROLL, THE ROOM'S SOUNDS. TESTED IN
+STUDIO (one player: real spins, real games, numbers and pictures; nobody has LISTENED to the sounds), 2026-11-21, the
+overnight run. COMMITTED with this step (see git log; before it ec7b965 the back room).**
+- EVERY NUMBER IN src/shared/Config/LuckConfig.luau IS CLAUDE'S FIRST DRAFT, FOR THE USER TO CHANGE: the wheel's 20
+  wedges are 10x (1 wedge, 5%), 3x (2, 10%), 2x (3, 15%), 1.5x (5, 25%), 1.2x (6, 30%), 0.8x (3, 15%); luck lasts 24
+  hours; 3 game tries a day; at most 5 won spins waiting; rare suit drops take luck only up to 3x.
+- LUCK IS A TRUE MULTIPLIER (LuckConfig.applyToOdds): from the rarest down, each rare result's chance is its own times
+  the luck, and Common takes what is left. Server check, 20,000 crate rolls each: 1x = 60/25/10/4/1; 0.8x = 68/20/8/
+  3.2/0.8; 1.5x = 40/37.5/15/6/1.5; 3x = 0/55/30/12/3; 10x = 0/0/50/40/10 (Common/Uncommon/Rare/Epic/Legendary, in
+  percent). FOR THE USER TO JUDGE: 10x means no Commons or Uncommons at all for a day.
+- SAVE DATA: version 33 (PlayerProfileSchema: `luck` = multiplier, endsAt, freeDayKey, spins, gameDayKey, gameTries;
+  migrations[32] repairs, never overwrites). ProfileOperations: luckMultiplier, getLuck, spinLuckWheel, startCowGame,
+  addLuckSpins; PlayerDataService wraps them. Studio: "loaded ... (version 33, session 1)".
+- SERVER: NEW src/server/Economy/LuckService.luau and src/shared/Progression/LuckRemotes.luau. The server rolls the
+  wedge, decides where the steak starts and every swap, knows where it ended, and gives the spin; it rate-limits,
+  needs the lifter in the back room, and rejects an answer sent before the swaps could have been watched. Luck is
+  applied in the three rolls: gear crates (GearStats.roll, ShopService), celebration spins (CelebrationSpinService),
+  rare suit drops (LocalMeetService.rollSuit, capped). The player attributes Luck / LuckEndsAt carry it to screens.
+- SCREENS: NEW src/client/UI/LuckMenu.luau (UIFancy): talk to THE BOSS (the coaches' dialogue; his portrait is scaled
+  and lowered by attributes CoachDialogue now reads), the WHEEL OF LUCK card with every result's colour and real
+  chance, the spin (the real wheel turns to the server's wedge, the camera on it, a tick for every peg, the result
+  pops), the shuffle (a copy of the cow at his table with his arm out, the cloches swap faster and faster, LEFT /
+  MIDDLE / RIGHT, the reveal). BoostBar: a purple LUCK chip (held back until the wheel stops, so it doesn't give the
+  result away). ShopMenu and CelebrationSpinner show the REAL odds with the player's luck applied.
+- THE WHEEL IN THE ROOM: KitchenBackRoom paints every wedge in its prize's colour and writes the prize along it; the
+  wheel model streams in as one piece; a "Talk / The Boss" prompt on the cow.
+- SOUNDS (ElevenLabs, 60 credits for 16 takes; 112 of the user's 150 spent tonight with the kitchen's 52; prompts and
+  takes in art/sounds/elevenlabs_shouts.json; WAVs in D:/Powerlifting Roblox Extras/Sounds/BackRoom, cut by
+  D:/ClaudeScratch/wchews/backroom_sounds.py): DoorOpen, DoorClose, WheelTick (ONE click cut from a run of them),
+  WheelWin, WheelLow, ClocheLift, ClocheSlide, BossMoo, all in KitchenConfig.Sounds. Picked by waveform.
+- STUDIO: the talk, the card, a free spin (1.5x: the wheel turned, 62 ticks, the win sound, the pop, the chip only
+  after), a lost shuffle on screen (picked MIDDLE, the steak was under RIGHT, "NOT THIS TIME, 1 try left today"), a
+  won shuffle through the remotes (a spin added), "NoTries" on the fourth game, the won spin used (1.2x replaced
+  1.5x), "NoSpins" after, an answer with no game running rejected, an unanswered game "TOO SLOW"; the door's open and
+  close sounds; all eight sounds load. Pictures art/previews/WChewsLuck_01..06.
+- NOT BUILT: the Robux SPIN NOW (needs the user's Developer Product, one receipt handler for the whole game and the
+  PolicyService check; LuckConfig.SpinProductId is 0 and there is no button); ARM WRESTLING (its table is in the
+  room: it needs a real two-figure animation, which has to pass the animation quality gate, so it was not rushed);
+  a WIN on screen was not watched (the test tool's clicks are too slow to follow nine swaps: the win path was proved
+  through the remotes and shares the lost game's reveal); a second player; a phone.
+
 **W CHEWS REDESIGN, STEP 8: THE BACK ROOM AND THE MAFIA BOSS COW. TESTED IN STUDIO (one player, pictures and
 numbers), 2026-11-21, the overnight run. COMMITTED with this step (see git log; before it 956f1fc the terrace,
 0b280c9 steps 1 to 6).**

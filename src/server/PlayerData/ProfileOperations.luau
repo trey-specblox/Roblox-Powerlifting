@@ -59,6 +59,7 @@ local StartingValuesConfig = require(ConfigFolder:WaitForChild("StartingValuesCo
 local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig"))
 local QuestConfig = require(ConfigFolder:WaitForChild("QuestConfig"))
 local KitchenConfig = require(ConfigFolder:WaitForChild("KitchenConfig"))
+local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -2676,6 +2677,130 @@ function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOut
 	kitchen.startedAt = 0
 	kitchen.readyAt = 0
 	return "Eaten", percent
+end
+
+--[[
+	=========================================================================
+	LUCK  (GAME_DESIGN §40.7, user 2026-11-21: the mafia boss cow's wheel)
+	=========================================================================
+
+	One multiplier at a time on every rollable, from the cow's wheel; a new spin replaces it, better or worse. One
+	free spin a UTC day; spins won from the cow's games wait in `spins`; each game costs one of the day's tries and
+	never anything else. Every number is LuckConfig's and every clock the server's; the wedge a spin lands on is
+	rolled by the server (LuckService) and only checked here. No yield.
+]]
+export type LuckView = {
+	-- The multiplier in force (1 = none) and its seconds left.
+	multiplier: number,
+	secondsLeft: number,
+	-- Whether today's free spin is still unused, and spins won and waiting.
+	freeSpin: boolean,
+	spins: number,
+	-- The cow's games: tries left today.
+	triesLeft: number,
+}
+export type SpinOutcome = "Spun" | "NoSpins" | "Rejected"
+export type GameOutcome = "Started" | "NoTries" | "Rejected"
+
+local function usableLuck(data: ProfileData): any?
+	local luck = (data :: any).luck
+	if typeof(luck) ~= "table" or not isFiniteNumber(luck.multiplier) or luck.multiplier <= 0 then
+		return nil
+	end
+	for _, field in ipairs({ "endsAt", "spins", "gameTries" }) do
+		if not isFiniteNumber(luck[field]) or luck[field] < 0 then
+			return nil
+		end
+	end
+	if typeof(luck.freeDayKey) ~= "string" or typeof(luck.gameDayKey) ~= "string" then
+		return nil
+	end
+	return luck
+end
+
+-- The multiplier in force at `nowUnix` (1 when none, ended or unusable). Reads only.
+function ProfileOperations.luckMultiplier(data: ProfileData, nowUnix: number): number
+	local luck = usableLuck(data)
+	if luck == nil or not isFiniteNumber(nowUnix) or luck.endsAt <= nowUnix or not LuckConfig.isMultiplier(luck.multiplier) then
+		return 1
+	end
+	return luck.multiplier
+end
+
+-- Luck for the wheel's screen and the luck chip. Reads only.
+function ProfileOperations.getLuck(data: ProfileData, nowUnix: number): LuckView
+	local view: LuckView = { multiplier = 1, secondsLeft = 0, freeSpin = false, spins = 0, triesLeft = 0 }
+	local luck = usableLuck(data)
+	if luck == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return view
+	end
+	local today = DayKey.fromUnix(nowUnix)
+	view.multiplier = ProfileOperations.luckMultiplier(data, nowUnix)
+	view.secondsLeft = if view.multiplier ~= 1 or luck.endsAt > nowUnix then math.max(0, luck.endsAt - nowUnix) else 0
+	view.freeSpin = luck.freeDayKey ~= today
+	view.spins = math.floor(luck.spins)
+	local used = if luck.gameDayKey == today then luck.gameTries else 0
+	view.triesLeft = math.max(0, LuckConfig.GameTriesPerDay - math.floor(used))
+	return view
+end
+
+--[[
+	Spins the wheel onto wedge `wedge` (rolled by the server): uses today's free spin if it is unused, else one won
+	spin. Sets the multiplier (replacing the one in force) for LuckHours. Returns "Spun" with the multiplier and
+	whether the free spin paid for it. Nothing is written otherwise.
+]]
+function ProfileOperations.spinLuckWheel(data: ProfileData, wedge: number, nowUnix: number): (SpinOutcome, number?, boolean?)
+	local luck = usableLuck(data)
+	local prize = LuckConfig.wedgePrize(wedge)
+	if luck == nil or prize == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return "Rejected", nil, nil
+	end
+	local today = DayKey.fromUnix(nowUnix)
+	local free = luck.freeDayKey ~= today
+	if not free and luck.spins < 1 then
+		return "NoSpins", nil, nil
+	end
+	if free then
+		luck.freeDayKey = today
+	else
+		luck.spins = math.floor(luck.spins) - 1
+	end
+	luck.multiplier = prize.multiplier
+	luck.endsAt = math.floor(nowUnix) + LuckConfig.LuckHours * 3600
+	return "Spun", prize.multiplier, free
+end
+
+-- Starts one of the cow's games: uses one of today's tries. Nothing is written unless it returns "Started".
+function ProfileOperations.startCowGame(data: ProfileData, nowUnix: number): GameOutcome
+	local luck = usableLuck(data)
+	if luck == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return "Rejected"
+	end
+	local today = DayKey.fromUnix(nowUnix)
+	local used = if luck.gameDayKey == today then math.floor(luck.gameTries) else 0
+	if used >= LuckConfig.GameTriesPerDay then
+		return "NoTries"
+	end
+	luck.gameDayKey = today
+	luck.gameTries = used + 1
+	return "Started"
+end
+
+--[[
+	Adds `count` spins to the ones waiting (a game won, or a bought spin), up to LuckConfig.MaxBankedSpins when
+	`capped` (a won spin; a bought one is never lost to the cap). Returns how many are waiting now, or nil.
+]]
+function ProfileOperations.addLuckSpins(data: ProfileData, count: number, capped: boolean): number?
+	local luck = usableLuck(data)
+	if luck == nil or not isFiniteNumber(count) or count < 1 or count ~= math.floor(count) or count > 100 then
+		return nil
+	end
+	local total = math.floor(luck.spins) + count
+	if capped then
+		total = math.max(math.floor(luck.spins), math.min(total, LuckConfig.MaxBankedSpins))
+	end
+	luck.spins = total
+	return total
 end
 
 --[[

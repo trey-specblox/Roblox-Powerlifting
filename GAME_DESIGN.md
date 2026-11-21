@@ -7942,6 +7942,20 @@ can fit"):**
     and warm (a pool of light under every pendant, the chandelier, the wall lights), the kitchen bright and white
     (KitchenLights). **THE FURNITURE IS SOLID** ("Make furniture solid"): chairs, plants, the host stand, and the
     giant pans (a lifter can jump into a pan and stand on its floor).
+  - **[BUILT 2026-11-21, under the user's overnight OK "Wheel plus the cow's games"; EVERY NUMBER IS CLAUDE'S FIRST
+    DRAFT, for the user to change in LuckConfig] THE WHEEL OF LUCK AND THE CLOCHE SHUFFLE:**
+    - **The wheel** has 20 equal wedges, so its picture is its odds: **10x 5%, 3x 10%, 2x 15%, 1.5x 25%, 1.2x 30%,
+      0.8x 15%**. One free spin a UTC day; a new spin REPLACES the multiplier you hold, better or worse (the user's
+      rule); the multiplier lasts **24 hours**. The wheel's screen always shows every result's chance.
+    - **Luck is a true multiplier** on the rare results of every rollable: gear crates, celebration spins, and a
+      meet's rare suit drop (**capped at 3x** there). 2x luck is twice the chance of each rarity above Common; Common
+      takes what is left. The crate shop and the celebration spinner show the real odds with your luck applied.
+    - **The cloche shuffle** ("follow the steak"): the Boss hides a steak under one of three cloches and swaps them
+      nine times, faster and faster; pick the right one for **one spin** (at most 5 can wait). **3 tries a day**; a
+      try is all a game ever costs. Nothing is staked, ever.
+    - **Not built yet:** the Robux SPIN NOW (the user creates the Developer Product; then the odds-shown and
+      restricted-country rules above apply), and arm wrestling against the Boss (the table is in the room; it needs
+      a proper two-figure animation).
   - **[BUILT 2026-11-21, under the user's overnight OK] THE BACK ROOM AND THE MAFIA BOSS COW**: behind the EMPLOYEES
     ONLY door (it swings open as a lifter walks up) is the cow's room: walnut and burgundy, the WHEEL OF LUCK at the
     back with THE BOSS beside it, his desk, an arm wrestling table and a cloche shuffle table for his skill games, a

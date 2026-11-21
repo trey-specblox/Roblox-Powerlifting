@@ -1384,6 +1384,70 @@
       "ids": {
         "audio": "rbxassetid://84379172787367"
       }
+    },
+    "BackDoorOpen": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the EMPLOYEES ONLY door swinging open: a latch click and a short swing, 0.74 s (take A, the lower one). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a heavy solid wooden staff door swinging open, one soft brass latch click then a short smooth swing, no creak, no voices, close microphone, dry room.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BackDoorOpen.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://121455606325815"
+      }
+    },
+    "BackDoorClose": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the EMPLOYEES ONLY door shutting: one low wooden thunk, 0.57 s (take A, the heavier one). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a heavy solid wooden staff door shutting, one firm wooden thunk with a brass latch click, no creak, no voices, close microphone, dry room.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BackDoorClose.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://127854702933697"
+      }
+    },
+    "WheelTick": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): ONE peg passing the luck wheel's pointer, 0.075 s: both takes came back as a run of clicks, so this is the first click cut out of take B; the game plays it once for every peg, so it keeps time with the wheel. Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: ONE single crisp click, a plastic flapper flicking past one metal peg on a wooden carnival prize wheel, one tick only, very short, dry, no reverb, no voices.\" Prompt influence 0.6. ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelTick.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://91380274954058"
+      }
+    },
+    "WheelWin": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a good result on the wheel, and a game won: a bright hit that rings out, 0.99 s (take B). Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: a short bright winning sting, a brass stab with a bell ding and a sparkling shimmer, cheerful game-show win, no voices, no crowd.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelWin.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://120346069633995"
+      }
+    },
+    "WheelLow": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the 0.8x on the wheel, and a game lost: a comic falling sting, 1.08 s (take A, the one with a steady tone near 530 Hz; take B was higher and broken into four bursts). Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: a short comedic losing sting, a muted trombone playing two descending wah-wah notes, light-hearted, no voices, no crowd.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelLow.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://79573852180728"
+      }
+    },
+    "BossMoo": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the boss's greeting when you talk to him: one deep moo that swells, 1.42 s (take A, the lower one, strongest at 190 Hz). Prompt: \"Sound effect for a cartoon powerlifting video game: ONE deep, gruff, low-pitched cow moo, short and grumpy like a big boss bull greeting a visitor, close microphone, dry, no music, no other animals.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BossMoo.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://127288719238376"
+      }
+    },
+    "ClocheLift": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a dish cover lifted off the shuffle table: a short metallic ring, 0.41 s (take A). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a polished steel dish cover (a cloche) lifted off a table, a soft clear metallic ring with a quick light swish, short, no voices, dry.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/ClocheLift.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://139106599155906"
+      }
+    },
+    "ClocheSlide": {
+      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a dish cover sliding across the felt during a swap: a soft swelling scrape, 0.56 s (take A, the longer one); played once a swap, a little higher each time. Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a metal dish cover sliding quickly across a felt-covered table, one short soft scraping whoosh, no clang, no voices, dry.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/ClocheSlide.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://101796474199152"
+      }
     }
   }
 }

@@ -422,11 +422,15 @@ local function cowCameo(_kit: Instance?, hall0: CFrame, made: { Instance })
 	local room = hall and hall:FindFirstChild("BackRoom")
 	local standing = room and room:FindFirstChild("CowBoss")
 	local hidden: { BasePart } = {}
+	local tags: { BillboardGui } = {}
 	if standing then
 		for _, part in ipairs(standing:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.LocalTransparencyModifier = 1
 				table.insert(hidden, part)
+			elseif part:IsA("BillboardGui") and part.Enabled then
+				part.Enabled = false -- (his name tag goes with him)
+				table.insert(tags, part)
 			end
 		end
 	end
@@ -441,6 +445,9 @@ local function cowCameo(_kit: Instance?, hall0: CFrame, made: { Instance })
 		release()
 		for _, part in ipairs(hidden) do
 			part.LocalTransparencyModifier = 0
+		end
+		for _, tag in ipairs(tags) do
+			tag.Enabled = true
 		end
 	end)
 	local function at(x: number, y: number): Vector3

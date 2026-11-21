@@ -277,6 +277,15 @@ function CoachDialogue.start()
 			end
 		end
 		copy:PivotTo(CFrame.Angles(0, math.rad(24), 0))
+		-- A figure that isn't a coach's size, or doesn't pivot at its middle, says how its portrait copy is scaled and
+		-- lowered so its head sits where a coach's does (the mafia boss cow: KitchenBackRoom).
+		local scale, drop = coach:GetAttribute("PortraitScale"), coach:GetAttribute("PortraitDrop")
+		if typeof(scale) == "number" and scale > 0.05 and scale < 20 then
+			copy:ScaleTo(scale)
+		end
+		if typeof(drop) == "number" then
+			copy:PivotTo(copy:GetPivot() - Vector3.new(0, drop, 0))
+		end
 		copy.Parent = portraitWorld
 		local humanoid = copy:FindFirstChildOfClass("Humanoid")
 		if humanoid then

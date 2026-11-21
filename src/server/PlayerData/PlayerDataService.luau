@@ -62,6 +62,7 @@ local CelebrationConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitF
 local LoadoutConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("LoadoutConfig"))
 local BodyweightConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("BodyweightConfig"))
 local KitchenConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("KitchenConfig"))
+local LuckConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("LuckConfig"))
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
@@ -547,6 +548,45 @@ function PlayerDataService.eatSteak(player: Player): (ProfileOperations.EatOutco
 			percent :: number, KitchenConfig.BoostHours))
 	end
 	return outcome, percent
+end
+
+-- LUCK (GAME_DESIGN §40.7): the cow's wheel. Each is ProfileOperations' operation on the player's active profile.
+function PlayerDataService.getLuck(player: Player): ProfileOperations.LuckView?
+	local data = activeData(player, "getLuck")
+	return if data then ProfileOperations.getLuck(data, os.time()) else nil
+end
+
+-- The player's luck multiplier right now (1 with no luck or no loaded profile). For every roll that luck touches.
+function PlayerDataService.luckMultiplier(player: Player): number
+	local profile = profiles[player]
+	if profile == nil or not profile:IsActive() then
+		return 1
+	end
+	return ProfileOperations.luckMultiplier(profile.Data, os.time())
+end
+
+function PlayerDataService.spinLuckWheel(player: Player, wedge: number): (ProfileOperations.SpinOutcome?, number?, boolean?)
+	local data = activeData(player, "spinLuckWheel")
+	if data == nil then
+		return nil, nil, nil
+	end
+	local outcome: ProfileOperations.SpinOutcome, multiplier, free = ProfileOperations.spinLuckWheel(data, wedge, os.time())
+	if outcome == "Spun" then
+		print(string.format("[PlayerDataService] %s spun the luck wheel (%s): luck %sx for %d h", player.Name,
+			if free then "free daily spin" else "a won spin", tostring(multiplier), LuckConfig.LuckHours))
+	end
+	return outcome, multiplier, free
+end
+
+function PlayerDataService.startCowGame(player: Player): ProfileOperations.GameOutcome?
+	local data = activeData(player, "startCowGame")
+	return if data then ProfileOperations.startCowGame(data, os.time()) else nil
+end
+
+-- A spin for beating the cow (capped) or a bought one (never capped). Returns the spins waiting, or nil.
+function PlayerDataService.addLuckSpins(player: Player, count: number, capped: boolean): number?
+	local data = activeData(player, "addLuckSpins")
+	return if data then ProfileOperations.addLuckSpins(data, count, capped) else nil
 end
 
 --[[
