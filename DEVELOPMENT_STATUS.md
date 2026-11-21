@@ -51,6 +51,11 @@ overnight run. COMMITTED with this step (see git log; before it ec7b965 the back
   won shuffle through the remotes (a spin added), "NoTries" on the fourth game, the won spin used (1.2x replaced
   1.5x), "NoSpins" after, an answer with no game running rejected, an unanswered game "TOO SLOW"; the door's open and
   close sounds; all eight sounds load. Pictures art/previews/WChewsLuck_01..06.
+- PERFORMANCE WITH EVERYTHING IN (client view, Studio, one player, graphics level 4; the same from the restaurant's
+  doors and from the back room): 2,438 parts loaded in the hall (816 hidden), 258 different meshes, 36 shadow casters
+  (356 before the pans' shadows went), 64 lights (none with shadows), 22 world screens (the wheel's 20 labels and two
+  name tags), 60 frames a second on this PC. Inside the audit's budgets (10,000 parts, 600 meshes, 200 lights). A
+  phone was not tried.
 - NOT BUILT: the Robux SPIN NOW (needs the user's Developer Product, one receipt handler for the whole game and the
   PolicyService check; LuckConfig.SpinProductId is 0 and there is no button); ARM WRESTLING (its table is in the
   room: it needs a real two-figure animation, which has to pass the animation quality gate, so it was not rushed);
