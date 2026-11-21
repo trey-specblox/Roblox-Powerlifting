@@ -46,6 +46,7 @@ local GearStats = require(EconomyFolder:WaitForChild("GearStats"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local GearPreview = require(script.Parent:WaitForChild("GearPreview"))
+local PromptController = require(script.Parent:WaitForChild("PromptController"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
 
@@ -81,6 +82,10 @@ function ShopMenu.start()
 	local holder, body = UIStyle.panel(gui, "Panel", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
 	holder.AnchorPoint = Vector2.new(0.5, 0.5)
 	holder.Visible = false
+	-- No "E" prompt tiles over the open shop (user 2026-11-21).
+	holder:GetPropertyChangedSignal("Visible"):Connect(function()
+		PromptController.hide("Shop", holder.Visible)
+	end)
 	UIStyle.titleTag(holder, "Tag", "SHOP", UDim2.fromOffset(-18, -30), UDim2.fromOffset(220, 52), nil, "star")
 
 	-- The player's coins, top right.

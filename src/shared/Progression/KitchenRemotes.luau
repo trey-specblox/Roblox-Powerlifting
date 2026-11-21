@@ -13,6 +13,8 @@
 			cooking time come from KitchenConfig.
 		Eat          client -> server (RemoteFunction)  -> { outcome, percent?, view? }
 			Eat the finished meal: the steak boost starts (replacing one already running).
+		SceneSeen    client -> server (RemoteFunction)  -> KitchenView?
+			The chef scene played to the end: from now on it can be skipped (only a skip button; nothing to gain).
 ]]
 
 local KitchenRemotes = {}
@@ -21,6 +23,7 @@ KitchenRemotes.FOLDER_NAME = "KitchenRemotes"
 KitchenRemotes.GET = "GetKitchen"
 KitchenRemotes.COOK = "Cook"
 KitchenRemotes.EAT = "Eat"
+KitchenRemotes.SCENE_SEEN = "SceneSeen"
 
 -- Seconds are relative to the server's clock at the moment it answered.
 export type KitchenView = {
@@ -30,8 +33,9 @@ export type KitchenView = {
 	boostPercent: number,
 	boostLeft: number,
 	boostSteaks: number,
+	sceneSeen: boolean,
 }
-export type RemoteSet = { get: RemoteFunction, cook: RemoteFunction, eat: RemoteFunction }
+export type RemoteSet = { get: RemoteFunction, cook: RemoteFunction, eat: RemoteFunction, sceneSeen: RemoteFunction }
 
 local function child(folder: Instance, name: string): RemoteFunction
 	local existing = folder:FindFirstChild(name)
@@ -57,6 +61,7 @@ function KitchenRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		get = child(folder, KitchenRemotes.GET),
 		cook = child(folder, KitchenRemotes.COOK),
 		eat = child(folder, KitchenRemotes.EAT),
+		sceneSeen = child(folder, KitchenRemotes.SCENE_SEEN),
 	}
 end
 
@@ -67,6 +72,7 @@ function KitchenRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		get = folder:WaitForChild(KitchenRemotes.GET) :: RemoteFunction,
 		cook = folder:WaitForChild(KitchenRemotes.COOK) :: RemoteFunction,
 		eat = folder:WaitForChild(KitchenRemotes.EAT) :: RemoteFunction,
+		sceneSeen = folder:WaitForChild(KitchenRemotes.SCENE_SEEN) :: RemoteFunction,
 	}
 end
 

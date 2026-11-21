@@ -41,6 +41,8 @@ TeleportConfig.Destinations = {
 	{ id = "Shop", label = "SHOP", group = "MAIN AREAS", room = "Shop" },
 	{ id = "MockMeet", label = "MOCK MEET DESK", group = "MAIN AREAS", room = "MockMeet" },
 	{ id = "LocalMeet", label = "LOCAL MEET", group = "MAIN AREAS", venue = true },
+	-- The Kitchen's pan hall (GAME_DESIGN §40.7): KitchenBuilding tags its arrival spot.
+	{ id = "Kitchen", label = "KITCHEN", group = "MAIN AREAS", tag = "KitchenArrive" },
 } :: { Destination }
 
 -- Seconds between two teleports of one player.

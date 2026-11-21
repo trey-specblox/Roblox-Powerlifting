@@ -30,9 +30,14 @@ local QuestRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("Qu
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local QuestTracker = require(script.Parent:WaitForChild("QuestTracker"))
+local PromptController = require(script.Parent:WaitForChild("PromptController"))
 local C = UIStyle.Colours
 
 local CoachDialogue = {}
+
+-- Set by start: open a dialogue on any NPC (see converse below), and close it.
+CoachDialogue.converse = nil :: ((Model, string, (say: (string) -> (), ask: ({ { text: string, value: string } }) -> string?) -> ()) -> boolean)?
+CoachDialogue.close = nil :: (() -> ())?
 
 -- QuestService.PromptTag (server-side constant, repeated here).
 local PROMPT_TAG = "QuestCoachPrompt"
@@ -254,6 +259,7 @@ function CoachDialogue.start()
 		open = false
 		gui.Enabled = false
 		portraitWorld:ClearAllChildren()
+		PromptController.hide("Dialogue", false)
 	end
 
 	-- A copy of the coach for the portrait, without its name tag, bubble, clipboard or prompt.
@@ -288,25 +294,29 @@ function CoachDialogue.start()
 		return copy
 	end
 
-	local function talk(prompt: ProximityPrompt)
-		local lift = prompt:GetAttribute("Lift")
-		local coach = if typeof(lift) == "string" then QuestConfig.Coaches[lift] else nil
-		local figure = prompt:FindFirstAncestorOfClass("Model")
-		if open or coach == nil or figure == nil then
-			return
+	--[[
+		Opens the dialogue on `figure` (its portrait), titled `title`, and runs `conversation(say, ask)` in it: say(text)
+		types a line, ask(choices) shows the answer bubbles and returns the picked value (nil once the dialogue closed).
+		Closes when the conversation returns, when the player walks away, or after IDLE_SECONDS with no answer. Returns
+		false when a dialogue is already open. The coaches use it, and the Kitchen's chef (KitchenMenu).
+	]]
+	local function converse(figure: Model, title: string,
+		conversation: (say: (string) -> (), ask: ({ { text: string, value: string } }) -> string?) -> ()): boolean
+		if open then
+			return false
 		end
 		open = true
 		session += 1
 		local mine = session
-		local liftName = lift :: string
 		portraitWorld:ClearAllChildren()
 		fillNotch()
 		frameCoach(portraitOf(figure))
-		who.Text = string.upper(coach.name)
+		who.Text = string.upper(title)
 		words.Text = ""
 		-- Just appears: no slide, no bounce (user 2026-11-19: the bounce "looks weird").
 		speaker.Position = speakerAt
 		gui.Enabled = true
+		PromptController.hide("Dialogue", true) -- (no "E Talk" tiles over the conversation)
 
 		-- Walking away closes it.
 		task.spawn(function()
@@ -323,40 +333,60 @@ function CoachDialogue.start()
 		end)
 
 		task.wait(0.25)
-		say("What do you need?", mine)
-		while session == mine do
-			local choice = ask({
-				{ text = "Can you coach me?", value = "Coach" },
-				{ text = "I need a stronger " .. string.lower(liftName), value = "Quest" },
-				{ text = "Bye.", value = "Bye" },
-			}, mine)
-			if choice == nil or choice == "Bye" then
-				break
-			elseif choice == "Coach" then
-				say("It's gonna cost you... but I'm not taking new lifters yet. Come back soon.", mine)
-			elseif choice == "Quest" then
-				-- Asking for it takes it: the quest goes on the tracker (QuestService checks the lift).
-				local ok, quests = pcall(function()
-					return remotes.take:InvokeServer(liftName)
-				end)
-				if ok and typeof(quests) == "table" then
-					QuestTracker.show(quests)
-				end
-				local mineToday = if ok and typeof(quests) == "table" then quests[liftName] else nil
-				local plural = QuestConfig.Plural[liftName] or liftName
-				if typeof(mineToday) ~= "table" then
-					say("Give me a second... ask me again.", mine)
-				elseif mineToday.done then
-					say("You did my work for today. Rest up and come back tomorrow.", mine)
-				else
-					say(string.format("Make %d good %s in a meet today and I'll make it worth your while. So far: %d of %d.",
-						mineToday.needed, plural, mineToday.goodLifts, mineToday.needed), mine)
-				end
-			end
-		end
+		conversation(function(text: string)
+			say(text, mine)
+		end, function(choices)
+			return ask(choices, mine)
+		end)
 		if session == mine then
 			close()
 		end
+		return true
+	end
+	CoachDialogue.converse = converse
+	CoachDialogue.close = close
+
+	local function talk(prompt: ProximityPrompt)
+		local lift = prompt:GetAttribute("Lift")
+		local coach = if typeof(lift) == "string" then QuestConfig.Coaches[lift] else nil
+		local figure = prompt:FindFirstAncestorOfClass("Model")
+		if coach == nil or figure == nil then
+			return
+		end
+		local liftName = lift :: string
+		converse(figure, coach.name, function(say, ask)
+			say("What do you need?")
+			while true do
+				local choice = ask({
+					{ text = "Can you coach me?", value = "Coach" },
+					{ text = "I need a stronger " .. string.lower(liftName), value = "Quest" },
+					{ text = "Bye.", value = "Bye" },
+				})
+				if choice == nil or choice == "Bye" then
+					return
+				elseif choice == "Coach" then
+					say("It's gonna cost you... but I'm not taking new lifters yet. Come back soon.")
+				elseif choice == "Quest" then
+					-- Asking for it takes it: the quest goes on the tracker (QuestService checks the lift).
+					local ok, quests = pcall(function()
+						return remotes.take:InvokeServer(liftName)
+					end)
+					if ok and typeof(quests) == "table" then
+						QuestTracker.show(quests)
+					end
+					local mineToday = if ok and typeof(quests) == "table" then quests[liftName] else nil
+					local plural = QuestConfig.Plural[liftName] or liftName
+					if typeof(mineToday) ~= "table" then
+						say("Give me a second... ask me again.")
+					elseif mineToday.done then
+						say("You did my work for today. Rest up and come back tomorrow.")
+					else
+						say(string.format("Make %d good %s in a meet today and I'll make it worth your while. So far: %d of %d.",
+							mineToday.needed, plural, mineToday.goodLifts, mineToday.needed))
+					end
+				end
+			end
+		end)
 	end
 
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, triggeredBy)

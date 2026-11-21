@@ -13,6 +13,8 @@
 	Shared so the cooker's menu shows exactly the numbers the server uses.
 ]]
 
+local WChewsLayout = require(script.Parent:WaitForChild("WChewsLayout"))
+
 local KitchenConfig = {}
 
 -- Coins per steak (user's pick).
@@ -32,11 +34,121 @@ KitchenConfig.MaxSteaksPerCook = 10000
 	Zones face -Z (toward the hall's entrance) in rows of ZoneColumns.
 ]]
 KitchenConfig.HallOrigin = CFrame.new(4000, 1000, 0)
+-- Where the chef stands (in the hall's space): at the front, between the entrance and the first row of pans, facing the
+-- entrance (-Z). The meat grinder stands in front of him to his left, its spout toward the hall's middle line (+X), so
+-- the meat mound grows out in the open in front of him (2026-11-21, chef scene: beside him with the spout toward the
+-- entrance, the meat he held up hit its hopper when he turned to the pans, which are all behind him, +Z). From his spot
+-- the grinder is then always behind him when he faces any pan, and the biggest mound (22 studs) still stops short of him.
+--
+-- W CHEWS, FLOOR PLAN 02 (user 2026-11-21: "enter in the middle ... straight across you'll see the kitchen and the
+-- process"; art/previews/WChews_FloorPlan_02.png). The plan's numbers live in WChewsLayout (generated from
+-- art/scripts/wchews_layout.py) in PLAN space: x across (+x = the walking-in player's right), y front to back, z up.
+-- planSpot turns a plan point into the hall's space: (-x, z, y) (measured: that is where a Blender point lands).
+-- `turn`: degrees anticlockwise seen from above; 0 = facing the entrance (-Z).
+function KitchenConfig.planSpot(x: number, y: number, z: number?, turn: number?): CFrame
+	return CFrame.new(-x, z or 0, y) * CFrame.Angles(0, math.rad(turn or 0), 0)
+end
+-- The chef stands behind his service counter on the centre line, facing the entrance (-Z). The grinder stands straight
+-- behind him in the kitchen, its outlet toward the entrance, pouring into the meat display bay.
+KitchenConfig.ChefSpot = KitchenConfig.planSpot(WChewsLayout.Chef.X, WChewsLayout.Chef.Y)
+KitchenConfig.GrinderSpot = KitchenConfig.planSpot(WChewsLayout.Grinder.X, WChewsLayout.Grinder.Y)
+-- The grinder model (about 9.7 studs tall at scale 1) is scaled up so it reads from the doors and a cow fits its tub.
+KitchenConfig.GrinderScale = WChewsLayout.GrinderScale
+-- The chef scene (KitchenScene): a bag for cooks under CowFrom steaks, a cow from there, and more cows from
+-- ExtraCowsFrom (one more each time the count doubles, up to MaxCows).
+KitchenConfig.CowFrom = 100
+KitchenConfig.ExtraCowsFrom = 1000
+KitchenConfig.MaxCows = 4
+-- The chef's moves in the chef scene (art/scripts/chef_animations.py). They play on the cooking player's own copy of
+-- the chef (KitchenScene).
+KitchenConfig.ChefAnimations = {
+	ButtonPress = "rbxassetid://111057903603358", -- 1.6 s: looks down, lifts his open right hand, slaps the palm on the button
+	Walk = "rbxassetid://507777826", -- Roblox's own R15 walk (as the computer lifters'), made for 9 studs a second
+}
+-- The scoop / carry / throw scene's moves (2026-11-21, replaced the same day by the W Chews scene): kept, not loaded.
+KitchenConfig.ChefAnimationsUnused = {
+	ScoopLift = "rbxassetid://117821048478188",
+	Hold = "rbxassetid://78128363970640",
+	Throw = "rbxassetid://128406849556919",
+}
+KitchenConfig.ChefWalkSpeed = 7 -- studs per second
+-- Chef_ButtonPress: its length, when the palm lands (seconds in), and where his right hand is then, from his root:
+-- HandAhead in front of him, HandRight to his right, 0.28 below the root, 2.72 above the floor (measured in Studio on
+-- the Fat build, 2026-11-21). The scene stands him so the button is under it; the button panel's scale (0.6, in
+-- art/scripts/wchews_layout.py) puts the button's top 2.5 above the floor, under his palm.
+KitchenConfig.ChefPress = { Seconds = 1.6, Press = 0.62, HandAhead = 2.23, HandRight = 0.57 }
+-- The meat in the tube: how many lumps, how big, how far apart in time, and how long the run from the bay to the pan
+-- takes (the path's length / 150 studs a second, kept between these).
+KitchenConfig.TubeLumps = 7
+KitchenConfig.TubeLumpSize = 2.6
+KitchenConfig.TubeLumpGap = 0.14
+KitchenConfig.TubeMinSeconds = 2.4
+KitchenConfig.TubeMaxSeconds = 3.6
+
+-- The Kitchen's sounds (ElevenLabs, art/sounds/elevenlabs_shouts.json; user's go-ahead 2026-11-20).
+KitchenConfig.Sounds = {
+	Sizzle = "rbxassetid://140335319453723", -- a seamless loop on cooking pans
+	Grinder = "rbxassetid://99489705613915",
+	CowMoo = "rbxassetid://116016869694788",
+	BagThud = "rbxassetid://74704226139703",
+	MeatLand = "rbxassetid://114323852821853",
+	Eat = "rbxassetid://119322748175840",
+	ChefLine = "rbxassetid://110659636124322", -- "Alright, I'll handle this for you!"
+	ChefWelcome = "rbxassetid://117853087157699", -- "Hey, welcome into W Chews!" (said "Double-u Chews"; the restaurant)
+	-- The W Chews scene's machine sounds (user 2026-11-21: "Make the sound new sound affects").
+	Button = "rbxassetid://88662812930499", -- 0.31 s: the chef's palm on the start button, one clunk
+	Buzzer = "rbxassetid://91215560990283", -- 1.18 s: the machine's start buzzer, right after the clunk (played quietly)
+	Chute = "rbxassetid://100812110878986", -- 1.11 s: the bag or cow rumbling down the ceiling chute (the thud follows)
+	Tube = "rbxassetid://138689375274677", -- 3.17 s: the meat drawn up the funnel and rushing along the tube
+	Plop = "rbxassetid://84379172787367", -- 0.33 s: ONE lump landing on the pan (played for every lump after the first)
+}
+
+-- What drops into the grinder for a cook of `steaks`: "Bag" or "Cow", and how many.
+function KitchenConfig.sceneDrops(steaks: number): (string, number)
+	if steaks < KitchenConfig.CowFrom then
+		return "Bag", 1
+	end
+	local cows, need = 1, KitchenConfig.ExtraCowsFrom
+	while steaks >= need and cows < KitchenConfig.MaxCows do
+		cows += 1
+		need *= 2
+	end
+	return "Cow", cows
+end
+
+-- The chef scene's beats, in seconds (about 18 s for one bag; it was about 7 and read as rushed, user 2026-11-21).
+KitchenConfig.DropSeconds = 1.3 -- a bag or cow falling into the hopper
+KitchenConfig.DropGap = 0.45 -- between cows
+KitchenConfig.GrindSeconds = 3.2 -- the grinder churning, the meat mound growing (the chef walks over meanwhile)
+KitchenConfig.HoldSeconds = 2.4 -- the meat held up high while he says his line
+KitchenConfig.CarrySpeed = 5.5 -- studs a second, carrying the meat back to his spot (a little slower than his walk)
+KitchenConfig.FlightSeconds = 1.8 -- the meat flying to the pan
+KitchenConfig.LandingSeconds = 2.5 -- the landing, steam and the steak in the pan
+-- The entrance house in the front square between the Nationals building and the State arena, its front toward the gym
+-- (+Z). The map design comes last (user), so this one point moves it.
+KitchenConfig.EntranceOrigin = CFrame.new(17, 0, -105) * CFrame.Angles(0, math.pi, 0)
+-- The hall shell's placement (its bounds' bottom middle, in the hall's space) and its exit door (hall space).
+-- (WChewsHall_01's bounds: plan x -287..287, y -112..339, z -1..37.)
+KitchenConfig.HallShellAt = KitchenConfig.planSpot(0, 113.5, -1)
+KitchenConfig.ExitSpot = KitchenConfig.planSpot(0, -107, 3)
+-- The tag on the arrival spot (the Teleport menu's KITCHEN stop).
+KitchenConfig.ArriveTag = "KitchenArrive"
+-- Where a lifter arrives in the hall (in the hall's space), facing the chef.
+-- (just inside the glass doors, looking down the carpet at the chef, the display bay and the grinder)
+KitchenConfig.ArriveSpot = KitchenConfig.planSpot(0, -100, 3, 180)
 KitchenConfig.PanZones = 40
 KitchenConfig.ZoneColumns = 8
 -- Studs between zone centres, across and front to back.
 -- (Across: the pan is about 45 studs with its handle, so 52 keeps each handle out of the next zone; Studio 2026-11-19.)
 KitchenConfig.ZonePitch = Vector2.new(52, 48)
+-- The centre of pan zone `index` (1..PanZones) on the hall's floor, in the hall's space: plan 02 has 20 pans each side
+-- of the grinder station (WChewsLayout.PanColumns x PanRows), filled front row first, from the player's left.
+function KitchenConfig.zoneSpot(index: number): CFrame
+	local columns = WChewsLayout.PanColumns
+	local column = (index - 1) % #columns
+	local row = (index - 1) // #columns
+	return KitchenConfig.planSpot(columns[column + 1], WChewsLayout.PanRows[row + 1])
+end
 -- The pan (KitchenPan_01 GiantPan, about 12.7 studs across at scale 1) and the clock behind it are scaled up.
 KitchenConfig.PanScale = 2.2
 KitchenConfig.ClockScale = 1.4

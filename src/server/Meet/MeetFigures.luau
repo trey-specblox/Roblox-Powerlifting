@@ -376,6 +376,29 @@ end
 	quest coaches, GAME_DESIGN §40.6, each in their lift's colour).
 ]]
 export type Look = { top: Color3?, trousers: Color3?, tag: string? }
+--[[
+	Seats a figure's name tag just above the top of the figure (its head, hair or hat), with the tag's BOTTOM edge there
+	at every distance (user 2026-11-21: "fix the ui sinking inside the chef, and not staying on top of the character ...
+	for every person with a name tag"). The tags are sized in pixels and were hung by their MIDDLE a fixed number of
+	studs up, so from far away, where a stud is only a few pixels, the name (at the billboard's bottom) dropped onto
+	the chest. Call it again after giving a figure a hat. The Caller's tag is sized in studs and is left alone.
+]]
+local TAG_GAP = 0.45 -- studs of air between the top of the figure and the tag
+function MeetFigures.seatTag(figure: Model)
+	local head = figure:FindFirstChild("Head")
+	if head == nil or not head:IsA("BasePart") then
+		return
+	end
+	for _, child in ipairs(figure:GetChildren()) do
+		if child:IsA("BillboardGui") and string.sub(child.Name, -3) == "Tag" and child.Name ~= "CallerTag" then
+			local box, size = figure:GetBoundingBox()
+			local top = box.Position.Y + size.Y / 2
+			child.StudsOffset = Vector3.new(0, math.max(top - head.Position.Y, head.Size.Y / 2) + TAG_GAP, 0)
+			child.SizeOffset = Vector2.new(0, 0.5) -- its bottom edge sits on that point, whatever the distance
+		end
+	end
+end
+
 function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: Vector3, seatTop: number?,
 	look: Look?): (TextLabel?, Model?)
 	local outfit = OUTFITS[kind]
@@ -514,6 +537,8 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	line.TextScaled = true
 	line.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Heavy, Enum.FontStyle.Italic)
 	line.Parent = bubble
+	-- The name just above the head at every distance (not sinking onto the chest from far away).
+	MeetFigures.seatTag(figure)
 	return line, figure
 end
 
@@ -594,7 +619,61 @@ end
 	mesh, so the print can't go on a part face), welded to the torso. Its distance from the chest's centre line comes
 	from the build's bar clearances (ClothesConfig: chest and back plus the bar's 0.07 radius; the shirt is in them).
 ]]
+--[[
+	The Blender print (SpotterPrint_01, art/scripts/build_spotter_print_01.py): white CENTRAL letters shaped onto the
+	spotters' build's tee, front and back, welded to the upper torso where they lie on the shirt (user 2026-11-20: the
+	flat card below stood 0.12 - 0.27 studs off the round chest, "if my assessories were floating i would tell you").
+	Built in the figure's root space for one build; false when the build differs or the model or rest pose is missing
+	(the card below stands in).
+]]
+local PRINT_BUILD = "Fat"
+-- The print's bounds centre in root space (studs: x right, y up, z back), from the build script's BOUNDS line
+-- (Blender x, y, z -> root x, z, y).
+local PRINT_CENTRE = Vector3.new(0, (0.881 + 1.13) / 2, (-0.702 + 0.695) / 2)
+-- That build's upper torso at rest, in root space: its mesh's bounds centre (Blender, CartoonBodies_05_Rigged: 3.7497
+-- up on a rig whose root is 3.0 up, 0.179 forward), the same as measured on the Kitchen chef in Studio (2026-11-20:
+-- 0.7496 up, 0.179 forward).
+local PRINT_TORSO_REST = CFrame.new(0, 0.7497, -0.179)
+
+local function printOnTee(figure: Model, torso: BasePart, build: string): boolean
+	if build ~= PRINT_BUILD then
+		return false
+	end
+	local torsoRest = PRINT_TORSO_REST
+	local copy = RoomProps.propCopy("SpotterPrint", 1)
+	if copy == nil then
+		return false
+	end
+	copy.Name = "SpotterPrint"
+	-- In root space (the root at the origin), then each piece welded to the torso by its offset from the torso's rest
+	-- place: the rig may still be coming together, so nothing is read from where the parts happen to be.
+	local box = copy:GetBoundingBox()
+	copy:PivotTo(CFrame.new(PRINT_CENTRE) * box:ToObjectSpace(copy:GetPivot()))
+	for _, part in ipairs(copy:GetDescendants()) do
+		if part:IsA("BasePart") then
+			local offset = torsoRest:ToObjectSpace(part.CFrame)
+			part.Anchored = false
+			part.Massless = true
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.CastShadow = false
+			part.CFrame = torso.CFrame * offset
+			local weld = Instance.new("Weld")
+			weld.Part0 = torso
+			weld.Part1 = part
+			weld.C0 = offset
+			weld.Parent = part
+		end
+	end
+	copy.Parent = figure
+	return true
+end
+
 function labelTee(figure: Model, torso: BasePart, build: string)
+	if printOnTee(figure, torso, build) then
+		return
+	end
 	local body = ClothesConfig.Bodies[build]
 	if body == nil then
 		return

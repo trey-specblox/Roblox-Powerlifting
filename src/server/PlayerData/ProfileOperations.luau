@@ -2565,6 +2565,8 @@ export type KitchenView = {
 	boostPercent: number,
 	boostLeft: number,
 	boostSteaks: number,
+	-- Whether they have watched the chef scene once (it can be skipped after that).
+	sceneSeen: boolean,
 }
 
 local function usableKitchen(data: ProfileData): (any?, any?)
@@ -2583,10 +2585,12 @@ end
 -- The cooker and the steak boost, for the Kitchen menu and the boost timer. Reads only.
 function ProfileOperations.getKitchen(data: ProfileData, nowUnix: number): KitchenView
 	local kitchen, boosts = usableKitchen(data)
-	local view: KitchenView = { steaks = 0, readyIn = 0, cookSeconds = 0, boostPercent = 0, boostLeft = 0, boostSteaks = 0 }
+	local view: KitchenView = { steaks = 0, readyIn = 0, cookSeconds = 0, boostPercent = 0, boostLeft = 0, boostSteaks = 0,
+		sceneSeen = false }
 	if kitchen == nil or not isFiniteNumber(nowUnix) then
 		return view
 	end
+	view.sceneSeen = kitchen.sceneSeen == true
 	if kitchen.steaks >= 1 then
 		view.steaks = kitchen.steaks
 		view.readyIn = math.max(0, kitchen.readyAt - nowUnix)
@@ -2599,6 +2603,20 @@ function ProfileOperations.getKitchen(data: ProfileData, nowUnix: number): Kitch
 		view.boostSteaks = if isFiniteNumber(boosts.steak.steaks) then boosts.steak.steaks else 0
 	end
 	return view
+end
+
+--[[
+	Notes that the player has watched the chef scene to the end once (after that it can be skipped). Only ever sets it
+	true; returns whether the record could be written. Nothing else changes, so a client asking for it early gains
+	nothing but a skip button on a cut-scene.
+]]
+function ProfileOperations.markChefSceneSeen(data: ProfileData): boolean
+	local kitchen = usableKitchen(data)
+	if kitchen == nil then
+		return false
+	end
+	kitchen.sceneSeen = true
+	return true
 end
 
 --[[

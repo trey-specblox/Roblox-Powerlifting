@@ -16,7 +16,359 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
-**KITCHEN PART 2 STARTED (2026-11-19, GAME_DESIGN §40.7 "The Kitchen and the chef"). Models UPLOADED; COMMITTED 2026-11-20 (not pushed, not published).**
+**W CHEWS REDESIGN, STEP 6: THE HALL'S LIGHTING AND SOLID FURNITURE. TESTED IN STUDIO (one player, pictures and
+numbers), 2026-11-21, same session. NOT COMMITTED (last commit 74139f4).**
+- ORDER CHANGED (user: "we dont [want] to build that now, lets pick something else and work on that near the end"):
+  the back room, the mafia boss cow and the luck wheel wait until near the end; the scene's cow walk-on stays
+  dormant. The user chose "Light the restaurant", then: "You can do everything in steps, like a overnight session".
+- LIGHTING: NEW src/server/Economy/KitchenLights.luau, called from KitchenBuilding after the kit is placed. 14 plain
+  thick blocks outside the walls and over the ceilings keep the sun out (the hall stood in open sunlight; thin
+  ceilings leak sun on Roblox's coarse far/phone shadow grid), with a canopy over the glass front. Dining room: a warm
+  cone under each of the 28 pendants (range 18, brightness 2.2), the chandelier (40, 0.85), 8 wall-light washes
+  (12, 0.9), colour (255, 200, 142). Kitchen: 15 wide white point lights 6 under the ceiling (range 110, brightness
+  0.5: 1.4 burned the white walls out; cones pointing down left the ceiling dark) and one key light on the grinder
+  from the side (0.9; from the front the steel went flat white in the chef scene's close-up). 53 lights, none casting
+  shadows. Pictures art/previews/WChews_Lit_01_FromTheDoor.jpg, _02_Kitchen.jpg, _03_DiningRoom.jpg.
+- THE CHEF SCENE in the new light: a real 120-steak cook played to the end (14.4 s, no Kitchen errors); the button,
+  chute, bay and pan shots looked at in slow motion (StudioSceneSlow 6).
+- SOLID FURNITURE: KitchenBuilding gives every chair (96), plant (6), the host stand and the button stand a hidden
+  block (SOLID_FURNITURE); KitchenPans gives every pan zone a real pan shape (12 wall blocks round the rim, a round
+  floor inside, the handle, the clock's post: 600 hidden blocks). Studio: the lifter is stopped by a chair, a plant,
+  the host stand, a pan's wall and a clock post; dropped into a pan he stands on its floor and can't walk out
+  without jumping.
+- PERFORMANCE (client view inside the hall, Studio): 2,233 parts in the hall (785 hidden), 53 lights, 0 with
+  shadows, 60 frames a second on this PC at graphics level 4. The 360 pan and clock parts cast shadows for nothing
+  (no sun inside): turned off in KitchenPans (that last edit is synced but not re-run).
+- A Blender-only side session (Opus) is remodelling the building's heavy terrace to preview pictures; no upload.
+- NOT DONE: not tested with two players or on a phone (many small lights in one view: Roblox simplifies local
+  lights on low graphics by itself, but only a phone test shows the frame rate); the back room is unlit and shut;
+  tools/studio/PerformanceAudit.luau itself was not pasted (the same counts were run from the test tool).
+
+**W CHEWS REDESIGN, STEP 5: THE FRONT BUILDING UPLOADED AND IN THE SQUARE, THE SCENE'S FIVE NEW SOUNDS
+(2026-11-21, same session; user: "Upload the new building, also For the one thing to decide question, those were just
+references we can keep it how it is. Make the sound new sound affects."). TESTED IN STUDIO (one player, numbers and
+pictures; the sounds were NOT listened to by anyone yet). NOT COMMITTED (last commit 74139f4).**
+- THE DINING ROOM STAYS AS BUILT (user: the photos "were just references we can keep it how it is"): no restyle to
+  kitchen2.png.
+- THE FRONT BUILDING: WChewsFront_01 uploaded (rbxassetid://121517778514497, art/materials/materials.json; CHECK PASSED
+  re-run before the upload: 13 meshes, 1,996 triangles). StarterGymConfig: PropAssets, paints WcStucco (244, 230, 204:
+  the model's own colour read as cold grey on the shaded front, Studio), WcDarkStone, WcStepStone, WcRoofSlate,
+  WcStripGlow, colourway WChewsFront. KitchenBuilding places it at KitchenConfig.EntranceOrigin INSTEAD of the cream
+  cottage (KitchenHouse is no longer placed; its asset and colourway stay in the lists, unused): 14 hidden collision
+  blocks (two wings, the entrance box, the terrace's back, the terrace, the planter, four steps, four handrails), the
+  Enter prompt on the landing in front of the glass doors, the Leave spot on the landing facing out, the floating
+  "W CHEWS" name over the roof (KitchenSignTimer still finds KitchenSignAnchor). Small and flat pieces cast no shadow.
+  Studio: bounds 80.8 x 29.1 x 43.9 at (17, 14.6, -105); the lifter walks up the four steps to the landing (y 4.6),
+  the Enter prompt is 1.7 studs away there (limit 12), the doors and a handrail stop him; pictures
+  art/previews/WChewsFront_InGame_01_Square.jpg, _02_Steps.jpg. The terrace and its planter are one dark block (the
+  model's Base piece): reads heavy from the side; not changed.
+- THE SCENE'S NEW SOUNDS (ElevenLabs Sound Effects v3, 52 credits in all for 10 takes; prompts and takes in
+  art/sounds/elevenlabs_shouts.json; WAVs in D:/Powerlifting Roblox Extras/Sounds/Kitchen, cut by
+  D:/ClaudeScratch/wchews/kitchen_sounds.py): KitchenConfig.Sounds.Button (88662812930499, the palm's clunk), Buzzer
+  (91215560990283, the machine's start buzz, quiet, 0.12 s after the clunk: both button takes came back as the clunk
+  alone, so the buzzer is its own sound), Chute (100812110878986, the rumble down the chute, then the old thud),
+  Tube (138689375274677, 3.2 s, the suction and rush), Plop (84379172787367, one lump landing: played for each of
+  the six lumps after the first, which keeps the old splat and sizzle). Takes were picked by their loudness shape and
+  pitch (no one has heard them): the user should listen and say which to redo. Studio, a real 120-steak cook: every
+  sound loaded and played in time (button 1.65 s, buzzer 1.78, chute 3.08, thud 4.03, grinder 4.38, tube 8.21,
+  landing 10.63, plops 10.76 to 11.46; the scene 14.4 s), no Kitchen errors.
+- ROJO: it missed the third of three quick edits to StarterGymConfig (checksums differed, re-saving the same text did
+  not help; one more real edit did). Compare checksums after every batch of edits.
+- NEXT: the user's ears on the five sounds; the back room + the mafia boss cow model (turns the scene's cameo on); a
+  lighting pass for the hall; the luck wheel and games; PerformanceAudit; a second player.
+
+**W CHEWS REDESIGN, STEP 4: THE NEW CHEF SCENE, NAME TAGS, THE CHEF'S COUNTER, THE FRONT BUILDING MODELLED
+(2026-11-21, same session; user: "Yes make chef scene next ... update the shell, so it goes with the inside and
+reference photos, fix the ui sinking inside the chef ... for every person with a name tag, make sure i can talk to the
+chef from the counter"). TESTED IN STUDIO (one player, numbers and pictures). NOT COMMITTED (last commit 74139f4).**
+- REFERENCE PHOTOS: `References/W Chews/kitchen1.png` (the outside: stepped pale wall panels with glowing strips, a
+  tall glass entrance, lit steps, black rails, a terrace) and `kitchen2.png` (the dining room: dark ceiling with
+  constellation lights, walnut walls, dark round-back chairs and dark tables, a patterned floor, an open kitchen
+  glowing red and blue behind the counter). kitchen2.png was found loose at D:\ and moved in (the user asked).
+  The dining room built so far (green walls, cream ceiling, white cloths) does NOT match kitchen2 yet: offered.
+- NAME TAGS (every figure with one): MeetFigures.seatTag(figure): the pixel-sized tag was hung by its MIDDLE a fixed
+  number of studs up, so from far away the name dropped onto the chest. Now its BOTTOM edge sits 0.45 studs above the
+  top of the figure (head, hair or hat, measured), at every distance (BillboardGui.SizeOffset 0, 0.5). Called by
+  MeetFigures.build for every kind (the Caller's stud-sized tag is left alone), again by KitchenChef after his hat is
+  on; QuestService's own height removed. Studio: quest coaches offset 1.05, chef 2.35 (hat top 1.90 above the head),
+  picture from 50 studs: the tag floats above the hat.
+- THE CHEF'S COUNTER: he stands at plan (0, -25.4), close behind his counter; the Talk prompt reaches 14 studs (was
+  10). Studio: from the dining side touching the counter the distance is 8.6.
+- THE NEW CHEF SCENE (`src/client/World/KitchenScene.luau`, about 14.4 s; replaces the scoop / carry / throw): he
+  steps to the start button and slaps it (Chef_ButtonPress rbxassetid://111057903603358, made by
+  art/scripts/chef_animations.py, anim_qa PASS on Fat, the build he wears; the button's top is 2.51 up, the panel at
+  scale 0.6; Studio: his palm lands on it, the button sinks, the lamp blinks), says his line and walks back; the bag
+  or cows (sized 5-10 studs for the big grinder) fall out of the ceiling chute into the tub; the grinder squirts the
+  meat into the display bay where the mound grows under YOUR MEAT; 7 lumps are drawn up the funnel and run the
+  trunk and the branch to the player's own pan (the path's length / 150 studs a second, 2.4 to 3.6 s) and drop from
+  the nozzle; the steak shows in steam when the first lump lands. Studio: plays to the end on a real 120-steak cook
+  (outcome Started, result true, steak shown at 10.6 s, camera and prompts restored, no errors); pictures
+  art/previews/WChewsScene_01..05. KitchenConfig: ChefAnimations (ButtonPress, Walk), ChefAnimationsUnused, ChefPress,
+  Tube* numbers.
+- THE COW IN THE SCENE: the code is in (cowCameo: he waddles to the EMPLOYEES ONLY door, it swings open, he goes
+  through, it shuts; the last shot is framed with that door behind the pan) but DOES NOTHING YET: it needs his model
+  (ReplicatedStorage.KitchenModels.CowBoss), which comes with the back room.
+- SOUNDS: the scene reuses the existing ones (grinder, moo, thud, landing, the chef's line; the button's slap is the
+  bag thud played quietly). NEW sounds wanted, NOT made (cost first): button clunk + buzzer, chute rumble, tube
+  whoosh, meat dropping from the nozzle: about 4 effects, about 70-100 ElevenLabs credits with retakes.
+- THE FRONT BUILDING, MODELLED, NOT UPLOADED (waiting for the user's OK on art/previews/WChewsFront_01_Preview.jpg):
+  `art/scripts/build_wchews_front_01.py` -> art/blender/WChewsFront_01.blend, art/exports/WChewsFront_01.glb (13
+  pieces, 1,996 triangles, CHECK PASSED), from kitchen1.png, with sloping roofs on every wall panel and a gable on the
+  glass box (the photo's roofs are flat; the game's rule is no flat roofs). Preview script
+  art/scripts/preview_wchews_front.py. It is 81 x 44 studs; the square has room (State arena entrance from local x
+  -72, Nationals from +78, measured).
+- NEXT: the user's OK on the front building -> upload, materials.json, PropAssets/paints/colourway, KitchenBuilding
+  (item WChewsFront, its Door piece for the prompt, body and steps' collision, hide nothing: it has no sign board);
+  the user's answers on restyling the dining room to kitchen2.png and on the new sounds; the back room + the mafia
+  boss cow model (turns the cameo on); a lighting pass; the luck wheel and games; PerformanceAudit; a second player.
+
+**W CHEWS REDESIGN, STEP 3: THE RESTAURANT UPLOADED AND IN THE GAME (2026-11-21, same session; user: "Yes upload
+it"). TESTED IN STUDIO (one player, by numbers and pictures). NOT COMMITTED (last commit 74139f4).**
+- UPLOADED (group-owned, materials.json): WChewsHall_01 rbxassetid://139239848125079, WChewsKit_01
+  rbxassetid://130064569566225 (CHECK PASSED on both right before).
+- CODE: StarterGymConfig (both assets in PropAssets, 20 Wc* paints, colourways for WChewsHall and the 21 kit items;
+  WcChair has 3 colourways); NEW generated `src/shared/Config/WChewsLayout.luau` (python
+  art/scripts/write_wchews_layout.py; never edit by hand); KitchenConfig (planSpot: plan (x, y, z) -> hall (-x, z, y);
+  ChefSpot / GrinderSpot / GrinderScale 2 / HallShellAt / ExitSpot / ArriveSpot from the plan; zoneSpot(index): 20 pans
+  each side); KitchenPans (zoneCentre uses zoneSpot; the hidden floor now 574 x 451 under the whole restaurant);
+  KitchenBuilding (the WChewsHall shell, about 60 hidden collision blocks in plan space, the 281 kit copies; nothing
+  in the hall casts a shadow); KitchenWelcome (the hall's new bounds). KitchenBuilding_01's KitchenHall is no longer
+  placed (its asset still loads: the entrance house in the square uses it).
+- MEASURED IN STUDIO: 281 of 281 kit copies placed; shell centre hall (0, 18, 113.5), size 574 x 38 x 451; back room
+  floor at hall x -240 (the player's right); bay (0, 36), chute (0, 61.4) mouth 24 up, staff door (-248, 266), grinder
+  13 x 19.4 x 27 at (0, 57.6); zone 1 at (234, 34), zone 40 at (-234, 226); chef (0, -21.5); 1,491 parts in the hall
+  folder; the player stands on the kitchen floor; no Kitchen errors or warnings in the console. Scripts' checksums
+  matched disk before each test.
+- THE OLD CHEF SCENE STILL PLAYS to the end (10 steaks, 23.5 s, result true) but no longer fits the room: the meat
+  mound grows inside the display bay and the chef walks through its glass to scoop it. It is replaced by the new scene
+  next (GAME_DESIGN §40.7), so it was not patched.
+- FIXED FROM THE PICTURES: the floor paint (146, 154, 166 read strong blue; now 162, 158, 152) and blue shade patches
+  on the floor (the shell and kit no longer cast shadows; re-pictured, even grey).
+- NOT DONE / KNOWN: the hall has no real lights yet (it is lit evenly by the sun through shadowless walls, glowing
+  pieces are Neon only): a lighting pass would make it richer; the back room is an empty shell behind a shut door;
+  the chairs, plants, pendants and pans have no collision (tables, counters, islands, bay and grinder do); the
+  entrance house in the square is still the old CENTRAL KITCHEN house; tools/studio/PerformanceAudit.luau NOT run
+  yet; not tested with two players; no photos in `References/W Chews/`.
+- LUCK SYSTEM: the user wants the 0.8x on every spin, paid too; Claude agrees it most likely passes Roblox's rules
+  (GAME_DESIGN §40.7). Nothing of it is built.
+- NEXT: the new chef scene (chef's button-press animation with the animation tools and their QA rules, steaks/cows
+  from the chute, grind into the bay, the tube carrying the meat along trunk + branch to the player's own pan, the
+  cow walking on two legs into the EMPLOYEES ONLY door in the background, ElevenLabs sounds with the cost stated
+  first); then the back room and the mafia boss cow; the front building; the luck wheel and the cow's games.
+
+**W CHEWS REDESIGN, STEP 2: THE RESTAURANT MODELLED IN BLENDER TO PLAN 02 (2026-11-21, same session). NOT UPLOADED,
+NOT IN THE GAME, NOT COMMITTED (last commit 74139f4). WAITING FOR THE USER'S OK ON THE PICTURES.**
+- The user: "Yes, build plan 02"; no coin buy-in, a LUCK system instead (free daily spin from the cow for one luck
+  multiplier, e.g. 1.5x / 10x / 0.8x; games against the cow earn spins, limited tries; Robux SPIN NOW). Recorded in
+  GAME_DESIGN §40.7 with Claude's rule check and two guard rails still waiting for the user's OK. No photos in
+  `References/W Chews/` yet: built from the written description.
+- NEW FILES: `art/scripts/build_wchews_hall_01.py` -> art/blender/WChewsHall_01.blend, art/exports/WChewsHall_01.glb
+  (28 pieces, 3,832 triangles); `art/scripts/build_wchews_kit_01.py` -> art/blender/WChewsKit_01.blend (+
+  WChewsKit_01_bounds.json), art/exports/WChewsKit_01.glb (21 items, 77 pieces, 20,312 triangles). CHECK PASSED on
+  both. `art/scripts/wchews_layout.py` = the ONE list of placements (plan space); `art/scripts/preview_wchews.py`
+  assembles hall + kit + grinder + the 40 pans in Blender from it and renders 12 views (backface culling on).
+- PLAN SPACE: x across (+x = the walking-in player's RIGHT), y front to back, z up. MEASURED: a Blender point
+  (x, y, z) lands in Roblox at (-x, z, y) (checked on the grinder's pieces), so the game must flip x. The hall's
+  bottom-centre pivot is plan (0, 113.5), floor top at z 0 (its bounds reach -1).
+- AS PLACED: 281 copies = 862 parts, 163,184 triangles if all in view (plus the hall's 3,832 and the pans). All decor:
+  no collision, no touch, small pieces without shadows. PERFORMANCE NOTE for the user: fine for 30-40 players, but it
+  is the biggest single room so far; run tools/studio/PerformanceAudit.luau after it is in.
+- CHANGED FROM PLAN 02's DRAWING: the grinder is scaled 2.0 (was 1.3) with its centre at plan (0, 57.6), the chute at
+  (0, 61.4) mouth 24 up; the fancy front is 22 high; 24 dining tables (the drawing showed 12).
+- NEXT (after the user's OK): add both GLBs to materials.json, upload, PropAssets + paints + PropColourways for every
+  Wc* / WChewsHall piece, generate src/shared/Config/WChewsLayout.luau (wchews_layout.write_luau), KitchenConfig (pan
+  columns at plan x +-78/130/182/234 and rows y 34..226, HallShellAt, ChefSpot, GrinderSpot + GrinderScale 2,
+  ArriveSpot, ExitSpot), KitchenBuilding (new shell, walls' collision, counters' collision, placements),
+  KitchenScene's old scene must keep working until the new one replaces it; then the new chef scene (button press,
+  chute, bay, tube, the cow walking to the EMPLOYEES ONLY door), the back room + cow, the front building in the
+  square, the luck wheel and games.
+
+**W CHEWS REDESIGN, STEP 1: ANSWERS + THE GRINDER IN THE GAME (2026-11-21, the "w-chews" build session). TESTED IN
+STUDIO (one player). NOT COMMITTED (last commit 74139f4). GAME_DESIGN §40.7 updated.**
+- THE USER'S ANSWERS: floor plan "Yes build your plan, BUT ... enter in the middle to be able to see the whole
+  kitchen ... straight across youll see the kitchen and the process"; grinder "Yes, upload it"; back room = skill games
+  + a free daily spin with a Robux "spin again" (no coin buy-in: Claude advised against it, Roblox's rules checked);
+  the mafia boss cow is seen walking into the EMPLOYEES ONLY room during the chef cinematic (background detail); the
+  user will save their restaurant photos in `References/W Chews/` (folder made, EMPTY so far).
+- FLOOR PLAN 02 drawn to scale: `art/previews/WChews_FloorPlan_02.png` (entrance in the middle; grinder + display bay
+  straight ahead; 20 pans each side at x = +-78, 130, 182, 234 and z = 34..226; kitchen x -285..285, z -20..265; fancy
+  front x -80..80, z -110..-20; back room x 195..285, z 265..335; hall space, +Z = back). WAITING FOR THE USER'S OK on
+  the one change Claude made (grinder to the middle, pans split left/right). Plan 01 is superseded.
+- GRINDER UPLOADED AND IN THE GAME: KitchenGrinder_02 rbxassetid://81094364762706 (materials.json; group-owned;
+  CHECK PASSED again before the upload). StarterGymConfig: the asset added to PropAssets AFTER KitchenExtras_01 (a
+  later asset's item wins, so its MeatGrinder_* pieces replace the old red grinder), new paints KitStainless /
+  KitStainlessDark / KitWheelRed, MeatGrinder's colourway rewritten for the new piece names. No other code changed.
+  Studio: 8.5 x 12.6 x 17.6 studs at GrinderScale 1.3 on the old GrinderSpot, spout toward the hall's middle; the
+  current chef scene played to the end with it (10 steaks, 17.9 s, result true, no errors in the console). Pictures
+  checked: `art/previews/KitchenGrinder_02_InGame_Front.jpg` / `_Back.jpg`; the Blender preview was re-rendered
+  (the first one was washed out).
+- NEXT: the user's OK on plan 02 and their photos; then the Blender restaurant (front building, hall shell, kit:
+  counters, hoods, cooking line, fridges, sinks, islands, dining tables, hanging lights, ceiling chute, button panel,
+  display bay, tube line + pan drop), placement code (KitchenConfig pan columns, KitchenBuilding walls), the new chef
+  scene with the button-press animation and the cow walking to the door, the back room and the mafia boss cow, then
+  the games (which skill games, prizes, the spin's prize list and odds, the user's Developer Product).
+
+**W CHEWS: SKIP, PROMPTS, WELCOME, FLOATING SIGN (2026-11-21, after the scene remake; user: "Skip after first time",
+"make sure for all ui's once your talking to ... any npcs, the Ui does not just stay on the screen", "he should say
+'hey, welcome into W Chews'", "change the little sign ... do the floating name UI thing ... how much time is left on
+top"). TESTED IN STUDIO (one player). NOT COMMITTED (last commit 74139f4). GAME_DESIGN §40.7 updated.**
+- PLAYER DATA VERSION 32 (PlayerProfileSchema.CURRENT_VERSION 31 -> 32): `kitchen.sceneSeen` (boolean); migration 31
+  only fills a missing value (false), keeps a stored one, idempotent (tested on a v31 save, a stored true, and a missing
+  kitchen record). ProfileOperations.markChefSceneSeen, PlayerDataService.markChefSceneSeen, KitchenRemotes SceneSeen
+  (RemoteFunction, rate-limited), KitchenView.sceneSeen. PUBLISHING moves live saves to version 32.
+- SKIP: KitchenScene.play(steaks, canSkip) -> finished; a SKIP button (UIFancy glossy, bottom right) when the view says
+  sceneSeen; KitchenMenu saves the first full watch. Studio: SKIP clicked 4 s in -> the scene ended at once, chef copy,
+  button and camera all restored, prompts back, finished=false; SceneSeen remote flips false -> true.
+- PROMPTS HIDDEN: PromptController.hide(reason, hidden) (ProximityPromptService.Enabled on this client while any reason
+  holds): CoachDialogue (every NPC talk), the steak picker, the chef scene, ShopMenu, CelebrationSpinner. Studio: hidden
+  during the scene, back after.
+- WELCOME: `src/client/World/KitchenWelcome.luau` + KitchenScene.say: "Hey, welcome into W Chews!" (ElevenLabs
+  ChefWelcome 117853087157699, 284 credits for 2 takes, take B's first of four repeats, word check OK) when you enter
+  the hall. First Studio try was silent (the far hall's chef hadn't streamed in yet); now it waits for him: plays ~1 s
+  after arriving with the caption.
+- FLOATING SIGN: KitchenBuilding hides KitchenHouse_Sign / _SignText and floats "W CHEWS" + "Steaks for a training
+  boost" (StyledScreen.floatAbove, star, 40x16, max 260 studs: from far south it could line up with the gym's big
+  name); `src/client/World/KitchenSignTimer.luau` floats "YOUR STEAKS 4:01" / "YOUR STEAKS ARE READY!" on top, from the
+  player's KitchenSteaks / KitchenReadyAt attributes (KitchenPans.refresh writes them). Studio picture checked (timer
+  then moved 1.5 studs higher, not re-pictured).
+- W CHEWS REDESIGN, decided so far (GAME_DESIGN §40.7): keep 40 own pans; the floor plan (entrance -> fancy front ->
+  chef counter -> cooking line -> grinder left / 40 pans right -> cold storage, prep, sinks at the back -> EMPLOYEES
+  ONLY door -> back room) shown to the user as a sketch, no answer yet; NEW CHEF SCENE from the user (button press,
+  steaks/cows fall from a ceiling chute, grind, meat-mountain display bay, a tube carries it onto the player's pan).
+- HERO GRINDER BUILT, NOT UPLOADED: `art/scripts/build_kitchen_grinder_02.py` -> art/blender/KitchenGrinder_02.blend,
+  art/exports/KitchenGrinder_02.glb (14 pieces, 4,133 triangles, CHECK PASSED; MeatGrinder_Hopper / MeatGrinder_Spout
+  names kept, the outlet faces the front). Preview art/previews/KitchenGrinder_02_Preview.png (backface culling on).
+- NEXT: the user's OK on the grinder's look and the floor plan, and the back room's games (Roblox bans simulated
+  gambling, coins included; casino looks allowed). Then: upload the grinder, Blender restaurant front + interior kit
+  (counters, hoods, fridges, sinks, dining, ceiling chute, button panel, display bay, tube line), mafia boss cow, the
+  new chef scene (button-press animation), placement code, Studio.
+
+**KITCHEN CHEF SCENE REMADE (2026-11-21, user: "too fast and weird, like the meat just walks away"; plan approved:
+"we can begin with your plan"). TESTED IN STUDIO (one player, by numbers and pictures). NOT COMMITTED (last commit
+74139f4). GAME_DESIGN §40.7 updated.**
+- THREE NEW CHEF ANIMATIONS (`art/scripts/chef_animations.py`, on the celebrations' pose engine, Fat build): Chef_ScoopLift
+  117821048478188 (2.8 s: squat, open palms under the meat, up to the chest, drive it up and forward), Chef_Hold
+  78128363970640 (loop, arms and head only, the walk plays under it), Chef_Throw 128406849556919 (1.7 s: the back arches
+  to wind up, a two-handed heave, release at 0.72 s). Palms-up wrists found by a search over every wrist angle. anim_qa
+  PASS on Skinny/Fat/Muscular (pop max 798 deg/s); pictures D:/ClaudeScratch/chefanim/qa5, qa6. (First uploads
+  138159728054125 / 82137330327956 / 100651214350790 are unused: the hold was redone further forward.)
+- SCENE (`src/client/World/KitchenScene.luau`, about 18 s for one bag, was ~7): drop 1.3 s, grind 3.2 s (the chef walks
+  to the mound meanwhile), scoop, carry back to his spot at 5.5 studs/s, hold 2.4 s with the line, throw, flight 1.8 s,
+  landing 2.5 s (KitchenConfig beats). Played on a LOCAL COPY of the chef (the server's chef hidden on that screen), so
+  hands and meat always keep time; the server no longer plays any chef animation (KitchenChef.lift and the
+  KitchenService call removed). The meat sits on his palms: forward of the hands just enough to clear the hat
+  (HoldHandsAhead 2.0, HatRadius 1.0), lowered by its measured underside (raycast at the hands). Camera glides, and
+  cuts instead when a glide would pass through the chef or the grinder; shots sit on the side away from the grinder.
+  The chef turns the long way round when the short way would swing the meat through the grinder.
+- GRINDER MOVED (KitchenConfig.GrinderSpot): hall (-12, 0, -26), spout toward +X (was (-9,0,-16), spout to the
+  entrance; held up, the meat ran into the hopper when he turned to the pans).
+- MEASURED in Studio: 1 / 10 / 100 / 10,000 steaks all play to the end with no errors (17.4-18.1 s); palms 0.03-0.28
+  under the meat's real underside while held; camera >= 9.9 studs from the chef for normal cooks. Pictures checked:
+  grind, scoop, carry, hold + line, throw (10 and 100 steaks).
+- KNOWN: for the biggest cooks (22-stud meat) box tests still show the meat near the hopper and hat (boxes overstate
+  round shapes; not seen in pictures). The scene is ~18 s on every cook: OPEN QUESTION for the user whether it should be
+  skippable. Nobody else sees the chef move (they see him standing).
+
+**NPC CLOTHES FIT (2026-11-20 night, user: "Make sure every npc has fitting cloths ... they have no neck, and their
+shirts are covering almost to their chin fix that ... the chef hat is over his eyes, the apron is not even on his
+chest"). NOT COMMITTED. GAME_DESIGN §38.7 + CHARACTER_ART_DIRECTION §1 record the change (the neck now SHOWS).**
+- TEE CREW NECK: the tee's neck cut is now `art/scripts/tee_neck_fix.py` crew_neck (a round U at the neck's base,
+  front lower than back; Skinny/SkinnyFat a little lower), hooked into `build_cartoon_gear_07.py` (GEAR07_OLD_NECK=1
+  = the old head-sized cylinder). Proven first: a rebuild with the old neck matched the shirts in the game exactly,
+  and an export from the old blend matched CartoonClothes12 byte for byte. New `art/blender/CartoonGear_07.blend`
+  (backup of the old one: D:/ClaudeScratch/necks/CartoonGear_07_BEFORE_NECK.blend; also in git), CHECK PASSED.
+- LONG SLEEVE too (players only): `build_cartoon_gear_05.py` make_tee_crew (GEAR05_OLD_NECK=1 = old), proven
+  reproducible first, swapped into `art/blender/CartoonGear_05_Knee100.blend` by `art/scripts/swap_longsleeve_neck.py`
+  (backup D:/ClaudeScratch/necks/CartoonGear_05_Knee100_BEFORE_NECK.blend; also in git), CHECK PASSED (982 meshes).
+  Its builder re-meshes the whole shirt: same look elsewhere (old/new renders compared).
+- CLOTHES v14 IN USE (ClothesConfig): Skinny 109818199363077, SkinnyFat 83996803580290, Fat 124174207343029, Fit
+  125949799228742, Muscular 110811863806108, BigBuff 113927749809120 (materials.json CartoonClothes14_*; only the
+  Tee and LongSleeve pieces changed, the gear's shapes are identical so CartoonGear12 stays). v13 (tee only) was
+  uploaded first and superseded the same night, never used. Players' tees change too (same clothes).
+- CHEF REFITTED: `build_kitchen_chef_01.py` now shapes the bib, skirt, ties and neck strap on the Fat body mesh itself
+  (raycasts CartoonBodies_05_Rigged.blend; the bib follows chest and belly, the skirt hangs from the belly, the strap
+  goes over the traps and round the back of the neck under the head), the hat band starts above the eyes (2.6 up,
+  snug 0.64 round). CHECK PASSED (6,088 triangles), UPLOADED 92909239501532 (was 72842442823666); KitchenChef CLOTHES
+  centres updated.
+- SPOTTER PRINT: the spotters' CENTRAL card floated 0.12 - 0.27 off the shirt; now `build_spotter_print_01.py`
+  letters shaped onto the Fat tee, UPLOADED 85645891800668 (SpotterPrint_01, StarterGymConfig PropAssets +
+  colourway), welded by MeetFigures.labelTee (printOnTee, torso rest taken from the measured Fat numbers; the old card
+  stays as the fallback for other builds).
+- VERIFIED in Studio (v13 tee): the squat coach shows a neck with the new collar (front). Then Studio dropped the place
+  during a screenshot and would not reopen it from the command line (it sits on the start page). NOT yet checked in
+  Studio: v14, the chef's new clothes, the spotter print, the coach from the side/back. Blender previews:
+  D:/ClaudeScratch/necks/v4/summary.png + v5/thin.png (tees), ls/summary.png + lsfull/summary.png (long sleeve),
+  chef/chef_v3.png (chef), chef/spot.png (spotter print).
+- NEXT: open the place in Studio, play, look at a quest coach, the chef (Teleport > KITCHEN), a Local meet's spotters
+  and referees, and your own character in a tee and a long sleeve.
+
+**OVERNIGHT 2026-11-20 (user asleep; Studio had no place open, so offline only). NOTHING CHANGED IN THE GAME.**
+- AUDIT of all uncommitted work: fwjelaa checker on all 16 changed/new .luau files = 0 errors (1 old harmless warning,
+  CoachDialogue:281 `Instance.new("Animator", humanoid)`; the "info" lines are already nil-checked). check_models.py
+  CHECK PASSED on KitchenChef_01, SpotterPrint_01, KitchenExtras_01, KitchenBuilding_01, CartoonGear_07,
+  CartoonGear_05_Knee100. Every asset id in ClothesConfig / StarterGymConfig / KitchenConfig is in materials.json or
+  elevenlabs_shouts.json, except ones already in commit 74139f4 and the chef's animation id (a celebration).
+- KITCHEN CUTSCENE, what's wrong (for tomorrow; user: "too fast and weird, like the meat just walks away"). Read from
+  `src/client/World/KitchenScene.luau`, `KitchenService.luau:92`, `KitchenConfig.luau:41-81`, CelebrationConfig LongVHold:
+  1. TOO FAST: one bag = about 7.3 s in all, 6 camera cuts (drop 0.85 + 0.3 shrink, grind 1.4, hold 2.0, throw 1.15,
+     landing 1.6). Every shot is a hard cut, and none lasts long enough to read.
+  2. THE MEAT TELEPORTS: the mound grows at the spout, then is put straight on the chef's hands (no walk, no bend, no
+     pickup). It just leaves the floor.
+  3. WRONG ANIMATION FOR HOLDING: "The Long V" is a victory pose with FISTS in a wide V (celebration_animations.py
+     LongVHold). The meat is pinned to the middle point between two fists far apart, so it floats and nothing
+     carries it (breaks memory "scenes make physical sense").
+  4. OUT OF STEP: the server starts the chef's lift timer when it gets the cook request, but the client starts the scene
+     only after the reply comes back, and the chef's animation arrives later still. The meat follows his hands from
+     wherever they are, so for the first moments it rides up from his hips. That is the likely "walks away" look.
+  5. THE THROW: a straight-line lerp plus a parabola from a standing pose, with no wind-up and no throw motion on the chef.
+- PROPOSED FIX (needs the user's OK tomorrow; new animations go through the §5.0 animation gate and anim_qa.py):
+  about 14-16 s for one bag, fewer and longer shots with eased camera moves instead of cuts. Drop (the bag tips over
+  the hopper, about 1.6 s), grind (about 3 s, the mound grows), the chef walks to the mound, squats and scoops it with
+  OPEN palms under it (new animation), presses it overhead and holds with the line (new palms-up hold, not the
+  Long V), winds up and throws (new animation), a slower arc (about 1.8 s), landing and steam held about 2.5 s. The
+  chef's animations are played on this player's screen in step with the scene (a local copy of the chef or a server
+  start time), so the hands and the meat always match. The skip button (§40.3) matters more once it is longer.
+
+**KITCHEN BUILT (2026-11-20, user: "Start on whatever you want, and do it in steps til it is all complete"). ALL
+STEPS TESTED IN STUDIO (one player), SOUNDS INCLUDED (user: "Yes, make them"). NOT COMMITTED (last commit 74139f4).
+GAME_DESIGN §40.7 "As built".**
+- SOUNDS (ElevenLabs, about 230 credits: 6 effects x 2 takes = 88, the chef's line x 2 = 142), picked by measurement,
+  trimmed / normalised / the sizzle made a seamless loop (D:/ClaudeScratch/kitchen/finish.py), WAVs in
+  D:/Powerlifting Roblox Extras/Sounds/Kitchen, uploaded (art/sounds/elevenlabs_shouts.json; KitchenConfig.Sounds):
+  KitchenSizzle 140335319453723 (loop on cooking pans near the camera, KitchenClocks), KitchenGrinder
+  99489705613915, KitchenCowMoo 116016869694788, KitchenBagThud 74704226139703, KitchenMeatLand 114323852821853
+  (KitchenScene), KitchenEat 119322748175840 (eating, KitchenMenu), ChefLine 110659636124322 (voice "The Sneakerhead
+  Chef", eleven_v4; local word check "All right, I'll handle this for you."; take B ad-libbed and was dropped). In
+  Studio all seven load and the scene plays them at 0.1 s (moo), 0.9 (thud), 1.3 (grinder), 2.7 (chef), 5.9 (landing).
+  The user hasn't heard them: listening file art/previews/Kitchen_Sounds_Listen.wav.
+- UPLOADED (all group-owned, materials.json + StarterGymConfig PropAssets / Kit* paints / colourways):
+  KitchenChef_01 rbxassetid://72842442823666 (ChefHat, ChefBib, ChefSkirt), KitchenExtras_01 105788984871145
+  (MeatGrinder, MeatBag, Cow, MeatMound), KitchenBuilding_01 115083646967578 (KitchenHouse, KitchenHall).
+  Scripts: art/scripts/build_kitchen_chef_01.py, build_kitchen_extras_01.py, build_kitchen_building_01.py; all
+  CHECK PASSED.
+- NEW server: `src/server/Economy/KitchenChef.luau` (chef figure from MeetFigures + welded clothes, grinder placed,
+  `lift()` plays the "Long V" celebration animation on him), `KitchenBuilding.luau` (house at
+  KitchenConfig.EntranceOrigin (17,0,-105) facing the gym, hall shell, hidden wall colliders, Enter / Leave prompts,
+  KitchenArrive tag). KitchenPans shares BigSteak / MeatBag / Cow / MeatMound in ReplicatedStorage.KitchenModels.
+  KitchenService: the chef is the cooker spot (prompt "Talk / Chef"); after a cook it calls KitchenChef.lift at
+  KitchenConfig.sceneLiftAt.
+- NEW client: `src/client/UI/UIFancy.luau` (the UI kit's look as helpers), `src/client/World/KitchenScene.luau`
+  (the chef scene; Studio-only workspace attribute StudioSceneSlow slows it for pictures). REWRITTEN
+  `src/client/UI/KitchenMenu.luau` (chef conversation + steak picker; eat handler). CoachDialogue: `converse()` and
+  `close()` exposed so any NPC uses the coaches' dialogue (the coaches' own talk now goes through it). KitchenClocks:
+  steam, the Eat prompt on your own pan. BoostBar: `celebrate()` (STEAK EATEN! pop). TeleportConfig: KITCHEN stop.
+- Tested in Studio: enter through the house door to the hall, leave through EXIT back outside; chef dialogue ->
+  picker -> COOK IT! (coins off, steak in pan); the scene (cow into the grinder, mound, chef lift with the caption,
+  throw onto the pan); steam on cooking pans; Eat on your pan -> boost + pop + clock EMPTY. Previews:
+  art/previews/Chef_*.jpg, ChefScene_*.jpg, Kitchen_*.jpg, KitchenBuilding_01_*.png, KitchenExtras_01_*.png.
+- Found while testing (fixed): attachments must be parented before setting WorldPosition; the game has no standard
+  PlayerModule (the scene holds the player with WalkSpeed 0); the cartoon bodies use AnimationConstraints (posing an
+  NPC's arms on one client doesn't show: the server plays an animation); client-made BillboardGuis on NPC heads didn't
+  show (the chef's line is a ScreenGui caption); Studio screenshots don't show prompts or SurfaceGuis with a set
+  camera.
+- NOT DONE: the lifter's dumping animation; the Robux cook skip and meet meals; not tested on a phone or with two players.
+
+**KITCHEN PART 2 STARTED (2026-11-19, GAME_DESIGN §40.7 "The Kitchen and the chef"). Models UPLOADED; COMMITTED in 74139f4, PUSHED 2026-11-20 (not published).**
 - User's new design: a huge Kitchen in the front square (map design comes last, so it's placed from one point), an
   NPC chef with a slider/typing screen, a short scene (bag or cow into a meat grinder, the chef lifts a steak mountain
   sized by the cook, "Alright, I'll handle this for you", throws it onto your pan; skip = the ~80 Robux basic-animation

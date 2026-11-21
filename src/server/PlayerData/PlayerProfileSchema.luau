@@ -63,9 +63,10 @@ local PlayerProfileSchema = {}
 	version 24: walk-outs, celebrations and fail styles collected, with a slot
 	for each attempt; version 25: clothes and the gear toggle; version 26: the
 	numbered State Champion badges; version 27: the Nationals spots; version
-	28: the Worlds spots).
+	28: the Worlds spots; version 31: the Kitchen and gain boosts; version 32:
+	whether the player has watched the chef scene once).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 31
+PlayerProfileSchema.CURRENT_VERSION = 32
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -531,6 +532,9 @@ export type Kitchen = {
 	-- Server time the cook started, and when it is ready (0 when empty).
 	startedAt: number,
 	readyAt: number,
+	-- (version 32) Whether the player has watched the chef scene to the end once: after that it can be skipped
+	-- (user 2026-11-21: "Skip after first time"). Written only by ProfileOperations.markChefSceneSeen.
+	sceneSeen: boolean,
 }
 
 --[[
@@ -752,7 +756,7 @@ local template: ProfileData = {
 	},
 
 	-- An empty cooker and no boosts.
-	kitchen = { steaks = 0, startedAt = 0, readyAt = 0 },
+	kitchen = { steaks = 0, startedAt = 0, readyAt = 0, sceneSeen = false },
 	boosts = {
 		steak = { percent = 0, endsAt = 0, steaks = 0 },
 	},
@@ -2135,6 +2139,25 @@ migrations[30] = function(data: ProfileData)
 		if not isTimeOrCount(boosts.steak[field]) then
 			boosts.steak[field] = 0
 		end
+	end
+end
+
+--[[
+	Version 31 -> 32: whether the player has watched the chef scene once (user 2026-11-21, GAME_DESIGN §40.7: the scene
+	can be skipped after the first time). Everyone starts as not having watched it.
+
+	REPAIRS, NEVER OVERWRITES: a stored true or false is kept; anything else (missing) becomes false. A missing kitchen
+	record is version 31's to make; it is made here too so the field has somewhere to live.
+	IDEMPOTENT: a second run finds a boolean and changes nothing.
+]]
+migrations[31] = function(data: ProfileData)
+	local kitchen = (data :: any).kitchen
+	if typeof(kitchen) ~= "table" then
+		kitchen = { steaks = 0, startedAt = 0, readyAt = 0 }
+		(data :: any).kitchen = kitchen
+	end
+	if typeof(kitchen.sceneSeen) ~= "boolean" then
+		kitchen.sceneSeen = false
 	end
 end
 

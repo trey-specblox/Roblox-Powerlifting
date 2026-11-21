@@ -12,8 +12,9 @@
 	Steaks (0 = nothing cooking) and ReadyAt (server unix time). The cook itself lives in the save (ProfileOperations);
 	refresh(player) re-reads it after cooking, eating and joining.
 
-	PERFORMANCE: 40 zones of three shared meshes (about 5,400 triangles a zone); every piece is decor (no collision,
-	touch or query). The steak exists only while something is cooking.
+	PERFORMANCE: 40 zones of three shared meshes (about 5,400 triangles a zone); every mesh is decor (no collision,
+	touch or query), with 15 hidden plain blocks a zone for collision (the pan's wall and floor, its handle, the
+	clock's post: 600 in all, anchored and never touched by scripts). The steak exists only while something is cooking.
 ]]
 
 local Players = game:GetService("Players")
@@ -41,12 +42,7 @@ local steakModelLength = 0
 
 -- The centre (on the floor, facing -Z) of zone `index`, in rows of ZoneColumns from the hall's front left.
 local function zoneCentre(index: number): CFrame
-	local columns = KitchenConfig.ZoneColumns
-	local column = (index - 1) % columns
-	local row = (index - 1) // columns
-	local pitch = KitchenConfig.ZonePitch
-	local x = (column - (columns - 1) / 2) * pitch.X
-	return KitchenConfig.HallOrigin * CFrame.new(x, 0, 30 + row * pitch.Y)
+	return KitchenConfig.HallOrigin * KitchenConfig.zoneSpot(index)
 end
 
 -- Puts the pan copy so its stand's axis is on `centre` (the pan's own pivot is off to the side: the handle).
@@ -58,6 +54,64 @@ local function placePan(pan: Model, centre: CFrame)
 		local off = centre:PointToObjectSpace(stand.Position)
 		pan:PivotTo(centre * CFrame.new(-off.X, 0, -off.Z))
 	end
+end
+
+-- A hidden anchored solid piece of a zone (the pan's meshes are decor).
+local function solidPart(parent: Instance, name: string, size: Vector3, at: CFrame, cylinder: boolean?)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Shape = if cylinder then Enum.PartType.Cylinder else Enum.PartType.Block
+	part.Anchored = true
+	part.Transparency = 1
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Size = size
+	part.CFrame = at
+	part.Parent = parent
+end
+
+--[[
+	The zone's collision (user 2026-11-21: "Make furniture solid"; before this you walked through the pans). A real
+	pan shape, not a lid: a ring of wall blocks round the rim and a round floor inside, so a lifter can jump in and
+	stand on the pan's floor; plus the handle and the clock's post. Sizes from the pan model
+	(art/scripts/build_kitchen_pan_01.py) at KitchenConfig.PanScale, sunk PanSink into the floor.
+]]
+local RIM_BLOCKS = 12
+local function buildSolids(model: Model, centre: CFrame, pan: Model)
+	local scale, sink = KitchenConfig.PanScale, KitchenConfig.PanSink
+	local rimTop = 4.7 * scale - sink -- the rolled rim's top above the hall floor
+	local floorTop = KitchenConfig.PanFloorHeight * scale - sink
+	local outer, inner = 6.35 * scale, 5.6 * scale
+	local solids = Instance.new("Folder")
+	solids.Name = "Solids"
+	-- The pan's floor (a cylinder lies along its X: stood up on end).
+	solidPart(solids, "PanFloor", Vector3.new(floorTop + 1, 2 * inner, 2 * inner),
+		centre * CFrame.new(0, (floorTop - 1) / 2, 0) * CFrame.Angles(0, 0, math.pi / 2), true)
+	-- The wall: blocks round the rim, each wide enough to meet its neighbours at the outside.
+	local thick = outer - inner
+	local wide = 2 * outer * math.tan(math.pi / RIM_BLOCKS)
+	for k = 1, RIM_BLOCKS do
+		local turn = CFrame.Angles(0, 2 * math.pi * k / RIM_BLOCKS, 0)
+		solidPart(solids, "PanWall", Vector3.new(wide, rimTop, thick),
+			centre * turn * CFrame.new(0, rimTop / 2, -(inner + thick / 2)))
+	end
+	-- The handle (its grip is 11.8 from the pan's axis in the model, the stem from 6.2), wherever the pan is turned.
+	local grip = pan:FindFirstChild("GiantPan_Grip", true)
+	if grip and grip:IsA("BasePart") then
+		local flat = Vector3.new(grip.Position.X - centre.Position.X, 0, grip.Position.Z - centre.Position.Z)
+		if flat.Magnitude > 1 then
+			local from, to = 6.0 * scale, 14.4 * scale
+			local middle = centre.Position + flat.Unit * (from + to) / 2 + Vector3.new(0, grip.Position.Y - centre.Position.Y - 0.4, 0)
+			solidPart(solids, "PanHandle", Vector3.new(1.3 * scale, 1.5 * scale, to - from),
+				CFrame.lookAt(middle, middle + flat.Unit))
+		end
+	end
+	-- The clock's post (the clock itself is far overhead).
+	local post = 13.6 * KitchenConfig.ClockScale
+	solidPart(solids, "ClockPost", Vector3.new(1.2, post, 1.2),
+		centre * CFrame.new(0, post / 2, KitchenConfig.ClockBehind * scale))
+	solids.Parent = model
 end
 
 local function buildZone(folder: Folder, index: number): Zone?
@@ -78,6 +132,14 @@ local function buildZone(folder: Folder, index: number): Zone?
 	clock:ScaleTo(KitchenConfig.ClockScale)
 	clock:PivotTo(centre * CFrame.new(0, 0, KitchenConfig.ClockBehind * KitchenConfig.PanScale))
 	clock.Parent = model
+	-- No shadows: KitchenLights keeps the sun out of the hall and its lights cast none, so these 360 casters were
+	-- drawn into the sun's shadow picture for nothing (audit 2026-11-21).
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CastShadow = false
+		end
+	end
+	buildSolids(model, centre, pan)
 	model.WorldPivot = centre
 	-- The whole zone streams in at once (the clocks need the face as soon as the zone is there).
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
@@ -102,6 +164,11 @@ local function showSteak(zone: Zone, steaks: number)
 			return
 		end
 		steak.Name = "Steak"
+		for _, part in ipairs(steak:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CastShadow = false -- (as the pans: no sun in the hall)
+			end
+		end
 		zone.steak = steak
 	end
 	local s = steak :: Model
@@ -129,6 +196,9 @@ function KitchenPans.refresh(player: Player)
 	local steaks = if view then view.steaks else 0
 	zone.model:SetAttribute("Steaks", steaks)
 	zone.model:SetAttribute("ReadyAt", if view and steaks >= 1 then os.time() + view.readyIn else 0)
+	-- (on the player too, for their own timer on top of the Kitchen's sign outside: KitchenSignTimer)
+	player:SetAttribute("KitchenSteaks", steaks)
+	player:SetAttribute("KitchenReadyAt", if view and steaks >= 1 then os.time() + view.readyIn else 0)
 	showSteak(zone, steaks)
 end
 
@@ -180,15 +250,13 @@ function KitchenPans.start()
 	local folder = Instance.new("Folder")
 	folder.Name = "KitchenHall"
 	folder.Parent = Workspace
-	-- TEMPORARY: a plain floor under the zones until the hall itself is modelled in Blender (the pans sink into it).
-	local columns = KitchenConfig.ZoneColumns
-	local rows = math.ceil(KitchenConfig.PanZones / columns)
-	local pitch = KitchenConfig.ZonePitch
+	-- The floor's collision under the whole restaurant (hidden by KitchenBuilding once the hall's shell is there: W
+	-- Chews' fancy front, kitchen and back room, plan x -287..287, y -112..339; the pans sink into it).
 	local floor = Instance.new("Part")
 	floor.Name = "HallFloor_Temporary"
 	floor.Anchored = true
-	floor.Size = Vector3.new(columns * pitch.X + 40, 2, rows * pitch.Y + 80)
-	floor.CFrame = KitchenConfig.HallOrigin * CFrame.new(0, -1, 30 + (rows - 1) * pitch.Y / 2)
+	floor.Size = Vector3.new(574, 2, 451)
+	floor.CFrame = KitchenConfig.HallOrigin * KitchenConfig.planSpot(0, 113.5, -1)
 	floor.Color = Color3.fromRGB(196, 186, 170)
 	floor.Material = Enum.Material.Concrete
 	floor.Parent = folder
@@ -204,6 +272,18 @@ function KitchenPans.start()
 		end
 	end
 	print(string.format("[KitchenPans] %d pan zones ready at %s", #zones, tostring(KitchenConfig.HallOrigin.Position)))
+	-- One copy of the big steak for the clients (the chef's steak picker shows it growing with the number).
+	local shared = Instance.new("Folder")
+	shared.Name = "KitchenModels"
+	-- (and the chef scene's props: KitchenScene)
+	for _, item in ipairs({ "BigSteak", "MeatBag", "Cow", "MeatMound" }) do
+		local model = RoomProps.propCopy(item, 1)
+		if model then
+			model.Name = item
+			model.Parent = shared
+		end
+	end
+	shared.Parent = ReplicatedStorage
 	for _, player in ipairs(Players:GetPlayers()) do
 		assign(player)
 	end

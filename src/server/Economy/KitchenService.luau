@@ -51,11 +51,14 @@ local function addPrompt(spot: Instance)
 	end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "CookPrompt"
-	prompt.ActionText = "Cook"
-	prompt.ObjectText = "Steak cooker"
+	-- (The spot is the chef, GAME_DESIGN §40.7: you talk to him to cook.)
+	prompt.ActionText = "Talk"
+	prompt.ObjectText = "Chef"
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.HoldDuration = 0
-	prompt.MaxActivationDistance = 10
+	-- (He stands behind his service counter: 14 studs reaches him from the dining side, across it; user 2026-11-21:
+	--  "make sure i can talk to the chef from the counter, and not have to jump over the barricade".)
+	prompt.MaxActivationDistance = 14
 	prompt.RequiresLineOfSight = false
 	prompt:AddTag(KitchenConfig.PromptTag)
 	prompt.Parent = spot
@@ -72,6 +75,15 @@ function KitchenService.start()
 		if tooSoon(player) then
 			return nil
 		end
+		return PlayerDataService.getKitchen(player)
+	end
+
+	-- The chef scene played to the end once (KitchenScene): it can be skipped from now on.
+	set.sceneSeen.OnServerInvoke = function(player: Player): any
+		if tooSoon(player) then
+			return nil
+		end
+		PlayerDataService.markChefSceneSeen(player)
 		return PlayerDataService.getKitchen(player)
 	end
 

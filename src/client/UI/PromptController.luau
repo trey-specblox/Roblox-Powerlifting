@@ -153,6 +153,17 @@ local function adopt(instance: Instance)
 	end
 end
 
+--[[
+	Hides every prompt on this screen while any `reason` holds: an NPC conversation, a menu opened from one, a cut-scene
+	(user 2026-11-21: "once your talking to one npc or any npcs, the Ui does not just stay on the screen"; the chef's
+	"E Talk" tile sat over his own scene). Only this client's prompts; the server's prompts are untouched.
+]]
+local hideReasons: { [string]: boolean } = {}
+function PromptController.hide(reason: string, hidden: boolean)
+	hideReasons[reason] = if hidden then true else nil
+	ProximityPromptService.Enabled = next(hideReasons) == nil
+end
+
 function PromptController.start()
 	if started then
 		return

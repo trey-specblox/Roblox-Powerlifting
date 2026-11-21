@@ -618,6 +618,28 @@ StarterGymConfig.PropAssets = {
 	{ id = 133935733618984 }, -- KitchenPan_01: the Kitchen's pan zone, shared by all 40 zones: GiantPan, PanClock (Face carries
 	-- the countdown) and BigSteak (one steak, scaled per cook) (GAME_DESIGN §40.7; art/scripts/build_kitchen_pan_01.py,
 	-- CHECK PASSED, 5,384 triangles).
+	{ id = 92909239501532 }, -- KitchenChef_01: the Kitchen chef's hat, apron bib and apron skirt, FITTED to the Fat body
+	-- in its root space (KitchenChef welds them on; art/scripts/build_kitchen_chef_01.py, CHECK PASSED, 6,088 triangles;
+	-- refitted 2026-11-20, was 72842442823666: the hat over the eyes, the apron off the chest).
+	{ id = 85645891800668 }, -- SpotterPrint_01: the meet spotters' CENTRAL shirt print, front and back, shaped onto the
+	-- Fat build's tee (MeetFigures welds it on; art/scripts/build_spotter_print_01.py, CHECK PASSED, 1,196 triangles).
+	{ id = 105788984871145 }, -- KitchenExtras_01: the chef scene's props: MeatGrinder, MeatBag, Cow, MeatMound
+	-- (art/scripts/build_kitchen_extras_01.py, CHECK PASSED, 5,564 triangles).
+	{ id = 81094364762706 }, -- KitchenGrinder_02: W Chews' stainless mixer-grinder on red wheels (user's photo, look approved
+	-- 2026-11-21). Its pieces are MeatGrinder_*, so it REPLACES KitchenExtras_01's MeatGrinder: it must stay AFTER that
+	-- asset in this list (a later asset's item wins). art/scripts/build_kitchen_grinder_02.py, CHECK PASSED, 4,133 triangles.
+	{ id = 115083646967578 }, -- KitchenBuilding_01: the Kitchen's entrance house and the pan hall's shell (KitchenBuilding;
+	-- art/scripts/build_kitchen_building_01.py, CHECK PASSED, 5,666 triangles).
+	{ id = 139239848125079 }, -- WChewsHall_01: W Chews' hall shell (item WChewsHall): the fancy front, the kitchen and the
+	-- back room's shell, to floor plan 02 (GAME_DESIGN §40.7, user 2026-11-21; look approved "Yes upload it"). Replaces
+	-- KitchenBuilding_01's KitchenHall. art/scripts/build_wchews_hall_01.py, CHECK PASSED, 3,832 triangles.
+	{ id = 130064569566225 }, -- WChewsKit_01: W Chews' restaurant kit, one mesh per repeated object (items Wc*): counter,
+	-- range, fryer, hood, fridge, sink, island, service counter, table, chair, pendant, chandelier, host stand, plant,
+	-- staff door, and the chef scene's button panel, chute, display bay and meat tube. Placed from WChewsLayout
+	-- (art/scripts/wchews_layout.py). art/scripts/build_wchews_kit_01.py, CHECK PASSED, 20,312 triangles.
+	{ id = 121517778514497 }, -- WChewsFront_01: W Chews' building in the front square (item WChewsFront), from the user's photo
+	-- References/W Chews/kitchen1.png (user 2026-11-21: "Upload the new building"). Replaces KitchenBuilding_01's
+	-- KitchenHouse. art/scripts/build_wchews_front_01.py, CHECK PASSED, 1,996 triangles.
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -708,10 +730,61 @@ StarterGymConfig.PropPaints = {
 	KitSteakFat = { color = Color3.fromRGB(248, 232, 206) },
 	KitSteakSear = { color = Color3.fromRGB(58, 22, 12) },
 	KitSteakBone = { color = Color3.fromRGB(242, 232, 210) },
+	KitGrinderRed = { color = Color3.fromRGB(200, 34, 34), reflectance = 0.05 },
+	KitBurlap = { color = Color3.fromRGB(184, 144, 92), material = Enum.Material.Fabric },
+	KitRope = { color = Color3.fromRGB(128, 92, 52), material = Enum.Material.Fabric },
+	KitCowPink = { color = Color3.fromRGB(244, 160, 168) },
+	KitCream = { color = Color3.fromRGB(242, 230, 196) },
+	KitGroundMeat = { color = Color3.fromRGB(198, 80, 78) },
+	KitHouseCream = { color = Color3.fromRGB(238, 222, 188), material = Enum.Material.Plaster },
+	KitRoofRed = { color = Color3.fromRGB(160, 36, 30), material = Enum.Material.Slate },
+	KitWindow = { color = Color3.fromRGB(120, 160, 200), transparency = 0.3, reflectance = 0.2 },
+	KitBrick = { color = Color3.fromRGB(140, 58, 42), material = Enum.Material.Brick },
+	KitTile = { color = Color3.fromRGB(242, 242, 238), material = Enum.Material.CeramicTiles },
+	KitHallRoof = { color = Color3.fromRGB(52, 54, 62), material = Enum.Material.CorrodedMetal },
+	KitFloorRed = { color = Color3.fromRGB(176, 40, 34), material = Enum.Material.CeramicTiles },
+	KitFloorWhite = { color = Color3.fromRGB(236, 234, 226), material = Enum.Material.CeramicTiles },
+	KitExitGreen = { color = Color3.fromRGB(40, 210, 90), material = Enum.Material.Neon },
+	-- W Chews' stainless steel (KitchenGrinder_02 and the restaurant kit, user 2026-11-21: "big, clean, stainless").
+	KitStainless = { color = Color3.fromRGB(206, 210, 216), material = Enum.Material.Metal, reflectance = 0.12 },
+	KitStainlessDark = { color = Color3.fromRGB(128, 132, 140), material = Enum.Material.Metal, reflectance = 0.06 },
+	KitWheelRed = { color = Color3.fromRGB(214, 44, 36) },
+	-- W Chews' hall and kit (WChewsHall_01, WChewsKit_01; user 2026-11-21: a "beautiful", fancy restaurant).
+	-- (a warm neutral grey: 146, 154, 166 read as strong blue under the hall's light, Studio 2026-11-21)
+	WcFloorTile = { color = Color3.fromRGB(162, 158, 152), material = Enum.Material.CeramicTiles },
+	WcWallPale = { color = Color3.fromRGB(214, 219, 224) },
+	WcCeiling = { color = Color3.fromRGB(234, 236, 238) },
+	WcBeam = { color = Color3.fromRGB(58, 62, 70), material = Enum.Material.Metal },
+	WcWalnut = { color = Color3.fromRGB(84, 48, 28), material = Enum.Material.Wood },
+	WcWoodFloor = { color = Color3.fromRGB(132, 84, 48), material = Enum.Material.WoodPlanks },
+	WcMaple = { color = Color3.fromRGB(214, 172, 120), material = Enum.Material.Wood },
+	WcDeepGreen = { color = Color3.fromRGB(28, 84, 66) },
+	WcDoorGreen = { color = Color3.fromRGB(20, 70, 52) },
+	WcBurgundy = { color = Color3.fromRGB(120, 28, 44), material = Enum.Material.Fabric },
+	WcCushionTeal = { color = Color3.fromRGB(0, 138, 140), material = Enum.Material.Fabric },
+	WcCushionMustard = { color = Color3.fromRGB(214, 160, 38), material = Enum.Material.Fabric },
+	WcCloth = { color = Color3.fromRGB(244, 242, 236), material = Enum.Material.Fabric },
+	WcStone = { color = Color3.fromRGB(232, 226, 214), material = Enum.Material.Marble },
+	WcDarkCeiling = { color = Color3.fromRGB(36, 30, 30) },
+	WcCopper = { color = Color3.fromRGB(196, 112, 70), material = Enum.Material.Metal, reflectance = 0.1 },
+	WcMeat = { color = Color3.fromRGB(190, 56, 56) },
+	WcOil = { color = Color3.fromRGB(214, 160, 40), reflectance = 0.2 },
+	WcLeaf = { color = Color3.fromRGB(52, 140, 60) },
+	WcGlowYellow = { color = Color3.fromRGB(255, 214, 70), material = Enum.Material.Neon },
+	-- W Chews' building in the square (WChewsFront_01): pale stone panels, dark plinth and roofs, orange-red light strips.
+	-- (lighter and warmer than the model's own colour: the front faces away from the sun and read as cold grey; Studio)
+	WcStucco = { color = Color3.fromRGB(244, 230, 204), material = Enum.Material.Concrete },
+	WcDarkStone = { color = Color3.fromRGB(44, 44, 50), material = Enum.Material.Slate },
+	WcStepStone = { color = Color3.fromRGB(150, 150, 156), material = Enum.Material.Concrete },
+	WcRoofSlate = { color = Color3.fromRGB(48, 56, 62), material = Enum.Material.Metal },
+	WcStripGlow = { color = Color3.fromRGB(255, 110, 60), material = Enum.Material.Neon },
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
 StarterGymConfig.PropFabricPieces = {
+	-- The Kitchen chef's cloth hat and apron.
+	ChefHat_Band = true, ChefHat_Puff = true, ChefBib_Cloth = true, ChefBib_Strap = true, ChefSkirt_Cloth = true,
+	ChefSkirt_Ties = true,
 	Sandbag_Body = true,
 	Sofa_Frame = true,
 	Sofa_Cushion = true,
@@ -1034,6 +1107,83 @@ StarterGymConfig.PropColourways = {
 	} },
 	PanClock = { { Post = "Silver", Body = "Yellow", Bells = "Navy", Face = "White", Ticks = "Black" } },
 	BigSteak = { { Meat = "KitSteak", Fat = "KitSteakFat", Sear = "KitSteakSear", Bone = "KitSteakBone" } },
+	-- The Kitchen chef's clothes (KitchenChef_01, KitchenChef).
+	ChefHat = { { Band = "White", Puff = "White", Label = "Navy" } },
+	ChefBib = { { Cloth = "Navy", Strap = "Navy", Label = "Yellow" } },
+	ChefSkirt = { { Cloth = "Navy", Pocket = "Yellow", Ties = "Navy" } },
+	-- The meet spotters' shirt print (SpotterPrint_01, MeetFigures).
+	SpotterPrint = { { Front = "White", Back = "White" } },
+	-- The chef scene's props (KitchenExtras_01).
+	-- MeatGrinder is KitchenGrinder_02's stainless mixer-grinder (2026-11-21); it replaced KitchenExtras_01's squat red
+	-- one, whose pieces (Body, Feet, Crank, Label) are no longer used.
+	MeatGrinder = { {
+		Hopper = "KitStainless", Rim = "KitStainless", Head = "KitStainless", Spout = "KitStainless", Guard = "KitStainless",
+		Motor = "KitStainless", Cabinet = "KitStainless", Frame = "KitStainlessDark", Casters = "KitStainlessDark",
+		Wheels = "KitWheelRed", Cord = "Black", Plate = "Navy", PlateText = "Yellow", Caution = "Yellow",
+	} },
+	MeatBag = { { Sack = "KitBurlap", Tie = "KitRope", Label = "Red" } },
+	Cow = { { Body = "White", Spots = "Black", Snout = "KitCowPink", Horns = "KitCream", Eyes = "Black", Hooves = "Black" } },
+	MeatMound = { { Meat = "KitGroundMeat" } },
+	-- The Kitchen's buildings (KitchenBuilding_01).
+	KitchenHouse = { {
+		Body = "KitHouseCream", Roof = "KitRoofRed", Trim = "White", Glass = "KitWindow", Door = "Charcoal", Sign = "Navy",
+		SignText = "Yellow", Awning = "Red", AwningWhite = "White", Chimney = "KitBrick",
+	} },
+	KitchenHall = { {
+		Walls = "KitTile", Band = "Red", Roof = "KitHallRoof", Trusses = "Silver", FloorRed = "KitFloorRed",
+		FloorWhite = "KitFloorWhite", ExitDoor = "Charcoal", ExitSign = "Navy", ExitText = "KitExitGreen", BackSign = "Yellow",
+	} },
+	-- W Chews' hall shell (WChewsHall_01).
+	WChewsHall = { {
+		Floor = "WcFloorTile", FloorLines = "Yellow", WallTile = "KitTile", WallAccent = "Teal", WallUpper = "WcWallPale",
+		WallRail = "KitStainless", Ceiling = "WcCeiling", Beams = "WcBeam", LightPanels = "GlowWhite",
+		FrontFloor = "WcWoodFloor", FrontWalls = "WcDeepGreen", FrontWainscot = "WcWalnut", FrontCeiling = "Cream",
+		FrontBeams = "WcWalnut", FrontCove = "WarmGlow", FrontGlass = "Glass", FrontMullions = "Black", FrontBrass = "Brass",
+		ExitText = "GlowGreen", FrontRunner = "WcBurgundy", FrontRunnerEdge = "Brass", FrontPanels = "Navy",
+		FrontSconces = "WarmGlow", FrontSign = "WarmGlow", BackFloor = "WcBurgundy", BackWalls = "WcWalnut",
+		BackTrim = "Brass", BackCeiling = "WcDarkCeiling",
+	} },
+	-- W Chews' building in the front square (WChewsFront_01; the name floats over it, so it has no sign piece).
+	WChewsFront = { {
+		Walls = "WcStucco", Base = "WcDarkStone", Steps = "WcStepStone", Roofs = "WcRoofSlate", Glass = "Glass",
+		Mullions = "Black", Inside = "WarmGlow", Strips = "WcStripGlow", StepLights = "GlowWhite", Rails = "Black",
+		Carpet = "WcBurgundy", Brass = "Brass", Door = "Glass",
+	} },
+	-- W Chews' restaurant kit (WChewsKit_01).
+	WcCounter = { { Top = "KitStainless", Frame = "KitStainlessDark" } },
+	WcRange = { { Body = "KitStainless", Top = "Black", Knobs = "Red", Pots = "WcCopper", Flame = "KitBurner" } },
+	WcFryer = { { Body = "KitStainless", Oil = "WcOil", Baskets = "KitStainlessDark", Grips = "Teal" } },
+	WcHood = { { Canopy = "KitStainless", Filters = "KitStainlessDark", Light = "GlowWhite" } },
+	WcFridge = { {
+		Body = "KitStainless", Light = "GlowWhite", Meat = "WcMeat", Greens = "WcLeaf", Cheese = "Yellow", Glass = "Glass",
+	} },
+	WcSink = { { Body = "KitStainless", Frame = "KitStainlessDark", Water = "WaterBlue" } },
+	WcIsland = { {
+		Top = "KitStainless", Frame = "KitStainlessDark", Boards = "WcMaple", Tomatoes = "Red", Greens = "WcLeaf",
+		Bowls = "Teal", Pans = "WcCopper",
+	} },
+	WcButtonPanel = { {
+		Body = "KitStainless", Button = "Red", Collar = "Yellow", Lamp = "GlowGreen", Plate = "Navy", PlateText = "Yellow",
+	} },
+	WcChute = { { Duct = "KitStainless", Band = "Yellow", Inside = "Black" } },
+	WcBay = { {
+		Tray = "KitStainless", Frame = "KitStainlessDark", Glass = "Glass", Lights = "GlowWhite", SignText = "WcGlowYellow",
+	} },
+	WcTubeBranch = { { Glass = "Glass", Collars = "KitStainless", Hangers = "KitStainlessDark" } },
+	WcTubeTrunk = { { Glass = "Glass", Collars = "KitStainless", Hangers = "KitStainlessDark" } },
+	WcTubeIntake = { { Glass = "Glass", Collars = "KitStainless", Hangers = "KitStainlessDark" } },
+	WcTable = { { Cloth = "WcCloth", Base = "Brass", Plates = "Navy", Flame = "WarmGlow" } },
+	WcChair = {
+		{ Frame = "WcWalnut", Cushion = "WcCushionTeal" },
+		{ Frame = "WcWalnut", Cushion = "WcBurgundy" },
+		{ Frame = "WcWalnut", Cushion = "WcCushionMustard" },
+	},
+	WcPendant = { { Cord = "Black", Shade = "Brass", Bulb = "WarmGlow" } },
+	WcChandelier = { { Ring = "Brass", Globes = "WarmGlow" } },
+	WcHostStand = { { Body = "WcWalnut", Trim = "Brass", Text = "Brass", Menu = "Navy" } },
+	WcBar = { { Body = "WcWalnut", Top = "WcStone", Trim = "Brass" } },
+	WcPlant = { { Pot = "Teal", Leaves = "WcLeaf" } },
+	WcStaffDoor = { { Frame = "WcWalnut", Door = "WcDoorGreen", DoorBrass = "Brass", DoorText = "Black" } },
 	-- The Shop's menu colours the Body and Lid for the crate being opened and keeps only its labels (GearStatsConfig.Crates).
 	GearCrate = { {
 		Body = "Navy", Lid = "Navy", Steel = "Silver", LidSteel = "Silver", Yellow = "Yellow", LidYellow = "Yellow",

@@ -58,6 +58,7 @@ local CelebrationRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("Cel
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local CelebrationStage = require(script.Parent:WaitForChild("CelebrationStage"))
+local PromptController = require(script.Parent:WaitForChild("PromptController"))
 local CelebrationViewer = require(script.Parent:WaitForChild("CelebrationViewer"))
 
 local CelebrationSpinner = {}
@@ -866,7 +867,15 @@ function CelebrationSpinner.open(back: boolean?)
 	if set == nil then
 		return
 	end
-	local s = screen or build()
+	local s = screen
+	if s == nil then
+		s = build()
+		-- No "E" prompt tiles over the open screen (user 2026-11-21).
+		local gui = s.gui
+		gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+			PromptController.hide("CelebrationSpinner", gui.Enabled)
+		end)
+	end
 	screen = s
 	if not back then
 		openedAt = rootPosition()

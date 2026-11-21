@@ -1933,6 +1933,114 @@
     "model": "rbxassetid://94343850079984"
    }
   },
+  "CartoonClothes13_Skinny": {
+   "about": "(SUPERSEDED the same night by v14, never used in the game) Everyday clothes v13 for the Skinny body (2026-11-20): v12 with the tee's crew neck lowered so the neck shows (user: the staff had no neck, the shirt came up to the chin): art/scripts/tee_neck_fix.py through build_cartoon_gear_07.py; every other piece byte-identical in shape to v12. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 13, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes13_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes12_Skinny",
+   "ids": {
+    "model": "rbxassetid://138972543938278"
+   }
+  },
+  "CartoonClothes13_SkinnyFat": {
+   "about": "(SUPERSEDED the same night by v14, never used in the game) Everyday clothes v13 for the SkinnyFat body (2026-11-20): v12 with the tee's crew neck lowered so the neck shows (user: the staff had no neck, the shirt came up to the chin): art/scripts/tee_neck_fix.py through build_cartoon_gear_07.py; every other piece byte-identical in shape to v12. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 13, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes13_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes12_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://117148695359844"
+   }
+  },
+  "CartoonClothes13_Fat": {
+   "about": "(SUPERSEDED the same night by v14, never used in the game) Everyday clothes v13 for the Fat body (2026-11-20): v12 with the tee's crew neck lowered so the neck shows (user: the staff had no neck, the shirt came up to the chin): art/scripts/tee_neck_fix.py through build_cartoon_gear_07.py; every other piece byte-identical in shape to v12. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 13, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes13_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes12_Fat",
+   "ids": {
+    "model": "rbxassetid://135582624215382"
+   }
+  },
+  "CartoonClothes13_Fit": {
+   "about": "(SUPERSEDED the same night by v14, never used in the game) Everyday clothes v13 for the Fit body (2026-11-20): v12 with the tee's crew neck lowered so the neck shows (user: the staff had no neck, the shirt came up to the chin): art/scripts/tee_neck_fix.py through build_cartoon_gear_07.py; every other piece byte-identical in shape to v12. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 13, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes13_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes12_Fit",
+   "ids": {
+    "model": "rbxassetid://107973252839796"
+   }
+  },
+  "CartoonClothes13_Muscular": {
+   "about": "(SUPERSEDED the same night by v14, never used in the game) Everyday clothes v13 for the Muscular body (2026-11-20): v12 with the tee's crew neck lowered so the neck shows (user: the staff had no neck, the shirt came up to the chin): art/scripts/tee_neck_fix.py through build_cartoon_gear_07.py; every other piece byte-identical in shape to v12. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 13, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes13_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes12_Muscular",
+   "ids": {
+    "model": "rbxassetid://112150251853386"
+   }
+  },
+  "CartoonClothes13_BigBuff": {
+   "about": "(SUPERSEDED the same night by v14, never used in the game) Everyday clothes v13 for the BigBuff body (2026-11-20): v12 with the tee's crew neck lowered so the neck shows (user: the staff had no neck, the shirt came up to the chin): art/scripts/tee_neck_fix.py through build_cartoon_gear_07.py; every other piece byte-identical in shape to v12. Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 13, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes13_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes12_BigBuff",
+   "ids": {
+    "model": "rbxassetid://70756581982293"
+   }
+  },
+  "CartoonClothes14_Skinny": {
+   "about": "Everyday clothes v14 for the Skinny body (2026-11-20): v13 (the tee's crew neck) plus the LongSleeve with the same crew neck (build_cartoon_gear_05.py make_tee_crew, swapped into CartoonGear_05_Knee100.blend by art/scripts/swap_longsleeve_neck.py; the long sleeve is re-meshed whole by its builder, same look elsewhere). Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 14, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes14_Skinny.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes13_Skinny",
+   "ids": {
+    "model": "rbxassetid://109818199363077"
+   }
+  },
+  "CartoonClothes14_SkinnyFat": {
+   "about": "Everyday clothes v14 for the SkinnyFat body (2026-11-20): v13 (the tee's crew neck) plus the LongSleeve with the same crew neck (build_cartoon_gear_05.py make_tee_crew, swapped into CartoonGear_05_Knee100.blend by art/scripts/swap_longsleeve_neck.py; the long sleeve is re-meshed whole by its builder, same look elsewhere). Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 14, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes14_SkinnyFat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes13_SkinnyFat",
+   "ids": {
+    "model": "rbxassetid://83996803580290"
+   }
+  },
+  "CartoonClothes14_Fat": {
+   "about": "Everyday clothes v14 for the Fat body (2026-11-20): v13 (the tee's crew neck) plus the LongSleeve with the same crew neck (build_cartoon_gear_05.py make_tee_crew, swapped into CartoonGear_05_Knee100.blend by art/scripts/swap_longsleeve_neck.py; the long sleeve is re-meshed whole by its builder, same look elsewhere). Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 14, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes14_Fat.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes13_Fat",
+   "ids": {
+    "model": "rbxassetid://124174207343029"
+   }
+  },
+  "CartoonClothes14_Fit": {
+   "about": "Everyday clothes v14 for the Fit body (2026-11-20): v13 (the tee's crew neck) plus the LongSleeve with the same crew neck (build_cartoon_gear_05.py make_tee_crew, swapped into CartoonGear_05_Knee100.blend by art/scripts/swap_longsleeve_neck.py; the long sleeve is re-meshed whole by its builder, same look elsewhere). Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 14, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes14_Fit.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes13_Fit",
+   "ids": {
+    "model": "rbxassetid://125949799228742"
+   }
+  },
+  "CartoonClothes14_Muscular": {
+   "about": "Everyday clothes v14 for the Muscular body (2026-11-20): v13 (the tee's crew neck) plus the LongSleeve with the same crew neck (build_cartoon_gear_05.py make_tee_crew, swapped into CartoonGear_05_Knee100.blend by art/scripts/swap_longsleeve_neck.py; the long sleeve is re-meshed whole by its builder, same look elsewhere). Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 14, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes14_Muscular.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes13_Muscular",
+   "ids": {
+    "model": "rbxassetid://110811863806108"
+   }
+  },
+  "CartoonClothes14_BigBuff": {
+   "about": "Everyday clothes v14 for the BigBuff body (2026-11-20): v13 (the tee's crew neck) plus the LongSleeve with the same crew neck (build_cartoon_gear_05.py make_tee_crew, swapped into CartoonGear_05_Knee100.blend by art/scripts/swap_longsleeve_neck.py; the long sleeve is re-meshed whole by its builder, same look elsewhere). Exported by art/scripts/export_cartoon_08.py (GEAR_EXPORT_NUM 14, centring check). CHECK PASSED.",
+   "file": "art/exports/CartoonClothes14_BigBuff.glb",
+   "license": "own work",
+   "supersedes": "CartoonClothes13_BigBuff",
+   "ids": {
+    "model": "rbxassetid://113927749809120"
+   }
+  },
   "NationalsArena_02": {
    "about": "The Nationals arena (GAME_DESIGN 39 step 3, from the user's photos and video, approved 2026-11-17): the plaza building (NatBay x6, NatBayEnd, NatPorch, NatEndLeft/Right, NatWalkway) and the hall (NatFloor, NatStandMain, NatStandEnd, NatWall, NatRoofBay, NatTruss, NatHighBay, NatDrape, NatStageSet, NatBanner, NatCrowdMainA/B, NatCrowdEnd). Built by art/scripts/build_nationals_arena_02.py. CHECK PASSED (115 meshes, 29,040 triangles).",
    "file": "art/exports/NationalsArena_02.glb",
@@ -2037,6 +2145,70 @@
    "license": "own work",
    "ids": {
     "model": "rbxassetid://133935733618984"
+   }
+  },
+  "SpotterPrint_01": {
+   "about": "The meet spotters' CENTRAL shirt print, front and back, shaped onto the Fat build's v13 tee in the figure's root space (user 2026-11-20: no floating accessories; the old flat card stood 0.12 - 0.27 off the chest). Welded by MeetFigures.labelTee. Built by art/scripts/build_spotter_print_01.py. CHECK PASSED (2 meshes, 1,196 triangles).",
+   "file": "art/exports/SpotterPrint_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://85645891800668"
+   }
+  },
+  "KitchenChef_01": {
+   "about": "The Kitchen chef's clothes (GAME_DESIGN \u00a740.7, user 2026-11-19), built in the coach body's root space: ChefHat (a puffy toque with a CENTRAL band, welded to the head), ChefBib (the navy apron's bib with neck straps and a yellow CENTRAL, welded to the upper torso) and ChefSkirt (the apron's skirt with a yellow pocket and waist ties, welded to the lower torso). Refitted 2026-11-20 on the Fat body itself (the hat had covered the eyes, the apron floated off the chest): the bib follows the chest and belly, the skirt hangs from the belly, the strap goes round the back of the neck. Placed by KitchenChef. Built by art/scripts/build_kitchen_chef_01.py. CHECK PASSED (9 meshes, 6,088 triangles). Was rbxassetid://72842442823666.",
+   "file": "art/exports/KitchenChef_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://92909239501532"
+   }
+  },
+  "KitchenExtras_01": {
+   "about": "The Kitchen's scene props (GAME_DESIGN \u00a740.7, user 2026-11-19): MeatGrinder (a squat red grinder on four feet with a big steel hopper, crank and spout; CENTRAL on its side), MeatBag (a burlap sack labelled STEAKS), Cow (a cartoon cow for big cooks) and MeatMound (a lumpy heap of ground meat, scaled by code to the steak's size for the chef to lift). Built by art/scripts/build_kitchen_extras_01.py. CHECK PASSED (16 meshes, 5,564 triangles).",
+   "file": "art/exports/KitchenExtras_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://105788984871145"
+   }
+  },
+  "KitchenBuilding_01": {
+   "about": "The Kitchen's buildings (GAME_DESIGN \u00a740.7, user 2026-11-19): KitchenHouse (the entrance building in the front square: cream walls, pitched red roof with gables, a projecting entrance with its own gable, striped awnings, a chimney and a CENTRAL KITCHEN sign) and KitchenHall (the off-map pan hall's shell: white tiled walls with a red band, a pitched roof on steel trusses, a red and white checked floor, a CENTRAL KITCHEN sign on the back wall, an EXIT door and sign). Placed by KitchenBuilding. Built by art/scripts/build_kitchen_building_01.py. CHECK PASSED (20 meshes, 5,666 triangles).",
+   "file": "art/exports/KitchenBuilding_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://115083646967578"
+   }
+  },
+  "KitchenGrinder_02": {
+   "about": "W Chews' hero meat grinder (GAME_DESIGN \u00a740.7, user 2026-11-21, from the user's photo of a stainless mixer-grinder): a stainless tub with a rounded bottom (MeatGrinder_Hopper), rolled rim, grinding head and outlet with its ring and hood (MeatGrinder_Spout, pointing to the front), a square-tube frame on red wheels, motor box, back cabinet, coiled black cord, a navy CENTRAL nameplate and yellow caution plates. Replaces KitchenExtras_01's squat red MeatGrinder. Look approved by the user 2026-11-21 (\"Yes, upload it\"). Built by art/scripts/build_kitchen_grinder_02.py. CHECK PASSED (14 meshes, 4,133 triangles).",
+   "file": "art/exports/KitchenGrinder_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://81094364762706"
+   }
+  },
+  "WChewsHall_01": {
+   "about": "W Chews' hall shell, off the map (GAME_DESIGN \u00a740.7, floor plan 02, user 2026-11-21): the fancy front (glass front wall with glowing doors, walnut floor and wainscot, deep green walls with navy panels in brass frames, coffered ceiling, burgundy carpet, W CHEWS glowing over the opening), the kitchen (slate tile floor, white tiled walls with a teal band and a steel rail, white ceiling with dark beams and light panels) and the back room's shell (burgundy carpet, walnut panelling, brass rails). Replaces KitchenBuilding_01's KitchenHall. Look approved by the user 2026-11-21 (\"Yes upload it\"). Built by art/scripts/build_wchews_hall_01.py in plan space (a Blender point (x, y, z) lands at the hall's (-x, z, y)). CHECK PASSED (28 meshes, 3,832 triangles).",
+   "file": "art/exports/WChewsHall_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://139239848125079"
+   }
+  },
+  "WChewsKit_01": {
+   "about": "W Chews' restaurant kit (GAME_DESIGN \u00a740.7, user 2026-11-21), one mesh per repeated object, placed from art/scripts/wchews_layout.py: WcCounter, WcRange, WcFryer, WcHood, WcFridge, WcSink, WcIsland (back of house, stainless); WcButtonPanel, WcChute, WcBay, WcTubeIntake, WcTubeTrunk, WcTubeBranch (the chef scene: start button, ceiling chute, meat display bay, overhead meat tube with a drop over every pan); WcBar, WcTable, WcChair, WcPendant, WcChandelier, WcHostStand, WcPlant (front of house); WcStaffDoor (EMPLOYEES ONLY). Look approved by the user 2026-11-21 (\"Yes upload it\"). Built by art/scripts/build_wchews_kit_01.py. CHECK PASSED (77 meshes, 20,312 triangles).",
+   "file": "art/exports/WChewsKit_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://130064569566225"
+   }
+  },
+  "WChewsFront_01": {
+   "about": "W Chews' building in the front square, the way into the restaurant (GAME_DESIGN \u00a740.7; user 2026-11-21: \"update the shell, so it goes with the inside and reference photos\", then \"Upload the new building\"). From the user's photo References/W Chews/kitchen1.png: tall pale wall panels stepping down in height with glowing strips between them, a tall glass entrance box glowing from inside, four wide steps with a light under every edge, black handrails, the burgundy carpet, a terrace with a glass rail; every panel has its own sloping roof and the glass box a gable (no flat roofs). Its own design: no real restaurant's name or logo. Replaces KitchenBuilding_01's KitchenHouse. Pieces WChewsFront_*: Walls, Base, Steps, Roofs, Glass, Mullions, Inside, Strips, StepLights, Rails, Carpet, Brass, Door. 81 x 44 studs. Built by art/scripts/build_wchews_front_01.py. CHECK PASSED (13 meshes, 1,996 triangles).",
+   "file": "art/exports/WChewsFront_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://121517778514497"
    }
   }
  },

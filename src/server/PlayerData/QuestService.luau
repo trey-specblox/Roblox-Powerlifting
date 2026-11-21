@@ -38,8 +38,6 @@ local QuestService = {}
 QuestService.PromptTag = "QuestCoachPrompt"
 
 local MIN_SECONDS_BETWEEN_ASKS = 0.5
--- How far above the head the coach's name tag floats (studs).
-local TAG_HEIGHT = 3.6
 
 local started = false
 local remotes: QuestRemotes.RemoteSet? = nil
@@ -68,10 +66,9 @@ local function placeCoach(spot: Instance)
 	end
 	figure.Name = "QuestCoach_" .. lift
 	figure:SetAttribute("Lift", lift)
-	-- The name tag clear of the cartoon head (at MeetFigures' height the head covered its middle; Studio 2026-11-19).
+	-- (MeetFigures.build seats the name tag just above the cartoon head, at every distance.)
 	local tag = figure:FindFirstChild("CoachTag")
 	if tag and tag:IsA("BillboardGui") then
-		tag.StudsOffset = Vector3.new(0, TAG_HEIGHT, 0)
 		tag.MaxDistance = 40
 	end
 	local root = figure:FindFirstChild("HumanoidRootPart")

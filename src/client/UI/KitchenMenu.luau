@@ -3,23 +3,28 @@
 	KitchenMenu
 	Client / UI
 
-	The steak cooker's menu (GAME_DESIGN §40.7, user 2026-11-19). Pressing the cooker's "Cook" prompt (KitchenService
-	tags it) opens it; it shows one of three states:
+	Talking to the Kitchen's chef (GAME_DESIGN §40.7, user 2026-11-19). His "Talk" prompt (KitchenService) opens the
+	NPC dialogue the coaches use (CoachDialogue.converse: the panel, his portrait, typed words, answer bubbles):
 
-		EMPTY     pick how many steaks (−/+, quick picks, or type a number): the price, the cooking time and the
-		          training boost the meal will give; COOK pays and starts it
-		COOKING   how far along it is and the time left; it keeps cooking while you're away, even offline
-		READY     EAT starts the boost (24 hours); a warning first if it would replace a bigger boost still running
+		empty pan    "What are we cooking today?"  Steaks / Meet meals (coming) / Bye
+		cooking      how long is left, and "Skip the wait" (the Robux skip: not sold yet)
+		ready        the steak is done: go eat it at your pan
 
-	At the bottom: the steak boost running now, if any. Display only: the server checks the count and the coins and
-	sets every number (KitchenService, ProfileOperations); the numbers shown come from the same KitchenConfig.
+	"Steaks" opens the STEAK PICKER, built from the UI kit, not a plain panel (user: "we cant have everything the same
+	boring plain box"): turning rays and a glow in steak red, the big steak in 3D growing with the number, a big outlined
+	count, a chunky slider, quick picks, the price / cooking time / boost as badges, and a glossy COOK IT! button.
 
-	PERFORMANCE: one panel, built once; its timer updates once a second while open.
+	Display only: the server checks the count and the coins and keeps the cook (KitchenService, ProfileOperations);
+	the numbers shown come from the same KitchenConfig.
+
+	PERFORMANCE: one screen, built once; while the picker is open its rays turn and the steak spins.
 ]]
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CoinConfig = require(Shared:WaitForChild("Config"):WaitForChild("CoinConfig"))
@@ -28,24 +33,35 @@ local KitchenConfig = require(Shared:WaitForChild("Config"):WaitForChild("Kitche
 local KitchenRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("KitchenRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
+local UIFancy = require(script.Parent:WaitForChild("UIFancy"))
 local BoostBar = require(script.Parent:WaitForChild("BoostBar"))
-local C = UIStyle.Colours
-local SIZES = UIStyle.TextSizes
+local CoachDialogue = require(script.Parent:WaitForChild("CoachDialogue"))
+local PromptController = require(script.Parent:WaitForChild("PromptController"))
+local KitchenScene = require(script.Parent.Parent:WaitForChild("World"):WaitForChild("KitchenScene"))
+local KitchenClocks = require(script.Parent.Parent:WaitForChild("World"):WaitForChild("KitchenClocks"))
+
+local make, corner, outline, glow, words = UIFancy.make, UIFancy.corner, UIFancy.outline, UIFancy.glow, UIFancy.words
+local WHITE, INK = UIFancy.White, UIFancy.Ink
 
 local KitchenMenu = {}
 
-local PANEL_WIDTH = 620
-local PANEL_HEIGHT = 440
--- Farther than this from the cooker (studs) closes the menu.
-local WALK_AWAY = 16
-local QUICK_PICKS = { 1, 10, 50, 100, 250, 500 }
+local CARD = Vector2.new(600, 640)
+local STEAK_RED = Color3.fromRGB(214, 70, 46)
+local YELLOW_TOP, YELLOW_BOTTOM = Color3.fromRGB(255, 226, 92), Color3.fromRGB(232, 160, 24)
+local GREY_TOP, GREY_BOTTOM = Color3.fromRGB(150, 150, 156), Color3.fromRGB(92, 92, 100)
+local GREEN = Color3.fromRGB(110, 236, 96)
+-- The slider runs from 1 to this many steaks on a log scale (type a number for more, up to MaxSteaksPerCook).
+local SLIDER_MAX = 2000
+local QUICK_PICKS = { 10, 50, 100, 500 }
+-- How long a lifter is, for "N LIFTERS LONG" (studs).
+local LIFTER_LENGTH = 5.5
+
+local started = false
 
 -- "1 STEAK" / "250 STEAKS".
 local function steaksText(steaks: number): string
 	return string.format("%s STEAK%s", CoinConfig.format(steaks), if steaks == 1 then "" else "S")
 end
-
-local started = false
 
 function KitchenMenu.start()
 	if started then
@@ -59,271 +75,244 @@ function KitchenMenu.start()
 	gui.Name = "Kitchen"
 	gui.ResetOnSpawn = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.DisplayOrder = 8
+	gui.DisplayOrder = 31
 	gui.Enabled = false
 	UIStyle.fitToScreen(gui)
 
-	local holder, body = UIStyle.panel(gui, "Panel", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT))
-	holder.AnchorPoint = Vector2.new(0.5, 0.5)
-	UIStyle.titleTag(holder, "Tag", "KITCHEN", UDim2.fromOffset(-18, -30), UDim2.fromOffset(240, 52), nil, "star")
+	local tickSound = make("Sound", { SoundId = GearStatsConfig.Sounds.Tick, Volume = 0.35, Parent = gui })
+	local bigSound = make("Sound", { SoundId = GearStatsConfig.Sounds.Big, Volume = 0.6, Parent = gui })
 
-	-- The player's coins, top right.
-	UIStyle.coin(body, UDim2.new(1, -236, 0, 22), 26)
-	local coinsText = UIStyle.text(body, "Coins", UDim2.new(1, -202, 0, 20), UDim2.fromOffset(186, 30), SIZES.heading, C.yellow,
-		UIStyle.heading())
-	coinsText.TextWrapped = false
+	------------------------------------------------------------------ the card
+	local holder = make("Frame", {
+		Name = "Picker", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(CARD.X, CARD.Y), BackgroundTransparency = 1, Parent = gui,
+	})
+	local scene = make("Frame", {
+		Name = "Scene", BackgroundColor3 = Color3.fromRGB(34, 12, 10), BorderSizePixel = 0, Size = UDim2.fromScale(1, 1),
+		ClipsDescendants = true, Parent = holder,
+	})
+	corner(scene, UDim.new(0, 18))
+	outline(scene, 4)
+	glow(scene, Color3.new(0, 0, 0), 30, 0.4)
+	make("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new(Color3.fromRGB(96, 30, 20), Color3.fromRGB(26, 8, 6)),
+		Parent = scene,
+	})
+	local rays = UIFancy.rays(scene, UDim2.fromScale(0.5, 0.36), 1000, 14, STEAK_RED)
+	local halo = make("Frame", {
+		Name = "Halo", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36),
+		Size = UDim2.fromOffset(300, 300), BackgroundColor3 = STEAK_RED, BackgroundTransparency = 0.7, BorderSizePixel = 0,
+		Parent = scene,
+	})
+	corner(halo, UDim.new(1, 0))
+	glow(halo, Color3.fromRGB(255, 140, 90), 150, 0.2)
 
-	local function sound(id: string, volume: number): Sound
-		local made = Instance.new("Sound")
-		made.SoundId = id
-		made.Volume = volume
-		made.Parent = gui
-		return made
-	end
-	local tickSound = sound(GearStatsConfig.Sounds.Tick, 0.35)
-	local bigSound = sound(GearStatsConfig.Sounds.Big, 0.6)
+	-- The steak, in 3D, sized by the count.
+	local viewport = make("ViewportFrame", {
+		Name = "Steak", BackgroundTransparency = 1, Position = UDim2.fromScale(0, 0.1), Size = UDim2.new(1, 0, 0.5, 0),
+		Ambient = Color3.fromRGB(170, 150, 140), LightColor = Color3.fromRGB(255, 240, 220),
+		LightDirection = Vector3.new(-0.4, -1, 0.3), Parent = scene,
+	})
+	local world = make("WorldModel", { Parent = viewport })
+	local camera = make("Camera", { FieldOfView = 34, Parent = viewport })
+	viewport.CurrentCamera = camera
+	local steak: Model? = nil
+	local steakLength = 1
 
-	-- One frame per state; only one shows.
-	local function page(name: string): Frame
-		local frame = Instance.new("Frame")
-		frame.Name = name
-		frame.BackgroundTransparency = 1
-		frame.Position = UDim2.fromOffset(0, 56)
-		frame.Size = UDim2.new(1, 0, 1, -130)
-		frame.Visible = false
-		frame.Parent = body
-		return frame
-	end
+	UIFancy.vignette(scene, 0.2, 0.5)
+	local title = words(scene, "Title", UDim2.fromOffset(20, 14), UDim2.new(1, -90, 0, 44), 38, 3)
+	title.Text = "HOW MANY STEAKS?"
+	title.TextXAlignment = Enum.TextXAlignment.Left
+	local lengthBadge = words(scene, "Length", UDim2.new(0, 22, 0.52, 0), UDim2.new(1, -44, 0, 26), 22, 2,
+		Color3.fromRGB(255, 214, 190))
 
-	------------------------------------------------------------------ EMPTY: choose and cook
-	local emptyPage = page("Empty")
-	UIStyle.sectionHead(emptyPage, "Head", "HOW MANY STEAKS?", UDim2.fromOffset(24, 0), 220, PANEL_WIDTH - 48, "slashes")
-	local count = 10
-	local minus = UIStyle.button(emptyPage, "Minus", "−", UDim2.fromOffset(24, 34), UDim2.fromOffset(56, 56), "outline", function() end)
-	local countBox = Instance.new("TextBox")
-	countBox.Name = "Count"
-	countBox.Position = UDim2.fromOffset(90, 34)
-	countBox.Size = UDim2.fromOffset(180, 56)
-	countBox.BackgroundColor3 = C.navyDeep
-	countBox.BorderSizePixel = 0
-	countBox.TextColor3 = C.white
-	countBox.FontFace = UIStyle.heading()
-	countBox.TextSize = SIZES.big
-	countBox.ClearTextOnFocus = false
-	countBox.Text = tostring(count)
-	countBox.Parent = emptyPage
-	UIStyle.stroke(countBox, C.yellow, 2)
-	local plus = UIStyle.button(emptyPage, "Plus", "+", UDim2.fromOffset(280, 34), UDim2.fromOffset(56, 56), "outline", function() end)
-	local quick: { TextButton } = {}
+	-- The close button, top right.
+	local closeButton = UIFancy.button(scene, "Close", "X", UDim2.new(1, -64, 0, 12), UDim2.fromOffset(50, 46),
+		Color3.fromRGB(240, 90, 80), Color3.fromRGB(170, 36, 36), 28, function() end)
+
+	-- The count, big and outlined.
+	local countText = words(scene, "Count", UDim2.new(0, 0, 0.57, 0), UDim2.new(1, 0, 0, 70), 64, 4)
+	countText.TextColor3 = WHITE
+
+	-- The slider: a dark track, a yellow fill and a round knob.
+	local track = make("Frame", {
+		Name = "Track", Position = UDim2.new(0, 96, 0.71, 0), Size = UDim2.new(1, -192, 0, 22),
+		BackgroundColor3 = Color3.fromRGB(24, 10, 8), BorderSizePixel = 0, Parent = scene,
+	})
+	corner(track, UDim.new(1, 0))
+	outline(track, 3)
+	local fill = make("Frame", { Name = "Fill", Size = UDim2.fromScale(0.3, 1), BackgroundColor3 = WHITE, BorderSizePixel = 0, Parent = track })
+	corner(fill, UDim.new(1, 0))
+	make("UIGradient", { Color = ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM), Parent = fill })
+	local knob = make("TextButton", {
+		Name = "Knob", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.3, 0.5), Size = UDim2.fromOffset(44, 44),
+		BackgroundColor3 = WHITE, BorderSizePixel = 0, Text = "", AutoButtonColor = false, ZIndex = 3, Parent = track,
+	})
+	corner(knob, UDim.new(1, 0))
+	outline(knob, 3)
+	glow(knob, Color3.fromRGB(255, 220, 120), 18, 0.3)
+	local minus = UIFancy.button(scene, "Minus", "-", UDim2.new(0, 22, 0.71, -14), UDim2.fromOffset(56, 50),
+		Color3.fromRGB(110, 110, 120), Color3.fromRGB(60, 60, 70), 34, function() end)
+	local plus = UIFancy.button(scene, "Plus", "+", UDim2.new(1, -78, 0.71, -14), UDim2.fromOffset(56, 50),
+		Color3.fromRGB(110, 110, 120), Color3.fromRGB(60, 60, 70), 34, function() end)
+
+	-- Quick picks and a box to type any number.
+	local picks: { TextButton } = {}
 	for index, amount in ipairs(QUICK_PICKS) do
-		local column = (index - 1) % 3
-		local row = (index - 1) // 3
-		quick[index] = UIStyle.button(emptyPage, "Pick" .. amount, tostring(amount),
-			UDim2.fromOffset(356 + column * 82, 34 + row * 32), UDim2.fromOffset(74, 26), "outline", function()
-				count = amount
-				tickSound:Play()
-			end)
+		picks[index] = (UIFancy.button(scene, "Pick" .. amount, tostring(amount), UDim2.new(0, 22 + (index - 1) * 96, 0.8, 0),
+			UDim2.fromOffset(86, 40), Color3.fromRGB(255, 130, 100), Color3.fromRGB(190, 60, 40), 24, function() end))
 	end
-	local costText = UIStyle.text(emptyPage, "Cost", UDim2.fromOffset(24, 106), UDim2.fromOffset(280, 30), SIZES.heading, C.white,
-		UIStyle.heading())
-	local timeText = UIStyle.text(emptyPage, "Time", UDim2.fromOffset(310, 106), UDim2.fromOffset(290, 30), SIZES.heading, C.white,
-		UIStyle.heading())
-	local boostText = UIStyle.text(emptyPage, "Boost", UDim2.fromOffset(24, 142), UDim2.fromOffset(PANEL_WIDTH - 48, 30),
-		SIZES.heading, C.yellow, UIStyle.heading())
-	local hintText = UIStyle.text(emptyPage, "Hint", UDim2.fromOffset(24, 178), UDim2.fromOffset(PANEL_WIDTH - 48, 44), SIZES.small,
-		C.muted)
-	hintText.Text = "It keeps cooking while you train, compete or log off. Come back and eat it when it's ready."
-	local cookButton: TextButton
+	local typeBox = make("TextBox", {
+		Name = "Type", Position = UDim2.new(1, -196, 0.8, 0), Size = UDim2.fromOffset(174, 40), BackgroundColor3 = Color3.fromRGB(24, 10, 8),
+		TextColor3 = WHITE, PlaceholderText = "TYPE A NUMBER", PlaceholderColor3 = Color3.fromRGB(180, 140, 130),
+		FontFace = UIFancy.TitleFont, TextSize = 20, ClearTextOnFocus = true, Text = "", Parent = scene,
+	})
+	corner(typeBox, UDim.new(0, 12))
+	outline(typeBox, 3)
 
-	------------------------------------------------------------------ COOKING
-	local cookingPage = page("Cooking")
-	local cookingHead = UIStyle.sectionHead(cookingPage, "Head", "COOKING", UDim2.fromOffset(24, 0), 300, PANEL_WIDTH - 48, "slashes")
-	local track = UIStyle.frame(cookingPage, "Track", UDim2.fromOffset(24, 44), UDim2.fromOffset(PANEL_WIDTH - 48, 30), C.empty)
-	UIStyle.stroke(track, C.white, 2)
-	local fill = UIStyle.frame(track, "Fill", UDim2.fromOffset(0, 0), UDim2.fromScale(0, 1), C.yellow)
-	local leftText = UIStyle.text(cookingPage, "Left", UDim2.fromOffset(24, 88), UDim2.fromOffset(PANEL_WIDTH - 48, 40), SIZES.big,
-		C.white, UIStyle.heading())
-	local willText = UIStyle.text(cookingPage, "Will", UDim2.fromOffset(24, 136), UDim2.fromOffset(PANEL_WIDTH - 48, 30),
-		SIZES.body, C.yellow, UIStyle.heading())
-	local awayText = UIStyle.text(cookingPage, "Away", UDim2.fromOffset(24, 172), UDim2.fromOffset(PANEL_WIDTH - 48, 44), SIZES.small,
-		C.muted)
-	awayText.Text = "You can leave: it keeps cooking while you're away, even offline."
+	-- The badges: price, cooking time, boost.
+	local function badge(name: string, x: number, colour: Color3): TextLabel
+		local back = make("Frame", {
+			Name = name, Position = UDim2.new(x, 0, 0.885, 0), Size = UDim2.new(0.3, -8, 0, 30),
+			BackgroundColor3 = Color3.fromRGB(20, 8, 6), BackgroundTransparency = 0.15, BorderSizePixel = 0, Parent = scene,
+		})
+		corner(back, UDim.new(1, 0))
+		outline(back, 2, colour)
+		local label = words(back, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 18, 2, colour)
+		return label
+	end
+	local costBadge = badge("Cost", 0.035, Color3.fromRGB(255, 220, 90))
+	local timeBadge = badge("Time", 0.35, WHITE)
+	local boostBadge = badge("Boost", 0.665, GREEN)
 
-	------------------------------------------------------------------ READY
-	local readyPage = page("Ready")
-	local readyHead = UIStyle.sectionHead(readyPage, "Head", "READY!", UDim2.fromOffset(24, 0), 300, PANEL_WIDTH - 48, "star")
-	local mealText = UIStyle.text(readyPage, "Meal", UDim2.fromOffset(24, 40), UDim2.fromOffset(PANEL_WIDTH - 48, 40),
-		SIZES.heading, C.yellow, UIStyle.heading())
-	local warnText = UIStyle.text(readyPage, "Warn", UDim2.fromOffset(24, 96), UDim2.fromOffset(PANEL_WIDTH - 48, 60), SIZES.body,
-		C.white)
-	local eatButton: TextButton
-
-	-- The steak boost running now, at the bottom.
-	local activeText = UIStyle.text(body, "Active", UDim2.new(0, 24, 1, -64), UDim2.new(1, -230, 0, 44), SIZES.body, C.muted)
-	activeText.TextYAlignment = Enum.TextYAlignment.Center
-
-	local status = UIStyle.text(body, "Status", UDim2.new(0, 24, 1, -100), UDim2.new(1, -48, 0, 28), SIZES.body, C.red)
+	local cookButton, cookGradient, cookLabel = UIFancy.button(holder, "Cook", "COOK IT!", UDim2.new(0.5, -150, 1, -40),
+		UDim2.fromOffset(300, 64), YELLOW_TOP, YELLOW_BOTTOM, 34, function() end)
 
 	gui.Parent = player:WaitForChild("PlayerGui")
 
-	-- The last answer from the server, and when it arrived on this client's clock.
-	local view: KitchenRemotes.KitchenView? = nil
-	local viewAt = os.clock()
-	local open = false
+	------------------------------------------------------------------ state
+	local count = 50
 	local busy = false
-	local session = 0
-	local confirmReplace = false
+	local open = false
+	local dragging = false
 
 	local function coins(): number
 		local value = player:GetAttribute(CoinConfig.BalanceAttribute)
 		return if typeof(value) == "number" then value else 0
 	end
 
-	local function readyIn(): number
-		return if view then math.max(0, view.readyIn - (os.clock() - viewAt)) else 0
-	end
-	local function boostLeft(): number
-		return if view then math.max(0, view.boostLeft - (os.clock() - viewAt)) else 0
+	local function sliderShare(steaks: number): number
+		return math.clamp(math.log(math.max(steaks, 1)) / math.log(SLIDER_MAX), 0, 1)
 	end
 
-	local function drawEmpty()
-		count = math.clamp(math.floor(count), 1, KitchenConfig.MaxSteaksPerCook)
-		if not countBox:IsFocused() then
-			countBox.Text = tostring(count)
+	local function placeSteak()
+		local model = steak
+		if model == nil then
+			local template = ReplicatedStorage:FindFirstChild("KitchenModels")
+			local source = template and template:FindFirstChild("BigSteak")
+			if source and source:IsA("Model") then
+				model = source:Clone()
+				model:ScaleTo(1)
+				steakLength = math.max(model:GetExtentsSize().X, 0.1)
+				model:PivotTo(CFrame.new())
+				model.Parent = world
+				steak = model
+			end
 		end
-		local price = KitchenConfig.cost(count)
-		costText.Text = string.format("COST  %s COINS", CoinConfig.format(price))
-		timeText.Text = string.format("COOKS  %s", KitchenConfig.clockText(KitchenConfig.cookSeconds(count)))
-		boostText.Text = string.format("%s TRAINING GAINS FOR %d HOURS", KitchenConfig.percentText(KitchenConfig.steakPercent(count)),
-			KitchenConfig.BoostHours)
-		local enough = coins() >= price
-		cookButton.Text = if enough then "COOK" else "NOT ENOUGH COINS"
-		cookButton.AutoButtonColor = enough
-		cookButton.BackgroundColor3 = if enough then C.yellow else C.empty
-		cookButton.TextColor3 = if enough then C.ink else C.muted
+		if model then
+			-- Shown at the size it will be in the pan, up to what fits the card: the camera backs off as it grows.
+			local length = KitchenConfig.steakLength(count)
+			model:ScaleTo(length / steakLength)
+			local distance = 6 + length * 1.25
+			camera.CFrame = CFrame.lookAt(Vector3.new(0, distance * 0.55, -distance), Vector3.new(0, length * 0.05, 0))
+		end
 	end
 
 	local function draw()
-		coinsText.Text = string.format("%s %s", CoinConfig.format(coins()), CoinConfig.Name)
-		local current = view
-		local steaks = if current then current.steaks else 0
-		local left = readyIn()
-		emptyPage.Visible = steaks < 1
-		cookingPage.Visible = steaks >= 1 and left > 0
-		readyPage.Visible = steaks >= 1 and left <= 0
-		cookButton.Visible = emptyPage.Visible
-		eatButton.Visible = readyPage.Visible
-		if emptyPage.Visible then
-			drawEmpty()
-		elseif cookingPage.Visible and current then
-			cookingHead.Text = "COOKING " .. steaksText(steaks)
-			local total = math.max(current.cookSeconds, 1)
-			fill.Size = UDim2.fromScale(math.clamp(1 - left / total, 0, 1), 1)
-			leftText.Text = string.format("READY IN %s", KitchenConfig.clockText(left))
-			willText.Text = string.format("EAT IT FOR %s TRAINING GAINS FOR %d HOURS",
-				KitchenConfig.percentText(KitchenConfig.steakPercent(steaks)), KitchenConfig.BoostHours)
-		elseif readyPage.Visible and current then
-			readyHead.Text = steaksText(steaks) .. " READY!"
-			local percent = KitchenConfig.steakPercent(steaks)
-			mealText.Text = string.format("%s TRAINING GAINS FOR %d HOURS", KitchenConfig.percentText(percent),
-				KitchenConfig.BoostHours)
-			local running = current.boostPercent > 0 and boostLeft() > 0
-			if running and current.boostPercent > percent + 1e-6 then
-				warnText.Text = string.format("Your %s steak boost (%s left) is bigger. Eating this replaces it.",
-					KitchenConfig.percentText(current.boostPercent), KitchenConfig.clockText(boostLeft()))
-				warnText.TextColor3 = C.red
-				eatButton.Text = if confirmReplace then "EAT ANYWAY" else "EAT"
-			elseif running then
-				warnText.Text = string.format("Replaces your %s steak boost and starts a fresh %d hours.",
-					KitchenConfig.percentText(current.boostPercent), KitchenConfig.BoostHours)
-				warnText.TextColor3 = C.white
-				eatButton.Text = "EAT"
-			else
-				warnText.Text = "Strength and technique from training both go up while it lasts."
-				warnText.TextColor3 = C.white
-				eatButton.Text = "EAT"
-			end
-		end
-		if current and current.boostPercent > 0 and boostLeft() > 0 then
-			activeText.Text = string.format("ACTIVE: STEAK %s TRAINING, %s LEFT", KitchenConfig.percentText(current.boostPercent),
-				KitchenConfig.clockText(boostLeft()))
-			activeText.TextColor3 = C.yellow
-		else
-			activeText.Text = "NO STEAK BOOST RUNNING"
-			activeText.TextColor3 = C.muted
-		end
+		count = math.clamp(math.floor(count), 1, KitchenConfig.MaxSteaksPerCook)
+		countText.Text = steaksText(count)
+		local share = sliderShare(count)
+		fill.Size = UDim2.fromScale(share, 1)
+		knob.Position = UDim2.fromScale(share, 0.5)
+		local price = KitchenConfig.cost(count)
+		costBadge.Text = string.format("%s COINS", CoinConfig.format(price))
+		timeBadge.Text = "COOKS " .. KitchenConfig.clockText(KitchenConfig.cookSeconds(count))
+		boostBadge.Text = string.format("%s FOR %dH", KitchenConfig.percentText(KitchenConfig.steakPercent(count)),
+			KitchenConfig.BoostHours)
+		local lifters = KitchenConfig.steakLength(count) / LIFTER_LENGTH
+		lengthBadge.Text = if lifters < 1.15 then "ABOUT ONE LIFTER LONG"
+			else string.format("ABOUT %s LIFTERS LONG", if lifters < 10 then string.format("%.1f", lifters) else tostring(math.floor(lifters)))
+		local enough = coins() >= price
+		cookLabel.Text = if enough then "COOK IT!" else "NOT ENOUGH COINS"
+		cookGradient.Color = if enough then ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM) else ColorSequence.new(GREY_TOP, GREY_BOTTOM)
+		placeSteak()
 	end
 
-	local function apply(fresh: any)
-		if typeof(fresh) == "table" and typeof(fresh.steaks) == "number" then
-			view = fresh
-			viewAt = os.clock()
-			BoostBar.show(fresh)
-		end
+	local function setFromShare(share: number)
+		count = math.max(1, math.floor(math.exp(math.clamp(share, 0, 1) * math.log(SLIDER_MAX)) + 0.5))
+		draw()
 	end
 
-	local function close()
-		session += 1
+	local spin = 0
+	local spinConnection: RBXScriptConnection? = nil
+	local function closePicker()
 		open = false
 		gui.Enabled = false
-		confirmReplace = false
+		PromptController.hide("KitchenPicker", false)
+		if spinConnection then
+			spinConnection:Disconnect()
+			spinConnection = nil
+		end
+	end
+	local function openPicker()
+		open = true
+		gui.Enabled = true
+		PromptController.hide("KitchenPicker", true)
+		draw()
+		if spinConnection == nil then
+			spinConnection = RunService.RenderStepped:Connect(function(dt)
+				spin += dt
+				rays.Rotation = (spin * 8) % 360
+				local model = steak
+				if model then
+					model:PivotTo(CFrame.Angles(0, spin * 0.6, 0))
+				end
+			end)
+		end
 	end
 
-	cookButton = UIStyle.button(body, "CookButton", "COOK", UDim2.new(1, -224, 1, -60), UDim2.fromOffset(200, 44), "primary",
-		function()
-			if busy or coins() < KitchenConfig.cost(count) then
-				return
-			end
-			busy = true
-			status.Text = ""
-			local ok, answer = pcall(function()
-				return remotes.cook:InvokeServer(count)
-			end)
-			busy = false
-			if ok and typeof(answer) == "table" then
-				apply(answer.view)
-				if answer.outcome == "Started" then
-					bigSound:Play()
-				elseif answer.outcome == "NotEnough" then
-					status.Text = "Not enough coins."
-				elseif answer.outcome == "Busy" then
-					status.Text = "The cooker is busy. Try again."
-				else
-					status.Text = "That didn't work. Try again."
-				end
-			end
-			draw()
-		end)
-	eatButton = UIStyle.button(body, "EatButton", "EAT", UDim2.new(1, -224, 1, -60), UDim2.fromOffset(200, 44), "primary", function()
-		local current = view
-		if busy or current == nil then
-			return
+	-- The slider: drag the knob or press anywhere on the track.
+	local function slideTo(x: number)
+		local left, width = track.AbsolutePosition.X, track.AbsoluteSize.X
+		if width > 0 then
+			setFromShare((x - left) / width)
 		end
-		local bigger = current.boostPercent > KitchenConfig.steakPercent(current.steaks) + 1e-6 and boostLeft() > 0
-		if bigger and not confirmReplace then
-			confirmReplace = true
-			draw()
-			return
+	end
+	knob.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
 		end
-		busy = true
-		status.Text = ""
-		local ok, answer = pcall(function()
-			return remotes.eat:InvokeServer()
-		end)
-		busy = false
-		confirmReplace = false
-		if ok and typeof(answer) == "table" then
-			apply(answer.view)
-			if answer.outcome == "Eaten" then
-				bigSound:Play()
-			elseif answer.outcome ~= "Eaten" then
-				status.Text = "Not ready yet."
-			end
-		end
-		draw()
 	end)
-	UIStyle.exitButton(holder, "Back", "BACK", UDim2.new(1, -150, 1, 20), close)
-
+	track.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			slideTo(input.Position.X)
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			slideTo(input.Position.X)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			if dragging then
+				tickSound:Play()
+			end
+			dragging = false
+		end
+	end)
 	minus.Activated:Connect(function()
 		count -= if count > 100 then 10 else 1
 		tickSound:Play()
@@ -334,69 +323,156 @@ function KitchenMenu.start()
 		tickSound:Play()
 		draw()
 	end)
-	for _, button in ipairs(quick) do
-		button.Activated:Connect(draw)
+	for index, button in ipairs(picks) do
+		button.Activated:Connect(function()
+			count = QUICK_PICKS[index]
+			tickSound:Play()
+			draw()
+		end)
 	end
-	countBox.FocusLost:Connect(function()
-		local typed = tonumber((string.gsub(countBox.Text, "[^%d]", "")))
+	typeBox.FocusLost:Connect(function()
+		local typed = tonumber((string.gsub(typeBox.Text, "[^%d]", "")))
 		if typed then
 			count = typed
 		end
+		typeBox.Text = ""
 		draw()
 	end)
-
-	local function openAt(prompt: ProximityPrompt)
-		if open then
-			return
-		end
-		open = true
-		session += 1
-		local mine = session
-		status.Text = ""
-		confirmReplace = false
-		gui.Enabled = true
-		draw()
-		task.spawn(function()
-			for _ = 1, 3 do
-				local ok, fresh = pcall(function()
-					return remotes.get:InvokeServer()
-				end)
-				if ok and fresh then
-					apply(fresh)
-					break
-				end
-				task.wait(0.5)
-			end
-			if session == mine then
-				draw()
-			end
-		end)
-		-- Walking away closes it; the timer ticks while open.
-		local spot = prompt.Parent
-		task.spawn(function()
-			while session == mine do
-				task.wait(1)
-				local character = player.Character
-				local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-				if spot and spot:IsA("BasePart") and (root == nil or (root.Position - spot.Position).Magnitude > WALK_AWAY) then
-					close()
-					return
-				end
-				if session == mine then
-					draw()
-				end
-			end
-		end)
-	end
-
-	ProximityPromptService.PromptTriggered:Connect(function(prompt, triggeredBy)
-		if triggeredBy == player and prompt:HasTag(KitchenConfig.PromptTag) then
-			openAt(prompt)
-		end
-	end)
+	closeButton.Activated:Connect(closePicker)
 	player:GetAttributeChangedSignal(CoinConfig.BalanceAttribute):Connect(function()
 		if open then
 			draw()
+		end
+	end)
+
+	cookButton.Activated:Connect(function()
+		if busy or coins() < KitchenConfig.cost(count) then
+			return
+		end
+		busy = true
+		local ok, answer = pcall(function()
+			return remotes.cook:InvokeServer(count)
+		end)
+		busy = false
+		if ok and typeof(answer) == "table" then
+			if typeof(answer.view) == "table" then
+				BoostBar.show(answer.view)
+			end
+			if answer.outcome == "Started" then
+				bigSound:Play()
+				closePicker()
+				-- The chef scene: into the grinder, the meat mountain, onto the pan. Skippable once watched to the end
+				-- (user 2026-11-21: "Skip after first time"); the first full watch is saved.
+				local seen = typeof(answer.view) == "table" and answer.view.sceneSeen == true
+				task.spawn(function()
+					local finished = KitchenScene.play(count, seen)
+					if finished and not seen then
+						pcall(function()
+							return remotes.sceneSeen:InvokeServer()
+						end)
+					end
+				end)
+				return
+			end
+			cookLabel.Text = if answer.outcome == "NotEnough" then "NOT ENOUGH COINS"
+				elseif answer.outcome == "Busy" then "YOUR PAN IS BUSY" else "TRY AGAIN"
+		end
+	end)
+
+	------------------------------------------------------------------ the chef's conversation
+	local function talk(prompt: ProximityPrompt)
+		local figure = prompt:FindFirstAncestorOfClass("Model")
+		local converse = CoachDialogue.converse
+		if figure == nil or converse == nil or open then
+			return
+		end
+		local view: any = nil
+		local ok, fresh = pcall(function()
+			return remotes.get:InvokeServer()
+		end)
+		if ok and typeof(fresh) == "table" then
+			view = fresh
+			BoostBar.show(fresh)
+		end
+		local wantsSteaks = false
+		converse(figure, "Chef", function(say, ask)
+			local steaks = if view then view.steaks else 0
+			if steaks >= 1 and view.readyIn > 0 then
+				say(string.format("Your %s are on the pan. Ready in %s.", string.lower(steaksText(steaks)),
+					KitchenConfig.clockText(view.readyIn)))
+				while true do
+					local choice = ask({
+						{ text = "Skip the wait", value = "Skip" },
+						{ text = "Meet meals?", value = "Meals" },
+						{ text = "Bye.", value = "Bye" },
+					})
+					if choice == nil or choice == "Bye" then
+						return
+					elseif choice == "Skip" then
+						say("The fast lane isn't open yet. Patience builds muscle too.")
+					else
+						say("Meet meals are coming soon. I'm still perfecting the recipe.")
+					end
+				end
+			elseif steaks >= 1 then
+				say(string.format("Your %s are done! Go eat at your pan before they get cold.", string.lower(steaksText(steaks))))
+				ask({ { text = "On my way!", value = "Bye" } })
+			else
+				say("What are we cooking today?")
+				while true do
+					local choice = ask({
+						{ text = "Steaks", value = "Steaks" },
+						{ text = "Meet meals", value = "Meals" },
+						{ text = "Bye.", value = "Bye" },
+					})
+					if choice == nil or choice == "Bye" then
+						return
+					elseif choice == "Steaks" then
+						say("How many? The more you bring, the bigger I cook it.")
+						wantsSteaks = true
+						return
+					else
+						say("Meet meals are coming soon. I'm still perfecting the recipe.")
+					end
+				end
+			end
+		end)
+		if wantsSteaks then
+			openPicker()
+		end
+	end
+
+	-- Eating at your own pan (KitchenClocks puts the "Eat" prompt there when it's done): the boost starts, with a big pop.
+	local eating = false
+	KitchenClocks.onEat(function()
+		if eating then
+			return
+		end
+		eating = true
+		local ok, answer = pcall(function()
+			return remotes.eat:InvokeServer()
+		end)
+		eating = false
+		if ok and typeof(answer) == "table" then
+			if typeof(answer.view) == "table" then
+				BoostBar.show(answer.view)
+			end
+			if answer.outcome == "Eaten" and typeof(answer.percent) == "number" then
+				local chomp = make("Sound", { SoundId = KitchenConfig.Sounds.Eat, Volume = 0.9, Parent = gui })
+				chomp:Play()
+				task.delay(3, function()
+					chomp:Destroy()
+				end)
+				bigSound:Play()
+				BoostBar.celebrate(string.format("%s TRAINING FOR %dH", KitchenConfig.percentText(answer.percent),
+					KitchenConfig.BoostHours))
+			end
+		end
+	end)
+
+	ProximityPromptService.PromptTriggered:Connect(function(prompt, triggeredBy)
+		if triggeredBy == player and prompt:HasTag(KitchenConfig.PromptTag) then
+			task.spawn(talk, prompt)
 		end
 	end)
 end

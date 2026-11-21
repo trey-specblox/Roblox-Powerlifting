@@ -513,6 +513,12 @@ function PlayerDataService.getKitchen(player: Player): ProfileOperations.Kitchen
 	return if data then ProfileOperations.getKitchen(data, os.time()) else nil
 end
 
+-- The chef scene was watched to the end once: from now on it can be skipped (GAME_DESIGN §40.7).
+function PlayerDataService.markChefSceneSeen(player: Player): boolean
+	local data = activeData(player, "markChefSceneSeen")
+	return data ~= nil and ProfileOperations.markChefSceneSeen(data)
+end
+
 function PlayerDataService.startCook(player: Player, steaks: number): (ProfileOperations.CookOutcome?, number?)
 	local data = activeData(player, "startCook")
 	if data == nil then

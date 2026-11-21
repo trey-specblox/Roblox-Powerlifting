@@ -7277,8 +7277,14 @@ singlets. The shirt shall be slightly showing through the empty space of the sin
 references (studied in References/Body Study.md; references only, our bodies are our own). Claude built examples;
 after two shoulder fixes the user approved: **"Yes, looks good."** This replaces §38.5's realistic skeleton.
 
-- **The game's original Roblox block skeleton stays.** The full-size Roblox head sits into the body with no neck; every
-  existing animation keeps working.
+- **The game's original Roblox block skeleton stays.** The full-size Roblox head sits into the body; every existing
+  animation keeps working.
+- **[CHANGED BY THE USER, 2026-11-20] The neck shows.** Was "no neck". The user, seeing the coaches, the chef, the
+  spotters and the referees in Studio: "they have no neck, and their shirts are covering almost to their chin fix
+  that ... If i seen my neck was covered or i just had no neck ... i would tell you something." The tee's collar is now
+  a round crew neck at the base of the neck (front lower than back), so skin shows between the chin and the collar on
+  every build (art/scripts/tee_neck_fix.py, clothes v13). The bodies themselves did not change. Every worn piece
+  (clothes, gear, hats, aprons) must fit like this: nothing covering the neck, nothing floating off the body.
 - **Style:** every muscle its own smooth, rounded shape, fused into one surface with clean creases where they meet
   (`art/scripts/build_cartoon_body_02.py`). Heavy bodies are smooth and round with a low belly; skinny bodies are
   slim with level shoulders.
@@ -7737,7 +7743,7 @@ can fit"):**
   fills the strip beside the camera cutout, right to the screen's edge. Computers keep the close-up portrait, unless
   the window is so short the head would go off the top; then they frame the whole coach the same way.
 
-### 40.7 Steaks and the Kitchen (user, 2026-11-19; PART 1 BUILT: boosts, cooking, menu, timer; the building is next)
+### 40.7 Steaks and the Kitchen (user, 2026-11-19; BUILT 2026-11-20 with sounds; the lifter's dumping animation is still to come)
 
 | Question | Decision |
 |---|---|
@@ -7777,6 +7783,187 @@ can fit"):**
   and the big steak are one shared model each (40 pans stay cheap to draw).
 - **REMINDER (user):** the Kitchen's screens must not be the same plain box as the other panels; redo them from the UI kit
   when the chef is built.
+
+**As built (2026-11-20, Claude; change any):**
+- **The way in:** the CENTRAL KITCHEN house in the front square (pitched roof, gables, awnings, chimney) has an
+  **Enter** prompt at its door; the pan hall's **EXIT** door has a **Leave** prompt back out. The Teleport menu has a
+  **KITCHEN** stop.
+- **The chef** stands at the front of the hall beside the meat grinder: white top, a CENTRAL chef's hat and a navy
+  CENTRAL apron. Talking to him opens the same dialogue as the coaches (panel, portrait, answer bubbles): Steaks /
+  Meet meals (coming soon) / Bye; while cooking he says how long is left and offers "Skip the wait" (the Robux skip,
+  not sold yet); when it's done he sends you to your pan.
+- **The steak picker** (from the UI kit, not a plain box): turning rays and a glow in steak red, the big steak in 3D
+  growing with the count ("ABOUT 3.9 LIFTERS LONG"), a big outlined count, a chunky slider (1 to 2,000; type a number
+  for more), quick picks 10 / 50 / 100 / 500, price / cooking time / boost badges, and a glossy COOK IT! button.
+- **The chef scene** (about 18 s, only on the cooking player's screen). [CHANGED BY THE USER, 2026-11-21: the first
+  version (about 7 s) was "too fast and weird, like the meat just walks away": six hard camera cuts, the meat jumped
+  off the floor onto him, and he held it in the "Long V" victory pose, fists in a wide V, so it floated.] Now: the bag
+  (a cow from 100 steaks, more cows from 1,000) drops into the grinder; it churns and squirts meat into a growing mound
+  while the chef walks over; he **squats, slides both open palms under it, stands with it at his chest and drives it
+  up and forward** (his own moves, `art/scripts/chef_animations.py`); he **carries it back to his spot**, turns to your
+  pan and holds it up while "CHEF: Alright, I'll handle this for you!" types over the scene; then he **winds up and
+  heaves it** in an arc onto your pan with a burst of steam. The camera glides between fewer, longer shots. The meat
+  rests on his palms the whole time (its real underside, measured), clear of his tall hat. It plays on a copy of the
+  chef on your own screen, so his hands and the meat always keep time; other players see him standing at his spot.
+  The grinder now stands in front of him to his left, its spout toward the hall's middle, so the mound grows in the
+  open (beside him, the meat he held up ran into the hopper when he turned to the pans). The lifter carrying and
+  dumping the bag needs its own animation (a later step): for now the bag drops in from above the shot. It always
+  plays the first time. **[DECIDED BY THE USER, 2026-11-21: "Skip after first time"]** Once a player has watched it
+  to the end, a SKIP button (bottom right, the UI kit's glossy button) shows on every later cook; it is free (no
+  pass). Watching to the end is saved (player data version 32, `kitchen.sceneSeen`); skipping never counts as
+  watching.
+- **The restaurant's name is W Chews** (user 2026-11-21; said "Double-u Chews"). Its name floats over the entrance
+  in the game's floating-name style (like the gym's and the meets'; the flat sign board is hidden: user "i told you
+  not to have just boring squares for signs"), "W CHEWS / Steaks for a training boost", seen within 260 studs; while
+  a player has steaks cooking, their own time left floats on top of it ("YOUR STEAKS 4:01", then "YOUR STEAKS ARE
+  READY!"), only on their screen.
+- **The chef greets you** when you walk into the hall (user 2026-11-21): "Hey, welcome into W Chews!" in his voice
+  (ElevenLabs, The Sneakerhead Chef) with the words in the dialogue caption; once per visit, not again within 25 s,
+  never over his scene.
+- **No prompts over NPC screens** (user 2026-11-21: "once your talking to one npc or any npcs, the Ui does not just
+  stay on the screen"): while any NPC conversation, the steak picker, the chef scene, the shop or the celebration
+  spinner is open, every "E ..." prompt tile is hidden on that player's screen (PromptController.hide). Any new NPC
+  screen must do the same.
+- **W CHEWS REDESIGN (user 2026-11-21, NOT BUILT YET; plan waiting for the user's answers):** a "beautiful", fancy
+  restaurant (the user's photos: a glowing glass-fronted restaurant entrance with steps, a fancy dining room, big
+  clean stainless commercial kitchens) laid out as the user's plan: player entrance -> chef / steak handoff counter ->
+  giant blender (left) and giant pan (right) -> cold storage, prep area and sinks along the back; a large, clean,
+  high-capacity commercial back-of-house kitchen (stainless counters, a long cooking line under hoods, central prep
+  islands, wide walkways, a hero meat blender like the user's photo of a stainless mixer-grinder on red wheels; no
+  home-kitchen look, no random clutter, no novelty checker floor, no empty giant room). Behind it all a small doorway
+  marked **EMPLOYEES ONLY** into a back room in the same beautiful style, with an NPC **mafia boss cow**. Games there
+  are to be discussed later ("players are only gambling coins"). **Claude's warning (2026-11-21):** Roblox's rules ban
+  simulated gambling, including betting in-experience currency or items (since 2023); a casino LOOK is allowed, but
+  betting coins on chance games is not, so the room's games need another shape (see DEVELOPMENT_STATUS).
+  - **[DECIDED BY THE USER, 2026-11-21: "Keep 40 own pans"]** every player keeps their own giant pan (40), in rows on
+    the kitchen floor beside the grinder, instead of the plan's one giant pan.
+  - **THE NEW CHEF SCENE (user 2026-11-21, for the redesign; REPLACES the scoop / carry / throw built the same day):**
+    after the player picks how many steaks, the chef **presses a button** (or similar) to start the blender; the
+    steaks (a bag) or cows **fall from above** (a chute in the ceiling) into it; it blends; the meat falls into **a
+    little area showing the lifter their mountain of meat**; then **a tube picks the meat up and drops it right on top
+    of their pan**. Layout pieces this needs: a ceiling drop chute over the grinder, a button panel by the chef's
+    counter, a display bay under the grinder's outlet, an overhead tube line with a drop over every pan. The chef
+    needs a button-press animation (the scoop / hold / throw animations stay in the repo, unused).
+  - **The hero grinder** (built 2026-11-21; **look APPROVED by the user: "Yes, upload it"**; uploaded and IN THE GAME,
+    standing in the old hall until the new one is built): `art/scripts/build_kitchen_grinder_02.py` from the user's
+    photo of a stainless mixer-grinder (tub with a rounded bottom, grinding head and outlet with its ring and hood,
+    square-tube frame on red wheels, coiled cord, navy CENTRAL plate, yellow caution plates); 4,133 triangles, CHECK
+    PASSED; preview `art/previews/KitchenGrinder_02_Preview.png`, in the game
+    `art/previews/KitchenGrinder_02_InGame_Front.jpg` / `_Back.jpg`.
+  - **[DECIDED BY THE USER, 2026-11-21] THE FLOOR PLAN: "Yes build your plan, BUT ... i want players to enter in the
+    middle to be able to see the whole kitchen, so like the fancy entrance, then straight across youll see the kitchen
+    and the process."** Claude's drawing of that, to scale: `art/previews/WChews_FloorPlan_02.png` (plan 01, with the
+    entrance at the left end, is superseded). Walking in at the middle you look straight down the centre line: the
+    fancy front (glass doors, dining tables, hanging lights), the chef and steak counter with the start button, an
+    open wall into the kitchen, the meat display bay and behind it the giant grinder under the ceiling chute, then
+    prep islands; **20 pans on each side** (4 columns x 5 rows, the pans and steaks the size they are now); the
+    cooking line under hoods along the kitchen's front wall on both sides of the opening; cold storage, prep counters
+    and sinks along the back wall; the EMPLOYEES ONLY door at the back right, the back room behind it. The kitchen is
+    about 570 x 285 studs. To put "the process" straight ahead, the grinder moved from the left to the middle and the
+    pans were split left and right (the user's first plan had the grinder left and all 40 pans right):
+    **[APPROVED BY THE USER, 2026-11-21: "Yes, build plan 02"]**.
+  - **PLAN 02 AS MODELLED IN BLENDER (2026-11-21; LOOK APPROVED BY THE USER: "Yes upload it"; UPLOADED AND IN THE GAME
+    the same day, pictures `art/previews/WChews_InGame_01_FromTheDoor.jpg`, `_02_Kitchen.jpg`, `_03_ChefCounter.jpg`;
+    the Blender pictures were
+    `art/previews/WChews_Preview_01_Front.jpg`, `_02_Kitchen.jpg`, `_03_BackWall.jpg`, `_04_TopNoRoof.png`):**
+    the hall `art/scripts/build_wchews_hall_01.py` (fancy front 160 x 90, 22 high: glass front wall with glowing
+    doors, walnut floor and wainscot, deep green walls with navy panels in brass frames, a coffered ceiling, a
+    burgundy carpet from the doors to the counter, W CHEWS glowing over the opening; kitchen 570 x 285, 36 high:
+    slate tile floor, white tiled walls with a teal band, light panels; the back room's shell, burgundy carpet and
+    walnut panelling) and the kit `art/scripts/build_wchews_kit_01.py` (counter, range, fryer, hood, glass fridge,
+    sink, prep island, the chef's walnut service counter, round dining table, chair in teal / burgundy / mustard,
+    brass pendant, chandelier, host stand, plant, EMPLOYEES ONLY door, and the chef scene's machines: start-button
+    panel, ceiling chute, display bay with a glowing YOUR MEAT sign, and the overhead meat tube with a drop over
+    every pan). Where each copy stands is ONE list, `art/scripts/wchews_layout.py`, used by the Blender preview and
+    (generated into Luau) by the game. The grinder is scaled to 2.0 (13 x 19 x 27 studs) so it reads from the doors
+    and a cow fits it. The kitchen's wall equipment is scaled 1.6 to suit the giant pans. The back room's furniture
+    and the mafia boss cow, and the restaurant's front building in the square, come after this.
+  - **[USER, 2026-11-21] THE COW IN THE CHEF SCENE:** while the cooking cinematic plays, **the mafia boss cow is seen
+    walking into the EMPLOYEES ONLY room**: "a small detail that if players just look down or something they see a
+    cow on 2 legs opening and walking through the door, so it raises suspicion" and makes players want to walk
+    over there. A background detail, never the shot's subject.
+  - **[USER, 2026-11-21] THE BACK ROOM'S GAMES:** "I said gambling just for context. We can have skill games, not
+    necessarily 'gambling', and we can include a free daily spin, which we could monetize 'spin again'." So: **skill
+    games against the cow** and **one free daily spin**, with a Robux **SPIN AGAIN**. The user asked whether a coin
+    buy-in that pays more back on a win is possible. **Claude's answer (Roblox's rules checked 2026-11-21):** Roblox's
+    Community Standards ban simulated gambling and say no Robux or in-game items of value may be exchanged in
+    connection with it; no official rule says a paid-entry SKILL game is allowed, so a coin buy-in is a risk to the
+    whole game and Claude recommends against it: the games are **free to play with a few tries a day, the cow puts
+    up the prize** (he "bets against you", you risk nothing). The **paid spin** IS allowed as a "paid random item"
+    under three rules: the odds of every prize are shown before buying, every spin wins something (a spin that can
+    win nothing counts as gambling), and it is hidden for players whose country bans paid random items
+    (`PolicyService` `ArePaidRandomItemsRestricted`). It needs a Developer Product the user creates. Which skill
+    games, the prizes and the spin's prize list are still to be agreed; the room's look is built first.
+  - **[USER, 2026-11-21, later the same day] NO COIN BUY-IN; A LUCK SYSTEM INSTEAD ("Alright no coins, what about
+    we make a 'luck' system like other games"):**
+    - **Luck** is a multiplier on your chances at every rollable: crates "and stuff", "and that goes for every
+      rollable, even the rare suit meet drops": more luck = better odds of the rarer results.
+    - **The cow's wheel** gives the multiplier: one **free spin a day**; "you can only have **one multiplier** from
+      the wheel"; the wheel has good results (the user's examples: 1.5x, 10x) **and a bad one (0.8x), "so there is
+      risk"**.
+    - **Games against the cow earn SPINS** (beat him, get a spin), with **a limit on how many times you can play**,
+      "so players lean on using the **SPIN NOW** button for Robux".
+    - **Claude's check against Roblox's rules (2026-11-21; Claude's reading, not a ruling from Roblox):** a luck
+      wheel is a "paid random item" once Robux can buy a spin, which Roblox allows (it names prize wheels) under
+      conditions: **(1)** the odds of every result are shown before buying; **(2)** hidden for players where
+      `PolicyService` `ArePaidRandomItemsRestricted` is true; **(3)** because luck changes the odds of other
+      rollables, any crate bought with Robux (or with something bought with Robux) must show the player's REAL odds
+      with their luck applied. **Claude's two recommended guard rails, WAITING FOR THE USER'S OK:** a spin bought
+      with Robux never leaves you worse off (it can't land below 1x, and you keep your current multiplier if it is
+      higher), because paying Robux for a result that can be a loss is what Roblox's gambling rule is aimed at; the
+      0.8x risk stays on the free daily spin and on spins won from the cow. And nothing is ever staked on the cow's
+      games: losing costs one of the day's tries, never luck, spins or coins.
+    - **[USER, 2026-11-21] THE 0.8x STAYS ON THE WHEEL FOR EVERY SPIN, PAID ONES TOO:** "i dont see how that is
+      gambling its one of the drops you get from spinning, it just happen to make your luck a little 'worse' ... i
+      think it will pass". Claude agrees it most likely passes: Roblox's written rule for paid random items asks
+      for the odds to be shown, not for every result to be good, and every spin still gives a multiplier. So
+      Claude's first guard rail ("a paid spin never leaves you worse off") is DROPPED as a rule matter. What stays
+      required: the odds shown before buying, the country check, real crate odds with luck applied. Claude's
+      remaining suggestion is about how it feels, not the rules (the user's call, not decided): after a PAID spin
+      let the player choose to keep their old multiplier or take the new one, so nobody pays Robux and ends up
+      with worse luck than they walked in with.
+    - **Still to agree:** how long a multiplier lasts (Claude suggests until the next day's free spin), the wheel's
+      full list of results and their odds, the size of the top result (10x on rare suits could flood the game with
+      them: the rare suit plan's pacing needs a cap), which games, how many tries a day, the Robux price (a Developer
+      Product the user creates).
+  - **THE NEW CHEF SCENE IS BUILT (2026-11-21, Studio-tested):** button press (the chef's own animation, his open
+    palm landing on the button), the bag or cows out of the ceiling chute, the grind into the display bay, the meat
+    drawn up the funnel in lumps and run along the tube to the player's own pan, the steak appearing in steam; about
+    14 s. The cow's walk through the EMPLOYEES ONLY door is coded and waits for his model (built with the back
+    room). New sounds for it (button, chute, tube, nozzle) are not made yet (ElevenLabs cost to be agreed).
+  - **[USER, 2026-11-21] NAME TAGS** stay ON TOP of every character with one ("fix the ui sinking inside the chef,
+    and not staying on top of the character, make sure it is like that for every person with a name tag"): the
+    tag's bottom edge sits just above the head or hat at every distance (MeetFigures.seatTag).
+  - **[USER, 2026-11-21] TALK TO THE CHEF FROM THE COUNTER** ("not have to jump over the barricade"): he stands close
+    behind his counter and his prompt reaches across it.
+  - **[USER, 2026-11-21] THE BACK ROOM, THE MAFIA BOSS COW AND THE LUCK WHEEL COME NEAR THE END** ("we dont
+    [want] to build that now, lets pick something else and work on that near the end").
+  - **[USER, 2026-11-21] THE RESTAURANT IS LIT** ("Light the restaurant"): no sunlight inside; the dining room is dim
+    and warm (a pool of light under every pendant, the chandelier, the wall lights), the kitchen bright and white
+    (KitchenLights). **THE FURNITURE IS SOLID** ("Make furniture solid"): chairs, plants, the host stand, and the
+    giant pans (a lifter can jump into a pan and stand on its floor).
+  - **[USER, 2026-11-21] THE OUTSIDE BUILDING IS APPROVED AND IN THE GAME** ("Upload the new building"):
+    WChewsFront_01 stands in the front square in place of the cream cottage, with the Enter prompt on the landing
+    in front of its glass doors and the floating W CHEWS name over its roof.
+  - **[USER, 2026-11-21] THE DINING ROOM STAYS AS BUILT**: the photos "were just references we can keep it how it
+    is" (green walls, cream ceiling, white tablecloths); no restyle to kitchen2.png.
+  - **[USER, 2026-11-21] THE SCENE HAS ITS OWN MACHINE SOUNDS** ("Make the sound new sound affects"): the button's
+    clunk and a quiet start buzzer, the rumble down the chute, the rush along the tube, and a plop for every lump
+    that lands on the pan (ElevenLabs; KitchenConfig.Sounds Button, Buzzer, Chute, Tube, Plop).
+  - **[USER, 2026-11-21] THE OUTSIDE BUILDING MUST MATCH THE INSIDE AND THE PHOTOS** ("update the shell"): modelled
+    from `References/W Chews/kitchen1.png` (stepped pale wall panels with glowing strips between them, a tall glass
+    entrance glowing from inside, wide steps with a light under each edge, black handrails, the burgundy carpet, a
+    terrace with a glass rail), with sloping roofs because of the no-flat-roofs rule; waiting for the user's OK
+    before upload (`art/previews/WChewsFront_01_Preview.jpg`). `kitchen2.png` shows the DINING ROOM the user has in
+    mind (dark ceiling with constellation lights, walnut walls, dark round-back chairs and tables, a patterned
+    floor, the open kitchen glowing red and blue): the dining room as built differs; restyling it is offered.
+  - **The user's photos** are to be saved in `References/W Chews/` (the building session can't see pictures sent in
+    another chat); the restaurant's models are built from them.
+- **Sounds** (ElevenLabs, 2026-11-20): a sizzle loop on every cooking pan nearby; in the scene a cow's funny moo, the
+  bag's thud, the grinder churning, the chef saying "Alright, I'll handle this for you!" in a warm, hyped chef's voice,
+  and the meat's splat and sizzle on the pan; a chomp and a pleased "mmm" when you eat.
+- **Eating at your pan:** an **Eat** prompt appears on your own pan when the steak is done; eating starts the boost with
+  a big STEAK EATEN! pop. Cooking pans steam (more when ready); the clock says the time left, READY!, EMPTY or FREE.
 
 **Future idea (user, 2026-11-19; NOT for now):** **collectable meat types** that drop from meets; once unlocked you can
 cook that meat instead of steaks, with its own buff (e.g. faster cooking, or a slight stat boost). Claude: good for a later

@@ -1280,6 +1280,110 @@
       "ids": {
         "audio": "rbxassetid://136963528084285"
       }
+    },
+    "KitchenSizzle": {
+      "about": "Kitchen (GAME_DESIGN 40.7): a giant steak sizzling in an enormous cast-iron pan in a powerlifting gym kitchen, made a seamless 5.4 s loop (take B). Loops on every cooking pan near the camera.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenSizzle.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://140335319453723"
+      }
+    },
+    "KitchenGrinder": {
+      "about": "Kitchen chef scene: the big red meat grinder churning and squelching meat out of its spout, 2 s (take B).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenGrinder.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://99489705613915"
+      }
+    },
+    "KitchenCowMoo": {
+      "about": "Kitchen chef scene: a cartoon cow's surprised, funny MOOO as it tumbles into the grinder, 1.4 s (take B).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenCowMoo.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://116016869694788"
+      }
+    },
+    "KitchenBagThud": {
+      "about": "Kitchen chef scene: a heavy burlap sack of steaks thudding into the grinder's steel funnel, 0.45 s (take A).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenBagThud.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://74704226139703"
+      }
+    },
+    "KitchenMeatLand": {
+      "about": "Kitchen chef scene: the meat mountain splatting onto the giant hot pan, then a burst of sizzling steam, 1.6 s (take B).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenMeatLand.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://114323852821853"
+      }
+    },
+    "KitchenEat": {
+      "about": "Kitchen: a hungry powerlifter chomping into the big steak with a pleased mmm, when eating at the pan, 1.05 s (take B).",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenEat.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://119322748175840"
+      }
+    },
+    "ChefLine": {
+      "about": "Kitchen chef scene: the chef (ElevenLabs voice 'The Sneakerhead Chef', eleven_v4, [confident, warm, hyped, a big grin]) saying \"Alright, I'll handle this for you!\" (take A; local word check: 'All right, I'll handle this for you.'), 2.49 s.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/ChefLine.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://110659636124322"
+      }
+    },
+    "ChefWelcome": {
+      "about": "Kitchen: the chef greets you walking into the hall (ElevenLabs voice 'The Sneakerhead Chef', eleven_v4, [warm, excited, a big welcoming grin, a chef greeting a hungry powerlifter walking into his busy restaurant]) saying \"Hey! Welcome into Double-U Chews!\" (W Chews, the restaurant; user 2026-11-21). Take B, the first of the four times it said it (both takes repeated the line); local word check: 'Hey, welcome into W choose.' (chews / choose sound the same), 3.01 s. 284 credits for the two takes.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/ChefWelcome.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://117853087157699"
+      }
+    },
+    "KitchenButton": {
+      "about": "W Chews chef scene (user 2026-11-21: \"Make the sound new sound affects\"): the chef's open palm slapping the big start button: one firm mechanical clunk, 0.31 s (take B). Prompt: \"A cook's open palm slaps a big chunky industrial start button on a steel panel in the busy kitchen of a powerlifting gym's restaurant: one firm heavy mechanical clunk, then a short bright electric buzzer beep as the machine powers on. Close, clean, punchy, cartoon-fun. No voices, no music.\" (both takes came back as the clunk alone, so the buzzer is its own sound, KitchenBuzzer). ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenButton.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://88662812930499"
+      }
+    },
+    "KitchenBuzzer": {
+      "about": "W Chews chef scene: the machine's start buzzer right after the button's clunk, one steady buzz, 1.18 s (take A, strongest at 720 Hz; take B was higher, 1,800 Hz). Prompt: \"A machine starting up in the kitchen of a powerlifting gym's restaurant: a loud electric factory start buzzer, one steady BZZZZT lasting about one second, then it stops cleanly. Bright, bold, cartoon-fun game sound, close and clean. No voices, no music, no alarm siren.\" Prompt influence 0.8. Played quietly.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenBuzzer.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://91215560990283"
+      }
+    },
+    "KitchenChute": {
+      "about": "W Chews chef scene: the bag or cow tumbling down the stainless ceiling chute before it thuds into the grinder: a hollow metal rumble that swells and fades, 1.11 s (take A; take B had two separate hits). Prompt: \"Something heavy tumbling down a big stainless steel ceiling chute in the kitchen of a powerlifting gym's restaurant: a hollow metallic rumble and rattling clatter rushing closer and getting louder as it slides fast down the metal duct. Ends abruptly just before the impact. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenChute.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://100812110878986"
+      }
+    },
+    "KitchenTube": {
+      "about": "W Chews chef scene: the meat drawn up the funnel and rushing along the overhead glass tube to the pan: a suction pop then a steady rush, 3.17 s (take B; take A was very quiet and only swelled at its end). Prompt: \"A giant pneumatic glass tube sucking up lumps of ground meat and shooting them along overhead pipes in the kitchen of a powerlifting gym's restaurant: a strong vacuum suction whoosh with soft wet thup-thup-thup lumps rushing through the tube and a steady rush of air, playful cartoon factory feel. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenTube.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://138689375274677"
+      }
+    },
+    "KitchenPlop": {
+      "about": "W Chews chef scene: ONE lump of ground meat dropping from the nozzle onto the pan, 0.33 s (take B, the louder and fuller one); played once for every lump that lands, so it stays in time with the picture. Prompt: \"One single soft wet plop: a fist-sized lump of raw ground meat dropping from a nozzle onto a metal pan in the kitchen of a powerlifting gym's restaurant. One short squishy splat, close and clean, no sizzle tail. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenPlop.wav",
+      "license": "ElevenLabs generated; commercial use depends on the account's plan",
+      "ids": {
+        "audio": "rbxassetid://84379172787367"
+      }
     }
   }
 }

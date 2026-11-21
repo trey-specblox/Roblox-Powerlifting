@@ -108,6 +108,10 @@ KitchenService.start()
 -- The pan hall waits for the prop models to load, so it builds without holding up the rest.
 local KitchenPans = require(script:WaitForChild("Economy"):WaitForChild("KitchenPans"))
 task.spawn(KitchenPans.start)
+local KitchenChef = require(script:WaitForChild("Economy"):WaitForChild("KitchenChef"))
+task.spawn(KitchenChef.start)
+local KitchenBuilding = require(script:WaitForChild("Economy"):WaitForChild("KitchenBuilding"))
+task.spawn(KitchenBuilding.start)
 
 -- The Shop: cosmetic gear bought with coins at the Shop's counter (the server checks every purchase).
 local ShopService = require(script:WaitForChild("Economy"):WaitForChild("ShopService"))
