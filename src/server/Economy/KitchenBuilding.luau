@@ -5,7 +5,7 @@
 
 	The Kitchen's buildings and the way in and out (GAME_DESIGN §40.7, user 2026-11-19):
 
-		- W Chews' building (WChewsFront_01, from the user's photo References/W Chews/kitchen1.png) in the front square
+		- W Chews' building (WChewsFront_02, from the user's photo References/W Chews/kitchen1.png) in the front square
 		  at KitchenConfig.EntranceOrigin, with an "Enter / Kitchen" prompt at its glass doors
 		- W Chews' hall (WChewsHall_01: the fancy front, the kitchen, the back room's shell) round the pan zones, to
 		  floor plan 02 (user 2026-11-21), with every copy of the restaurant kit (WChewsKit_01) placed from WChewsLayout
@@ -23,7 +23,7 @@
 	PERFORMANCE: the shell (3,832 triangles) and 281 kit copies (862 parts, about 163,000 triangles if all were in view:
 	21 shared meshes), all decor (no collision, no touch, small pieces cast no shadow); about 165 hidden collision blocks
 	(60 for walls and big furniture, 104 for the chairs, plants, host stand and button stand).
-	The building in the square: 13 parts, 1,996 triangles, 14 hidden collision blocks.
+	The building in the square: 20 parts, 2,988 triangles, 19 hidden collision blocks.
 ]]
 
 local Players = game:GetService("Players")
@@ -240,7 +240,8 @@ function KitchenBuilding.start()
 		house.Name = "WChewsFront"
 		house:PivotTo(KitchenConfig.EntranceOrigin)
 		-- The small and flat pieces cast no shadow (the walls and roofs do: it is a building in the sun).
-		for _, name in ipairs({ "Glass", "Mullions", "Inside", "Strips", "StepLights", "Rails", "Carpet", "Brass", "Door" }) do
+		for _, name in ipairs({ "Glass", "Mullions", "Inside", "Strips", "StepLights", "Rails", "Carpet", "Brass", "Door",
+			"Deck", "Furniture", "Cushions", "Pots" }) do
 			local piece = house:FindFirstChild("WChewsFront_" .. name, true)
 			if piece and piece:IsA("BasePart") then
 				piece.CastShadow = false
@@ -265,6 +266,18 @@ function KitchenBuilding.start()
 		wall("FrontTerraceBack", 24.6, 40, -3, 15, 18)
 		wall("FrontTerrace", 25.2, 40, -15, -3, 5)
 		wall("FrontPlanter", 24.8, 40.4, -17.6, -15, 2.4)
+		-- The terrace's glass balustrade (a lifter can jump up there from the planter: the deck is 5 up, the handrail
+		-- 7.55) and its two tables: a block from `low` to `high` above the ground.
+		local function raised(name: string, x0: number, x1: number, y0: number, y1: number, low: number, high: number)
+			collider(outside, name, Vector3.new(math.abs(x1 - x0), high - low, math.abs(y1 - y0)),
+				spot((x0 + x1) / 2, (y0 + y1) / 2, (low + high) / 2))
+		end
+		raised("TerraceRailFront", 25.2, 40, -15.05, -14.75, 5, 7.6)
+		raised("TerraceRailEnd", 39.75, 40.05, -15, -3.2, 5, 7.6)
+		raised("TerraceRailSide", 25.15, 25.45, -15, -11, 5, 7.6)
+		for _, at in ipairs({ Vector2.new(29.2, -10), Vector2.new(35.6, -7.2) }) do
+			raised("TerraceTable", at.X - 1.2, at.X + 1.2, at.Y - 1.2, at.Y + 1.2, 5, 7.7)
+		end
 		-- The four steps (0.4 high, 2.2 deep each; the top one is the landing in front of the doors) and the handrails.
 		for step = 1, 4 do
 			wall("FrontStep" .. step, -21, 21, -19 - 2.2 * (5 - step), -11, 0.4 * step)

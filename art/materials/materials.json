@@ -2210,6 +2210,14 @@
    "ids": {
     "model": "rbxassetid://121517778514497"
    }
+  },
+  "WChewsFront_02": {
+   "about": "W Chews' building in the front square, version 02: WChewsFront_01 with only its raised terrace remodelled (the terrace and planter were one dark block that read heavy from the side; user 2026-11-21 approved uploads after Claude's own checks for the overnight session). Sandstone terrace body on a dark base band with pale pilasters and coping and a glowing strip under the coping, a wooden deck, an open glass balustrade with black posts and handrail, two tables with chairs, mustard cushions and teal parasols, potted cypresses and bushes, a clipped hedge on the planter, glowing glass doors onto the terrace under a dark canopy and two tall glowing windows in the end wall. Same bounds, door and footprint as 01. Pieces WChewsFront_*: the 13 of 01 plus TerraceStone, Deck, Furniture, Cushions, Parasols, Greenery, Pots. Built by art/scripts/build_wchews_front_02.py. CHECK PASSED (20 meshes, 2,988 triangles).",
+   "file": "art/exports/WChewsFront_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://112316736547236"
+   }
   }
  },
  "images": {

@@ -637,9 +637,11 @@ StarterGymConfig.PropAssets = {
 	-- range, fryer, hood, fridge, sink, island, service counter, table, chair, pendant, chandelier, host stand, plant,
 	-- staff door, and the chef scene's button panel, chute, display bay and meat tube. Placed from WChewsLayout
 	-- (art/scripts/wchews_layout.py). art/scripts/build_wchews_kit_01.py, CHECK PASSED, 20,312 triangles.
-	{ id = 121517778514497 }, -- WChewsFront_01: W Chews' building in the front square (item WChewsFront), from the user's photo
+	{ id = 112316736547236 }, -- WChewsFront_02: W Chews' building in the front square (item WChewsFront), from the user's photo
 	-- References/W Chews/kitchen1.png (user 2026-11-21: "Upload the new building"). Replaces KitchenBuilding_01's
-	-- KitchenHouse. art/scripts/build_wchews_front_01.py, CHECK PASSED, 1,996 triangles.
+	-- KitchenHouse. Version 02 (was 121517778514497, WChewsFront_01: the same pieces' names, so only one of the two
+	-- may be in this list): the terrace remodelled from one dark block into a sandstone terrace with a glass
+	-- balustrade, tables, parasols and plants. art/scripts/build_wchews_front_02.py, CHECK PASSED, 2,988 triangles.
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -778,6 +780,7 @@ StarterGymConfig.PropPaints = {
 	WcStepStone = { color = Color3.fromRGB(150, 150, 156), material = Enum.Material.Concrete },
 	WcRoofSlate = { color = Color3.fromRGB(48, 56, 62), material = Enum.Material.Metal },
 	WcStripGlow = { color = Color3.fromRGB(255, 110, 60), material = Enum.Material.Neon },
+	WcSandstone = { color = Color3.fromRGB(214, 176, 132), material = Enum.Material.Sandstone }, -- (the terrace's body)
 } :: { [string]: PropPaint }
 
 -- Pieces made of cloth (Fabric) whatever their colour, as "<Item>_<Piece>".
@@ -1143,11 +1146,14 @@ StarterGymConfig.PropColourways = {
 		FrontSconces = "WarmGlow", FrontSign = "WarmGlow", BackFloor = "WcBurgundy", BackWalls = "WcWalnut",
 		BackTrim = "Brass", BackCeiling = "WcDarkCeiling",
 	} },
-	-- W Chews' building in the front square (WChewsFront_01; the name floats over it, so it has no sign piece).
+	-- W Chews' building in the front square (WChewsFront_02; the name floats over it, so it has no sign piece).
 	WChewsFront = { {
 		Walls = "WcStucco", Base = "WcDarkStone", Steps = "WcStepStone", Roofs = "WcRoofSlate", Glass = "Glass",
 		Mullions = "Black", Inside = "WarmGlow", Strips = "WcStripGlow", StepLights = "GlowWhite", Rails = "Black",
 		Carpet = "WcBurgundy", Brass = "Brass", Door = "Glass",
+		-- (02's terrace)
+		TerraceStone = "WcSandstone", Deck = "WcWoodFloor", Furniture = "WcMaple", Cushions = "WcCushionMustard",
+		Parasols = "WcCushionTeal", Greenery = "WcLeaf", Pots = "Terracotta",
 	} },
 	-- W Chews' restaurant kit (WChewsKit_01).
 	WcCounter = { { Top = "KitStainless", Frame = "KitStainlessDark" } },

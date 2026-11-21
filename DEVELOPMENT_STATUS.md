@@ -16,6 +16,27 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**W CHEWS REDESIGN, STEP 7: BOOST CHIPS REDONE, THE TERRACE REMODELLED AND UPLOADED. TESTED IN STUDIO (one player),
+2026-11-21, same session (the overnight run). COMMITTED: 0b280c9 holds steps 1 to 6 and the chips; the terrace is the
+next commit (see git log).**
+- THE USER'S STANDING OKS FOR THIS OVERNIGHT RUN (asked 2026-11-21, valid for this run only): upload new models after
+  Claude's own checks (CHECK PASSED and pictures from all sides); up to 150 ElevenLabs credits; a local commit after
+  each tested step (own files, no push); after the back room and the cow: the luck wheel plus the cow's skill games.
+- BOOST CHIPS (src/client/UI/BoostBar.luau, UIFancy): the running boost is a glossy steak-red pill with the gain in a
+  yellow badge, STEAK BOOST, the time left in a dark inset and a bar that drains over the 24 hours; a cooked meal
+  waiting is a green pill that breathes slowly, "STEAK READY! EAT IT AT W CHEWS". Studio: a real 2-steak cook, the
+  ready chip after 20 s, eaten, the boost chip (+2%, 23:59:57). Picture art/previews/WChews_BoostChips_Zoomed.png.
+  The memory reminder "kitchen-gui-redo-reminder" is done once the user is happy with them.
+- THE TERRACE (a Blender-only Opus side session built it; hand-over note wchews-terrace.md in the side-session notes):
+  WChewsFront_02 = 01 with only the terrace remodelled (sandstone body on a dark band, pale pilasters and coping, a
+  glow strip, a wooden deck, a glass balustrade, two tables with parasols, plants, a hedge on the planter, glowing
+  doors and two windows). CHECK PASSED re-run here (20 meshes, 2,988 triangles); uploaded
+  (rbxassetid://112316736547236, art/materials/materials.json); StarterGymConfig's WChewsFront asset now points at 02
+  (01's id is out of the list: both carry the same piece names), new paint WcSandstone, the seven new pieces in the
+  colourway; KitchenBuilding: no shadows for the small new pieces, hidden blocks for the balustrade's three sides and
+  the two tables. Studio: all 20 pieces painted, same bounds as 01, the lifter on the terrace is stopped by the front
+  rail. Picture art/previews/WChewsFront_02_InGame.jpg.
+
 **W CHEWS REDESIGN, STEP 6: THE HALL'S LIGHTING AND SOLID FURNITURE. TESTED IN STUDIO (one player, pictures and
 numbers), 2026-11-21, same session. NOT COMMITTED (last commit 74139f4).**
 - ORDER CHANGED (user: "we dont [want] to build that now, lets pick something else and work on that near the end"):

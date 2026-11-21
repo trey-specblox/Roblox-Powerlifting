@@ -7942,6 +7942,10 @@ can fit"):**
     and warm (a pool of light under every pendant, the chandelier, the wall lights), the kitchen bright and white
     (KitchenLights). **THE FURNITURE IS SOLID** ("Make furniture solid"): chairs, plants, the host stand, and the
     giant pans (a lifter can jump into a pan and stand on its floor).
+  - **[USER, 2026-11-21] THE BOOST CHIPS FOLLOW THE UI KIT** (the bottom chips were the last plain Kitchen boxes): a
+    steak-red pill with the gain in a yellow badge, the time left and a draining bar; a green breathing pill while a
+    cooked meal waits. **THE BUILDING'S TERRACE** is a real restaurant terrace (WChewsFront_02: sandstone, a glass
+    balustrade, tables under parasols, plants), uploaded under the user's overnight OK ("Upload after your checks").
   - **[USER, 2026-11-21] THE OUTSIDE BUILDING IS APPROVED AND IN THE GAME** ("Upload the new building"):
     WChewsFront_01 stands in the front square in place of the cream cottage, with the Enter prompt on the landing
     in front of its glass doors and the floating W CHEWS name over its roof.
