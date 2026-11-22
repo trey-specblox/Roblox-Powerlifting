@@ -16,6 +16,11 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**COMMITTED 2026-11-22: 82c7ce0 (W Chews round 3, the luck bands, the whole-map flicker fixes, the NPC crew-neck
+tees and refitted chef, the unboxing study notes). NOT PUSHED. The user is publishing this version from Studio to
+test it on their phone. Left out on purpose: References/W Chews/ (four reference pictures, possibly third-party,
+and the repo is public) and .claude/.**
+
 **W CHEWS, ROUND 3: THE CHEF TALKS TO THE PLAYER, THE DOUBLE DOOR IN THE MIDDLE, THE COW IN THE BACKGROUND (the
 user's notes of 2026-11-22: "you cant visibly see yourself, as in my character" and "the cutscene for the cow walking
 in is too obvious ... like a background type of thing ... a double door ... move the room, and the door to the middle
