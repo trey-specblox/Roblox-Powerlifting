@@ -1010,7 +1010,7 @@ local function simpleShowers(kit: Kit)
 		back.item("Shower_Arm_" .. index, s - 0.06, s + 0.06, 0.32, 1, 7.48, 7.6, looks.Stainless)
 		back.item("Shower_Head_" .. index, s - 0.4, s + 0.4, 0.7, 1.5, 7.3, 7.45, looks.Stainless)
 		back.item("Shower_Valve_" .. index, s - 0.25, s + 0.25, 0.2, 0.35, 3.8, 4.3, looks.Stainless)
-		back.item("Shower_Drain_" .. index, s - 0.3, s + 0.3, 2, 2.6, 0, 0.03, looks.Gadget)
+		back.item("Shower_Drain_" .. index, s - 0.3, s + 0.3, 2, 2.6, 0, 0.06, looks.Gadget) -- (0.05 proud of the floor)
 	end
 	-- A bench with hooks on the side wall away from the door, towels on the other.
 	local benchWall = kit.wall(if kit.doorA < 0 then "right" else "left")
@@ -1901,7 +1901,7 @@ FURNISH.Showers = function(kit)
 		end
 		onWall(back, "-d", id .. "_Gel", "ShowerGel", k, c + 1.35, 0.4, 4.72)
 		onWall(back, "-d", id .. "_Shampoo", "Shampoo", (k - 1) % 4 + 1, c + 2, 0.4, 4.72)
-		back.item(id .. "_Drain", c - 2, c + 2, 3.7, 3.9, 0.06, 0.08, looks.Gadget)
+		back.item(id .. "_Drain", c - 2, c + 2, 3.7, 3.9, 0.06, 0.11, looks.Gadget) -- (0.05 proud of the stall's floor)
 		-- A glass screen across the right half of the opening, in a black frame; an oak duckboard.
 		if spa then
 			wallProp(kit, spa, back, id .. "_Screen", "ShowerScreen", c + 0.1, c + 2.5, depth - 0.12, depth + 0.02, 0.06, 7.6)
@@ -2346,7 +2346,8 @@ FURNISH.Sauna = function(kit)
 		end
 		local upperStrip = wall.item(name .. "_Upper_Light", s0 + 0.85, s1 - 0.85, 3.2, 3.26, 2.7, 2.8, looks.GlowWarm)
 		BuildParts.surfaceLight(upperStrip, Enum.NormalId.Bottom, 8, 1, 120, looks.GlowWarm.color)
-		local lowerStrip = wall.item(name .. "_Lower_Light", s0 + 0.85, s1 - 0.85, 5.6, 5.66, 1.38, 1.46, looks.GlowWarm)
+		-- (0.05 proud of the bench's front: the kit bench's skirt is flush at 5.66)
+		local lowerStrip = wall.item(name .. "_Lower_Light", s0 + 0.85, s1 - 0.85, 5.6, 5.71, 1.38, 1.46, looks.GlowWarm)
 		BuildParts.surfaceLight(lowerStrip, Enum.NormalId.Bottom, 6, 0.8, 120, looks.GlowWarm.color)
 	end
 	-- Along the back wall, and (user 2026-10-25: the bigger sauna upstairs) down
@@ -3505,25 +3506,28 @@ FRONT.Office = function(front)
 		a += 3
 	end
 	front.band("BrassRail", front.aMin, front.aMax, 3.3, 3.42, 0.06, 0.14, looks.Brass)
-	front.item("Window_Back", w0, w1, 0.06, 0.09, y0, y1, looks.SBarWall)
-	-- The Fronts_01 blinds (sixteen slats and a head rail, d 0.09..0.15), or block slats.
+	-- (the dark panel stands 0.05 proud of the front's panels: 0.03 could shimmer from across the hall, 2026-11-22;
+	--  the blinds and the glass sit 0.025 further out to match)
+	front.item("Window_Back", w0, w1, 0.06, 0.11, y0, y1, looks.SBarWall)
+	-- The Fronts_01 blinds (sixteen slats and a head rail, d 0.115..0.175), or block slats.
 	local blindProps = propsFor({ "Blinds" })
 	if blindProps then
-		paintLooks(frontProp(front, blindProps, "Blinds", "Blinds", 1, (w0 + w1) / 2, 0.12, y0 + 0.15, "+d"), "Blinds",
+		paintLooks(frontProp(front, blindProps, "Blinds", "Blinds", 1, (w0 + w1) / 2, 0.145, y0 + 0.15, "+d"), "Blinds",
 			{ Slats = looks.Whiteboard })
 	else
 		local slat, y = 0, y0 + 0.15
 		while y + 0.16 <= y1 - 0.1 do
 			slat += 1
-			front.item("Blind_" .. slat, w0 + 0.1, w1 - 0.1, 0.09, 0.12, y, y + 0.18, looks.Whiteboard)
+			front.item("Blind_" .. slat, w0 + 0.1, w1 - 0.1, 0.115, 0.145, y, y + 0.18, looks.Whiteboard)
 			y += 0.26
 		end
 	end
-	front.item("Window_Glass", w0, w1, 0.13, 0.16, y0, y1, looks.FrostedGlass)
+	-- (the glass clear in front of the slats; the mullion 0.05 proud of the glass)
+	front.item("Window_Glass", w0, w1, 0.225, 0.235, y0, y1, looks.FrostedGlass)
 	front.item("Window_Frame_1", w0 - 0.18, w0, 0.06, 0.24, y0, y1, looks.Gadget)
 	front.item("Window_Frame_2", w1, w1 + 0.18, 0.06, 0.24, y0, y1, looks.Gadget)
 	front.item("Window_Frame_Top", w0 - 0.18, w1 + 0.18, 0.06, 0.24, y1, y1 + 0.18, looks.Gadget)
-	front.item("Window_Mullion", (w0 + w1) / 2 - 0.08, (w0 + w1) / 2 + 0.08, 0.06, 0.2, y0, y1, looks.Gadget)
+	front.item("Window_Mullion", (w0 + w1) / 2 - 0.08, (w0 + w1) / 2 + 0.08, 0.06, 0.29, y0, y1, looks.Gadget)
 	front.item("Window_Sill", w0 - 0.35, w1 + 0.35, 0.06, 0.5, y0 - 0.2, y0, looks.Stainless)
 	-- The name plate and the framed help-point sign, left of the door.
 	local plate = front.item("NamePlate", -8.4, -5.4, 0.06, 0.12, 4.5, 5.3, looks.Brass)

@@ -134,19 +134,29 @@ src/server/Meet/LocalMeetVenue.luau, tools/studio/FlickerAudit.luau; NEW tools/s
   numbers, the warm-up routine board's frame, the strongman shed's lane lines.
 - FIXED, MEET HALLS (LocalMeetVenue): the dark exit doorway stands 0.05 proud of the red stripe it crosses (was
   0.02). The "Carpet against the walls" lines were two bottoms on the same floor: hidden, nothing changed.
-- LEFT ON PURPOSE (thin layers, each seen only from near): the spa wing corridor's wall finish (0.03 thick so the
-  doors' name plaques stay in front of it; the corridor is 70 studs long), the Office window's dark back panel
-  (0.03, behind the blinds and frosted glass), the shower stalls' drains (0.02). Say if these should be 0.05 too:
-  the corridor one means moving the door plaques out.
+- SECOND PASS (2026-11-22, the user: "go ahead and fix the flickering, and continue doing the other steps"; tested
+  in Studio, one player, checksums matched; NOT COMMITTED). Every thin layer that was left is now 0.05 proud:
+  (1) the spa corridor's room-side finish 0.06 thick like the hall side (StarterGymBuilder LINING); the wing's rooms
+  get a DoorFaceLining attribute and swingDoor puts their name plaques that much further out (measured: plates at
+  100.39..100.44, the finish's face at 100.44); (2) the Office window (RoomProps): dark panel d 0.06..0.11, blinds
+  0.115..0.175, frosted glass 0.225..0.235, mullion to 0.29 (0.05 in front of the glass); (3) both kinds of
+  drain (Shower_Drain_# and the stalls' _Drain) 0.05 above their floors; (4) the sauna benches' lower light strips
+  (Bench*_Lower_Light) 0.05 in front of the kit bench's front (they were flush with it). The WHOLE-MAP checker
+  afterwards: no visible block-against-block or block-against-mesh line left except three looked at and
+  harmless: Shelf_#_Light's top under the supplement bar's shelf board (hidden by the board), Board_Title in front
+  of a cork-board note (the note's face is inside the title), the lobby's sliding-door glass inside its frame bars
+  (looked at: clean). Looked at by eye after: the corridor straight down its length, the Office window, the sauna
+  bench lights, the Nationals warm-up area (two shots a few studs apart), meet hall 4, the lockers, showers,
+  supplement bar, recovery, shop and coaches' rooms, the gym hall from three spots (balcony edges included):
+  nothing flickers. The mesh-against-mesh hints still can't be checked by a script (the "Allow Mesh / Image APIs"
+  setting is the user's).
 - BUILDING AGAINST BUILDING (measured from the parts): nothing overlaps. Gym to the local meet entrance: a 6-stud
   alley (roof edges 3.4 apart). W Chews terrace to the State arena's round wall: 42 studs (they only look close
   from the square). Gym to W Chews 44, W Chews to Nationals 37, State arena entrance to the meet entrance 36.
 - LOOKED AT BY EYE (a script cannot check mesh against mesh unless the experience's "Allow Mesh / Image APIs"
   security setting is on: the USER's to change): the outsides of Nationals, the State arena entrance and the meet
   entrance; inside one local meet hall, the Nationals hall and the State arena; the gym's hall, sauna, corridor.
-  Nothing flickered in still pictures from near. NOT DONE: a slow walk with a moving camera (stills can miss
-  flicker), the other five meet halls (the same build), the Nationals warm-up area, every gym room, the
-  supplement bar's shelf lights against their brackets (the checker's last "likely" line, 0.6 sq studs each).
+  Nothing flickered in still pictures from near. (The NOT DONE list here was done in the SECOND PASS above.)
 - SEEN, FOR THE USER TO DECIDE: (1) Workspace.ScaleTest_2StudCube_v2, the loose grey 2-stud cube from the first
   Blender import test, saved in the place inside the gym near (69, 1, 21), not anchored: REMOVED 2026-11-22 on
   the user's yes ("Yes, remove it") with tools/studio/RemoveScaleTestCube.luau in Edit mode (every check passed;

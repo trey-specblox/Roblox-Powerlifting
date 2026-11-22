@@ -1120,12 +1120,15 @@ local function swingDoor(parent: Instance, room: BasePart, spec: StarterGymConfi
 	slab(door, "Frame_Header", -doorHalf, doorHalf, hallFace, roomFace, doorHeight, openingHeight, frameLook)
 	-- A plaque with the room's name on the hall side of the header (unless the spec says no).
 	if spec.plaque ~= false then
-		-- Doors_01's DoorSign facing the hall, or a block.
-		local signAt = wallLine + inward * (hallFace - 0.025) + Vector3.yAxis * (doorHeight + 0.15)
+		-- Doors_01's DoorSign facing the hall, or a block; out in front of any finish on that face (the spa corridor's
+		-- lining: the room's DoorFaceLining), so the two never share a plane.
+		local lining = room:GetAttribute("DoorFaceLining")
+		local out = if typeof(lining) == "number" then lining else 0
+		local signAt = wallLine + inward * (hallFace - out - 0.025) + Vector3.yAxis * (doorHeight + 0.15)
 		local sign = doorPiece(door, "PlaqueSign", "DoorSign", CFrame.lookAt(signAt, signAt - inward), nil,
 			{ Plate = looks.SignPanel })
 		local plaque = (sign and sign:FindFirstChild("DoorSign_Plate", true) :: BasePart?)
-			or decor(slab(door, "Plaque", -1.2, 1.2, hallFace - 0.05, hallFace, doorHeight + 0.15, doorHeight + 0.85,
+			or decor(slab(door, "Plaque", -1.2, 1.2, hallFace - out - 0.05, hallFace - out, doorHeight + 0.15, doorHeight + 0.85,
 				looks.SignPanel))
 		local gui = Instance.new("SurfaceGui")
 		gui.Face = StyledScreen.faceToward(plaque, -inward)
@@ -1674,8 +1677,16 @@ local function buildGym(model: Model): string
 			wall(walls, "Wall_SpaWing_Corridor", false, corridorLine, zBack - t / 2, z1, y0, y1, "Paint", doors)
 			-- The corridor's finish, like the spa rooms (decoration): the light wood
 			-- floor and warm limewash on both long walls (holes for the doors) and
-			-- on the end wall. Thin on the rooms' side, so the doors' name plaques
-			-- (0.05 out from the wall) stay in front of it.
+			-- on the end wall. 0.06 thick on both sides (a thinner layer can shimmer
+			-- down the 70-stud corridor, 2026-11-22); the rooms' doors put their name
+			-- plaques that much further out (the room's DoorFaceLining, swingDoor).
+			local LINING = 0.06
+			for _, wingRoom in ipairs(wing.rooms) do
+				local roomPart = rooms:FindFirstChild("Room_" .. wingRoom.name)
+				if roomPart then
+					roomPart:SetAttribute("DoorFaceLining", LINING)
+				end
+			end
 			local looks = cfg.Looks
 			local hallFace, roomFace = innerX, corridorLine - sign * t / 2
 			local function lining(name: string, x: number, from: number, to: number, thickness: number)
@@ -1689,13 +1700,13 @@ local function buildGym(model: Model): string
 			for _, opening in ipairs(doors) do
 				piece += 1
 				local a, b = opening.centre - opening.width / 2, opening.centre + opening.width / 2
-				lining("SpaWing_Corridor_RoomSide_" .. piece, roomFace - sign * 0.03, cursor, a, 0.03)
+				lining("SpaWing_Corridor_RoomSide_" .. piece, roomFace - sign * LINING, cursor, a, LINING)
 				decor(box(walls, "SpaWing_Corridor_OverDoor_" .. piece,
-					Vector3.new(math.min(roomFace, roomFace - sign * 0.03), opening.bottom + opening.height, a),
-					Vector3.new(math.max(roomFace, roomFace - sign * 0.03), y1, b), looks.MassageWall))
+					Vector3.new(math.min(roomFace, roomFace - sign * LINING), opening.bottom + opening.height, a),
+					Vector3.new(math.max(roomFace, roomFace - sign * LINING), y1, b), looks.MassageWall))
 				cursor = b
 			end
-			lining("SpaWing_Corridor_RoomSide_End", roomFace - sign * 0.03, cursor, z1, 0.03)
+			lining("SpaWing_Corridor_RoomSide_End", roomFace - sign * LINING, cursor, z1, LINING)
 			decor(box(walls, "SpaWing_Corridor_EndWall", Vector3.new(math.min(hallFace, roomFace), y0 + 0.06, z1 - 0.06),
 				Vector3.new(math.max(hallFace, roomFace), y1, z1), looks.MassageWall))
 			table.insert(corridors, {
