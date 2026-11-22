@@ -888,14 +888,53 @@ def finish_one_piece(o, body, coll, H, worn, trim_key, plain_key, with_logo=True
 
 
 # ---------------------------------------------------------------- the sleeved family (tee, long sleeve, bench shirt)
-def sleeved(body, H, coll, name, sleeve, tris_out=900):
-    """The v4 tee (make_tee) with its sleeves ending at `sleeve` (the shell's arms counted from there up)."""
+# The long sleeve's crew neck (user 2026-11-20: "they have no neck, and their shirts are covering almost to their chin"):
+# art/scripts/tee_neck_fix.py, as the tee's (build_cartoon_gear_07.py). GEAR05_OLD_NECK=1 keeps v4's head-sized cylinder.
+import sys as _sys  # noqa: E402
+_sys.path.insert(0, SCRIPTS)
+import tee_neck_fix as _neck  # noqa: E402
+OLD_NECK = os.environ.get("GEAR05_OLD_NECK", "0") == "1"
+
+
+def make_tee_crew(body, shell, H, coll):
+    """build_cartoon_gear_04.py make_tee with the crew neck (tee_neck_fix.crew_neck_np) in place of its cylinder."""
+    fn = lambda X: shell.field(X) - W["TEE_CLEAR"]
+    o = W["iso_mesh"](body.build + "_Tee", fn, (-2.4, -1.5, H["hem"] - 0.15), (2.4, 1.4, L["N"] + 0.4), coll)
+    W["apply_mod"](o, "SMOOTH", factor=0.5, iterations=2)
+    W["apply_mod"](o, "DECIMATE", ratio=min(1.0, 7000 / max(1, W["triangles"](o))), use_symmetry=False)
+    neck = lambda X: _neck.crew_neck_np(X, body.build)
+
+    def keep(X):
+        lab = shell.label(X)
+        return ((lab != 2) & (X[:, 2] > H["hem"]) & ~((lab == 1) & (X[:, 2] < H["sleeve"])) & (neck(X) > 0))
+    rules = [
+        (lambda X: (X[:, 2] < H["hem"] + 0.2) & (np.abs(X[:, 0]) < 1.9), lambda X: X[:, 2] - H["hem"]),
+        (lambda X: (np.abs(X[:, 0]) > 0.6) & (X[:, 2] < H["sleeve"] + 0.2), lambda X: X[:, 2] - H["sleeve"]),
+        (lambda X: X[:, 2] > _neck.SH - 0.4, neck),
+    ]
+    W["cut_shell"](o, fn, keep, rules, 900)
+    W["bisect"](o, [((0, 0, H["sleeve"] + 0.13), (0, 0, 1), lambda c: abs(c.x) > 0.6)])
+    lab_of = lambda C: shell.label(C)
+    W["face_keys"](o, lambda C: np.where((lab_of(C) == 1) & (C[:, 2] < H["sleeve"] + 0.13), "TeeWhite", "Tee"))
+    keys = o["keys"]
+    me = o.data
+    cuff = {vi for p, k in zip(me.polygons, keys) if k == "TeeWhite" for vi in p.vertices}
+    for vi in cuff:
+        me.vertices[vi].co += me.vertices[vi].normal * 0.015
+    relief = W["finish_shell"](o, body, W["TEE_CLEAR"], hold=W["P"]["BUILDS"][body.build](L)["pivot_x"])
+    log(body.build, "Tee (crew neck)", W["triangles"](o), "triangles, pose relief up to %.3f" % relief)
+    return o
+
+
+def sleeved(body, H, coll, name, sleeve, tris_out=900, crew=False):
+    """The v4 tee (make_tee) with its sleeves ending at `sleeve` (the shell's arms counted from there up); `crew`: the
+    crew neck (make_tee_crew)."""
     Hx = dict(H, sleeve=sleeve, arm_from=sleeve - 0.12)
     shell = W["Shell"](B5["body_spec"](body.build), Hx["arm_from"])
     cut0 = W["cut_shell"]
     cut = lambda o, fn, keep, rules, final_tris, smooth_rounds=10: cut0(o, fn, keep, rules, tris_out, smooth_rounds)
     with Patched(cut_shell=cut):
-        o = W["make_tee"](body, shell, Hx, coll)
+        o = (make_tee_crew if crew else W["make_tee"])(body, shell, Hx, coll)
     o.name = "%s_%s" % (body.build, name)
     return o, shell, Hx
 
@@ -1310,7 +1349,7 @@ for b in BUILDS:
 
     # --- long sleeve: the tee with sleeves to the wrist (white cuffs)
     if "LongSleeve" in WANT:
-        o, _sh, _H = sleeved(body, H, coll, "LongSleeve", m["wrist"] + 0.19, tris_out=1300)
+        o, _sh, _H = sleeved(body, H, coll, "LongSleeve", m["wrist"] + 0.19, tris_out=1300, crew=not OLD_NECK)
         rekey(o, lambda i, k: k.replace("Tee", "LongSleeve"))
         W["thicken"](o)
         pieces = V["split_keys"](o, coll, b + "_LongSleeve")

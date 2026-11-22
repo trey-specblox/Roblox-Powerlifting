@@ -16,7 +16,7 @@
 		  light a room this size more evenly, and more cheaply, than one small light under each of the 45 panels),
 		  plus one key light on the grinder from the side (the centre of the room and of the chef scene).
 
-	PERFORMANCE: 14 plain blocks and 64 lights (53 in the restaurant, 11 in the back room: its four pendants, its
+	PERFORMANCE: 15 plain blocks and 64 lights (53 in the restaurant, 11 in the back room: its four pendants, its
 	chandelier, five fills and a spot on the wheel), none of them casting shadows (the costly part of a light). The
 	world had 344 shadowless lights before this. The dining room's are small on purpose (each covers little of the
 	screen); on low graphics settings Roblox draws local lights the cheap way by itself.
@@ -55,10 +55,8 @@ local PANEL_DROP = 6
 -- the chef scene's close-up: Studio). Plan space: where it hangs, and what it points at.
 local HERO = { range = 46, brightness = 0.9, angle = 60 }
 local HERO_FROM = Vector3.new(-26, 28, 30)
--- The back room's fills (plan space: x, y, height).
+-- The back room's fills (where they hang is WChewsLayout.BackFills: they move with the room).
 local BACK_FILL = { range = 38, brightness = 0.75 }
-local BACK_FILLS = { Vector3.new(212, 300, 13), Vector3.new(282, 300, 13), Vector3.new(248, 284, 14), Vector3.new(224, 328, 12),
-	Vector3.new(272, 326, 12) }
 local HERO_ONTO = Vector3.new(0, 52, 8)
 
 -- A hidden anchored point to carry a light.
@@ -126,7 +124,12 @@ function KitchenLights.build(hallFolder: Instance, kit: Instance, hall0: CFrame)
 	blocker("SunBlock_KitchenRoof", -297, 297, -32, 277, 37.2, top)
 	blocker("SunBlock_KitchenLeft", -297, -287.2, -32, 277, -1, 37.2)
 	blocker("SunBlock_KitchenRight", 287.2, 297, -32, 277, -1, 37.2)
-	blocker("SunBlock_KitchenBack", -287.2, 192.8, 267.2, 277, -1, 37.2)
+	-- (the kitchen's back wall, either side of the back room that stands behind its middle)
+	local room, thick = WChewsLayout.BackRoom, WChewsLayout.WallThickness
+	local roomLeft, roomRight = room.X0 - thick - 0.2, room.X1 + thick + 0.2
+	local roomEnd, roomRoof = room.Y1 + thick + 0.2, WChewsLayout.BackHeight + 1.2
+	blocker("SunBlock_KitchenBack", -287.2, roomLeft, 267.2, 277, -1, 37.2)
+	blocker("SunBlock_KitchenBackRight", roomRight, 287.2, 267.2, 277, -1, 37.2)
 	blocker("SunBlock_KitchenFrontLeft", -287.2, -82.2, -32, -22.2, -1, 37.2)
 	blocker("SunBlock_KitchenFrontRight", 82.2, 287.2, -32, -22.2, -1, 37.2)
 	-- The fancy front (x -80..80, y -110..-20, 22 high; its walls and ceiling end at 82, -112 and 23).
@@ -136,12 +139,12 @@ function KitchenLights.build(hallFolder: Instance, kit: Instance, hall0: CFrame)
 	-- A canopy over the glass front (the glass stops at 17): the sun comes from the front at 53 degrees and would
 	-- reach 9 studs in through the glass.
 	blocker("SunBlock_FrontCanopy", -96, 96, -127, -112.2, 17.4, top)
-	-- The back room (x 195..285, y 267..337, 18 high; its walls and ceiling end at 193, 287, 339 and 19), and the
+	-- The back room (WChewsLayout.BackRoom, 18 high; its walls are 2 thick and its ceiling ends at 19), and the
 	-- kitchen's back wall above it.
-	blocker("SunBlock_BackRoomRoof", 185, 297, 267.2, 349, 19.2, top)
-	blocker("SunBlock_BackRoomSides", 185, 192.8, 277, 349, -1, 19.2)
-	blocker("SunBlock_BackRoomRight", 287.2, 297, 277, 349, -1, 19.2)
-	blocker("SunBlock_BackRoomBack", 192.8, 287.2, 339.2, 349, -1, 19.2)
+	blocker("SunBlock_BackRoomRoof", roomLeft - 9.8, roomRight + 9.8, 267.2, roomEnd + 9.8, roomRoof, top)
+	blocker("SunBlock_BackRoomSides", roomLeft - 9.8, roomLeft, 277, roomEnd + 9.8, -1, roomRoof)
+	blocker("SunBlock_BackRoomRight", roomRight, roomRight + 9.8, 277, roomEnd + 9.8, -1, roomRoof)
+	blocker("SunBlock_BackRoomBack", roomLeft, roomRight, roomEnd, roomEnd + 9.8, -1, roomRoof)
 
 	local lights = 0
 	-- The dining room: every pendant and the chandelier (kit copies), and the wall lights (part of the shell's mesh).
@@ -191,7 +194,7 @@ function KitchenLights.build(hallFolder: Instance, kit: Instance, hall0: CFrame)
 	-- The back room (its pendants and chandelier carry their own, above): five soft warm fills so the walnut walls
 	-- and the booths don't sink into black (with the fittings alone the room was a few pools in the dark: Studio),
 	-- and a warm spot on the luck wheel.
-	for _, at in ipairs(BACK_FILLS) do
+	for _, at in ipairs(WChewsLayout.BackFills) do
 		pointLight(lightPoint(folder, "BackFill", hall0 * KitchenConfig.planSpot(at.X, at.Y, at.Z)), BACK_FILL, WARM)
 		lights += 1
 	end

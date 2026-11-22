@@ -2234,6 +2234,30 @@
    "ids": {
     "model": "rbxassetid://90852818389171"
    }
+  },
+  "WChewsMeat_01": {
+   "about": "The W Chews chef scene's meat models (GAME_DESIGN \u00a740.7; user 2026-11-22: \"lets add a Giant meat presser\", \"Look at the photo of meat, thats how the mountain of meat ... should look\", \"meat falls\"; the user saw the previews and said \"Yes, upload\" the same day). Three items: MeatPress (a flat steel plate with a U handle and CENTRAL on it, 10 x 6.8 x 1.6, kept squat so it fits under the pan's nozzle when the scene scales it up), MincePile (a slumped heap of about 330 soft worms of mince, red, pink and white fat, over a lumpy dark core, 4.7 wide, 2.7 tall, 11,774 triangles: shown at most twice at once, on the cooking player's own screen), MeatChunk (a rounded slab of raw meat with a fat strip, 2.3 x 1.6 x 1.3, 320 triangles). Built by art/scripts/build_wchews_meat_01.py (the Opus modelling session). CHECK PASSED (9 meshes, 13,484 triangles).",
+   "file": "art/exports/WChewsMeat_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://91387152636333"
+   }
+  },
+  "WChewsHall_02": {
+   "about": "W Chews' hall shell, version 02 (GAME_DESIGN \u00a740.7; user 2026-11-22: \"a double door ... move the room, and the door to the middle of the wall\"; the user saw the pictures art/previews/WChewsDoor_01..11 and said \"Yes, upload\" the same day). The same as WChewsHall_01 except: the EMPLOYEES ONLY doorway is 16 wide and 13 high in the MIDDLE of the kitchen's back wall (plan x -8..8; it was 6 x 9 at x 245..251), the back room's shell stands behind it (plan x -53..37, y 267..337; it was x 195..285), and the steel wall rail stops inside the double door's frame. The same piece names and bounds as 01: only one of the two may be in the game's list. Built by art/scripts/build_wchews_hall_02.py from art/scripts/wchews_layout.py's numbers. CHECK PASSED (28 meshes, 3,892 triangles).",
+   "file": "art/exports/WChewsHall_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://92806815963499"
+   }
+  },
+  "WChewsDoor_01": {
+   "about": "W Chews' EMPLOYEES ONLY double door (GAME_DESIGN \u00a740.7; user 2026-11-22: \"make the entrance door way more noticable, like a double door, and the mafia boss cow can push open both of them at the same time\"; the user saw the pictures and said \"Yes, upload\" the same day). One item, WcDoubleDoor: a walnut frame with a pitched pediment, brass trim, a row of bulbs and a lantern either side, and two deep red leaves (LeafL..., LeafR...: slab, Brass, Plate, Text, Window) with glowing round windows, brass kick plates and pull bars, EMPLOYEES on the left leaf and ONLY on the right. Built so nothing flashes or cuts: the frame's inner faces 0.1 into the doorway and 0.4 proud of the wall, each leaf hung on its outer edge and 0.3 clear of its jamb when open 90 degrees. It replaces the kit's single WcStaffDoor. Built by art/scripts/build_wchews_door_01.py. CHECK PASSED (13 meshes, 6,136 triangles).",
+   "file": "art/exports/WChewsDoor_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://72709187235561"
+   }
   }
  },
  "images": {

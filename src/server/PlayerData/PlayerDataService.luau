@@ -565,15 +565,15 @@ function PlayerDataService.luckMultiplier(player: Player): number
 	return ProfileOperations.luckMultiplier(profile.Data, os.time())
 end
 
-function PlayerDataService.spinLuckWheel(player: Player, wedge: number): (ProfileOperations.SpinOutcome?, number?, boolean?)
+function PlayerDataService.spinLuckWheel(player: Player, wedge: number, rolled: number): (ProfileOperations.SpinOutcome?, number?, boolean?)
 	local data = activeData(player, "spinLuckWheel")
 	if data == nil then
 		return nil, nil, nil
 	end
-	local outcome: ProfileOperations.SpinOutcome, multiplier, free = ProfileOperations.spinLuckWheel(data, wedge, os.time())
+	local outcome: ProfileOperations.SpinOutcome, multiplier, free = ProfileOperations.spinLuckWheel(data, wedge, rolled, os.time())
 	if outcome == "Spun" then
 		print(string.format("[PlayerDataService] %s spun the luck wheel (%s): luck %sx for %d h", player.Name,
-			if free then "free daily spin" else "a won spin", tostring(multiplier), LuckConfig.LuckHours))
+			if free then "free daily spin" else "a won spin", tostring(multiplier), LuckConfig.hoursFor(multiplier or 1)))
 	end
 	return outcome, multiplier, free
 end

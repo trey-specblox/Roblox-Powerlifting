@@ -161,9 +161,11 @@ local function wall(parent: Instance, name: string, alongX: boolean, line: numbe
 		assert(a >= cursor - 0.001 and b <= to + 0.001, string.format("%s: opening %d does not fit in the wall", name, index))
 		solid(cursor, a, y0, y1)
 		-- Below the opening (an upper-floor door starts well above y0; a ground-floor
-		-- door only 0.05 above it, too thin to bother with) and above it.
+		-- door only 0.05 above it, too thin to bother with) and above it. It stops 0.05
+		-- under the doorway's floor: the upper floor's slab runs through the wall there,
+		-- and two tops at the same height flickered in the doorway (flicker check, 2026-11-22).
 		if opening.bottom - y0 > 0.1 then
-			solid(a, b, y0, opening.bottom)
+			solid(a, b, y0, opening.bottom - 0.05)
 		end
 		solid(a, b, opening.bottom + opening.height, y1)
 		cursor = b
@@ -1548,16 +1550,25 @@ local function buildGym(model: Model): string
 		end
 	end
 
-	-- The upper floor and the ceiling of each room block (they reach under the walls).
-	-- The ceilings are hidden under the one pitched roof: no flat roof shows outside.
+	-- The upper floor and the ceiling of each room block. The ceilings reach under the walls
+	-- and are hidden under the one pitched roof: no flat roof shows outside.
+	-- The upper floor's slab stops at the INSIDE faces of the walls round it (the outer
+	-- walls, the slab-edge walls onto the hall and the front block's back wall: they all
+	-- pass it at full height, so nothing opens up). Reaching to their outer faces, its
+	-- edges lay in the same planes as theirs and showed through them as a flickering band
+	-- of tiles round the outside of the gym and along the hall (the whole-map flicker
+	-- check, 2026-11-22).
 	local blocks = {
-		{ name = "LeftBlock", low = Vector2.new(cx + hallHalf, hallFrontZ), high = Vector2.new(cx + outerHalf + t, hallBackZ) },
-		{ name = "RightBlock", low = Vector2.new(cx - outerHalf - t, hallFrontZ), high = Vector2.new(cx - hallHalf, hallBackZ) },
-		{ name = "FrontBlock", low = Vector2.new(cx - outerHalf - t, frontZ - t), high = Vector2.new(cx + outerHalf + t, hallFrontZ) },
+		{ name = "LeftBlock", low = Vector2.new(cx + hallHalf, hallFrontZ), high = Vector2.new(cx + outerHalf + t, hallBackZ),
+			slabLow = Vector2.new(cx + hallHalf + t, hallFrontZ), slabHigh = Vector2.new(cx + outerHalf, hallBackZ) },
+		{ name = "RightBlock", low = Vector2.new(cx - outerHalf - t, hallFrontZ), high = Vector2.new(cx - hallHalf, hallBackZ),
+			slabLow = Vector2.new(cx - outerHalf, hallFrontZ), slabHigh = Vector2.new(cx - hallHalf - t, hallBackZ) },
+		{ name = "FrontBlock", low = Vector2.new(cx - outerHalf - t, frontZ - t), high = Vector2.new(cx + outerHalf + t, hallFrontZ),
+			slabLow = Vector2.new(cx - outerHalf, frontZ), slabHigh = Vector2.new(cx + outerHalf, blockBackZ) },
 	}
 	for _, block in ipairs(blocks) do
-		box(floors, "Slab_" .. block.name, Vector3.new(block.low.X, upperSlabBottom, block.low.Y),
-			Vector3.new(block.high.X, upperY, block.high.Y), looks.RoomFloor)
+		box(floors, "Slab_" .. block.name, Vector3.new(block.slabLow.X, upperSlabBottom, block.slabLow.Y),
+			Vector3.new(block.slabHigh.X, upperY, block.slabHigh.Y), looks.RoomFloor)
 		box(roofs, "Ceiling_" .. block.name, Vector3.new(block.low.X, roofSlabBottom, block.low.Y),
 			Vector3.new(block.high.X, roofY, block.high.Y), looks.WallPaint)
 	end
@@ -1709,8 +1720,9 @@ local function buildGym(model: Model): string
 				local z = z0 + k * (z1 - z0) / bays
 				box(walls, string.format("Column_%s_%d", name, k), Vector3.new(glassLine - half, y0, z - half),
 					Vector3.new(glassLine + half, y1, z + half), cfg.Looks.SteelBeam)
-				decor(box(walls, string.format("Column_%s_%d_Band", name, k), Vector3.new(glassLine - half - 0.03, y0, z - half - 0.03),
-					Vector3.new(glassLine + half + 0.03, y0 + 1.2, z + half + 0.03), cfg.Looks.PlateYellow))
+				-- (0.05 proud of the column: seen from right across the hall, a thinner band can shimmer.)
+				decor(box(walls, string.format("Column_%s_%d_Band", name, k), Vector3.new(glassLine - half - 0.05, y0, z - half - 0.05),
+					Vector3.new(glassLine + half + 0.05, y0 + 1.2, z + half + 0.05), cfg.Looks.PlateYellow))
 			end
 		end
 

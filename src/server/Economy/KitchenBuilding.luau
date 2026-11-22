@@ -7,8 +7,9 @@
 
 		- W Chews' building (WChewsFront_02, from the user's photo References/W Chews/kitchen1.png) in the front square
 		  at KitchenConfig.EntranceOrigin, with an "Enter / Kitchen" prompt at its glass doors
-		- W Chews' hall (WChewsHall_01: the fancy front, the kitchen, the back room's shell) round the pan zones, to
-		  floor plan 02 (user 2026-11-21), with every copy of the restaurant kit (WChewsKit_01) placed from WChewsLayout
+		- W Chews' hall (WChewsHall_02: the fancy front, the kitchen, and the back room's shell behind the double door
+		  in the middle of the kitchen's back wall) round the pan zones, to floor plan 02 (user 2026-11-21; the door
+		  moved 2026-11-22), with every copy of the restaurant kit (WChewsKit_01, WChewsDoor_01) placed from WChewsLayout
 		  (generated from art/scripts/wchews_layout.py, the same list the approved Blender pictures were made from), and a
 		  "Leave / Kitchen" prompt at its glass doors
 		- entering puts the lifter at the arrival spot facing the chef (tagged KitchenConfig.ArriveTag: also the
@@ -162,17 +163,21 @@ function KitchenBuilding.start()
 			hall0 * KitchenConfig.planSpot((x0 + x1) / 2, (y0 + y1) / 2, height / 2))
 	end
 	-- The kitchen's walls (x -285..285, y -20..265), the fancy front's (x -80..80, y -110..-20) with its glass doors
-	-- shut (the Leave prompt is the way out), and the back room's (x 195..285, y 267..337, 18 high). The EMPLOYEES ONLY
-	-- doorway (x 245..251, 9 high) in the kitchen's back wall is left open: the door itself swings out of the way on
-	-- each screen (KitchenBackDoor, client).
+	-- shut (the Leave prompt is the way out), and the back room's (WChewsLayout.BackRoom, 18 high) behind the
+	-- EMPLOYEES ONLY doorway in the MIDDLE of the kitchen's back wall (WChewsLayout.BackDoor: 16 wide, 13 high; user
+	-- 2026-11-22). The doorway is left open: the double door's two leaves swing out of the way on each screen
+	-- (KitchenBackDoor, client).
+	local door, room = WChewsLayout.BackDoor, WChewsLayout.BackRoom
+	local backY, thick = WChewsLayout.BackWallY, WChewsLayout.WallThickness
 	block("KitchenLeft", -287, -285, -22, 267, 40)
 	block("KitchenRight", 285, 287, -22, 267, 40)
-	block("KitchenBack", -287, 245, 265, 267, 40)
-	block("KitchenBackRight", 251, 287, 265, 267, 40)
-	collider(blocks, "KitchenBackOverDoor", Vector3.new(6, 31, 2), hall0 * KitchenConfig.planSpot(248, 266, 24.5))
-	block("BackRoomLeft", 193, 195, 267, 339, 22)
-	block("BackRoomRight", 285, 287, 267, 339, 22)
-	block("BackRoomEnd", 193, 287, 337, 339, 22)
+	block("KitchenBack", -287, door.X0, backY, backY + thick, 40)
+	block("KitchenBackRight", door.X1, 287, backY, backY + thick, 40)
+	collider(blocks, "KitchenBackOverDoor", Vector3.new(door.X1 - door.X0, 40 - door.Height, thick),
+		hall0 * KitchenConfig.planSpot(door.Middle, backY + thick / 2, (40 + door.Height) / 2))
+	block("BackRoomLeft", room.X0 - thick, room.X0, room.Y0, room.Y1 + thick, 22)
+	block("BackRoomRight", room.X1, room.X1 + thick, room.Y0, room.Y1 + thick, 22)
+	block("BackRoomEnd", room.X0 - thick, room.X1 + thick, room.Y1, room.Y1 + thick, 22)
 	block("KitchenFrontLeft", -287, -80, -22, -20, 40)
 	block("KitchenFrontRight", 80, 287, -22, -20, 40)
 	block("FrontLeft", -82, -80, -112, -20, 26)
@@ -184,9 +189,15 @@ function KitchenBuilding.start()
 	block("ServiceCounter", -48, 48, -32, -28, 4)
 	block("CookingLineLeft", -272, -92, -20, -15, 7)
 	block("CookingLineRight", 92, 272, -20, -15, 7)
-	block("BackWallLine", -280, 215.5, 257.5, 265, 8)
-	for _, y in ipairs({ 150, 190, 230 }) do
-		block("Island", -29, 29, y - 5, y + 5, 6.5)
+	-- (the fridges, counters and sinks along the back wall, either side of the double door; the prep islands in two
+	--  lines either side of the middle aisle that leads to it)
+	for _, run in ipairs(WChewsLayout.BackWallRuns) do
+		block("BackWallLine", run[1], run[2], WChewsLayout.BackWallRunY, backY, 8)
+	end
+	for _, x in ipairs(WChewsLayout.IslandXs) do
+		for _, y in ipairs(WChewsLayout.IslandYs) do
+			block("Island", x - WChewsLayout.IslandHalf, x + WChewsLayout.IslandHalf, y - 5, y + 5, 6.5)
+		end
 	end
 	local bay, grinderAt = WChewsLayout.Bay, WChewsLayout.Grinder
 	block("DisplayBay", bay.X - 13, bay.X + 13, bay.Y - 13, bay.Y + 13, 8)
@@ -211,6 +222,9 @@ function KitchenBuilding.start()
 			end
 			copy:ScaleTo(scale)
 			copy:PivotTo(hall0 * KitchenConfig.planSpot(x, y, z, turn) * CFrame.new(Vector3.new(-offset.X, offset.Z, offset.Y) * scale))
+			-- (The EMPLOYEES ONLY double door needs no fitting here: its frame is modelled 0.1 into the doorway from
+			--  the wall's cut edges and 0.4 proud of the wall's faces, art/scripts/build_wchews_door_01.py. The single
+			--  door it replaced lay in the cut edges' planes and flashed two colours until it was resized here.)
 			copy.Parent = kit
 			placed += 1
 			if item == "WcTable" then
@@ -234,7 +248,8 @@ function KitchenBuilding.start()
 	end
 
 	-- The milk bar's counter in the back room (a module of the restaurant's service counter, turned to face the room).
-	block("MilkBar", 212, 224, 272.6, 276.6, 4)
+	local milkBar = WChewsLayout.MilkBar
+	block("MilkBar", milkBar.X - 6, milkBar.X + 6, milkBar.Y - 2, milkBar.Y + 2, 4)
 	-- The back room's wheel and the mafia boss cow.
 	KitchenBackRoom.build(hallFolder, hall0)
 

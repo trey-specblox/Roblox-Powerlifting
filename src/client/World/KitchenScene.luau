@@ -7,20 +7,40 @@
 	(KitchenMenu calls play). THE W CHEWS SCENE (user 2026-11-21, replacing the scoop / carry / throw of the same day):
 
 		1. the chef steps to the start button by his counter and slaps it with his open palm (Chef_ButtonPress,
-		   art/scripts/chef_animations.py); the button goes down, its lamp blinks; "Alright, I'll handle this for you!"
-		2. the bag (a cow from KitchenConfig.CowFrom steaks, more cows for huge cooks) falls out of the ceiling chute into
-		   the grinder's tub
+		   art/scripts/chef_animations.py); the button goes down, its lamp blinks; he turns to the PLAYER, who is seen
+		   standing where they really are, and says "Alright, I'll handle this for you!" to them, heard in full, both
+		   of them in the picture; then he walks back to his spot
+		2. raw meat tumbles out of the ceiling chute into the grinder's tub (a cow from KitchenConfig.CowFrom steaks,
+		   more cows for huge cooks)
 		3. the grinder churns and squirts the meat out of its outlet into the display bay, where the lifter's mountain of
-		   meat grows under the YOUR MEAT sign
-		4. the funnel over the bay draws it up in lumps; they run along the overhead trunk, down the branch over the
-		   lifter's column of pans, and drop out of the nozzle onto the lifter's OWN pan, which bursts into steam as the
-		   big steak appears
-		5. in the background of the last shot the mafia boss cow walks on two legs through the EMPLOYEES ONLY door (a
-		   small detail to make players curious; it plays once his model exists: KitchenModels.CowBoss)
+		   mince grows under the YOUR MEAT sign
+		4. the funnel over the bay draws it up (ONE shot); the lumps run along the overhead trunk and down the branch
+		   over the lifter's column of pans
+		   IN THE BACKGROUND of shots 3 and 4, far down the kitchen: the mafia boss cow waddles up to the EMPLOYEES
+		   ONLY double door in the middle of the back wall, pushes both leaves open at once and goes through; they
+		   swing shut behind him. No camera move toward him: a detail for the second or third watch.
+		5. they drop out of the nozzle onto the lifter's OWN pan and STACK UP into a pile
+		6. the GIANT MEAT PRESS slides in over the pan, SLAMS the pile, and slowly lifts off a RAW steak
+		7. the raw steak cooks in its steam: it browns, the sear marks come up, and it is the big steak
+
+	USER 2026-11-22, after watching it: the chef's line was cut off (it played from his head and the camera left him:
+	now it plays flat and the camera waits); bags were too much for a little meat (meat falls); the cuts were too fast
+	and the second tube shot wasn't needed (fewer shots, held longer, glides); the meat plopped straight into a steak
+	(now the pile, the press, the raw steak, the cooking); nobody could see the cow (his own shot).
+	USER 2026-11-22, second notes: "he turns back and talks to the counter, but you cant visibly see yourself" (the
+	player's character is no longer hidden: it is turned to the chef, he talks to it, and it is hidden only for a
+	shot it would stand in the way of); "the cutscene for the cow walking in is too obvious ... what i was looking
+	for was like a background type of thing" (his own shot is gone: he is in the background of the two bay shots,
+	which are filmed with a longer lens from further back so the door at the far wall is big enough to notice).
+
+	ITS MEAT MODELS (WChewsMeat_01, uploaded 2026-11-22; the scene still plays if one fails to load): MeatPress (without
+	it the pile just presses itself flat in a puff), MincePile (the mountain of mince, as the user's photo; the old
+	MeatMound stands in) and MeatChunk (the falling raw meat; MeatMound lumps stand in). The lumps in the tube stay
+	the light MeatMound: there are twelve of them.
 
 	Everything here is local: copies of the shared props in ReplicatedStorage.KitchenModels, the camera, and this
 	screen's own copy of the chef (the server's chef is hidden on this screen meanwhile); nobody else sees it, and the
-	server's steak in the pan is only hidden from this player until the meat lands. About 17 seconds for one bag. It
+	server's steak in the pan is only hidden from this player until the raw one has cooked. About 28 seconds. It
 	always plays the first time; after one full watch a SKIP button shows.
 
 	PERFORMANCE: a few prop copies, one chef copy, two particle emitters and a camera, all removed when it ends.
@@ -29,6 +49,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
@@ -42,6 +63,30 @@ local PromptController = require(script.Parent.Parent:WaitForChild("UI"):WaitFor
 local KitchenBackDoor = require(script.Parent:WaitForChild("KitchenBackDoor"))
 
 local KitchenScene = {}
+
+-- The chef's line is 2.49 s long (KitchenConfig.Sounds.ChefLine); the camera stays on him this long.
+local CHEF_LINE_SECONDS = 2.6
+-- The press (plan in the scene): the slide in over the pan, the pause above the pile, the slam, the hold, the slow lift.
+local PRESS = { SlideIn = 0.85, Pause = 0.5, Slam = 0.14, Hold = 0.8, Lift = 2.2, SlideOut = 1.0 }
+-- The raw steak's colours before it cooks, and how long the cooking takes.
+local RAW_MEAT = Color3.fromRGB(204, 52, 60)
+local RAW_FAT = Color3.fromRGB(252, 238, 230)
+local COOK_SECONDS = 2.6
+-- The nozzle over a pan ends this far under the tube's axis (the meat's path below).
+local NOZZLE_DROP = 9
+-- The player's own character is hidden for a shot only when it stands this near the line from the camera to what the
+-- camera looks at.
+local CHARACTER_CLEAR = 4
+-- The two bay shots (the grinding and the suction) are filmed from further back with a longer lens, aimed between
+-- the bay and the double door at the far wall (Weight of the way toward the bay): the door is 250 studs behind the
+-- bay, and with the game's usual 70 degrees the cow at it was 27 pixels tall on a 1080p screen. At 40 degrees he is
+-- about 45, the open doorway 75 by 90. Checked in art/scripts/preview_wchews.py (views 30 and 31), which uses the
+-- same numbers.
+local BAY_SHOT = { FieldOfView = 40, Weight = 0.6 }
+-- The cow in the background: how fast he waddles (studs a second), how far along the wall he starts from the door,
+-- and when he sets off (seconds into the grinding shot, which lasts about 4.6: he is through the doors before it
+-- ends, and they shut behind him in the suction shot).
+local COW_WALK = { Speed = 8, From = 12, After = 0.4 }
 
 local playing = false
 -- Set by the SKIP button: every wait and move of the running scene stops at once (SKIP is raised through them).
@@ -184,8 +229,14 @@ local function chefSays(_head: BasePart, text: string, seconds: number)
 	end)
 end
 
--- Hides (or shows) this player's own character on their screen (so it can't block the chef's shots).
+-- Hides (or shows) this player's own character on their screen. The character is SEEN in the scene (user 2026-11-22:
+-- "you cant visibly see yourself"); it is hidden only for a shot it would stand in the way of (shoot, in play).
+local characterHidden = false
 local function hideCharacter(hidden: boolean)
+	if hidden == characterHidden then
+		return
+	end
+	characterHidden = hidden
 	local character = Players.LocalPlayer.Character
 	if character then
 		for _, part in ipairs(character:GetDescendants()) do
@@ -194,6 +245,13 @@ local function hideCharacter(hidden: boolean)
 			end
 		end
 	end
+end
+
+-- This player's own character's root part, if it is there.
+local function characterRoot(): BasePart?
+	local character = Players.LocalPlayer.Character
+	local body = character and character:FindFirstChild("HumanoidRootPart")
+	return if body and body:IsA("BasePart") then body else nil
 end
 
 -- Hides (or shows) the server's steak in the pan for this player only.
@@ -405,19 +463,27 @@ local function walkChef(root: BasePart, walk: AnimationTrack?, to: Vector3, face
 end
 
 --[[
-	The mafia boss cow's walk-on (user 2026-11-21: "a small detail that if players just look down or something they see
-	a cow on 2 legs opening and walking through the door, so it raises suspicion"): he waddles to the EMPLOYEES ONLY
-	door, it swings open into the back room (KitchenBackDoor), he goes through, it shuts. On this screen only. Does
-	nothing if his model didn't load (ReplicatedStorage.KitchenModels.CowBoss, KitchenBackRoom).
+	The mafia boss cow in the BACKGROUND of the two bay shots (user 2026-11-21: "a cow on 2 legs opening and walking
+	through the door, so it raises suspicion"; 2026-11-22: his own shot was "too obvious ... what i was looking for
+	was like a background type of thing ... the mafia boss cow can push open both of them at the same time"). Far
+	down the kitchen he waddles along the back wall to the EMPLOYEES ONLY double door, turns in, leans into both
+	leaves with his hoof out (they swing open into the back room: KitchenBackDoor), goes through, and they shut
+	behind him. The camera never moves toward him. On this screen only; it runs beside the scene and returns when he
+	is gone. Does nothing if his model didn't load (ReplicatedStorage.KitchenModels.CowBoss, KitchenBackRoom).
 ]]
-local function cowCameo(_kit: Instance?, hall0: CFrame, made: { Instance })
+local function cowInTheBackground(hall0: CFrame, made: { Instance })
 	local cow = prop("CowBoss")
 	if cow == nil then
 		return
 	end
+	for _, item in ipairs(cow:GetDescendants()) do
+		if item:IsA("BillboardGui") or item:IsA("ProximityPrompt") then
+			item:Destroy()
+		end
+	end
 	table.insert(made, cow)
 	-- While his double walks, the cow standing in the back room isn't drawn on this screen (he can't be in two places
-	-- when the door opens), and the door is held open for him.
+	-- when the doors open), and the doors are held open for him.
 	local hall = Workspace:FindFirstChild("KitchenHall")
 	local room = hall and hall:FindFirstChild("BackRoom")
 	local standing = room and room:FindFirstChild("CowBoss")
@@ -450,27 +516,72 @@ local function cowCameo(_kit: Instance?, hall0: CFrame, made: { Instance })
 			tag.Enabled = true
 		end
 	end)
+
+	-- His right arm's pieces turn round his shoulder (rigid pieces, no skeleton: WChewsLayout.CowShoulder), as at his
+	-- shuffle table (LuckMenu). `reach` 0..1: his hoof out in front of him.
+	local offset, shoulder = WChewsLayout.PivotOffset.CowBoss, WChewsLayout.CowShoulder
+	local toShoulder = CFrame.new(offset.X - shoulder.X, shoulder.Z - offset.Z, shoulder.Y - offset.Y)
+	local joint = cow:GetPivot() * toShoulder
+	local arm: { { part: BasePart, home: CFrame } } = {}
+	for _, part in ipairs(cow:GetDescendants()) do
+		if part:IsA("BasePart") and string.find(part.Name, "CowBoss_ArmR", 1, true) then
+			table.insert(arm, { part = part, home = joint:ToObjectSpace(part.CFrame) })
+		end
+	end
+	local reach = 0
+	local function stand(at: CFrame)
+		cow:PivotTo(at)
+		local turned = at * toShoulder * CFrame.Angles(math.rad(78) * reach, 0, 0)
+		for _, piece in ipairs(arm) do
+			piece.part.CFrame = turned * piece.home
+		end
+	end
+
+	-- (plan points: the doorway is in the back wall, BackWallY .. BackWallY + WallThickness)
+	local door, wallY = WChewsLayout.BackDoor, WChewsLayout.BackWallY
 	local function at(x: number, y: number): Vector3
 		return (hall0 * KitchenConfig.planSpot(x, y, 0)).Position
 	end
-	local from, doorway, inside = at(236, 250), at(248, 262), at(248, 277)
-	local function waddle(a: Vector3, b: Vector3, seconds: number)
+	local from = at(door.Middle + COW_WALK.From, wallY - 9)
+	local front = at(door.Middle + 0.8, wallY - 8)
+	local push = at(door.Middle + 0.4, wallY - 1.8) -- (his hoof, 2.6 in front of him, reaches the leaves here)
+	local inside = at(door.Middle, wallY + WChewsLayout.WallThickness + 13)
+	-- Waddles from a to b: `lean` (0..1) tips him forward into the doors.
+	local function waddle(a: Vector3, b: Vector3, lean: number, during: ((number) -> ())?)
+		local seconds = (b - a).Magnitude / COW_WALK.Speed
 		animate(seconds, function(t)
+			if during then
+				during(t)
+			end
 			local sway = math.sin(t * seconds * 9)
-			cow:PivotTo(CFrame.lookAt(a:Lerp(b, t), b + (b - a)) * CFrame.Angles(0, 0, math.rad(5) * sway)
+			stand(CFrame.lookAt(a:Lerp(b, t), b + (b - a)) * CFrame.Angles(math.rad(-7) * lean, 0, math.rad(5) * sway)
 				+ Vector3.new(0, math.abs(sway) * 0.15, 0))
 		end, Enum.EasingStyle.Linear)
 	end
-	cow:PivotTo(CFrame.lookAt(from, doorway))
+
+	wait(COW_WALK.After)
+	stand(CFrame.lookAt(from, front))
 	cow.Parent = Workspace
-	local short = doorway - (doorway - from).Unit * 3
-	waddle(from, short, 0.9)
+	waddle(from, front, 0)
+	-- He turns in to the doors, his hoof coming up.
+	local facingAlong = CFrame.lookAt(front, front + (front - from))
+	local facingDoor = CFrame.lookAt(front, Vector3.new(push.X, front.Y, push.Z))
+	animate(0.35, function(t)
+		reach = t
+		stand(facingAlong:Lerp(facingDoor, t))
+	end)
+	-- Up to the doors, leaning in: both leaves give way together as his hoof reaches them.
+	waddle(front, push, 1)
 	holding = true
 	KitchenBackDoor.hold(true)
-	wait(0.4)
-	waddle(short, inside, 0.9)
-	cow.Parent = nil
+	-- Through the doorway, his arm coming down once he is past the leaves.
+	waddle(push, inside, 1, function(t)
+		reach = 1 - math.clamp((t - 0.35) / 0.3, 0, 1)
+	end)
+	-- The leaves swing shut behind him; he is taken away once they have.
 	release()
+	wait(1.0)
+	cow.Parent = nil
 end
 
 --[[
@@ -507,6 +618,11 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 	-- him to the other side, it flew through his body).
 	local wantFrom, wantAt = Vector3.zero, Vector3.zero
 	local camFrom, camAt = Vector3.zero, Vector3.zero
+	-- A short shake (the press's slam): `shakeSize` studs, dying away until `shakeUntil`.
+	local shakeUntil, shakeFor, shakeSize = 0, 1, 0
+	local function shakeCamera(size: number, seconds: number)
+		shakeSize, shakeFor, shakeUntil = size, seconds * slow(), os.clock() + seconds * slow()
+	end
 	local obstacles: { () -> (Vector3, number) } = {}
 	local function blocked(a: Vector3, b: Vector3): boolean
 		local along = b - a
@@ -519,18 +635,39 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		end
 		return false
 	end
-	local function shoot(from: Vector3, at: Vector3, cut: boolean?)
+	-- Whether this player's own character would stand in a shot's way: near the line from the camera to what it
+	-- looks at.
+	local function inTheWay(from: Vector3, at: Vector3): boolean
+		local body = characterRoot()
+		if body == nil then
+			return false
+		end
+		local along = at - from
+		local share = if along.Magnitude > 0.01 then math.clamp((body.Position - from):Dot(along) / along:Dot(along), 0, 1) else 0
+		return (from + along * share - body.Position).Magnitude < CHARACTER_CLEAR
+	end
+	-- `withPlayer`: the shot is framed on the player's character too, so it is shown wherever it stands; in every
+	-- other shot it is shown unless it would stand in the way.
+	local function shoot(from: Vector3, at: Vector3, cut: boolean?, withPlayer: boolean?)
 		wantFrom, wantAt = from, at
 		if cut or blocked(camFrom, from) then
 			camFrom, camAt = from, at
 		end
+		hideCharacter(not withPlayer and inTheWay(from, at))
 	end
+	local usualFieldOfView = camera.FieldOfView
 	RunService:BindToRenderStep("KitchenSceneCamera", Enum.RenderPriority.Camera.Value + 2, function(dt)
 		local follow = 1 - math.exp(-dt / (0.45 * slow()))
 		camFrom = camFrom:Lerp(wantFrom, follow)
 		camAt = camAt:Lerp(wantAt, follow)
+		local jolt = Vector3.zero
+		local left = shakeUntil - os.clock()
+		if left > 0 then
+			local size = shakeSize * left / shakeFor
+			jolt = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 2 * size
+		end
 		camera.CameraType = Enum.CameraType.Scriptable
-		camera.CFrame = CFrame.lookAt(camFrom, camAt)
+		camera.CFrame = CFrame.lookAt(camFrom + jolt, camAt)
 		camera.Focus = CFrame.new(camAt)
 	end)
 	local made: { Instance } = {}
@@ -584,7 +721,20 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		local panel = kit and kit:FindFirstChild("WcButtonPanel")
 		local button = panel and panel:FindFirstChild("WcButtonPanel_Button", true)
 		local lamp = panel and panel:FindFirstChild("WcButtonPanel_Lamp", true)
-		hideCharacter(true)
+		-- The player's character stays where it really is, in the picture, turned to the chef (controls are held).
+		local body = characterRoot()
+		if body then
+			local chefAt = Vector3.new(home.Position.X, body.Position.Y, home.Position.Z)
+			if (chefAt - body.Position).Magnitude > 1 then
+				body.CFrame = CFrame.lookAt(body.Position, chefAt)
+			end
+		end
+		-- A plan point is inside the restaurant's walkable rooms (the dining room, the kitchen, the opening between).
+		local function inRooms(at: Vector3): boolean
+			local p = hall0:PointToObjectSpace(at)
+			local x, y = math.abs(p.X), p.Z
+			return (x < 77 and y > -107 and y < -18) or (x < 282 and y >= -18 and y < 262)
+		end
 
 		-- 1. The chef steps to the start button and slaps it with his open palm (Chef_ButtonPress). He stands so that his
 		-- palm, ChefPress.HandAhead in front of him and HandRight to his right at the press, comes down on the button.
@@ -632,67 +782,115 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 			end
 			wait(0.5)
 			pressed.CFrame = buttonHome
+			-- (his hand comes back up off the button before he turns)
+			wait(math.max(press.Seconds - press.Press - 0.5, 0.1))
 		end
 
-		-- He says his line and walks back to his spot while the machine does the work.
-		chefSays(head, "Alright, I'll handle this for you!", 2.6 * slow())
-		sound(KitchenConfig.Sounds.ChefLine, 1, head)
+		-- He turns to the PLAYER and says his line to them (user 2026-11-22: "he turns back and talks to the counter, but
+		-- you cant visibly see yourself, as in my character"), then walks back to his spot. A two-shot from the side,
+		-- level with their heads, looking along the counter between them: the chef on one half of the picture and the
+		-- player on the other, both the same size, face to face, neither in front of the other. (From behind the
+		-- player's shoulder the chef was a small figure far across the counter: Studio 2026-11-22.) The line is heard
+		-- in full (user 2026-11-22: "the audio gets cut off"): it plays flat instead of from his head, so no camera
+		-- move can fade it, and the camera stays on the two of them until he has said it.
+		local listener = if body then body.Position else chefRoot.Position + home.LookVector * 10
+		local toListener = Vector3.new(listener.X - chefRoot.Position.X, 0, listener.Z - chefRoot.Position.Z)
+		if body and toListener.Magnitude > 2 then
+			local toward = toListener.Unit
+			local side = toward:Cross(up)
+			local between = chefRoot.Position:Lerp(listener, 0.5)
+			-- (the player's character looks at him where he stands now, by the button)
+			body.CFrame = CFrame.lookAt(body.Position, Vector3.new(chefRoot.Position.X, body.Position.Y, chefRoot.Position.Z))
+			-- (far enough to the side for both to fit a narrow screen; a little toward the player's end, so the chef's
+			--  face shows more than his ear)
+			local aside = math.clamp(toListener.Magnitude * 0.85, 8, 16)
+			-- (from whichever side is inside the rooms; of two that are, the one nearer the middle aisle)
+			local spots = { between + side * aside + toward * 1.5 + up * 2.2, between - side * aside + toward * 1.5 + up * 2.2 }
+			local function rank(at: Vector3): number
+				return (if inRooms(at) then 0 else 1000) + math.abs(hall0:PointToObjectSpace(at).X)
+			end
+			local from = if rank(spots[1]) <= rank(spots[2]) then spots[1] else spots[2]
+			shoot(from, between + up * 1.2, true, true)
+		else
+			-- (no character to talk to: he says it over his counter, as before)
+			shoot(chefRoot.Position + hallVector(-7, 4.2, 12), chefRoot.Position + up * 1.3)
+		end
 		beside(function()
-			wait(math.max(press.Seconds - press.Press - 0.5, 0.1))
+			turnChef(chefRoot, listener, 0.5)
+		end)
+		chefSays(head, "Alright, I'll handle this for you!", (CHEF_LINE_SECONDS + 0.5) * slow())
+		sound(KitchenConfig.Sounds.ChefLine, 1, SoundService)
+		wait(CHEF_LINE_SECONDS)
+		beside(function()
 			walkChef(chefRoot, tracks.Walk, home.Position, home.Position + home.LookVector * 10)
 			chefRoot.CFrame = home
 		end)
-		wait(0.9)
+		wait(0.7) -- (he sets off back to his spot)
 
-		-- 2. The bag (a cow for big cooks, more cows for huge ones) falls out of the ceiling chute into the grinder's tub.
+		-- 2. The meat falls out of the ceiling chute into the grinder's tub (user 2026-11-22: "the bags of meats are too
+		-- much for a little amount of meat so instead ... meat falls"): a handful of raw chunks, more for a bigger cook;
+		-- a cow from CowFrom steaks, more cows for huge cooks.
 		local chuteMouth = spot(WChewsLayout.Chute.X, WChewsLayout.Chute.Y, WChewsLayout.ChuteMouth + 3)
 		-- (from the grinder's side, behind the display bay: from the front corner the bay's frame and the funnel filled the
 		--  picture; Studio 2026-11-21)
 		shoot(inKitchen(grinderAt + hallVector(34, 14, -4)), grinderAt + up * 19, true)
+		wait(0.5)
 		local drops: { Model } = {}
 		local kind, count = KitchenConfig.sceneDrops(steaks)
-		for _ = 1, count do
-			local item = prop(if kind == "Bag" then "MeatBag" else "Cow")
+		for index = 1, count do
+			local item = if kind == "Cow" then prop("Cow") else (prop("MeatChunk") or prop("MeatMound"))
 			if item then
-				-- (sized for the big grinder: a bag 5 to 8 studs, a cow 10: at a fixed scale the cow was a speck; Studio 2026-11-21)
+				-- (sized for the big grinder: a chunk 3.6 to 5.6 studs, a cow 10: at 2 to 3 studs a chunk was a dot against
+				--  the grinder, Studio 2026-11-22, as the cow was a speck at a fixed scale the day before)
 				local size = item:GetExtentsSize()
 				local longest = math.max(size.X, size.Y, size.Z, 0.1)
-				item:ScaleTo((if kind == "Bag" then math.clamp(5 + steaks / 30, 5, 8) else 10) / longest)
+				item:ScaleTo((if kind == "Cow" then 10 else 3.6 + (index * 7 % 5) * 0.5) / longest)
 				table.insert(drops, item)
 			end
 		end
+		local dropGap = if kind == "Cow" then KitchenConfig.DropGap else KitchenConfig.ChunkGap
 		local fall = KitchenConfig.DropSeconds - 0.35
 		for index, item in ipairs(drops) do
 			table.insert(made, item)
 			local spin = math.rad(40 * index)
+			-- (the chunks spread over the tub's mouth; a cow comes down its middle)
+			local aside = if kind == "Cow" then Vector3.zero
+				else Vector3.new(math.sin(index * 2.4), 0, math.cos(index * 1.7)) * math.min(hopper.Size.X, hopper.Size.Z) * 0.22
 			item:PivotTo(CFrame.new(chuteMouth) * CFrame.Angles(0.4, spin, 0.3))
 			beside(function()
-				wait((index - 1) * KitchenConfig.DropGap)
+				wait((index - 1) * dropGap)
 				item.Parent = Workspace
-				sound(KitchenConfig.Sounds.Chute, 0.7, hopper) -- (the rumble down the chute; the thud follows as it lands)
+				if index == 1 or kind == "Cow" then
+					sound(KitchenConfig.Sounds.Chute, 0.7, hopper) -- (the rumble down the chute; the thud follows as it lands)
+				end
 				if kind == "Cow" then
 					sound(KitchenConfig.Sounds.CowMoo, 0.8, hopper)
 				end
 				local baseScale = item:GetScale()
 				animate(fall, function(t)
-					item:PivotTo(CFrame.new(chuteMouth:Lerp(hopperTop + up, t)) * CFrame.Angles(0.4 + t * 2.5, spin, 0.3 - t))
+					item:PivotTo(CFrame.new(chuteMouth:Lerp(hopperTop + up + aside, t)) * CFrame.Angles(0.4 + t * 2.5, spin, 0.3 - t))
 				end, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-				sound(KitchenConfig.Sounds.BagThud, 0.9, hopper)
+				if kind == "Cow" then
+					sound(KitchenConfig.Sounds.BagThud, 0.9, hopper)
+				else
+					-- (every chunk slaps into the tub, each at a slightly different pitch)
+					sound(KitchenConfig.Sounds.MeatFall, 0.8, hopper).PlaybackSpeed = 0.9 + 0.05 * (index % 5)
+				end
 				animate(0.35, function(t)
 					item:ScaleTo(math.max(baseScale * (1 - t), 0.02))
-					item:PivotTo(CFrame.new(hopperTop + Vector3.new(0, 1 - 2 * t, 0)))
+					item:PivotTo(CFrame.new(hopperTop + aside + Vector3.new(0, 1 - 2 * t, 0)))
 				end)
 				item.Parent = nil
 			end)
 		end
-		wait(KitchenConfig.DropSeconds + (math.max(#drops, 1) - 1) * KitchenConfig.DropGap)
+		wait(KitchenConfig.DropSeconds + (math.max(#drops, 1) - 1) * dropGap + 0.5)
 
 		-- 3. Grinding: the grinder churns and squirts the meat out of its outlet into the display bay, where the lifter's
-		-- mountain of meat grows under the YOUR MEAT sign.
+		-- mountain of mince grows under the YOUR MEAT sign.
 		local bayAt = spot(WChewsLayout.Bay.X, WChewsLayout.Bay.Y, 0.3)
 		local spoutDir = Vector3.new(spout.CFrame.LookVector.X, 0, spout.CFrame.LookVector.Z).Unit -- (the way it points)
 		local spoutFront = spout.Position + spoutDir * (spout.Size.Z / 2 + 0.4)
-		local mound = prop("MeatMound")
+		local mound = prop("MincePile") or prop("MeatMound")
 		local moundSize = math.clamp(length * 0.5, 3, 22)
 		local radius = moundSize / 2
 		local moundScale = 1
@@ -703,8 +901,24 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 			mound:PivotTo(CFrame.new(bayAt))
 			mound.Parent = Workspace
 		end
-		-- (from the dining side of the bay, a little to one side: the sign, the mound, the grinder shaking behind it)
-		shoot(inKitchen(bayAt + hallVector(15 + radius * 0.5, 8.5 + radius * 0.3, -23 - radius)), bayAt + up * (3.5 + radius * 0.35), true)
+		-- The two bay shots (this one and the suction shot) are filmed from far back by the kitchen's front wall with a
+		-- longer lens, aimed between the bay and the EMPLOYEES ONLY double door in the middle of the far wall, so the
+		-- door stands in the picture beside the bay, big enough to notice (BAY_SHOT). The cow sets off as this shot
+		-- starts.
+		local backDoor = WChewsLayout.BackDoor
+		local farDoor = spot(backDoor.Middle, WChewsLayout.BackWallY, backDoor.Height / 2)
+		local function bayShot(from: Vector3, subject: Vector3)
+			local aim = (subject - from).Unit * BAY_SHOT.Weight + (farDoor - from).Unit * (1 - BAY_SHOT.Weight)
+			camera.FieldOfView = BAY_SHOT.FieldOfView
+			shoot(from, from + aim * 50, true)
+		end
+		-- (from the dining side of the bay, a little to one side: the sign, the mound, the grinder shaking behind it,
+		--  and the double door far behind, between the grinder and the left-hand islands)
+		bayShot(inKitchen(bayAt + hallVector(20 + radius * 0.5, 11.7 + radius * 0.3, -50 - radius)), bayAt + up * (3.5 + radius * 0.35))
+		beside(function()
+			cowInTheBackground(hall0, made)
+		end)
+		wait(0.4)
 		burst(spoutFront, Color3.fromRGB(205, 82, 80), 16, 0.7, KitchenConfig.GrindSeconds - 0.4, 70, spoutDir - Vector3.new(0, 0.6, 0))
 		sound(KitchenConfig.Sounds.Grinder, 0.8, spout)
 		animate(KitchenConfig.GrindSeconds, function(t)
@@ -716,22 +930,53 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 			end
 		end, Enum.EasingStyle.Linear)
 		grinder:PivotTo(grinderHome)
-		wait(0.6)
+		wait(1.0)
 
-		-- 4. The tube: the funnel over the bay draws the meat up in lumps; they run along the overhead trunk, down the
-		-- branch over the lifter's column of pans, and drop out of the nozzle onto the lifter's own pan.
+		-- The pan end, worked out before the meat sets off: where the steak lies, how thick it is, how much room there is
+		-- under the nozzle, and from that the press's size, how high it hovers and how tall the pile can stand.
 		local panFloor = KitchenConfig.PanFloorHeight * KitchenConfig.PanScale - KitchenConfig.PanSink
 		local zoneAt = if zone then (zone :: Model):GetPivot().Position else spot(WChewsLayout.PanColumns[5], WChewsLayout.PanRows[1])
 		local target = zoneAt + up * panFloor
 		local zoneHall = hall0:PointToObjectSpace(zoneAt)
 		local tubeY = WChewsLayout.TubeHeight
+		local served = zone and (zone :: Model):FindFirstChild("Steak")
+		local steakModel: Model? = if served and served:IsA("Model") then served else nil
+		local steakBase = if steakModel then steakModel:GetPivot() else CFrame.new(target) * CFrame.Angles(0, math.rad(18), 0)
+		local thickness = if steakModel then steakModel:GetExtentsSize().Y else math.max(length * 0.135, 0.6)
+		local steakTop = steakBase.Position.Y + thickness
+		local nozzleBottom = hall0:PointToWorldSpace(Vector3.new(zoneHall.X, tubeY - NOZZLE_DROP, zoneHall.Z)).Y
+		local room = nozzleBottom - 0.4 - steakTop
+		local pressModel = prop("MeatPress")
+		local pressScale, lift = 1, math.clamp(room * 0.5, 1.5, 5)
+		if pressModel then
+			local size = pressModel:GetExtentsSize()
+			-- Big enough to cover the steak, but never so tall that it would reach the nozzle with 1.5 studs to lift in.
+			pressScale = math.min(1.15 * length / math.max(size.X, 0.1), (room - 1.5) / math.max(size.Y, 0.1))
+			if pressScale * size.X < length * 0.5 then
+				pressModel = nil -- (no room for a press that covers even half the steak: the pile presses itself)
+			else
+				lift = math.clamp(room - size.Y * pressScale, 1.5, 7)
+				table.insert(made, pressModel)
+			end
+		end
+		local pile = prop("MincePile") or prop("MeatMound")
+		local pileScale = 1
+		if pile then
+			table.insert(made, pile)
+			pileScale = (thickness + lift * 0.6) / math.max(pile:GetExtentsSize().Y, 0.1)
+			pile:ScaleTo(pileScale * 0.05)
+			pile:PivotTo(CFrame.new(target))
+		end
+
+		-- 4. The tube: the funnel over the bay draws the meat up in lumps; they run along the overhead trunk, down the
+		-- branch over the lifter's column of pans, and drop out of the nozzle onto the lifter's own pan.
 		local path = {
 			bayAt + up * math.min(radius, 6),
 			spot(WChewsLayout.Bay.X, WChewsLayout.Bay.Y, tubeY),
 			spot(WChewsLayout.Bay.X, WChewsLayout.TrunkY, tubeY),
 			hall0:PointToWorldSpace(Vector3.new(zoneHall.X, tubeY, WChewsLayout.TrunkY)),
 			hall0:PointToWorldSpace(Vector3.new(zoneHall.X, tubeY, zoneHall.Z)),
-			hall0:PointToWorldSpace(Vector3.new(zoneHall.X, tubeY - 9, zoneHall.Z)),
+			hall0:PointToWorldSpace(Vector3.new(zoneHall.X, tubeY - NOZZLE_DROP, zoneHall.Z)),
 			target,
 		}
 		local lengths: { number } = {}
@@ -762,24 +1007,27 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		end
 		local landed = 0
 		local streamStart = os.clock()
-		sound(KitchenConfig.Sounds.Tube, 0.7, Workspace) -- (3.2 s: the suction and the rush along the tube; the run takes 2.4 to 3.6)
+		sound(KitchenConfig.Sounds.Tube, 0.7, SoundService) -- (3.2 s: the suction and the rush along the tube; the run takes 2.4 to 3.6)
 		table.insert(connections, RunService.RenderStepped:Connect(function()
 			local now = (os.clock() - streamStart) / slow()
 			for _, lump in ipairs(lumps) do
 				if not lump.done then
 					local t = now - lump.delay
 					if t >= travel then
+						-- 5. A lump lands on the pan: the pile grows by it (user 2026-11-22: "instead of the meat plopping
+						-- instantly to the steak ... the meat gets stacked up"), each with its own plop at its own pitch.
 						lump.done = true
 						lump.model.Parent = nil
 						landed += 1
+						if pile then
+							pile:ScaleTo(pileScale * math.max(landed / math.max(#lumps, 1), 0.08))
+							pile:PivotTo(CFrame.new(target))
+							pile.Parent = Workspace
+						end
 						if landed == 1 then
-							-- The first lump hits the pan: the steak is there, in a burst of steam.
-							hideSteak(zone :: Model?, false)
-							burst(target + Vector3.new(0, 1, 0), Color3.fromRGB(240, 240, 240), 10, 2.5, 1.2, 40)
-							sound(KitchenConfig.Sounds.MeatLand, 0.9, Workspace)
+							sound(KitchenConfig.Sounds.MeatLand, 0.8, SoundService)
 						else
-							-- Every lump after it lands with its own plop, each at a slightly different pitch.
-							sound(KitchenConfig.Sounds.Plop, 0.55, Workspace).PlaybackSpeed = 0.94 + 0.03 * (landed % 5)
+							sound(KitchenConfig.Sounds.Plop, 0.55, SoundService).PlaybackSpeed = 0.94 + 0.03 * (landed % 5)
 						end
 					elseif t >= 0 then
 						if lump.model.Parent == nil then
@@ -791,36 +1039,155 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 			end
 		end))
 		-- The mound shrinks away as it is drawn up.
+		local drawUp = #lumps * KitchenConfig.TubeLumpGap + 0.9
 		beside(function()
 			if mound then
 				local leaving = mound :: Model
-				animate(#lumps * KitchenConfig.TubeLumpGap + 0.9, function(t)
+				animate(drawUp, function(t)
 					leaving:ScaleTo(moundScale * math.max(1 - t, 0.04))
 					leaving:PivotTo(CFrame.new(bayAt))
 				end, Enum.EasingStyle.Linear)
 				leaving.Parent = nil
 			end
 		end)
-		-- (low beside the bay, looking up at the funnel)
-		-- (well outside the bay's front corner: closer in, a post crossed the picture and the sign showed from behind)
-		shoot(inKitchen(bayAt + hallVector(-24, 7, -27)), bayAt + up * 11, true)
-		wait(1.0)
-		-- (under the trunk near the middle, looking along it the way the meat runs)
-		local side = if zoneHall.X >= 0 then 1 else -1
-		shoot(inKitchen(hall0:PointToWorldSpace(Vector3.new(-side * 16, 20, WChewsLayout.TrunkY - 22))),
-			hall0:PointToWorldSpace(Vector3.new(zoneHall.X * 0.55, tubeY, WChewsLayout.TrunkY + 6)), true)
-		wait(math.max(travel - 1.0 - 1.1, 0.4))
-		-- (at the lifter's pan, looking up at the nozzle the meat drops out of; the camera stands on the pan's side away
-		--  from the EMPLOYEES ONLY door, so that door is in the background)
-		local doorAt = spot(248, 266, 5)
-		local away = Vector3.new(target.X - doorAt.X, 0, target.Z - doorAt.Z)
-		away = if away.Magnitude > 1 then away.Unit else hallVector(0, 0, -1)
-		shoot(inKitchen(target + away * (19 + length * 0.5) + up * (8 + length * 0.25)), target + up * 6, true)
-		wait(1.1 + #lumps * KitchenConfig.TubeLumpGap + 0.2)
+		-- ONE shot of it (user 2026-11-22: "the first frame, when the meat first starts getting sucked in is enough we
+		-- dont need the second frame"): low beside the bay, looking up at the funnel, well outside the bay's front corner
+		-- (closer in, a post crossed the picture and the sign showed from behind). It holds until the first lump is
+		-- nearly at the pan.
+		-- (with the bay shots' longer lens, from the other front corner: the double door stands right of the bay here)
+		bayShot(inKitchen(bayAt + hallVector(-26, 4.2, -50)), bayAt + up * 10.7)
+		wait(math.max(travel - 0.6, 1.8))
 
-		-- 5. The steak in the pan, in its steam; behind it, the mafia boss cow slips through the EMPLOYEES ONLY door.
+		-- 5. At the lifter's pan: the lumps drop out of the nozzle and stack up. The camera stands on the pan's side away
+		-- from the back wall's right end (the pan shots were framed from that point when the single staff door stood
+		-- there, and are kept as they were) and stays here, only gliding, until the steak is cooked.
+		local farCorner = spot(248, 266, 5)
+		local away = Vector3.new(target.X - farCorner.X, 0, target.Z - farCorner.Z)
+		away = if away.Magnitude > 1 then away.Unit else hallVector(0, 0, -1)
+		camera.FieldOfView = usualFieldOfView
+		shoot(inKitchen(target + away * (19 + length * 0.5) + up * (8 + length * 0.25)), target + up * 6, true)
+		wait(0.6 + #lumps * KitchenConfig.TubeLumpGap + 0.7)
+
+		-- 6. The giant meat press (user 2026-11-22: "a Giant meat presser ... that slams the meat and slowly lifts up
+		-- which makes it form into a raw steak"). It slides in under the nozzle from the kitchen's middle aisle, hangs
+		-- over the pile, slams down, holds, and lifts slowly off the raw steak. The raw steak is this screen's copy of
+		-- the server's steak in the pan, in raw colours.
+		local raw: Model? = nil
+		local cooked: { { part: BasePart, colour: Color3, sear: boolean } } = {}
+		if steakModel then
+			local copy = steakModel:Clone()
+			copy.Name = "KitchenRawSteak"
+			for _, part in ipairs(copy:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = true
+					part.CanCollide = false
+					part.CanQuery = false
+					part.CanTouch = false
+					part.CastShadow = false
+					part.LocalTransparencyModifier = 0
+					local sear = string.find(part.Name, "Sear", 1, true) ~= nil
+					table.insert(cooked, { part = part, colour = part.Color, sear = sear })
+					if sear then
+						part.Transparency = 1
+					elseif string.find(part.Name, "Meat", 1, true) then
+						part.Color = RAW_MEAT
+					elseif string.find(part.Name, "Fat", 1, true) then
+						part.Color = RAW_FAT
+					end
+				end
+			end
+			table.insert(made, copy)
+			raw = copy
+		end
+		local pressDown = CFrame.new(steakBase.Position.X, steakTop, steakBase.Position.Z) * steakBase.Rotation
+		local function pressed(byPress: boolean)
+			-- The moment the pile is pressed flat: it is gone, the raw steak lies there, and meat spits out sideways.
+			if pile then
+				pile.Parent = nil
+			end
+			if raw then
+				raw.Parent = Workspace
+			else
+				hideSteak(zone :: Model?, false)
+			end
+			burst(target + up * 0.6, Color3.fromRGB(205, 82, 80), 26, 0.6, 0.25, 220)
+			if byPress then
+				sound(KitchenConfig.Sounds.PressSlam, 1, SoundService) -- (its loudest moment is its start: the plate landing)
+			else
+				sound(KitchenConfig.Sounds.BagThud, 1, SoundService)
+				sound(KitchenConfig.Sounds.MeatLand, 0.9, SoundService)
+			end
+			shakeCamera(0.35, 0.5)
+		end
+		if pressModel then
+			local machine = pressModel :: Model
+			local hover = pressDown + up * lift
+			-- (from the middle aisle's side, along the row: the tube's branch runs along the column, so nothing hangs in
+			--  the way across it)
+			local fromSide = hallVector(if zoneHall.X >= 0 then -1 else 1, 0, 0)
+			local enter = hover + fromSide * (machine:GetExtentsSize().X * pressScale * 0.6 + 16)
+			machine:ScaleTo(pressScale)
+			machine:PivotTo(enter)
+			machine.Parent = Workspace
+			-- (closer in for the press)
+			shoot(inKitchen(target + away * (15 + length * 0.45) + up * (6.5 + length * 0.2)), target + up * (thickness + lift * 0.5))
+			animate(PRESS.SlideIn, function(t)
+				machine:PivotTo(enter:Lerp(hover, t))
+			end, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+			wait(PRESS.Pause)
+			local pileFull = if pile then (pile :: Model):GetScale() else 1
+			animate(PRESS.Slam, function(t)
+				machine:PivotTo(hover:Lerp(pressDown, t))
+				if pile and (pile :: Model).Parent then
+					-- (the pile gives way under the plate)
+					(pile :: Model):ScaleTo(pileFull * math.max(1 - 0.7 * t, 0.05))
+					;(pile :: Model):PivotTo(CFrame.new(target))
+				end
+			end, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+			pressed(true)
+			wait(PRESS.Hold)
+			sound(KitchenConfig.Sounds.PressLift, 0.8, SoundService) -- (the wet peel as the plate lets go of the meat)
+			animate(PRESS.Lift, function(t)
+				machine:PivotTo(pressDown:Lerp(hover, t))
+			end, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			wait(0.5)
+			beside(function()
+				animate(PRESS.SlideOut, function(t)
+					machine:PivotTo(hover:Lerp(enter, t))
+				end, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+				machine.Parent = nil
+			end)
+		else
+			-- (the press's model didn't load: the pile presses itself flat in a puff)
+			pressed(false)
+			wait(0.8)
+		end
+
+		-- 7. The raw steak cooks: steam, the sizzle, the meat browns and the sear marks come up; then it IS the server's
+		-- steak (the copy goes, the real one shows: the same thing in the same place).
+		shoot(inKitchen(target + away * (22 + length * 0.55) + up * (12 + length * 0.3)), target + up * 1.5)
+		if raw then
+			sound(KitchenConfig.Sounds.Sizzle, 0.7, SoundService)
+			burst(target + up * 1, Color3.fromRGB(240, 240, 240), 9, 2.4, COOK_SECONDS, 34)
+			animate(COOK_SECONDS, function(t)
+				for _, piece in ipairs(cooked) do
+					if piece.sear then
+						piece.part.Transparency = 1 - math.clamp((t - 0.35) / 0.65, 0, 1)
+					elseif piece.part.Color ~= piece.colour or t < 1 then
+						local from = if string.find(piece.part.Name, "Meat", 1, true) then RAW_MEAT
+							elseif string.find(piece.part.Name, "Fat", 1, true) then RAW_FAT
+							else piece.colour
+						piece.part.Color = from:Lerp(piece.colour, t)
+					end
+				end
+			end, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+			hideSteak(zone :: Model?, false)
+			;(raw :: Model).Parent = nil
+		else
+			burst(target + up * 1, Color3.fromRGB(240, 240, 240), 10, 2.5, 1.2, 40)
+		end
+		-- (a slow pull back off the finished steak)
 		shoot(inKitchen(target + away * (26 + length * 0.6) + up * (18 + length * 0.4)), target)
-		beside(cowCameo, kit, hall0, made)
 		wait(KitchenConfig.LandingSeconds)
 	end)
 	if not ok and problem ~= SKIP then
@@ -842,6 +1209,7 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 	hideCharacter(false)
 	hideSteak(zone :: Model?, false)
 	RunService:UnbindFromRenderStep("KitchenSceneCamera")
+	camera.FieldOfView = usualFieldOfView
 	camera.CameraType = Enum.CameraType.Custom
 	controls(true)
 	PromptController.hide("KitchenScene", false)

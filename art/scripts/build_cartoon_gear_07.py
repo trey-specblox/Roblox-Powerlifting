@@ -43,8 +43,18 @@ SLEEVE_UNDER_UP = float(os.environ.get("GEAR07_SLEEVE_UNDER_UP", "0"))
 _tee_lines6 = G6["tee_lines"]
 
 
+import sys as _sys  # noqa: E402
+_sys.path.insert(0, os.path.join(ROOT, "art", "scripts"))
+import tee_neck_fix as _neck  # noqa: E402
+# The tee's crew neck (user 2026-11-20: the shirt covered the neck up to the chin): art/scripts/tee_neck_fix.py.
+# GEAR07_OLD_NECK=1 keeps v6's neck (head-sized cylinder), for comparing a rebuild with the uploaded shirts.
+OLD_NECK = os.environ.get("GEAR07_OLD_NECK", "0") == "1"
+
+
 def tee_lines7(H, body):
     t = _tee_lines6(H, body)
+    if not OLD_NECK:
+        t["neck"] = _neck.crew_neck_for(globals().get("b"))   # (b: the build this loop is making)
     if SLEEVE_UNDER_UP <= 0:
         return t
     sleeve = H["sleeve"]

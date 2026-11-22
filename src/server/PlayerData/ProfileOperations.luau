@@ -2745,14 +2745,16 @@ function ProfileOperations.getLuck(data: ProfileData, nowUnix: number): LuckView
 end
 
 --[[
-	Spins the wheel onto wedge `wedge` (rolled by the server): uses today's free spin if it is unused, else one won
-	spin. Sets the multiplier (replacing the one in force) for LuckHours. Returns "Spun" with the multiplier and
-	whether the free spin paid for it. Nothing is written otherwise.
+	Spins the wheel onto wedge `wedge` and its band's result `multiplier` (both rolled by the server): uses today's
+	free spin if it is unused, else one won spin. Sets the multiplier (replacing the one in force) for its hours
+	(LuckConfig.hoursFor: 24, or 2 for bad luck).
+	Returns "Spun" with the multiplier and whether the free spin paid for it. Nothing is written otherwise, nor when
+	the multiplier isn't one of that wedge's band.
 ]]
-function ProfileOperations.spinLuckWheel(data: ProfileData, wedge: number, nowUnix: number): (SpinOutcome, number?, boolean?)
+function ProfileOperations.spinLuckWheel(data: ProfileData, wedge: number, multiplier: number, nowUnix: number): (SpinOutcome, number?, boolean?)
 	local luck = usableLuck(data)
 	local prize = LuckConfig.wedgePrize(wedge)
-	if luck == nil or prize == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+	if luck == nil or prize == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 or not LuckConfig.inBand(prize, multiplier) then
 		return "Rejected", nil, nil
 	end
 	local today = DayKey.fromUnix(nowUnix)
@@ -2765,9 +2767,10 @@ function ProfileOperations.spinLuckWheel(data: ProfileData, wedge: number, nowUn
 	else
 		luck.spins = math.floor(luck.spins) - 1
 	end
-	luck.multiplier = prize.multiplier
-	luck.endsAt = math.floor(nowUnix) + LuckConfig.LuckHours * 3600
-	return "Spun", prize.multiplier, free
+	luck.multiplier = multiplier
+	-- (bad luck, below 1x, lasts BadLuckHours; anything else LuckHours)
+	luck.endsAt = math.floor(nowUnix) + LuckConfig.hoursFor(multiplier) * 3600
+	return "Spun", multiplier, free
 end
 
 -- Starts one of the cow's games: uses one of today's tries. Nothing is written unless it returns "Started".

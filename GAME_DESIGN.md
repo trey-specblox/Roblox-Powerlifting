@@ -7942,6 +7942,50 @@ can fit"):**
     and warm (a pool of light under every pendant, the chandelier, the wall lights), the kitchen bright and white
     (KitchenLights). **THE FURNITURE IS SOLID** ("Make furniture solid"): chairs, plants, the host stand, and the
     giant pans (a lifter can jump into a pan and stand on its floor).
+  - **[USER, 2026-11-22, after playing it] CHANGES TO THE WHEEL, THE SHUFFLE AND THE CHEF SCENE** (these replace the
+    matching lines of the 2026-11-21 entries below):
+    - **More results, bunched** ("Add more things you can roll for, like 10x, 9x ... 0.1x ... bunch them up ... this
+      makes it even more rare to get 10x and makes players want to keep spinning"): the wheel's 20 wedges are six
+      bands; a spin lands in a band, then on one of its results, each equally likely: **4x to 10x 5%** (whole numbers),
+      **2.1x to 3x 10%, 1.6x to 2x 15%, 1.3x to 1.5x 25%, 0.9x to 1.2x 30%, 0.1x to 0.8x 15%**. The user's message
+      gave 5 / 10 / 15 / 30 / 15 (75% in all) with overlapping ranges: the bands' edges and the 25 / 30 split were
+      Claude's reading, **APPROVED by the user 2026-11-22** ("Yes, keep them"; the idea in the user's words: "like
+      games that have clans or styles, and there is multiple legendaries, you role a legendary and you only get 1 out
+      of lets say 10 legendaries"). The card shows every band's chance.
+    - **Bad luck lasts 2 hours** (user 2026-11-22: "Keep the bad luck, make it last 2 hours, but they still cant spin
+      unless they have more spins, after 2 hours their luck goes back to 1.0x"): a result under 1x ends after 2 hours
+      and luck is 1x again; good luck still lasts 24 hours. Bad luck gives no extra spin.
+    - **The shuffle**: the cloches swap for **11 seconds**; then **10 seconds** to pick, counted down on screen.
+    - **The luck chip** sits at the bottom right of the screen.
+    - **The chef scene**: the chef's line is heard in full; raw meat falls into the grinder (not a bag); the mountain
+      of meat looks like minced meat (the user's photo); fewer camera cuts, held longer, one shot of the meat
+      being drawn up; at the pan the meat STACKS UP, a GIANT MEAT PRESS slams it and slowly lifts off a RAW steak
+      (models approved from their pictures and uploaded 2026-11-22: "Yes, upload"; the user has still to see them in
+      the game), the steak cooks, and then the mafia boss cow gets a shot of his own walking
+      through the EMPLOYEES ONLY door.
+    - **Meet notices**: the GO button on "the next meet is ..." asks once more (SURE?) before it takes you there.
+    - **Standing rule**: nothing in the game may flash between two colours or have builds overlapping ("This makes
+      the game look not well made"): check with tools/studio/FlickerAudit.luau and by eye.
+  - **[USER, 2026-11-22, second notes after watching the chef scene; BUILT IN CODE AND BLENDER, NOT YET UPLOADED OR
+    SEEN IN THE GAME: see DEVELOPMENT_STATUS "W CHEWS, ROUND 3"]:**
+    - **The chef talks to YOU** ("he turns back and talks to the counter, but you cant visibly see yourself, as in my
+      character"): the player's own character is seen in the scene, standing where it really is; after pressing the
+      button the chef turns to the player and says "Alright, I'll handle this for you!" to them, both in the picture,
+      then walks back. The character is hidden only for a later shot it would stand in the way of.
+    - **The cow is a background detail again, not a shot** ("too obvious ... if players already know about the door,
+      why would they want to keep watching it over and over again. what i was looking for was like a background type
+      of thing"): the cow's own shot is REMOVED. He is seen far behind the YOUR MEAT bay during the grinding and
+      suction shots, pushing both leaves of the door open and walking through; the camera never moves toward him.
+    - **The EMPLOYEES ONLY door is a DOUBLE door in the MIDDLE of the kitchen's back wall, and the back room moved
+      behind it** ("make the entrance door way more noticable, like a double door, and the mafia boss cow can push
+      open both of them at the same time ... move the room, and the door to the middle of the wall. so its kinda more
+      visible for players just walking in"): 16 wide and 13 high (the single door was 6 by 9, at the back right),
+      deep red leaves with glowing round windows and EMPLOYEES | ONLY in glowing letters, a walnut frame with a
+      pitched pediment and lanterns. This REPLACES "the EMPLOYEES ONLY door at the back right" in the floor plan
+      above. To clear the way the prep islands moved out of the kitchen's middle into two lines either side of a wide
+      aisle that runs from the grinder to the door. **Claude's finding:** from the entrance doors, on the centre line,
+      the grinder hides the exact middle of the back wall; the door shows from a few steps to either side. Whether it
+      should move off the exact middle is the user's call.
   - **[BUILT 2026-11-21, under the user's overnight OK "Wheel plus the cow's games"; EVERY NUMBER IS CLAUDE'S FIRST
     DRAFT, for the user to change in LuckConfig] THE WHEEL OF LUCK AND THE CLOCHE SHUFFLE:**
     - **The wheel** has 20 equal wedges, so its picture is its odds: **10x 5%, 3x 10%, 2x 15%, 1.5x 25%, 1.2x 30%,

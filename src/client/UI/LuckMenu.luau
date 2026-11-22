@@ -7,12 +7,13 @@
 	prompt (KitchenBackRoom) opens the NPC dialogue the coaches and the chef use (CoachDialogue.converse), then:
 
 		SPIN THE WHEEL   the WHEEL OF LUCK card, built from the UI kit (UIFancy: turning rays, a glow, outlined words,
-		                 a glossy button): every result with its colour and its real chance, your luck now, and SPIN.
-		                 A spin turns the real wheel in the room to the wedge the SERVER rolled, the camera on it, the
-		                 pegs ticking past the pointer, then the result pops.
+		                 a glossy button): every band of results with its colour and its real chance, your luck now,
+		                 and SPIN. A spin turns the real wheel in the room to the wedge the SERVER rolled, the camera on
+		                 it, the pegs ticking past the pointer; then the band's results roll past in the pop and stop
+		                 on the one the server drew.
 		PLAY THE SHUFFLE "follow the steak": the cow shows a steak under one of three cloches on his table, swaps them
-		                 faster and faster, and you pick one. Win and you get a spin. Costs one of the day's tries,
-		                 never anything else.
+		                 faster and faster for 11 seconds, and you pick one before a 10 second countdown runs out. Win
+		                 and you get a spin. Costs one of the day's tries, never anything else.
 
 	Display only. The server rolls the wedge, decides where the steak starts and every swap, knows where it ended and
 	gives the spin (LuckService); this screen only shows what it was told and sends the cloche that was picked.
@@ -213,7 +214,7 @@ function LuckMenu.start()
 	local closeButton = UIFancy.button(scene, "Close", "X", UDim2.new(1, -62, 0, 12), UDim2.fromOffset(48, 44),
 		Color3.fromRGB(240, 90, 80), Color3.fromRGB(170, 36, 36), 26, function() end)
 
-	-- Every result: its colour, its multiplier and its real chance (a result's wedges out of the wheel's 20).
+	-- Every band of results: its colour, its multipliers and its real chance (the band's wedges out of the wheel's 20).
 	local list = make("Frame", {
 		Name = "Prizes", Position = UDim2.fromOffset(34, 132), Size = UDim2.new(1, -68, 0, 228), BackgroundColor3 = INSET,
 		BackgroundTransparency = 0.25, BorderSizePixel = 0, Parent = scene,
@@ -222,10 +223,10 @@ function LuckMenu.start()
 	outline(list, 2, Color3.fromRGB(255, 226, 92), 0.4)
 	local heading = words(list, "Heading", UDim2.fromOffset(16, 6), UDim2.new(1, -32, 0, 24), 17, 2)
 	heading.TextXAlignment = Enum.TextXAlignment.Left
-	heading.Text = "EVERY SPIN GIVES ONE OF THESE (THE CHANCE OF EACH):"
+	heading.Text = "WHERE A SPIN CAN LAND, AND THE CHANCE OF EACH:"
 	local ordered = table.clone(LuckConfig.Prizes)
 	table.sort(ordered, function(a, b)
-		return a.multiplier > b.multiplier
+		return a.high > b.high
 	end)
 	for index, prize in ipairs(ordered) do
 		local column, row = (index - 1) % 2, (index - 1) // 2
@@ -235,22 +236,29 @@ function LuckMenu.start()
 		})
 		corner(cell, UDim.new(0, 12))
 		local chip = make("Frame", {
-			Name = "Chip", Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(96, 42), BackgroundColor3 = prize.colour,
+			Name = "Chip", Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(158, 42), BackgroundColor3 = prize.colour,
 			BorderSizePixel = 0, Parent = cell,
 		})
 		corner(chip, UDim.new(0, 10))
 		outline(chip, 2.5)
-		local amount = words(chip, "Amount", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 28, 0, prize.ink)
-		amount.Text = LuckConfig.multiplierText(prize.multiplier)
-		local chance = words(cell, "Chance", UDim2.fromOffset(110, 0), UDim2.new(1, -118, 1, 0), 26, 3)
+		local amount = words(chip, "Amount", UDim2.fromOffset(6, 4), UDim2.new(1, -12, 1, -8), 24, 0, prize.ink)
+		amount.TextWrapped = false
+		amount.TextScaled = true
+		make("UITextSizeConstraint", { MaxTextSize = 24, MinTextSize = 12, Parent = amount })
+		amount.Text = LuckConfig.bandText(prize)
+		local chance = words(cell, "Chance", UDim2.fromOffset(172, 0), UDim2.new(1, -178, 1, 0), 26, 3)
 		chance.TextXAlignment = Enum.TextXAlignment.Left
 		chance.Text = LuckConfig.percentText(LuckConfig.chance(prize))
 	end
 
 	local nowLine = words(scene, "Now", UDim2.fromOffset(30, 368), UDim2.new(1, -60, 0, 30), 24, 3)
 	local noteLine = words(scene, "Note", UDim2.fromOffset(30, 398), UDim2.new(1, -60, 0, 44), 18, 2.5, Color3.fromRGB(255, 214, 190))
-	noteLine.Text = "You hold ONE multiplier: a new spin replaces it, better or worse. It lasts "
-		.. tostring(LuckConfig.LuckHours) .. " hours."
+	-- (short enough for two lines of the card: a longer note didn't fit; Studio 2026-11-22)
+	noteLine.Text = string.format("Results in a band are equally likely. A new spin replaces your luck. Good luck lasts %d hours, bad luck %d.",
+		LuckConfig.LuckHours, LuckConfig.BadLuckHours)
+	noteLine.TextScaled = true
+	-- (the least size is in screen pixels: low enough for the card shrunk to a phone's height)
+	make("UITextSizeConstraint", { MaxTextSize = 18, MinTextSize = 6, Parent = noteLine })
 	local spinButton, spinGradient, spinLabel = UIFancy.button(scene, "Spin", "SPIN!", UDim2.new(0.5, -170, 1, -104),
 		UDim2.fromOffset(340, 78), GOLD_TOP, GOLD_BOTTOM, 40, function() end)
 	-- (its words change: they shrink to fit the button)
@@ -301,6 +309,17 @@ function LuckMenu.start()
 		Name = "Picks", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -70), Size = UDim2.fromOffset(660, 84),
 		BackgroundTransparency = 1, Visible = false, Parent = gui,
 	})
+	-- The time left to pick, draining above the three buttons.
+	local timerTrack = make("Frame", {
+		Name = "Timer", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 0, -14), Size = UDim2.new(1, -30, 0, 14),
+		BackgroundColor3 = INSET, BackgroundTransparency = 0.15, BorderSizePixel = 0, Parent = picks,
+	})
+	corner(timerTrack, UDim.new(1, 0))
+	outline(timerTrack, 2.5)
+	local timerFill = make("Frame", {
+		Name = "Left", BackgroundColor3 = GOLD_TOP, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), Parent = timerTrack,
+	})
+	corner(timerFill, UDim.new(1, 0))
 	local picked: number? = nil
 	for index, name in ipairs({ "LEFT", "MIDDLE", "RIGHT" }) do
 		UIFancy.button(picks, name, name, UDim2.fromOffset((index - 1) * 225, 0), UDim2.fromOffset(210, 84), GOLD_TOP, GOLD_BOTTOM,
@@ -449,13 +468,32 @@ function LuckMenu.start()
 		else
 			task.wait(1)
 		end
-		BoostBar.holdLuck(false)
-		if prize then
-			local good = prize.multiplier >= 1
-			playSound(if good then KitchenConfig.Sounds.WheelWin else KitchenConfig.Sounds.WheelLow, 0.7)
-			showPop("LUCK " .. LuckConfig.multiplierText(prize.multiplier), if good
-				then string.format("for %d hours!", LuckConfig.LuckHours)
-				else string.format("ouch... for %d hours", LuckConfig.LuckHours), prize.colour, if good then GREEN else RED, 3)
+		local won: number? = if typeof(answer.multiplier) == "number" then answer.multiplier else nil
+		if prize and won then
+			-- The wheel stopped on a band: its results roll past in the pop, slower and slower, and stop on the one
+			-- the server drew.
+			local values = LuckConfig.bandValues(prize)
+			showPop("LUCK ?", LuckConfig.bandText(prize), prize.colour, WHITE, 30)
+			if #values > 1 then
+				local shown = 0
+				for index = 1, 18 do
+					shown = (shown + math.random(1, #values - 1) - 1) % #values + 1 -- (never the same one twice running)
+					popHead.Text = "LUCK " .. LuckConfig.multiplierText(values[shown])
+					playSound(KitchenConfig.Sounds.WheelTick, 0.45, 1.25)
+					task.wait(0.045 + index * 0.011)
+				end
+			end
+			BoostBar.holdLuck(false)
+			if won > 1 then
+				playSound(KitchenConfig.Sounds.WheelWin, 0.7)
+			elseif won < 1 then
+				playSound(KitchenConfig.Sounds.WheelLow, 0.7)
+			end
+			showPop("LUCK " .. LuckConfig.multiplierText(won), if won > 1 then string.format("for %d hours!", LuckConfig.hoursFor(won))
+				elseif won < 1 then string.format("ouch... for %d hours", LuckConfig.hoursFor(won))
+				else "no luck, no harm", prize.colour, if won > 1 then GREEN elseif won < 1 then RED else WHITE, 3)
+		else
+			BoostBar.holdLuck(false)
 		end
 		task.wait(3.2)
 		releaseCamera()
@@ -644,12 +682,26 @@ function LuckMenu.start()
 				liftArm(1 - share)
 			end)
 			-- The pick.
-			caption.Text = "WHERE IS THE STEAK?"
+			-- The pick, against the clock (user 2026-11-22: a 10 second limit): the seconds count down in the caption
+			-- and the bar above the buttons drains, red and ticking for the last three.
 			picked = nil
 			picks.Visible = true
-			local deadline = os.clock() + LuckConfig.Shuffle.AnswerSeconds
+			local answerSeconds = LuckConfig.Shuffle.AnswerSeconds
+			local deadline = os.clock() + answerSeconds
+			local lastSecond = -1
 			while picked == nil and os.clock() < deadline do
-				task.wait(0.05)
+				local left = deadline - os.clock()
+				local second = math.ceil(left)
+				if second ~= lastSecond then
+					lastSecond = second
+					caption.Text = string.format("WHERE IS THE STEAK?  %d", second)
+					if second <= 3 then
+						playSound(KitchenConfig.Sounds.WheelTick, 0.5, 0.8)
+					end
+				end
+				timerFill.Size = UDim2.fromScale(math.clamp(left / answerSeconds, 0, 1), 1)
+				timerFill.BackgroundColor3 = if left <= 3 then RED else GOLD_TOP
+				task.wait(0.03)
 			end
 			picks.Visible = false
 			local choice = picked
@@ -742,7 +794,7 @@ function LuckMenu.start()
 				elseif view and view.triesLeft < 1 then
 					say("That's enough for one day. Come back tomorrow.")
 				else
-					say("Three cloches, one steak. Keep your eyes on it. Find it and you win a spin.")
+					say("Three cloches, one steak. Keep your eyes on it. Find it in ten seconds and you win a spin.")
 					wants = "Shuffle"
 					return
 				end

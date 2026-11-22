@@ -20,6 +20,7 @@ WChewsLayout.PivotOffset = {
 	WcChute = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcCloche = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcCounter = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcDoubleDoor = Vector3.new(0.0000, -0.4350, 0.0000),
 	WcFridge = Vector3.new(0.0000, -0.1450, 0.0000),
 	WcFryer = Vector3.new(0.0000, -0.2350, 0.0000),
 	WcHood = Vector3.new(0.0000, -0.0300, -0.1100),
@@ -58,18 +59,38 @@ WChewsLayout.GrinderScale = 2
 WChewsLayout.Chute = Vector2.new(0, 61.4)
 WChewsLayout.ChuteMouth = 24 -- the chute's mouth above the floor
 WChewsLayout.Chef = Vector2.new(0, -25.4) -- he faces the entrance (-y)
--- The back room (plan x 195..285, y 267..337).
+-- The kitchen's back wall (y from BackWallY, WallThickness thick) and the EMPLOYEES ONLY doorway in its middle:
+-- a double door (WcDoubleDoor). Each leaf turns on a hinge line LeafHinge from the doorway's middle, on the
+-- back room's side of the leaf (LeafHingeY), opening into the back room.
+WChewsLayout.BackWallY = 265
+WChewsLayout.WallThickness = 2
+WChewsLayout.BackDoor = { X0 = -8, X1 = 8, Middle = 0, Height = 13 }
+WChewsLayout.LeafHinge = 7.6
+WChewsLayout.LeafHingeY = 266.15
+-- The runs of furniture along the back wall, either side of the double door (x0, x1), and the line they
+-- stand out to.
+WChewsLayout.BackWallRuns = { { -280, -107.2 }, { -83.2, -19.2 }, { 19.2, 83.2 }, { 100, 215.2 }, { 221.6, 260 } }
+WChewsLayout.BackWallRunY = 257.5
+-- The prep islands (two lines either side of the middle aisle): their middles, and half their size across.
+WChewsLayout.IslandXs = { -36, 36 }
+WChewsLayout.IslandYs = { 104, 152, 200 }
+WChewsLayout.IslandHalf = 14
+-- The back room behind the double door (its inside faces; its walls are WallThickness thick).
+WChewsLayout.BackRoom = { X0 = -53, X1 = 37, Y0 = 267, Y1 = 337 }
 WChewsLayout.BackHeight = 18
-WChewsLayout.Wheel = Vector2.new(248, 331) -- the luck wheel's stand, facing the door (-y)
+WChewsLayout.MilkBar = Vector2.new(-30, 274.6) -- the milk bar's counter (12 x 4)
+-- The back room's soft fill lights (x, y, height).
+WChewsLayout.BackFills = { Vector3.new(-36, 300, 13), Vector3.new(34, 300, 13), Vector3.new(0, 284, 14), Vector3.new(-24, 328, 12), Vector3.new(24, 326, 12) }
+WChewsLayout.Wheel = Vector2.new(0, 331) -- the luck wheel's stand, facing the door (-y)
 WChewsLayout.WheelAxis = 7.6 -- the wheel's axis above the floor
 WChewsLayout.WheelWedges = 20
-WChewsLayout.Cow = Vector2.new(262, 321) -- the mafia boss cow, facing the door (-y)
+WChewsLayout.Cow = Vector2.new(14, 321) -- the mafia boss cow, facing the door (-y)
 -- His joints in his own model's space (x across, y front to back with his front at -y, z up): his head
 -- pieces (CowBoss_Head*) turn round the neck, his right arm's (CowBoss_ArmR*) round the shoulder.
 WChewsLayout.CowNeck = Vector3.new(0, 0, 5.1)
 WChewsLayout.CowShoulder = Vector3.new(-1.75, 0, 4.75)
-WChewsLayout.ArmTable = Vector2.new(216, 298)
-WChewsLayout.ShuffleTable = Vector2.new(271, 294)
+WChewsLayout.ArmTable = Vector2.new(-32, 298)
+WChewsLayout.ShuffleTable = Vector2.new(23, 294)
 WChewsLayout.ClocheXs = { -2.7, 0, 2.7 } -- along the shuffle table
 WChewsLayout.TableTop = 3.33 -- the game tables' tops
 
@@ -154,9 +175,6 @@ WChewsLayout.Placements = {
 	{ "WcCounter", 1, -51.2, 262.6, 0, 0, 1.6 },
 	{ "WcCounter", 1, -38.4, 262.6, 0, 0, 1.6 },
 	{ "WcCounter", 1, -25.6, 262.6, 0, 0, 1.6 },
-	{ "WcCounter", 1, -12.8, 262.6, 0, 0, 1.6 },
-	{ "WcCounter", 1, 0, 262.6, 0, 0, 1.6 },
-	{ "WcCounter", 1, 12.8, 262.6, 0, 0, 1.6 },
 	{ "WcCounter", 1, 25.6, 262.6, 0, 0, 1.6 },
 	{ "WcCounter", 1, 38.4, 262.6, 0, 0, 1.6 },
 	{ "WcCounter", 1, 51.2, 262.6, 0, 0, 1.6 },
@@ -171,13 +189,16 @@ WChewsLayout.Placements = {
 	{ "WcSink", 1, 183.2, 262.6, 0, 0, 1.6 },
 	{ "WcSink", 1, 196, 262.6, 0, 0, 1.6 },
 	{ "WcSink", 1, 208.8, 262.6, 0, 0, 1.6 },
-	{ "WcStaffDoor", 1, 248, 266, 0, 0, 1 },
-	{ "WcIsland", 1, -15, 150, 0, 0, 2 },
-	{ "WcIsland", 1, 15, 150, 0, 0, 2 },
-	{ "WcIsland", 1, -15, 190, 0, 0, 2 },
-	{ "WcIsland", 1, 15, 190, 0, 0, 2 },
-	{ "WcIsland", 1, -15, 230, 0, 0, 2 },
-	{ "WcIsland", 1, 15, 230, 0, 0, 2 },
+	{ "WcCounter", 1, 228, 262.6, 0, 0, 1.6 },
+	{ "WcCounter", 1, 240.8, 262.6, 0, 0, 1.6 },
+	{ "WcCounter", 1, 253.6, 262.6, 0, 0, 1.6 },
+	{ "WcDoubleDoor", 1, 0, 266, 0, 0, 1 },
+	{ "WcIsland", 1, -36, 104, 0, 0, 2 },
+	{ "WcIsland", 1, 36, 104, 0, 0, 2 },
+	{ "WcIsland", 1, -36, 152, 0, 0, 2 },
+	{ "WcIsland", 1, 36, 152, 0, 0, 2 },
+	{ "WcIsland", 1, -36, 200, 0, 0, 2 },
+	{ "WcIsland", 1, 36, 200, 0, 0, 2 },
 	{ "WcBay", 1, 0, 36, 0, 0, 1 },
 	{ "WcTubeIntake", 1, 0, 36, 0, 0, 1 },
 	{ "WcChute", 1, 0, 61.4, 24, 0, 1 },
@@ -356,41 +377,41 @@ WChewsLayout.Placements = {
 	{ "WcPlant", 1, 76, -26, 0, 0, 1.5 },
 	{ "WcPlant", 1, -12.5, -107, 0, 0, 1.5 },
 	{ "WcPlant", 1, 12.5, -107, 0, 0, 1.5 },
-	{ "WcWheelStand", 1, 248, 331, 0, 0, 1 },
-	{ "WcRopeSpan", 1, 241.5, 323, 0, 0, 1 },
-	{ "WcRopeSpan", 1, 254.5, 323, 0, 0, 1 },
-	{ "WcBossDesk", 1, 272, 319, 0, 0, 1 },
-	{ "WcBossChair", 1, 272, 323.6, 0, 0, 1 },
-	{ "WcArmTable", 1, 216, 298, 0, 0, 1 },
-	{ "WcShuffleTable", 1, 271, 294, 0, 0, 1 },
-	{ "WcCloche", 1, 268.3, 294, 3.33, 0, 1 },
-	{ "WcCloche", 1, 271, 294, 3.33, 0, 1 },
-	{ "WcCloche", 1, 273.7, 294, 3.33, 0, 1 },
-	{ "WcBooth", 1, 197, 284, 0, 90, 1 },
-	{ "WcBooth", 2, 197, 297, 0, 90, 1 },
-	{ "WcBooth", 2, 283, 277, 0, 270, 1 },
-	{ "WcPortrait", 1, 195.02, 284, 10.3, 90, 1 },
-	{ "WcPortrait", 2, 195.02, 297, 10.3, 90, 1 },
-	{ "WcPortrait", 3, 284.98, 277, 10.3, 270, 1 },
-	{ "WcPortrait", 1, 284.98, 303, 10.3, 270, 1 },
-	{ "WcPortrait", 2, 262, 267.32, 10.3, 180, 1 },
-	{ "WcPortrait", 3, 275, 267.32, 10.3, 180, 1 },
-	{ "WcMilkShelf", 1, 218, 268.4, 0, 180, 1 },
-	{ "WcBar", 1, 218, 274.6, 0, 180, 1 },
-	{ "WcStool", 1, 213.5, 278.6, 0, 0, 1 },
-	{ "WcStool", 1, 216.5, 278.6, 0, 0, 1 },
-	{ "WcStool", 1, 219.5, 278.6, 0, 0, 1 },
-	{ "WcStool", 1, 222.5, 278.6, 0, 0, 1 },
-	{ "WcNeonMoo", 1, 222, 336.95, 12.6, 0, 1 },
-	{ "WcRug", 1, 248, 298, 0, 0, 1 },
-	{ "WcChandelier", 1, 248, 298, 11.4, 0, 1 },
-	{ "WcPendant", 1, 216, 298, 11, 0, 1 },
-	{ "WcPendant", 1, 271, 294, 11, 0, 1 },
-	{ "WcPendant", 1, 272, 319, 11, 0, 1 },
-	{ "WcPendant", 1, 218, 276, 11, 0, 1 },
-	{ "WcPlant", 1, 199, 333, 0, 0, 1.5 },
-	{ "WcPlant", 1, 282, 334, 0, 0, 1.5 },
-	{ "WcPlant", 1, 200, 270.5, 0, 0, 1.5 },
+	{ "WcWheelStand", 1, 0, 331, 0, 0, 1 },
+	{ "WcRopeSpan", 1, -6.5, 323, 0, 0, 1 },
+	{ "WcRopeSpan", 1, 6.5, 323, 0, 0, 1 },
+	{ "WcBossDesk", 1, 24, 319, 0, 0, 1 },
+	{ "WcBossChair", 1, 24, 323.6, 0, 0, 1 },
+	{ "WcArmTable", 1, -32, 298, 0, 0, 1 },
+	{ "WcShuffleTable", 1, 23, 294, 0, 0, 1 },
+	{ "WcCloche", 1, 20.3, 294, 3.33, 0, 1 },
+	{ "WcCloche", 1, 23, 294, 3.33, 0, 1 },
+	{ "WcCloche", 1, 25.7, 294, 3.33, 0, 1 },
+	{ "WcBooth", 1, -51, 284, 0, 90, 1 },
+	{ "WcBooth", 2, -51, 297, 0, 90, 1 },
+	{ "WcBooth", 2, 35, 277, 0, 270, 1 },
+	{ "WcPortrait", 1, -52.98, 284, 10.3, 90, 1 },
+	{ "WcPortrait", 2, -52.98, 297, 10.3, 90, 1 },
+	{ "WcPortrait", 3, 36.98, 277, 10.3, 270, 1 },
+	{ "WcPortrait", 1, 36.98, 303, 10.3, 270, 1 },
+	{ "WcPortrait", 2, 16, 267.32, 10.3, 180, 1 },
+	{ "WcPortrait", 3, 29, 267.32, 10.3, 180, 1 },
+	{ "WcMilkShelf", 1, -30, 268.4, 0, 180, 1 },
+	{ "WcBar", 1, -30, 274.6, 0, 180, 1 },
+	{ "WcStool", 1, -34.5, 278.6, 0, 0, 1 },
+	{ "WcStool", 1, -31.5, 278.6, 0, 0, 1 },
+	{ "WcStool", 1, -28.5, 278.6, 0, 0, 1 },
+	{ "WcStool", 1, -25.5, 278.6, 0, 0, 1 },
+	{ "WcNeonMoo", 1, -26, 336.95, 12.6, 0, 1 },
+	{ "WcRug", 1, 0, 298, 0, 0, 1 },
+	{ "WcChandelier", 1, 0, 298, 11.4, 0, 1 },
+	{ "WcPendant", 1, -32, 298, 11, 0, 1 },
+	{ "WcPendant", 1, 23, 294, 11, 0, 1 },
+	{ "WcPendant", 1, 24, 319, 11, 0, 1 },
+	{ "WcPendant", 1, -30, 276, 11, 0, 1 },
+	{ "WcPlant", 1, -49, 333, 0, 0, 1.5 },
+	{ "WcPlant", 1, 34, 334, 0, 0, 1.5 },
+	{ "WcPlant", 1, -48, 270.5, 0, 0, 1.5 },
 } :: { { any } }
 
 return WChewsLayout

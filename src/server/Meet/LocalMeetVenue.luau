@@ -809,7 +809,8 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 		Vector3.new(xLeft, 9, deskZ - 2), "SIGN UP HERE", { "The desk by the doors", "Then wait in the hall" }, "bar", 30)
 
 	-- The way out: a dark doorway in the front wall with a board over it, and the exit prompt in front of it.
-	decor("ExitDoorway", Vector3.new(-5, 0, Z_FRONT), Vector3.new(5, 10, Z_FRONT + 0.08), looks.FrontCharcoal)
+	-- (0.05 proud of the red stripe it crosses: the hall is long, and from its far end a thinner step can shimmer.)
+	decor("ExitDoorway", Vector3.new(-5, 0, Z_FRONT), Vector3.new(5, 10, Z_FRONT + 0.11), looks.FrontCharcoal)
 	-- (Twice the size it was, user 2026-11-18: "make the exit sign in the back bigger"; on a phone it is the only way out.)
 	wallBoard("ExitBoard", "MeetBoard", "MeetBoard_Screen", 0.7, Vector3.new(0, 0, Z_FRONT + 0.06), Vector3.zAxis,
 		Vector3.new(0, 16, Z_FRONT), "EXIT", { "Back to the gym" }, "bar", 30)

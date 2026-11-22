@@ -1,1453 +1,1477 @@
 {
-  "about": "Shouts people yell at a meet, the sounds of chalking up of opening a gear crate and of a lifter's celebration (CelebrationConfig.Sounds) (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment; and the State arena crowd's chants (GAME_DESIGN 36.4, MeetSoundConfig.Chant; the ChantMix_ loops are mixed by art/scripts/make_chant_mix.py). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig. Nationals (GAME_DESIGN 39, 2026-11-17): the Nat*Shout voices (word-checked with a local speech-to-text model) and the NatChantMix_ loops mixed by art/scripts/make_nationals_chant_mix.py from the NatChant_ takes; none of the State or Local takes is reused there.",
-  "sounds": {
-    "LiftShout_1": {
-      "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_1.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://88650045295512"
-      }
-    },
-    "LiftShout_2": {
-      "about": "Single young man screaming one long drawn out \"UPPPPP!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_2.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://85759075386502"
-      }
-    },
-    "LiftShout_3": {
-      "about": "Single woman yelling \"You got this!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_3.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://102145250898707"
-      }
-    },
-    "LiftShout_4": {
-      "about": "Single deep voiced man yelling \"Come on!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_4.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://124723740426288"
-      }
-    },
-    "LiftShout_5": {
-      "about": "Single young man yelling \"Let's go!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_5.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://132787944284167"
-      }
-    },
-    "LiftShout_6": {
-      "about": "Single gruff older man yelling \"Drive! Drive!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_6.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://134812369331510"
-      }
-    },
-    "LiftShout_7": {
-      "about": "Single woman yelling \"Keep pushing!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_7.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://96519684386231"
-      }
-    },
-    "LiftShout_8": {
-      "about": "Single man yelling \"Big lift, come on!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_8.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://93544230817104"
-      }
-    },
-    "WalkShout_1": {
-      "about": "Single man yelling \"Easy weight!\" with raw confident intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_1.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://82391465593479"
-      }
-    },
-    "WalkShout_2": {
-      "about": "Single gruff man yelling \"Easy!\" with raw confident intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_2.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://108091981985004"
-      }
-    },
-    "WalkShout_3": {
-      "about": "Single young man yelling a long drawn out \"Let's goooooo!\" with hyped excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://79247368338280"
-      }
-    },
-    "WalkShout_4": {
-      "about": "Single woman yelling a long hyped \"Let's goooo!\" with raw excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://98604994214888"
-      }
-    },
-    "WalkShout_5": {
-      "about": "Single deep voiced man yelling \"Light weight!\" with confident intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://101894713441519"
-      }
-    },
-    "WalkShout_6": {
-      "about": "Single young woman yelling \"You own this!\" with raw excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_6.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://132519921470853"
-      }
-    },
-    "WalkShout_7": {
-      "about": "Single raspy voiced man yelling \"This is yours!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_7.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://138547795525987"
-      }
-    },
-    "WalkShout_8": {
-      "about": "Single teenage boy yelling \"Go get it!\" with raw excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_8.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://82667830825330"
-      }
-    },
-    "WalkShout_9": {
-      "about": "Single older woman calling out \"Nice and tight!\" firmly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_9.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://113888590268054"
-      }
-    },
-    "WalkShout_10": {
-      "about": "Single big burly man yelling \"Time to work!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_10.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://104016337436187"
-      }
-    },
-    "WalkShout_11": {
-      "about": "Single man yelling \"Easy money!\" with a cheerful confident tone, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_11.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://85863084757990"
-      }
-    },
-    "LiftShout_9": {
-      "about": "Single pumped up male sports fan cheering, one long happy triumphant \"YEEEEAAAAAH!\" hyping up his friend, big smile in his voice, like a fan celebrating at a game, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_9.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://123615255611016"
-      }
-    },
-    "LiftShout_10": {
-      "about": "Single excited woman sports fan cheering, one long joyful hyped \"WOOOOOOOO!\" rallying her friend on, big smile in her voice, like a fan celebrating at a game, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_10.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://110678563480923"
-      }
-    },
-    "LiftShout_11": {
-      "about": "Single big deep voiced man giving a proud rallying battle cheer, one long hyped \"HOOOOO-RAAAAH!\" pumping up his teammate, confident and happy, like a coach celebrating at a game, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_11.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://111261566401497"
-      }
-    },
-    "LiftShout_12": {
-      "about": "Single hyped young man cheering, one long excited \"AAAAYYYYYYY!\" celebrating and rallying his friend on, laughing with joy in his voice, like a fan at a game, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_12.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://120019086737764"
-      }
-    },
-    "LiftShout_13": {
-      "about": "Single older man yelling \"Push! Push! Push!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_13.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://88128578376287"
-      }
-    },
-    "LiftShout_14": {
-      "about": "Single woman yelling \"Get it! Get it!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_14.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://92859395750675"
-      }
-    },
-    "LiftShout_15": {
-      "about": "Single gruff man yelling \"Don't you quit!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_15.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://70809770249736"
-      }
-    },
-    "LiftShout_16": {
-      "about": "Single young woman yelling \"All you! All you!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_16.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://113179212662492"
-      }
-    },
-    "LiftShout_17": {
-      "about": "Single man yelling \"Finish it!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_17.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://138376250510208"
-      }
-    },
-    "LiftShout_18": {
-      "about": "Single deep voiced man yelling \"Stay tight!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_18.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://92491501492797"
-      }
-    },
-    "LiftShout_19": {
-      "about": "Single woman yelling \"Keep going!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_19.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://131316488877824"
-      }
-    },
-    "LiftShout_20": {
-      "about": "Single raspy voiced man yelling frantically \"Up! Up! Up!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_20.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://135790096814440"
-      }
-    },
-    "LiftShout_21": {
-      "about": "Single woman screaming \"Up! Up!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_21.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://121978364157695"
-      }
-    },
-    "SquatShout_1": {
-      "about": "Single gruff man yelling \"Knees out!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://75834581112249"
-      }
-    },
-    "SquatShout_2": {
-      "about": "Single woman yelling \"Chest up!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://106441317874920"
-      }
-    },
-    "SquatShout_3": {
-      "about": "Single young man yelling \"Stand it up!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://81238679048761"
-      }
-    },
-    "BenchShout_1": {
-      "about": "Single deep voiced man yelling \"Leg drive!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://104462044381291"
-      }
-    },
-    "BenchShout_2": {
-      "about": "Single woman yelling \"Stay on it!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://97462955193534"
-      }
-    },
-    "BenchShout_3": {
-      "about": "Single older man yelling \"Squeeze it!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://108076731648106"
-      }
-    },
-    "DeadliftShout_1": {
-      "about": "Single man yelling \"Pull! Pull! Pull!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://82181720916294"
-      }
-    },
-    "DeadliftShout_2": {
-      "about": "Single woman yelling \"Lock it out!\" with raw intensity, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://104521722412983"
-      }
-    },
-    "DeadliftShout_3": {
-      "about": "Single gruff man yelling \"Hips through!\" with raw urgency, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://81875562795817"
-      }
-    },
-    "GoodShout_1": {
-      "about": "Single young man yelling a long joyful \"Let's goooooo!\" celebrating, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://125876457036400"
-      }
-    },
-    "GoodShout_2": {
-      "about": "Single woman yelling \"Yeah! Let's go!\" joyfully celebrating, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://83399404070933"
-      }
-    },
-    "GoodShout_3": {
-      "about": "Single deep voiced man yelling \"That's what I'm talking about!\" happily celebrating, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://127084376899712"
-      }
-    },
-    "GoodShout_4": {
-      "about": "Single man yelling \"Light work!\" with a confident laugh in his voice, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://102327352629954"
-      }
-    },
-    "GoodShout_5": {
-      "about": "Single young woman yelling \"Too easy!\" happily, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://98125825945499"
-      }
-    },
-    "GoodShout_6": {
-      "about": "Single gruff older man yelling \"There it is!\" proudly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_6.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://123984005671168"
-      }
-    },
-    "GoodShout_7": {
-      "about": "Single woman calling out \"Beautiful lift!\" warmly and loudly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_7.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://89927247474830"
-      }
-    },
-    "GoodShout_8": {
-      "about": "Single young man yelling \"So strong!\" with hyped excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_8.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://97483044506373"
-      }
-    },
-    "GoodShout_9": {
-      "about": "Single man yelling \"What a lift!\" with amazement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_9.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://108238962444743"
-      }
-    },
-    "GoodShout_10": {
-      "about": "Single woman whooping a long joyful \"WOOOOOO!\" with no other words, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_10.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://101878361109447"
-      }
-    },
-    "MissShout_1": {
-      "about": "Single man laughing loudly, a short big belly laugh, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://111464244047245"
-      }
-    },
-    "MissShout_2": {
-      "about": "Single woman calling out \"Nice try!\" warmly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://132065134091851"
-      }
-    },
-    "MissShout_3": {
-      "about": "Single woman laughing out loud, a short loud cackling laugh, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://103552772847361"
-      }
-    },
-    "MissShout_4": {
-      "about": "Single young man laughing hard, a short wheezing laugh, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://138261206183662"
-      }
-    },
-    "MissShout_5": {
-      "about": "Single deep voiced man calling out \"Nice try!\" kindly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://107755833351562"
-      }
-    },
-    "MissShout_6": {
-      "about": "Single young woman calling out \"So close!\" with disappointment, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_6.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://90471194455503"
-      }
-    },
-    "MissShout_7": {
-      "about": "Single gruff older man calling out \"You'll get it next time!\" encouragingly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_7.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://128205685292520"
-      }
-    },
-    "MissShout_8": {
-      "about": "Single man calling out clearly \"You've got the next one!\" encouragingly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_8.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://89232899893228"
-      }
-    },
-    "MissShout_9": {
-      "about": "Single woman calling out \"Unlucky!\" sympathetically, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_9.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://133322911119247"
-      }
-    },
-    "MissShout_10": {
-      "about": "Single teenage boy calling out \"Almost!\" with disappointment, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_10.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://107299750113352"
-      }
-    },
-    "MissShout_11": {
-      "about": "Single man groaning a disappointed \"Ooooooh!\" reacting to a near miss, no other words, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_11.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://123781580033789"
-      }
-    },
-    "MissShout_12": {
-      "about": "Single woman calling out \"Next one!\" firmly and encouragingly, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_12.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://90086924258505"
-      }
-    },
-    "BigShout_1": {
-      "about": "Single young man screaming \"New PR! New PR!\" with wild excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://127030106765313"
-      }
-    },
-    "BigShout_2": {
-      "about": "Single woman screaming \"That's a PR!\" with wild excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://139968385671294"
-      }
-    },
-    "BigShout_3": {
-      "about": "Single deep voiced man yelling \"New gym record!\" with wild excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://103825655529490"
-      }
-    },
-    "BigShout_4": {
-      "about": "Single man yelling \"Yes! Still in it!\" with huge relief and excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://132348431572583"
-      }
-    },
-    "BigShout_5": {
-      "about": "Single woman yelling clearly in English \"You took the lead!\" with wild excitement, in a large gym hall, slight room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://94374920564013"
-      }
-    },
-    "ChalkRub_1": {
-      "about": "Close up of a weightlifter rubbing chalk between dry hands, soft powdery scraping and rubbing palms together, in a quiet gym room",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChalkRub_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://70735128991498"
-      }
-    },
-    "ChalkClap_1": {
-      "about": "A weightlifter clapping chalky hands once, a single dull dry clap with a soft puff of chalk dust, in a gym room",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChalkClap_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://80485192542230"
-      }
-    },
-    "BackSlap_1": {
-      "about": "A coach giving one firm open-hand slap on a lifter's upper back through a shirt, a single meaty pat with a little chalk dust, in a gym room",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BackSlap_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://92544739948841"
-      }
-    },
-    "CrateOpen_1": {
-      "about": "A heavy gym equipment crate being unlatched and flipped open, metal latches clack, then the wooden lid thuds, short and satisfying, game reward sound",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateOpen_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://78601167944819"
-      }
-    },
-    "CrateBig_1": {
-      "about": "A short triumphant rare item reveal for a game, bright rising shimmer ending in a powerful brass and metal hit, exciting and celebratory, no voice",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateBig_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://93621931694016"
-      }
-    },
-    "CrateDrop_1": {
-      "about": "A heavy metal road case dropped onto a rubber gym floor from waist height, one deep solid thud with a short metallic clank of latches, no echo, game sound effect",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateDrop_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://89711320801766"
-      }
-    },
-    "CrateRattle_1": {
-      "about": "A heavy metal equipment case shaking and rattling faster and faster, latches jiggling and steel corners knocking, building anticipation, under one second, game sound effect, no voice",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateRattle_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://104195321031097"
-      }
-    },
-    "Chant_LiftOrLose": {
-      "about": "A packed stadium crowd of excited sports fans chanting in unison, clearly in English, \"LIFT! OR! LOSE!\" three loud words in rhythm, hyping up their athlete, happy and rallying, big arena echo, about 2 seconds",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_LiftOrLose.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://109769382818593"
-      }
-    },
-    "Chant_SquatItUp": {
-      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"SQUAT IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_SquatItUp.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://82700761660432"
-      }
-    },
-    "Chant_ThisAllYou": {
-      "about": "A packed stadium crowd of excited sports fans chanting in unison, clearly in English, \"THIS! ALL! YOU!\" three loud words in rhythm, hyping up their athlete, happy and rallying, big arena echo, about 2 seconds",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_ThisAllYou.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://119631593039458"
-      }
-    },
-    "ChantMix_LiftOrLose": {
-      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_LiftOrLose take (LIFT OR LOSE) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_LiftOrLose.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://102688704977029"
-      }
-    },
-    "ChantMix_SquatItUp": {
-      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_SquatItUp take (SQUAT IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_SquatItUp.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://109418282642406"
-      }
-    },
-    "Chant_PressItUp": {
-      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"PRESS IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take D, word check read \"Press it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_PressItUp.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "Chant_LiftItUp": {
-      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"LIFT IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take F, word check read \"Lift it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_LiftItUp.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "Chant_PickItUp": {
-      "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"PICK IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take C, word check read \"Pick it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_PickItUp.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "ChantMix_PressItUp": {
-      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_PressItUp take (PRESS IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_PressItUp.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://77510660676043"
-      }
-    },
-    "ChantMix_Deadlift": {
-      "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_LiftItUp and Chant_PickItUp takes (LIFT IT UP, then PICK IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_Deadlift.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://94448130535726"
-      }
-    },
-    "Celeb_Roar1": {
-      "about": "A strong powerlifter's triumphant victory roar right after making a huge lift, one man, deep powerful chest voice, \"YEEAAAAAHHH!\", proud and joyful like an athlete celebrating, not scared, dry indoor arena with a little echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://123458672899540"
-      }
-    },
-    "Celeb_Roar2": {
-      "about": "A big strongman athlete's happy celebration roar after a winning lift, one man, deep and loud \"RAAAAHHH!\", fists clenched energy, triumphant and proud, smiling, not angry or scared, indoor arena with light echo, about 1.5 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://125839665862508"
-      }
-    },
-    "Celeb_Roar3": {
-      "about": "A powerlifter's joyful victory yell after a world record, one man, \"LET'S GOOOOO!\" shouted clearly in English, triumphant, proud, happy and loud, not scared, indoor arena with light echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://122033673152836"
-      }
-    },
-    "Celeb_Scream": {
-      "about": "A young athlete's excited happy scream of joy right after winning, one person, \"WOOOOOO!\", big smile in the voice, celebrating like a happy sports fan, not frightened, indoor arena with light echo, about 1.5 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Scream.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://128253693502822"
-      }
-    },
-    "Celeb_Grunt": {
-      "about": "A strong man's short confident grunt of satisfaction after a good lift, one quick low \"YEAH!\" with a fist pump, proud and calm, close to the listener, dry room, half a second (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Grunt.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://81839489817776"
-      }
-    },
-    "Celeb_Laugh": {
-      "about": "An athlete laughing happily in disbelief after a big win while sitting on the floor, one person, warm joyful breathy laugh, ha ha ha, delighted and relieved, close, small echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Laugh.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://134421334607054"
-      }
-    },
-    "Celeb_Cheer": {
-      "about": "A quick happy cheer from one athlete, a short bright \"WOO!\", celebrating with arms up, smiling, energetic, close, small indoor echo, under one second (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Cheer.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://80728459212813"
-      }
-    },
-    "Celeb_Land": {
-      "about": "A heavy athlete in sneakers landing a jump with both feet on a solid wooden competition platform, one firm dull thud with a short creak of the boards, close, dry, no echo, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Land.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://81108779545819"
-      }
-    },
-    "Celeb_Knees": {
-      "about": "A man dropping down onto both knees on a rubber-topped wooden powerlifting platform, two quick dull knee thuds close together, soft and heavy, close, dry, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Knees.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://89084835055024"
-      }
-    },
-    "Celeb_Sit": {
-      "about": "A person sitting down suddenly on a wooden stage floor, one soft dull bump of a body landing on boards, with a little clothing rustle, close, dry, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Sit.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://140639113665774"
-      }
-    },
-    "CelebFx_Knees": {
-      "about": "A man dropping down onto both knees on a rubber-topped wooden powerlifting platform, two quick dull knee thuds close together, soft and heavy, close, dry, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Knees.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://109314144737773"
-      }
-    },
-    "CelebFx_Land": {
-      "about": "A heavy athlete in sneakers landing a jump with both feet on a solid wooden competition platform, one firm dull thud with a short creak of the boards, close, dry, no echo, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Land.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://92250222061931"
-      }
-    },
-    "CelebFx_Sit": {
-      "about": "A person sitting down suddenly on a wooden stage floor, one soft dull bump of a body landing on boards, with a little clothing rustle, close, dry, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Sit.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://102136677463296"
-      }
-    },
-    "CelebFx_FootTap": {
-      "about": "One single light footstep of a sneaker landing on a solid wooden competition platform, a clean soft tap with a little rubber squeak, very short and dry, no echo, no voice, one step only (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_FootTap.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://107912176890186"
-      }
-    },
-    "CelebFx_Stomp": {
-      "about": "One single firm stomp of a heavy athlete's foot planted on a solid wooden competition platform, a clean deep tight thud, very short and dry, no creak, no echo, no voice (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Stomp.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://115953996885187"
-      }
-    },
-    "NatWalkShout_1": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"This is your moment!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://88051571876734"
-      }
-    },
-    "NatWalkShout_2": {
-      "about": "Powerlifting meet, Nationals: a single older man with a deep gravelly voice in the stands of a big national powerlifting championship arena: \"Make it count!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://99194073347452"
-      }
-    },
-    "NatWalkShout_3": {
-      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"Own that platform!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://93367272417025"
-      }
-    },
-    "NatWalkShout_4": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Lock in!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://105639400414168"
-      }
-    },
-    "NatWalkShout_5": {
-      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"Bring it home!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://136122612820275"
-      }
-    },
-    "NatWalkShout_6": {
-      "about": "Powerlifting meet, Nationals: a single teenage girl in the stands of a big national powerlifting championship arena: \"You trained for this!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_6.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://130069451627142"
-      }
-    },
-    "NatWalkShout_7": {
-      "about": "Powerlifting meet, Nationals: a single big man with a very deep voice in the stands of a big national powerlifting championship arena: \"Big stage, big lift!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_7.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://83044561946790"
-      }
-    },
-    "NatWalkShout_8": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"LET'S GO!\" as the powerlifter walks out to the bar, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_8.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://72661847599662"
-      }
-    },
-    "NatLiftShout_1": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"DRIVE! DRIVE!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://116486355238611"
-      }
-    },
-    "NatLiftShout_2": {
-      "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"STAND UP!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://114308128695462"
-      }
-    },
-    "NatLiftShout_3": {
-      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"COME ON, COME ON!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://132378915777342"
-      }
-    },
-    "NatLiftShout_4": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"SQUEEZE! SQUEEZE!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://75828470500681"
-      }
-    },
-    "NatLiftShout_5": {
-      "about": "Powerlifting meet, Nationals: a single older man in the stands of a big national powerlifting championship arena: \"DON'T STOP!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://121243430682783"
-      }
-    },
-    "NatLiftShout_6": {
-      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"ALL THE WAY!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_6.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://113526900747068"
-      }
-    },
-    "NatLiftShout_7": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"KEEP GRINDING!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_7.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://113882252163022"
-      }
-    },
-    "NatLiftShout_8": {
-      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"PUSH THROUGH!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_8.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://138576991082778"
-      }
-    },
-    "NatLiftShout_9": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"UP! UP! UP!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_9.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://120408263673058"
-      }
-    },
-    "NatLiftShout_10": {
-      "about": "Powerlifting meet, Nationals: a single big man with a very deep voice in the stands of a big national powerlifting championship arena: \"YES! YES! YES!\" during a heavy lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_10.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://139725780632492"
-      }
-    },
-    "NatGoodShout_1": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"THAT'S THE ONE!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://84831321180095"
-      }
-    },
-    "NatGoodShout_2": {
-      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"UNREAL!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://95152937789186"
-      }
-    },
-    "NatGoodShout_3": {
-      "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"HUGE LIFT!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://86312495191126"
-      }
-    },
-    "NatGoodShout_4": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"NAILED IT!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://129476826431077"
-      }
-    },
-    "NatGoodShout_5": {
-      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"MASSIVE!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://121320419357719"
-      }
-    },
-    "NatGoodShout_6": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"a happy cheering WOOOOO!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_6.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://92682520407472"
-      }
-    },
-    "NatGoodShout_7": {
-      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"THAT'S A CHAMPION!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_7.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://104639578706340"
-      }
-    },
-    "NatGoodShout_8": {
-      "about": "Powerlifting meet, Nationals: a single older man in the stands of a big national powerlifting championship arena: \"TEXTBOOK!\" right after a good lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_8.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://94007079970693"
-      }
-    },
-    "NatMissShout_1": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Ohh, so close!\" right after a missed lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_1.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://111900279375748"
-      }
-    },
-    "NatMissShout_2": {
-      "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"Next one's yours!\" right after a missed lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_2.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://107421567171628"
-      }
-    },
-    "NatMissShout_3": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Keep your head up!\" right after a missed lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_3.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://73019588573452"
-      }
-    },
-    "NatMissShout_4": {
-      "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"Unlucky, champ!\" right after a missed lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_4.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://130340241579930"
-      }
-    },
-    "NatMissShout_5": {
-      "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"Aww, man!\" right after a missed lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_5.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://89029877433003"
-      }
-    },
-    "NatMissShout_6": {
-      "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"You almost had it!\" right after a missed lift, arena room echo",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_6.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://98149385923146"
-      }
-    },
-    "NatChant_LiftOrLose_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT OR LOSE!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftOrLose_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_LiftOrLose_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT OR LOSE!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftOrLose_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_LetsGo_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LET'S GO!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LetsGo_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_LetsGo_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LET'S GO!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LetsGo_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_SquatItUp_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"SQUAT IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_SquatItUp_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_SquatItUp_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"SQUAT IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_SquatItUp_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_StandItUp_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"STAND IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_StandItUp_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_StandItUp_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"STAND IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_StandItUp_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_PressItUp_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PRESS IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PressItUp_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_PressItUp_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PRESS IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PressItUp_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_LockItOut_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LOCK IT OUT!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LockItOut_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_LockItOut_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LOCK IT OUT!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LockItOut_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_LiftItUp_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftItUp_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_LiftItUp_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftItUp_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_PickItUp_A": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PICK IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PickItUp_A.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChant_PickItUp_B": {
-      "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PICK IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PickItUp_B.mp3",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "skip": true,
-      "ids": {
-        "audio": "not uploaded alone"
-      }
-    },
-    "NatChantMix_ForTheWin": {
-      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of LIFT OR LOSE and then LET'S GO stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_ForTheWin.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://101829221359786"
-      }
-    },
-    "NatWelcome_A": {
-      "about": "Nationals opening announcer (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', 2026-11-18), shouted with excitement to a huge packed powerlifting arena: \"Welcome, ladies and gentlemen... to CENTRAL NATIONALS! Where these lifters will be in an ALL or NOTHING battle... competing for the WORLDS invitation! This meet will begin shortly!\" Take A (the one the game uses until the user picks). Words checked locally (faster-whisper): all right.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/NatWelcome_A.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://80969960609874"
-      }
-    },
-    "NatWelcome_B": {
-      "about": "Nationals opening announcer, take B (same line, voice and model as NatWelcome_A). Words checked locally: all right.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/NatWelcome_B.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://107631807856915"
-      }
-    },
-    "NatChantMix_Squat": {
-      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of SQUAT IT UP and then STAND IT UP stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Squat.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://104224299630196"
-      }
-    },
-    "NatChantMix_Bench": {
-      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of PRESS IT UP and then LOCK IT OUT stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Bench.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://81212795486043"
-      }
-    },
-    "NatChantMix_Deadlift": {
-      "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of LIFT IT UP and then PICK IT UP stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Deadlift.wav",
-      "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
-      "ids": {
-        "audio": "rbxassetid://122422533517454"
-      }
-    },
-    "LiftOffJudge_First": {
-      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. First place goes to a lift-off.\" One take (5.09 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_First.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://109357897168685"
-      }
-    },
-    "LiftOffJudge_Second": {
-      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. Second place goes to a lift-off.\" One take (5.13 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Second.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://87394996343198"
-      }
-    },
-    "LiftOffJudge_Third": {
-      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. Third place goes to a lift-off.\" One take (5.02 s; the take said its last sentence twice, the repeat was cut off). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Third.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://127909988397691"
-      }
-    },
-    "LiftOffJudge_Rules": {
-      "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"One lift each, your choice: your best plus two and a half kilos. Miss while another makes it, and you are out.\" One take (7.57 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Rules.wav",
-      "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
-      "ids": {
-        "audio": "rbxassetid://136963528084285"
-      }
-    },
-    "KitchenSizzle": {
-      "about": "Kitchen (GAME_DESIGN 40.7): a giant steak sizzling in an enormous cast-iron pan in a powerlifting gym kitchen, made a seamless 5.4 s loop (take B). Loops on every cooking pan near the camera.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenSizzle.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://140335319453723"
-      }
-    },
-    "KitchenGrinder": {
-      "about": "Kitchen chef scene: the big red meat grinder churning and squelching meat out of its spout, 2 s (take B).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenGrinder.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://99489705613915"
-      }
-    },
-    "KitchenCowMoo": {
-      "about": "Kitchen chef scene: a cartoon cow's surprised, funny MOOO as it tumbles into the grinder, 1.4 s (take B).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenCowMoo.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://116016869694788"
-      }
-    },
-    "KitchenBagThud": {
-      "about": "Kitchen chef scene: a heavy burlap sack of steaks thudding into the grinder's steel funnel, 0.45 s (take A).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenBagThud.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://74704226139703"
-      }
-    },
-    "KitchenMeatLand": {
-      "about": "Kitchen chef scene: the meat mountain splatting onto the giant hot pan, then a burst of sizzling steam, 1.6 s (take B).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenMeatLand.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://114323852821853"
-      }
-    },
-    "KitchenEat": {
-      "about": "Kitchen: a hungry powerlifter chomping into the big steak with a pleased mmm, when eating at the pan, 1.05 s (take B).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenEat.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://119322748175840"
-      }
-    },
-    "ChefLine": {
-      "about": "Kitchen chef scene: the chef (ElevenLabs voice 'The Sneakerhead Chef', eleven_v4, [confident, warm, hyped, a big grin]) saying \"Alright, I'll handle this for you!\" (take A; local word check: 'All right, I'll handle this for you.'), 2.49 s.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/ChefLine.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://110659636124322"
-      }
-    },
-    "ChefWelcome": {
-      "about": "Kitchen: the chef greets you walking into the hall (ElevenLabs voice 'The Sneakerhead Chef', eleven_v4, [warm, excited, a big welcoming grin, a chef greeting a hungry powerlifter walking into his busy restaurant]) saying \"Hey! Welcome into Double-U Chews!\" (W Chews, the restaurant; user 2026-11-21). Take B, the first of the four times it said it (both takes repeated the line); local word check: 'Hey, welcome into W choose.' (chews / choose sound the same), 3.01 s. 284 credits for the two takes.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/ChefWelcome.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://117853087157699"
-      }
-    },
-    "KitchenButton": {
-      "about": "W Chews chef scene (user 2026-11-21: \"Make the sound new sound affects\"): the chef's open palm slapping the big start button: one firm mechanical clunk, 0.31 s (take B). Prompt: \"A cook's open palm slaps a big chunky industrial start button on a steel panel in the busy kitchen of a powerlifting gym's restaurant: one firm heavy mechanical clunk, then a short bright electric buzzer beep as the machine powers on. Close, clean, punchy, cartoon-fun. No voices, no music.\" (both takes came back as the clunk alone, so the buzzer is its own sound, KitchenBuzzer). ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenButton.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://88662812930499"
-      }
-    },
-    "KitchenBuzzer": {
-      "about": "W Chews chef scene: the machine's start buzzer right after the button's clunk, one steady buzz, 1.18 s (take A, strongest at 720 Hz; take B was higher, 1,800 Hz). Prompt: \"A machine starting up in the kitchen of a powerlifting gym's restaurant: a loud electric factory start buzzer, one steady BZZZZT lasting about one second, then it stops cleanly. Bright, bold, cartoon-fun game sound, close and clean. No voices, no music, no alarm siren.\" Prompt influence 0.8. Played quietly.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenBuzzer.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://91215560990283"
-      }
-    },
-    "KitchenChute": {
-      "about": "W Chews chef scene: the bag or cow tumbling down the stainless ceiling chute before it thuds into the grinder: a hollow metal rumble that swells and fades, 1.11 s (take A; take B had two separate hits). Prompt: \"Something heavy tumbling down a big stainless steel ceiling chute in the kitchen of a powerlifting gym's restaurant: a hollow metallic rumble and rattling clatter rushing closer and getting louder as it slides fast down the metal duct. Ends abruptly just before the impact. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenChute.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://100812110878986"
-      }
-    },
-    "KitchenTube": {
-      "about": "W Chews chef scene: the meat drawn up the funnel and rushing along the overhead glass tube to the pan: a suction pop then a steady rush, 3.17 s (take B; take A was very quiet and only swelled at its end). Prompt: \"A giant pneumatic glass tube sucking up lumps of ground meat and shooting them along overhead pipes in the kitchen of a powerlifting gym's restaurant: a strong vacuum suction whoosh with soft wet thup-thup-thup lumps rushing through the tube and a steady rush of air, playful cartoon factory feel. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenTube.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://138689375274677"
-      }
-    },
-    "KitchenPlop": {
-      "about": "W Chews chef scene: ONE lump of ground meat dropping from the nozzle onto the pan, 0.33 s (take B, the louder and fuller one); played once for every lump that lands, so it stays in time with the picture. Prompt: \"One single soft wet plop: a fist-sized lump of raw ground meat dropping from a nozzle onto a metal pan in the kitchen of a powerlifting gym's restaurant. One short squishy splat, close and clean, no sizzle tail. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenPlop.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://84379172787367"
-      }
-    },
-    "BackDoorOpen": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the EMPLOYEES ONLY door swinging open: a latch click and a short swing, 0.74 s (take A, the lower one). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a heavy solid wooden staff door swinging open, one soft brass latch click then a short smooth swing, no creak, no voices, close microphone, dry room.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BackDoorOpen.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://121455606325815"
-      }
-    },
-    "BackDoorClose": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the EMPLOYEES ONLY door shutting: one low wooden thunk, 0.57 s (take A, the heavier one). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a heavy solid wooden staff door shutting, one firm wooden thunk with a brass latch click, no creak, no voices, close microphone, dry room.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BackDoorClose.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://127854702933697"
-      }
-    },
-    "WheelTick": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): ONE peg passing the luck wheel's pointer, 0.075 s: both takes came back as a run of clicks, so this is the first click cut out of take B; the game plays it once for every peg, so it keeps time with the wheel. Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: ONE single crisp click, a plastic flapper flicking past one metal peg on a wooden carnival prize wheel, one tick only, very short, dry, no reverb, no voices.\" Prompt influence 0.6. ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelTick.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://91380274954058"
-      }
-    },
-    "WheelWin": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a good result on the wheel, and a game won: a bright hit that rings out, 0.99 s (take B). Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: a short bright winning sting, a brass stab with a bell ding and a sparkling shimmer, cheerful game-show win, no voices, no crowd.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelWin.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://120346069633995"
-      }
-    },
-    "WheelLow": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the 0.8x on the wheel, and a game lost: a comic falling sting, 1.08 s (take A, the one with a steady tone near 530 Hz; take B was higher and broken into four bursts). Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: a short comedic losing sting, a muted trombone playing two descending wah-wah notes, light-hearted, no voices, no crowd.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelLow.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://79573852180728"
-      }
-    },
-    "BossMoo": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the boss's greeting when you talk to him: one deep moo that swells, 1.42 s (take A, the lower one, strongest at 190 Hz). Prompt: \"Sound effect for a cartoon powerlifting video game: ONE deep, gruff, low-pitched cow moo, short and grumpy like a big boss bull greeting a visitor, close microphone, dry, no music, no other animals.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BossMoo.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://127288719238376"
-      }
-    },
-    "ClocheLift": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a dish cover lifted off the shuffle table: a short metallic ring, 0.41 s (take A). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a polished steel dish cover (a cloche) lifted off a table, a soft clear metallic ring with a quick light swish, short, no voices, dry.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/ClocheLift.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://139106599155906"
-      }
-    },
-    "ClocheSlide": {
-      "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a dish cover sliding across the felt during a swap: a soft swelling scrape, 0.56 s (take A, the longer one); played once a swap, a little higher each time. Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a metal dish cover sliding quickly across a felt-covered table, one short soft scraping whoosh, no clang, no voices, dry.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
-      "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/ClocheSlide.wav",
-      "license": "ElevenLabs generated; commercial use depends on the account's plan",
-      "ids": {
-        "audio": "rbxassetid://101796474199152"
-      }
-    }
+ "about": "Shouts people yell at a meet, the sounds of chalking up of opening a gear crate and of a lifter's celebration (CelebrationConfig.Sounds) (GAME_DESIGN 37.5, 35.12): on the walk out, during the lift, after a good lift or a miss, and after a big moment; and the State arena crowd's chants (GAME_DESIGN 36.4, MeetSoundConfig.Chant; the ChantMix_ loops are mixed by art/scripts/make_chant_mix.py). Made with ElevenLabs Sound Effects (model eleven_text_to_sound_v2) from the prompts below, then cut and levelled by art/scripts/make_lift_shouts.py. The audio stays outside this public repo. Uploaded privately under group 529442797 with art/scripts/upload_group_images.py. Cues are in MeetSoundConfig. Nationals (GAME_DESIGN 39, 2026-11-17): the Nat*Shout voices (word-checked with a local speech-to-text model) and the NatChantMix_ loops mixed by art/scripts/make_nationals_chant_mix.py from the NatChant_ takes; none of the State or Local takes is reused there.",
+ "sounds": {
+  "LiftShout_1": {
+   "about": "Single man yelling \"UP! UP! UP!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_1.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://88650045295512"
+   }
+  },
+  "LiftShout_2": {
+   "about": "Single young man screaming one long drawn out \"UPPPPP!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_2.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://85759075386502"
+   }
+  },
+  "LiftShout_3": {
+   "about": "Single woman yelling \"You got this!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_3.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://102145250898707"
+   }
+  },
+  "LiftShout_4": {
+   "about": "Single deep voiced man yelling \"Come on!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_4.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://124723740426288"
+   }
+  },
+  "LiftShout_5": {
+   "about": "Single young man yelling \"Let's go!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_5.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://132787944284167"
+   }
+  },
+  "LiftShout_6": {
+   "about": "Single gruff older man yelling \"Drive! Drive!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_6.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://134812369331510"
+   }
+  },
+  "LiftShout_7": {
+   "about": "Single woman yelling \"Keep pushing!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_7.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://96519684386231"
+   }
+  },
+  "LiftShout_8": {
+   "about": "Single man yelling \"Big lift, come on!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_8.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://93544230817104"
+   }
+  },
+  "WalkShout_1": {
+   "about": "Single man yelling \"Easy weight!\" with raw confident intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_1.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://82391465593479"
+   }
+  },
+  "WalkShout_2": {
+   "about": "Single gruff man yelling \"Easy!\" with raw confident intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_2.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://108091981985004"
+   }
+  },
+  "WalkShout_3": {
+   "about": "Single young man yelling a long drawn out \"Let's goooooo!\" with hyped excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://79247368338280"
+   }
+  },
+  "WalkShout_4": {
+   "about": "Single woman yelling a long hyped \"Let's goooo!\" with raw excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://98604994214888"
+   }
+  },
+  "WalkShout_5": {
+   "about": "Single deep voiced man yelling \"Light weight!\" with confident intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://101894713441519"
+   }
+  },
+  "WalkShout_6": {
+   "about": "Single young woman yelling \"You own this!\" with raw excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_6.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://132519921470853"
+   }
+  },
+  "WalkShout_7": {
+   "about": "Single raspy voiced man yelling \"This is yours!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_7.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://138547795525987"
+   }
+  },
+  "WalkShout_8": {
+   "about": "Single teenage boy yelling \"Go get it!\" with raw excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_8.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://82667830825330"
+   }
+  },
+  "WalkShout_9": {
+   "about": "Single older woman calling out \"Nice and tight!\" firmly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_9.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://113888590268054"
+   }
+  },
+  "WalkShout_10": {
+   "about": "Single big burly man yelling \"Time to work!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_10.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://104016337436187"
+   }
+  },
+  "WalkShout_11": {
+   "about": "Single man yelling \"Easy money!\" with a cheerful confident tone, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/WalkShout_11.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://85863084757990"
+   }
+  },
+  "LiftShout_9": {
+   "about": "Single pumped up male sports fan cheering, one long happy triumphant \"YEEEEAAAAAH!\" hyping up his friend, big smile in his voice, like a fan celebrating at a game, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_9.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://123615255611016"
+   }
+  },
+  "LiftShout_10": {
+   "about": "Single excited woman sports fan cheering, one long joyful hyped \"WOOOOOOOO!\" rallying her friend on, big smile in her voice, like a fan celebrating at a game, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_10.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://110678563480923"
+   }
+  },
+  "LiftShout_11": {
+   "about": "Single big deep voiced man giving a proud rallying battle cheer, one long hyped \"HOOOOO-RAAAAH!\" pumping up his teammate, confident and happy, like a coach celebrating at a game, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_11.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://111261566401497"
+   }
+  },
+  "LiftShout_12": {
+   "about": "Single hyped young man cheering, one long excited \"AAAAYYYYYYY!\" celebrating and rallying his friend on, laughing with joy in his voice, like a fan at a game, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_12.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://120019086737764"
+   }
+  },
+  "LiftShout_13": {
+   "about": "Single older man yelling \"Push! Push! Push!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_13.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://88128578376287"
+   }
+  },
+  "LiftShout_14": {
+   "about": "Single woman yelling \"Get it! Get it!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_14.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://92859395750675"
+   }
+  },
+  "LiftShout_15": {
+   "about": "Single gruff man yelling \"Don't you quit!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_15.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://70809770249736"
+   }
+  },
+  "LiftShout_16": {
+   "about": "Single young woman yelling \"All you! All you!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_16.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://113179212662492"
+   }
+  },
+  "LiftShout_17": {
+   "about": "Single man yelling \"Finish it!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_17.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://138376250510208"
+   }
+  },
+  "LiftShout_18": {
+   "about": "Single deep voiced man yelling \"Stay tight!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_18.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://92491501492797"
+   }
+  },
+  "LiftShout_19": {
+   "about": "Single woman yelling \"Keep going!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_19.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://131316488877824"
+   }
+  },
+  "LiftShout_20": {
+   "about": "Single raspy voiced man yelling frantically \"Up! Up! Up!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_20.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://135790096814440"
+   }
+  },
+  "LiftShout_21": {
+   "about": "Single woman screaming \"Up! Up!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/LiftShout_21.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://121978364157695"
+   }
+  },
+  "SquatShout_1": {
+   "about": "Single gruff man yelling \"Knees out!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://75834581112249"
+   }
+  },
+  "SquatShout_2": {
+   "about": "Single woman yelling \"Chest up!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://106441317874920"
+   }
+  },
+  "SquatShout_3": {
+   "about": "Single young man yelling \"Stand it up!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/SquatShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://81238679048761"
+   }
+  },
+  "BenchShout_1": {
+   "about": "Single deep voiced man yelling \"Leg drive!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://104462044381291"
+   }
+  },
+  "BenchShout_2": {
+   "about": "Single woman yelling \"Stay on it!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://97462955193534"
+   }
+  },
+  "BenchShout_3": {
+   "about": "Single older man yelling \"Squeeze it!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BenchShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://108076731648106"
+   }
+  },
+  "DeadliftShout_1": {
+   "about": "Single man yelling \"Pull! Pull! Pull!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://82181720916294"
+   }
+  },
+  "DeadliftShout_2": {
+   "about": "Single woman yelling \"Lock it out!\" with raw intensity, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://104521722412983"
+   }
+  },
+  "DeadliftShout_3": {
+   "about": "Single gruff man yelling \"Hips through!\" with raw urgency, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/DeadliftShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://81875562795817"
+   }
+  },
+  "GoodShout_1": {
+   "about": "Single young man yelling a long joyful \"Let's goooooo!\" celebrating, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://125876457036400"
+   }
+  },
+  "GoodShout_2": {
+   "about": "Single woman yelling \"Yeah! Let's go!\" joyfully celebrating, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://83399404070933"
+   }
+  },
+  "GoodShout_3": {
+   "about": "Single deep voiced man yelling \"That's what I'm talking about!\" happily celebrating, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://127084376899712"
+   }
+  },
+  "GoodShout_4": {
+   "about": "Single man yelling \"Light work!\" with a confident laugh in his voice, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://102327352629954"
+   }
+  },
+  "GoodShout_5": {
+   "about": "Single young woman yelling \"Too easy!\" happily, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://98125825945499"
+   }
+  },
+  "GoodShout_6": {
+   "about": "Single gruff older man yelling \"There it is!\" proudly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_6.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://123984005671168"
+   }
+  },
+  "GoodShout_7": {
+   "about": "Single woman calling out \"Beautiful lift!\" warmly and loudly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_7.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://89927247474830"
+   }
+  },
+  "GoodShout_8": {
+   "about": "Single young man yelling \"So strong!\" with hyped excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_8.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://97483044506373"
+   }
+  },
+  "GoodShout_9": {
+   "about": "Single man yelling \"What a lift!\" with amazement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_9.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://108238962444743"
+   }
+  },
+  "GoodShout_10": {
+   "about": "Single woman whooping a long joyful \"WOOOOOO!\" with no other words, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/GoodShout_10.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://101878361109447"
+   }
+  },
+  "MissShout_1": {
+   "about": "Single man laughing loudly, a short big belly laugh, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://111464244047245"
+   }
+  },
+  "MissShout_2": {
+   "about": "Single woman calling out \"Nice try!\" warmly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://132065134091851"
+   }
+  },
+  "MissShout_3": {
+   "about": "Single woman laughing out loud, a short loud cackling laugh, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://103552772847361"
+   }
+  },
+  "MissShout_4": {
+   "about": "Single young man laughing hard, a short wheezing laugh, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://138261206183662"
+   }
+  },
+  "MissShout_5": {
+   "about": "Single deep voiced man calling out \"Nice try!\" kindly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://107755833351562"
+   }
+  },
+  "MissShout_6": {
+   "about": "Single young woman calling out \"So close!\" with disappointment, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_6.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://90471194455503"
+   }
+  },
+  "MissShout_7": {
+   "about": "Single gruff older man calling out \"You'll get it next time!\" encouragingly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_7.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://128205685292520"
+   }
+  },
+  "MissShout_8": {
+   "about": "Single man calling out clearly \"You've got the next one!\" encouragingly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_8.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://89232899893228"
+   }
+  },
+  "MissShout_9": {
+   "about": "Single woman calling out \"Unlucky!\" sympathetically, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_9.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://133322911119247"
+   }
+  },
+  "MissShout_10": {
+   "about": "Single teenage boy calling out \"Almost!\" with disappointment, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_10.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://107299750113352"
+   }
+  },
+  "MissShout_11": {
+   "about": "Single man groaning a disappointed \"Ooooooh!\" reacting to a near miss, no other words, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_11.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://123781580033789"
+   }
+  },
+  "MissShout_12": {
+   "about": "Single woman calling out \"Next one!\" firmly and encouragingly, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/MissShout_12.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://90086924258505"
+   }
+  },
+  "BigShout_1": {
+   "about": "Single young man screaming \"New PR! New PR!\" with wild excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://127030106765313"
+   }
+  },
+  "BigShout_2": {
+   "about": "Single woman screaming \"That's a PR!\" with wild excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://139968385671294"
+   }
+  },
+  "BigShout_3": {
+   "about": "Single deep voiced man yelling \"New gym record!\" with wild excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://103825655529490"
+   }
+  },
+  "BigShout_4": {
+   "about": "Single man yelling \"Yes! Still in it!\" with huge relief and excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://132348431572583"
+   }
+  },
+  "BigShout_5": {
+   "about": "Single woman yelling clearly in English \"You took the lead!\" with wild excitement, in a large gym hall, slight room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BigShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://94374920564013"
+   }
+  },
+  "ChalkRub_1": {
+   "about": "Close up of a weightlifter rubbing chalk between dry hands, soft powdery scraping and rubbing palms together, in a quiet gym room",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChalkRub_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://70735128991498"
+   }
+  },
+  "ChalkClap_1": {
+   "about": "A weightlifter clapping chalky hands once, a single dull dry clap with a soft puff of chalk dust, in a gym room",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChalkClap_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://80485192542230"
+   }
+  },
+  "BackSlap_1": {
+   "about": "A coach giving one firm open-hand slap on a lifter's upper back through a shirt, a single meaty pat with a little chalk dust, in a gym room",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/BackSlap_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://92544739948841"
+   }
+  },
+  "CrateOpen_1": {
+   "about": "A heavy gym equipment crate being unlatched and flipped open, metal latches clack, then the wooden lid thuds, short and satisfying, game reward sound",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateOpen_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://78601167944819"
+   }
+  },
+  "CrateBig_1": {
+   "about": "A short triumphant rare item reveal for a game, bright rising shimmer ending in a powerful brass and metal hit, exciting and celebratory, no voice",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateBig_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://93621931694016"
+   }
+  },
+  "CrateDrop_1": {
+   "about": "A heavy metal road case dropped onto a rubber gym floor from waist height, one deep solid thud with a short metallic clank of latches, no echo, game sound effect",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateDrop_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://89711320801766"
+   }
+  },
+  "CrateRattle_1": {
+   "about": "A heavy metal equipment case shaking and rattling faster and faster, latches jiggling and steel corners knocking, building anticipation, under one second, game sound effect, no voice",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CrateRattle_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://104195321031097"
+   }
+  },
+  "Chant_LiftOrLose": {
+   "about": "A packed stadium crowd of excited sports fans chanting in unison, clearly in English, \"LIFT! OR! LOSE!\" three loud words in rhythm, hyping up their athlete, happy and rallying, big arena echo, about 2 seconds",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_LiftOrLose.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://109769382818593"
+   }
+  },
+  "Chant_SquatItUp": {
+   "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"SQUAT IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_SquatItUp.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://82700761660432"
+   }
+  },
+  "Chant_ThisAllYou": {
+   "about": "A packed stadium crowd of excited sports fans chanting in unison, clearly in English, \"THIS! ALL! YOU!\" three loud words in rhythm, hyping up their athlete, happy and rallying, big arena echo, about 2 seconds",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Chant_ThisAllYou.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://119631593039458"
+   }
+  },
+  "ChantMix_LiftOrLose": {
+   "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_LiftOrLose take (LIFT OR LOSE) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_LiftOrLose.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://102688704977029"
+   }
+  },
+  "ChantMix_SquatItUp": {
+   "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_SquatItUp take (SQUAT IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_SquatItUp.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://109418282642406"
+   }
+  },
+  "Chant_PressItUp": {
+   "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"PRESS IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take D, word check read \"Press it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_PressItUp.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "Chant_LiftItUp": {
+   "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"LIFT IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take F, word check read \"Lift it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_LiftItUp.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "Chant_PickItUp": {
+   "about": "A huge indoor arena crowd of hundreds of happy, hyped sports fans chanting together in perfect unison, clearly in English, \"PICK IT UP!\" shouted once, loud and rhythmic, each word punched on the beat, rallying and joyful, big arena echo, about 2 seconds (take C, word check read \"Pick it up!\"; mixed into a ChantMix_ loop, not uploaded alone)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/Chant_PickItUp.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "ChantMix_PressItUp": {
+   "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_PressItUp take (PRESS IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_PressItUp.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://77510660676043"
+   }
+  },
+  "ChantMix_Deadlift": {
+   "about": "The State arena chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with the word-checked Chant_LiftItUp and Chant_PickItUp takes (LIFT IT UP, then PICK IT UP) stacked into a crowd on every other bar, in one arena echo. Mixed by art/scripts/make_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/ChantMix_Deadlift.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://94448130535726"
+   }
+  },
+  "Celeb_Roar1": {
+   "about": "A strong powerlifter's triumphant victory roar right after making a huge lift, one man, deep powerful chest voice, \"YEEAAAAAHHH!\", proud and joyful like an athlete celebrating, not scared, dry indoor arena with a little echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://123458672899540"
+   }
+  },
+  "Celeb_Roar2": {
+   "about": "A big strongman athlete's happy celebration roar after a winning lift, one man, deep and loud \"RAAAAHHH!\", fists clenched energy, triumphant and proud, smiling, not angry or scared, indoor arena with light echo, about 1.5 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://125839665862508"
+   }
+  },
+  "Celeb_Roar3": {
+   "about": "A powerlifter's joyful victory yell after a world record, one man, \"LET'S GOOOOO!\" shouted clearly in English, triumphant, proud, happy and loud, not scared, indoor arena with light echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Roar3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://122033673152836"
+   }
+  },
+  "Celeb_Scream": {
+   "about": "A young athlete's excited happy scream of joy right after winning, one person, \"WOOOOOO!\", big smile in the voice, celebrating like a happy sports fan, not frightened, indoor arena with light echo, about 1.5 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Scream.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://128253693502822"
+   }
+  },
+  "Celeb_Grunt": {
+   "about": "A strong man's short confident grunt of satisfaction after a good lift, one quick low \"YEAH!\" with a fist pump, proud and calm, close to the listener, dry room, half a second (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Grunt.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://81839489817776"
+   }
+  },
+  "Celeb_Laugh": {
+   "about": "An athlete laughing happily in disbelief after a big win while sitting on the floor, one person, warm joyful breathy laugh, ha ha ha, delighted and relieved, close, small echo, about 2 seconds (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Laugh.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://134421334607054"
+   }
+  },
+  "Celeb_Cheer": {
+   "about": "A quick happy cheer from one athlete, a short bright \"WOO!\", celebrating with arms up, smiling, energetic, close, small indoor echo, under one second (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED: the user wants no voices in celebrations (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Cheer.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://80728459212813"
+   }
+  },
+  "Celeb_Land": {
+   "about": "A heavy athlete in sneakers landing a jump with both feet on a solid wooden competition platform, one firm dull thud with a short creak of the boards, close, dry, no echo, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Land.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://81108779545819"
+   }
+  },
+  "Celeb_Knees": {
+   "about": "A man dropping down onto both knees on a rubber-topped wooden powerlifting platform, two quick dull knee thuds close together, soft and heavy, close, dry, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Knees.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://89084835055024"
+   }
+  },
+  "Celeb_Sit": {
+   "about": "A person sitting down suddenly on a wooden stage floor, one soft dull bump of a body landing on boards, with a little clothing rustle, close, dry, short (a lifter's celebration, GAME_DESIGN 36.4, CelebrationConfig.Sounds) NOT USED as is: replaced by its cleaned CelebFx_ version (2026-11-11)",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Celeb_Sit.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://140639113665774"
+   }
+  },
+  "CelebFx_Knees": {
+   "about": "A man dropping down onto both knees on a rubber-topped wooden powerlifting platform, two quick dull knee thuds close together, soft and heavy, close, dry, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Knees.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://109314144737773"
+   }
+  },
+  "CelebFx_Land": {
+   "about": "A heavy athlete in sneakers landing a jump with both feet on a solid wooden competition platform, one firm dull thud with a short creak of the boards, close, dry, no echo, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Land.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://92250222061931"
+   }
+  },
+  "CelebFx_Sit": {
+   "about": "A person sitting down suddenly on a wooden stage floor, one soft dull bump of a body landing on boards, with a little clothing rustle, close, dry, short (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Sit.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://102136677463296"
+   }
+  },
+  "CelebFx_FootTap": {
+   "about": "One single light footstep of a sneaker landing on a solid wooden competition platform, a clean soft tap with a little rubber squeak, very short and dry, no echo, no voice, one step only (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_FootTap.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://107912176890186"
+   }
+  },
+  "CelebFx_Stomp": {
+   "about": "One single firm stomp of a heavy athlete's foot planted on a solid wooden competition platform, a clean deep tight thud, very short and dry, no creak, no echo, no voice (a celebration's body sound, GAME_DESIGN 36.4, CelebrationConfig.Sounds). Cleaned by art/scripts/make_celebration_sounds.py (starts on the hit, rumble and hiss off, a real impact's decay, smooth fade).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/CelebFx_Stomp.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://115953996885187"
+   }
+  },
+  "NatWalkShout_1": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"This is your moment!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://88051571876734"
+   }
+  },
+  "NatWalkShout_2": {
+   "about": "Powerlifting meet, Nationals: a single older man with a deep gravelly voice in the stands of a big national powerlifting championship arena: \"Make it count!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://99194073347452"
+   }
+  },
+  "NatWalkShout_3": {
+   "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"Own that platform!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://93367272417025"
+   }
+  },
+  "NatWalkShout_4": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Lock in!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://105639400414168"
+   }
+  },
+  "NatWalkShout_5": {
+   "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"Bring it home!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://136122612820275"
+   }
+  },
+  "NatWalkShout_6": {
+   "about": "Powerlifting meet, Nationals: a single teenage girl in the stands of a big national powerlifting championship arena: \"You trained for this!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_6.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://130069451627142"
+   }
+  },
+  "NatWalkShout_7": {
+   "about": "Powerlifting meet, Nationals: a single big man with a very deep voice in the stands of a big national powerlifting championship arena: \"Big stage, big lift!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_7.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://83044561946790"
+   }
+  },
+  "NatWalkShout_8": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"LET'S GO!\" as the powerlifter walks out to the bar, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatWalkShout_8.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://72661847599662"
+   }
+  },
+  "NatLiftShout_1": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"DRIVE! DRIVE!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://116486355238611"
+   }
+  },
+  "NatLiftShout_2": {
+   "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"STAND UP!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://114308128695462"
+   }
+  },
+  "NatLiftShout_3": {
+   "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"COME ON, COME ON!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://132378915777342"
+   }
+  },
+  "NatLiftShout_4": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"SQUEEZE! SQUEEZE!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://75828470500681"
+   }
+  },
+  "NatLiftShout_5": {
+   "about": "Powerlifting meet, Nationals: a single older man in the stands of a big national powerlifting championship arena: \"DON'T STOP!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://121243430682783"
+   }
+  },
+  "NatLiftShout_6": {
+   "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"ALL THE WAY!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_6.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://113526900747068"
+   }
+  },
+  "NatLiftShout_7": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"KEEP GRINDING!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_7.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://113882252163022"
+   }
+  },
+  "NatLiftShout_8": {
+   "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"PUSH THROUGH!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_8.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://138576991082778"
+   }
+  },
+  "NatLiftShout_9": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"UP! UP! UP!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_9.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://120408263673058"
+   }
+  },
+  "NatLiftShout_10": {
+   "about": "Powerlifting meet, Nationals: a single big man with a very deep voice in the stands of a big national powerlifting championship arena: \"YES! YES! YES!\" during a heavy lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatLiftShout_10.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://139725780632492"
+   }
+  },
+  "NatGoodShout_1": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"THAT'S THE ONE!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://84831321180095"
+   }
+  },
+  "NatGoodShout_2": {
+   "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"UNREAL!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://95152937789186"
+   }
+  },
+  "NatGoodShout_3": {
+   "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"HUGE LIFT!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://86312495191126"
+   }
+  },
+  "NatGoodShout_4": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"NAILED IT!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://129476826431077"
+   }
+  },
+  "NatGoodShout_5": {
+   "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"MASSIVE!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://121320419357719"
+   }
+  },
+  "NatGoodShout_6": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"a happy cheering WOOOOO!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_6.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://92682520407472"
+   }
+  },
+  "NatGoodShout_7": {
+   "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"THAT'S A CHAMPION!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_7.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://104639578706340"
+   }
+  },
+  "NatGoodShout_8": {
+   "about": "Powerlifting meet, Nationals: a single older man in the stands of a big national powerlifting championship arena: \"TEXTBOOK!\" right after a good lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatGoodShout_8.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://94007079970693"
+   }
+  },
+  "NatMissShout_1": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Ohh, so close!\" right after a missed lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_1.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://111900279375748"
+   }
+  },
+  "NatMissShout_2": {
+   "about": "Powerlifting meet, Nationals: a single man in the stands of a big national powerlifting championship arena: \"Next one's yours!\" right after a missed lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_2.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://107421567171628"
+   }
+  },
+  "NatMissShout_3": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"Keep your head up!\" right after a missed lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_3.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://73019588573452"
+   }
+  },
+  "NatMissShout_4": {
+   "about": "Powerlifting meet, Nationals: a single man with a deep voice in the stands of a big national powerlifting championship arena: \"Unlucky, champ!\" right after a missed lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_4.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://130340241579930"
+   }
+  },
+  "NatMissShout_5": {
+   "about": "Powerlifting meet, Nationals: a single young man in the stands of a big national powerlifting championship arena: \"Aww, man!\" right after a missed lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_5.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://89029877433003"
+   }
+  },
+  "NatMissShout_6": {
+   "about": "Powerlifting meet, Nationals: a single woman in the stands of a big national powerlifting championship arena: \"You almost had it!\" right after a missed lift, arena room echo",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatMissShout_6.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://98149385923146"
+   }
+  },
+  "NatChant_LiftOrLose_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT OR LOSE!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftOrLose_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_LiftOrLose_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT OR LOSE!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftOrLose_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_LetsGo_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LET'S GO!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LetsGo_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_LetsGo_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LET'S GO!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LetsGo_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_SquatItUp_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"SQUAT IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_SquatItUp_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_SquatItUp_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"SQUAT IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_SquatItUp_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_StandItUp_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"STAND IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_StandItUp_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_StandItUp_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"STAND IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_StandItUp_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_PressItUp_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PRESS IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PressItUp_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_PressItUp_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PRESS IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PressItUp_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_LockItOut_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LOCK IT OUT!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LockItOut_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_LockItOut_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LOCK IT OUT!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LockItOut_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_LiftItUp_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftItUp_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_LiftItUp_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"LIFT IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_LiftItUp_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_PickItUp_A": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PICK IT UP!\" (take A, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PickItUp_A.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChant_PickItUp_B": {
+   "about": "A packed national powerlifting championship arena, men and women of all ages, deep and high voices, chanting in unison \"PICK IT UP!\" (take B, word check read it right); mixed into a NatChantMix_ loop, not uploaded alone",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/Raw/NatChant_PickItUp_B.mp3",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "skip": true,
+   "ids": {
+    "audio": "not uploaded alone"
+   }
+  },
+  "NatChantMix_ForTheWin": {
+   "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of LIFT OR LOSE and then LET'S GO stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_ForTheWin.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://101829221359786"
+   }
+  },
+  "NatWelcome_A": {
+   "about": "Nationals opening announcer (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', 2026-11-18), shouted with excitement to a huge packed powerlifting arena: \"Welcome, ladies and gentlemen... to CENTRAL NATIONALS! Where these lifters will be in an ALL or NOTHING battle... competing for the WORLDS invitation! This meet will begin shortly!\" Take A (the one the game uses until the user picks). Words checked locally (faster-whisper): all right.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/NatWelcome_A.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://80969960609874"
+   }
+  },
+  "NatWelcome_B": {
+   "about": "Nationals opening announcer, take B (same line, voice and model as NatWelcome_A). Words checked locally: all right.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/NatWelcome_B.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://107631807856915"
+   }
+  },
+  "NatChantMix_Squat": {
+   "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of SQUAT IT UP and then STAND IT UP stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Squat.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://104224299630196"
+   }
+  },
+  "NatChantMix_Bench": {
+   "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of PRESS IT UP and then LOCK IT OUT stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Bench.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://81212795486043"
+   }
+  },
+  "NatChantMix_Deadlift": {
+   "about": "The Nationals hall chant as one finished loop: the stomp, stomp, clap beat at 144 BPM (own work) with both NatChant takes of LIFT IT UP and then PICK IT UP stacked into a bigger crowd on every other bar, in one arena echo. Mixed by art/scripts/make_nationals_chant_mix.py.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Shouts/NatChantMix_Deadlift.wav",
+   "license": "ElevenLabs generated chant (the account is on a paid plan, user 2026-11-05) over an original beat",
+   "ids": {
+    "audio": "rbxassetid://122422533517454"
+   }
+  },
+  "LiftOffJudge_First": {
+   "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. First place goes to a lift-off.\" One take (5.09 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_First.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://109357897168685"
+   }
+  },
+  "LiftOffJudge_Second": {
+   "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. Second place goes to a lift-off.\" One take (5.13 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Second.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://87394996343198"
+   }
+  },
+  "LiftOffJudge_Third": {
+   "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"You finished dead level on total. Third place goes to a lift-off.\" One take (5.02 s; the take said its last sentence twice, the repeat was cut off). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Third.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://127909988397691"
+   }
+  },
+  "LiftOffJudge_Rules": {
+   "about": "Nationals lift-off, the head judge to the tied lifters (ElevenLabs speech, eleven_v4, voice 'David - Sports Arena Announcer', the opening's announcer, who is the head judge; 2026-11-18, user: 'tell elevenlabs to generate the same voice for the text'), firm, raising his voice over a roaring packed powerlifting arena: \"One lift each, your choice: your best plus two and a half kilos. Miss while another makes it, and you are out.\" One take (7.57 s). Words checked locally (faster-whisper): right. Flow 'Nationals lift-off judge lines', 701 credits for the four.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Announcer/LiftOffJudge_Rules.wav",
+   "license": "ElevenLabs generated; the account is on a paid plan (user, 2026-11-05)",
+   "ids": {
+    "audio": "rbxassetid://136963528084285"
+   }
+  },
+  "KitchenSizzle": {
+   "about": "Kitchen (GAME_DESIGN 40.7): a giant steak sizzling in an enormous cast-iron pan in a powerlifting gym kitchen, made a seamless 5.4 s loop (take B). Loops on every cooking pan near the camera.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenSizzle.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://140335319453723"
+   }
+  },
+  "KitchenGrinder": {
+   "about": "Kitchen chef scene: the big red meat grinder churning and squelching meat out of its spout, 2 s (take B).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenGrinder.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://99489705613915"
+   }
+  },
+  "KitchenCowMoo": {
+   "about": "Kitchen chef scene: a cartoon cow's surprised, funny MOOO as it tumbles into the grinder, 1.4 s (take B).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenCowMoo.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://116016869694788"
+   }
+  },
+  "KitchenBagThud": {
+   "about": "Kitchen chef scene: a heavy burlap sack of steaks thudding into the grinder's steel funnel, 0.45 s (take A).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenBagThud.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://74704226139703"
+   }
+  },
+  "KitchenMeatLand": {
+   "about": "Kitchen chef scene: the meat mountain splatting onto the giant hot pan, then a burst of sizzling steam, 1.6 s (take B).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenMeatLand.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://114323852821853"
+   }
+  },
+  "KitchenEat": {
+   "about": "Kitchen: a hungry powerlifter chomping into the big steak with a pleased mmm, when eating at the pan, 1.05 s (take B).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenEat.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://119322748175840"
+   }
+  },
+  "ChefLine": {
+   "about": "Kitchen chef scene: the chef (ElevenLabs voice 'The Sneakerhead Chef', eleven_v4, [confident, warm, hyped, a big grin]) saying \"Alright, I'll handle this for you!\" (take A; local word check: 'All right, I'll handle this for you.'), 2.49 s.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/ChefLine.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://110659636124322"
+   }
+  },
+  "ChefWelcome": {
+   "about": "Kitchen: the chef greets you walking into the hall (ElevenLabs voice 'The Sneakerhead Chef', eleven_v4, [warm, excited, a big welcoming grin, a chef greeting a hungry powerlifter walking into his busy restaurant]) saying \"Hey! Welcome into Double-U Chews!\" (W Chews, the restaurant; user 2026-11-21). Take B, the first of the four times it said it (both takes repeated the line); local word check: 'Hey, welcome into W choose.' (chews / choose sound the same), 3.01 s. 284 credits for the two takes.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/ChefWelcome.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://117853087157699"
+   }
+  },
+  "KitchenButton": {
+   "about": "W Chews chef scene (user 2026-11-21: \"Make the sound new sound affects\"): the chef's open palm slapping the big start button: one firm mechanical clunk, 0.31 s (take B). Prompt: \"A cook's open palm slaps a big chunky industrial start button on a steel panel in the busy kitchen of a powerlifting gym's restaurant: one firm heavy mechanical clunk, then a short bright electric buzzer beep as the machine powers on. Close, clean, punchy, cartoon-fun. No voices, no music.\" (both takes came back as the clunk alone, so the buzzer is its own sound, KitchenBuzzer). ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenButton.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://88662812930499"
+   }
+  },
+  "KitchenBuzzer": {
+   "about": "W Chews chef scene: the machine's start buzzer right after the button's clunk, one steady buzz, 1.18 s (take A, strongest at 720 Hz; take B was higher, 1,800 Hz). Prompt: \"A machine starting up in the kitchen of a powerlifting gym's restaurant: a loud electric factory start buzzer, one steady BZZZZT lasting about one second, then it stops cleanly. Bright, bold, cartoon-fun game sound, close and clean. No voices, no music, no alarm siren.\" Prompt influence 0.8. Played quietly.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenBuzzer.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://91215560990283"
+   }
+  },
+  "KitchenChute": {
+   "about": "W Chews chef scene: the bag or cow tumbling down the stainless ceiling chute before it thuds into the grinder: a hollow metal rumble that swells and fades, 1.11 s (take A; take B had two separate hits). Prompt: \"Something heavy tumbling down a big stainless steel ceiling chute in the kitchen of a powerlifting gym's restaurant: a hollow metallic rumble and rattling clatter rushing closer and getting louder as it slides fast down the metal duct. Ends abruptly just before the impact. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenChute.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://100812110878986"
+   }
+  },
+  "KitchenTube": {
+   "about": "W Chews chef scene: the meat drawn up the funnel and rushing along the overhead glass tube to the pan: a suction pop then a steady rush, 3.17 s (take B; take A was very quiet and only swelled at its end). Prompt: \"A giant pneumatic glass tube sucking up lumps of ground meat and shooting them along overhead pipes in the kitchen of a powerlifting gym's restaurant: a strong vacuum suction whoosh with soft wet thup-thup-thup lumps rushing through the tube and a steady rush of air, playful cartoon factory feel. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenTube.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://138689375274677"
+   }
+  },
+  "KitchenPlop": {
+   "about": "W Chews chef scene: ONE lump of ground meat dropping from the nozzle onto the pan, 0.33 s (take B, the louder and fuller one); played once for every lump that lands, so it stays in time with the picture. Prompt: \"One single soft wet plop: a fist-sized lump of raw ground meat dropping from a nozzle onto a metal pan in the kitchen of a powerlifting gym's restaurant. One short squishy splat, close and clean, no sizzle tail. No voices, no music.\" ElevenLabs Sound Effects v3, flow 'Kitchen machine sounds', prompt influence 0.75.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/Kitchen/KitchenPlop.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://84379172787367"
+   }
+  },
+  "BackDoorOpen": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the EMPLOYEES ONLY door swinging open: a latch click and a short swing, 0.74 s (take A, the lower one). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a heavy solid wooden staff door swinging open, one soft brass latch click then a short smooth swing, no creak, no voices, close microphone, dry room.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BackDoorOpen.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://121455606325815"
+   }
+  },
+  "BackDoorClose": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the EMPLOYEES ONLY door shutting: one low wooden thunk, 0.57 s (take A, the heavier one). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a heavy solid wooden staff door shutting, one firm wooden thunk with a brass latch click, no creak, no voices, close microphone, dry room.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BackDoorClose.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://127854702933697"
+   }
+  },
+  "WheelTick": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): ONE peg passing the luck wheel's pointer, 0.075 s: both takes came back as a run of clicks, so this is the first click cut out of take B; the game plays it once for every peg, so it keeps time with the wheel. Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: ONE single crisp click, a plastic flapper flicking past one metal peg on a wooden carnival prize wheel, one tick only, very short, dry, no reverb, no voices.\" Prompt influence 0.6. ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelTick.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://91380274954058"
+   }
+  },
+  "WheelWin": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a good result on the wheel, and a game won: a bright hit that rings out, 0.99 s (take B). Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: a short bright winning sting, a brass stab with a bell ding and a sparkling shimmer, cheerful game-show win, no voices, no crowd.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelWin.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://120346069633995"
+   }
+  },
+  "WheelLow": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the 0.8x on the wheel, and a game lost: a comic falling sting, 1.08 s (take A, the one with a steady tone near 530 Hz; take B was higher and broken into four bursts). Prompt: \"Sound effect for a cartoon powerlifting video game's prize wheel: a short comedic losing sting, a muted trombone playing two descending wah-wah notes, light-hearted, no voices, no crowd.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/WheelLow.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://79573852180728"
+   }
+  },
+  "BossMoo": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): the boss's greeting when you talk to him: one deep moo that swells, 1.42 s (take A, the lower one, strongest at 190 Hz). Prompt: \"Sound effect for a cartoon powerlifting video game: ONE deep, gruff, low-pitched cow moo, short and grumpy like a big boss bull greeting a visitor, close microphone, dry, no music, no other animals.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/BossMoo.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://127288719238376"
+   }
+  },
+  "ClocheLift": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a dish cover lifted off the shuffle table: a short metallic ring, 0.41 s (take A). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a polished steel dish cover (a cloche) lifted off a table, a soft clear metallic ring with a quick light swish, short, no voices, dry.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/ClocheLift.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://139106599155906"
+   }
+  },
+  "ClocheSlide": {
+   "about": "W Chews' back room (the mafia boss cow's room; user 2026-11-21 allowed up to 150 credits for the overnight run): a dish cover sliding across the felt during a swap: a soft swelling scrape, 0.56 s (take A, the longer one); played once a swap, a little higher each time. Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse: a metal dish cover sliding quickly across a felt-covered table, one short soft scraping whoosh, no clang, no voices, dry.\" ElevenLabs Sound Effects v3, flow 'Back room sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/BackRoom/ClocheSlide.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://101796474199152"
+   }
+  },
+  "PressSlam": {
+   "about": "W Chews' chef scene (user 2026-11-22: \"Yes, make them\", about 30 credits approved; 20 spent for the six takes): the giant meat press slamming onto the pile of mince: one hit, 0.47 s, loudest at its very start (take B, the one with more low end). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse kitchen: a giant heavy steel meat press plate slamming down hard onto a big pile of raw minced meat, ONE deep metallic thud with a wet meaty squelch and a short ring of steel, no voices, no music, close microphone, dry room.\" 1.0 s asked. ElevenLabs Sound Effects v3, flow 'Chef scene press sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/ChefScene/PressSlam.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://87798820489434"
+   }
+  },
+  "PressLift": {
+   "about": "W Chews' chef scene (user 2026-11-22: \"Yes, make them\", about 30 credits approved; 20 spent for the six takes): the press lifting off the raw steak: a wet peel that swells and lets go, 0.99 s (take A; take B came back almost silent). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse kitchen: a giant heavy steel meat press plate slowly lifting off a freshly pressed raw steak, a wet sticky peeling suction sound that ends in a soft pop of release, no voices, no music, close microphone, dry room.\" 1.2 s asked. ElevenLabs Sound Effects v3, flow 'Chef scene press sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/ChefScene/PressLift.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://98224797412593"
+   }
+  },
+  "MeatFall": {
+   "about": "W Chews' chef scene (user 2026-11-22: \"Yes, make them\", about 30 credits approved; 20 spent for the six takes): ONE chunk of raw meat slapping into the grinder's steel tub, 0.52 s (take A, the lower, heavier one; three slaps were asked for and both takes came back as one, so the game plays it once for every chunk, at a slightly different pitch each time). Prompt: \"Sound effect for a cartoon powerlifting video game's steakhouse kitchen: big chunks of raw meat slapping one after another into a large steel tub, three heavy wet slaps on metal in quick succession, no voices, no music, close microphone, dry room.\" 0.8 s asked. ElevenLabs Sound Effects v3, flow 'Chef scene press sounds', two takes each, picked by waveform (nobody has listened).",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/ChefScene/MeatFall.wav",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://100771838890313"
+   }
   }
+ }
 }

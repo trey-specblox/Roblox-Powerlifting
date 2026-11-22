@@ -6,7 +6,7 @@
 	The mafia boss cow's WHEEL OF LUCK and his games (GAME_DESIGN §40.7, user 2026-11-21; the rules and numbers are
 	LuckConfig's, the save's operations ProfileOperations').
 
-		- LuckRemotes: the luck view (GET), a spin (SPIN: the server rolls the wedge), a game's start (GAME_START: the
+		- LuckRemotes: the luck view (GET), a spin (SPIN: the server rolls the wedge and the result inside its band), a game's start (GAME_START: the
 		  server decides where the steak starts and every swap) and its answer (GAME_FINISH: the server knows where the
 		  steak ended).
 		- The player attributes LuckConfig.MultiplierAttribute / EndsAtAttribute, kept current, for every screen that
@@ -102,9 +102,12 @@ function LuckService.start()
 		if not inRoom(player) then
 			return { outcome = "TooFar", view = PlayerDataService.getLuck(player) }
 		end
-		-- Every wedge is as likely as any other: a result's chance is its wedges / WedgeCount, as the wheel shows.
+		-- Every wedge is as likely as any other: a band's chance is its wedges / WedgeCount, as the wheel shows. Then
+		-- one of the band's results, each as likely as the next.
 		local wedge = random:NextInteger(1, LuckConfig.WedgeCount)
-		local outcome, multiplier, free = PlayerDataService.spinLuckWheel(player, wedge)
+		local band = LuckConfig.wedgePrize(wedge)
+		local rolled = if band then LuckConfig.rollIn(band, random) else 1
+		local outcome, multiplier, free = PlayerDataService.spinLuckWheel(player, wedge, rolled)
 		local view = publish(player)
 		if outcome ~= "Spun" then
 			return { outcome = outcome or "Rejected", view = view }

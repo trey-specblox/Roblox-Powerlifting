@@ -16,7 +16,8 @@
 	Display only: the server keeps the boosts (KitchenService, ProfileOperations, GainBoosts).
 
 	A third chip, in purple, is your LUCK from the mafia boss cow's wheel ("2x", the time left, the same draining bar):
-	it shows while a multiplier is in force.
+	it shows while a multiplier is in force, by itself at the bottom RIGHT of the screen (user 2026-11-22), above the
+	jump button on a touch screen.
 
 	PERFORMANCE: three small chips (about 40 instances); the text updates once a second; the ready chip's slow pulse
 	is one tween that runs only while that chip shows.
@@ -117,7 +118,7 @@ function BoostBar.start()
 	holder.Name = "Chips"
 	holder.AnchorPoint = Vector2.new(0.5, 1)
 	holder.Position = UDim2.new(0.5, 0, 1, -10)
-	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 3 + 20)
+	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 2 + 10)
 	holder.BackgroundTransparency = 1
 	holder.Parent = gui
 	local layout = Instance.new("UIListLayout")
@@ -127,12 +128,28 @@ function BoostBar.start()
 	layout.Padding = UDim.new(0, 10)
 	layout.Parent = holder
 
+	-- Luck's own corner: the bottom right. On a touch screen the jump button lives there, so the chip sits above it
+	-- (the button is 70 px on a phone and 120 on a tablet; the offset is in full-size pixels, scaled with the screen).
+	local luckLift = 10
+	if UIStyle.isTouchOnly() then
+		local camera = workspace.CurrentCamera
+		local short = if camera then math.min(camera.ViewportSize.X, camera.ViewportSize.Y) else 400
+		luckLift = math.floor((if short < 500 then 105 else 160) / UIStyle.screenScale())
+	end
+	local luckHolder = Instance.new("Frame")
+	luckHolder.Name = "LuckChips"
+	luckHolder.AnchorPoint = Vector2.new(1, 1)
+	luckHolder.Position = UDim2.new(1, -14, 1, -luckLift)
+	luckHolder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT)
+	luckHolder.BackgroundTransparency = 1
+	luckHolder.Parent = gui
+
 	-- A glossy pill: a gradient fill with a dark edge and a soft glow, a shine on its top half. Returns the chip (hidden)
 	-- and its fill (to put things on).
-	local function pill(name: string, order: number, top: Color3, bottom: Color3, glowColour: Color3): (Frame, Frame)
+	local function pill(name: string, order: number, top: Color3, bottom: Color3, glowColour: Color3, into: Frame?): (Frame, Frame)
 		local chip = make("Frame", {
 			Name = name, BackgroundTransparency = 1, Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT), LayoutOrder = order,
-			Visible = false, Parent = holder,
+			Visible = false, Parent = into or holder,
 		})
 		local fill = make("Frame", {
 			Name = "Fill", BackgroundColor3 = UIFancy.White, BorderSizePixel = 0, Size = UDim2.fromScale(1, 1), Parent = chip,
@@ -160,8 +177,9 @@ function BoostBar.start()
 		TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.05 })
 
 	-- A running boost: its amount in a yellow badge, its name, the time left in a dark inset, a draining bar.
-	local function boostChip(name: string, order: number, top: Color3, bottom: Color3, glowColour: Color3, title: string)
-		local chip, fill = pill(name, order, top, bottom, glowColour)
+	local function boostChip(name: string, order: number, top: Color3, bottom: Color3, glowColour: Color3, title: string,
+		into: Frame?)
+		local chip, fill = pill(name, order, top, bottom, glowColour, into)
 		local badge = make("Frame", {
 			Name = "Gain", BackgroundColor3 = UIFancy.White, BorderSizePixel = 0, AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.new(0, 6, 0.5, -2), Size = UDim2.fromOffset(84, 28), Parent = fill,
@@ -201,7 +219,7 @@ function BoostBar.start()
 	-- Luck from the mafia boss cow's wheel (GAME_DESIGN §40.7): read from this player's attributes, which the server
 	-- keeps current (LuckService).
 	local luckChip, luckText, luckClock, luckDrain = boostChip("Luck", 3, LUCK_TOP, LUCK_BOTTOM, Color3.fromRGB(190, 130, 255),
-		"LUCK")
+		"LUCK", luckHolder)
 	local function drawLuck()
 		if luckHeld then
 			return
@@ -212,7 +230,7 @@ function BoostBar.start()
 		if luck ~= 1 and typeof(endsAt) == "number" then
 			luckText.Text = LuckConfig.multiplierText(luck)
 			luckClock.Text = KitchenConfig.clockText(endsAt - now)
-			luckDrain.Size = UDim2.fromScale(math.clamp((endsAt - now) / (LuckConfig.LuckHours * 3600), 0.02, 1), 1)
+			luckDrain.Size = UDim2.fromScale(math.clamp((endsAt - now) / (LuckConfig.hoursFor(luck) * 3600), 0.02, 1), 1)
 			luckChip.Visible = true
 		else
 			luckChip.Visible = false

@@ -1570,7 +1570,8 @@ FURNISH.TrainingZone = function(kit)
 	local panels = math.max(1, math.round((m1 - m0) / 4))
 	for k = 1, panels - 1 do
 		local s = m0 + k * (m1 - m0) / panels
-		back.item("Mirror_Joint_" .. k, s - 0.06, s + 0.06, 0.1, 0.12, 1.2, 9.2, looks.Gadget)
+		-- (0.05 proud of the mirror: the zone is open to the hall, and from across it a thinner strip can shimmer.)
+		back.item("Mirror_Joint_" .. k, s - 0.06, s + 0.06, 0.1, 0.15, 1.2, 9.2, looks.Gadget)
 	end
 	back.item("SteelPanels", split, hw, 0, 0.06, 0, 9.6, looks.MachinesSteel)
 	endWall.item("SteelPanels_End", 0, D, 0, 0.06, 0, 9.6, looks.MachinesSteel)
@@ -2311,9 +2312,9 @@ FURNISH.Sauna = function(kit)
 	front.item("Window", w0, w1, 0.05, 0.1, wy0, wy1, looks.SaunaGlass)
 	front.item("Window_Sill", w0 - 0.2, w1 + 0.2, 0.15, 0.45, wy0 - 0.15, wy0, slat)
 	front.item("Window_Head", w0 - 0.2, w1 + 0.2, 0.15, 0.3, wy1, wy1 + 0.15, slat)
-	front.item("Door_Casing_Top", door - doorHalf - 0.25, door + doorHalf + 0.25, 0.15, 0.3, doorTop, doorTop + 0.25, slat)
-	front.item("Door_Casing_1", door - doorHalf - 0.25, door - doorHalf, 0.15, 0.3, 0.1, doorTop, slat)
-	front.item("Door_Casing_2", door + doorHalf, door + doorHalf + 0.25, 0.15, 0.3, 0.1, doorTop, slat)
+	-- (No casing round the door: the swing door's own frame (StarterGymBuilder.swingDoor) fills the doorway
+	-- 0.3 wide and deeper than a casing here would be. The old casing lay wholly inside that frame, with its
+	-- inner faces in the same planes as the frame's, and flickered in the doorway: flicker check, 2026-11-22.)
 	kit.item("Ceiling", -hw + 0.15, hw - 0.15, 0.15, D - 0.15, 9.85, 10, board)
 
 	-- Two tiers of slatted benches with a backrest and warm LED strips under
@@ -3412,14 +3413,15 @@ end
 FRONT.Cardio = function(front)
 	front.band("Track", front.aMin, front.aMax, 0, 4.6, 0.06, 0.16, looks.CardioTrack)
 	for index, y in ipairs({ 1.15, 2.3, 3.45 }) do
-		front.band("Lane_" .. index, front.aMin, front.aMax, y - 0.05, y + 0.05, 0.16, 0.18, looks.LaneWhite)
+		-- (0.05 proud of the track: these fronts are seen from right across the hall, where a thinner line can shimmer.)
+		front.band("Lane_" .. index, front.aMin, front.aMax, y - 0.05, y + 0.05, 0.16, 0.21, looks.LaneWhite)
 	end
 	front.band("TrackEdge", front.aMin, front.aMax, 4.6, 4.75, 0.06, 0.18, looks.LaneWhite)
 	-- Lane numbers at both ends.
 	for _, a in ipairs({ front.aMin + 0.5, front.aMax - 1.4 }) do
 		for lane = 1, 4 do
 			local y0 = (lane - 1) * 1.15 + 0.15
-			local number = front.item(string.format("LaneNumber_%d_%d", if a < 0 then 1 else 2, lane), a, a + 0.9, 0.16, 0.17, y0,
+			local number = front.item(string.format("LaneNumber_%d_%d", if a < 0 then 1 else 2, lane), a, a + 0.9, 0.16, 0.21, y0,
 				y0 + 0.85, looks.LaneWhite)
 			number.Transparency = 1
 			local gui = Instance.new("SurfaceGui")
@@ -3485,18 +3487,25 @@ end
 	the door, a brass name plate, a framed "HELP POINT" sign and a planter.
 ]]
 FRONT.Office = function(front)
+	-- The window: a dark panel (the room behind), white blinds, frosted glass, a black frame and a steel sill.
+	local w0, w1, y0, y1 = 5.6, 12.4, 3.9, 8.3
+	-- The grooves stand 0.05 proud of the panels (seen from right across the hall, a thinner line can
+	-- shimmer), so one that would cross the window is in two pieces, under and over it.
 	local groove, a = 0, front.aMin + 1.5
 	while a < front.aMax - 0.5 do
 		if math.abs(a) > front.doorHalf + 0.6 then
 			groove += 1
-			front.item("Groove_" .. groove, a - 0.04, a + 0.04, 0.06, 0.08, 0.5, front.H - 0.2, looks.SignPanel)
+			if a + 0.04 > w0 - 0.18 and a - 0.04 < w1 + 0.18 then
+				front.item("Groove_" .. groove .. "_Low", a - 0.04, a + 0.04, 0.06, 0.11, 0.5, y0 - 0.2, looks.SignPanel)
+				front.item("Groove_" .. groove .. "_High", a - 0.04, a + 0.04, 0.06, 0.11, y1 + 0.18, front.H - 0.2, looks.SignPanel)
+			else
+				front.item("Groove_" .. groove, a - 0.04, a + 0.04, 0.06, 0.11, 0.5, front.H - 0.2, looks.SignPanel)
+			end
 		end
 		a += 3
 	end
 	front.band("BrassRail", front.aMin, front.aMax, 3.3, 3.42, 0.06, 0.14, looks.Brass)
-	-- The window: a dark panel (the room behind), white blinds, frosted glass, a black frame and a steel sill.
-	local w0, w1, y0, y1 = 5.6, 12.4, 3.9, 8.3
-	front.item("Window_Back", w0, w1, 0.06, 0.09, y0, y1, looks.SBarWall) -- over the grooves
+	front.item("Window_Back", w0, w1, 0.06, 0.09, y0, y1, looks.SBarWall)
 	-- The Fronts_01 blinds (sixteen slats and a head rail, d 0.09..0.15), or block slats.
 	local blindProps = propsFor({ "Blinds" })
 	if blindProps then
@@ -3543,8 +3552,9 @@ end
 -- A small instruction board on a front: a title and lines in a black frame.
 local function frontBoard(front: FrontKit, name: string, a0: number, a1: number, y0: number, y1: number, title: string,
 	lines: { string }, background: Color3, ink: Color3)
-	front.item(name .. "_Frame", a0 - 0.12, a1 + 0.12, 0.06, 0.16, y0 - 0.12, y1 + 0.12, looks.Gadget)
-	local board = front.item(name, a0, a1, 0.16, 0.2, y0, y1, looks.Whiteboard)
+	-- (The frame stands 0.05 proud of slats and bands up to 0.14 out that run behind it.)
+	front.item(name .. "_Frame", a0 - 0.12, a1 + 0.12, 0.06, 0.19, y0 - 0.12, y1 + 0.12, looks.Gadget)
+	local board = front.item(name, a0, a1, 0.19, 0.23, y0, y1, looks.Whiteboard)
 	writing(board, front.toward("+d"), title, lines, background, ink)
 end
 
@@ -4022,12 +4032,14 @@ end
 FURNISH.StrongmanShed = function(kit)
 	-- The turf lanes, with white side lines and start and finish lines.
 	for _, lane in ipairs({ { name = "YokeLane", a0 = -32, a1 = -22 }, { name = "FarmerLane", a0 = -18, a1 = -8 } }) do
+		-- (The lines stand 0.05 proud of the turf: through the open roller door they are seen from far across
+		-- the square, where a thinner line can shimmer.)
 		kit.item(lane.name, lane.a0, lane.a1, 4.4, 40.4, 0, 0.08, looks.YardTurf)
 		for index, a in ipairs({ lane.a0, lane.a1 - 0.2 }) do
-			kit.item(lane.name .. "_Side_" .. index, a, a + 0.2, 4.4, 40.4, 0.08, 0.1, looks.LaneWhite)
+			kit.item(lane.name .. "_Side_" .. index, a, a + 0.2, 4.4, 40.4, 0.08, 0.13, looks.LaneWhite)
 		end
-		kit.item(lane.name .. "_Start", lane.a0, lane.a1, 4.4, 4.7, 0.08, 0.1, looks.LaneWhite)
-		kit.item(lane.name .. "_Finish", lane.a0, lane.a1, 40.1, 40.4, 0.08, 0.1, looks.LaneWhite)
+		kit.item(lane.name .. "_Start", lane.a0, lane.a1, 4.4, 4.7, 0.08, 0.13, looks.LaneWhite)
+		kit.item(lane.name .. "_Finish", lane.a0, lane.a1, 40.1, 40.4, 0.08, 0.13, looks.LaneWhite)
 	end
 	-- A chalk stand between the lanes' starts, and a steel rig at the far end with chains hanging from its front
 	-- beam: the BackRooms_01 models on the old solid blocks (now hidden), or blocks.

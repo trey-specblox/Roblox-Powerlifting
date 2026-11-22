@@ -16,6 +16,215 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**W CHEWS, ROUND 3: THE CHEF TALKS TO THE PLAYER, THE DOUBLE DOOR IN THE MIDDLE, THE COW IN THE BACKGROUND (the
+user's notes of 2026-11-22: "you cant visibly see yourself, as in my character" and "the cutscene for the cow walking
+in is too obvious ... like a background type of thing ... a double door ... move the room, and the door to the middle
+of the wall"). UPLOADED 2026-11-22 on the user's "Yes, upload" (WChewsHall_02 = rbxassetid://92806815963499,
+replacing 01's id in StarterGymConfig.PropAssets; WChewsDoor_01 = rbxassetid://72709187235561; both in
+art/materials/materials.json). TESTED IN STUDIO, one player, checksums matched (KitchenLights was stale and was
+nudged). NOT COMMITTED. The leftover checks were finished on 2026-11-22 in a second Studio pass: see FINISHED CHECKS
+below; only a second player and a phone are still untried.**
+- FINISHED CHECKS (2026-11-22, second pass, one player, every changed script's checksum matched disk before Play):
+  (1) FlickerAudit run on W Chews only (KitchenHall + KitchenEntrance, 1,611 parts): 0 block-against-block and 0
+  block-against-mesh lines of any kind; 170 mesh-against-mesh hints, nearly all pieces standing on the same floor
+  (bounding-box bottoms). The hints worth an eye were looked at up close: the door's plates, windows and lamps, a
+  back-room portrait (Dark + Tie): nothing flickers. (2) The OPEN door looked at up close from the back room (leaves
+  at 90 degrees, both hinge edges and the frame's step against the wall): clean, the leaves clear of the frame.
+  (3) A moving-camera look: pairs of shots a few studs apart along the aisle, at the left wall's rail, and from the
+  entrance end down the hall: nothing changed between pairs, no flashing patch. (4) THE REAL COOK (prompt, "Steaks",
+  Cook 50 through the real KitchenMenu, StudioSceneSlow 3): 7 shots, about 32 s at real speed for 50 steaks; the
+  chef's line (2.49 s) plays in full on the two-shot (held 3.4 s); the doors start opening 3.0 s into the first bay
+  shot, the cow (spawned at the back wall) goes through, the doors shut during the suction shot and he is removed;
+  THE SUCTION SHOT WAS SEEN (the meat rising into the tube, the doors shut behind). All 13 of the scene's sound
+  kinds loaded and played, the door's own open and shut sounds included. (5) 16:9: the shots cropped to a 16:9
+  screen (art/previews/WChewsScene_16x9.jpg): the two-shot keeps the chef and the player, both bay shots keep the
+  door and the cow. NOTE: the cow in the doorway is small on purpose (a background detail, the user's round 3 note),
+  about 30 to 45 pixels tall at 1080p.
+- TEST-TOOL NOTES (not game bugs): an execute_luau `require` gets its OWN copy of a client module, so a scene played
+  that way does not move the real door (KitchenBackDoor.hold on the copy does nothing): drive the real menu instead
+  (prompt:InputHoldBegin, then user_mouse_input on CoachDialogue.Answer1 and Kitchen.Picker.Cook). execute_luau also
+  reset the camera to Scriptable after a scene ended inside a call it started.
+- STILL NOT TRIED: a second player, a phone; nobody has HEARD the scene (the sounds load and play on time).
+- STUDIO RESULTS (2026-11-22): 316 of 316 pieces placed, the door's 13 pieces painted, no errors in the console.
+  The leaves open 90 degrees into the back room when the lifter is within 14 studs (open: x 7.24..7.66, the jamb
+  at 7.9) and shut again; the lifter walked through the doorway and was stopped by the room's walls. The Boss's
+  talk, the wheel card, a free spin (1.3x, the chip showed) and a shuffle (camera at the table, cleaned up after)
+  all work in the moved room. THE CHEF SCENE ran twice at slow speed to its end (28.9 s at real speed): the player
+  is seen behind the chef at the button and in the two-shot (reframed after the first run: from the side, level
+  with their heads, both the same size; from behind the player's shoulder the chef was too small); the cow walks
+  to the doors, they open 2.7 s into the grinding shot, he is inside before the suction shot, they shut, he is
+  removed; lens 40 for the two bay shots, 70 again at the pan and at the end; nothing left behind, the standing
+  cow and his tag back. Looked at up close, shut, from the kitchen and the back room: no flashing seen in stills.
+- (FIRST PASS'S LEFTOVERS, all done in the second pass above except a second player and a phone.) Test-tool note: a ProximityPrompt can be fired with InputHoldBegin only while
+  its part is ON SCREEN; Studio's window was found minimized once (white captures) and was shown again.
+- NEW MODELS (both CHECK PASSED; pictures art/previews/WChewsDoor_01..11): `art/scripts/build_wchews_door_01.py` ->
+  art/blender/WChewsDoor_01.blend, art/exports/WChewsDoor_01.glb (item WcDoubleDoor, 13 pieces, 6,136 triangles: a
+  walnut frame with a pitched pediment, brass trim, a row of bulbs, a lantern either side, two deep red leaves with
+  glowing round windows, brass kick plates and pull bars, EMPLOYEES on the left leaf and ONLY on the right in glowing
+  letters on navy plates). `art/scripts/build_wchews_hall_02.py` -> WChewsHall_02.blend / .glb (28 pieces, 3,892
+  triangles; the same piece names and bounds as 01): the doorway is 16 wide and 13 high in the MIDDLE of the
+  kitchen's back wall (plan x -8..8), the back room's shell stands behind it (plan x -53..37, y 267..337), the
+  steel wall rail stops inside the door's frame.
+- THE DOOR'S RULES, BUILT INTO THE MODEL (no resize hack in KitchenBuilding any more): the frame's inner faces stand
+  0.1 into the doorway from the wall's cut edges and 0.4 proud of both wall faces; each leaf hangs on its outer edge
+  (x 7.6) and turns 90 degrees on that edge's corner on the back room's side, ending 0.3 clear of its jamb; the leaves
+  stand 0.1 apart and swing away from each other; the right leaf's brass meeting strip covers the gap from 0.05 in
+  front of the left leaf; every layer on a leaf is at least 0.05 proud.
+- THE LAYOUT (`art/scripts/wchews_layout.py`, then `python art/scripts/write_wchews_layout.py`): ONE number, DOOR_X,
+  places the doorway and everything in the back room (316 placements). WChewsLayout.luau now also carries BackDoor,
+  BackRoom, BackWallY, WallThickness, LeafHinge, LeafHingeY, BackWallRuns, IslandXs / IslandYs / IslandHalf, MilkBar
+  and BackFills, so no script has the room's numbers written into it.
+- WHAT HAD TO MOVE: (1) the three prep counters in the middle of the back wall went to the wall's right end, where
+  the single door was; (2) the six prep islands stood ACROSS the kitchen's middle (x -15 and 15, two studs apart):
+  they now stand in two lines at x -36 and 36, y 104 / 152 / 200 (between the pans' rows: the left pans' handles
+  reach x -47), leaving a 44 stud aisle from the grinder to the door; (3) two portraits in the back room moved 2
+  studs along their wall (the doorway is wider). The single WcStaffDoor is no longer placed (it stays in the kit).
+- CODE: `src/server/Economy/KitchenBuilding.luau` (the back wall's blocks with the doorway's gap, the back room's
+  walls, the back wall's furniture runs, the islands and the milk bar all from WChewsLayout; the frame resize
+  removed), `src/server/Economy/KitchenLights.luau` (sun blockers round the moved room, one more for the back wall's
+  right half; the fills from WChewsLayout.BackFills), `src/client/World/KitchenBackDoor.luau` (rewritten: both
+  leaves, each on its own hinge, opened together within 14 studs or by hold; openShare()),
+  `src/shared/Config/StarterGymConfig.luau` (paint WcDoorRed, colourway WcDoubleDoor; the asset ids are NOT in yet),
+  `art/scripts/preview_wchews.py` (the door kit, the back room's views moved, "+cow" opens the doors with the cow in
+  them, views 30 / 31 are the scene's two bay shots with its lens). KitchenBackRoom, LuckService (inRoom) and
+  LuckMenu already read the wheel, the cow and the tables from WChewsLayout: nothing to change in them.
+- THE CHEF SCENE (`src/client/World/KitchenScene.luau`): (1) the player's character is no longer hidden: it is
+  turned to face the chef and stays where it stands; after the button he turns to the player and says the line in a
+  two-shot from beside and a little behind the player (the chef's face on one half, the player's side on the other),
+  then walks back. A shot hides the character only when it stands within 4 studs of the line from the camera to its
+  subject. (2) The cow's own shot (step 8) is gone. He waddles along the back wall to the double door, pushes both
+  leaves open with his hoof out and goes through during the grinding shot; the leaves shut in the suction shot.
+  (3) The two bay shots are filmed from 50 studs in front of the bay (by the kitchen's front wall) with a 40 degree
+  lens instead of 70, aimed 60 / 40 between the bay and the door: with the old lens the cow at the far wall was 27
+  pixels tall on a 1080p screen, now about 45 (the open doorway 75 by 90). The scene is about 7 s shorter.
+- FOUND, FOR THE USER TO DECIDE: walking in through the entrance on the centre line, the grinder (13 wide, 27 tall,
+  on the centre line too) hides the exact middle of the back wall: the door is NOT seen from the entrance doors
+  (picture WChewsDoor_09). From a few steps to either side, or from the counter beside the chef, it is in plain view
+  (WChewsDoor_10). Moving it means changing DOOR_X in wchews_layout.py and rebuilding the hall (the islands and the
+  bay shots would need another look).
+- DONE (was WAITING): both models uploaded on the user's yes, the whole Studio test and the leftover checks run (see
+  STUDIO RESULTS and FINISHED CHECKS above). NEXT: the user plays it, decides about the grinder hiding the door from
+  the entrance, then says whether to commit.
+
+**THE WHOLE-MAP FLICKER AND OVERLAP CHECK, OUTSIDE W CHEWS (2026-11-22; the user: "checking if any building or
+model does this thing where it flashes two different colors, or overlapping builds"). TESTED IN STUDIO (one player;
+the checker's numbers and close-up pictures art/previews/FlickerFix_*.jpg and FlickerCheck_*.jpg). NOT COMMITTED.
+NOTHING UPLOADED. Files changed: src/server/World/StarterGymBuilder.luau, src/server/World/RoomProps.luau,
+src/server/Meet/LocalMeetVenue.luau, tools/studio/FlickerAudit.luau; NEW tools/studio/RemoveScaleTestCube.luau
+(run once in Edit mode on the user's yes; the place saved afterwards, version 1005).**
+- THE CHECKER (tools/studio/FlickerAudit.luau, second version) now sorts every pair into SAME PLANE (flickers),
+  THIN LAYER (0.01 to 0.03 proud: fine near, can shimmer from very far), IN A GAP (the backs of wall boards in the
+  closed hollow behind them) and HIDDEN (inside or under another solid block: two bottoms on one floor). Before the
+  fixes: 34 exact SAME PLANE groups, all in the Starter Gym. After: 0. Left: 5 thin-layer groups (below), 20 in a
+  gap, 22 hidden.
+- FIXED, STARTER GYM (StarterGymBuilder): the upper floor's three slabs reached to the OUTER faces of the walls
+  round them, so a band of floor tiles showed through the plaster all round the outside of the gym at first-floor
+  height and along the hall's edge (picture FlickerFix_GymOuterWall_Before / _After). They now stop at the walls'
+  inside faces. The wall piece under an upstairs doorway stops 0.05 under the floor (two tops at one height in the
+  corner rooms' doorways). The yellow bands on the training zone's columns stand 0.05 proud (were 0.03).
+- FIXED, ROOMS AND FRONTS (RoomProps): the sauna's old door casing lay wholly inside the swing door's frame with
+  its faces in the frame's planes: removed (nothing seen changes; the frame is the door's surround). Stood 0.05
+  proud instead of 0.02 to 0.03, because they are seen from right across the hall: the mirror's black joints, the
+  Office front's grooves (now in two pieces where one crosses the window), the Cardio front's lane lines and
+  numbers, the warm-up routine board's frame, the strongman shed's lane lines.
+- FIXED, MEET HALLS (LocalMeetVenue): the dark exit doorway stands 0.05 proud of the red stripe it crosses (was
+  0.02). The "Carpet against the walls" lines were two bottoms on the same floor: hidden, nothing changed.
+- LEFT ON PURPOSE (thin layers, each seen only from near): the spa wing corridor's wall finish (0.03 thick so the
+  doors' name plaques stay in front of it; the corridor is 70 studs long), the Office window's dark back panel
+  (0.03, behind the blinds and frosted glass), the shower stalls' drains (0.02). Say if these should be 0.05 too:
+  the corridor one means moving the door plaques out.
+- BUILDING AGAINST BUILDING (measured from the parts): nothing overlaps. Gym to the local meet entrance: a 6-stud
+  alley (roof edges 3.4 apart). W Chews terrace to the State arena's round wall: 42 studs (they only look close
+  from the square). Gym to W Chews 44, W Chews to Nationals 37, State arena entrance to the meet entrance 36.
+- LOOKED AT BY EYE (a script cannot check mesh against mesh unless the experience's "Allow Mesh / Image APIs"
+  security setting is on: the USER's to change): the outsides of Nationals, the State arena entrance and the meet
+  entrance; inside one local meet hall, the Nationals hall and the State arena; the gym's hall, sauna, corridor.
+  Nothing flickered in still pictures from near. NOT DONE: a slow walk with a moving camera (stills can miss
+  flicker), the other five meet halls (the same build), the Nationals warm-up area, every gym room, the
+  supplement bar's shelf lights against their brackets (the checker's last "likely" line, 0.6 sq studs each).
+- SEEN, FOR THE USER TO DECIDE: (1) Workspace.ScaleTest_2StudCube_v2, the loose grey 2-stud cube from the first
+  Blender import test, saved in the place inside the gym near (69, 1, 21), not anchored: REMOVED 2026-11-22 on
+  the user's yes ("Yes, remove it") with tools/studio/RemoveScaleTestCube.luau in Edit mode (every check passed;
+  0 left afterwards). THE PLACE WAS SAVED the same day on the user's yes ("Yes, save it"): Saved to Roblox, place
+  version 1005 (a save, not a publish). That save also keeps the W Chews session's removal of the 104 spilled grey
+  blocks (0 loose "Part" at the top of the Workspace when it was saved).
+  (2) The default grey Roblox spawn pad with its star picture stands 1 stud high in the middle of the gym lobby
+  (Workspace.SpawnLocation, saved in the place): hide it or restyle it? (3) Nationals hall: bright specks show
+  under the black stage curtains (picture FlickerCheck_NationalsCurtainBase): the curtains stop 0.3 off the floor
+  on purpose (build_nationals_arena_02.py CURTAIN_HEM); not flicker, say if they should reach the floor (a model
+  rebuild and upload).
+- Studio's window was found minimized halfway (screenshots came back blank white): it was shown again without
+  taking focus. A minimized Studio draws nothing: check that first when captures are white.
+
+**W CHEWS, ROUND 2 (the user's notes after playing it, 2026-11-22). TESTED IN STUDIO (one player, pictures
+art/previews/WChewsRound2_01..07). NOT COMMITTED (the overnight OK to commit is over: the user decides). THE PLACE
+NEEDS SAVING BY THE USER (the loose blocks were removed in Studio, not saved). [SAVED later the same day by the
+flicker-check session on the user's yes: place version 1005, see the entry above.]**
+- SPILLED BLOCKS: not W Chews at all. `Workspace.Part` was a default 4x1x2 block with 103 more nested inside it,
+  saved in the place, unanchored: in a play test they fell out over the gym floor by the manager's desk. Removed in
+  Edit mode with NEW tools/studio/RemoveSpilledParts.luau (checks everything first, undoable); 0 left in the next two
+  play tests. `Workspace.ScaleTest_2StudCube_v2` (a loose test cube in the gym) was left: ask the user.
+- THE STAFF DOOR'S FLASHING: its frame's inner faces lay in the same planes as the doorway's cut edges, and the open
+  door (100 degrees about its middle line) cut through its own frame. KitchenBuilding makes the frame 1.6% narrower
+  and 0.6% lower from its top (inner faces 0.05 proud of the wall); KitchenBackDoor hangs the leaf on its corner and
+  opens it 90 degrees. Looked at closed and open from four spots: clean.
+- THE WHEEL (LuckConfig): 20 wedges are now six BANDS; the server rolls the wedge, then one result inside the band
+  (each equally likely): 4x-10x 5% (whole numbers; 10x is 1 spin in 140), 2.1x-3x 10%, 1.6x-2x 15%, 1.3x-1.5x 25%,
+  0.9x-1.2x 30%, 0.1x-0.8x 15%. The bands' edges and the 25 / 30 split were Claude's reading of the user's message (it
+  gave 5, 10, 15, 30, 15 = 75% with overlapping ranges): APPROVED BY THE USER the same day ("Yes, keep them ... Yes
+  the wheel is good"; a band is a rarity and its results are the items inside it). BAD LUCK (under 1x) NOW LASTS 2
+  HOURS, then luck is 1x again; it gives no extra spin (user: "Keep the bad luck, make it last 2 hours, but they
+  still cant spin unless they have more spins"): LuckConfig.BadLuckHours / hoursFor, used by
+  ProfileOperations.spinLuckWheel, the luck chip's bar, the result pop and the card's note. TESTED 2026-11-22 on the
+  real modules in Studio (checksums matched): 0.1x, 0.8x and 0.9x last 2 h and read 1x after it, 1x / 1.2x / 10x last
+  24 h, the free spin stays used and no spin is added, a multiplier outside its wedge's band is rejected; the chip
+  showed 0.4x with 1:39:43 and its bar at 0.83 of two hours; the card's note fits (shortened). NOT seen: a real spin
+  landing in the low band on screen (15% a spin). The wedges read "4-10x"; the card lists the bands;
+  after the wheel stops the band's results roll past in the pop and stop on the server's. Studio: landed in 2.1x-3x,
+  rolled 18 numbers, stopped on 2.7x, the chip showed only after. ProfileOperations.spinLuckWheel now takes the
+  rolled multiplier and rejects one that isn't in the wedge's band. Luck can now be as low as 0.1x.
+- THE SHUFFLE: 24 swaps in 11 seconds (0.62 s down to 0.3 s), then a 10 second countdown in the caption with a
+  draining bar (red and ticking for the last 3). Studio: 14.6 s from WATCH THE STEAK to the pick, answered with 3 s
+  left, accepted.
+- THE LUCK CHIP sits bottom right in its own holder (above the jump button on a touch screen: NOT seen on a phone).
+- THE MEET NOTICE'S GO (GymRecordAnnouncer): the first press turns it into SURE?, a second within 4 s goes; it turns
+  back after 4 s. Studio: SURE?, back to GO, and a double press teleported to the meet.
+- THE CHEF SCENE (KitchenScene, about 31 s at real speed; beats at 5.2 falling meat, 9.3 the bay, 14.5 the pile,
+  17.7 the raw steak, 23.6 the cow, 30.8 the end): the chef's line plays flat with the camera on him until it is
+  said; raw chunks fall instead of a bag (cows unchanged); ONE suction shot; the lumps (12 now) stack into a pile on
+  the pan; the pile is pressed into a RAW steak (this screen's copy of the server's steak in raw colours) that
+  browns over 2.6 s; then the cow's own shot at the EMPLOYEES ONLY door (walks up, looks back at the camera, goes
+  through, the door shuts). Nothing left behind after it; no errors.
+- THE MEAT MODELS (Opus session, art/scripts/build_wchews_meat_01.py, art/exports/WChewsMeat_01.glb, previews
+  art/previews/WChewsMeat_01_*): the MeatPress is good; the MincePile read as sprinkles on a ball and the MeatChunk as
+  a brick, so both went back to that session with exact fixes (2026-11-22). Nothing uploaded.
+- THE MEAT MODELS ARE IN THE GAME (2026-11-22; the user saw the redone previews and said "Yes, upload"): WChewsMeat_01
+  = rbxassetid://91387152636333 (art/materials/materials.json; CHECK PASSED again before the upload: 9 meshes, 13,484
+  triangles, MincePile 11,774 of them). StarterGymConfig: the asset, paints KitMinceCore / KitMinceRed / KitMincePink
+  / KitMeatFat / KitChunkMeat, colourways MeatPress / MincePile / MeatChunk; KitchenPans puts all three in
+  ReplicatedStorage.KitchenModels. Studio (10 steaks, checksums matched): all three load painted; the scene ran to its
+  end in 35.0 s with nothing left behind (beats: chunks 5.2, bay mince 9.7, pile on the pan 15.8, press 17.7, raw
+  steak 19.2, cow 27.8); the press (11 x 7.5 x 1.8 for this steak) slid in at 10.8 above the floor over a 5.5 tall
+  pile, slammed to the steak's top (3.83), the raw steak appeared and the pile went, it lifted over about 2.2 s and
+  slid out; its top stayed 4.4 under the nozzle. CHECKED BY NUMBERS ONLY: Studio's 3D view came back blank white in
+  every capture of that run (its window was probably minimised), so NOBODY HAS SEEN the press, the mince or the
+  chunks in the game yet: the user's eyes needed. Bigger cooks (the press scaled up to 5 times) not run.
+- THE PRESS'S AND THE FALLING MEAT'S SOUNDS (user 2026-11-22: "Yes, make them"; ElevenLabs, 20 credits for six
+  takes: the flow's estimate said 102 for the first plan, the real charge is 3.3 a second; prompts and takes in
+  art/sounds/elevenlabs_shouts.json; WAVs in D:/Powerlifting Roblox Extras/Sounds/ChefScene, cut by
+  D:/ClaudeScratch/wchews/press_sounds.py): KitchenConfig.Sounds.PressSlam (0.47 s), PressLift (0.99 s), MeatFall
+  (0.52 s, ONE slap: played for every chunk at its own pitch). Picked by waveform; NOBODY HAS LISTENED. Studio
+  (checksums matched, real speed, 35.3 s): the chef's line at 2.1 s (2.49 s long, flat), five MeatFall at 6.3 to 6.8
+  on the hopper, PressSlam at 19.3, PressLift at 20.1, all loaded and playing. Screenshots were still blank white.
+- NOT DONE: nobody has HEARD the chef's line in the new scene (the cause was fixed in code: it played from his head
+  and the camera left him); the falling chunks were enlarged after the last watched run (a number only); the user's
+  clip could not be played in the built-in browser.
+- THE WHOLE-MAP FLICKER CHECK: NEW tools/studio/FlickerAudit.luau (read-only, run on the server in a play test).
+  First run: 148 groups outside mesh-against-mesh, the exact ones in the Starter Gym (spa wing corridor walls, floor
+  slabs against walls) and the meet halls. It can't see inside meshes (it missed the staff door). Findings in the
+  sessions' shared notes (flicker-audit-findings-2026-11-22.md). Fixing the other buildings is proposed as its own
+  session.
+
 **W CHEWS REDESIGN, STEP 9: THE WHEEL OF LUCK, THE CLOCHE SHUFFLE, LUCK ON EVERY ROLL, THE ROOM'S SOUNDS. TESTED IN
 STUDIO (one player: real spins, real games, numbers and pictures; nobody has LISTENED to the sounds), 2026-11-21, the
 overnight run. COMMITTED with this step (see git log; before it ec7b965 the back room).**

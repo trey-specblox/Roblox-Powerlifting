@@ -71,6 +71,8 @@ local LINE_GAP = 10
 local RECORD_SECONDS = 7
 local ATTEMPT_SECONDS = 12
 local LEVEL_SECONDS = 14
+-- How long a GO button stays on SURE? waiting for its second press.
+local CONFIRM_SECONDS = 4
 local NOTE_SECONDS = 4
 local FADE_SECONDS = 0.4
 -- A notice (GymRecordAnnouncer.note) stays this long: a base, plus reading time for its letters, within these limits.
@@ -200,7 +202,7 @@ function GymRecordAnnouncer.start()
 		`seconds`. It wraps to stay on screen with the button beside it (user 2026-11-05: on a phone a line ran
 		off the edge, so its time and GO button couldn't be seen).
 	]]
-	local function show(text: string, seconds: number, watch: string?, buttonText: string?, watchHall: number?): Frame
+	local function show(text: string, seconds: number, watch: string?, buttonText: string?, watchHall: number?, confirm: boolean?): Frame
 		while #lines >= MAX_LINES do
 			remove(lines[1])
 		end
@@ -261,8 +263,23 @@ function GymRecordAnnouncer.start()
 			corner.CornerRadius = UDim.new(0, 4)
 			corner.Parent = button
 			local asking = false
+			local armedUntil = 0
 			button.Activated:Connect(function()
 				if asking then
+					return
+				end
+				-- A button that takes the player away from what they're doing asks once more first (user 2026-11-22:
+				-- "if players click go, they have to click it twice, like 'are you sure?'"): the first press turns it into
+				-- SURE?, and only a second press within CONFIRM_SECONDS goes.
+				if confirm and os.clock() > armedUntil then
+					armedUntil = os.clock() + CONFIRM_SECONDS
+					local mine = armedUntil
+					button.Text = "SURE? ▶"
+					task.delay(CONFIRM_SECONDS, function()
+						if armedUntil == mine and not asking and button.Parent then
+							button.Text = buttonText or "WATCH ▶"
+						end
+					end)
 					return
 				end
 				asking = true
@@ -275,6 +292,7 @@ function GymRecordAnnouncer.start()
 				else
 					button.Text = buttonText or "WATCH ▶"
 					asking = false
+					armedUntil = 0
 					if ok and typeof(message) == "string" then
 						show(message, NOTE_SECONDS, nil)
 					end
@@ -348,7 +366,7 @@ function GymRecordAnnouncer.start()
 			local there = player:GetAttribute(LocalMeetConfig.VenueAttribute) ~= nil
 			show(string.format("Meet %d's next is a %s: prize pot x%d, titles for the top 3. Sign up within %d:%02d",
 				news.hallIndex, coloured(news.levelLabel, "#FACE24"), news.potMultiplier or 1, left // 60, left % 60), LEVEL_SECONDS,
-				if there then nil else "LocalMeet", "GO ▶")
+				if there then nil else "LocalMeet", "GO ▶", nil, true)
 		end)
 	end)
 

@@ -276,7 +276,7 @@ function KitchenPans.start()
 	local shared = Instance.new("Folder")
 	shared.Name = "KitchenModels"
 	-- (and the chef scene's props: KitchenScene)
-	for _, item in ipairs({ "BigSteak", "MeatBag", "Cow", "MeatMound" }) do
+	for _, item in ipairs({ "BigSteak", "MeatBag", "Cow", "MeatMound", "MeatPress", "MincePile", "MeatChunk" }) do
 		local model = RoomProps.propCopy(item, 1)
 		if model then
 			model.Name = item

@@ -21,7 +21,11 @@ investigation", 2026-11-12. Pictures of the current bodies: `art/previews/Redesi
 ## 1. What is already approved
 
 - **[APPROVED 2026-11-12, §38.7]** Chunky cartoon style on the game's own R15 skeleton; the player's own full-size
-  Roblox head, hair, face and skin colour stay; no visible neck; hand-shape swaps; one smooth body, no gaps.
+  Roblox head, hair, face and skin colour stay; hand-shape swaps; one smooth body, no gaps.
+- **[CHANGED BY THE USER 2026-11-20, GAME_DESIGN §38.7]** The neck SHOWS (was "no visible neck"): "they have no neck,
+  and their shirts are covering almost to their chin fix that". The tee has a round crew neck at the neck's base
+  (art/scripts/tee_neck_fix.py, clothes v13); the bodies are unchanged. Clothes, gear and accessories never cover the
+  neck or float off the body; check every worn item close up, front, side, back.
 - **[APPROVED 2026-11-12, §38.1]** Size from bodyweight (a lifter always looks like their weight class); muscle from
   closeness to the class's Progression Reference table (PP); technique never changes the body; looks only, never
   strength.

@@ -16,8 +16,8 @@
 	Nothing in this room is ever bet (Roblox bans simulated gambling): the wheel is a free daily spin and the cow's
 	games are skill games (LuckService).
 
-	Each wedge is painted in its prize's colour with the prize written on it (LuckConfig.Wedges), so the wheel shows
-	the real odds: a result's chance is its share of the 20 wedges.
+	Each wedge is painted in its band's colour with the band written on it ("4-10x", LuckConfig.Wedges), so the wheel
+	shows the real odds: a band's chance is its share of the 20 wedges.
 
 	PERFORMANCE: 40 wedge parts of 2 shared meshes (1,280 triangles) with 20 small text screens, and the cow's 20
 	parts (3,088 triangles), all decor without shadows; one hidden block so nobody walks through him.
@@ -128,7 +128,7 @@ local function dress(wedge: Model, index: number, outward: Vector3, front: Vecto
 	label.Size = UDim2.fromOffset(130, 46)
 	label.Rotation = along - 90 -- (reads from the hub out to the rim)
 	label.BackgroundTransparency = 1
-	label.Text = LuckConfig.multiplierText(prize.multiplier)
+	label.Text = LuckConfig.bandShort(prize) -- ("4-10x": the band; the exact result is drawn when the wheel stops)
 	label.TextColor3 = prize.ink
 	label.TextScaled = true
 	label.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold)

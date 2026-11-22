@@ -630,13 +630,20 @@ StarterGymConfig.PropAssets = {
 	-- asset in this list (a later asset's item wins). art/scripts/build_kitchen_grinder_02.py, CHECK PASSED, 4,133 triangles.
 	{ id = 115083646967578 }, -- KitchenBuilding_01: the Kitchen's entrance house and the pan hall's shell (KitchenBuilding;
 	-- art/scripts/build_kitchen_building_01.py, CHECK PASSED, 5,666 triangles).
-	{ id = 139239848125079 }, -- WChewsHall_01: W Chews' hall shell (item WChewsHall): the fancy front, the kitchen and the
+	{ id = 92806815963499 }, -- WChewsHall_02: W Chews' hall shell (item WChewsHall): the fancy front, the kitchen and the
 	-- back room's shell, to floor plan 02 (GAME_DESIGN §40.7, user 2026-11-21; look approved "Yes upload it"). Replaces
-	-- KitchenBuilding_01's KitchenHall. art/scripts/build_wchews_hall_01.py, CHECK PASSED, 3,832 triangles.
+	-- KitchenBuilding_01's KitchenHall. Version 02 (user 2026-11-22: "Yes, upload"; was 139239848125079, WChewsHall_01:
+	-- the same pieces' names, so only one of the two may be in this list): the EMPLOYEES ONLY doorway is 16 x 13 in
+	-- the MIDDLE of the kitchen's back wall and the back room stands behind it. art/scripts/build_wchews_hall_02.py,
+	-- CHECK PASSED, 3,892 triangles.
 	{ id = 130064569566225 }, -- WChewsKit_01: W Chews' restaurant kit, one mesh per repeated object (items Wc*): counter,
 	-- range, fryer, hood, fridge, sink, island, service counter, table, chair, pendant, chandelier, host stand, plant,
 	-- staff door, and the chef scene's button panel, chute, display bay and meat tube. Placed from WChewsLayout
 	-- (art/scripts/wchews_layout.py). art/scripts/build_wchews_kit_01.py, CHECK PASSED, 20,312 triangles.
+	{ id = 72709187235561 }, -- WChewsDoor_01: the EMPLOYEES ONLY double door (item WcDoubleDoor; user 2026-11-22: "a double
+	-- door ... push open both of them at the same time", "Yes, upload"): walnut frame with a pitched pediment, two deep
+	-- red leaves with glowing round windows. It replaces the kit's single WcStaffDoor (no longer placed).
+	-- art/scripts/build_wchews_door_01.py, CHECK PASSED, 6,136 triangles.
 	{ id = 112316736547236 }, -- WChewsFront_02: W Chews' building in the front square (item WChewsFront), from the user's photo
 	-- References/W Chews/kitchen1.png (user 2026-11-21: "Upload the new building"). Replaces KitchenBuilding_01's
 	-- KitchenHouse. Version 02 (was 121517778514497, WChewsFront_01: the same pieces' names, so only one of the two
@@ -647,6 +654,9 @@ StarterGymConfig.PropAssets = {
 	-- THE MOO ROOM neon, rug. art/scripts/build_wchews_back_01.py, CHECK PASSED, 11,604 triangles.
 	{ id = 90852818389171 }, -- WChewsCowBoss_01: the mafia boss cow (item CowBoss): pinstripe suit, fedora, horns through the
 	-- brim. art/scripts/build_wchews_cow_boss_01.py, CHECK PASSED, 3,088 triangles.
+	{ id = 91387152636333 }, -- WChewsMeat_01: the chef scene's meat (user 2026-11-22): MeatPress (the giant press), MincePile
+	-- (the mountain of mince, 11,774 triangles: only ever on the cooking player's own screen), MeatChunk (falling raw
+	-- meat). art/scripts/build_wchews_meat_01.py, CHECK PASSED, 13,484 triangles.
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -743,6 +753,12 @@ StarterGymConfig.PropPaints = {
 	KitCowPink = { color = Color3.fromRGB(244, 160, 168) },
 	KitCream = { color = Color3.fromRGB(242, 230, 196) },
 	KitGroundMeat = { color = Color3.fromRGB(198, 80, 78) },
+	-- The chef scene's mince and raw meat (WChewsMeat_01; the colours of its Blender materials).
+	KitMinceCore = { color = Color3.fromRGB(100, 16, 24) },
+	KitMinceRed = { color = Color3.fromRGB(190, 38, 48) },
+	KitMincePink = { color = Color3.fromRGB(218, 92, 104) },
+	KitMeatFat = { color = Color3.fromRGB(238, 214, 208) },
+	KitChunkMeat = { color = Color3.fromRGB(172, 30, 40) },
 	KitHouseCream = { color = Color3.fromRGB(238, 222, 188), material = Enum.Material.Plaster },
 	KitRoofRed = { color = Color3.fromRGB(160, 36, 30), material = Enum.Material.Slate },
 	KitWindow = { color = Color3.fromRGB(120, 160, 200), transparency = 0.3, reflectance = 0.2 },
@@ -767,6 +783,7 @@ StarterGymConfig.PropPaints = {
 	WcMaple = { color = Color3.fromRGB(214, 172, 120), material = Enum.Material.Wood },
 	WcDeepGreen = { color = Color3.fromRGB(28, 84, 66) },
 	WcDoorGreen = { color = Color3.fromRGB(20, 70, 52) },
+	WcDoorRed = { color = Color3.fromRGB(156, 30, 40) }, -- (the EMPLOYEES ONLY double door's leaves)
 	WcBurgundy = { color = Color3.fromRGB(120, 28, 44), material = Enum.Material.Fabric },
 	WcCushionTeal = { color = Color3.fromRGB(0, 138, 140), material = Enum.Material.Fabric },
 	WcCushionMustard = { color = Color3.fromRGB(214, 160, 38), material = Enum.Material.Fabric },
@@ -1144,6 +1161,9 @@ StarterGymConfig.PropColourways = {
 	MeatBag = { { Sack = "KitBurlap", Tie = "KitRope", Label = "Red" } },
 	Cow = { { Body = "White", Spots = "Black", Snout = "KitCowPink", Horns = "KitCream", Eyes = "Black", Hooves = "Black" } },
 	MeatMound = { { Meat = "KitGroundMeat" } },
+	MeatPress = { { Plate = "KitStainless", Handle = "KitStainless", Text = "KitStainlessDark" } },
+	MincePile = { { Core = "KitMinceCore", Red = "KitMinceRed", Pink = "KitMincePink", Fat = "KitMeatFat" } },
+	MeatChunk = { { Meat = "KitChunkMeat", Fat = "KitMeatFat" } },
 	-- The Kitchen's buildings (KitchenBuilding_01).
 	KitchenHouse = { {
 		Body = "KitHouseCream", Roof = "KitRoofRed", Trim = "White", Glass = "KitWindow", Door = "Charcoal", Sign = "Navy",
@@ -1207,6 +1227,13 @@ StarterGymConfig.PropColourways = {
 	WcBar = { { Body = "WcWalnut", Top = "WcStone", Trim = "Brass" } },
 	WcPlant = { { Pot = "Teal", Leaves = "WcLeaf" } },
 	WcStaffDoor = { { Frame = "WcWalnut", Door = "WcDoorGreen", DoorBrass = "Brass", DoorText = "Black" } },
+	-- The EMPLOYEES ONLY double door in the middle of the kitchen's back wall (WChewsDoor_01; it replaced the kit's
+	-- single WcStaffDoor, which is no longer placed). Each leaf's five pieces swing together (KitchenBackDoor).
+	WcDoubleDoor = { {
+		Frame = "WcWalnut", Trim = "Brass", Lamps = "WarmGlow",
+		LeafL = "WcDoorRed", LeafLBrass = "Brass", LeafLPlate = "Navy", LeafLText = "WcGlowYellow", LeafLWindow = "WarmGlow",
+		LeafR = "WcDoorRed", LeafRBrass = "Brass", LeafRPlate = "Navy", LeafRText = "WcGlowYellow", LeafRWindow = "WarmGlow",
+	} },
 	-- W Chews' back room kit (WChewsBack_01). LuckService repaints each wheel wedge's Face by its prize.
 	WcWheelWedge = { { Face = "WcWedge", Rim = "Brass" } },
 	WcWheelStand = { { Frame = "WcWalnut", Brass = "Brass", Pointer = "Red", Sign = "WarmGlow", Bulbs = "WarmGlow" } },

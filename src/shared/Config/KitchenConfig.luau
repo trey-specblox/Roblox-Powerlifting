@@ -79,9 +79,10 @@ KitchenConfig.ChefWalkSpeed = 7 -- studs per second
 KitchenConfig.ChefPress = { Seconds = 1.6, Press = 0.62, HandAhead = 2.23, HandRight = 0.57 }
 -- The meat in the tube: how many lumps, how big, how far apart in time, and how long the run from the bay to the pan
 -- takes (the path's length / 150 studs a second, kept between these).
-KitchenConfig.TubeLumps = 7
+-- (12 lumps 0.2 s apart since 2026-11-22, so the pile on the pan is seen stacking up; it was 7, 0.14 s apart)
+KitchenConfig.TubeLumps = 12
 KitchenConfig.TubeLumpSize = 2.6
-KitchenConfig.TubeLumpGap = 0.14
+KitchenConfig.TubeLumpGap = 0.2
 KitchenConfig.TubeMinSeconds = 2.4
 KitchenConfig.TubeMaxSeconds = 3.6
 
@@ -101,6 +102,10 @@ KitchenConfig.Sounds = {
 	Chute = "rbxassetid://100812110878986", -- 1.11 s: the bag or cow rumbling down the ceiling chute (the thud follows)
 	Tube = "rbxassetid://138689375274677", -- 3.17 s: the meat drawn up the funnel and rushing along the tube
 	Plop = "rbxassetid://84379172787367", -- 0.33 s: ONE lump landing on the pan (played for every lump after the first)
+	-- The press and the falling meat (user 2026-11-22: "Yes, make them").
+	PressSlam = "rbxassetid://87798820489434", -- 0.47 s: the giant press hitting the pile, loudest at its very start
+	PressLift = "rbxassetid://98224797412593", -- 0.99 s: the press peeling off the raw steak
+	MeatFall = "rbxassetid://100771838890313", -- 0.52 s: ONE chunk of raw meat slapping into the grinder's tub
 	-- The back room (KitchenBackDoor, LuckMenu; ElevenLabs, art/sounds/elevenlabs_shouts.json).
 	DoorOpen = "rbxassetid://121455606325815", -- 0.74 s: the EMPLOYEES ONLY door swinging open
 	DoorClose = "rbxassetid://127854702933697", -- 0.57 s: it shutting
@@ -112,10 +117,11 @@ KitchenConfig.Sounds = {
 	BossMoo = "rbxassetid://127288719238376", -- 1.42 s: the boss's greeting
 }
 
--- What drops into the grinder for a cook of `steaks`: "Bag" or "Cow", and how many.
+-- What drops into the grinder for a cook of `steaks`: "Meat" (raw chunks; user 2026-11-22: a bag was too much for a
+-- little meat) or "Cow", and how many.
 function KitchenConfig.sceneDrops(steaks: number): (string, number)
 	if steaks < KitchenConfig.CowFrom then
-		return "Bag", 1
+		return "Meat", math.clamp(4 + steaks // 6, 4, 12)
 	end
 	local cows, need = 1, KitchenConfig.ExtraCowsFrom
 	while steaks >= need and cows < KitchenConfig.MaxCows do
@@ -125,9 +131,11 @@ function KitchenConfig.sceneDrops(steaks: number): (string, number)
 	return "Cow", cows
 end
 
--- The chef scene's beats, in seconds (about 18 s for one bag; it was about 7 and read as rushed, user 2026-11-21).
-KitchenConfig.DropSeconds = 1.3 -- a bag or cow falling into the hopper
+-- The chef scene's beats, in seconds (about 30 s since 2026-11-22: fewer shots held longer, the pile, the press, the
+-- cooking and the cow's own shot; the press's and the cooking's beats are in KitchenScene).
+KitchenConfig.DropSeconds = 1.3 -- a chunk of meat or a cow falling into the hopper
 KitchenConfig.DropGap = 0.45 -- between cows
+KitchenConfig.ChunkGap = 0.14 -- between chunks of meat
 KitchenConfig.GrindSeconds = 3.2 -- the grinder churning, the meat mound growing (the chef walks over meanwhile)
 KitchenConfig.HoldSeconds = 2.4 -- the meat held up high while he says his line
 KitchenConfig.CarrySpeed = 5.5 -- studs a second, carrying the meat back to his spot (a little slower than his walk)
@@ -137,7 +145,7 @@ KitchenConfig.LandingSeconds = 2.5 -- the landing, steam and the steak in the pa
 -- (+Z). The map design comes last (user), so this one point moves it.
 KitchenConfig.EntranceOrigin = CFrame.new(17, 0, -105) * CFrame.Angles(0, math.pi, 0)
 -- The hall shell's placement (its bounds' bottom middle, in the hall's space) and its exit door (hall space).
--- (WChewsHall_01's bounds: plan x -287..287, y -112..339, z -1..37.)
+-- (WChewsHall_02's bounds, the same as 01's: plan x -287..287, y -112..339, z -1..37.)
 KitchenConfig.HallShellAt = KitchenConfig.planSpot(0, 113.5, -1)
 KitchenConfig.ExitSpot = KitchenConfig.planSpot(0, -107, 3)
 -- The tag on the arrival spot (the Teleport menu's KITCHEN stop).
