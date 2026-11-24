@@ -20,6 +20,7 @@
 ]]
 
 local Players = game:GetService("Players")
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -51,6 +52,23 @@ function LocalMeetController.start()
 
 	local player = Players.LocalPlayer
 	local remotes = LocalMeetRemotes.waitForClient(ReplicatedStorage)
+
+	-- THE LEAVE SIGN beside each platform's waiting spot (user 2026-11-24): its hold-to-leave prompt is off for
+	-- everyone; this switches on the one for the platform this player is lifting on (the server checks it again).
+	local function fitLeavePrompts()
+		local hallIndex = player:GetAttribute(LocalMeetConfig.HallAttribute)
+		local platformIndex = player:GetAttribute(LocalMeetConfig.PlatformAttribute)
+		for _, leave in ipairs(CollectionService:GetTagged(LocalMeetConfig.LeavePromptTag)) do
+			if leave:IsA("ProximityPrompt") then
+				leave.Enabled = platformIndex ~= nil and leave:GetAttribute("Platform") == platformIndex
+					and leave:GetAttribute("Hall") == hallIndex
+			end
+		end
+	end
+	player:GetAttributeChangedSignal(LocalMeetConfig.PlatformAttribute):Connect(fitLeavePrompts)
+	player:GetAttributeChangedSignal(LocalMeetConfig.HallAttribute):Connect(fitLeavePrompts)
+	CollectionService:GetInstanceAddedSignal(LocalMeetConfig.LeavePromptTag):Connect(fitLeavePrompts)
+	fitLeavePrompts()
 
 	-- The lifter's own meet screen: the Mock Meet's, with the Local meet's title.
 	MockMeetController.attach(remotes, LocalMeetConfig.PlatformAttribute, {

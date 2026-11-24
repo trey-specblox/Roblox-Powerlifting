@@ -5474,6 +5474,31 @@ function LocalMeetService.start()
 					leaveVenue(player, true)
 				end
 			end)
+			-- THE LEAVE SIGN beside each platform's waiting spot (LocalMeetVenue, user 2026-11-24): hold to withdraw from
+			-- the meet, as LEAVE does; the lifter stays in the venue. Only that platform's lifter sees it (LocalMeetController
+			-- switches it on for them; it starts off), and the server checks it is theirs. Not at State or Nationals, whose
+			-- lifters can walk to the arena's EXIT.
+			for _, platform in ipairs(hall.venue.platforms) do
+				if platform.leavePoint then
+					local leave = prompt(platform.leavePoint, "Leave the meet", "Hold to withdraw", function(player)
+						local current, lifter = activeLifter(player)
+						if not pressAllowed(player) or lifter == nil or lifter.hall ~= hall or lifter.platform ~= platform
+							or current == nil or current.final then
+							return
+						end
+						withdraw(player, "held the LEAVE sign")
+						if visits[player] then
+							standAt(player, LocalMeetVenue.lobbySpotFor(hall.venue, lifter.order), false)
+						end
+						showDroppedSuit(lifter, player)
+					end)
+					leave.HoldDuration = 1.5
+					leave.Enabled = false
+					leave:SetAttribute("Hall", hall.index)
+					leave:SetAttribute("Platform", platform.index)
+					CollectionService:AddTag(leave, LocalMeetConfig.LeavePromptTag)
+				end
+			end
 			hall.nextStartAt = startAfter(now(), hall)
 			rollLevel(hall)
 		end

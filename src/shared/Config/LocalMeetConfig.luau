@@ -32,6 +32,9 @@ LocalMeetConfig.VenueAttribute = "LocalMeetVenue"
 LocalMeetConfig.PlatformAttribute = "LocalMeetPlatform"
 -- Which of the five halls they are in, while in the venue (the client hides WATCH for a lift in their own hall).
 LocalMeetConfig.HallAttribute = "LocalMeetHall"
+-- The LEAVE sign's prompt beside each platform's waiting spot (user 2026-11-24): tagged so the lifter's own client can
+-- switch on the one for their platform (attributes Hall, Platform).
+LocalMeetConfig.LeavePromptTag = "LocalMeetLeavePrompt"
 
 -- Where the temporary venue is built: far from the gym (about 2000 studs across round 0,0,0) and from
 -- the Mock Meet rooms (+X from 4000), high up, so nobody walks in by accident.

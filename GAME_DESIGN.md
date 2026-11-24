@@ -8378,3 +8378,13 @@ and stages 3-4 (uncommitted at the time of writing):
   meals"): a big one sits forward of the chest, held at its near edge, so it never swallows the lifter.
 - The meet's weight panel keeps its size on phones (a bigger panel was tried and reverted on the user's word: "The
   panel was fine. Now it's huge"); the typed number in its box is big on a phone (it showed tiny while typing).
+
+## 43. Leaving a Local or Regional meet (user, 2026-11-24)
+
+"Add back a way to leave local regional meets n stuff. Maby make it where u can walk around to a leave sign." Lifters
+at a Local or Regional meet wait at a spot behind their platform's doorway, held there, and a phone has no LEAVE button
+(a stray tap withdrew lifters, 2026-11-18). So each platform has a **LEAVE sign** on the warm-up room wall right beside
+the waiting spot, with a **hold-to-leave prompt** ("Leave the meet", held 1.5 s, so a stray tap does nothing) that only
+that platform's lifter sees. Holding it withdraws them from the meet, as LEAVE does; they stay in the venue. State and
+Nationals lifters can walk about the meet area, so they use the arena's EXIT. A computer still also has its LEAVE button.
+

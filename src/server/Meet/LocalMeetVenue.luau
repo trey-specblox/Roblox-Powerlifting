@@ -184,6 +184,9 @@ export type Platform = {
 	waitSpot: CFrame,
 	-- The walk out from waitSpot (through the doorway, behind the platform to its middle), without either end.
 	walkOut: { Vector3 },
+	-- The LEAVE sign's prompt point beside waitSpot (Local meet halls only; LocalMeetService gives it a hold-to-leave
+	-- prompt that only this platform's lifter sees).
+	leavePoint: BasePart?,
 	-- Where the walk style starts on the way out (user 2026-11-11): the doorway here, the banner at State.
 	styleFrom: Vector3?,
 	-- The competition rack (StationVisuals shows it for the lift: no bench for squat and deadlift).
@@ -691,8 +694,18 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			centre + Vector3.new(doorX, 0, Z_BACK - 3),
 			centre + Vector3.new(x, 0, Z_BACK - 3),
 		}
+		-- THE LEAVE SIGN (user 2026-11-24: "Add back a way to leave local regional meets ... make it where u can walk
+		-- around to a leave sign"): on the warm-up room's wall beside the lifter's waiting spot, on their own side of the
+		-- doorway (5 studs from it, in reach of the waiting spot), with a hold-to-leave prompt at its foot. Holding,
+		-- not tapping: the phone's LEAVE button was taken away because a stray tap withdrew lifters (2026-11-18).
+		local leaveX = doorX - side * (DOORWAY + 2)
+		wallBoard("LeaveBoard_" .. index, "MeetBoard", "MeetBoard_Screen", 0.3, Vector3.new(leaveX, 0, Z_BACK + WALL + 0.06),
+			Vector3.zAxis, Vector3.new(leaveX, 7, Z_BACK + WALL), "LEAVE", { "Hold to leave the meet" }, "bar", 30)
+		-- (its middle at head height under the sign: at the floor the lifter's own body hid the prompt from the camera)
+		local leavePoint = point("LeavePoint_" .. index, Vector3.new(leaveX, 3, Z_BACK + WALL + 1.5))
 		table.insert(platforms, {
 			index = index,
+			leavePoint = leavePoint,
 			-- Facing the rack (and through it the head referee).
 			liftSpot = CFrame.lookAt(liftAt, liftAt - Vector3.zAxis),
 			-- Facing their chalk stand (further from the doorway, along the wall).

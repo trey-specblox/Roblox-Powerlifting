@@ -72,6 +72,15 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     hides the column while a meet's screen is up (LocalMeet, also used at State/Nationals, or MockMeet; not
     NationalsMeetUI, which is always on). STUDIO, iPhone size: shown before the meet, hidden during it, back after
     leaving.
+- LEAVE SIGN AT LOCAL / REGIONAL MEETS (2026-11-24, user: "Add back a way to leave local regional meets n stuff. Maby make
+  it where u can walk around to a leave sign"). NOT COMMITTED. Lifters there stand anchored at their waiting spot (no
+  walking to the venue's EXIT), and the phone LEAVE button was removed for stray taps. Now each platform has a LEAVE
+  board on the warm-up room wall beside the waiting spot (LocalMeetVenue, reused MeetBoard) with a HOLD-to-leave prompt
+  (1.5 s) that only that platform's lifter sees (LocalMeetController enables it by the Hall/Platform attributes; tag
+  LocalMeetConfig.LeavePromptTag); the server checks it is theirs and withdraws them like LEAVE (they stay in the
+  venue). Not at State/Nationals (lifters roam to the arena EXIT). STUDIO: 40 prompts; only 2/1 on for me, 4.7 studs
+  away; held E -> "withdrew from the meet (held the LEAVE sign)", meet screen off, free to walk. NOTE: Studio's
+  screen_capture does not draw the prompt tiles (AlwaysOnTop billboards); a real screenshot shows it.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip
