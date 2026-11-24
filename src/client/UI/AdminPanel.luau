@@ -510,11 +510,28 @@ function AdminPanel.start()
 				end)
 		end
 	end
+	-- Coaches (GAME_DESIGN §40.5), for testing: each coach one step on (not paid -> paid -> trial 1 passed -> hired), and
+	-- a reset. No coins are paid and no lifts are needed.
+	local coachY = awardY + 26 + #awards * 42 + GAP
+	local coachTitle = UIStyle.text(statsPage, "CoachTitle", UDim2.fromOffset(MARGIN, coachY), UDim2.new(1, -2 * MARGIN, 0, 22),
+		SIZES.small, C.muted, UIStyle.font(Enum.FontWeight.Bold))
+	coachTitle.Text = "COACHES: NEXT STEP (NOT PAID > PAID > TRIAL 1 PASSED > HIRED)"
+	local coachButtons = { { "Squat", "SQUAT COACH" }, { "Bench", "BENCH COACH" }, { "Deadlift", "DEADLIFT COACH" }, { "Reset", "RESET" } }
+	for index, entry in ipairs(coachButtons) do
+		local position, size = cell(index, #coachButtons, coachY + 26, 36)
+		UIStyle.button(statsPage, "Coach_" .. entry[1], entry[2], position, size, "outline", function()
+			if entry[1] == "Reset" then
+				ask("CoachReset", { userId = targetUserId })
+			else
+				ask("CoachStep", { userId = targetUserId, lift = entry[1] })
+			end
+		end)
+	end
 	-- Room under the last row so it scrolls fully into view (it sat on the bottom edge).
 	local spacer = Instance.new("Frame")
 	spacer.Name = "BottomSpace"
 	spacer.BackgroundTransparency = 1
-	spacer.Position = UDim2.fromOffset(0, awardY + 26 + #awards * 42)
+	spacer.Position = UDim2.fromOffset(0, coachY + 26 + 42)
 	spacer.Size = UDim2.new(1, 0, 0, 16)
 	spacer.Parent = statsPage
 

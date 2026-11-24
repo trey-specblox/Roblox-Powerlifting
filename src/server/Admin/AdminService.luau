@@ -51,6 +51,7 @@ local InventoryService = require(ServerRoot:WaitForChild("PlayerData"):WaitForCh
 local HoldService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("HoldService"))
 local RankConfig = require(Shared:WaitForChild("Config"):WaitForChild("RankConfig"))
 local MeetLevelConfig = require(Shared:WaitForChild("Config"):WaitForChild("MeetLevelConfig"))
+local CoachingConfig = require(Shared:WaitForChild("Config"):WaitForChild("CoachingConfig"))
 
 local AdminService = {}
 
@@ -318,6 +319,43 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		end
 		InventoryService.changed(target)
 		return true, string.format("%s: %s given.", target.Name, HoldService.awardLabel(kind, level, math.floor(place)))
+	end,
+	-- COACH: NEXT STEP (GAME_DESIGN §40.5, for testing): moves one coach to the next stage (none -> paid -> trial 1 passed
+	-- -> hired -> none again), without paying or lifting.
+	CoachStep = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		local lift = value.lift
+		if not CoachingConfig.isLift(lift) then
+			return false, "That isn't a coach."
+		end
+		local coaching = PlayerDataService.getCoaching(target)
+		if coaching == nil then
+			return false, target.Name .. ": that player's save hasn't loaded."
+		end
+		local stages = CoachingConfig.Stages
+		local now = table.find(stages, coaching.coaches[lift].stage) or 1
+		local nextStage = stages[now % #stages + 1]
+		PlayerDataService.adminSetCoachStage(target, lift, nextStage)
+		if nextStage == "hired" then
+			PlayerDataService.setActiveCoach(target, lift)
+		end
+		local words = { none = "not paid", trial1 = "paid, trial 1 next", trial2 = "trial 1 passed, trial 2 next", hired = "hired (active)" }
+		return true, string.format("%s: %s coach %s.", target.Name, lift, words[nextStage] or nextStage)
+	end,
+	-- RESET COACHES (for testing): every lift coach back to "not paid", the gym owner coaching again.
+	CoachReset = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		for _, lift in ipairs(CoachingConfig.Lifts) do
+			PlayerDataService.adminSetCoachStage(target, lift, "none")
+		end
+		PlayerDataService.setActiveCoach(target, CoachingConfig.OwnerId)
+		return true, target.Name .. ": coaches reset, the gym owner coaches them."
 	end,
 	-- GIVE TITLE (GAME_DESIGN §41): a title by its RankConfig id, shown with the same TITLE UNLOCKED card a meet gives.
 	GiveTitle = function(_player: Player, value: any): (boolean, string)

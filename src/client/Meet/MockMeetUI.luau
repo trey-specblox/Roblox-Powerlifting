@@ -630,12 +630,13 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 			setBanner(state.banner or string.format("%.1f KG", state.bodyweightKg), C.white, C.ink)
 			sub.Text = state.note or string.format("You lift in the %s class today.", state.classLabel)
 		elseif state.phase == "Ready" then
-			stepTag.Text = attemptText
+			-- (a coach's trial counts its lifts in the tag: "SQUAT TRIAL  ·  4 / 10")
+			stepTag.Text = state.stepTag or attemptText
 			setBanner("BAR LOADED  ·  " .. kgText(state.declaredKg or 0) .. " KG", C.white, C.ink)
 			sub.Text = if state.autoLift then "Walk out to the bar. Wait for the referee's command."
 				else "Your coach is watching. Press LIFT when you are ready."
 		elseif state.phase == "Result" then
-			stepTag.Text = attemptText
+			stepTag.Text = state.stepTag or attemptText
 			local good = state.verdict == "GoodLift"
 			-- A Local meet's good lift that did something says so ("NEW BEST!", GAME_DESIGN §37.5).
 			setBanner(if good then state.moment or "GOOD LIFT" else "NO LIFT", if good then C.white else C.red,

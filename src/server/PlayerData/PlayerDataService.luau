@@ -679,6 +679,62 @@ function PlayerDataService.endSuitTrial(player: Player, passed: boolean)
 	end
 end
 
+-- COACHING (GAME_DESIGN §40.5, ProfileOperations). SERVER-ONLY: CoachingService, MockMeetService (trial 1) and the
+-- meets (trial 2, the bond) call these; the price comes from CoachingConfig, never from a client.
+function PlayerDataService.getCoaching(player: Player): ProfileOperations.CoachingView?
+	local data = activeData(player, "getCoaching")
+	return if data then ProfileOperations.getCoaching(data) else nil
+end
+
+function PlayerDataService.hireCoach(player: Player, lift: string, price: number): (ProfileOperations.HireOutcome?, number?)
+	local data = activeData(player, "hireCoach")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome, balance = ProfileOperations.hireCoach(data, lift, price)
+	if outcome == "Paid" then
+		print(string.format("[PlayerDataService] %s -%d coins (hired the %s coach's trials): %d", player.Name, price, lift,
+			balance :: number))
+		coinsChanged(player, -price, balance :: number, "Coach")
+	end
+	return outcome, balance
+end
+
+function PlayerDataService.endCoachTrial1(player: Player, lift: string, passed: boolean): string?
+	local data = activeData(player, "endCoachTrial1")
+	local stage = if data then ProfileOperations.endCoachTrial1(data, lift, passed) else nil
+	if stage then
+		print(string.format("[PlayerDataService] %s's %s coach trial 1: %s", player.Name, lift, if passed then "passed" else "failed"))
+	end
+	return stage
+end
+
+function PlayerDataService.passCoachTrial2(player: Player, lift: string): boolean
+	local data = activeData(player, "passCoachTrial2")
+	local passed = data ~= nil and ProfileOperations.passCoachTrial2(data :: any, lift)
+	if passed then
+		print(string.format("[PlayerDataService] %s passed the %s coach's trial 2: hired", player.Name, lift))
+	end
+	return passed
+end
+
+function PlayerDataService.setActiveCoach(player: Player, id: string): boolean
+	local data = activeData(player, "setActiveCoach")
+	return data ~= nil and ProfileOperations.setActiveCoach(data :: any, id)
+end
+
+function PlayerDataService.addCoachBond(player: Player)
+	local data = activeData(player, "addCoachBond")
+	if data then
+		ProfileOperations.addCoachBond(data)
+	end
+end
+
+function PlayerDataService.adminSetCoachStage(player: Player, lift: string, stage: string): boolean
+	local data = activeData(player, "adminSetCoachStage")
+	return data ~= nil and ProfileOperations.adminSetCoachStage(data :: any, lift, stage)
+end
+
 function PlayerDataService.resetSuitTests(player: Player, isSuit: (string) -> boolean)
 	local data = activeData(player, "resetSuitTests")
 	if data then

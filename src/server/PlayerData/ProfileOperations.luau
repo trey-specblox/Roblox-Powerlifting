@@ -61,6 +61,7 @@ local QuestConfig = require(ConfigFolder:WaitForChild("QuestConfig"))
 local KitchenConfig = require(ConfigFolder:WaitForChild("KitchenConfig"))
 local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 local RankConfig = require(ConfigFolder:WaitForChild("RankConfig"))
+local CoachingConfig = require(ConfigFolder:WaitForChild("CoachingConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -3920,6 +3921,144 @@ function ProfileOperations.getItems(data: ProfileData): { [string]: Item }
 		end
 	end
 	return copy
+end
+
+--[[
+	=========================================================================
+	COACHING  (GAME_DESIGN §40.5, version 38)
+	=========================================================================
+
+	Every player is coached by the gym owner (free). A lift coach is hired in steps: pay (hireCoach), pass trial 1 in
+	the Mock Meet room (endCoachTrial1; a fail means paying again), pass trial 2 at a real meet (passCoachTrial2), and
+	they're the player's coach. One coach is active at a time (setActiveCoach). SERVER-ONLY callers; the client only
+	asks (CoachingService).
+]]
+
+export type CoachingView = { active: string, coaches: { [string]: { stage: string, bond: number } } }
+export type HireOutcome = "Paid" | "NotEnough" | "AlreadyPaid" | "Rejected"
+
+-- The coaching record, repaired in place (nil only when the data itself is unusable).
+local function coachingOf(data: ProfileData): PlayerProfileSchema.Coaching?
+	if typeof(data) ~= "table" then
+		return nil
+	end
+	local coaching = (data :: any).coaching
+	if typeof(coaching) ~= "table" then
+		(data :: any).coaching = { active = CoachingConfig.OwnerId, coaches = {} }
+		coaching = (data :: any).coaching
+	end
+	if typeof(coaching.coaches) ~= "table" then
+		coaching.coaches = {}
+	end
+	for _, lift in ipairs(CoachingConfig.Lifts) do
+		local record = coaching.coaches[lift]
+		if typeof(record) ~= "table" then
+			record = {}
+			coaching.coaches[lift] = record
+		end
+		if not CoachingConfig.isStage(record.stage) then
+			record.stage = "none"
+		end
+		if not isFiniteNumber(record.bond) or record.bond < 0 then
+			record.bond = 0
+		end
+	end
+	if coaching.active ~= CoachingConfig.OwnerId
+		and not (CoachingConfig.isLift(coaching.active) and coaching.coaches[coaching.active].stage == "hired") then
+		coaching.active = CoachingConfig.OwnerId
+	end
+	return coaching
+end
+
+-- A copy of the player's coaching, for screens.
+function ProfileOperations.getCoaching(data: ProfileData): CoachingView?
+	local coaching = coachingOf(data)
+	if coaching == nil then
+		return nil
+	end
+	local view: CoachingView = { active = coaching.active, coaches = {} }
+	for _, lift in ipairs(CoachingConfig.Lifts) do
+		local record = coaching.coaches[lift]
+		view.coaches[lift] = { stage = record.stage, bond = record.bond }
+	end
+	return view
+end
+
+--[[
+	Pays `price` coins to `lift`'s coach to start their trials (stage "none" -> "trial1"). Returns "Paid" and the new
+	balance; "NotEnough" and the balance; "AlreadyPaid" when this coach is past "none"; "Rejected" otherwise. Nothing
+	changes unless "Paid".
+]]
+function ProfileOperations.hireCoach(data: ProfileData, lift: string, price: number): (HireOutcome, number?)
+	local coaching = coachingOf(data)
+	if coaching == nil or not CoachingConfig.isLift(lift) or not isWholeCoins(price) then
+		return "Rejected", nil
+	end
+	if coaching.coaches[lift].stage ~= "none" then
+		return "AlreadyPaid", ProfileOperations.getCoins(data)
+	end
+	local outcome, balance = ProfileOperations.spendCoins(data, price)
+	if outcome == "NotEnough" then
+		return "NotEnough", balance
+	elseif outcome ~= "Spent" then
+		return "Rejected", nil
+	end
+	coaching.coaches[lift].stage = "trial1"
+	return "Paid", balance
+end
+
+-- Trial 1's result for `lift`'s coach: passed -> "trial2"; failed -> "none" (pay again). Returns the new stage, or nil
+-- when this coach wasn't on trial 1.
+function ProfileOperations.endCoachTrial1(data: ProfileData, lift: string, passed: boolean): string?
+	local coaching = coachingOf(data)
+	if coaching == nil or not CoachingConfig.isLift(lift) or coaching.coaches[lift].stage ~= "trial1" then
+		return nil
+	end
+	coaching.coaches[lift].stage = if passed then "trial2" else "none"
+	return coaching.coaches[lift].stage
+end
+
+-- Trial 2 passed for `lift`'s coach: they're hired, and become the active coach. Returns whether it changed anything.
+function ProfileOperations.passCoachTrial2(data: ProfileData, lift: string): boolean
+	local coaching = coachingOf(data)
+	if coaching == nil or not CoachingConfig.isLift(lift) or coaching.coaches[lift].stage ~= "trial2" then
+		return false
+	end
+	coaching.coaches[lift].stage = "hired"
+	coaching.active = lift
+	return true
+end
+
+-- Makes `id` the active coach: "Owner" or a hired coach's lift. Returns whether it is now the active coach.
+function ProfileOperations.setActiveCoach(data: ProfileData, id: string): boolean
+	local coaching = coachingOf(data)
+	if coaching == nil then
+		return false
+	end
+	if id == CoachingConfig.OwnerId or (CoachingConfig.isLift(id) and coaching.coaches[id].stage == "hired") then
+		coaching.active = id
+		return true
+	end
+	return false
+end
+
+-- A real meet finished with a hired coach active: their bond grows by one (for the coach's unlocks, later).
+function ProfileOperations.addCoachBond(data: ProfileData)
+	local coaching = coachingOf(data)
+	if coaching and CoachingConfig.isLift(coaching.active) then
+		coaching.coaches[coaching.active].bond += 1
+	end
+end
+
+-- ADMIN (testing): puts `lift`'s coach at `stage` (and the gym owner back in charge if they're no longer hired).
+function ProfileOperations.adminSetCoachStage(data: ProfileData, lift: string, stage: string): boolean
+	local coaching = coachingOf(data)
+	if coaching == nil or not CoachingConfig.isLift(lift) or not CoachingConfig.isStage(stage) then
+		return false
+	end
+	coaching.coaches[lift].stage = stage
+	coachingOf(data)
+	return true
 end
 
 return ProfileOperations

@@ -62,6 +62,8 @@ local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig")
 local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
 local LocalMeetConfig = require(ConfigFolder:WaitForChild("LocalMeetConfig"))
 local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
+local QuestConfig = require(ConfigFolder:WaitForChild("QuestConfig"))
+local CoachingConfig = require(ConfigFolder:WaitForChild("CoachingConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
@@ -98,6 +100,8 @@ type Body = { character: Model, root: BasePart, humanoid: Humanoid }
 
 -- A running coach's test: which suit, on which piece. `running` once the save has it on loan; `over` once the result is in.
 type SuitTest = { suit: GearStatsConfig.Suit, pieceId: string, running: boolean, over: boolean }
+-- A coach's trial 1 (GAME_DESIGN §40.5): whose coach (their lift); `over` once the result is in.
+type CoachTrial = { lift: string, over: boolean }
 
 -- One lift's attempts as the meet keeps them: AttemptRules' history, plus passed attempts.
 type LiftRecord = { history: AttemptRules.AttemptHistory, passed: number }
@@ -118,6 +122,10 @@ type Visit = {
 	readyPressed: boolean,
 	-- Set when this visit is the coach's test instead of a mock meet.
 	suitTest: SuitTest?,
+	-- Set when this visit is a coach's trial 1 instead.
+	coachTrial: CoachTrial?,
+	-- What the step tag says through every phase (a coach's trial: "SQUAT TRIAL  ·  4 / 10").
+	stepTag: string?,
 }
 
 -- Who is in which room. Entries are removed on every way out, so no room is left behind.
@@ -240,6 +248,7 @@ local function sendState(player: Player, visit: Visit, phase: string, extra: { [
 		classLabel = visit.classLabel,
 		competitionNumber = visit.competitionNumber,
 		attempts = attemptViews(visit),
+		stepTag = visit.stepTag,
 	}
 	if extra then
 		for key, value in pairs(extra) do
@@ -550,6 +559,58 @@ local function runSuitTest(player: Player, visit: Visit, test: SuitTest)
 	log("%s %s the %s test", player.Name, if passed then "passed" else "did not pass", test.suit.id)
 end
 
+--[[
+	A coach's trial 1 (GAME_DESIGN §40.5, user 2026-11-19, approved): CoachingConfig.Trial1.Lifts good lifts of the coach's
+	lift in a row at Trial1.PercentOfCn of the Competition Number (fixed weight, no choosing). The first miss ends it, and a
+	fail means paying again. Saves only the result (PlayerDataService.endCoachTrial1). The scorecard shows three attempts,
+	so it is cleared after every three; the step tag counts all ten.
+]]
+local function runCoachTrial(player: Player, visit: Visit, trial: CoachTrial)
+	local lift = trial.lift
+	local count = CoachingConfig.Trial1.Lifts
+	local stepKg = MockMeetConfig.WeightStepKg
+	local kg = math.max(math.floor(visit.competitionNumber[lift] * CoachingConfig.Trial1.PercentOfCn / stepKg + 1e-6) * stepKg,
+		stepKg)
+	local coach = QuestConfig.Coaches[lift]
+	local coachName = if coach then coach.name else "The coach"
+	local liftWord = string.lower(lift)
+	updateBoard(player, visit, nil, nil, nil)
+	MockMeetArena.coachSays(visit.room, "I don't want you to waste your money or your time. Show me what you got.")
+	visit.stepTag = string.upper(lift) .. " TRIAL"
+	sendState(player, visit, "WeighIn", { secondsLeft = MockMeetConfig.WeighInSeconds,
+		banner = string.format("%d GOOD %s IN A ROW  ·  %s KG", count, string.upper(QuestConfig.Plural[lift] or liftWord), kgText(kg)),
+		note = string.format("%s is watching. One miss and it's over.", coachName) })
+	task.wait(MockMeetConfig.WeighInSeconds)
+	local passed = true
+	for number = 1, count do
+		if (number - 1) % 3 == 0 then
+			visit.lifts[lift].history = {}
+		end
+		visit.stepTag = string.format("%s TRIAL  ·  %d / %d", string.upper(lift), number, count)
+		if not stillIn(player, visit) or not runAttempt(player, visit, lift, (number - 1) % 3 + 1, kg) then
+			-- Gone before the end: `finish` fails it (a fail means paying again).
+			log("%s left the %s coach's trial 1", player.Name, lift)
+			return
+		end
+		local history = visit.lifts[lift].history
+		if history[#history].result ~= "GoodLift" then
+			passed = false
+			break
+		end
+	end
+	trial.over = true
+	PlayerDataService.endCoachTrial1(player, lift, passed)
+	MockMeetArena.coachSays(visit.room, if passed then "Not bad. Now show me in a real meet." else "Not today. Come back when you're ready.")
+	updateBoard(player, visit, nil, nil, nil)
+	visit.stepTag = string.upper(lift) .. " TRIAL"
+	sendState(player, visit, "Done", { best = MeetTotal.resolve(meetAttempts(visit)).best, bombedOut = not passed,
+		banner = if passed then "TRIAL 1 PASSED" else "TRIAL FAILED",
+		note = if passed then string.format("Next: go 3/3 on %s at a real meet, the 3rd at %d%% of your CN or more, and place.",
+				liftWord, math.floor(CoachingConfig.Trial2.ThirdAtLeast * 100 + 0.5))
+			else string.format("%s wants to see it again. Pay again to retry.", coachName) })
+	log("%s %s the %s coach's trial 1", player.Name, if passed then "passed" else "failed", lift)
+end
+
 -- ---------------------------------------------------------------- in and out
 
 --[[
@@ -573,6 +634,12 @@ local function finish(player: Player, sendBack: boolean)
 	LiftAttemptService.setFreeAttemptsBlocked(player, false)
 	if player.Parent then
 		player:SetAttribute(MockMeetConfig.SlotAttribute, nil)
+	end
+	-- Left a coach's trial 1 before its result: it counts as a fail (paying again), as walking out on a coach would.
+	local trial = visit.coachTrial
+	if trial and not trial.over and player.Parent then
+		trial.over = true
+		PlayerDataService.endCoachTrial1(player, trial.lift, false)
 	end
 	-- Left the coach's test before its result: the gear on loan comes off. (If they left the game the next load does this.)
 	local test = visit.suitTest
@@ -601,7 +668,7 @@ local function finish(player: Player, sendBack: boolean)
 end
 
 -- Builds the player's room and moves them in, for a mock meet or, with `suitTest`, the coach's test. Returns whether they went.
-local function enterRoom(player: Player, body: Body, suitTest: SuitTest?): boolean
+local function enterRoom(player: Player, body: Body, suitTest: SuitTest?, coachTrial: CoachTrial?): boolean
 	-- The weigh-in reads the player's data; nothing is written. The class it locks is the build the meet saves to.
 	local data = PlayerDataService.getData(player)
 	if data == nil then
@@ -667,9 +734,12 @@ local function enterRoom(player: Player, body: Body, suitTest: SuitTest?): boole
 		choice = nil,
 		readyPressed = false,
 		suitTest = suitTest,
+		coachTrial = coachTrial,
 	}
 	visits[player] = visit
-	if suitTest == nil then
+	if coachTrial then
+		-- (a coach's trial has no wait and doesn't count as the day's mock meet)
+	elseif suitTest == nil then
 		lastCheckIn[player.UserId] = os.clock()
 	else
 		-- Only now it can't fail for the room's sake: the try starts here, and with it the wait.
@@ -696,7 +766,9 @@ local function enterRoom(player: Player, body: Body, suitTest: SuitTest?): boole
 		finish(player, false)
 	end))
 	log("%s entered mock meet room %d (%.1f kg, %s class)", player.Name, slot, bodyweightKg, visit.classLabel)
-	if suitTest then
+	if coachTrial then
+		task.spawn(runCoachTrial, player, visit, coachTrial)
+	elseif suitTest then
 		task.spawn(runSuitTest, player, visit, suitTest)
 	else
 		task.spawn(runMeet, player, visit)
@@ -782,6 +854,35 @@ function MockMeetService.startSuitTest(player: Player, pieceId: string): (boolea
 	end
 	if enterRoom(player, body, { suit = suit, pieceId = pieceId, running = false, over = false }) then
 		return true, "Show the coach you can handle it."
+	end
+	return false, "That didn't go through. Try again."
+end
+
+--[[
+	A coach's trial 1 (CoachingService checks the player is on it): into the player's own Mock Meet room for that coach's
+	lifts, from anywhere they are free to go. Returns whether they went, and what to tell them.
+]]
+function MockMeetService.startCoachTrial(player: Player, lift: string): (boolean, string)
+	if visits[player] or entering[player] then
+		return false, "You're in a mock meet room already."
+	end
+	if player:GetAttribute(LocalMeetConfig.PlatformAttribute) ~= nil then
+		return false, "Finish your meet first."
+	end
+	local body = bodyOf(player)
+	if body == nil or body.humanoid.Health <= 0 or body.root.Anchored then
+		return false, "You can't go right now."
+	end
+	for _, attribute in ipairs(BUSY_ATTRIBUTES) do
+		if body.character:GetAttribute(attribute) ~= nil then
+			return false, "Step off first."
+		end
+	end
+	if LiftAttemptService.isAttemptActive(player) then
+		return false, "Finish your lift first."
+	end
+	if enterRoom(player, body, nil, { lift = lift, over = false }) then
+		return true, "Show the coach what you've got."
 	end
 	return false, "That didn't go through. Try again."
 end

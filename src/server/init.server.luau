@@ -109,6 +109,8 @@ RankService.start()
 -- The INVENTORY's items (GAME_DESIGN §42): food from the chef, medals, trophies.
 local InventoryService = require(PlayerDataFolder:WaitForChild("InventoryService"))
 InventoryService.start()
+-- Getting coached (GAME_DESIGN §40.5): hiring, trial 1 in the Mock Meet room, trial 2 at meets, the active coach.
+require(PlayerDataFolder:WaitForChild("CoachingService")).start()
 local KitchenService = require(script:WaitForChild("Economy"):WaitForChild("KitchenService"))
 KitchenService.start()
 -- The pan hall waits for the prop models to load, so it builds without holding up the rest.

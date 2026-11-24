@@ -67,9 +67,9 @@ local PlayerProfileSchema = {}
 	whether the player has watched the chef scene once; version 33: the luck
 	wheel's multiplier, spins and game tries; version 34: meet meals; version
 	35: ranks and feat titles; version 36: the cook timer; version 37: inventory
-	items: food, medals, trophies).
+	items: food, medals, trophies; version 38: coaching).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 37
+PlayerProfileSchema.CURRENT_VERSION = 38
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -607,6 +607,15 @@ export type Ranks = {
 	streakDays: number,
 }
 
+-- Getting coached (version 38, GAME_DESIGN §40.5): each lift coach's stage with this player (CoachingConfig.Stages) and
+-- how many real meets they've lifted with that coach as their active coach (the bond, for later); and who is active.
+export type CoachRecord = { stage: string, bond: number }
+export type Coaching = {
+	-- "Owner" (the gym owner, everyone's free basic coach) or a hired coach's lift ("Squat", "Bench", "Deadlift").
+	active: string,
+	coaches: { [string]: CoachRecord },
+}
+
 export type Bodyweight = {
 	currentKg: number,
 	-- What the player is eating toward. Equal to current means "maintain".
@@ -654,6 +663,7 @@ export type ProfileData = {
 	boosts: Boosts,
 	luck: Luck,
 	ranks: Ranks,
+	coaching: Coaching,
 
 	-- (competitionBudget, added in version 3, was removed in version 10: GAME_DESIGN 29.9.)
 	-- (trainingEnergy, added in version 3, was retired in version 8: GAME_DESIGN 29.8.)
@@ -843,6 +853,16 @@ local template: ProfileData = {
 		titlesSeenUnix = 0,
 		streakDayKey = "",
 		streakDays = 0,
+	},
+
+	-- Coached by the gym owner; no lift coach paid for yet.
+	coaching = {
+		active = "Owner",
+		coaches = {
+			Squat = { stage = "none", bond = 0 },
+			Bench = { stage = "none", bond = 0 },
+			Deadlift = { stage = "none", bond = 0 },
+		},
 	},
 
 	meta = {
@@ -2390,6 +2410,38 @@ migrations[36] = function(data: ProfileData)
 	if typeof(inventory.nextItemId) ~= "number" or inventory.nextItemId ~= inventory.nextItemId
 		or inventory.nextItemId <= highest then
 		inventory.nextItemId = highest + 1
+	end
+end
+
+--[[
+	Version 37 -> 38: coaching (user 2026-11-19 to 2026-11-23, GAME_DESIGN §40.5). Nobody has a coach yet: everyone is
+	coached by the gym owner. REPAIRS, NEVER OVERWRITES: a usable record is kept; a broken stage reads "none", a broken
+	bond 0, an unknown active coach the gym owner. IDEMPOTENT.
+]]
+migrations[37] = function(data: ProfileData)
+	local coaching = (data :: any).coaching
+	if typeof(coaching) ~= "table" then
+		(data :: any).coaching = { active = "Owner", coaches = {} }
+		coaching = (data :: any).coaching
+	end
+	if typeof(coaching.coaches) ~= "table" then
+		coaching.coaches = {}
+	end
+	for _, lift in ipairs({ "Squat", "Bench", "Deadlift" }) do
+		local record = coaching.coaches[lift]
+		if typeof(record) ~= "table" then
+			record = {}
+			coaching.coaches[lift] = record
+		end
+		if typeof(record.stage) ~= "string" or not table.find({ "none", "trial1", "trial2", "hired" }, record.stage) then
+			record.stage = "none"
+		end
+		if typeof(record.bond) ~= "number" or record.bond ~= record.bond or record.bond < 0 then
+			record.bond = 0
+		end
+	end
+	if coaching.active ~= "Owner" and not (coaching.coaches[coaching.active] and coaching.coaches[coaching.active].stage == "hired") then
+		coaching.active = "Owner"
 	end
 end
 

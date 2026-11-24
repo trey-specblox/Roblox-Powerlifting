@@ -1164,6 +1164,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	-- statement and no new locals on purpose: this file is at Luau's 200-local limit.
 	require(PlayerDataFolder:WaitForChild("InventoryService")).meetPlaced(player, current.level,
 		if totalKg and current.places[lifter.key] then current.places[lifter.key].place else nil, lines)
+	-- COACHING (GAME_DESIGN §40.5): a coach's trial 2 is judged from this meet, and the active coach's bond grows
+	-- (CoachingService.meetFinished; one statement, no new locals: this file is at Luau's 200-local limit).
+	require(PlayerDataFolder:WaitForChild("CoachingService")).meetFinished(player, current, lifter, totalKg, lines)
 	if rankResult then
 		log("%s's rank: %d -> %d (%.1f GL%s), new titles: %s, streak %d day(s)", player.Name, rankResult.rankBefore,
 			rankResult.rankAfter, rankMeet and rankMeet.points or 0, if rankResult.newBest then ", new best" else "",

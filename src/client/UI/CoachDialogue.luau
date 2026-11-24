@@ -8,7 +8,8 @@
 	(SuitCutscene, §35.12): the panel with a big portrait of the coach in the lower left, their name on a black bar,
 	their words typed out, and the answers as speech bubbles beside the portrait.
 
-		"Can you coach me?"           coaching (§40.5) isn't open yet: the coach says so
+		"Can you coach me?"           coaching (§40.5): the price, paying, trial 1 (the Mock Meet room), what trial 2 asks, or
+		                              "Be my coach" once hired (CoachingRemotes; the server checks everything)
 		"I need a stronger squat"     takes today's quest (QuestRemotes.TAKE, it goes on the QuestTracker): what to do and
 		                              how far you are, or done
 		"Bye."                        closes it
@@ -27,6 +28,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GearStatsConfig = require(Shared:WaitForChild("Config"):WaitForChild("GearStatsConfig"))
 local QuestConfig = require(Shared:WaitForChild("Config"):WaitForChild("QuestConfig"))
 local QuestRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("QuestRemotes"))
+local CoachingConfig = require(Shared:WaitForChild("Config"):WaitForChild("CoachingConfig"))
+local CoachingRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("CoachingRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local QuestTracker = require(script.Parent:WaitForChild("QuestTracker"))
@@ -61,6 +64,7 @@ function CoachDialogue.start()
 	started = true
 	local player = Players.LocalPlayer
 	local remotes = QuestRemotes.waitForClient(ReplicatedStorage)
+	local coachingRemotes = CoachingRemotes.waitForClient(ReplicatedStorage)
 	local playerGui = player:WaitForChild("PlayerGui")
 
 	local tickSound = Instance.new("Sound")
@@ -374,7 +378,86 @@ function CoachDialogue.start()
 				if choice == nil or choice == "Bye" then
 					return
 				elseif choice == "Coach" then
-					say("It's gonna cost you... but I'm not taking new lifters yet. Come back soon.")
+					-- Getting coached (§40.5): where the player stands with this coach decides what he says.
+					local ok, view = pcall(function()
+						return coachingRemotes.get:InvokeServer()
+					end)
+					local record = if ok and typeof(view) == "table" and typeof(view.coaches) == "table" then view.coaches[liftName] else nil
+					local liftWord = string.lower(liftName)
+					local plural = QuestConfig.Plural[liftName] or liftName
+					local cnPercent = math.floor(CoachingConfig.Trial1.PercentOfCn * 100 + 0.5)
+					local thirdPercent = math.floor(CoachingConfig.Trial2.ThirdAtLeast * 100 + 0.5)
+					local trial1Line = string.format("%d good %s in a row at %d%% of your Competition Number, in your Mock Meet room. One miss and you pay again.",
+						CoachingConfig.Trial1.Lifts, plural, cnPercent)
+					local function goToTrial(): boolean
+						local went, problem = false, "Try again in a moment."
+						pcall(function()
+							went, problem = coachingRemotes.trial:InvokeServer(liftName)
+						end)
+						if went then
+							return true
+						end
+						say(if typeof(problem) == "string" then problem else "Try again in a moment.")
+						return false
+					end
+					if typeof(record) ~= "table" then
+						say("Give me a second... ask me again.")
+					elseif record.stage == "none" then
+						say(string.format("It's gonna cost you... %s coins. Then you prove yourself to me.",
+							string.format("%d,%03d", CoachingConfig.Price // 1000, CoachingConfig.Price % 1000)))
+						local pay = ask({
+							{ text = string.format("Pay %d,%03d coins", CoachingConfig.Price // 1000, CoachingConfig.Price % 1000), value = "Pay" },
+							{ text = "Not now.", value = "No" },
+						})
+						if pay == nil then
+							return
+						elseif pay == "Pay" then
+							local paid, outcome = pcall(function()
+								return coachingRemotes.hire:InvokeServer(liftName)
+							end)
+							if paid and outcome == "Paid" then
+								say("I don't want you to waste your money or your time. Show me what you got: " .. trial1Line)
+								local go = ask({ { text = "Let's go.", value = "Go" }, { text = "Later.", value = "Later" } })
+								if go == nil then
+									return
+								elseif go == "Go" and goToTrial() then
+									return
+								end
+							elseif paid and outcome == "NotEnough" then
+								say("Come back when you've got the coins. Meets pay well.")
+							else
+								say("Give me a second... ask me again.")
+							end
+						end
+					elseif record.stage == "trial1" then
+						say("You paid. Now show me: " .. trial1Line)
+						local go = ask({ { text = "Let's go.", value = "Go" }, { text = "Later.", value = "Later" } })
+						if go == nil then
+							return
+						elseif go == "Go" and goToTrial() then
+							return
+						end
+					elseif record.stage == "trial2" then
+						say(string.format("Now prove it where it counts, at a real meet: go 3 for 3 on %s, your third at %d%% of your Competition Number or more, and place top %d. If it's only computer lifters, beat them all.",
+							liftWord, thirdPercent, CoachingConfig.Trial2.TopPlacesWithPlayers))
+					elseif record.stage == "hired" and typeof(view) == "table" and view.active == liftName then
+						say("I'm your coach. Let's go win some meets.")
+					elseif record.stage == "hired" then
+						say("Want me back in your corner?")
+						local back = ask({ { text = "Be my coach.", value = "Active" }, { text = "Not now.", value = "No" } })
+						if back == nil then
+							return
+						elseif back == "Active" then
+							local done, newView = pcall(function()
+								return coachingRemotes.setActive:InvokeServer(liftName)
+							end)
+							if done and typeof(newView) == "table" and newView.active == liftName then
+								say("Good. Let's get to work.")
+							else
+								say("Give me a second... ask me again.")
+							end
+						end
+					end
 				elseif choice == "Quest" then
 					-- Asking for it takes it: the quest goes on the tracker (QuestService checks the lift).
 					local ok, quests = pcall(function()
@@ -406,6 +489,17 @@ function CoachDialogue.start()
 
 	-- After a meet: each quest it moved, as a line at the top of the screen.
 	local Announcer = require(script.Parent.Parent:WaitForChild("Meet"):WaitForChild("GymRecordAnnouncer"))
+	-- Coaching news (a trial 2 passed), the same way.
+	coachingRemotes.news.OnClientEvent:Connect(function(lines: any)
+		if typeof(lines) ~= "table" then
+			return
+		end
+		for _, line in ipairs(lines) do
+			if typeof(line) == "string" then
+				Announcer.note(line)
+			end
+		end
+	end)
 	remotes.news.OnClientEvent:Connect(function(lines: any)
 		if typeof(lines) ~= "table" then
 			return

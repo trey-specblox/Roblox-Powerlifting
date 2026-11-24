@@ -7666,7 +7666,7 @@ doesn't cover it. To settle while designing:
 - With no pass, the basic opening should stay short: Blade Ball's 5-10 s unskippable spin is the reason its players buy
   a skip, and it annoys everyone who doesn't.
 
-### 40.5 Getting coached: Coach Squatavious (user, 2026-11-19; NOT BUILT; trials APPROVED)
+### 40.5 Getting coached: Coach Squatavious (user, 2026-11-19; STAGE 1 BUILT 2026-11-24: hiring, both trials, the active coach)
 
 | Step | The user's design |
 |---|---|
@@ -7741,6 +7741,23 @@ doesn't cover it. To settle while designing:
     - **Price: 28,000 coins per coach** (first 10,000; changed the same day to 12 hours of Local meets, §41.4).
   - OPEN: where the choice is made, and whether the Mock Meet room's coach and the meet scenes (rituals,
     Nationals opening, the rare suit cutscene) use the chosen coach too.
+  - **STAGE 1 BUILT (2026-11-24; user: "Yea let's start with the coaching system"):**
+    - Save version 38 `coaching` (each coach's stage: not paid / paid / trial 1 passed / hired, a bond count; the active
+      coach, "Owner" = the gym owner by default). CoachingConfig has the numbers; CoachingService the rules.
+    - **"Can you coach me?"** in the coach dialogue: the price ("It's gonna cost you... 28,000 coins"), PAY (the server
+      takes the coins), then "Show me what you got" and LET'S GO into the Mock Meet room for **trial 1** (10 good lifts
+      of that coach's lift in a row at 100% of the Competition Number, fixed weight; one miss, or leaving, fails it and
+      means paying again). **Trial 2** is judged when a real meet saves (3/3, the third at 105%+ of CN, top 3 with other
+      real players or the best of the meet with only computer lifters; ties to the lighter lifter, then the earlier
+      entry; the meet must end with a total); its result is a line on the result screen. Passing hires the coach and
+      makes them active; a hired coach's **"Be my coach"** switches back to them.
+    - **APPROVED by the user 2026-11-24 ("Commit save and publish" after Claude listed them):** the bench and deadlift
+      coaches use the same trials on their own lift; the choice of active coach is made by talking to the coach; a newly
+      hired coach becomes active at once.
+    - The bond counts real meets finished with that coach active (nothing unlocks yet). Admin panel: COACHES NEXT STEP
+      per coach and RESET.
+    - NOT YET: the gym owner as a figure in the gym; the chosen coach shown at your meets (only on your screen); the
+      three coach bodies (Blender, approval first); better quests; bond unlocks.
 
 ### 40.6 Daily quests (user, 2026-11-19, picked from Claude's options; BUILT 2026-11-19)
 
@@ -7872,7 +7889,7 @@ can fit"):**
   stay on the screen"): while any NPC conversation, the steak picker, the chef scene, the shop or the celebration
   spinner is open, every "E ..." prompt tile is hidden on that player's screen (PromptController.hide). Any new NPC
   screen must do the same.
-- **W CHEWS REDESIGN (user 2026-11-21, NOT BUILT YET; plan waiting for the user's answers):** a "beautiful", fancy
+- **W CHEWS REDESIGN (user 2026-11-21; BUILT 2026-11-21/22: the hall, kitchen, chef scene, meet meals and the cow's luck wheel are in the game (committed 82c7ce0 and later); the notes below record how it got there):** a "beautiful", fancy
   restaurant (the user's photos: a glowing glass-fronted restaurant entrance with steps, a fancy dining room, big
   clean stainless commercial kitchens) laid out as the user's plan: player entrance -> chef / steak handoff counter ->
   giant blender (left) and giant pan (right) -> cold storage, prep area and sinks along the back; a large, clean,
