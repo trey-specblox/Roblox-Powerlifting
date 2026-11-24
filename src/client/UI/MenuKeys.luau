@@ -17,10 +17,15 @@
 	and gets its way when the turn is over. The meet's own screen (scorecard, the turn's card)
 	stays.
 
+	LIFTING (user 2026-11-24, a phone: the luck chip "stays popped up during lifts"; "when someone is trying to lift
+	the uis disappear"): the same screens go, plus the boost and luck chips and the quest tracker, during ANY lift
+	attempt (the gym's lifts and practice too, LiftAttemptController.isAttemptActive), and come back as they were.
+
 	Display only.
 ]]
 
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local LiftAttemptController = require(script.Parent.Parent:WaitForChild("Lifting"):WaitForChild("LiftAttemptController"))
@@ -28,9 +33,14 @@ local LiftAttemptController = require(script.Parent.Parent:WaitForChild("Lifting
 local MenuKeys = {}
 
 -- The side menus' screens (their ScreenGui names): ADMIN, MEETS, COINS, STATS, TELEPORT, GEAR, EMOTES, and the shop.
-local HIDDEN_ON_TURN = { "AdminPanel", "MeetsTab", "Coins", "Stats", "Teleport", "Gear", "EmoteWheel", "Shop", "Ranks" }
+-- Also the boost and luck chips (BoostBar, "Boosts"), the cow's luck screen ("Luck") and the quest tracker.
+local HIDDEN_ON_TURN = { "AdminPanel", "MeetsTab", "Coins", "Stats", "Teleport", "Gear", "EmoteWheel", "Shop", "Ranks",
+	"Boosts", "Luck", "QuestTracker" }
 
 local onTurn = false
+-- Whether a lift attempt was running at the last check, and whether the screens are hidden now (on the turn OR lifting).
+local lifting = false
+local hidden = false
 -- While on the turn: each hidden screen, whether it should be on once the turn is over.
 local wanted: { [ScreenGui]: boolean } = {}
 local watchers: { RBXScriptConnection } = {}
@@ -45,12 +55,12 @@ function MenuKeys.isOnTurn(): boolean
 	return onTurn
 end
 
--- The lifter's turn at a meet starts (`on`) or is over: the side menus go, or come back as they were.
-function MenuKeys.setOnTurn(on: boolean)
-	if on == onTurn then
+-- Hides the screens (`on`) or brings them back as they were.
+local function setHidden(on: boolean)
+	if on == hidden then
 		return
 	end
-	onTurn = on
+	hidden = on
 	local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
 	if on then
 		if playerGui == nil then
@@ -62,7 +72,7 @@ function MenuKeys.setOnTurn(on: boolean)
 				wanted[gui] = gui.Enabled
 				gui.Enabled = false
 				table.insert(watchers, gui:GetPropertyChangedSignal("Enabled"):Connect(function()
-					if onTurn and gui.Enabled then
+					if hidden and gui.Enabled then
 						wanted[gui] = true
 						gui.Enabled = false
 					end
@@ -81,6 +91,32 @@ function MenuKeys.setOnTurn(on: boolean)
 		end
 		table.clear(wanted)
 	end
+end
+
+-- The lifter's turn at a meet starts (`on`) or is over: the side menus go, or come back as they were.
+function MenuKeys.setOnTurn(on: boolean)
+	if on == onTurn then
+		return
+	end
+	onTurn = on
+	setHidden(onTurn or lifting)
+end
+
+-- Every lift attempt hides them too (checked a few times a second: cheap, one boolean).
+if RunService:IsClient() then
+	local since = 0
+	RunService.Heartbeat:Connect(function(dt)
+		since += dt
+		if since < 0.1 then
+			return
+		end
+		since = 0
+		local now = LiftAttemptController.isAttemptActive()
+		if now ~= lifting then
+			lifting = now
+			setHidden(onTurn or lifting)
+		end
+	end)
 end
 
 return MenuKeys

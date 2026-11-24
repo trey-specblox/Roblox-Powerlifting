@@ -57,6 +57,15 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
   - DEADLIFT ON A PHONE: the LetterPad key to press next glows (deadlift colour, pulsing white edge), one by one
     (TypingUI Hooks.onNext -> LetterPad.next). STUDIO (ForcePhoneScreens, removed after): STANCE lit S, HIPS lit H;
     tapping F in FEET moved the glow to E, it stayed lit for the double E; the glow clears when the pull ends.
+- THIRD PHONE TEST (2026-11-24, user: "everything's good, but I noticed overlapping uis with the boost, and the luck ui
+  stays popped up during lifts. Make sure for now on uis don't overlap, and when someone is trying to lift the uis
+  disappear" - now a standing rule, memory ui-no-overlap-hide-on-lift). NOT COMMITTED:
+  - BoostBar: all chips in ONE column at the bottom right (luck at the foot, steak and meet meal above it), above the
+    jump button on a phone; the bottom middle is left to panels (the practice panel they sat on).
+  - MenuKeys: the side menus + Boosts, Luck and QuestTracker hide during ANY lift attempt (not only a meet turn) and
+    come back as they were.
+  - STUDIO: iPhone 17 Pro: chips at x 588-744, y 151-219, clear of the jump button and the bottom middle; computer:
+    bottom right corner. A squat: all ten screens off during it, back on 5 s later when it ended.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip

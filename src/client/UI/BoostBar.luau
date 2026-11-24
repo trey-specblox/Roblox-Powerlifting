@@ -3,7 +3,8 @@
 	BoostBar
 	Client / UI
 
-	The gain boosts you have running, as small chips at the bottom middle of the screen (GAME_DESIGN §40.7): today the
+	The gain boosts you have running, as small chips at the bottom right of the screen, above the luck chip (GAME_DESIGN
+	§40.7; moved from the bottom middle 2026-11-24 so they never sit on a panel): today the
 	steak meal, a glossy steak-red pill with the boost in a yellow badge ("+80%"), STEAK BOOST, the time left and a
 	thin bar that drains over the boost's 24 hours. When a cook finishes while you're in the game, a line says so, and
 	a green pill says the meal is waiting until you eat it. Nothing running and nothing waiting = nothing shown.
@@ -17,8 +18,8 @@
 	Display only: the server keeps the boosts (KitchenService, ProfileOperations, GainBoosts).
 
 	A third chip, in purple, is your LUCK from the mafia boss cow's wheel ("2x", the time left, the same draining bar):
-	it shows while a multiplier is in force, by itself at the bottom RIGHT of the screen (user 2026-11-22), above the
-	jump button on a touch screen.
+	it shows while a multiplier is in force, at the bottom RIGHT of the screen (user 2026-11-22), above the jump button
+	on a touch screen, at the foot of the same column.
 
 	PERFORMANCE: three small chips (about 40 instances); the text updates once a second; the ready chip's slow pulse
 	is one tween that runs only while that chip shows.
@@ -117,35 +118,30 @@ function BoostBar.start()
 	gui.DisplayOrder = 4
 	UIStyle.fitToScreen(gui)
 
+	-- ALL the chips in one column at the bottom RIGHT, luck at the bottom and the boosts stacked above it (user
+	-- 2026-11-24, a phone: the steak and meet meal chips at the bottom middle sat on top of the practice panel; "Make
+	-- sure for now on uis don't overlap"). The bottom middle is where panels open (practice, the meet's choices). On a
+	-- touch screen the jump button lives in that corner, so the column starts above it (the button is 70 px on a phone
+	-- and 120 on a tablet; the offset is in full-size pixels, scaled with the screen).
+	local columnLift = 10
+	if UIStyle.isTouchOnly() then
+		local camera = workspace.CurrentCamera
+		local short = if camera then math.min(camera.ViewportSize.X, camera.ViewportSize.Y) else 400
+		columnLift = math.floor((if short < 500 then 105 else 160) / UIStyle.screenScale())
+	end
 	local holder = Instance.new("Frame")
 	holder.Name = "Chips"
-	holder.AnchorPoint = Vector2.new(0.5, 1)
-	holder.Position = UDim2.new(0.5, 0, 1, -10)
-	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 3 + 20)
+	holder.AnchorPoint = Vector2.new(1, 1)
+	holder.Position = UDim2.new(1, -14, 1, -columnLift)
+	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 4 + 30)
 	holder.BackgroundTransparency = 1
 	holder.Parent = gui
 	local layout = Instance.new("UIListLayout")
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 	layout.Padding = UDim.new(0, 10)
 	layout.Parent = holder
-
-	-- Luck's own corner: the bottom right. On a touch screen the jump button lives there, so the chip sits above it
-	-- (the button is 70 px on a phone and 120 on a tablet; the offset is in full-size pixels, scaled with the screen).
-	local luckLift = 10
-	if UIStyle.isTouchOnly() then
-		local camera = workspace.CurrentCamera
-		local short = if camera then math.min(camera.ViewportSize.X, camera.ViewportSize.Y) else 400
-		luckLift = math.floor((if short < 500 then 105 else 160) / UIStyle.screenScale())
-	end
-	local luckHolder = Instance.new("Frame")
-	luckHolder.Name = "LuckChips"
-	luckHolder.AnchorPoint = Vector2.new(1, 1)
-	luckHolder.Position = UDim2.new(1, -14, 1, -luckLift)
-	luckHolder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT)
-	luckHolder.BackgroundTransparency = 1
-	luckHolder.Parent = gui
 
 	-- A glossy pill: a gradient fill with a dark edge and a soft glow, a shine on its top half. Returns the chip (hidden)
 	-- and its fill (to put things on).
@@ -223,8 +219,8 @@ function BoostBar.start()
 		Color3.fromRGB(110, 170, 255), "MEET MEAL BOOST")
 	-- Luck from the mafia boss cow's wheel (GAME_DESIGN §40.7): read from this player's attributes, which the server
 	-- keeps current (LuckService).
-	local luckChip, luckText, luckClock, luckDrain = boostChip("Luck", 3, LUCK_TOP, LUCK_BOTTOM, Color3.fromRGB(190, 130, 255),
-		"LUCK", luckHolder)
+	local luckChip, luckText, luckClock, luckDrain = boostChip("Luck", 9, LUCK_TOP, LUCK_BOTTOM, Color3.fromRGB(190, 130, 255),
+		"LUCK")
 	local function drawLuck()
 		if luckHeld then
 			return
