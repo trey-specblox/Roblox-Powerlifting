@@ -491,6 +491,32 @@ function AdminPanel.start()
 			ask("GiveEntrance", { userId = targetUserId, id = id })
 		end)
 	end
+	-- Medals and trophies (GAME_DESIGN §42), as a meet podium gives them (AdminService GiveAward): a row of medals, a row of
+	-- trophies. Each tap adds one more to the count.
+	local awardY = entranceY + 26 + math.ceil(#EntranceConfig.Order / perRow) * 42 + GAP
+	local awardTitle = UIStyle.text(statsPage, "AwardTitle", UDim2.fromOffset(MARGIN, awardY), UDim2.new(1, -2 * MARGIN, 0, 22),
+		SIZES.small, C.muted, UIStyle.font(Enum.FontWeight.Bold))
+	awardTitle.Text = "GIVE A MEDAL OR TROPHY (ADDS ONE TO THE COUNT)"
+	local awards = {
+		{ { "Medal", "Local", 1, "LOCAL GOLD" }, { "Medal", "Local", 2, "LOCAL SILVER" }, { "Medal", "Local", 3, "LOCAL BRONZE" } },
+		{ { "Trophy", "Regional", 1, "REGIONAL 1ST" }, { "Trophy", "State", 1, "STATE 1ST" }, { "Trophy", "Nationals", 1, "NATIONALS 1ST" } },
+	}
+	for row, list in ipairs(awards) do
+		for index, award in ipairs(list) do
+			local position, size = cell(index, #list, awardY + 26 + (row - 1) * 42, 36)
+			UIStyle.button(statsPage, string.format("Award_%s_%s_%d", award[1], award[2], award[3]), award[4], position, size,
+				"outline", function()
+					ask("GiveAward", { userId = targetUserId, kind = award[1], level = award[2], place = award[3] })
+				end)
+		end
+	end
+	-- Room under the last row so it scrolls fully into view (it sat on the bottom edge).
+	local spacer = Instance.new("Frame")
+	spacer.Name = "BottomSpace"
+	spacer.BackgroundTransparency = 1
+	spacer.Position = UDim2.fromOffset(0, awardY + 26 + #awards * 42)
+	spacer.Size = UDim2.new(1, 0, 0, 16)
+	spacer.Parent = statsPage
 
 	UIStyle.exitButton(holder, "Back", "BACK", UDim2.new(1, -150, 1, 20), function()
 		holder.Visible = false

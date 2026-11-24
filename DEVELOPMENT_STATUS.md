@@ -35,6 +35,10 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
 - NOT TESTED: a whole real meet giving a medal (the call reuses the GiveAward save path); two players seeing each
   other's counter; phone size of the new HOLD button.
 - Medals/trophies come from solo meets too (user: "yea we can give it to them in solo meets too").
+- ADMIN PANEL GIVE AWARD BUTTONS (2026-11-24, the user on their phone: "I don't see the give award"; the server action
+  existed but had no button): PLAYER STATS page, two rows at the bottom: LOCAL GOLD / SILVER / BRONZE medals and
+  REGIONAL / STATE / NATIONALS 1ST trophies. STUDIO: clicked STATE 1ST and LOCAL GOLD -> both in the inventory; the
+  last row scrolls fully into view.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip
