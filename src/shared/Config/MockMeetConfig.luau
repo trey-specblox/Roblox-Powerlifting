@@ -31,7 +31,10 @@ MockMeetConfig.SlotAttribute = "MockMeetSlot"
 	reach them. One slot per player at most, so MaxSlots matches the server's
 	player limit.
 ]]
-MockMeetConfig.Origin = Vector3.new(4000, 1000, 0)
+-- (Moved from 4000, 1000, 0 on 2026-11-24: the W Chews kitchen hall was built at that same spot in 2026-11-20
+-- (KitchenConfig.HallOrigin), so its dispenser and machines stood inside every Mock Meet room; the user saw them in a
+-- coach's trial. Other far-off places: Local meets -4000, State 0/+4000, Nationals 0/-4000, the Kitchen 4000.)
+MockMeetConfig.Origin = Vector3.new(8000, 1000, 0)
 MockMeetConfig.SpacingStuds = 200
 MockMeetConfig.MaxSlots = 60
 

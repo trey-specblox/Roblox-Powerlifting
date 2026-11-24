@@ -57,6 +57,8 @@ export type Room = {
 	liftSpot: CFrame,
 	-- The coach's speech bubble (nil if the coach could not be built).
 	coachLine: TextLabel?,
+	-- The competition rack on the platform (the lifts are animated at it: MeetLiftAnimation).
+	rack: Model?,
 }
 
 local function slotCentre(slot: number): Vector3
@@ -320,6 +322,7 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 		arrival = CFrame.lookAt(arrivalAt, arrivalAt + Vector3.zAxis),
 		liftSpot = CFrame.lookAt(liftAt, liftAt - Vector3.zAxis),
 		coachLine = coachLine,
+		rack = model:FindFirstChild("CompetitionRack") :: Model?,
 	}, nil
 end
 

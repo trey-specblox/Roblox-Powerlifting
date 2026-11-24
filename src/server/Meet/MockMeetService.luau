@@ -83,6 +83,9 @@ local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
+local MeetLiftAnimation = require(script.Parent:WaitForChild("MeetLiftAnimation"))
+local StationVisuals = require(ServerFolder:WaitForChild("Training"):WaitForChild("StationVisuals"))
+local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 
 local MockMeetService = {}
 
@@ -434,7 +437,13 @@ local function runAttempt(player: Player, visit: Visit, lift: string, attemptNum
 		weightKg = chosen or default
 	end
 
-	-- Ready: on the platform, LIFT to start.
+	-- Ready: on the platform, LIFT to start. The rack set for the lift (the bench only for bench; for deadlift only the
+	-- bar on the floor) and the bar loaded with this attempt's plates, as at a real meet (LocalMeetVenue.rackFor/loadBar).
+	local platformRack = visit.room.rack
+	if platformRack and platformRack.Parent then
+		StationVisuals.show(platformRack, lift, true)
+		StationVisuals.loadBar(platformRack, weightKg)
+	end
 	visit.readyPressed = false
 	standAt(player, visit, visit.room.liftSpot, true)
 	MockMeetArena.coachSays(visit.room, pick(COACH_READY))
@@ -448,11 +457,61 @@ local function runAttempt(player: Player, visit: Visit, lift: string, attemptNum
 		return false
 	end
 
-	-- Lift.
+	-- Lift. THE LIFT IS ANIMATED AT THE RACK, as at a real meet (MeetLiftAnimation, GAME_DESIGN §37.5; user 2026-11-24:
+	-- "there are also no animation" in a coach's trial; the Mock Meet was built before the meet animations): to the bar,
+	-- the unrack, the lift following the minigame's phases, then the finish or the fail animation, the rerack, and the bar's
+	-- own sounds at those moments (it used to make one sound at the end, with no lift to go with it).
 	local verdict: string? = nil
+	local handle: MeetLiftAnimation.Handle? = nil
+	local failedPart = 1
+	local rack = visit.room.rack
+	local function barSound(cue: string)
+		local character = player.Character
+		local at = if rack then rack:GetPivot().Position elseif character then character:GetPivot().Position else nil
+		if at then
+			LocalMeetRemotes.createOnServer(ReplicatedStorage).sound:FireAllClients(cue, at)
+		end
+	end
+	local function hold(seconds: number): boolean
+		if seconds > 0 then
+			waitFor(player, visit, seconds, function()
+				return false
+			end)
+		end
+		return stillIn(player, visit)
+	end
 	if ready then
+		local character = player.Character
+		local approach = if rack then MeetLiftAnimation.approachFor(rack, lift) else nil
+		if approach then
+			standAt(player, visit, approach, true)
+		end
+		handle = if character and rack then MeetLiftAnimation.begin(character, rack, lift) else nil
+		if handle then
+			if lift ~= "Deadlift" then
+				task.delay(MeetLiftAnimation.unrackSoundIn(handle), function()
+					if stillIn(player, visit) then
+						barSound("BarRack")
+					end
+				end)
+			end
+			if not hold(MeetLiftAnimation.unrack(handle)) then
+				MeetLiftAnimation.stop(handle)
+				return false
+			end
+		end
 		local ok, problem = LiftAttemptService.startServerAttempt(player, lift, weightKg, function(result)
 			verdict = result
+		end, function(event: string, index: number, _count: number, seconds: number?, passed: boolean?)
+			if not stillIn(player, visit) then
+				return
+			end
+			if event == "start" then
+				failedPart = index
+				MeetLiftAnimation.phase(handle, index, seconds, false)
+			elseif passed then
+				MeetLiftAnimation.progress(handle, index, 1)
+			end
 		end)
 		if ok then
 			sendState(player, visit, "Lifting", { lift = lift, attemptNumber = attemptNumber, declaredKg = weightKg })
@@ -460,6 +519,7 @@ local function runAttempt(player: Player, visit: Visit, lift: string, attemptNum
 				return verdict ~= nil
 			end)
 			if not stillIn(player, visit) then
+				MeetLiftAnimation.stop(handle)
 				return false
 			end
 		else
@@ -470,11 +530,55 @@ local function runAttempt(player: Player, visit: Visit, lift: string, attemptNum
 	end
 	local result: AttemptRules.AttemptResult = if verdict == "GoodLift" then "GoodLift" else "NoLift"
 
-	-- The bar's sound (a lift that ran only: not when time ran out). Sound only.
-	local character = player.Character
-	if verdict ~= nil and character then
-		LocalMeetRemotes.createOnServer(ReplicatedStorage).sound:FireAllClients(
-			MeetSoundConfig.endOfLiftCue(lift, result == "GoodLift", 1, weightKg), character:GetPivot().Position)
+	-- The end of the lift on the platform: the finish (good) or the player's fail animation for the part that failed,
+	-- the bar landing or being caught, then the rerack (good) or getting up, and the bar's sounds with them.
+	if handle and verdict ~= nil then
+		local good = result == "GoodLift"
+		local fail = if good then nil
+			else StationAnimationConfig.failFor(lift, failedPart, PlayerDataService.getFailStyle(player, attemptNumber))
+		local finishSeconds = MeetLiftAnimation.finish(handle, good, fail)
+		local barCue = MeetSoundConfig.endOfLiftCue(lift, good, failedPart, weightKg)
+		if good and lift == "Deadlift" then
+			task.delay(finishSeconds, function()
+				if stillIn(player, visit) then
+					barSound(barCue)
+				end
+			end)
+		elseif not good and fail then
+			task.delay(fail.release + MeetSoundConfig.fallSeconds(lift, failedPart), function()
+				if stillIn(player, visit) then
+					barSound(barCue)
+				end
+			end)
+		end
+		if not hold(if fail then fail.length else finishSeconds) then
+			MeetLiftAnimation.stop(handle)
+			return false
+		end
+		if good then
+			local racked, clear = MeetLiftAnimation.rerack(handle)
+			if lift ~= "Deadlift" then
+				task.delay(racked + MeetSoundConfig.RackGlideSeconds, function()
+					if stillIn(player, visit) then
+						barSound("BarRack")
+					end
+				end)
+			end
+			if not hold(clear) then
+				MeetLiftAnimation.stop(handle)
+				return false
+			end
+		else
+			if not hold(MeetLiftAnimation.getUp(handle)) then
+				MeetLiftAnimation.stop(handle)
+				return false
+			end
+		end
+	end
+	MeetLiftAnimation.stop(handle)
+	if handle then
+		-- Back on their feet at the lift spot for the result.
+		standAt(player, visit, visit.room.liftSpot, true)
 	end
 
 	-- Result.

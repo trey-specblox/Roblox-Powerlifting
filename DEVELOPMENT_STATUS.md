@@ -29,6 +29,20 @@ price with PAY / NOT NOW; admin CoachStep cycles and CoachReset works; console c
 NOT TESTED: trial 2 with other real players (top 3), leaving the room mid-trial (coded as a fail), the dialogue's
 trial 2 and "Be my coach" lines on screen, a phone.
 
+**MOCK MEET FIXES (2026-11-24, the user's phone during a coach trial: "The chef building and the chef spawned in with the
+mock meet ... And there are also no animation and the only sounds that play are the deadlift bar dropping sound").
+NOT COMMITTED.**
+- The Mock Meet rooms and the W Chews kitchen hall were BOTH at (4000, 1000, 0) since 2026-11-20: every Mock Meet room
+  had the kitchen's machines in it. MockMeetConfig.Origin -> (8000, 1000, 0) (rooms run +X from there, 200 apart).
+- The Mock Meet never animated its lifts (built before the meet animations): MockMeetService.runAttempt now does what a
+  real meet does: StationVisuals.show(rack, lift, true) + loadBar at Ready (the bar was missing too), walk to
+  MeetLiftAnimation.approachFor, begin, BarRack at the unrack, unrack, the minigame phases move the animation (timed,
+  not live-driven), finish or the player's fail animation, the bar's landing/caught/thud sound at its moment, rerack +
+  BarRack or getUp, stop. MockMeetArena.Room has `rack`.
+- STUDIO: room at x 8000, no kitchen near; forced Pass: walk-up, unrack and squat tracks played, bar on the back
+  mid-squat (screenshot), BarRack at unrack and rerack; forced Fail: squat fail 1 played, BarCaught, then TRIAL FAILED.
+  Console clean. NOT TESTED: bench and deadlift in a Mock Meet (same code path the real meets use), a phone.
+
 **2026-11-24 LATEST: published place version 1072 (coaching stage 1; commit 34b9cfb); 1069 = LEAVE sign moved clear of the doorway (6bbbf62); 1068 = holding the LEAVE sign works with a finger (f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
