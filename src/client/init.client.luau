@@ -60,6 +60,14 @@ task.spawn(require(UIFolder:WaitForChild("RankNameTags")).start)
 -- clothes, food from the chef, medals and trophies, in one screen on the same tab and key.
 local InventoryMenu = require(UIFolder:WaitForChild("InventoryMenu"))
 task.spawn(InventoryMenu.start)
+-- Held items (GAME_DESIGN §42) are Roblox Tools in the hand; the INVENTORY is the item screen, so Roblox's own backpack bar
+-- stays hidden. The floating win counter over held medals and trophies:
+pcall(function()
+	game:GetService("StarterGui"):SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+end)
+task.spawn(require(UIFolder:WaitForChild("HeldCounters")).start)
+-- Food is carried in both hands: each screen fits the plate onto the carrier's palms.
+task.spawn(require(script:WaitForChild("World"):WaitForChild("HeldPlates")).start)
 
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))

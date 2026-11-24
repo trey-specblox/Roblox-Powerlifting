@@ -13,6 +13,33 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**2026-11-24 LATEST: main is commit 15b5326 (inventory stages 1-2), published as place version 1045. Everything in the
+blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
+
+**INVENTORY STAGES 3-4: HOLDING, MEDALS/TROPHIES, WIN COUNTER (2026-11-24, user: "Start building"; GAME_DESIGN §42).
+NOT COMMITTED.** Files: HoldService (new), HeldCounters (new), InventoryService, InventoryRemotes (Hold),
+InventoryMenu (HOLD/PUT AWAY, award pictures, "1 STEAK"), AdminService (GiveAward), Trophies (copy + a load race fix:
+a second caller got nil while the model downloaded), LocalMeetService (one award call + `Once` table),
+init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (new), art/animations/Carry_FoodTray.rbxmx, client World/HeldPlates (new).
+- **LocalMeetService is AT LUAU'S 200-LOCAL LIMIT in its main chunk** ("Out of local registers ... exceeded limit 200",
+  the whole server stops loading). Constant locals (`local X = 0.5`) do NOT count (the compiler folds them); requires,
+  tables and functions do. Four once-used requires went into one `Once` table to make room. Add nothing at the top
+  level there; put new meet code in other modules.
+- STUDIO (2026-11-24): server loads clean; GiveAward x3 State trophy + Local medal -> stacked x3 / x1; HOLD trophy, medal,
+  steak, crate belt piece -> Tool in hand, upright in the fist (Grip without a turn; -90 laid it on its side);
+  WinCounter "x3 STATE CHAMPION" in gold; backpack bar hidden; HOLD from the INVENTORY closes the screen (fixed:
+  the button called `say` before it existed); during a lift the item is put away and HOLD answers "Not while lifting.";
+  console clean.
+- NOT TESTED: a whole real meet giving a medal (the call reuses the GiveAward save path); two players seeing each
+  other's counter; phone size of the new HOLD button.
+- Medals/trophies come from solo meets too (user: "yea we can give it to them in solo meets too").
+- FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
+  (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
+  (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip
+  weld's C1 so the plate sits flat on both palms (setting Tool.Grip on a client does NOT move the weld: checked).
+  STUDIO: plate centred between the hands and level, standing and walking at 16 studs/s; put away + carry stopped
+  when a lift starts; console clean.
+
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 

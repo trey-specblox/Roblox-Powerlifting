@@ -47,7 +47,10 @@ local CelebrationConfig = require(Shared:WaitForChild("Config"):WaitForChild("Ce
 local MockMeetService = require(ServerRoot:WaitForChild("Meet"):WaitForChild("MockMeetService"))
 local KitchenPans = require(ServerRoot:WaitForChild("Economy"):WaitForChild("KitchenPans"))
 local RankService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("RankService"))
+local InventoryService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("InventoryService"))
+local HoldService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("HoldService"))
 local RankConfig = require(Shared:WaitForChild("Config"):WaitForChild("RankConfig"))
+local MeetLevelConfig = require(Shared:WaitForChild("Config"):WaitForChild("MeetLevelConfig"))
 
 local AdminService = {}
 
@@ -297,6 +300,24 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		end
 		RankService.refresh(target)
 		return true, target.Name .. ": rank reset to Unranked (titles and coins kept)."
+	end,
+	-- GIVE AWARD (GAME_DESIGN §42, for testing): a medal or trophy, as a meet podium would give it.
+	GiveAward = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		local kind, level, place = value.kind, value.level, value.place
+		if (kind ~= "Medal" and kind ~= "Trophy") or typeof(level) ~= "string" or MeetLevelConfig.Levels[level] == nil
+			or typeof(place) ~= "number" or place < 1 or place > 3 then
+			return false, "That isn't a medal or trophy."
+		end
+		local id = PlayerDataService.addAward(target, kind, level, math.floor(place))
+		if id == nil then
+			return false, target.Name .. ": that player's save hasn't loaded, or the inventory is full."
+		end
+		InventoryService.changed(target)
+		return true, string.format("%s: %s given.", target.Name, HoldService.awardLabel(kind, level, math.floor(place)))
 	end,
 	-- GIVE TITLE (GAME_DESIGN §41): a title by its RankConfig id, shown with the same TITLE UNLOCKED card a meet gives.
 	GiveTitle = function(_player: Player, value: any): (boolean, string)

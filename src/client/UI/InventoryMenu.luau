@@ -241,14 +241,21 @@ function InventoryMenu.start()
 	descBody.TextWrapped = true
 	descBody.TextYAlignment = Enum.TextYAlignment.Top
 	local status = UIStyle.text(desc, "Status", UDim2.fromOffset(170, 128), UDim2.fromOffset(440, 28), SIZES.small, C.muted)
-	local primary = make("TextButton", { Name = "Primary", Position = UDim2.new(1, -196, 0, 20), Size = UDim2.fromOffset(180, 54),
+	local primary = make("TextButton", { Name = "Primary", Position = UDim2.new(1, -196, 0, 10), Size = UDim2.fromOffset(180, 46),
 		BackgroundColor3 = C.yellow, BorderSizePixel = 0, AutoButtonColor = true, FontFace = UIStyle.heading(), TextSize = SIZES.heading,
 		TextColor3 = C.ink, Text = "", Visible = false, Parent = desc })
 	UIFancy.corner(primary, UDim.new(0, 10))
-	local secondary = make("TextButton", { Name = "Secondary", Position = UDim2.new(1, -196, 0, 86), Size = UDim2.fromOffset(180, 44),
+	local secondary = make("TextButton", { Name = "Secondary", Position = UDim2.new(1, -196, 0, 62), Size = UDim2.fromOffset(180, 40),
 		BackgroundColor3 = C.empty, BorderSizePixel = 0, AutoButtonColor = true, FontFace = UIStyle.heading(), TextSize = SIZES.body,
 		TextColor3 = C.white, Text = "", Visible = false, Parent = desc })
 	UIFancy.corner(secondary, UDim.new(0, 10))
+	-- HOLD / PUT AWAY (GAME_DESIGN §42): any item, held out in the hand like a Roblox gear (HoldService).
+	local holdButton = make("TextButton", { Name = "Hold", Position = UDim2.new(1, -196, 0, 108), Size = UDim2.fromOffset(180, 40),
+		BackgroundColor3 = C.navy, BorderSizePixel = 0, AutoButtonColor = true, FontFace = UIStyle.heading(), TextSize = SIZES.body,
+		TextColor3 = C.white, Text = "HOLD", Visible = false, Parent = desc })
+	UIFancy.corner(holdButton, UDim.new(0, 10))
+	UIStyle.stroke(holdButton, C.yellow, 1.5, 0.2)
+	local holdKey: string? = nil
 	local primaryAction: (() -> ())? = nil
 	local secondaryAction: (() -> ())? = nil
 	primary.Activated:Connect(function()
@@ -284,6 +291,33 @@ function InventoryMenu.start()
 		return viewport
 	end
 
+	-- The trophy or medal the server put in ReplicatedStorage.ItemModels, in this one's metal.
+	local function awardPreview(parent: GuiObject, kind: string, colour: Color3): ViewportFrame?
+		local models = ReplicatedStorage:FindFirstChild("ItemModels")
+		local source = models and models:FindFirstChild(kind)
+		if source == nil or not source:IsA("Model") then
+			return nil
+		end
+		local viewport = make("ViewportFrame", { Name = "Preview", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1),
+			Ambient = Color3.fromRGB(170, 160, 150), LightColor = Color3.fromRGB(255, 245, 230), LightDirection = Vector3.new(-0.4, -1, 0.3),
+			Parent = parent })
+		local model = source:Clone()
+		for _, part in ipairs(model:GetDescendants()) do
+			if part:IsA("BasePart") and (part.Name == "Trophy_Metal" or string.find(part.Name, "Disc") ~= nil) then
+				part.Color = colour
+			end
+		end
+		model:PivotTo(CFrame.Angles(0, math.rad(20), 0))
+		model.Parent = viewport
+		local size = model:GetExtentsSize()
+		local reach = math.max(size.X, size.Y, size.Z)
+		local camera = make("Camera", { FieldOfView = 30, Parent = viewport })
+		local cf = model:GetBoundingBox()
+		camera.CFrame = CFrame.lookAt(cf.Position + Vector3.new(0, reach * 0.25, -reach * 2.1), cf.Position)
+		viewport.CurrentCamera = camera
+		return viewport
+	end
+
 	local function previewFor(parent: GuiObject, entry: Entry)
 		if entry.piece or entry.shop then
 			local look = if entry.piece then ShopConfig.find(entry.piece.look) else entry.shop
@@ -292,12 +326,14 @@ function InventoryMenu.start()
 			end
 		elseif entry.item and entry.item.type == "Food" then
 			modelPreview(parent, if entry.item.food == "Meal" then "MeetMeal" else "BigSteak")
-		elseif entry.item then
-			-- (medal and trophy models arrive with Stage 4; a big place letter until then)
-			local letter = UIStyle.text(parent, "Place", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), SIZES.heading, entry.colour, UIStyle.heading())
-			letter.Text = string.format("%s\n%s", if entry.item.type == "Trophy" then "TROPHY" else "MEDAL", placeText(entry.item.place or 3))
-			letter.TextXAlignment = Enum.TextXAlignment.Center
-			letter.TextScaled = true
+		elseif entry.item and (entry.item.type == "Trophy" or entry.item.type == "Medal") then
+			local viewport = awardPreview(parent, entry.item.type, entry.colour)
+			if viewport == nil then
+				local letter = UIStyle.text(parent, "Place", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), SIZES.heading, entry.colour, UIStyle.heading())
+				letter.Text = string.format("%s\n%s", if entry.item.type == "Trophy" then "TROPHY" else "MEDAL", placeText(entry.item.place or 3))
+				letter.TextXAlignment = Enum.TextXAlignment.Center
+				letter.TextScaled = true
+			end
 		end
 	end
 
@@ -334,7 +370,7 @@ function InventoryMenu.start()
 			if item.type == "Food" then
 				local meal = item.food == "Meal"
 				table.insert(list, { key = "item:" .. id, category = "FOOD", name = string.format("%d %s", item.count or 0,
-					if meal then "MEET MEALS" else "STEAKS"), colour = FOOD_COLOUR, qty = item.qty, item = item, itemId = id,
+					if meal then (if item.count == 1 then "MEET MEAL" else "MEET MEALS") else (if item.count == 1 then "STEAK" else "STEAKS")), colour = FOOD_COLOUR, qty = item.qty, item = item, itemId = id,
 					rank = 2000 + (item.count or 0) })
 			elseif item.type == "Medal" or item.type == "Trophy" then
 				local place = item.place or 3
@@ -455,6 +491,14 @@ function InventoryMenu.start()
 		end
 		primary.Visible, secondary.Visible = false, false
 		primaryAction, secondaryAction = nil, nil
+		holdButton.Visible = entry ~= nil
+		holdKey = if entry then entry.key else nil
+		if entry then
+			local holding = player:GetAttribute("HeldItem") == entry.key
+			holdButton.Text = if holding then "PUT AWAY" else "HOLD"
+			holdButton.BackgroundColor3 = if holding then C.yellow else C.navy
+			holdButton.TextColor3 = if holding then C.ink else C.white
+		end
 		if entry == nil then
 			descName.Text, descSub.Text = "", ""
 			descBody.Text = "Pick an item to see it here."
@@ -552,8 +596,8 @@ function InventoryMenu.start()
 		elseif entry.item then
 			local item = entry.item
 			descSub.Text = string.format("%d WON", item.qty or 1)
-			descBody.Text = if item.type == "Trophy" then "Won on the podium. Hold it out to show it off."
-				else "A medal from a Local meet podium."
+			descBody.Text = (if item.type == "Trophy" then "Won on the podium at a Regional, State or National meet."
+				else "Won on a Local meet podium.") .. " HOLD it and everyone nearby sees how many you've won."
 		end
 	end
 
@@ -723,6 +767,43 @@ function InventoryMenu.start()
 	end
 	gearToggle.Activated:Connect(function()
 		task.spawn(askClothes, clothesRemotes.gear, not (clothesView and clothesView.gearOn))
+	end)
+
+	-- (connected down here, not next to the button: it calls `say`, which is defined after the button is made)
+	holdButton.Activated:Connect(function()
+		local key = holdKey
+		if key == nil or asking then
+			return
+		end
+		asking = true
+		local ok, holding, message = pcall(function()
+			return itemRemotes.hold:InvokeServer(key)
+		end)
+		asking = false
+		if ok then
+			say(if typeof(message) == "string" then message else "", holding == true)
+			if holding == true then
+				holder.Visible = false -- close the screen so the lifter sees what they hold
+			end
+		end
+	end)
+
+	player:GetAttributeChangedSignal("HeldItem"):Connect(function()
+		if holder.Visible then
+			refreshAll()
+		end
+	end)
+	-- On their turn at a meet nothing is held (the server also puts it away during any lift).
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			local heldKey = player:GetAttribute("HeldItem")
+			if MenuKeys.isOnTurn() and typeof(heldKey) == "string" and heldKey ~= "" then
+				pcall(function()
+					return itemRemotes.hold:InvokeServer(false)
+				end)
+			end
+		end
 	end)
 
 	itemRemotes.changed.OnClientEvent:Connect(function(view: any)

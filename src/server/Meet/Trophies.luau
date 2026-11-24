@@ -22,11 +22,18 @@ local template: Model? = nil
 local loadTried = false
 local given: { Model } = {}
 
+local loading = false
+
 local function load(): Model?
+	-- A second caller while the first is still downloading waits for it (it used to get nil: no trophy picture).
+	while loading do
+		task.wait()
+	end
 	if loadTried then
 		return template
 	end
 	loadTried = true
+	loading = true
 	if MeetLevelConfig.TrophyAssetId == 0 then
 		return nil
 	end
@@ -43,6 +50,7 @@ local function load(): Model?
 		assert(model:FindFirstChild("Trophy_Metal"), "Trophy_Metal missing")
 		template = model
 	end)
+	loading = false
 	if not ok then
 		warn("[Trophies] the trophy model did not load (no trophies): " .. tostring(problem))
 	end
@@ -101,6 +109,32 @@ function Trophies.clearFrom(characters: { Model })
 			table.remove(given, index)
 		end
 	end
+end
+
+--[[
+	A loose trophy for `place` (1-3), coloured gold, silver or bronze, unanchored and touch-free, for the INVENTORY's held
+	trophies (HoldService, GAME_DESIGN §42). Nil without the model. It may yield the first time (the model loads).
+]]
+function Trophies.copy(place: number): Model?
+	local colour: Color3? = MeetLevelConfig.TrophyColours[place]
+	local model = load()
+	if model == nil or colour == nil then
+		return nil
+	end
+	local trophy = model:Clone()
+	for _, part in ipairs(trophy:GetDescendants()) do
+		if part:IsA("BasePart") then
+			if part.Name == "Trophy_Metal" then
+				part.Color = colour :: Color3
+				part.Material = Enum.Material.Metal
+				part.Reflectance = 0.15
+			else
+				part.Color = Color3.fromRGB(24, 24, 26)
+				part.Material = Enum.Material.SmoothPlastic
+			end
+		end
+	end
+	return trophy
 end
 
 -- Loads the model ahead of the first ceremony (it yields).

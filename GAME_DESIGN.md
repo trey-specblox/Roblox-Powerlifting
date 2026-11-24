@@ -8330,7 +8330,7 @@ cook multiple things at once all with different timers."
   takes at most 250), eating the same boost adds its hours up to 24, save version 36. Extra pans wait for the user's
   Game Pass.
 
-## 42. Inventory, holding items, food pick-up, medals and trophies (user, 2026-11-24; NOT BUILT)
+## 42. Inventory, holding items, food pick-up, medals and trophies (user, 2026-11-24; BUILT)
 
 The user (2026-11-24, from their phone, with a reference screenshot of another game's inventory): "make it where
 players can just walk up to the chef and ask for their food then it appears in their Inventory, because as of right now
@@ -8348,9 +8348,25 @@ Decisions (picked from Claude's options, same day):
 |---|---|
 | The INVENTORY screen | **Replaces the GEAR menu.** Categories on the left (ALL, GEAR, FOOD, TROPHIES, MISC), the items in a grid in the middle (rarity-coloured frames), the equip slots on the right (belt, singlet, wrist wraps, knee sleeves), the chosen item's description at the bottom. Layout inspired by the user's reference; never its artwork |
 | Food | **Collected from the chef** when it's done ("ask for their food"), then kept in the inventory as an item (its kind, size, boost and hours), **eaten from the inventory** whenever the player wants, and tradable later. **It never spoils** (spoiling can come with the trading center if needed) |
-| Holding | Any item can be **held**: held out in the hand like a Roblox gear; **food is carried over the head like a waiter** bringing a plate |
+| Holding | Any item can be **held**: held out in the hand like a Roblox gear; **food is carried in front with BOTH hands, palms up under the plate** (changed by the user 2026-11-24 after seeing the over-the-head pose: "just change it to where two hands are foward holding the plate") |
 | Medals and trophies | **Top 3 at a Local meet: a gold / silver / bronze MEDAL. Top 3 at Regional, State or Nationals: a TROPHY** (the podium trophy model). Each kind stacks with a count |
 | The win counter | A small floating label over the medal or trophy **while it is held, seen only by players nearby** ("x12 STATE CHAMPION"); nothing floats when it is put away |
 
 Also the same day: **every screen must fit a phone** ("make sure screens don't do this, scale it accordingly with
 mobile"): UIStyle.fitToScreen now shrinks a panel to the screen's height and width, and the admin panel's pages scroll.
+
+**Built (2026-11-24):** stages 1-2 (collect from the chef, the INVENTORY with the slots on the body; commit 15b5326)
+and stages 3-4 (uncommitted at the time of writing):
+- **HOLD / PUT AWAY** on every item in the INVENTORY (HoldService): a real Roblox Tool, held upright in the fist in
+  the standard hold pose; one thing at a time; the Roblox backpack bar is hidden. Put away during any lift, on the
+  lifter's turn at a meet, when the item is gone, and on respawn. Tested in Studio: trophy, medal, food, gear piece.
+- **Medals and trophies from meets:** the whole-field top 3 (the podium they stand on) at the end of the meet, into
+  the inventory with a count, and a line on the result screen ("NEW STATE CHAMPION! It's in your INVENTORY.").
+  **Solo meets give them too** (user 2026-11-24, asked whether only full-reward meets should: "yea we can give it to
+  them in solo meets too"). Admin **GiveAward** gives one for testing.
+- **The win counter** (client HeldCounters): "x3 STATE CHAMPION" in the metal's colour over the held medal or
+  trophy, drawn within 60 studs, never through walls.
+- **Food carried in both hands** (animation Carry_FoodTray, rbxassetid://107112559176114, uploaded with the user's OK;
+  art/scripts/carry_animations.py; the over-the-head pose was made first and replaced at the user's request): the arms
+  only, over the walk; each screen fits the plate flat on top of both palms (client HeldPlates). Tested in Studio:
+  standing, walking at full speed (stays centred and level), put away when a lift starts.

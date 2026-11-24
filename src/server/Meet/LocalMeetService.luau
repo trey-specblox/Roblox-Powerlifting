@@ -101,13 +101,10 @@ local GearStatsConfig = require(ConfigFolder:WaitForChild("GearStatsConfig"))
 local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
 local MeetConfig = require(ConfigFolder:WaitForChild("MeetConfig"))
 local LiftAttemptConfig = require(ConfigFolder:WaitForChild("LiftAttemptConfig"))
-local ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig"))
 local StationAnimationConfig = require(ConfigFolder:WaitForChild("StationAnimationConfig"))
 local MeetSoundConfig = require(ConfigFolder:WaitForChild("MeetSoundConfig"))
-local CheerConfig = require(ConfigFolder:WaitForChild("CheerConfig"))
 local EntranceConfig = require(ConfigFolder:WaitForChild("EntranceConfig"))
 local CelebrationConfig = require(ConfigFolder:WaitForChild("CelebrationConfig"))
-local EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig"))
 local MeetFolder = Shared:WaitForChild("Meet")
 local LocalMeetRemotes = require(MeetFolder:WaitForChild("LocalMeetRemotes"))
 local MockMeetRemotes = require(MeetFolder:WaitForChild("MockMeetRemotes"))
@@ -139,8 +136,15 @@ local PlayerDataService = require(PlayerDataFolder:WaitForChild("PlayerDataServi
 local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("GearService"))
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
-local QuestService = require(PlayerDataFolder:WaitForChild("QuestService"))
 local RankService = require(PlayerDataFolder:WaitForChild("RankService"))
+-- Modules this file uses in only one place, in one table: the main chunk is at Luau's 200-local limit (each top-level
+-- `local` that holds a value takes one of 200 slots; a table entry takes none).
+local Once = {
+	ProgressionConfig = require(ConfigFolder:WaitForChild("ProgressionConfig")),
+	CheerConfig = require(ConfigFolder:WaitForChild("CheerConfig")),
+	EmoteConfig = require(ConfigFolder:WaitForChild("EmoteConfig")),
+	QuestService = require(PlayerDataFolder:WaitForChild("QuestService")),
+}
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local TrainingStationService = require(ServerFolder:WaitForChild("Training"):WaitForChild("TrainingStationService"))
 local CardioMachineService = require(ServerFolder:WaitForChild("World"):WaitForChild("CardioMachineService"))
@@ -903,7 +907,7 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	if player == nil or (totalKg == nil and not settlesCn) then
 		return lines
 	end
-	local cnCost = if current.rewards then 1 else ProgressionConfig.MeetCnAllowance.SoloCostMultiplier
+	local cnCost = if current.rewards then 1 else Once.ProgressionConfig.MeetCnAllowance.SoloCostMultiplier
 	local nowUnix = os.time()
 	local scaleOutcomes: { [string]: ProfileOperations.ScaleRaiseOutcome } = {}
 	-- How much each lift's Competition Scale rose (for the gain display, GAME_DESIGN §40.1).
@@ -1068,7 +1072,7 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		end
 	end
 	GainNews.send(player, "Quest", questGains)
-	QuestService.tell(player, questProgress)
+	Once.QuestService.tell(player, questProgress)
 	for _, lift in ipairs(MeetConfig.LiftOrder) do
 		if cnOutcomes[lift] == "Raised" and cnAfter[lift] then
 			table.insert(lines, string.format("%s CN %.1f → %.1f kg", lift, lifter.competitionNumber[lift], cnAfter[lift]))
@@ -1155,6 +1159,11 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	if worldsOutcome then
 		log("%s's Worlds spot (%s): %s", player.Name, lifter.classLabel, tostring(worldsOutcome))
 	end
+	-- MEDALS AND TROPHIES (GAME_DESIGN §42): a top-3 place in the whole field (the podium they stand on) wins one, solo
+	-- meets too (user 2026-11-24: "yea we can give it to them in solo meets too") (InventoryService.meetPlaced). One
+	-- statement and no new locals on purpose: this file is at Luau's 200-local limit.
+	require(PlayerDataFolder:WaitForChild("InventoryService")).meetPlaced(player, current.level,
+		if totalKg and current.places[lifter.key] then current.places[lifter.key].place else nil, lines)
 	if rankResult then
 		log("%s's rank: %d -> %d (%.1f GL%s), new titles: %s, streak %d day(s)", player.Name, rankResult.rankBefore,
 			rankResult.rankAfter, rankMeet and rankMeet.points or 0, if rankResult.newBest then ", new best" else "",
@@ -2000,7 +2009,7 @@ local function runComputerEmotes(current: Meet, lifter: Lifter)
 	-- When emote `id` may START: on the podium, or in a wait while the others finish that lasts the whole emote. (Not the
 	-- weigh-in: 6 s, straight into round 1's chalking.)
 	local function mayStart(id: string): boolean
-		local emote = EmoteConfig.byId[id]
+		local emote = Once.EmoteConfig.byId[id]
 		return emote ~= nil and (lifter.onPodium == true or roundHeldUpFor(emote.seconds + EMOTE_SPARE_SECONDS))
 	end
 	task.spawn(function()
@@ -3225,7 +3234,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 			-- The crowd can cheer them on from this rack's watching zones (§36.4), from now until their lift is over. A full
 			-- bar gets a roar from the crowd.
 			local cheered = lifter.player
-			if cheered and CheerConfig.MeetLevels[current.level] then
+			if cheered and Once.CheerConfig.MeetLevels[current.level] then
 				MeetCheering.openTurn(platform.index, cheered, lifter.name, lift, lifter.bodyweightKg, current.rewards, function()
 					if stillLifting(lifter) then
 						soundCue(lifter, "CrowdCheer", MeetSoundConfig.LiftCrowd.RoarVolume)
