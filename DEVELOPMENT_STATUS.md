@@ -13,7 +13,7 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: published place version 1060 (meet panel reverted, big typed weight, deadlift letter glow; commit 00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1062 (boost chips in one right-hand column, every HUD hides during lifts; commit 70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
@@ -59,7 +59,8 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     tapping F in FEET moved the glow to E, it stayed lit for the double E; the glow clears when the pull ends.
 - THIRD PHONE TEST (2026-11-24, user: "everything's good, but I noticed overlapping uis with the boost, and the luck ui
   stays popped up during lifts. Make sure for now on uis don't overlap, and when someone is trying to lift the uis
-  disappear" - now a standing rule, memory ui-no-overlap-hide-on-lift). NOT COMMITTED:
+  disappear" - now a standing rule, memory ui-no-overlap-hide-on-lift). Commit 70701d8, saved and PUBLISHED as
+  place version 1062:
   - BoostBar: all chips in ONE column at the bottom right (luck at the foot, steak and meet meal above it), above the
     jump button on a phone; the bottom middle is left to panels (the practice panel they sat on).
   - MenuKeys: the side menus + Boosts, Luck and QuestTracker hide during ANY lift attempt (not only a meet turn) and
