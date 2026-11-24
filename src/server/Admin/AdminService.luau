@@ -286,6 +286,18 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		local rank = RankConfig.Ranks[result.rankAfter]
 		return true, string.format("%s: now %s (%.1f GL).", target.Name, if rank then rank.label else "?", points or 0)
 	end,
+	-- RESET RANK (user 2026-11-23): the rank back to the start, to test the ladder again. Titles and coins stay.
+	ResetRank = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		if not PlayerDataService.adminResetRank(target) then
+			return false, target.Name .. ": that player's save hasn't loaded."
+		end
+		RankService.refresh(target)
+		return true, target.Name .. ": rank reset to Unranked (titles and coins kept)."
+	end,
 	-- GIVE TITLE (GAME_DESIGN §41): a title by its RankConfig id, shown with the same TITLE UNLOCKED card a meet gives.
 	GiveTitle = function(_player: Player, value: any): (boolean, string)
 		local target, problem = targetOf(value)

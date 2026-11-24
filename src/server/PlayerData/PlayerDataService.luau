@@ -1021,6 +1021,12 @@ function PlayerDataService.adminGiveTitle(player: Player, id: string): boolean?
 	return ProfileOperations.addTitle(data, id) == 1
 end
 
+-- ADMIN PANEL: RESET RANK (ProfileOperations.adminResetRank). False with no save.
+function PlayerDataService.adminResetRank(player: Player): boolean
+	local data = activeData(player, "adminResetRank")
+	return data ~= nil and ProfileOperations.adminResetRank(data)
+end
+
 function PlayerDataService.markTitlesSeen(player: Player): boolean
 	local data = activeData(player, "markTitlesSeen")
 	return if data then ProfileOperations.markTitlesSeen(data, os.time()) else false

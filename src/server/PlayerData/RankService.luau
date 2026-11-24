@@ -122,6 +122,17 @@ function RankService.meetRecorded(player: Player, result: ProfileOperations.Rank
 	end
 end
 
+-- Refreshes the name tag, the player list and the player's own RANKS screen after an admin change to the save.
+function RankService.refresh(player: Player)
+	local view = PlayerDataService.getRanks(player)
+	publish(player, view)
+	if remotes and view then
+		-- (no moment to show: rankAfter = rankBefore, nothing new; the menu and its red dot take the view)
+		remotes.news:FireClient(player, { rankBefore = view.rank, rankAfter = view.rank, pointsBefore = 0, points = 0,
+			newBest = false, newFeats = {}, view = view } :: RankRemotes.RankNews)
+	end
+end
+
 -- A meet title (career.titles) was just earned: refresh the tag, and tell the server if it is Legendary.
 function RankService.titleEarned(player: Player, id: string)
 	publish(player, nil)

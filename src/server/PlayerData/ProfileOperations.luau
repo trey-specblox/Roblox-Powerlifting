@@ -3666,6 +3666,31 @@ function ProfileOperations.setTitle(data: ProfileData, id: string): boolean
 	return true
 end
 
+--[[
+	ADMIN ONLY (AdminService checks the caller): puts the rank back to the start so the whole ladder can be tested again
+	(user 2026-11-23: "do the admin only reset my rank"). Clears the best total, the rewards paid and waiting, the unopened
+	free rank crates, the rank luck boost and the day streak. Keeps the titles (feats and meet titles) and every coin
+	already earned. Returns true when written.
+]]
+function ProfileOperations.adminResetRank(data: ProfileData): boolean
+	local ranks = usableRanks(data)
+	if ranks == nil then
+		return false
+	end
+	ranks.hasTotal = false
+	ranks.bestPoints = 0
+	ranks.bestTotalKg = 0
+	ranks.bestBodyweightKg = 0
+	ranks.bestClass = ""
+	ranks.bestUnix = 0
+	ranks.claimed = 0
+	ranks.freeCrates = 0
+	ranks.luckBoostEndsAt = 0
+	ranks.streakDayKey = ""
+	ranks.streakDays = 0
+	return true
+end
+
 -- Marks every title earned so far as seen (the titles screen's NEW tags go). Returns true when written.
 function ProfileOperations.markTitlesSeen(data: ProfileData, nowUnix: number): boolean
 	local ranks = usableRanks(data)

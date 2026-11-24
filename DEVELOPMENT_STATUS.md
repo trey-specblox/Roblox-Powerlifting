@@ -21,6 +21,13 @@ QuestConfig; the gym owner is every new player's free basic coach; your coach sh
 GAME_DESIGN §40.5), and RANKS AND TITLES (GAME_DESIGN §41: the user's four picks; Claude's 12-rank ladder, first
 titles and placement wait for the user's OK). Cosmetics are deliberately NOT being designed now.**
 
+**ADMIN RESET RANK (2026-11-23, user: "do the admin only reset my rank"). NOT COMMITTED.** A RESET RANK button under
+RANK UP on the admin panel's PLAYER STATS page (AdminService ResetRank -> PlayerDataService / ProfileOperations
+.adminResetRank, RankService.refresh): best total, rewards paid and waiting, unopened free rank crates, the rank luck boost
+and the streak go back to the start; titles and coins stay. STUDIO: rank 3 -> Unranked, 0 waiting, 0 crates, the title
+kept, tag and player list "Unranked", RANK UP starts again at rank 1; the button fits. The game was PUBLISHED by Claude on
+the user's ask (place version 1039: ranks, meet pay, food).
+
 **THE NEW FOOD SYSTEM BUILT (2026-11-23, user: "You can build the new food system"; GAME_DESIGN §41.5). NOT COMMITTED.**
 - The cook timer: the chef's picker has a row 30M / 1H / 2H / 4H / 6H / 12H / 24H; the cook takes that long and the boost
   lasts that long. Price = the 24-hour price (steak 25, meal 50) x sqrt(hours / 24). The boost is capped at +150%

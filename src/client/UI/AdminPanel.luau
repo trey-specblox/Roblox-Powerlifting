@@ -447,6 +447,10 @@ function AdminPanel.start()
 	pageButton("RankUp", "RANK UP", function()
 		ask("RankUp", { userId = targetUserId })
 	end)
+	-- Back to Unranked, to test the whole ladder again (titles and coins stay).
+	pageButton("ResetRank", "RESET RANK", function()
+		ask("ResetRank", { userId = targetUserId })
+	end)
 	-- Their coins, on a row of their own.
 	local coinsY = gridTop + math.ceil(slot / 3) * STATS_ROW_HEIGHT + 4
 	for index, coinButton in ipairs(AdminConfig.CoinButtons) do
