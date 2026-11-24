@@ -48,14 +48,14 @@ local WHITE, INK = UIFancy.White, UIFancy.Ink
 
 local KitchenMenu = {}
 
-local CARD = Vector2.new(600, 640)
+local CARD = Vector2.new(600, 730)
 local STEAK_RED = Color3.fromRGB(214, 70, 46)
 local YELLOW_TOP, YELLOW_BOTTOM = Color3.fromRGB(255, 226, 92), Color3.fromRGB(232, 160, 24)
 local GREY_TOP, GREY_BOTTOM = Color3.fromRGB(150, 150, 156), Color3.fromRGB(92, 92, 100)
 local GREEN = Color3.fromRGB(110, 236, 96)
--- The slider runs from 1 to this many steaks on a log scale (type a number for more, up to MaxSteaksPerCook).
-local SLIDER_MAX = 2000
-local QUICK_PICKS = { 10, 50, 100, 500 }
+-- The slider runs from 1 to the most a cook takes (KitchenConfig.MaxSteaksPerCook: the +150% cap) on a log scale.
+local SLIDER_MAX = KitchenConfig.MaxSteaksPerCook
+local QUICK_PICKS = { 10, 50, 100, KitchenConfig.MaxSteaksPerCook }
 -- How long a lifter is, for "N LIFTERS LONG" (studs).
 local LIFTER_LENGTH = 5.5
 
@@ -103,9 +103,9 @@ function KitchenMenu.start()
 		Color = ColorSequence.new(Color3.fromRGB(96, 30, 20), Color3.fromRGB(26, 8, 6)),
 		Parent = scene,
 	})
-	local rays = UIFancy.rays(scene, UDim2.fromScale(0.5, 0.36), 1000, 14, STEAK_RED)
+	local rays = UIFancy.rays(scene, UDim2.fromScale(0.5, 0.31), 1000, 14, STEAK_RED)
 	local halo = make("Frame", {
-		Name = "Halo", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36),
+		Name = "Halo", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.31),
 		Size = UDim2.fromOffset(300, 300), BackgroundColor3 = STEAK_RED, BackgroundTransparency = 0.7, BorderSizePixel = 0,
 		Parent = scene,
 	})
@@ -114,7 +114,7 @@ function KitchenMenu.start()
 
 	-- The steak, in 3D, sized by the count.
 	local viewport = make("ViewportFrame", {
-		Name = "Steak", BackgroundTransparency = 1, Position = UDim2.fromScale(0, 0.1), Size = UDim2.new(1, 0, 0.5, 0),
+		Name = "Steak", BackgroundTransparency = 1, Position = UDim2.fromScale(0, 0.08), Size = UDim2.new(1, 0, 0.44, 0),
 		Ambient = Color3.fromRGB(170, 150, 140), LightColor = Color3.fromRGB(255, 240, 220),
 		LightDirection = Vector3.new(-0.4, -1, 0.3), Parent = scene,
 	})
@@ -128,7 +128,7 @@ function KitchenMenu.start()
 	local title = words(scene, "Title", UDim2.fromOffset(20, 14), UDim2.new(1, -90, 0, 44), 38, 3)
 	title.Text = "HOW MANY STEAKS?"
 	title.TextXAlignment = Enum.TextXAlignment.Left
-	local lengthBadge = words(scene, "Length", UDim2.new(0, 22, 0.52, 0), UDim2.new(1, -44, 0, 26), 22, 2,
+	local lengthBadge = words(scene, "Length", UDim2.new(0, 22, 0.465, 0), UDim2.new(1, -44, 0, 26), 22, 2,
 		Color3.fromRGB(255, 214, 190))
 
 	-- The close button, top right.
@@ -136,12 +136,12 @@ function KitchenMenu.start()
 		Color3.fromRGB(240, 90, 80), Color3.fromRGB(170, 36, 36), 28, function() end)
 
 	-- The count, big and outlined.
-	local countText = words(scene, "Count", UDim2.new(0, 0, 0.57, 0), UDim2.new(1, 0, 0, 70), 64, 4)
+	local countText = words(scene, "Count", UDim2.new(0, 0, 0.5, 0), UDim2.new(1, 0, 0, 70), 64, 4)
 	countText.TextColor3 = WHITE
 
 	-- The slider: a dark track, a yellow fill and a round knob.
 	local track = make("Frame", {
-		Name = "Track", Position = UDim2.new(0, 96, 0.71, 0), Size = UDim2.new(1, -192, 0, 22),
+		Name = "Track", Position = UDim2.new(0, 96, 0.615, 0), Size = UDim2.new(1, -192, 0, 22),
 		BackgroundColor3 = Color3.fromRGB(24, 10, 8), BorderSizePixel = 0, Parent = scene,
 	})
 	corner(track, UDim.new(1, 0))
@@ -156,29 +156,44 @@ function KitchenMenu.start()
 	corner(knob, UDim.new(1, 0))
 	outline(knob, 3)
 	glow(knob, Color3.fromRGB(255, 220, 120), 18, 0.3)
-	local minus = UIFancy.button(scene, "Minus", "-", UDim2.new(0, 22, 0.71, -14), UDim2.fromOffset(56, 50),
+	local minus = UIFancy.button(scene, "Minus", "-", UDim2.new(0, 22, 0.615, -14), UDim2.fromOffset(56, 50),
 		Color3.fromRGB(110, 110, 120), Color3.fromRGB(60, 60, 70), 34, function() end)
-	local plus = UIFancy.button(scene, "Plus", "+", UDim2.new(1, -78, 0.71, -14), UDim2.fromOffset(56, 50),
+	local plus = UIFancy.button(scene, "Plus", "+", UDim2.new(1, -78, 0.615, -14), UDim2.fromOffset(56, 50),
 		Color3.fromRGB(110, 110, 120), Color3.fromRGB(60, 60, 70), 34, function() end)
 
 	-- Quick picks and a box to type any number.
 	local picks: { TextButton } = {}
 	for index, amount in ipairs(QUICK_PICKS) do
-		picks[index] = (UIFancy.button(scene, "Pick" .. amount, tostring(amount), UDim2.new(0, 22 + (index - 1) * 96, 0.8, 0),
+		picks[index] = (UIFancy.button(scene, "Pick" .. amount, tostring(amount), UDim2.new(0, 22 + (index - 1) * 96, 0.69, 0),
 			UDim2.fromOffset(86, 40), Color3.fromRGB(255, 130, 100), Color3.fromRGB(190, 60, 40), 24, function() end))
 	end
 	local typeBox = make("TextBox", {
-		Name = "Type", Position = UDim2.new(1, -196, 0.8, 0), Size = UDim2.fromOffset(174, 40), BackgroundColor3 = Color3.fromRGB(24, 10, 8),
+		Name = "Type", Position = UDim2.new(1, -196, 0.69, 0), Size = UDim2.fromOffset(174, 40), BackgroundColor3 = Color3.fromRGB(24, 10, 8),
 		TextColor3 = WHITE, PlaceholderText = "TYPE A NUMBER", PlaceholderColor3 = Color3.fromRGB(180, 140, 130),
 		FontFace = UIFancy.TitleFont, TextSize = 20, ClearTextOnFocus = true, Text = "", Parent = scene,
 	})
 	corner(typeBox, UDim.new(0, 12))
 	outline(typeBox, 3)
 
+	-- THE COOK TIMER (user 2026-11-23, GAME_DESIGN §41.5): how long it cooks is how long the boost lasts; longer is the
+	-- better deal per hour.
+	local timerLabel = words(scene, "TimerLabel", UDim2.new(0, 22, 0.765, 0), UDim2.new(1, -44, 0, 22), 18, 2,
+		Color3.fromRGB(255, 214, 190), UIFancy.BodyFont)
+	timerLabel.Text = "COOK TIME = HOW LONG THE BOOST LASTS"
+	local hourButtons: { { button: TextButton, gradient: UIGradient, hours: number } } = {}
+	local hourCount = #KitchenConfig.CookHours
+	local hourWidth = math.floor((CARD.X - 44 - (hourCount - 1) * 6) / hourCount)
+	for index, hours in ipairs(KitchenConfig.CookHours) do
+		local button, gradient = UIFancy.button(scene, "Hours" .. index, KitchenConfig.hoursText(hours),
+			UDim2.new(0, 22 + (index - 1) * (hourWidth + 6), 0.8, 0), UDim2.fromOffset(hourWidth, 40), GREY_TOP, GREY_BOTTOM, 20,
+			function() end)
+		table.insert(hourButtons, { button = button, gradient = gradient, hours = hours })
+	end
+
 	-- The badges: price, cooking time, boost.
 	local function badge(name: string, x: number, colour: Color3): TextLabel
 		local back = make("Frame", {
-			Name = name, Position = UDim2.new(x, 0, 0.885, 0), Size = UDim2.new(0.3, -8, 0, 30),
+			Name = name, Position = UDim2.new(x, 0, 0.87, 0), Size = UDim2.new(0.3, -8, 0, 30),
 			BackgroundColor3 = Color3.fromRGB(20, 8, 6), BackgroundTransparency = 0.15, BorderSizePixel = 0, Parent = scene,
 		})
 		corner(back, UDim.new(1, 0))
@@ -198,6 +213,7 @@ function KitchenMenu.start()
 	------------------------------------------------------------------ state
 	local count = 50
 	local mode = "Steak" -- what the picker cooks: "Steak" or "Meal"
+	local hours = KitchenConfig.BoostHours -- the cook timer: 24 hours is the best deal per hour
 	local busy = false
 	local open = false
 	local dragging = false
@@ -248,11 +264,17 @@ function KitchenMenu.start()
 		local share = sliderShare(count)
 		fill.Size = UDim2.fromScale(share, 1)
 		knob.Position = UDim2.fromScale(share, 0.5)
-		local price = KitchenConfig.cost(count, mode)
+		local price = KitchenConfig.cost(count, mode, hours)
 		costBadge.Text = string.format("%s COINS", CoinConfig.format(price))
-		timeBadge.Text = "COOKS " .. KitchenConfig.clockText(KitchenConfig.cookSeconds(count, mode))
-		boostBadge.Text = string.format("%s FOR %dH", KitchenConfig.percentText(KitchenConfig.boostPercent(count, mode)),
-			KitchenConfig.BoostHours)
+		timeBadge.Text = "READY IN " .. KitchenConfig.hoursText(hours)
+		local percent = KitchenConfig.boostPercent(count, mode)
+		boostBadge.Text = string.format("%s%s · %s", KitchenConfig.percentText(percent),
+			if percent >= KitchenConfig.MaxBoostPercent then " MAX" else "", KitchenConfig.hoursText(hours))
+		for _, entry in ipairs(hourButtons) do
+			local chosen = entry.hours == hours
+			entry.gradient.Color = if chosen then ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM) else ColorSequence.new(GREY_TOP, GREY_BOTTOM)
+		end
+		timerLabel.Text = string.format("COOK TIME = BOOST TIME  ·  %s COINS AN HOUR", CoinConfig.format(math.floor(price / hours + 0.5)))
 		if mode == "Meal" then
 			lengthBadge.Text = "MORE STRENGTH FROM EVERY MEET"
 		else
@@ -348,6 +370,13 @@ function KitchenMenu.start()
 			draw()
 		end)
 	end
+	for _, entry in ipairs(hourButtons) do
+		entry.button.Activated:Connect(function()
+			hours = entry.hours
+			tickSound:Play()
+			draw()
+		end)
+	end
 	typeBox.FocusLost:Connect(function()
 		local typed = tonumber((string.gsub(typeBox.Text, "[^%d]", "")))
 		if typed then
@@ -364,13 +393,13 @@ function KitchenMenu.start()
 	end)
 
 	cookButton.Activated:Connect(function()
-		if busy or coins() < KitchenConfig.cost(count, mode) then
+		if busy or coins() < KitchenConfig.cost(count, mode, hours) then
 			return
 		end
 		busy = true
 		local cooking = mode
 		local ok, answer = pcall(function()
-			return remotes.cook:InvokeServer(count, cooking)
+			return remotes.cook:InvokeServer(count, cooking, hours)
 		end)
 		busy = false
 		if ok and typeof(answer) == "table" then
@@ -488,8 +517,13 @@ function KitchenMenu.start()
 					chomp:Destroy()
 				end)
 				bigSound:Play()
-				BoostBar.celebrate(string.format("%s %s FOR %dH", KitchenConfig.percentText(answer.percent),
-					if answer.kind == "Meal" then "MEETS" else "TRAINING", KitchenConfig.BoostHours),
+				-- The time it now runs for (the cook's hours, or more when it topped up the same boost).
+				local view = answer.view
+				local left = if typeof(view) == "table"
+					then (if answer.kind == "Meal" then view.mealLeft else view.boostLeft) else nil
+				BoostBar.celebrate(string.format("%s %s FOR %s", KitchenConfig.percentText(answer.percent),
+					if answer.kind == "Meal" then "MEETS" else "TRAINING",
+					if typeof(left) == "number" then KitchenConfig.clockText(left) else "24H"),
 					if answer.kind == "Meal" then "MEAL EATEN!" else nil)
 			end
 		end

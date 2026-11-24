@@ -21,6 +21,22 @@ QuestConfig; the gym owner is every new player's free basic coach; your coach sh
 GAME_DESIGN §40.5), and RANKS AND TITLES (GAME_DESIGN §41: the user's four picks; Claude's 12-rank ladder, first
 titles and placement wait for the user's OK). Cosmetics are deliberately NOT being designed now.**
 
+**THE NEW FOOD SYSTEM BUILT (2026-11-23, user: "You can build the new food system"; GAME_DESIGN §41.5). NOT COMMITTED.**
+- The cook timer: the chef's picker has a row 30M / 1H / 2H / 4H / 6H / 12H / 24H; the cook takes that long and the boost
+  lasts that long. Price = the 24-hour price (steak 25, meal 50) x sqrt(hours / 24). The boost is capped at +150%
+  (KitchenConfig.MaxBoostPercent; a cook takes at most 250). Eating the same boost (same %) while it runs ADDS its
+  hours, never past 24 h from now; a different boost replaces it. Save VERSION 36 (`kitchen.hours`, migrations[35]:
+  old cooks are 24 h). Extra pans (Robux) NOT built: they need the user's Game Pass.
+- Files: KitchenConfig (CookHours, isCookHours, hoursText, cost/cookSeconds take hours, boostPercent capped,
+  MaxSteaksPerCook 250), PlayerProfileSchema, ProfileOperations (startCook hours, eatSteak adds hours, getKitchen
+  cookHours), PlayerDataService, KitchenService (hours checked), KitchenRemotes, KitchenMenu (the timer row, coins an
+  hour, MAX on the boost badge, quick pick 250, slider to 250, the eat pop-up shows the time it now runs).
+- STUDIO (scripts matched disk): through the real remotes, 250 meals for 2 h cost 3,608, cooked 2 h, +150% for 2 h;
+  again: 4 h; +80% for 1 h replaced it; 250 steaks 24 h cost 6,250, +150% for 24 h; a second one stayed at 24 h;
+  10 steaks 30 min cost 36; 3 h, 251 and a text length refused. The picker opened from the chef (24H: 2,500 coins,
+  104 an hour; 250 and 2H: 3,608, +150% MAX · 2H, 1,804 an hour). No errors. Pictures:
+  art/previews/ranks/Food_Picker_24h.jpg, Food_Picker_250_2h.jpg. NOT TRIED: a phone, the boost bars with short boosts.
+
 **NEW MEET PAY BUILT (2026-11-23, user: "Start the new meet payouts"; GAME_DESIGN §41.4). NOT COMMITTED.**
 - Finishing with a total 500, 9/9 200, place 1st/2nd/3rd 200/130/70 in the WHOLE field (computer lifters counted; at
   Nationals in the class), one gym record bonus 100 a meet; everything x the level (Local 1, Regional 2, State 3,

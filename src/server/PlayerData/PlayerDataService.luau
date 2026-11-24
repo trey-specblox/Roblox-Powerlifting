@@ -523,17 +523,18 @@ function PlayerDataService.markChefSceneSeen(player: Player): boolean
 end
 
 -- `kind`: "Steak" (nil) or "Meal" (meet meals, version 34); checked by ProfileOperations.
-function PlayerDataService.startCook(player: Player, steaks: number, kind: string?): (ProfileOperations.CookOutcome?, number?)
+function PlayerDataService.startCook(player: Player, steaks: number, kind: string?, hours: number?)
+	: (ProfileOperations.CookOutcome?, number?)
 	local data = activeData(player, "startCook")
 	if data == nil then
 		return nil, nil
 	end
-	local outcome: ProfileOperations.CookOutcome, balance = ProfileOperations.startCook(data, steaks, os.time(), kind)
+	local outcome: ProfileOperations.CookOutcome, balance = ProfileOperations.startCook(data, steaks, os.time(), kind, hours)
 	local what = if kind == "Meal" then "meet meals" else "steaks"
 	if outcome == "Started" then
-		local price = KitchenConfig.cost(steaks, kind)
-		print(string.format("[PlayerDataService] %s put %d %s in the cooker for %d coins: %d left", player.Name, steaks,
-			what, price, balance :: number))
+		local price = KitchenConfig.cost(steaks, kind, hours)
+		print(string.format("[PlayerDataService] %s put %d %s in the cooker for %s h, %d coins: %d left", player.Name, steaks,
+			what, tostring(hours or KitchenConfig.BoostHours), price, balance :: number))
 		coinsChanged(player, -price, balance :: number, if kind == "Meal" then "Meet meals" else "Steaks")
 	elseif outcome == "Rejected" then
 		warn(string.format("[PlayerDataService] %s: cooking %s %s refused", player.Name, tostring(steaks), what))
@@ -549,9 +550,11 @@ function PlayerDataService.eatSteak(player: Player): (ProfileOperations.EatOutco
 	end
 	local outcome: ProfileOperations.EatOutcome, percent, kind = ProfileOperations.eatSteak(data, os.time())
 	if outcome == "Eaten" then
-		print(string.format("[PlayerDataService] %s ate a %s: +%.1f%% %s for %d h", player.Name,
+		local view = ProfileOperations.getKitchen(data, os.time())
+		print(string.format("[PlayerDataService] %s ate a %s: +%.1f%% %s, %.2f h left", player.Name,
 			if kind == "Meal" then "meet meal" else "steak meal", percent :: number,
-			if kind == "Meal" then "meet gains" else "training", KitchenConfig.BoostHours))
+			if kind == "Meal" then "meet gains" else "training",
+			(if kind == "Meal" then view.mealLeft else view.boostLeft) / 3600))
 	end
 	return outcome, percent, kind
 end

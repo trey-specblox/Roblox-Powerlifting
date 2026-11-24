@@ -5,10 +5,13 @@
 
 	Steaks and the Kitchen (GAME_DESIGN §40.7, user 2026-11-19):
 
-		- put any number of steaks in the cooker; they cook into one meal (more steaks = a bigger meal, a longer cook)
-		- each steak costs PricePerSteak coins and adds SecondsPerSteak to the cooking time; coins only, never Robux
-		- it cooks while you're away, even offline; one cook at a time
-		- eating the meal boosts TRAINING gains (strength and technique) by steakPercent(steaks) for BoostHours
+		- put up to MaxSteaksPerCook steaks in the cooker; they cook into one meal (more steaks = a bigger meal, a
+		  bigger boost, capped at MaxBoostPercent)
+		- THE COOK TIMER (user 2026-11-23, GAME_DESIGN §41.5): the player picks how long it cooks (CookHours, 30 min to
+		  24 h); that is how long the boost lasts once eaten. A 24-hour cook costs PricePerSteak a steak; a shorter one
+		  costs less, on the square-root curve (cost), so longer cooks are the better deal per hour
+		- it cooks while you're away, even offline; one cook at a time; coins only, never Robux
+		- eating the meal boosts TRAINING gains (strength and technique) by boostPercent(steaks) for its hours
 
 	Shared so the cooker's menu shows exactly the numbers the server uses.
 ]]
@@ -17,23 +20,47 @@ local WChewsLayout = require(script.Parent:WaitForChild("WChewsLayout"))
 
 local KitchenConfig = {}
 
--- Coins per steak (user's pick).
+-- Coins per steak for a 24-hour cook (user's pick).
 KitchenConfig.PricePerSteak = 25
--- Seconds of cooking each steak adds (user's pick).
+-- (Before the cook timer, each steak added this many seconds of cooking. Kept for reference; unused.)
 KitchenConfig.SecondsPerSteak = 10
--- How long an eaten meal boosts training (user: "24 hours").
+-- The longest cook, and so the longest boost (user 2026-11-23: "24 hours"). The boost bars drain over this.
 KitchenConfig.BoostHours = 24
--- A safety limit, not a design one (about 28 hours of cooking and 250,000 coins).
-KitchenConfig.MaxSteaksPerCook = 10000
+-- The cook lengths the chef offers, in hours (user 2026-11-23: a timer up to 24 hours). The boost lasts as long.
+KitchenConfig.CookHours = { 0.5, 1, 2, 4, 6, 12, 24 } :: { number }
+-- THE CAP (user 2026-11-23, §41.5: "a heavy grinder is a issue"): no boost goes past this, which 250 of a kind reach.
+KitchenConfig.MaxBoostPercent = 150
+-- Past the cap a cook adds nothing, so the cooker takes no more than this.
+KitchenConfig.MaxSteaksPerCook = 250
 
 --[[
 	MEET MEALS (GAME_DESIGN §40.7, user 2026-11-23, picked from Claude's options): the MEET gain boost. A chicken, rice
 	and broccoli plate; eating it raises the strength every meet you finish gives, for BoostHours (24, as steaks).
 	Double a steak's price and cooking time per meal ("Meets are the biggest strength source"), the same % table.
-	ONE cook at a time: the cooker holds steaks OR meals (the user's pick), so a cook has a kind.
+	ONE cook at a time: the cooker holds steaks OR meals (the user's pick), so a cook has a kind. Since 2026-11-23 the
+	cook timer and the +150% cap apply to meals too (§41.5).
 ]]
 KitchenConfig.PricePerMeal = 50
+-- (Before the cook timer, each meal added this many seconds. Unused.)
 KitchenConfig.SecondsPerMeal = 20
+
+-- Whether `hours` is one of the cook lengths the chef offers.
+function KitchenConfig.isCookHours(hours: any): boolean
+	if typeof(hours) ~= "number" then
+		return false
+	end
+	for _, offered in ipairs(KitchenConfig.CookHours) do
+		if hours == offered then
+			return true
+		end
+	end
+	return false
+end
+
+-- "30M", "2H", "24H": a cook length on a button.
+function KitchenConfig.hoursText(hours: number): string
+	return if hours < 1 then string.format("%dM", math.floor(hours * 60 + 0.5)) else string.format("%dH", hours)
+end
 
 -- Whether `kind` is something the cooker cooks.
 function KitchenConfig.isKind(kind: any): boolean
@@ -222,7 +249,7 @@ KitchenConfig.PromptTag = "KitchenCookerPrompt"
 --[[
 	§25's table (user): steaks in one cook -> training boost in percent. Between two rows the boost rises in a straight
 	line; past the last row it keeps rising more slowly, as the table's last rows do (a power curve through the last
-	row: 1,000 steaks is about +408%). Infinite stacking: every extra steak still adds a little.
+	row). CAPPED at MaxBoostPercent since 2026-11-23 (§41.5); steakPercent itself still follows the table past it.
 ]]
 KitchenConfig.Table = {
 	{ 1, 1 },
@@ -254,18 +281,25 @@ function KitchenConfig.steakPercent(steaks: number): number
 	return last[2] * (steaks / last[1]) ^ PAST_TABLE_POWER
 end
 
--- Coins and cooking seconds for `count` of a kind (steaks when `kind` is nil).
-function KitchenConfig.cost(steaks: number, kind: string?): number
-	return steaks * (if kind == "Meal" then KitchenConfig.PricePerMeal else KitchenConfig.PricePerSteak)
+--[[
+	Coins for `count` of a kind (steaks when `kind` is nil) cooked for `hours` (nil = 24): the 24-hour price x the
+	square root of (hours / 24), so 2 h costs 29%, 6 h 50%, 12 h 71% (user 2026-11-23, §41.5: "Current is good").
+	Never below 1 coin.
+]]
+function KitchenConfig.cost(steaks: number, kind: string?, hours: number?): number
+	local full = steaks * (if kind == "Meal" then KitchenConfig.PricePerMeal else KitchenConfig.PricePerSteak)
+	local share = math.sqrt(math.clamp((hours or KitchenConfig.BoostHours) / KitchenConfig.BoostHours, 0, 1))
+	return math.max(1, math.floor(full * share + 0.5))
 end
 
-function KitchenConfig.cookSeconds(steaks: number, kind: string?): number
-	return steaks * (if kind == "Meal" then KitchenConfig.SecondsPerMeal else KitchenConfig.SecondsPerSteak)
+-- Cooking seconds: the cook timer itself (nil = 24 hours). The boost lasts as long once eaten.
+function KitchenConfig.cookSeconds(_steaks: number, _kind: string?, hours: number?): number
+	return math.floor((hours or KitchenConfig.BoostHours) * 3600)
 end
 
--- The boost in percent a cook of `count` gives: the same table for steaks (training) and meals (meets).
+-- The boost in percent a cook of `count` gives: the same table for steaks (training) and meals (meets), capped.
 function KitchenConfig.boostPercent(count: number, _kind: string?): number
-	return KitchenConfig.steakPercent(count)
+	return math.min(KitchenConfig.steakPercent(count), KitchenConfig.MaxBoostPercent)
 end
 
 -- Whether `steaks` is a steak count a cook accepts: a whole number from 1 to MaxSteaksPerCook.

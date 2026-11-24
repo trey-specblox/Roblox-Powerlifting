@@ -66,9 +66,9 @@ local PlayerProfileSchema = {}
 	28: the Worlds spots; version 31: the Kitchen and gain boosts; version 32:
 	whether the player has watched the chef scene once; version 33: the luck
 	wheel's multiplier, spins and game tries; version 34: meet meals; version
-	35: ranks and feat titles).
+	35: ranks and feat titles; version 36: the cook timer).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 35
+PlayerProfileSchema.CURRENT_VERSION = 36
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -816,7 +816,7 @@ local template: ProfileData = {
 	},
 
 	-- An empty cooker and no boosts.
-	kitchen = { steaks = 0, startedAt = 0, readyAt = 0, sceneSeen = false, kind = "Steak" },
+	kitchen = { steaks = 0, startedAt = 0, readyAt = 0, sceneSeen = false, kind = "Steak", hours = 24 },
 	boosts = {
 		steak = { percent = 0, endsAt = 0, steaks = 0 },
 		meal = { percent = 0, endsAt = 0, meals = 0 },
@@ -2338,6 +2338,23 @@ migrations[34] = function(data: ProfileData)
 				ranks.feats[id] = nil
 			end
 		end
+	end
+end
+
+--[[
+	Version 35 -> 36: the cook timer (user 2026-11-23, GAME_DESIGN §41.5). The cook's length is saved with it (`hours`),
+	and that is how long its boost lasts. Every cook so far was a 24-hour one (boosts were 24 hours).
+
+	REPAIRS, NEVER OVERWRITES: a usable stored length (0.5 to 24) is kept; anything else becomes 24. IDEMPOTENT.
+]]
+migrations[35] = function(data: ProfileData)
+	local kitchen = (data :: any).kitchen
+	if typeof(kitchen) ~= "table" then
+		return -- (version 31's step makes the record; the template fills the field)
+	end
+	local hours = kitchen.hours
+	if typeof(hours) ~= "number" or hours ~= hours or hours < 0.5 or hours > 24 then
+		kitchen.hours = 24
 	end
 end
 

@@ -2582,6 +2582,8 @@ export type KitchenView = {
 	mealCount: number,
 	-- Whether they have watched the chef scene once (it can be skipped after that).
 	sceneSeen: boolean,
+	-- The cook's length in hours (the cook timer): how long its boost will last.
+	cookHours: number,
 }
 
 -- What the cooker holds ("Meal" only when stored so; anything else reads as steaks).
@@ -2606,7 +2608,7 @@ end
 function ProfileOperations.getKitchen(data: ProfileData, nowUnix: number): KitchenView
 	local kitchen, boosts = usableKitchen(data)
 	local view: KitchenView = { steaks = 0, kind = "Steak", readyIn = 0, cookSeconds = 0, boostPercent = 0, boostLeft = 0,
-		boostSteaks = 0, mealPercent = 0, mealLeft = 0, mealCount = 0, sceneSeen = false }
+		boostSteaks = 0, mealPercent = 0, mealLeft = 0, mealCount = 0, sceneSeen = false, cookHours = 0 }
 	if kitchen == nil or not isFiniteNumber(nowUnix) then
 		return view
 	end
@@ -2616,6 +2618,7 @@ function ProfileOperations.getKitchen(data: ProfileData, nowUnix: number): Kitch
 		view.kind = cookKind(kitchen)
 		view.readyIn = math.max(0, kitchen.readyAt - nowUnix)
 		view.cookSeconds = math.max(0, kitchen.readyAt - kitchen.startedAt)
+		view.cookHours = if KitchenConfig.isCookHours(kitchen.hours) then kitchen.hours else KitchenConfig.BoostHours
 	end
 	local steak = GainBoosts.active(boosts.steak, nowUnix)
 	if steak then
@@ -2652,12 +2655,15 @@ end
 	the balance) when the player can't afford it, "Rejected" for a bad count or kind or broken data. Nothing is written
 	unless it returns "Started".
 ]]
-function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix: number, kind: string?): (CookOutcome, number?)
+function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix: number, kind: string?, hours: number?)
+	: (CookOutcome, number?)
 	local kitchen = usableKitchen(data)
 	local wallet = walletOf(data)
 	local cooking = kind or "Steak"
+	-- The cook timer (§41.5): one of the offered lengths; nil = 24 hours.
+	local length = hours or KitchenConfig.BoostHours
 	if kitchen == nil or wallet == nil or not KitchenConfig.isSteakCount(steaks) or not KitchenConfig.isKind(cooking)
-		or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		or not KitchenConfig.isCookHours(length) or not isFiniteNumber(nowUnix) or nowUnix < 0 then
 		return "Rejected", nil
 	end
 	if cooking == "Meal" and typeof((data :: any).boosts.meal) ~= "table" then
@@ -2666,7 +2672,7 @@ function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix:
 	if kitchen.steaks >= 1 then
 		return "Busy", wallet.coins
 	end
-	local price = KitchenConfig.cost(steaks, cooking)
+	local price = KitchenConfig.cost(steaks, cooking, length)
 	if not isWholeCoins(price) then
 		return "Rejected", nil
 	end
@@ -2677,15 +2683,17 @@ function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix:
 	wallet.spentTotal += price
 	kitchen.steaks = steaks
 	kitchen.kind = cooking
+	kitchen.hours = length
 	kitchen.startedAt = math.floor(nowUnix)
-	kitchen.readyAt = kitchen.startedAt + KitchenConfig.cookSeconds(steaks, cooking)
+	kitchen.readyAt = kitchen.startedAt + KitchenConfig.cookSeconds(steaks, cooking, length)
 	return "Started", wallet.coins
 end
 
 --[[
-	Eats a finished cook: empties the cooker and sets its boost (steaks: the training boost; meals: the meet boost),
-	replacing a boost of that kind already running. Returns the boost's percent and the kind with "Eaten". Nothing is
-	written otherwise.
+	Eats a finished cook: empties the cooker and sets its boost (steaks: the training boost; meals: the meet boost) for
+	the cook's hours (the cook timer, §41.5). A boost of the same kind and the same percent still running gets the hours
+	ADDED, never past BoostHours (24) from now; any other boost of that kind is replaced. Returns the boost's percent and
+	the kind with "Eaten". Nothing is written otherwise.
 ]]
 function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOutcome, number?, string?)
 	local kitchen, boosts = usableKitchen(data)
@@ -2703,7 +2711,12 @@ function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOut
 	if not isFiniteNumber(percent) or percent <= 0 then
 		return "Rejected", nil, nil
 	end
-	local endsAt = math.floor(nowUnix) + KitchenConfig.BoostHours * 3600
+	local hours = if KitchenConfig.isCookHours(kitchen.hours) then kitchen.hours else KitchenConfig.BoostHours
+	local now = math.floor(nowUnix)
+	local entry = if kind == "Meal" then boosts.meal else boosts.steak
+	local running = GainBoosts.active(entry, nowUnix)
+	local from = if running and math.abs(running.percent - percent) < 1e-6 then running.endsAt else now
+	local endsAt = math.min(from + math.floor(hours * 3600), now + KitchenConfig.BoostHours * 3600)
 	if kind == "Meal" then
 		if typeof(boosts.meal) ~= "table" then
 			return "Rejected", nil, nil
@@ -2718,6 +2731,7 @@ function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOut
 	end
 	kitchen.steaks = 0
 	kitchen.kind = "Steak"
+	kitchen.hours = KitchenConfig.BoostHours
 	kitchen.startedAt = 0
 	kitchen.readyAt = 0
 	return "Eaten", percent, kind

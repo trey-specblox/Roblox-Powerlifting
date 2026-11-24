@@ -8284,3 +8284,48 @@ the payouts above.
 
 **A coach costs 28,000 coins** (APPROVED 2026-11-23: 12 hours of Local meets; about 6 to 7 hours for a player who
 climbs). This replaces the 10,000 in §40.5.
+
+### 41.5 Food: a cook timer, extra pans, and keeping heavy grinders in check (user, 2026-11-23)
+
+Claude's food study (same day) found that with the new meet pay a heavy grinder eating 500 steaks and 500 meals a day
+reaches the top rank in about 26 days instead of 90. The user: "a heavy grinder is a issue. What if once the player puts
+how much steaks or meet meals they want to make, they can put a timer for how long they want their stuff cooked, and
+however long they put that's how long the buff lasts ... for monetization ... players can take up multiple pans and
+cook multiple things at once all with different timers."
+
+- **DECIDED:** the cook timer sets the buff's length, **up to 24 hours**. **Extra pans (Robux) only let a player cook
+  more at once** (steaks and meals together, or the next cook while one waits): still one steak buff and one meal buff
+  active, so Robux never buys strength (§35.3).
+- **OPEN, the price:** the user doesn't want a 24-hour buff to cost 24 times more ("I want food buffs to be useful but
+  be ethical to want"). Claude's notes: strength is capped every day (training's daily cap, the meet allowance), so
+  playing longer gives coins, not more strength; food multiplies the strength inside those caps. So a grinder's real
+  edge is affording bigger food, not playing longer. Days to the top rank with the same boost on steaks and meals every
+  day: none 90, +24% 72, +45% 62, +80% 50, +150% 36, +250% 26.
+- **APPROVED (user: "Sounds good, let's do the plan"):** a 24-hour buff costs today's price (steak 25, meal 50 each);
+  shorter buffs cost less; **the boost is capped at +150% per food type** (250 of a kind; no more infinite stacking).
+  The max, both kinds for 24 hours: 6,250 + 12,500 = **18,750 coins** (about 7 hours of Local meets, 4 to 5 climbing).
+- **The pricing curve (APPROVED by the user 2026-11-23: "Current is good"):** straight per-hour prices would be too cheap for short
+  buffs, because the daily strength caps fill in a few hours of play, so a 2-hour buff at 1/12 of the price would give
+  almost a whole day's benefit. Instead **price = the 24-hour price x the square root of (hours / 24)**: 2 h 29%,
+  6 h 50%, 12 h 71%, 24 h 100%.
+
+  | Steaks + meals | 2 h | 6 h | 12 h | 24 h |
+  |---|---|---|---|---|
+  | +24% (25 each) | 541 | 938 | 1,326 | 1,875 |
+  | +45% (50 each) | 1,083 | 1,875 | 2,652 | 3,750 |
+  | +80% (100 each) | 2,165 | 3,750 | 5,303 | 7,500 |
+  | +150% max (250 each) | 5,413 | 9,375 | 13,258 | 18,750 |
+
+  Coins per extra day of progress at 24 hours (the boost turns a day into 1.24 / 1.45 / 1.8 / 2.5 days): +24% 7,800,
+  +45% 8,300, +80% 9,400, +150% 12,500: bigger food costs more per day gained, but gets the most in total.
+- **The user's terms on stats (2026-11-23, restated):** "your competition number gets capped, but your stats don't get
+  capped." As built: the Competition Number has daily caps (training's daily cap, which about 4 hours of racks nearly
+  fills, and the meet allowance), while technique has no cap (§34.7). Steaks boost both; a long steak buff keeps paying
+  on technique all day.
+- **Longer cooks are cheaper per hour (user, same day: "make food items cheaper the longer it gets cooked ... so it makes
+  players want to save up for a longer and more worth it buff").** The square-root curve does this: for the max food,
+  2 h costs 2,706 an hour, 6 h 1,562, 12 h 1,105, 24 h 781 (a 24-hour buff is 3.5x cheaper per hour than a 2-hour one).
+  A steeper discount is possible (power 0.4: 4.4x; 0.3: 5.7x), at the cost of short buffs.
+- **BUILT 2026-11-23:** the cook timer (30 min, 1, 2, 4, 6, 12, 24 h), the square-root prices, the +150% cap (a cook
+  takes at most 250), eating the same boost adds its hours up to 24, save version 36. Extra pans wait for the user's
+  Game Pass.

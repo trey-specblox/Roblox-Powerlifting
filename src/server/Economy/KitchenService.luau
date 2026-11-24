@@ -87,19 +87,21 @@ function KitchenService.start()
 		return PlayerDataService.getKitchen(player)
 	end
 
-	-- `kind`: nil or "Steak" for steaks, "Meal" for meet meals (GAME_DESIGN §40.7, user 2026-11-23).
-	set.cook.OnServerInvoke = function(player: Player, steaks: any, kind: any): any
+	-- `kind`: nil or "Steak" for steaks, "Meal" for meet meals (GAME_DESIGN §40.7, user 2026-11-23). `hours`: the cook
+	-- timer, one of KitchenConfig.CookHours (nil = 24); the boost lasts as long (§41.5).
+	set.cook.OnServerInvoke = function(player: Player, steaks: any, kind: any, hours: any): any
 		if tooSoon(player) then
 			return { outcome = "Busy" }
 		end
-		if kind ~= nil and typeof(kind) ~= "string" then
+		if (kind ~= nil and typeof(kind) ~= "string") or (hours ~= nil and typeof(hours) ~= "number") then
 			return { outcome = "Rejected" }
 		end
 		local cooking = if kind == nil then "Steak" else kind
-		if not KitchenConfig.isSteakCount(steaks) or not KitchenConfig.isKind(cooking) then
+		local length = if hours == nil then KitchenConfig.BoostHours else hours
+		if not KitchenConfig.isSteakCount(steaks) or not KitchenConfig.isKind(cooking) or not KitchenConfig.isCookHours(length) then
 			return { outcome = "Rejected" }
 		end
-		local outcome, balance = PlayerDataService.startCook(player, steaks, cooking)
+		local outcome, balance = PlayerDataService.startCook(player, steaks, cooking, length)
 		-- The steak appears in the player's pan and the clock starts.
 		KitchenPans.refresh(player)
 		return { outcome = outcome or "Rejected", balance = balance, view = PlayerDataService.getKitchen(player) }
