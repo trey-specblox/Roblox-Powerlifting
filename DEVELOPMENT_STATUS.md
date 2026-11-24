@@ -13,7 +13,7 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: published place version 1064 (LEAVE sign at Local/Regional meets; commit eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1065 (the LEAVE sign itself is the hold button with a filling bar; commit 3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
@@ -82,7 +82,7 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
   away; held E -> "withdrew from the meet (held the LEAVE sign)", meet screen off, free to walk. NOTE: Studio's
   screen_capture does not draw the prompt tiles (AlwaysOnTop billboards); a real screenshot shows it.
   - THE PROMPT TILE WAS TOO BIG on the phone ("it covers up the screen. Just have the screen n when players hold it the
-    bar fills up"). NOT COMMITTED: the prompt has attribute NoTile (PromptController skips it); LocalMeetController puts
+    bar fills up"). Commit 3f55862, PUBLISHED as place version 1065: the prompt has attribute NoTile (PromptController skips it); LocalMeetController puts
     a SurfaceGui on the lifter's own LEAVE board screen: touching/clicking it calls InputHoldBegin/End, and a yellow bar
     along the sign's foot fills over the hold (PromptButtonHoldBegan/Ended). STUDIO: no tile; held E -> the bar filled
     on the sign, then "withdrew from the meet (held the LEAVE sign)" twice; let go early -> stayed in the meet.
