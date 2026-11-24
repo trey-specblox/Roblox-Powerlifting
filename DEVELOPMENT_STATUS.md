@@ -13,7 +13,7 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: published place version 1068 (holding the LEAVE sign works with a finger; commit f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1069 (LEAVE sign moved clear of the doorway; commit 6bbbf62); 1068 = holding the LEAVE sign works with a finger (f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
@@ -94,7 +94,7 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     meet screen off. (Test clicks are in GUI coordinates = viewport minus the 58 px inset, and the chalk-shot camera
     moves: aim from a fresh measurement.)
   - THE BOARD STUCK OUT INTO THE WALKWAY ("Reposition the screen. It's sticking out the walk way"): it hung 2.3 studs
-    over the doorway. NOT COMMITTED: its middle is now 8 studs from the doorway's centre (edge 0.7 clear; checked on
+    over the doorway. Commit 6bbbf62, PUBLISHED as place version 1069: its middle is now 8 studs from the doorway's centre (edge 0.7 clear; checked on
     platforms 1, 2 and 8: no overlap); the prompt reaches 10 studs (the waiting spot is 7.2 away), the hold still starts.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
