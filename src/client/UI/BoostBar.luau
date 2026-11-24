@@ -174,7 +174,7 @@ function BoostBar.start()
 	local readyChip, readyFill = pill("SteakReady", 1, GREEN_TOP, GREEN_BOTTOM, Color3.fromRGB(120, 255, 120))
 	local readyText = words(readyFill, "Text", UDim2.fromOffset(12, 0), UDim2.new(1, -24, 1, 0), 20, 3)
 	readyText.TextWrapped = false
-	readyText.Text = "STEAK READY!  EAT IT AT W CHEWS"
+	readyText.Text = "STEAK READY!  GET IT FROM THE CHEF"
 	local readyScale = make("UIScale", { Parent = readyChip })
 	local readyPulse = TweenService:Create(readyScale,
 		TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.05 })
@@ -280,7 +280,7 @@ function BoostBar.start()
 		local meal = current ~= nil and current.kind == "Meal"
 		local cooking = steaks >= 1 and readyIn > 0
 		local ready = steaks >= 1 and readyIn <= 0
-		readyText.Text = if meal then "MEET MEAL READY!  EAT IT AT W CHEWS" else "STEAK READY!  EAT IT AT W CHEWS"
+		readyText.Text = if meal then "MEET MEAL READY!  GET IT FROM THE CHEF" else "STEAK READY!  GET IT FROM THE CHEF"
 		if ready ~= readyChip.Visible then
 			readyChip.Visible = ready
 			if ready then
@@ -291,7 +291,7 @@ function BoostBar.start()
 			end
 		end
 		if wasCooking and ready then
-			Announcer.note(string.format("Your %s is ready! Eat it at W Chews for %s %s gains.",
+			Announcer.note(string.format("Your %s is ready! Get it from the chef at W Chews for %s %s gains.",
 				if meal then "meet meal" else "steak meal", KitchenConfig.percentText(KitchenConfig.boostPercent(steaks)),
 				if meal then "meet" else "training"))
 		end

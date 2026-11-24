@@ -56,8 +56,10 @@ task.spawn(require(UIFolder:WaitForChild("RanksMenu")).start)
 task.spawn(require(UIFolder:WaitForChild("RankNameTags")).start)
 
 -- MY GEAR (the GEAR tab): put on and take off owned gear. It only asks; the server checks and dresses.
-local GearMenu = require(UIFolder:WaitForChild("GearMenu"))
-task.spawn(GearMenu.start)
+-- THE INVENTORY (GAME_DESIGN §42, user 2026-11-24): replaces MY GEAR (GearMenu, retired, no longer started): gear,
+-- clothes, food from the chef, medals and trophies, in one screen on the same tab and key.
+local InventoryMenu = require(UIFolder:WaitForChild("InventoryMenu"))
+task.spawn(InventoryMenu.start)
 
 local LiftingFolder = script:WaitForChild("Lifting")
 local LiftAttemptController = require(LiftingFolder:WaitForChild("LiftAttemptController"))

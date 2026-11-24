@@ -99,8 +99,11 @@ function KitchenClocks.start()
 	end
 
 	-- The "Eat" prompt on your own pan once your steak is done (made on this screen only; the server checks the eating).
+	-- RETIRED 2026-11-24 (GAME_DESIGN §42): the chef hands finished food over into the inventory, so the pan never shows
+	-- the prompt any more (kept here, switched off, in case pan eating comes back).
+	local PAN_EATING = false
 	local function eatPromptFor(clock: Clock, show: boolean)
-		if not show then
+		if not show or not PAN_EATING then
 			if clock.eat then
 				clock.eat.Enabled = false
 			end

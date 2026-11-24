@@ -66,9 +66,10 @@ local PlayerProfileSchema = {}
 	28: the Worlds spots; version 31: the Kitchen and gain boosts; version 32:
 	whether the player has watched the chef scene once; version 33: the luck
 	wheel's multiplier, spins and game tries; version 34: meet meals; version
-	35: ranks and feat titles; version 36: the cook timer).
+	35: ranks and feat titles; version 36: the cook timer; version 37: inventory
+	items: food, medals, trophies).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 36
+PlayerProfileSchema.CURRENT_VERSION = 37
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -790,6 +791,9 @@ local template: ProfileData = {
 		outfit = {},
 		clothes = {},
 		gearOn = true,
+		-- Inventory items (version 37, GAME_DESIGN §42): food collected from the chef, medals, trophies.
+		items = {},
+		nextItemId = 1,
 	},
 
 	bodyweight = {
@@ -2355,6 +2359,37 @@ migrations[35] = function(data: ProfileData)
 	local hours = kitchen.hours
 	if typeof(hours) ~= "number" or hours ~= hours or hours < 0.5 or hours > 24 then
 		kitchen.hours = 24
+	end
+end
+
+--[[
+	Version 36 -> 37: inventory items (user 2026-11-24, GAME_DESIGN §42): food is collected from the chef into the
+	inventory and eaten from there; medals and trophies are items too. Nobody has any items yet.
+
+	REPAIRS, NEVER OVERWRITES: a usable items map is kept (broken entries dropped); nextItemId stays above every id.
+	IDEMPOTENT.
+]]
+migrations[36] = function(data: ProfileData)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" then
+		return -- (an older step makes the record; the template fills the fields)
+	end
+	if typeof(inventory.items) ~= "table" then
+		inventory.items = {}
+	end
+	local highest = 0
+	for id, item in pairs(inventory.items) do
+		local number = tonumber(id)
+		if typeof(id) ~= "string" or number == nil or typeof(item) ~= "table" or typeof(item.type) ~= "string"
+			or typeof(item.qty) ~= "number" or item.qty < 1 then
+			inventory.items[id] = nil
+		elseif number > highest then
+			highest = number
+		end
+	end
+	if typeof(inventory.nextItemId) ~= "number" or inventory.nextItemId ~= inventory.nextItemId
+		or inventory.nextItemId <= highest then
+		inventory.nextItemId = highest + 1
 	end
 end
 

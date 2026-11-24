@@ -106,6 +106,9 @@ QuestService.start()
 -- Ranks and titles (GAME_DESIGN §41): the remotes, the name tag attributes and the player list's Rank column.
 local RankService = require(PlayerDataFolder:WaitForChild("RankService"))
 RankService.start()
+-- The INVENTORY's items (GAME_DESIGN §42): food from the chef, medals, trophies.
+local InventoryService = require(PlayerDataFolder:WaitForChild("InventoryService"))
+InventoryService.start()
 local KitchenService = require(script:WaitForChild("Economy"):WaitForChild("KitchenService"))
 KitchenService.start()
 -- The pan hall waits for the prop models to load, so it builds without holding up the rest.

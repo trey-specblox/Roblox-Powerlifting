@@ -21,6 +21,35 @@ QuestConfig; the gym owner is every new player's free basic coach; your coach sh
 GAME_DESIGN §40.5), and RANKS AND TITLES (GAME_DESIGN §41: the user's four picks; Claude's 12-rank ladder, first
 titles and placement wait for the user's OK). Cosmetics are deliberately NOT being designed now.**
 
+**INVENTORY STAGES 1-2 + PHONE-FIT SCREENS (2026-11-24, user from their phone: the admin panel was cut off; "make the
+inventory ... hold it ... medals/trophies ... floating ui that counts their wins"; GAME_DESIGN §42). NOT COMMITTED.**
+- PHONES: UIStyle.fitToScreen scales each top-level piece to fit the screen's height and width too (fitScale; floor
+  0.3); the admin panel is 640 tall and its pages scroll (a clipping strip + ScrollingFrame). Studio device simulator,
+  iPhone 17 Pro landscape (750x381): the whole admin panel and its BACK fit, the stats page scrolls to RESET RANK.
+- STAGE 1, ITEMS + FOOD FROM THE CHEF: save VERSION 37 (inventory.items, nextItemId; migrations[36]). ProfileOperations
+  collectFood / useItem / addAward / getItems (+ applyFood shared with eating); identical items stack (qty);
+  InventoryRemotes (GetInventory, Use, ItemsChanged) + InventoryService; KitchenRemotes.Collect; the chef's done line
+  asks "Can I have my food?" and hands it over; the pan's Eat prompt is switched off (KitchenClocks PAN_EATING false);
+  the ready chip says GET IT FROM THE CHEF. STUDIO: 13 checks PASS (collect empty/not ready/collected, the screen told,
+  100 meals 6 h item, stacking x2, eat from the inventory +80% 6 h, second adds to 12 h, gone at 0, made-up and bad ids
+  refused).
+- STAGE 2, THE INVENTORY SCREEN (InventoryMenu; GearMenu retired, not started; the tab and key Y where GEAR was; the
+  ScreenGui keeps the name "Gear"): categories ALL / GEAR / FOOD / TROPHIES / MISC / CLOTHES + GEAR: ON/OFF; the item
+  grid (rarity-framed tiles, 3D previews, x2 stacks, WORN badge); EQUIPMENT outline with slots (singlet, bench shirt,
+  belt, wrist wraps, knee sleeves; tap = that slot's gear); the description (preview, name, stats/boost, WEAR / TAKE OFF
+  / SCRAP / TEST / EAT). STUDIO: opened with food and three crate pieces; EAT on 100 steaks x2 -> +80% 24 h, x1 left;
+  WEAR on the singlet -> WORN, in the SINGLET slot; no errors. Pictures art/previews/ranks/Inventory_All.jpg,
+  Inventory_WearSinglet.jpg, Phone_AdminPanel.jpg. NOT TRIED: the inventory on a phone size, CLOTHES page, scrap, test.
+- SLOTS ON THE BODY (user, same day: "the singlet box can be on the top of the chest area, belts on the waist area, writ
+  wraps on the wrist area, knee sleeves on the knee area"): the outline is bigger and broader (200 x 350); 60-pixel slots
+  sit on the chest (singlet), right upper arm (bench shirt, the piece with sleeves), left wrist (wrist wraps), waist
+  (belt) and knees (knee sleeves); labels above or below so none touch. STUDIO: four worn pieces showed in their places.
+  Picture art/previews/ranks/Inventory_SlotsOnBody.jpg.
+- FOUND: the characters use the default Animate script (toolnone 507768375), so a held Roblox Tool gets the standard
+  hold-out pose with no new animation; carrying food over the head needs a new animation (upload: ask first).
+- NEXT: Stage 3 holding (Tools from the inventory; the over-head carry animation, shown before upload), Stage 4 medals
+  (Local top 3) and trophies (Regional/State/Nationals top 3) given by meets, the floating win counter while held.
+
 **ADMIN RESET RANK (2026-11-23, user: "do the admin only reset my rank"). NOT COMMITTED.** A RESET RANK button under
 RANK UP on the admin panel's PLAYER STATS page (AdminService ResetRank -> PlayerDataService / ProfileOperations
 .adminResetRank, RankService.refresh): best total, rewards paid and waiting, unopened free rank crates, the rank luck boost

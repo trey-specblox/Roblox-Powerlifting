@@ -2695,6 +2695,34 @@ end
 	ADDED, never past BoostHours (24) from now; any other boost of that kind is replaced. Returns the boost's percent and
 	the kind with "Eaten". Nothing is written otherwise.
 ]]
+--[[
+	Sets a food's boost on `boosts` (steaks: training; meals: meets) for `hours`: the same kind and percent still running
+	gets the hours added, never past BoostHours from now; anything else of that kind is replaced. Returns the percent,
+	or nil (nothing written) for a bad food.
+]]
+local function applyFood(boosts: any, kind: string, count: number, hours: number, nowUnix: number): number?
+	local percent = KitchenConfig.boostPercent(count, kind)
+	if not isFiniteNumber(percent) or percent <= 0 or not KitchenConfig.isCookHours(hours) then
+		return nil
+	end
+	if kind == "Meal" and typeof(boosts.meal) ~= "table" then
+		return nil
+	end
+	local now = math.floor(nowUnix)
+	local entry = if kind == "Meal" then boosts.meal else boosts.steak
+	local running = GainBoosts.active(entry, nowUnix)
+	local from = if running and math.abs(running.percent - percent) < 1e-6 then running.endsAt else now
+	local endsAt = math.min(from + math.floor(hours * 3600), now + KitchenConfig.BoostHours * 3600)
+	entry.percent = percent
+	entry.endsAt = endsAt
+	if kind == "Meal" then
+		entry.meals = count
+	else
+		entry.steaks = count
+	end
+	return percent
+end
+
 function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOutcome, number?, string?)
 	local kitchen, boosts = usableKitchen(data)
 	if kitchen == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
@@ -3760,6 +3788,138 @@ function ProfileOperations.getRanks(data: ProfileData, nowUnix: number): RankVie
 	view.picked = if ranks.title ~= "" and view.titles[ranks.title] then ranks.title else ""
 	view.title = if view.picked ~= "" then view.picked else best
 	return view
+end
+
+--[[
+	=====================================================================================================================
+	INVENTORY ITEMS (schema 37; GAME_DESIGN §42): food collected from the chef, medals and trophies
+	=====================================================================================================================
+	An item is a record with a `type` and a `qty`; identical items stack (more qty). Food: { type "Food", food "Steak" |
+	"Meal", count, hours } (its boost comes from KitchenConfig when eaten). Medals and trophies: { type "Medal" |
+	"Trophy", level, place }. SECURITY BOUNDARY: the server makes every item from its own results; a client only asks
+	to collect its cook or use an item it owns.
+]]
+export type Item = { type: string, qty: number, food: string?, count: number?, hours: number?, level: string?, place: number? }
+export type CollectOutcome = "Collected" | "NotReady" | "Empty" | "Full" | "Rejected"
+export type UseOutcome = "Eaten" | "NotFood" | "Missing" | "Rejected"
+
+-- How many different item stacks an inventory holds (a safety limit).
+local MAX_ITEM_STACKS = 200
+
+local function itemsOf(data: ProfileData): (any?, any?)
+	local inventory = (data :: any).inventory
+	if typeof(inventory) ~= "table" or typeof(inventory.items) ~= "table" or not isFiniteNumber(inventory.nextItemId) then
+		return nil, nil
+	end
+	return inventory, inventory.items
+end
+
+local function sameItem(a: any, b: any): boolean
+	return a.type == b.type and a.food == b.food and a.count == b.count and a.hours == b.hours and a.level == b.level
+		and a.place == b.place
+end
+
+-- Adds one of `record` (stacking onto an identical item). Returns its id, or nil when full or broken.
+local function addItem(data: ProfileData, record: any): string?
+	local inventory, items = itemsOf(data)
+	if inventory == nil then
+		return nil
+	end
+	local stacks = 0
+	for id, item in pairs(items) do
+		if typeof(item) == "table" and sameItem(item, record) then
+			item.qty = (if isFiniteNumber(item.qty) then item.qty else 0) + 1
+			return id
+		end
+		stacks += 1
+	end
+	if stacks >= MAX_ITEM_STACKS then
+		return nil
+	end
+	local id = tostring(math.floor(inventory.nextItemId))
+	inventory.nextItemId += 1
+	record.qty = 1
+	items[id] = record
+	return id
+end
+
+--[[
+	Collects the finished cook from the chef into the inventory as a food item (user 2026-11-24: "walk up to the chef and
+	ask for their food then it appears in their Inventory") and empties the cooker. Returns the outcome and the item's id.
+	Nothing is written unless "Collected".
+]]
+function ProfileOperations.collectFood(data: ProfileData, nowUnix: number): (CollectOutcome, string?)
+	local kitchen = usableKitchen(data)
+	local inventory = itemsOf(data)
+	if kitchen == nil or inventory == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return "Rejected", nil
+	end
+	if kitchen.steaks < 1 then
+		return "Empty", nil
+	end
+	if nowUnix < kitchen.readyAt then
+		return "NotReady", nil
+	end
+	local hours = if KitchenConfig.isCookHours(kitchen.hours) then kitchen.hours else KitchenConfig.BoostHours
+	local id = addItem(data, { type = "Food", food = cookKind(kitchen), count = math.floor(kitchen.steaks), hours = hours })
+	if id == nil then
+		return "Full", nil
+	end
+	kitchen.steaks = 0
+	kitchen.kind = "Steak"
+	kitchen.hours = KitchenConfig.BoostHours
+	kitchen.startedAt = 0
+	kitchen.readyAt = 0
+	return "Collected", id
+end
+
+-- Uses (eats) one of item `id`: a food's boost starts (KitchenConfig, the cook-timer rules). Returns the outcome, the
+-- boost's percent and the food kind. Nothing is written unless "Eaten".
+function ProfileOperations.useItem(data: ProfileData, id: string, nowUnix: number): (UseOutcome, number?, string?)
+	local _, items = itemsOf(data)
+	local boosts = (data :: any).boosts
+	if items == nil or typeof(boosts) ~= "table" or typeof(boosts.steak) ~= "table" or typeof(id) ~= "string"
+		or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return "Rejected", nil, nil
+	end
+	local item = items[id]
+	if typeof(item) ~= "table" or not isFiniteNumber(item.qty) or item.qty < 1 then
+		return "Missing", nil, nil
+	end
+	if item.type ~= "Food" or not KitchenConfig.isKind(item.food) or not KitchenConfig.isSteakCount(item.count) then
+		return "NotFood", nil, nil
+	end
+	local percent = applyFood(boosts, item.food, item.count, item.hours, nowUnix)
+	if percent == nil then
+		return "Rejected", nil, nil
+	end
+	item.qty -= 1
+	if item.qty < 1 then
+		items[id] = nil
+	end
+	return "Eaten", percent, item.food
+end
+
+-- Gives one medal or trophy (Stage 4, the meet's result decides it). Returns its id or nil.
+function ProfileOperations.addAward(data: ProfileData, kind: string, level: string, place: number): string?
+	if (kind ~= "Medal" and kind ~= "Trophy") or typeof(level) ~= "string" or #level > 20 or not isFiniteNumber(place)
+		or place < 1 or place > 3 then
+		return nil
+	end
+	return addItem(data, { type = kind, level = level, place = math.floor(place) })
+end
+
+-- A copy of the items: id -> item. Reads only.
+function ProfileOperations.getItems(data: ProfileData): { [string]: Item }
+	local copy: { [string]: Item } = {}
+	local _, items = itemsOf(data)
+	for id, item in pairs(items or {}) do
+		if typeof(id) == "string" and typeof(item) == "table" and typeof(item.type) == "string" and isFiniteNumber(item.qty)
+			and item.qty >= 1 then
+			copy[id] = table.clone(item)
+		end
+	end
+	return copy
 end
 
 return ProfileOperations

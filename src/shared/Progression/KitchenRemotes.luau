@@ -13,6 +13,8 @@
 			coins; the price and the cooking time come from KitchenConfig.
 		Eat          client -> server (RemoteFunction)  -> { outcome, percent?, kind?, view? }
 			Eat the finished cook: its boost starts (steaks: training; meals: meets), replacing one of that kind.
+		Collect      client -> server (RemoteFunction)  -> { outcome, itemId?, view? }
+			Ask the chef for the finished cook: it goes into the INVENTORY as a food item (GAME_DESIGN §42).
 		SceneSeen    client -> server (RemoteFunction)  -> KitchenView?
 			The chef scene played to the end: from now on it can be skipped (only a skip button; nothing to gain).
 ]]
@@ -24,6 +26,7 @@ KitchenRemotes.GET = "GetKitchen"
 KitchenRemotes.COOK = "Cook"
 KitchenRemotes.EAT = "Eat"
 KitchenRemotes.SCENE_SEEN = "SceneSeen"
+KitchenRemotes.COLLECT = "Collect"
 
 -- Seconds are relative to the server's clock at the moment it answered.
 export type KitchenView = {
@@ -40,7 +43,8 @@ export type KitchenView = {
 	sceneSeen: boolean,
 	cookHours: number, -- the cook's length (the cook timer): how long its boost will last
 }
-export type RemoteSet = { get: RemoteFunction, cook: RemoteFunction, eat: RemoteFunction, sceneSeen: RemoteFunction }
+export type RemoteSet = { get: RemoteFunction, cook: RemoteFunction, eat: RemoteFunction, sceneSeen: RemoteFunction,
+	collect: RemoteFunction }
 
 local function child(folder: Instance, name: string): RemoteFunction
 	local existing = folder:FindFirstChild(name)
@@ -67,6 +71,7 @@ function KitchenRemotes.createOnServer(replicatedStorage: Instance): RemoteSet
 		cook = child(folder, KitchenRemotes.COOK),
 		eat = child(folder, KitchenRemotes.EAT),
 		sceneSeen = child(folder, KitchenRemotes.SCENE_SEEN),
+		collect = child(folder, KitchenRemotes.COLLECT),
 	}
 end
 
@@ -78,6 +83,7 @@ function KitchenRemotes.waitForClient(replicatedStorage: Instance): RemoteSet
 		cook = folder:WaitForChild(KitchenRemotes.COOK) :: RemoteFunction,
 		eat = folder:WaitForChild(KitchenRemotes.EAT) :: RemoteFunction,
 		sceneSeen = folder:WaitForChild(KitchenRemotes.SCENE_SEEN) :: RemoteFunction,
+		collect = folder:WaitForChild(KitchenRemotes.COLLECT) :: RemoteFunction,
 	}
 end
 

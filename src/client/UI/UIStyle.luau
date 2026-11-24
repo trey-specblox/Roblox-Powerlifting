@@ -429,6 +429,7 @@ local MIN_SCALE = 0.42
 ]]
 UIStyle.MinigameCentre = UDim2.new(0.5, 0, 0.5, 40)
 local FIT_SCALE_NAME = "FitToScreen"
+local fitScale: (GuiObject) -> number
 
 local function anchorAtCentre(piece: GuiObject)
 	-- Only pieces placed by their top-left corner: any other anchor was chosen on purpose and is kept.
@@ -515,6 +516,33 @@ local function placeScaled(piece: GuiObject)
 	piece.Position = placed
 end
 
+--[[
+	The scale for one top-level piece: the screen's scale, and smaller still when the piece (a panel, with room for its
+	title tag above and its BACK button below) would not fit the screen's height or width at that scale (user
+	2026-11-24, a phone: the admin panel's bottom was off the screen). Never below FIT_FLOOR.
+]]
+local FIT_FLOOR = 0.3
+local PANEL_EXTRA_HEIGHT = 96 -- the title tag above a panel and the exit button below it
+local SCREEN_MARGIN = 12
+fitScale = function(piece: GuiObject): number
+	local scale = UIStyle.screenScale()
+	local camera = workspace.CurrentCamera
+	if camera == nil then
+		return scale
+	end
+	local inset = game:GetService("GuiService"):GetGuiInset()
+	local size = piece.Size
+	if size.Y.Scale == 0 and size.Y.Offset > 0 then
+		local room = camera.ViewportSize.Y - inset.Y - SCREEN_MARGIN * 2
+		scale = math.min(scale, room / (size.Y.Offset + PANEL_EXTRA_HEIGHT))
+	end
+	if size.X.Scale == 0 and size.X.Offset > 0 then
+		local room = camera.ViewportSize.X - SCREEN_MARGIN * 2
+		scale = math.min(scale, room / size.X.Offset)
+	end
+	return math.max(scale, FIT_FLOOR)
+end
+
 function UIStyle.fitToScreen(gui: ScreenGui)
 	local function apply(child: Instance)
 		if not child:IsA("GuiObject") then
@@ -536,7 +564,7 @@ function UIStyle.fitToScreen(gui: ScreenGui)
 				end
 			end)
 		end
-		(scale :: UIScale).Scale = UIStyle.screenScale()
+		(scale :: UIScale).Scale = fitScale(child)
 		placeScaled(child)
 	end
 	local function applyAll()

@@ -8329,3 +8329,28 @@ cook multiple things at once all with different timers."
 - **BUILT 2026-11-23:** the cook timer (30 min, 1, 2, 4, 6, 12, 24 h), the square-root prices, the +150% cap (a cook
   takes at most 250), eating the same boost adds its hours up to 24, save version 36. Extra pans wait for the user's
   Game Pass.
+
+## 42. Inventory, holding items, food pick-up, medals and trophies (user, 2026-11-24; NOT BUILT)
+
+The user (2026-11-24, from their phone, with a reference screenshot of another game's inventory): "make it where
+players can just walk up to the chef and ask for their food then it appears in their Inventory, because as of right now
+there is not even a way to store the item and I told u I wanted it to be tradable. so make the inventory and make it
+where they can hold it. For food make it where they hold it over their head, like a server bringing you food. ... all
+items players have in their inventory make it where you hold it out like how roblox has it when someone holds out a
+gear ... collectible, gears, medals, foods, trophies ... have it like the screen shot. You can see the gears, items, on
+the right u can see where to put the gear like belts singlets wrist wraps knee sleeves. On the left you can see brief
+categories ... when players win their first medals/trophies and they get the item in their inventory have a floating ui
+that counts their wins. This could be like another way for them to flex their items."
+
+Decisions (picked from Claude's options, same day):
+
+| Question | Pick |
+|---|---|
+| The INVENTORY screen | **Replaces the GEAR menu.** Categories on the left (ALL, GEAR, FOOD, TROPHIES, MISC), the items in a grid in the middle (rarity-coloured frames), the equip slots on the right (belt, singlet, wrist wraps, knee sleeves), the chosen item's description at the bottom. Layout inspired by the user's reference; never its artwork |
+| Food | **Collected from the chef** when it's done ("ask for their food"), then kept in the inventory as an item (its kind, size, boost and hours), **eaten from the inventory** whenever the player wants, and tradable later. **It never spoils** (spoiling can come with the trading center if needed) |
+| Holding | Any item can be **held**: held out in the hand like a Roblox gear; **food is carried over the head like a waiter** bringing a plate |
+| Medals and trophies | **Top 3 at a Local meet: a gold / silver / bronze MEDAL. Top 3 at Regional, State or Nationals: a TROPHY** (the podium trophy model). Each kind stacks with a count |
+| The win counter | A small floating label over the medal or trophy **while it is held, seen only by players nearby** ("x12 STATE CHAMPION"); nothing floats when it is put away |
+
+Also the same day: **every screen must fit a phone** ("make sure screens don't do this, scale it accordingly with
+mobile"): UIStyle.fitToScreen now shrinks a panel to the screen's height and width, and the admin panel's pages scroll.

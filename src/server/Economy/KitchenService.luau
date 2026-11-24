@@ -26,6 +26,7 @@ local KitchenConfig = require(Shared:WaitForChild("Config"):WaitForChild("Kitche
 local KitchenRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("KitchenRemotes"))
 
 local PlayerDataService = require(script.Parent.Parent:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
+local InventoryService = require(script.Parent.Parent:WaitForChild("PlayerData"):WaitForChild("InventoryService"))
 local KitchenPans = require(script.Parent:WaitForChild("KitchenPans"))
 
 local KitchenService = {}
@@ -105,6 +106,19 @@ function KitchenService.start()
 		-- The steak appears in the player's pan and the clock starts.
 		KitchenPans.refresh(player)
 		return { outcome = outcome or "Rejected", balance = balance, view = PlayerDataService.getKitchen(player) }
+	end
+
+	-- Asking the chef for the finished cook (user 2026-11-24, GAME_DESIGN §42): it goes into the inventory.
+	set.collect.OnServerInvoke = function(player: Player): any
+		if tooSoon(player) then
+			return { outcome = "Busy" }
+		end
+		local outcome, itemId = PlayerDataService.collectFood(player)
+		KitchenPans.refresh(player)
+		if outcome == "Collected" then
+			InventoryService.changed(player)
+		end
+		return { outcome = outcome or "Rejected", itemId = itemId, view = PlayerDataService.getKitchen(player) }
 	end
 
 	set.eat.OnServerInvoke = function(player: Player): any

@@ -465,9 +465,30 @@ function KitchenMenu.start()
 					end
 				end
 			elseif steaks >= 1 then
-				say(string.format("Your %s %s done! Go eat at your pan before %s cold.", string.lower(steaksText(steaks, kind)),
-					if steaks == 1 then "is" else "are", if steaks == 1 then "it gets" else "they get"))
-				ask({ { text = "On my way!", value = "Bye" } })
+				-- Done: the chef hands it over into the inventory (user 2026-11-24, GAME_DESIGN §42: "walk up to the chef and
+				-- ask for their food then it appears in their Inventory").
+				say(string.format("Your %s %s done!", string.lower(steaksText(steaks, kind)), if steaks == 1 then "is" else "are"))
+				local choice = ask({
+					{ text = "Can I have my food?", value = "Collect" },
+					{ text = "Later.", value = "Bye" },
+				})
+				if choice == "Collect" then
+					local ok, answer = pcall(function()
+						return remotes.collect:InvokeServer()
+					end)
+					if ok and typeof(answer) == "table" and answer.outcome == "Collected" then
+						if typeof(answer.view) == "table" then
+							BoostBar.show(answer.view)
+						end
+						bigSound:Play()
+						say("Here you go! It's in your INVENTORY. Eat it whenever you're ready.")
+					elseif ok and typeof(answer) == "table" and answer.outcome == "Full" then
+						say("Your inventory is full. Make some room and come back.")
+					else
+						say("Hold on, something went wrong. Ask me again.")
+					end
+					ask({ { text = "Thanks!", value = "Bye" } })
+				end
 			else
 				say("What are we cooking today?")
 				while true do

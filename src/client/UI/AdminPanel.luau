@@ -44,7 +44,8 @@ local SIZES = UIStyle.TextSizes
 
 local AdminPanel = {}
 
-local PANEL_WIDTH, PANEL_HEIGHT = 640, 760
+-- (760 tall until 2026-11-24: too tall for a phone; the pages scroll instead)
+local PANEL_WIDTH, PANEL_HEIGHT = 640, 640
 local MARGIN = 24
 local GAP = 10
 local BUTTON_HEIGHT = 50
@@ -119,12 +120,29 @@ function AdminPanel.start()
 			UDim2.new(share, -inner * share, 0, height or BUTTON_HEIGHT)
 	end
 
-	local function page(name: string): Frame
-		local frame = Instance.new("Frame")
+	-- A page SCROLLS (user 2026-11-24: on a phone the panel's bottom was cut off): pieces keep their positions from the
+	-- body's top, a clipping strip under the page buttons shows them, and the page scrolls as far as its pieces go.
+	local function page(name: string): ScrollingFrame
+		local top = PAGE_TOP - 8
+		local clip = Instance.new("Frame")
+		clip.Name = name .. "Clip"
+		clip.BackgroundTransparency = 1
+		clip.ClipsDescendants = true
+		clip.Position = UDim2.fromOffset(0, top)
+		clip.Size = UDim2.new(1, 0, 1, -top - 52)
+		clip.Parent = body
+		local frame = Instance.new("ScrollingFrame")
 		frame.Name = name
 		frame.BackgroundTransparency = 1
-		frame.Size = UDim2.fromScale(1, 1)
-		frame.Parent = body
+		frame.BorderSizePixel = 0
+		frame.Position = UDim2.fromOffset(0, -top)
+		frame.Size = UDim2.new(1, 0, 1, top)
+		frame.CanvasSize = UDim2.new()
+		frame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+		frame.ScrollingDirection = Enum.ScrollingDirection.Y
+		frame.ScrollBarThickness = 8
+		frame.ScrollBarImageColor3 = C.yellow
+		frame.Parent = clip
 		return frame
 	end
 	local toolsPage = page("ToolsPage")

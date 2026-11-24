@@ -559,6 +559,49 @@ function PlayerDataService.eatSteak(player: Player): (ProfileOperations.EatOutco
 	return outcome, percent, kind
 end
 
+--[[
+	THE INVENTORY'S ITEMS (GAME_DESIGN §42): food collected from the chef, medals and trophies.
+]]
+function PlayerDataService.getInventory(player: Player): { items: { [string]: ProfileOperations.Item } }?
+	local data = activeData(player, "getInventory")
+	return if data then { items = ProfileOperations.getItems(data) } else nil
+end
+
+-- The finished cook, from the chef into the inventory. Returns the outcome and the item's id.
+function PlayerDataService.collectFood(player: Player): (ProfileOperations.CollectOutcome?, string?)
+	local data = activeData(player, "collectFood")
+	if data == nil then
+		return nil, nil
+	end
+	local outcome: ProfileOperations.CollectOutcome, id = ProfileOperations.collectFood(data, os.time())
+	if outcome == "Collected" then
+		local item = ProfileOperations.getItems(data)[id :: string]
+		print(string.format("[PlayerDataService] %s collected their food: item %s (%s %s x%d, %s h)", player.Name, tostring(id),
+			tostring(item and item.count), tostring(item and item.food), item and item.qty or 0, tostring(item and item.hours)))
+	end
+	return outcome, id
+end
+
+-- Eats one of an inventory food item. Returns the outcome, the boost's percent and the food kind.
+function PlayerDataService.useItem(player: Player, id: string): (ProfileOperations.UseOutcome?, number?, string?)
+	local data = activeData(player, "useItem")
+	if data == nil then
+		return nil, nil, nil
+	end
+	local outcome: ProfileOperations.UseOutcome, percent, kind = ProfileOperations.useItem(data, id, os.time())
+	if outcome == "Eaten" then
+		print(string.format("[PlayerDataService] %s ate item %s: +%.1f%% %s", player.Name, id, percent :: number,
+			if kind == "Meal" then "meet gains" else "training"))
+	end
+	return outcome, percent, kind
+end
+
+-- ADMIN / MEETS: gives a medal or trophy (Stage 4). Returns its id.
+function PlayerDataService.addAward(player: Player, kind: string, level: string, place: number): string?
+	local data = activeData(player, "addAward")
+	return if data then ProfileOperations.addAward(data, kind, level, place) else nil
+end
+
 -- LUCK (GAME_DESIGN §40.7): the cow's wheel. Each is ProfileOperations' operation on the player's active profile.
 function PlayerDataService.getLuck(player: Player): ProfileOperations.LuckView?
 	local data = activeData(player, "getLuck")
