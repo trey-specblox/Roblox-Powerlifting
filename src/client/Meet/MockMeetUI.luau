@@ -171,10 +171,6 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	local actionHolder, action = UIStyle.panel(gui, "Action", UDim2.new(0.5, 0, 1, -30),
 		UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL))
 	actionHolder.AnchorPoint = Vector2.new(0.5, 1)
-	-- Choosing a weight is typed and tapped here: as big as the screen's room allows, not shrunk with the whole screen
-	-- (user 2026-11-24, a phone: "when players type in their numbers extremely small"). Only its title tag sits outside it.
-	actionHolder:SetAttribute("FitToRoom", true)
-	actionHolder:SetAttribute("FitExtraHeight", 40)
 	local stepTag = UIStyle.titleTag(actionHolder, "Tag", "", UDim2.fromOffset(-14, -24), UDim2.fromOffset(300, 40))
 	local timer = UIStyle.frame(actionHolder, "Timer", UDim2.new(1, -92, 0, -20), UDim2.fromOffset(90, 38), C.yellow, 4)
 	timer.ZIndex = 5
@@ -220,7 +216,11 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 	box.PlaceholderText = "0"
 	box.PlaceholderColor3 = C.muted
 	box.TextColor3 = C.white
-	box.TextScaled = true
+	-- A fixed size, not TextScaled: on a phone a TextScaled box drew the typed number tiny while the keyboard was up
+	-- (user 2026-11-24, iPhone screenshot: "when players go to type their number it's extremely small"). 52 fills the
+	-- box's 56 inside its padding; the screen's UIScale shrinks it with the panel.
+	box.TextScaled = false
+	box.TextSize = 52
 	box.FontFace = UIStyle.heading()
 	box.TextXAlignment = Enum.TextXAlignment.Right
 	box.Parent = choose
@@ -488,7 +488,7 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 		end
 		local tall = state.phase == "Choose" or state.phase == "Ready"
 		actionHolder.Size = if state.phase == "Choose"
-			then UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL + (if state.race and not UIStyle.isTouchOnly() then RACE_TALL + 26 else 0))
+			then UDim2.fromOffset(CHOOSE_WIDTH, CHOOSE_TALL + (if state.race then RACE_TALL + 26 else 0))
 			else UDim2.fromOffset(ACTION_WIDTH, if tall then ACTION_TALL else ACTION_SHORT)
 		choose.Visible = state.phase == "Choose"
 		show.Visible = state.phase ~= "Choose"
@@ -614,12 +614,6 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 				end
 			end
 			drawRace(state.race, kg, state.minKg or 0, state.maxKg or math.huge, lift)
-			-- On a phone the race box stays hidden so the panel can be drawn about a third bigger (user 2026-11-24, a phone:
-			-- the numbers were "extremely small"); its main line goes in the hint line below instead.
-			local phoneRace = UIStyle.isTouchOnly() and state.race ~= nil
-			if phoneRace then
-				race.Visible = false
-			end
 			local overLimit = problem == nil and kg ~= nil and cn > 0 and AttemptChoice.isOverLimit(cn, kg :: number)
 			if overLimit then
 				-- The race is only sent where lifts pay (a Local meet with a total still possible).
@@ -627,8 +621,7 @@ function MockMeetUI.build(handlers: Handlers, options: Options?): Ui
 				hint.Text = "OVER THE LIMIT: NO CN OR RECORDS"
 					.. (if state.race then string.format("  ·  +%d COINS IF MADE", coins) else "")
 			else
-				hint.Text = problem or (if phoneRace and raceGoal.Text ~= "" then raceGoal.Text
-					else "Type a weight or pick one, then press Enter or CONFIRM")
+				hint.Text = problem or "Type a weight or pick one, then press Enter or CONFIRM"
 			end
 			hint.TextColor3 = if problem then C.red elseif overLimit then C.yellow else C.muted
 			confirm.BackgroundTransparency = if problem or kg == nil then 0.5 else 0

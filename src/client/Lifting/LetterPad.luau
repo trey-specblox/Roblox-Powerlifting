@@ -16,8 +16,10 @@
 	keyboard's, so nothing here can change a result, and no setting depends on the
 	player saying they are on a phone.
 
-	Every letter is always in its usual place, and the next correct key is NOT marked:
-	reading the word is the game.
+	Every letter is always in its usual place. The key to press next GLOWS, one by one
+	as the word is typed (user 2026-11-24: "on mobile make it where the letter the
+	lifter needs to press, glows, one by one it glows"; it used to be unmarked). Only
+	on this phone pad: a real keyboard still reads the word off the panel.
 
 	Each key reacts to its own press (InputBegan, not a click), the moment a finger
 	lands, so two thumbs can overlap and a key does not wait for its release.
@@ -61,18 +63,29 @@ type Key = {
 	tween: Tween?,
 }
 
+-- The key lit as the next one to press, its pulse and its stroke.
+local GLOW_PULSE = TweenInfo.new(0.35, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+local keysByLetter: { [string]: Key } = {}
+local glowing: Key? = nil
+local glowPulse: Tween? = nil
+
 local gui: ScreenGui? = nil
 local onToken: ((token: string) -> ())? = nil
 local lastPressed: Key? = nil
 local tapSound: Sound? = nil
 local missSound: Sound? = nil
 
+-- A key's resting colour: lit if it is the next one to press.
+local function restColour(key: Key): Color3
+	return if glowing == key then UIStyle.LiftColours.Deadlift else C.navyDeep
+end
+
 local function flash(key: Key, colour: Color3)
 	if key.tween then
 		key.tween:Cancel()
 	end
 	key.button.BackgroundColor3 = colour
-	local tween = TweenService:Create(key.button, FLASH_INFO, { BackgroundColor3 = C.navyDeep })
+	local tween = TweenService:Create(key.button, FLASH_INFO, { BackgroundColor3 = restColour(key) })
 	key.tween = tween
 	tween:Play()
 end
@@ -95,6 +108,7 @@ local function makeKey(pad: Frame, letter: string, position: UDim2)
 	UIStyle.stroke(button, C.white, 2)
 
 	local key: Key = { button = button, tween = nil }
+	keysByLetter[letter] = key
 	button.InputBegan:Connect(function(input: InputObject)
 		local kind = input.UserInputType
 		if kind ~= Enum.UserInputType.Touch and kind ~= Enum.UserInputType.MouseButton1 then
@@ -128,6 +142,63 @@ local function playSound(sound: Sound?)
 	if sound then
 		sound.TimePosition = 0
 		sound:Play()
+	end
+end
+
+local function unglow()
+	local key = glowing
+	glowing = nil
+	if glowPulse then
+		glowPulse:Cancel()
+		glowPulse = nil
+	end
+	if key then
+		-- Fades back (a press's flash was heading for the lit colour: it is replaced, not left to finish).
+		if key.tween then
+			key.tween:Cancel()
+		end
+		local fade = TweenService:Create(key.button, FLASH_INFO, { BackgroundColor3 = C.navyDeep })
+		key.tween = fade
+		fade:Play()
+		key.button.BackgroundTransparency = KEY_TRANSPARENCY
+		key.button.TextColor3 = C.white
+		local stroke = key.button:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Color = C.white
+			stroke.Thickness = 2
+			stroke.Transparency = 0
+		end
+	end
+end
+
+--[[
+	Lights the key for `token` as the next one to press (nil: none). Called by TypingUI
+	(Hooks.onNext) each time the letter to press changes.
+]]
+function LetterPad.next(token: string?)
+	local key = if token then keysByLetter[string.upper(token)] else nil
+	if key == glowing then
+		return
+	end
+	unglow()
+	if key == nil then
+		return
+	end
+	glowing = key
+	if key.tween then
+		key.tween:Cancel()
+	end
+	key.button.BackgroundColor3 = UIStyle.LiftColours.Deadlift
+	key.button.BackgroundTransparency = 0
+	key.button.TextColor3 = C.ink
+	local stroke = key.button:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Color = C.white
+		stroke.Thickness = 4
+		-- The glow: its white edge pulses.
+		stroke.Transparency = 0
+		glowPulse = TweenService:Create(stroke, GLOW_PULSE, { Transparency = 0.7 })
+		glowPulse:Play()
 	end
 end
 
@@ -220,6 +291,7 @@ end
 function LetterPad.stop()
 	onToken = nil
 	lastPressed = nil
+	unglow()
 	if gui then
 		gui.Enabled = false
 	end

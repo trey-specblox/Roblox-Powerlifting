@@ -520,17 +520,12 @@ end
 	The scale for one top-level piece: the screen's scale, and smaller still when the piece (a panel, with room for its
 	title tag above and its BACK button below) would not fit the screen's height or width at that scale (user
 	2026-11-24, a phone: the admin panel's bottom was off the screen). Never below FIT_FLOOR.
-	A piece with the attribute FitToRoom = true skips the screen's scale and is only as small as the room makes it (user
-	2026-11-24: on a phone the meet's weight panel was "extremely small" at the screen's 0.44); FitExtraHeight (a number)
-	replaces the room kept for a title tag and BACK button when the piece has less around it.
 ]]
 local FIT_FLOOR = 0.3
 local PANEL_EXTRA_HEIGHT = 96 -- the title tag above a panel and the exit button below it
 local SCREEN_MARGIN = 12
 fitScale = function(piece: GuiObject): number
-	local scale = if piece:GetAttribute("FitToRoom") == true then 1 else UIStyle.screenScale()
-	local extra = piece:GetAttribute("FitExtraHeight")
-	local extraHeight = if typeof(extra) == "number" then extra else PANEL_EXTRA_HEIGHT
+	local scale = UIStyle.screenScale()
 	local camera = workspace.CurrentCamera
 	if camera == nil then
 		return scale
@@ -539,7 +534,7 @@ fitScale = function(piece: GuiObject): number
 	local size = piece.Size
 	if size.Y.Scale == 0 and size.Y.Offset > 0 then
 		local room = camera.ViewportSize.Y - inset.Y - SCREEN_MARGIN * 2
-		scale = math.min(scale, room / (size.Y.Offset + extraHeight))
+		scale = math.min(scale, room / (size.Y.Offset + PANEL_EXTRA_HEIGHT))
 	end
 	if size.X.Scale == 0 and size.X.Offset > 0 then
 		local room = camera.ViewportSize.X - SCREEN_MARGIN * 2
@@ -566,13 +561,6 @@ function UIStyle.fitToScreen(gui: ScreenGui)
 				if child.Position ~= writtenPositions[child] then
 					fullSizePositions[child] = child.Position
 					placeScaled(child)
-				end
-			end)
-			-- A piece that changes height (the meet's action panel) fits again.
-			child:GetPropertyChangedSignal("Size"):Connect(function()
-				local fit = child:FindFirstChild(FIT_SCALE_NAME)
-				if fit and fit:IsA("UIScale") then
-					fit.Scale = fitScale(child)
 				end
 			end)
 		end

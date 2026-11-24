@@ -49,6 +49,14 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     the race box is hidden (its main line goes in the hint line above CONFIRM). STUDIO, iPhone 17 Pro (750x381,
     ForcePhoneScreens for the test only, removed after): panel 0.44 -> 0.71 scale, hint "YOU NEED A 25 KG SQUAT TO
     TAKE THE LEAD". The coach's speech bubble still sits partly behind the panel's top on a phone.
+- SECOND PHONE TEST (2026-11-24, iPhone screenshot). NOT COMMITTED:
+  - The user: "You mistaken what I meant for the meet panel. The panel was fine. Now it's huge ... revert those
+    changes what I meant was when players go to type their number it's extremely small." UIStyle and MockMeetUI are
+    back to before 7193e2b; the weight TextBox is no longer TextScaled (TextSize 52): on the phone, TextScaled drew
+    the typed "900" tiny while the keyboard was up. NOT testable in Studio (no phone keyboard): the user checks it.
+  - DEADLIFT ON A PHONE: the LetterPad key to press next glows (deadlift colour, pulsing white edge), one by one
+    (TypingUI Hooks.onNext -> LetterPad.next). STUDIO (ForcePhoneScreens, removed after): STANCE lit S, HIPS lit H;
+    tapping F in FEET moved the glow to E, it stayed lit for the double E; the glow clears when the pull ends.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip

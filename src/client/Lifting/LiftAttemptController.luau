@@ -438,7 +438,7 @@ local function onPresentPhase(payload: any)
 		if LetterPad.isWanted() then
 			-- A phone's own keyboard is too small to type on in time (user 2026-11-05).
 			LetterPad.start(TypingUI.registerToken)
-			hooks = { onHit = LetterPad.hit, onMiss = LetterPad.miss }
+			hooks = { onHit = LetterPad.hit, onMiss = LetterPad.miss, onNext = LetterPad.next }
 		else
 			SequenceInput.bind(TypingUI.registerToken)
 		end

@@ -166,11 +166,14 @@ export type Reporter = (events: { Simulation.TokenEvent }) -> ()
 
 --[[
 	For an input that reacts to whether each press landed, as a phone's LetterPad does
-	(a flash and a sound). A real keyboard has no use for these.
+	(a flash and a sound). A real keyboard has no use for these. onNext, when given, hears
+	the letter to press next (nil when there is none), so the phone's pad can light that
+	key (user 2026-11-24).
 ]]
 export type Hooks = {
 	onHit: () -> (),
 	onMiss: () -> (),
+	onNext: ((token: string?) -> ())?,
 }
 
 type Visuals = {
@@ -246,6 +249,8 @@ local lastWrongCount = 0
 local flashUntil = 0
 -- Correct-key count last seen, to tell the hooks about a new hit.
 local lastCorrectCount = 0
+-- The next letter last told to the hooks (onNext), so they hear only changes.
+local lastNextToken: string? = nil
 
 local function build(instructionText: string): Visuals
 	local gui = Instance.new("ScreenGui")
@@ -626,6 +631,19 @@ local function redraw(delta: number)
 		current.cursor.Visible = false
 	end
 
+	-- The letter to press next, for an input that shows it (the phone's LetterPad lights that key).
+	if hooks ~= nil and hooks.onNext ~= nil then
+		local nextToken: string? = nil
+		if activeCue ~= nil and not done and markCurrent then
+			local cue = challenge.cues[activeCue]
+			nextToken = cue and cue.tokens[expected - (cueFirstToken[activeCue] or 1) + 1]
+		end
+		if nextToken ~= lastNextToken then
+			lastNextToken = nextToken
+			hooks.onNext(nextToken)
+		end
+	end
+
 	--[[
 		The player's progress is the percentage (top right) and the bar. The raw
 		numbers below are DEV ONLY, labelled so, and only shown when
@@ -694,6 +712,7 @@ function TypingUI.run(challenge: TypingChallengeType, report: Reporter, hooks: H
 	pendingEvents = {}
 	lastWrongCount = 0
 	lastCorrectCount = 0
+	lastNextToken = nil
 	flashUntil = 0
 	markCurrent = true
 	phaseClock = os.clock()

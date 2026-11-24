@@ -2221,7 +2221,9 @@ left mouse button on a computer works every press game: the squat's bar, the ben
 holds, and every skill check, which also still takes Space. There is no on-screen button to find.
 On a phone the deadlift's letters sit above the keyboard. That keyboard is the game's own, not the
 phone's (user, 2026-11-05: the phone's keys are so small they cause typos): a normal QWERTY layout with
-much taller keys, all 26 letters always in their usual places, and the next letter not marked. Same
+much taller keys, all 26 letters always in their usual places, and **the key to press next GLOWS, one
+letter at a time** (changed by the user 2026-11-24: "on mobile make it where the letter the lifter needs to press,
+glows, one by one it glows"; until then it was not marked). Same
 words, time limit and penalties as typing on a computer. A computer, or a phone with a real keyboard
 attached, still types as before.
 
@@ -8374,3 +8376,5 @@ and stages 3-4 (uncommitted at the time of writing):
   ... inside a box just have it where the text floats"); held food is its REAL size, as long as the pan showed it
   ("if a player has a 250 steak and it's huge on the pan. They should be able to hold it out and flex it. Same for meet
   meals"): a big one sits forward of the chest, held at its near edge, so it never swallows the lifter.
+- The meet's weight panel keeps its size on phones (a bigger panel was tried and reverted on the user's word: "The
+  panel was fine. Now it's huge"); the typed number in its box is big on a phone (it showed tiny while typing).
