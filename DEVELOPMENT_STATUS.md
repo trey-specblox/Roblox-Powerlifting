@@ -13,7 +13,7 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: published place version 1055 (= 1054 + the admin GIVE AWARD buttons); inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1058 (the phone-test fixes, commit 7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
@@ -39,7 +39,7 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
   existed but had no button): PLAYER STATS page, two rows at the bottom: LOCAL GOLD / SILVER / BRONZE medals and
   REGIONAL / STATE / NATIONALS 1ST trophies. STUDIO: clicked STATE 1ST and LOCAL GOLD -> both in the inventory; the
   last row scrolls fully into view. Commit db54737, saved and PUBLISHED as place version 1055.
-- AFTER THE USER'S PHONE TEST (2026-11-24). NOT COMMITTED:
+- AFTER THE USER'S PHONE TEST (2026-11-24). Commit 7193e2b, saved and PUBLISHED as place version 1058:
   - HeldCounters: floating words only (metal colour, dark outline), no box.
   - HoldService: held food sized like the pan (KitchenConfig.steakLength(count) along its length; a 250-steak cook ~24
     studs). HeldPlates: a plate deeper than the hands reach goes forward until its near edge clears the chest.
