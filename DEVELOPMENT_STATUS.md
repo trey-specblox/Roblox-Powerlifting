@@ -13,7 +13,7 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: published place version 1063 (boost chips hide during meets; commit abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1064 (LEAVE sign at Local/Regional meets; commit eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
@@ -73,7 +73,7 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     NationalsMeetUI, which is always on). STUDIO, iPhone size: shown before the meet, hidden during it, back after
     leaving.
 - LEAVE SIGN AT LOCAL / REGIONAL MEETS (2026-11-24, user: "Add back a way to leave local regional meets n stuff. Maby make
-  it where u can walk around to a leave sign"). NOT COMMITTED. Lifters there stand anchored at their waiting spot (no
+  it where u can walk around to a leave sign"). Commit eb5248d, PUBLISHED as place version 1064. Lifters there stand anchored at their waiting spot (no
   walking to the venue's EXIT), and the phone LEAVE button was removed for stray taps. Now each platform has a LEAVE
   board on the warm-up room wall beside the waiting spot (LocalMeetVenue, reused MeetBoard) with a HOLD-to-leave prompt
   (1.5 s) that only that platform's lifter sees (LocalMeetController enables it by the Hall/Platform attributes; tag
