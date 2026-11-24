@@ -13,7 +13,7 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: published place version 1062 (boost chips in one right-hand column, every HUD hides during lifts; commit 70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1063 (boost chips hide during meets; commit abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
@@ -67,7 +67,8 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     come back as they were.
   - STUDIO: iPhone 17 Pro: chips at x 588-744, y 151-219, clear of the jump button and the bottom middle; computer:
     bottom right corner. A squat: all ten screens off during it, back on 5 s later when it ended.
-  - FOURTH PHONE TEST (2026-11-24): in a meet the column sat on the SCORECARD (right side). NOT COMMITTED: BoostBar
+  - FOURTH PHONE TEST (2026-11-24): in a meet the column sat on the SCORECARD (right side). Commit abbfe13, PUBLISHED
+    as place version 1063: BoostBar
     hides the column while a meet's screen is up (LocalMeet, also used at State/Nationals, or MockMeet; not
     NationalsMeetUI, which is always on). STUDIO, iPhone size: shown before the meet, hidden during it, back after
     leaving.
