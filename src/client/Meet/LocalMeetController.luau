@@ -22,6 +22,7 @@
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -57,10 +58,15 @@ function LocalMeetController.start()
 	-- THE LEAVE SIGN beside each platform's waiting spot (user 2026-11-24): its hold-to-leave prompt is off for
 	-- everyone; this switches on the one for the platform this player is lifting on (the server checks it again).
 	-- No prompt tile over the screen (user 2026-11-24: "it covers up the screen. Just have the screen n when players
-	-- hold it the bar fills up"): the sign's own screen is the button. A finger (or the mouse) held on it holds the
+	-- hold it the bar fills up"): the sign itself is the button. A finger (or the mouse) held on the sign holds the
 	-- prompt (InputHoldBegin), E still works, and a bar along the sign's foot fills over the hold.
+	-- The press is found by a ray from the camera tested against the sign's screen box alone, by plain geometry (user
+	-- 2026-11-24: "I'm trying to hold the thing it won't work": a button on the sign's SurfaceGui never got the touch,
+	-- the lifter, the coach and the speech bubble stand in front of it, and the board's parts don't take raycasts).
 	local leaveOverlay: SurfaceGui? = nil
 	local overlayFor: ProximityPrompt? = nil
+	local overlayBoard: Instance? = nil
+	local holdingInput: InputObject? = nil
 	local overlayConnections: { RBXScriptConnection } = {}
 	local function clearOverlay()
 		for _, connection in ipairs(overlayConnections) do
@@ -70,7 +76,10 @@ function LocalMeetController.start()
 		if leaveOverlay then
 			leaveOverlay:Destroy()
 		end
-		leaveOverlay, overlayFor = nil, nil
+		if holdingInput and overlayFor then
+			overlayFor:InputHoldEnd()
+		end
+		leaveOverlay, overlayFor, overlayBoard, holdingInput = nil, nil, nil, nil
 	end
 	local function overlayLeave(leave: ProximityPrompt)
 		if overlayFor == leave and leaveOverlay then
@@ -94,12 +103,6 @@ function LocalMeetController.start()
 		gui.LightInfluence = 0
 		gui.ZOffset = 1
 		gui.ResetOnSpawn = false
-		local button = Instance.new("TextButton")
-		button.Name = "Hold"
-		button.BackgroundTransparency = 1
-		button.Text = ""
-		button.Size = UDim2.fromScale(1, 1)
-		button.Parent = gui
 		local track = Instance.new("Frame")
 		track.Name = "Track"
 		track.AnchorPoint = Vector2.new(0.5, 1)
@@ -126,19 +129,6 @@ function LocalMeetController.start()
 			end
 			fill.Size = UDim2.fromScale(0, 1)
 		end
-		local function holdInput(input: InputObject): boolean
-			return input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1
-		end
-		table.insert(overlayConnections, button.InputBegan:Connect(function(input)
-			if holdInput(input) then
-				leave:InputHoldBegin()
-			end
-		end))
-		table.insert(overlayConnections, button.InputEnded:Connect(function(input)
-			if holdInput(input) then
-				leave:InputHoldEnd()
-			end
-		end))
 		table.insert(overlayConnections, leave.PromptButtonHoldBegan:Connect(function()
 			empty()
 			filling = TweenService:Create(fill, TweenInfo.new(leave.HoldDuration, Enum.EasingStyle.Linear),
@@ -148,8 +138,58 @@ function LocalMeetController.start()
 		table.insert(overlayConnections, leave.PromptButtonHoldEnded:Connect(empty))
 		table.insert(overlayConnections, leave.Triggered:Connect(empty))
 		gui.Parent = player:WaitForChild("PlayerGui")
-		leaveOverlay, overlayFor = gui, leave
+		leaveOverlay, overlayFor, overlayBoard = gui, leave, screenPart
 	end
+	-- A finger or the mouse pressed on the lifter's own LEAVE sign starts the hold; letting go (that same press) ends it.
+	local SIGN_MARGIN = 1.15 -- a little bigger than the screen, for a thumb
+	local function onSign(position: Vector3): boolean
+		local screenPart, camera = overlayBoard, Workspace.CurrentCamera
+		if screenPart == nil or not screenPart:IsA("BasePart") or camera == nil then
+			return false
+		end
+		-- The ray in the screen's own space, against its box (each axis: where the ray enters and leaves the slab).
+		local ray = camera:ScreenPointToRay(position.X, position.Y)
+		local origin = screenPart.CFrame:PointToObjectSpace(ray.Origin)
+		local direction = screenPart.CFrame:VectorToObjectSpace(ray.Direction)
+		local half = screenPart.Size * (SIGN_MARGIN / 2) + Vector3.new(0.3, 0.3, 0.3)
+		local enter, leave = -math.huge, math.huge
+		for _, axis in ipairs({ "X", "Y", "Z" }) do
+			local o, d, h = (origin :: any)[axis], (direction :: any)[axis], (half :: any)[axis]
+			if math.abs(d) < 1e-6 then
+				if math.abs(o) > h then
+					return false
+				end
+			else
+				local t1, t2 = (-h - o) / d, (h - o) / d
+				enter = math.max(enter, math.min(t1, t2))
+				leave = math.min(leave, math.max(t1, t2))
+			end
+		end
+		return enter <= leave and leave > 0
+	end
+	UserInputService.InputBegan:Connect(function(input)
+		local kind = input.UserInputType
+		local leave = overlayFor
+		if leave == nil or holdingInput ~= nil
+			or (kind ~= Enum.UserInputType.Touch and kind ~= Enum.UserInputType.MouseButton1) then
+			return
+		end
+		if onSign(input.Position) then
+			holdingInput = input
+			leave:InputHoldBegin()
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(input)
+		local leave = overlayFor
+		if holdingInput ~= nil and (input == holdingInput
+			or (input.UserInputType == Enum.UserInputType.MouseButton1
+				and holdingInput.UserInputType == Enum.UserInputType.MouseButton1)) then
+			holdingInput = nil
+			if leave then
+				leave:InputHoldEnd()
+			end
+		end
+	end)
 	local function fitLeavePrompts()
 		local hallIndex = player:GetAttribute(LocalMeetConfig.HallAttribute)
 		local platformIndex = player:GetAttribute(LocalMeetConfig.PlatformAttribute)

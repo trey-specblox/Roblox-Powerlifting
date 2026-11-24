@@ -86,6 +86,13 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     a SurfaceGui on the lifter's own LEAVE board screen: touching/clicking it calls InputHoldBegin/End, and a yellow bar
     along the sign's foot fills over the hold (PromptButtonHoldBegan/Ended). STUDIO: no tile; held E -> the bar filled
     on the sign, then "withdrew from the meet (held the LEAVE sign)" twice; let go early -> stayed in the meet.
+  - HOLDING WITH A FINGER DIDN'T WORK on the phone ("I'm trying to hold the thing it won't work"; only E had been
+    tested). NOT COMMITTED: the SurfaceGui button never got the touch, and the board's parts take no raycasts. Now
+    LocalMeetController listens to every Touch / MouseButton1 press, casts the camera ray (ScreenPointToRay) and tests
+    it against the sign's screen box by geometry (15% margin); a hit calls InputHoldBegin, letting go InputHoldEnd.
+    STUDIO (ForcePhoneScreens): prompt:InputHoldBegin works; a mouse press held on the sign -> HoldBegan, withdrew,
+    meet screen off. (Test clicks are in GUI coordinates = viewport minus the 58 px inset, and the chalk-shot camera
+    moves: aim from a fresh measurement.)
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip
