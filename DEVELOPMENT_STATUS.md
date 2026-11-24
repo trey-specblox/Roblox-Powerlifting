@@ -13,7 +13,7 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: published place version 1058 (the phone-test fixes, commit 7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1060 (meet panel reverted, big typed weight, deadlift letter glow; commit 00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
@@ -49,7 +49,7 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     the race box is hidden (its main line goes in the hint line above CONFIRM). STUDIO, iPhone 17 Pro (750x381,
     ForcePhoneScreens for the test only, removed after): panel 0.44 -> 0.71 scale, hint "YOU NEED A 25 KG SQUAT TO
     TAKE THE LEAD". The coach's speech bubble still sits partly behind the panel's top on a phone.
-- SECOND PHONE TEST (2026-11-24, iPhone screenshot). NOT COMMITTED:
+- SECOND PHONE TEST (2026-11-24, iPhone screenshot). Commit 00f1577, saved and PUBLISHED as place version 1060:
   - The user: "You mistaken what I meant for the meet panel. The panel was fine. Now it's huge ... revert those
     changes what I meant was when players go to type their number it's extremely small." UIStyle and MockMeetUI are
     back to before 7193e2b; the weight TextBox is no longer TextScaled (TextSize 52): on the phone, TextScaled drew
