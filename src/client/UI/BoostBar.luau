@@ -41,6 +41,9 @@ local make, corner, outline, glow, words = UIFancy.make, UIFancy.corner, UIFancy
 
 local BoostBar = {}
 
+-- The meets' own screens (MockMeetUI's: LocalMeet, also used at State and Nationals, and MockMeet): the chips hide
+-- while one is up. (Not NationalsMeetUI: that screen is always on, holding only its curtain and lift-off pieces.)
+local MEET_SCREENS = { "LocalMeet", "MockMeet" }
 local CHIP_HEIGHT = 44
 local CHIP_WIDTH = 350
 local PILL = UDim.new(1, 0)
@@ -142,6 +145,32 @@ function BoostBar.start()
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 	layout.Padding = UDim.new(0, 10)
 	layout.Parent = holder
+
+	-- In a meet the scorecard takes the right of the screen, so the column steps aside while a meet's screen is up
+	-- (user 2026-11-24, a phone: the boosts and luck sat on the SCORECARD). It comes back when the meet's screen goes.
+	local playerGui = player:WaitForChild("PlayerGui")
+	local meetScreens: { [ScreenGui]: boolean } = {}
+	local function fitAroundMeets()
+		local meetUp = false
+		for screen in pairs(meetScreens) do
+			if screen.Parent and screen.Enabled then
+				meetUp = true
+			end
+		end
+		holder.Visible = not meetUp
+	end
+	local function watchScreen(child: Instance)
+		if child:IsA("ScreenGui") and table.find(MEET_SCREENS, child.Name) and meetScreens[child] == nil then
+			meetScreens[child] = true
+			child:GetPropertyChangedSignal("Enabled"):Connect(fitAroundMeets)
+			child.AncestryChanged:Connect(fitAroundMeets)
+			fitAroundMeets()
+		end
+	end
+	for _, child in ipairs(playerGui:GetChildren()) do
+		watchScreen(child)
+	end
+	playerGui.ChildAdded:Connect(watchScreen)
 
 	-- A glossy pill: a gradient fill with a dark edge and a soft glow, a shine on its top half. Returns the chip (hidden)
 	-- and its fill (to put things on).

@@ -67,6 +67,10 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     come back as they were.
   - STUDIO: iPhone 17 Pro: chips at x 588-744, y 151-219, clear of the jump button and the bottom middle; computer:
     bottom right corner. A squat: all ten screens off during it, back on 5 s later when it ended.
+  - FOURTH PHONE TEST (2026-11-24): in a meet the column sat on the SCORECARD (right side). NOT COMMITTED: BoostBar
+    hides the column while a meet's screen is up (LocalMeet, also used at State/Nationals, or MockMeet; not
+    NationalsMeetUI, which is always on). STUDIO, iPhone size: shown before the meet, hidden during it, back after
+    leaving.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip
