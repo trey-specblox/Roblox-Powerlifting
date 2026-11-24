@@ -39,6 +39,16 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
   existed but had no button): PLAYER STATS page, two rows at the bottom: LOCAL GOLD / SILVER / BRONZE medals and
   REGIONAL / STATE / NATIONALS 1ST trophies. STUDIO: clicked STATE 1ST and LOCAL GOLD -> both in the inventory; the
   last row scrolls fully into view. Commit db54737, saved and PUBLISHED as place version 1055.
+- AFTER THE USER'S PHONE TEST (2026-11-24). NOT COMMITTED:
+  - HeldCounters: floating words only (metal colour, dark outline), no box.
+  - HoldService: held food sized like the pan (KitchenConfig.steakLength(count) along its length; a 250-steak cook ~24
+    studs). HeldPlates: a plate deeper than the hands reach goes forward until its near edge clears the chest.
+  - MEET WEIGHT PANEL ON PHONES ("when players type in their numbers extremely small"): the whole meet screen was
+    shrunk to the phone's 0.44 screen scale. UIStyle.fitScale: attribute FitToRoom (skip the screen scale, only fit
+    the room) + FitExtraHeight; pieces re-fit when their Size changes. MockMeetUI's action panel uses both; on a phone
+    the race box is hidden (its main line goes in the hint line above CONFIRM). STUDIO, iPhone 17 Pro (750x381,
+    ForcePhoneScreens for the test only, removed after): panel 0.44 -> 0.71 scale, hint "YOU NEED A 25 KG SQUAT TO
+    TAKE THE LEAD". The coach's speech bubble still sits partly behind the panel's top on a phone.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip

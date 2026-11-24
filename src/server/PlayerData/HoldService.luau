@@ -24,6 +24,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ShopConfig = require(Shared:WaitForChild("Config"):WaitForChild("ShopConfig"))
 local MeetLevelConfig = require(Shared:WaitForChild("Config"):WaitForChild("MeetLevelConfig"))
+local KitchenConfig = require(Shared:WaitForChild("Config"):WaitForChild("KitchenConfig"))
 local ShopRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("ShopRemotes"))
 
 local ServerRoot = script.Parent.Parent
@@ -122,7 +123,14 @@ local function resolve(player: Player, key: string): (Model?, string?, { count: 
 			local models = ReplicatedStorage:FindFirstChild("KitchenModels")
 			local source = models and models:FindFirstChild(if item.food == "Meal" then "MeetMeal" else "BigSteak")
 			if source and source:IsA("Model") then
-				return prepare(source:Clone(), HELD_SIZES.Food), "Food", nil
+				-- Its REAL size (user 2026-11-24: "if a player has a 250 steak and it's huge on the pan. They should be able
+				-- to hold it out and flex it. Same for meet meals"): as long as the pan showed it (KitchenPans.showSteak:
+				-- KitchenConfig.steakLength of the cook's steak count, along the model's length).
+				local food = prepare(source:Clone(), HELD_SIZES.Food)
+				food:ScaleTo(1)
+				local length = math.max(food:GetExtentsSize().X, 0.1)
+				food:ScaleTo(math.max(KitchenConfig.steakLength(item.count or 1), HELD_SIZES.Food) / length)
+				return food, "Food", nil
 			end
 		elseif (item.type == "Trophy" or item.type == "Medal") and item.level and item.place then
 			local place = item.place :: number

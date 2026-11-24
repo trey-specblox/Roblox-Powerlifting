@@ -34,22 +34,18 @@ local function drawFor(tool: Tool)
 	local gui = labels[tool]
 	if gui == nil then
 		gui = make("BillboardGui", {
-			Name = "WinCounter", Size = UDim2.fromOffset(220, 46), StudsOffset = Vector3.new(0, 2.2, 0), AlwaysOnTop = false,
+			Name = "WinCounter", Size = UDim2.fromOffset(240, 40), StudsOffset = Vector3.new(0, 2.2, 0), AlwaysOnTop = false,
 			LightInfluence = 0, MaxDistance = NEAR_STUDS, Adornee = handle, Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
 		})
-		local back = make("Frame", { Name = "Back", BackgroundColor3 = Color3.fromRGB(10, 14, 34), BackgroundTransparency = 0.25,
-			BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1, 0.8),
-			Parent = gui })
-		UIFancy.corner(back, UDim.new(0, 10))
-		UIFancy.outline(back, 2, if typeof(colour) == "Color3" then colour else Color3.new(1, 1, 1))
-		local text = UIFancy.words(back, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 20, 2,
+		-- Just the words floating over it, no box (user 2026-11-24: "instead of the text ui ... inside a box just have it
+		-- where the text floats"): the metal's colour with a dark outline so it reads on any background.
+		local text = UIFancy.words(gui, "Text", UDim2.fromScale(0, 0), UDim2.fromScale(1, 1), 24, 2.5,
 			if typeof(colour) == "Color3" then colour else Color3.new(1, 1, 1))
 		text.TextScaled = true
-		make("UITextSizeConstraint", { MaxTextSize = 22, Parent = text })
-		make("UIPadding", { PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6), Parent = text })
+		make("UITextSizeConstraint", { MaxTextSize = 26, Parent = text })
 		labels[tool] = gui
 	end
-	local text = gui:FindFirstChild("Back") and (gui :: any).Back:FindFirstChild("Text")
+	local text = gui:FindFirstChild("Text")
 	if text and text:IsA("TextLabel") then
 		text.Text = string.format("x%d  %s", count, label)
 	end

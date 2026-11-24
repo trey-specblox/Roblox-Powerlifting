@@ -20,6 +20,8 @@ local HeldPlates = {}
 
 -- How far above the hands' centres the plate's bottom sits (the hand is about 0.3 thick, palms up).
 local PALM_UP_STUDS = 0.16
+-- A plate deeper than the hands reach sits forward with this much room between its near edge and the chest.
+local CHEST_CLEAR_STUDS = 0.3
 -- How long the carry has to be playing before the hands are measured (the animation fades in over 0.25 s).
 local SETTLE_SECONDS = 0.45
 local CHECK_SECONDS = 0.2
@@ -62,6 +64,20 @@ local function fitGrip(tool: Tool, character: Model): boolean
 		return false
 	end
 	local middle = (right.Position + left.Position) / 2 + torso.CFrame.UpVector * PALM_UP_STUDS
+	-- A big plate (a 250-steak cook is ~24 studs, user 2026-11-24: "hold it out and flex it") would swallow the lifter if
+	-- it sat centred on the hands: it goes forward until its near edge is just in front of the chest.
+	local food = tool:FindFirstChildOfClass("Model")
+	if food then
+		local _, size = food:GetBoundingBox()
+		local look = torso.CFrame.LookVector
+		local handsAhead = (middle - torso.Position):Dot(look)
+		local lower = character:FindFirstChild("LowerTorso")
+		local bodyDepth = math.max(torso.Size.Z, if lower and lower:IsA("BasePart") then lower.Size.Z else 0)
+		local needAhead = bodyDepth / 2 + CHEST_CLEAR_STUDS + size.Z / 2
+		if needAhead > handsAhead then
+			middle += look * (needAhead - handsAhead)
+		end
+	end
 	local wanted = CFrame.new(middle) * torso.CFrame.Rotation
 	-- handle = hand * C0 * C1:Inverse(), so C1 = handle:Inverse() * hand * C0.
 	grip.C1 = wanted:Inverse() * right.CFrame * grip.C0

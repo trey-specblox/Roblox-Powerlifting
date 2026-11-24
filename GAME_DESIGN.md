@@ -8370,3 +8370,7 @@ and stages 3-4 (uncommitted at the time of writing):
   art/scripts/carry_animations.py; the over-the-head pose was made first and replaced at the user's request): the arms
   only, over the walk; each screen fits the plate flat on top of both palms (client HeldPlates). Tested in Studio:
   standing, walking at full speed (stays centred and level), put away when a lift starts.
+- **After the user's phone test (2026-11-24):** the win counter is just floating words, no box ("instead of the text ui
+  ... inside a box just have it where the text floats"); held food is its REAL size, as long as the pan showed it
+  ("if a player has a 250 steak and it's huge on the pan. They should be able to hold it out and flex it. Same for meet
+  meals"): a big one sits forward of the chest, held at its near edge, so it never swallows the lifter.
