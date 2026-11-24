@@ -176,6 +176,9 @@ function KitchenClocks.start()
 			end
 		end
 		eatPromptFor(clock, mine and ready)
+		if clock.eat then
+			(clock.eat :: ProximityPrompt).ObjectText = if zone:GetAttribute("Kind") == "Meal" then "Your meet meal" else "Your steak"
+		end
 	end
 
 	local add: (Instance) -> ()

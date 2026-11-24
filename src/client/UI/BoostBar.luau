@@ -11,7 +11,8 @@
 	The UI kit's look, as the chef's steak picker (UIFancy; user 2026-11-19: "we cant have everything the same boring
 	plain box"; 2026-11-21: the chips redone): gradient fills, thick dark edges, soft glows, outlined words.
 
-	Meet meals and boosters (§40.1) will add their own chips here.
+	The meet meal (user 2026-11-23) has its own chip in the meets' navy, MEET MEAL BOOST, the same way. Boosters
+	(§40.1) will add their own chips here.
 
 	Display only: the server keeps the boosts (KitchenService, ProfileOperations, GainBoosts).
 
@@ -48,15 +49,17 @@ local YELLOW_TOP, YELLOW_BOTTOM = Color3.fromRGB(255, 226, 92), Color3.fromRGB(2
 local GREEN_TOP, GREEN_BOTTOM = Color3.fromRGB(132, 240, 110), Color3.fromRGB(38, 150, 52)
 local INSET = Color3.fromRGB(24, 10, 8)
 local LUCK_TOP, LUCK_BOTTOM = Color3.fromRGB(122, 70, 200), Color3.fromRGB(44, 22, 84)
+local MEAL_TOP, MEAL_BOTTOM = Color3.fromRGB(46, 96, 196), Color3.fromRGB(14, 30, 84)
 
 local started = false
 local showView: ((any) -> ())? = nil
-local celebrateWith: ((string) -> ())? = nil
+local celebrateWith: ((string, string?) -> ())? = nil
 
--- A big "STEAK EATEN!" pop in the middle of the screen with `line` under it (eating at your pan, KitchenMenu).
-function BoostBar.celebrate(line: string)
+-- A big "STEAK EATEN!" pop in the middle of the screen with `line` under it (eating at your pan, KitchenMenu);
+-- `headline` replaces "STEAK EATEN!" (a meet meal's "MEAL EATEN!").
+function BoostBar.celebrate(line: string, headline: string?)
 	if celebrateWith then
-		(celebrateWith :: (string) -> ())(line)
+		(celebrateWith :: (string, string?) -> ())(line, headline)
 	end
 end
 local remotes: KitchenRemotes.RemoteSet? = nil
@@ -118,7 +121,7 @@ function BoostBar.start()
 	holder.Name = "Chips"
 	holder.AnchorPoint = Vector2.new(0.5, 1)
 	holder.Position = UDim2.new(0.5, 0, 1, -10)
-	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 2 + 10)
+	holder.Size = UDim2.fromOffset(CHIP_WIDTH, CHIP_HEIGHT * 3 + 20)
 	holder.BackgroundTransparency = 1
 	holder.Parent = gui
 	local layout = Instance.new("UIListLayout")
@@ -216,6 +219,8 @@ function BoostBar.start()
 	end
 	local steakChip, gainText, clockText, drain = boostChip("Steak", 2, STEAK_TOP, STEAK_BOTTOM, Color3.fromRGB(255, 140, 90),
 		"STEAK BOOST")
+	local mealChip, mealGain, mealClock, mealDrain = boostChip("MeetMeal", 3, MEAL_TOP, MEAL_BOTTOM,
+		Color3.fromRGB(110, 170, 255), "MEET MEAL BOOST")
 	-- Luck from the mafia boss cow's wheel (GAME_DESIGN §40.7): read from this player's attributes, which the server
 	-- keeps current (LuckService).
 	local luckChip, luckText, luckClock, luckDrain = boostChip("Luck", 3, LUCK_TOP, LUCK_BOTTOM, Color3.fromRGB(190, 130, 255),
@@ -263,8 +268,19 @@ function BoostBar.start()
 		else
 			steakChip.Visible = false
 		end
+		local mealLeft = if current and typeof(current.mealLeft) == "number" then math.max(0, current.mealLeft - since) else 0
+		if current and typeof(current.mealPercent) == "number" and current.mealPercent > 0 and mealLeft > 0 then
+			mealGain.Text = KitchenConfig.percentText(current.mealPercent)
+			mealClock.Text = KitchenConfig.clockText(mealLeft)
+			mealDrain.Size = UDim2.fromScale(math.clamp(mealLeft / (KitchenConfig.BoostHours * 3600), 0.02, 1), 1)
+			mealChip.Visible = true
+		else
+			mealChip.Visible = false
+		end
+		local meal = current ~= nil and current.kind == "Meal"
 		local cooking = steaks >= 1 and readyIn > 0
 		local ready = steaks >= 1 and readyIn <= 0
+		readyText.Text = if meal then "MEET MEAL READY!  EAT IT AT W CHEWS" else "STEAK READY!  EAT IT AT W CHEWS"
 		if ready ~= readyChip.Visible then
 			readyChip.Visible = ready
 			if ready then
@@ -275,8 +291,9 @@ function BoostBar.start()
 			end
 		end
 		if wasCooking and ready then
-			Announcer.note(string.format("Your steak meal is ready! Eat it at W Chews for %s training gains.",
-				KitchenConfig.percentText(KitchenConfig.steakPercent(steaks))))
+			Announcer.note(string.format("Your %s is ready! Eat it at W Chews for %s %s gains.",
+				if meal then "meet meal" else "steak meal", KitchenConfig.percentText(KitchenConfig.boostPercent(steaks)),
+				if meal then "meet" else "training"))
 		end
 		wasCooking = cooking
 	end
@@ -312,9 +329,10 @@ function BoostBar.start()
 	local popScale = UIFancy.make("UIScale", { Parent = pop })
 	popGui.Parent = player:WaitForChild("PlayerGui")
 	local popToken = 0
-	celebrateWith = function(line: string)
+	celebrateWith = function(line: string, title: string?)
 		popToken += 1
 		local mine = popToken
+		headline.Text = title or "STEAK EATEN!"
 		sub.Text = line
 		pop.Visible = true
 		popScale.Scale = 0.3

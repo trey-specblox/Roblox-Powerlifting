@@ -7,8 +7,9 @@
 	Boosts ADD TOGETHER (a steak's +50% and, later, a booster's +30% = +80%), so several at once can't multiply into
 	runaway gains.
 
-	Today there is one boost: the steak meal (a TRAINING boost, KitchenConfig). Meet meals, the strongman NPC's
-	boosters and stat-gain gear add their own entries to the save's `boosts` record and to the sums below.
+	Today there are two boosts: the steak meal (a TRAINING boost) and the meet meal (a MEET boost, version 34), both
+	KitchenConfig. The strongman NPC's boosters and stat-gain gear add their own entries to the save's `boosts` record
+	and to the sums below.
 
 	Pure: reads the saved boosts record and a SERVER clock passed in, writes nothing, never yields. The server uses it
 	in the training awards; the client uses the same numbers to show the boost timer.
@@ -46,6 +47,22 @@ function GainBoosts.trainingBonus(boosts: any, nowUnix: number): number
 	local steak = GainBoosts.active(boosts.steak, nowUnix)
 	if steak then
 		total += steak.percent / 100
+	end
+	return total
+end
+
+--[[
+	How much the active boosts raise MEET gains right now (the Competition Number a finished meet raises), as a fraction.
+	Today: the meet meal (GAME_DESIGN §40.7, user 2026-11-23).
+]]
+function GainBoosts.meetBonus(boosts: any, nowUnix: number): number
+	if typeof(boosts) ~= "table" then
+		return 0
+	end
+	local total = 0
+	local meal = GainBoosts.active(boosts.meal, nowUnix)
+	if meal then
+		total += meal.percent / 100
 	end
 	return total
 end

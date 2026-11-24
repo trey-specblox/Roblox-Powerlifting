@@ -20,7 +20,7 @@
 			< NAME >        pick the player
 			a box per stat  (AdminConfig.StatFields) showing their value now: type a new one and press
 			                Enter or tap away to set it; the server clamps it
-			QUALIFY FOR STATE, REFILL DAILY LIMITS, and coins for them
+			QUALIFY FOR STATE, REFILL DAILY LIMITS, SKIP COOLDOWNS (every wait at once, 2026-11-23), and coins for them
 
 	PERFORMANCE: nothing for other players; a few buttons for the admin.
 ]]
@@ -437,6 +437,15 @@ function AdminPanel.start()
 	end
 	pageButton("Refill", "REFILL DAILY", function()
 		ask("RefillDaily", { userId = targetUserId })
+	end)
+	-- Every wait at once (user 2026-11-23): cooking, training, meet allowance, the cow's spin and tries, quests, suit
+	-- tests, the Mock Meet (AdminService SkipCooldowns). New cooldowns add themselves there.
+	pageButton("SkipCooldowns", "SKIP COOLDOWNS", function()
+		ask("SkipCooldowns", { userId = targetUserId })
+	end)
+	-- The next rank (GAME_DESIGN §41), as if a meet had just given it.
+	pageButton("RankUp", "RANK UP", function()
+		ask("RankUp", { userId = targetUserId })
 	end)
 	-- Their coins, on a row of their own.
 	local coinsY = gridTop + math.ceil(slot / 3) * STATS_ROW_HEIGHT + 4

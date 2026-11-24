@@ -8,9 +8,10 @@ local WChewsLayout = {}
 -- From an item's own origin to the bottom centre of its bounds (where a copy's pivot is), plan space, scale 1.
 WChewsLayout.PivotOffset = {
 	CowBoss = Vector3.new(0.0000, 0.1300, 0.0000),
+	MealPile = Vector3.new(-0.1227, -0.0084, 0.0000),
 	WcArmTable = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcBar = Vector3.new(0.0000, -0.0750, 0.0000),
-	WcBay = Vector3.new(0.0000, -0.0550, 0.0000),
+	WcBay = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcBooth = Vector3.new(0.0000, 0.0500, 0.0000),
 	WcBossChair = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcBossDesk = Vector3.new(0.0000, 0.0000, 0.0000),
@@ -26,6 +27,7 @@ WChewsLayout.PivotOffset = {
 	WcHood = Vector3.new(0.0000, -0.0300, -0.1100),
 	WcHostStand = Vector3.new(0.0000, -0.0488, 0.0000),
 	WcIsland = Vector3.new(0.0000, 0.0000, 0.0000),
+	WcMealDispenser = Vector3.new(0.0000, -8.7100, 10.1750),
 	WcMilkShelf = Vector3.new(0.0000, 0.0000, 0.0000),
 	WcNeonMoo = Vector3.new(0.0000, -0.1000, -1.6900),
 	WcPendant = Vector3.new(0.0000, 0.0000, 0.0000),
@@ -54,6 +56,7 @@ WChewsLayout.FrontHeight = 22
 WChewsLayout.TubeHeight = 26 -- the meat tube's axis
 WChewsLayout.TrunkY = 10 -- the trunk runs across at this y
 WChewsLayout.Bay = Vector2.new(0, 36) -- the meat display bay's centre
+WChewsLayout.Dispenser = { HopperXs = { -8.4, 0, 8.4 }, HopperY = -8.5, Mouth = 10.2 } -- the meal dispenser's chutes (CHICKEN, BROCCOLI, RICE) from the bay's centre (plan), their mouths' height
 WChewsLayout.Grinder = Vector2.new(0, 57.6) -- the grinder's centre, its outlet toward -y
 WChewsLayout.GrinderScale = 2
 WChewsLayout.Chute = Vector2.new(0, 61.4)
@@ -201,6 +204,7 @@ WChewsLayout.Placements = {
 	{ "WcIsland", 1, 36, 200, 0, 0, 2 },
 	{ "WcBay", 1, 0, 36, 0, 0, 1 },
 	{ "WcTubeIntake", 1, 0, 36, 0, 0, 1 },
+	{ "WcMealDispenser", 1, 0, 36, 0, 0, 1 },
 	{ "WcChute", 1, 0, 61.4, 24, 0, 1 },
 	{ "WcTubeTrunk", 1, 0, 10, 26, 0, 1 },
 	{ "WcTubeTrunk", 1, 0, 10, 26, 180, 1 },

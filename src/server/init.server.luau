@@ -103,6 +103,9 @@ local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
 GainNews.start()
 local QuestService = require(PlayerDataFolder:WaitForChild("QuestService"))
 QuestService.start()
+-- Ranks and titles (GAME_DESIGN §41): the remotes, the name tag attributes and the player list's Rank column.
+local RankService = require(PlayerDataFolder:WaitForChild("RankService"))
+RankService.start()
 local KitchenService = require(script:WaitForChild("Economy"):WaitForChild("KitchenService"))
 KitchenService.start()
 -- The pan hall waits for the prop models to load, so it builds without holding up the rest.

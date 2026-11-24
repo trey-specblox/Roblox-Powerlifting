@@ -743,6 +743,11 @@ end
 	Starts the coach's test for a locked rare suit (GAME_DESIGN §35.12): from the cutscene or MY GEAR, anywhere the player is free
 	to go. It checks everything itself; the client only names the piece. Returns whether they went, and what to tell them.
 ]]
+-- ADMIN PANEL: SKIP ALL COOLDOWNS (AdminService checks the caller): the wait before `player`'s next Mock Meet is gone.
+function MockMeetService.adminClearCooldown(player: Player)
+	lastCheckIn[player.UserId] = nil
+end
+
 function MockMeetService.startSuitTest(player: Player, pieceId: string): (boolean, string)
 	if visits[player] or entering[player] then
 		return false, "You're in a mock meet room already."

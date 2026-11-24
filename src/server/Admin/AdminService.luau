@@ -17,6 +17,9 @@
 		- START A MEET NOW (user 2026-11-08) starts any meet early, with whoever signed up
 		- the CELEBRATIONS viewer's PLAY ON ME (user 2026-11-11) plays one on the admin's own character, so it can
 		  be watched for real, cinematic and all; it changes no save
+		- SKIP COOLDOWNS (user 2026-11-23) ends every wait a player has: cooking, training limits, meet allowance, the
+		  cow's daily spin and tries, daily quests, suit test waits, the Mock Meet's wait. EVERY NEW COOLDOWN MUST ADD
+		  ITS SKIP TO IT
 		- every use is in the server's log, with whose save it changed
 
 	To add a tool: a new action in `actions` here, and its buttons in client AdminPanel.
@@ -41,6 +44,10 @@ local ProfileOperations = require(ServerRoot:WaitForChild("PlayerData"):WaitForC
 local LocalMeetService = require(ServerRoot:WaitForChild("Meet"):WaitForChild("LocalMeetService"))
 local CelebrationService = require(ServerRoot:WaitForChild("Meet"):WaitForChild("CelebrationService"))
 local CelebrationConfig = require(Shared:WaitForChild("Config"):WaitForChild("CelebrationConfig"))
+local MockMeetService = require(ServerRoot:WaitForChild("Meet"):WaitForChild("MockMeetService"))
+local KitchenPans = require(ServerRoot:WaitForChild("Economy"):WaitForChild("KitchenPans"))
+local RankService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("RankService"))
+local RankConfig = require(Shared:WaitForChild("Config"):WaitForChild("RankConfig"))
 
 local AdminService = {}
 
@@ -246,6 +253,60 @@ local actions: { [string]: (Player, any) -> (boolean, string) } = {
 		end
 		local ok, message = PlayerDataService.adminRefillDaily(target)
 		return ok, target.Name .. ": " .. message
+	end,
+	-- SKIP ALL COOLDOWNS (user 2026-11-23): every wait the player has, at once (ProfileOperations.adminSkipCooldowns lists
+	-- the save's; the Mock Meet's wait is kept by its service). Every new cooldown adds its skip here.
+	SkipCooldowns = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		local ok, skipped = PlayerDataService.adminSkipCooldowns(target)
+		if not ok then
+			return false, target.Name .. ": that player's save hasn't loaded."
+		end
+		MockMeetService.adminClearCooldown(target)
+		table.insert(skipped, "Mock Meet wait")
+		-- The pan's clock and the cooking timers show the cook as ready at once.
+		KitchenPans.refresh(target)
+		return true, target.Name .. ": skipped " .. table.concat(skipped, ", ") .. "."
+	end,
+	-- RANK UP (GAME_DESIGN §41): the player's next rank, through the same path a real meet takes (the moment, the
+	-- rewards waiting and the name tag all behave as after a meet).
+	RankUp = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		local result, points = PlayerDataService.adminRankUp(target)
+		if result == nil then
+			return false, target.Name .. ": already at the top rank, or the save hasn't loaded."
+		end
+		RankService.meetRecorded(target, result, points)
+		local rank = RankConfig.Ranks[result.rankAfter]
+		return true, string.format("%s: now %s (%.1f GL).", target.Name, if rank then rank.label else "?", points or 0)
+	end,
+	-- GIVE TITLE (GAME_DESIGN §41): a title by its RankConfig id, shown with the same TITLE UNLOCKED card a meet gives.
+	GiveTitle = function(_player: Player, value: any): (boolean, string)
+		local target, problem = targetOf(value)
+		if target == nil then
+			return false, problem
+		end
+		if typeof(value.id) ~= "string" or RankConfig.TitleById[value.id] == nil then
+			return false, "That isn't a title."
+		end
+		local new = PlayerDataService.adminGiveTitle(target, value.id)
+		if new == nil then
+			return false, target.Name .. ": that player's save hasn't loaded."
+		end
+		local rank = ProfileOperations.getRank(PlayerDataService.getData(target) :: any)
+		if RankConfig.isFeat(value.id) then
+			RankService.meetRecorded(target, { rankBefore = rank, rankAfter = rank, newBest = false,
+				newFeats = if new then { value.id } else {}, streakDays = 0 }, nil)
+		else
+			RankService.titleEarned(target, value.id)
+		end
+		return true, string.format("%s: %s %s.", target.Name, RankConfig.TitleById[value.id].name, if new then "given" else "already owned")
 	end,
 	-- Gives an entrance (EntranceConfig id) and puts it on: only the admin panel hands them out until crates do (§36.4).
 	GiveEntrance = function(_player: Player, value: any): (boolean, string)

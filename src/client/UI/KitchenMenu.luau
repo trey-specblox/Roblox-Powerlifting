@@ -6,13 +6,16 @@
 	Talking to the Kitchen's chef (GAME_DESIGN §40.7, user 2026-11-19). His "Talk" prompt (KitchenService) opens the
 	NPC dialogue the coaches use (CoachDialogue.converse: the panel, his portrait, typed words, answer bubbles):
 
-		empty pan    "What are we cooking today?"  Steaks / Meet meals (coming) / Bye
+		empty pan    "What are we cooking today?"  Steaks / Meet meals / Bye
 		cooking      how long is left, and "Skip the wait" (the Robux skip: not sold yet)
-		ready        the steak is done: go eat it at your pan
+		ready        the steak (or meal) is done: go eat it at your pan
 
 	"Steaks" opens the STEAK PICKER, built from the UI kit, not a plain panel (user: "we cant have everything the same
 	boring plain box"): turning rays and a glow in steak red, the big steak in 3D growing with the number, a big outlined
 	count, a chunky slider, quick picks, the price / cooking time / boost as badges, and a glossy COOK IT! button.
+	"Meet meals" (user 2026-11-23) opens the same picker for meals: the meet gain boost, double a steak's price and time,
+	one cook at a time. A meal plays the chef scene's meal version (KitchenScene, kind "Meal": a live hen and two bags
+	tipped into the meat bay from its steps, then the tube and the plate on the pan).
 
 	Display only: the server checks the count and the coins and keeps the cook (KitchenService, ProfileOperations);
 	the numbers shown come from the same KitchenConfig.
@@ -58,9 +61,10 @@ local LIFTER_LENGTH = 5.5
 
 local started = false
 
--- "1 STEAK" / "250 STEAKS".
-local function steaksText(steaks: number): string
-	return string.format("%s STEAK%s", CoinConfig.format(steaks), if steaks == 1 then "" else "S")
+-- "1 STEAK" / "250 STEAKS"; with kind "Meal": "1 MEET MEAL" / "250 MEET MEALS".
+local function steaksText(steaks: number, kind: string?): string
+	return string.format("%s %s%s", CoinConfig.format(steaks), if kind == "Meal" then "MEET MEAL" else "STEAK",
+		if steaks == 1 then "" else "S")
 end
 
 function KitchenMenu.start()
@@ -193,6 +197,7 @@ function KitchenMenu.start()
 
 	------------------------------------------------------------------ state
 	local count = 50
+	local mode = "Steak" -- what the picker cooks: "Steak" or "Meal"
 	local busy = false
 	local open = false
 	local dragging = false
@@ -206,11 +211,17 @@ function KitchenMenu.start()
 		return math.clamp(math.log(math.max(steaks, 1)) / math.log(SLIDER_MAX), 0, 1)
 	end
 
+	local shownKind: string? = nil
 	local function placeSteak()
 		local model = steak
+		if shownKind ~= mode and model then
+			model:Destroy()
+			model, steak = nil, nil
+		end
 		if model == nil then
+			-- (the meal's plate model, "MeetMeal", is used once it is uploaded; until then the card shows no model)
 			local template = ReplicatedStorage:FindFirstChild("KitchenModels")
-			local source = template and template:FindFirstChild("BigSteak")
+			local source = template and template:FindFirstChild(if mode == "Meal" then "MeetMeal" else "BigSteak")
 			if source and source:IsA("Model") then
 				model = source:Clone()
 				model:ScaleTo(1)
@@ -218,6 +229,7 @@ function KitchenMenu.start()
 				model:PivotTo(CFrame.new())
 				model.Parent = world
 				steak = model
+				shownKind = mode
 			end
 		end
 		if model then
@@ -231,18 +243,23 @@ function KitchenMenu.start()
 
 	local function draw()
 		count = math.clamp(math.floor(count), 1, KitchenConfig.MaxSteaksPerCook)
-		countText.Text = steaksText(count)
+		title.Text = if mode == "Meal" then "HOW MANY MEET MEALS?" else "HOW MANY STEAKS?"
+		countText.Text = steaksText(count, mode)
 		local share = sliderShare(count)
 		fill.Size = UDim2.fromScale(share, 1)
 		knob.Position = UDim2.fromScale(share, 0.5)
-		local price = KitchenConfig.cost(count)
+		local price = KitchenConfig.cost(count, mode)
 		costBadge.Text = string.format("%s COINS", CoinConfig.format(price))
-		timeBadge.Text = "COOKS " .. KitchenConfig.clockText(KitchenConfig.cookSeconds(count))
-		boostBadge.Text = string.format("%s FOR %dH", KitchenConfig.percentText(KitchenConfig.steakPercent(count)),
+		timeBadge.Text = "COOKS " .. KitchenConfig.clockText(KitchenConfig.cookSeconds(count, mode))
+		boostBadge.Text = string.format("%s FOR %dH", KitchenConfig.percentText(KitchenConfig.boostPercent(count, mode)),
 			KitchenConfig.BoostHours)
-		local lifters = KitchenConfig.steakLength(count) / LIFTER_LENGTH
-		lengthBadge.Text = if lifters < 1.15 then "ABOUT ONE LIFTER LONG"
-			else string.format("ABOUT %s LIFTERS LONG", if lifters < 10 then string.format("%.1f", lifters) else tostring(math.floor(lifters)))
+		if mode == "Meal" then
+			lengthBadge.Text = "MORE STRENGTH FROM EVERY MEET"
+		else
+			local lifters = KitchenConfig.steakLength(count) / LIFTER_LENGTH
+			lengthBadge.Text = if lifters < 1.15 then "ABOUT ONE LIFTER LONG"
+				else string.format("ABOUT %s LIFTERS LONG", if lifters < 10 then string.format("%.1f", lifters) else tostring(math.floor(lifters)))
+		end
 		local enough = coins() >= price
 		cookLabel.Text = if enough then "COOK IT!" else "NOT ENOUGH COINS"
 		cookGradient.Color = if enough then ColorSequence.new(YELLOW_TOP, YELLOW_BOTTOM) else ColorSequence.new(GREY_TOP, GREY_BOTTOM)
@@ -265,7 +282,8 @@ function KitchenMenu.start()
 			spinConnection = nil
 		end
 	end
-	local function openPicker()
+	local function openPicker(kind: string?)
+		mode = if kind == "Meal" then "Meal" else "Steak"
 		open = true
 		gui.Enabled = true
 		PromptController.hide("KitchenPicker", true)
@@ -346,12 +364,13 @@ function KitchenMenu.start()
 	end)
 
 	cookButton.Activated:Connect(function()
-		if busy or coins() < KitchenConfig.cost(count) then
+		if busy or coins() < KitchenConfig.cost(count, mode) then
 			return
 		end
 		busy = true
+		local cooking = mode
 		local ok, answer = pcall(function()
-			return remotes.cook:InvokeServer(count)
+			return remotes.cook:InvokeServer(count, cooking)
 		end)
 		busy = false
 		if ok and typeof(answer) == "table" then
@@ -361,11 +380,12 @@ function KitchenMenu.start()
 			if answer.outcome == "Started" then
 				bigSound:Play()
 				closePicker()
-				-- The chef scene: into the grinder, the meat mountain, onto the pan. Skippable once watched to the end
-				-- (user 2026-11-21: "Skip after first time"); the first full watch is saved.
+				-- The chef scene: into the grinder, the meat mountain, onto the pan; for a meal (user 2026-11-23) up the bay's
+				-- steps with a live hen and two bags. Skippable once watched to the end (user 2026-11-21: "Skip after first
+				-- time"); the first full watch is saved.
 				local seen = typeof(answer.view) == "table" and answer.view.sceneSeen == true
 				task.spawn(function()
-					local finished = KitchenScene.play(count, seen)
+					local finished = KitchenScene.play(count, seen, cooking)
 					if finished and not seen then
 						pcall(function()
 							return remotes.sceneSeen:InvokeServer()
@@ -394,16 +414,17 @@ function KitchenMenu.start()
 			view = fresh
 			BoostBar.show(fresh)
 		end
-		local wantsSteaks = false
+		local wants: string? = nil -- "Steak" or "Meal": the picker to open after the talk
 		converse(figure, "Chef", function(say, ask)
 			local steaks = if view then view.steaks else 0
+			local kind = if view and view.kind == "Meal" then "Meal" else "Steak"
 			if steaks >= 1 and view.readyIn > 0 then
-				say(string.format("Your %s are on the pan. Ready in %s.", string.lower(steaksText(steaks)),
-					KitchenConfig.clockText(view.readyIn)))
+				say(string.format("Your %s %s on the pan. Ready in %s.", string.lower(steaksText(steaks, kind)),
+					if steaks == 1 then "is" else "are", KitchenConfig.clockText(view.readyIn)))
 				while true do
 					local choice = ask({
 						{ text = "Skip the wait", value = "Skip" },
-						{ text = "Meet meals?", value = "Meals" },
+						{ text = if kind == "Meal" then "Steaks?" else "Meet meals?", value = "Other" },
 						{ text = "Bye.", value = "Bye" },
 					})
 					if choice == nil or choice == "Bye" then
@@ -411,11 +432,12 @@ function KitchenMenu.start()
 					elseif choice == "Skip" then
 						say("The fast lane isn't open yet. Patience builds muscle too.")
 					else
-						say("Meet meals are coming soon. I'm still perfecting the recipe.")
+						say("One thing on the pan at a time. Come back once this is done and I'll cook it.")
 					end
 				end
 			elseif steaks >= 1 then
-				say(string.format("Your %s are done! Go eat at your pan before they get cold.", string.lower(steaksText(steaks))))
+				say(string.format("Your %s %s done! Go eat at your pan before %s cold.", string.lower(steaksText(steaks, kind)),
+					if steaks == 1 then "is" else "are", if steaks == 1 then "it gets" else "they get"))
 				ask({ { text = "On my way!", value = "Bye" } })
 			else
 				say("What are we cooking today?")
@@ -429,16 +451,18 @@ function KitchenMenu.start()
 						return
 					elseif choice == "Steaks" then
 						say("How many? The more you bring, the bigger I cook it.")
-						wantsSteaks = true
+						wants = "Steak"
 						return
 					else
-						say("Meet meals are coming soon. I'm still perfecting the recipe.")
+						say("Chicken, rice and broccoli. Eat it and every meet makes you stronger for a day. How many?")
+						wants = "Meal"
+						return
 					end
 				end
 			end
 		end)
-		if wantsSteaks then
-			openPicker()
+		if wants then
+			openPicker(wants)
 		end
 	end
 
@@ -464,8 +488,9 @@ function KitchenMenu.start()
 					chomp:Destroy()
 				end)
 				bigSound:Play()
-				BoostBar.celebrate(string.format("%s TRAINING FOR %dH", KitchenConfig.percentText(answer.percent),
-					KitchenConfig.BoostHours))
+				BoostBar.celebrate(string.format("%s %s FOR %dH", KitchenConfig.percentText(answer.percent),
+					if answer.kind == "Meal" then "MEETS" else "TRAINING", KitchenConfig.BoostHours),
+					if answer.kind == "Meal" then "MEAL EATEN!" else nil)
 			end
 		end
 	end)

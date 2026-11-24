@@ -140,6 +140,7 @@ local GearService = require(ServerFolder:WaitForChild("Economy"):WaitForChild("G
 local ProfileOperations = require(PlayerDataFolder:WaitForChild("ProfileOperations"))
 local GainNews = require(PlayerDataFolder:WaitForChild("GainNews"))
 local QuestService = require(PlayerDataFolder:WaitForChild("QuestService"))
+local RankService = require(PlayerDataFolder:WaitForChild("RankService"))
 local LiftAttemptService = require(ServerFolder:WaitForChild("Lifting"):WaitForChild("LiftAttemptService"))
 local TrainingStationService = require(ServerFolder:WaitForChild("Training"):WaitForChild("TrainingStationService"))
 local CardioMachineService = require(ServerFolder:WaitForChild("World"):WaitForChild("CardioMachineService"))
@@ -948,6 +949,30 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 	-- A National Champion (1st in their class at Nationals, GAME_DESIGN §39) earns that class's Worlds spot.
 	local worldsOutcome: ProfileOperations.WorldsOutcome? = nil
 	local earnsWorlds = wonIt and current.level == "Nationals"
+	-- RANKS AND TITLES (GAME_DESIGN §41): every real meet finished with a total (computer lifters too, never the Mock
+	-- Meet) scores the total in GL points for the lifter's rank, and checks the feat titles.
+	local rankMeet: ProfileOperations.RankMeet? = nil
+	if totalKg then
+		local clutch = false
+		for _, lift in ipairs(MeetConfig.LiftOrder) do
+			local history = lifter.lifts[lift].history
+			if #history >= 3 and history[1].result ~= "GoodLift" and history[2].result ~= "GoodLift"
+				and history[3].result == "GoodLift" then
+				clutch = true
+			end
+		end
+		rankMeet = {
+			points = MeetPlacing.points(lifter.bodyweightKg, totalKg) or 0,
+			totalKg = totalKg,
+			bodyweightKg = lifter.bodyweightKg,
+			classLabel = lifter.classLabel,
+			bestByLift = best,
+			perfect = goodLiftCount(lifter) == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift,
+			clutch = clutch,
+			gymRecord = #lifter.gymRecords > 0,
+		}
+	end
+	local rankResult: ProfileOperations.RankMeetResult? = nil
 	local saved = PlayerDataService.update(player, function(data)
 		if totalKg then
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -965,6 +990,9 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 				end
 			end
 			totalOutcome = ProfileOperations.raiseBestTotal(data, lifter.classLabel, totalKg)
+			if rankMeet then
+				rankResult = ProfileOperations.recordRankMeet(data, rankMeet, nowUnix)
+			end
 		end
 		if settlesCn then
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -1058,6 +1086,7 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 			title = lifter.classLabel .. " " .. title
 		end
 		table.insert(lines, if titleCount > 1 then string.format("%s x%d", title, titleCount) else "New title: " .. title)
+		RankService.titleEarned(player, titleId)
 	end
 	if worldsOutcome == "Earned" then
 		table.insert(lines, string.format("WORLDS SPOT EARNED (%s)!", lifter.classLabel))
@@ -1123,6 +1152,14 @@ local function saveLifter(current: Meet, lifter: Lifter, totalKg: number?, best:
 		if nationals then string.format(" %d/%d", nationals.placings, nationals.target) else "")
 	if worldsOutcome then
 		log("%s's Worlds spot (%s): %s", player.Name, lifter.classLabel, tostring(worldsOutcome))
+	end
+	if rankResult then
+		log("%s's rank: %d -> %d (%.1f GL%s), new titles: %s, streak %d day(s)", player.Name, rankResult.rankBefore,
+			rankResult.rankAfter, rankMeet and rankMeet.points or 0, if rankResult.newBest then ", new best" else "",
+			if #rankResult.newFeats > 0 then table.concat(rankResult.newFeats, ", ") else "none", rankResult.streakDays)
+		RankService.meetRecorded(player, rankResult, rankMeet and rankMeet.points)
+	elseif rankMeet then
+		warn(string.format("[LocalMeetService] %s's rank was not recorded", player.Name))
 	end
 	return lines
 end

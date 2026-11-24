@@ -657,6 +657,21 @@ StarterGymConfig.PropAssets = {
 	{ id = 91387152636333 }, -- WChewsMeat_01: the chef scene's meat (user 2026-11-22): MeatPress (the giant press), MincePile
 	-- (the mountain of mince, 11,774 triangles: only ever on the cooking player's own screen), MeatChunk (falling raw
 	-- meat). art/scripts/build_wchews_meat_01.py, CHECK PASSED, 13,484 triangles.
+	{ id = 93427071048621 }, -- WChewsBay_02: the meat display bay WITHOUT its sign (item WcBay; user 2026-11-23: the YOUR MEAT
+	-- words and their bar removed, "Yes, upload both"). Its pieces are WcBay_*, so it REPLACES WChewsKit_01's WcBay: it must
+	-- stay AFTER that asset in this list (a later asset's item wins). art/scripts/build_wchews_bay_02.py, CHECK PASSED,
+	-- 216 triangles.
+	{ id = 121160158126451 }, -- MeetMeal_01: the meet meal (item MeetMeal; GAME_DESIGN §40.7, user 2026-11-23): a plate of
+	-- grilled chicken, rice and broccoli, scaled per cook like BigSteak, on your pan and in the chef's picker.
+	-- art/scripts/build_meet_meal_01.py, CHECK PASSED, 4,962 triangles.
+	{ id = 76529672344710 }, -- WChewsMealProps_02: the meet meal scene's props (GAME_DESIGN §40.7, user 2026-11-23): WcBayStairs
+	-- (the steps up to the meat bay, placed from WChewsLayout), LiveChicken (user: "instead of the raw chicken ... a live
+	-- chicken"), BroccoliBag, RiceBag (CENTRAL labels), BroccoliBit. Replaces WChewsMealProps_01 (110375084853759, the raw
+	-- chicken: never placed; only one of the two may be in this list). art/scripts/build_wchews_meal_props_02.py, CHECK
+	-- PASSED, 10,788 triangles. (Its stairs and bags are no longer used: the dispenser below replaced them the same day.)
+	{ id = 104922146247811 }, -- WChewsDispenser_01: the meet meal's food dispenser on top of the meat bay (item
+	-- WcMealDispenser, placed from WChewsLayout) and the food pile on the pan while a meal cooks (item MealPile; user
+	-- 2026-11-23: "Yes, upload them"). art/scripts/build_wchews_dispenser_01.py, CHECK PASSED, 10,666 triangles.
 } :: { PropAsset }
 
 -- The colours a prop piece can take (material SmoothPlastic unless named here).
@@ -747,6 +762,30 @@ StarterGymConfig.PropPaints = {
 	KitSteakFat = { color = Color3.fromRGB(248, 232, 206) },
 	KitSteakSear = { color = Color3.fromRGB(58, 22, 12) },
 	KitSteakBone = { color = Color3.fromRGB(242, 232, 210) },
+	-- The meet meal (MeetMeal_01, user 2026-11-23): a pale blue-grey plate with a navy rim, grilled chicken, rice, broccoli.
+	-- (a white plate hid the white rice in the game's flat light: Studio 2026-11-23)
+	MealPlate = { color = Color3.fromRGB(190, 204, 222) },
+	MealRimNavy = { color = Color3.fromRGB(22, 40, 104) },
+	MealLabelYellow = { color = Color3.fromRGB(250, 200, 30) },
+	MealChicken = { color = Color3.fromRGB(214, 140, 66) },
+	MealGrill = { color = Color3.fromRGB(78, 38, 16) },
+	MealRice = { color = Color3.fromRGB(252, 250, 240) },
+	MealBroccoli = { color = Color3.fromRGB(40, 132, 46) },
+	MealStem = { color = Color3.fromRGB(150, 196, 92) },
+	-- The meet meal scene's props (WChewsMealProps_02).
+	MealSafetyYellow = { color = Color3.fromRGB(250, 200, 20) },
+	MealHenWhite = { color = Color3.fromRGB(248, 246, 238) },
+	MealHenCream = { color = Color3.fromRGB(232, 222, 196) },
+	MealHenRed = { color = Color3.fromRGB(220, 34, 34) },
+	MealHenBeak = { color = Color3.fromRGB(250, 186, 30) },
+	MealHenEye = { color = Color3.fromRGB(12, 12, 14) },
+	MealHenLegs = { color = Color3.fromRGB(246, 142, 32) },
+	MealBagGreen = { color = Color3.fromRGB(176, 214, 176), transparency = 0.15 },
+	MealBagWhite = { color = Color3.fromRGB(248, 248, 246) },
+	MealBagBlue = { color = Color3.fromRGB(28, 116, 216) },
+	MealBagNavy = { color = Color3.fromRGB(14, 38, 108) },
+	MealBagGreenInk = { color = Color3.fromRGB(22, 94, 34) },
+	MealRiceBag = { color = Color3.fromRGB(226, 216, 186) },
 	KitGrinderRed = { color = Color3.fromRGB(200, 34, 34), reflectance = 0.05 },
 	KitBurlap = { color = Color3.fromRGB(184, 144, 92), material = Enum.Material.Fabric },
 	KitRope = { color = Color3.fromRGB(128, 92, 52), material = Enum.Material.Fabric },
@@ -1144,6 +1183,32 @@ StarterGymConfig.PropColourways = {
 	} },
 	PanClock = { { Post = "Silver", Body = "Yellow", Bells = "Navy", Face = "White", Ticks = "Black" } },
 	BigSteak = { { Meat = "KitSteak", Fat = "KitSteakFat", Sear = "KitSteakSear", Bone = "KitSteakBone" } },
+	MeetMeal = { {
+		Plate = "MealPlate", Rim = "MealRimNavy", Label = "MealLabelYellow", Chicken = "MealChicken", Grill = "MealGrill",
+		Rice = "MealRice", Broccoli = "MealBroccoli", Stems = "MealStem",
+	} },
+	-- The meet meal scene (WChewsMealProps_02).
+	WcBayStairs = { { Steel = "KitStainlessDark", Rails = "KitStainless", Nosing = "MealSafetyYellow" } },
+	LiveChicken = { {
+		Body = "MealHenWhite", Wings = "MealHenCream", Comb = "MealHenRed", Beak = "MealHenBeak", Eyes = "MealHenEye",
+		Legs = "MealHenLegs",
+	} },
+	BroccoliBag = { {
+		Bag = "MealBagGreen", Print = "MealBroccoli", Stems = "MealStem", Label = "MealBagWhite", Banner = "MealBagBlue",
+		Words = "MealBagGreenInk", Brand = "MealBagWhite",
+	} },
+	RiceBag = { {
+		Bag = "MealRiceBag", Band = "MealBagNavy", Grains = "MealBagWhite", Label = "MealBagWhite", Words = "MealBagNavy",
+		Brand = "MealBagBlue",
+	} },
+	BroccoliBit = { { Head = "MealBroccoli", Stem = "MealStem" } },
+	-- The meal dispenser on the bay and the food pile on the pan (WChewsDispenser_01, user 2026-11-23).
+	WcMealDispenser = { {
+		Frame = "KitStainlessDark", Body = "KitStainless", Hens = "MealHenWhite", Combs = "MealHenRed", Beaks = "MealHenBeak",
+		Greens = "MealBroccoli", Rice = "MealRice", Glass = "Glass", Trim = "KitStainlessDark", Plates = "Navy",
+		Text = "WcGlowYellow", Gates = "Red", Lamp = "WarmGlow",
+	} },
+	MealPile = { { Rice = "MealRice", Chicken = "MealChicken", Broccoli = "MealBroccoli", Stems = "MealStem" } },
 	-- The Kitchen chef's clothes (KitchenChef_01, KitchenChef).
 	ChefHat = { { Band = "White", Puff = "White", Label = "Navy" } },
 	ChefBib = { { Cloth = "Navy", Strap = "Navy", Label = "Yellow" } },

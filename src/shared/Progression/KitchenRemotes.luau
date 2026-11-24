@@ -8,11 +8,11 @@
 
 		GetKitchen   client -> server (RemoteFunction)  -> KitchenView?
 			The cooker and the boost, for the cooker's menu and the boost timer. Reads only.
-		Cook         client -> server (RemoteFunction)  (steaks: number) -> { outcome, balance?, view? }
-			Pay for that many steaks and start cooking. The server checks the count and the coins; the price and the
-			cooking time come from KitchenConfig.
-		Eat          client -> server (RemoteFunction)  -> { outcome, percent?, view? }
-			Eat the finished meal: the steak boost starts (replacing one already running).
+		Cook         client -> server (RemoteFunction)  (steaks: number, kind: "Steak" | "Meal" | nil) -> { outcome, balance?, view? }
+			Pay for that many steaks (or meet meals) and start cooking. The server checks the count, the kind and the
+			coins; the price and the cooking time come from KitchenConfig.
+		Eat          client -> server (RemoteFunction)  -> { outcome, percent?, kind?, view? }
+			Eat the finished cook: its boost starts (steaks: training; meals: meets), replacing one of that kind.
 		SceneSeen    client -> server (RemoteFunction)  -> KitchenView?
 			The chef scene played to the end: from now on it can be skipped (only a skip button; nothing to gain).
 ]]
@@ -28,11 +28,15 @@ KitchenRemotes.SCENE_SEEN = "SceneSeen"
 -- Seconds are relative to the server's clock at the moment it answered.
 export type KitchenView = {
 	steaks: number,
+	kind: string, -- "Steak" or "Meal": what is in the cooker
 	readyIn: number,
 	cookSeconds: number,
 	boostPercent: number,
 	boostLeft: number,
 	boostSteaks: number,
+	mealPercent: number,
+	mealLeft: number,
+	mealCount: number,
 	sceneSeen: boolean,
 }
 export type RemoteSet = { get: RemoteFunction, cook: RemoteFunction, eat: RemoteFunction, sceneSeen: RemoteFunction }

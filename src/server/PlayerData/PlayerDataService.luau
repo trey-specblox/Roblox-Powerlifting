@@ -63,6 +63,8 @@ local LoadoutConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForCh
 local BodyweightConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("BodyweightConfig"))
 local KitchenConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("KitchenConfig"))
 local LuckConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("LuckConfig"))
+local RankConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"):WaitForChild("RankConfig"))
+local MeetPlacing = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Meet"):WaitForChild("MeetPlacing"))
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local PlayerProfileSchema = require(script.Parent.PlayerProfileSchema)
@@ -520,34 +522,38 @@ function PlayerDataService.markChefSceneSeen(player: Player): boolean
 	return data ~= nil and ProfileOperations.markChefSceneSeen(data)
 end
 
-function PlayerDataService.startCook(player: Player, steaks: number): (ProfileOperations.CookOutcome?, number?)
+-- `kind`: "Steak" (nil) or "Meal" (meet meals, version 34); checked by ProfileOperations.
+function PlayerDataService.startCook(player: Player, steaks: number, kind: string?): (ProfileOperations.CookOutcome?, number?)
 	local data = activeData(player, "startCook")
 	if data == nil then
 		return nil, nil
 	end
-	local outcome: ProfileOperations.CookOutcome, balance = ProfileOperations.startCook(data, steaks, os.time())
+	local outcome: ProfileOperations.CookOutcome, balance = ProfileOperations.startCook(data, steaks, os.time(), kind)
+	local what = if kind == "Meal" then "meet meals" else "steaks"
 	if outcome == "Started" then
-		local price = steaks * KitchenConfig.PricePerSteak
-		print(string.format("[PlayerDataService] %s put %d steaks in the cooker for %d coins: %d left", player.Name, steaks,
-			price, balance :: number))
-		coinsChanged(player, -price, balance :: number, "Steaks")
+		local price = KitchenConfig.cost(steaks, kind)
+		print(string.format("[PlayerDataService] %s put %d %s in the cooker for %d coins: %d left", player.Name, steaks,
+			what, price, balance :: number))
+		coinsChanged(player, -price, balance :: number, if kind == "Meal" then "Meet meals" else "Steaks")
 	elseif outcome == "Rejected" then
-		warn(string.format("[PlayerDataService] %s: cooking %s steaks refused", player.Name, tostring(steaks)))
+		warn(string.format("[PlayerDataService] %s: cooking %s %s refused", player.Name, tostring(steaks), what))
 	end
 	return outcome, balance
 end
 
-function PlayerDataService.eatSteak(player: Player): (ProfileOperations.EatOutcome?, number?)
+-- Eats whatever is cooked (steaks or meet meals). Returns the outcome, the boost's percent and the kind.
+function PlayerDataService.eatSteak(player: Player): (ProfileOperations.EatOutcome?, number?, string?)
 	local data = activeData(player, "eatSteak")
 	if data == nil then
-		return nil, nil
+		return nil, nil, nil
 	end
-	local outcome: ProfileOperations.EatOutcome, percent = ProfileOperations.eatSteak(data, os.time())
+	local outcome: ProfileOperations.EatOutcome, percent, kind = ProfileOperations.eatSteak(data, os.time())
 	if outcome == "Eaten" then
-		print(string.format("[PlayerDataService] %s ate a steak meal: +%.1f%% training for %d h", player.Name,
-			percent :: number, KitchenConfig.BoostHours))
+		print(string.format("[PlayerDataService] %s ate a %s: +%.1f%% %s for %d h", player.Name,
+			if kind == "Meal" then "meet meal" else "steak meal", percent :: number,
+			if kind == "Meal" then "meet gains" else "training", KitchenConfig.BoostHours))
 	end
-	return outcome, percent
+	return outcome, percent, kind
 end
 
 -- LUCK (GAME_DESIGN §40.7): the cow's wheel. Each is ProfileOperations' operation on the player's active profile.
@@ -909,6 +915,112 @@ function PlayerDataService.adminRefillDaily(player: Player): (boolean, string)
 		return false, "That player's save hasn't loaded."
 	end
 	return ProfileOperations.adminRefillDaily(data)
+end
+
+-- ADMIN PANEL: SKIP ALL COOLDOWNS on `player`'s save (ProfileOperations.adminSkipCooldowns). Returns what was skipped.
+function PlayerDataService.adminSkipCooldowns(player: Player): (boolean, { string })
+	local data = activeData(player, "adminSkipCooldowns")
+	if data == nil then
+		return false, {}
+	end
+	return true, ProfileOperations.adminSkipCooldowns(data, os.time())
+end
+
+--[[
+	RANKS AND TITLES (GAME_DESIGN §41). The meet records the rank inside its own save (ProfileOperations.recordRankMeet in
+	LocalMeetService's write); these are the rest. SERVER-ONLY callers (RankService) check every request first.
+]]
+function PlayerDataService.getRanks(player: Player): ProfileOperations.RankView?
+	local data = activeData(player, "getRanks")
+	return if data then ProfileOperations.getRanks(data, os.time()) else nil
+end
+
+-- Pays every rank reached but not yet paid (coins, free crates, the new-name luck boost). Nil with no session.
+function PlayerDataService.claimRankRewards(player: Player, upTo: number?): ProfileOperations.RankRewards?
+	local data = activeData(player, "claimRankRewards")
+	if data == nil then
+		return nil
+	end
+	local paid = ProfileOperations.claimRankRewards(data, os.time(), upTo)
+	if paid and #paid.ranks > 0 then
+		print(string.format("[PlayerDataService] %s claimed ranks %d..%d: %d coins, %d crates%s%s", player.Name, paid.ranks[1],
+			paid.ranks[#paid.ranks], paid.coins, paid.crates, if paid.luckBoost then ", luck boost" else "",
+			if paid.coinsRefused then " (coins refused: wallet full)" else ""))
+		if paid.coins > 0 and paid.balance then
+			coinsChanged(player, paid.coins, paid.balance, "Rank up")
+		end
+	end
+	return paid
+end
+
+function PlayerDataService.openFreeCrate(player: Player, piece: any, maxPieces: number)
+	: (ProfileOperations.FreeCrateOutcome?, string?, number?)
+	local data = activeData(player, "openFreeCrate")
+	if data == nil then
+		return nil, nil, nil
+	end
+	local outcome: ProfileOperations.FreeCrateOutcome, id, left = ProfileOperations.useFreeCrate(data, piece, maxPieces)
+	if outcome == "Opened" then
+		print(string.format("[PlayerDataService] %s opened a free rank crate: piece %s, %s %s (%s): %d free left", player.Name,
+			tostring(id), tostring(piece.rarity), tostring(piece.slot), tostring(piece.look), left :: number))
+	end
+	return outcome, id, left
+end
+
+function PlayerDataService.setTitle(player: Player, id: string): boolean
+	local data = activeData(player, "setTitle")
+	return if data then ProfileOperations.setTitle(data, id) else false
+end
+
+--[[
+	ADMIN PANEL: RANK UP. Records a made-up meet total worth exactly the next rank's GL points at the player's bodyweight,
+	through the same recordRankMeet a real meet uses (so the moment, the rewards and the tag all behave as in a meet).
+	Returns the result and the points, or nil.
+]]
+function PlayerDataService.adminRankUp(player: Player): (ProfileOperations.RankMeetResult?, number?)
+	local data = activeData(player, "adminRankUp")
+	if data == nil then
+		return nil, nil
+	end
+	local rank = ProfileOperations.getRank(data)
+	local nextRank = RankConfig.Ranks[rank + 1]
+	if nextRank == nil then
+		return nil, nil
+	end
+	local bodyweight = (data :: any).bodyweight and (data :: any).bodyweight.currentKg or 80
+	local points = math.max(nextRank.points, RankConfig.Ranks[2].points - 0.5) + 0.01
+	local totalKg = MeetPlacing.totalForPoints(bodyweight, points)
+	local result = ProfileOperations.recordRankMeet(data, {
+		points = points, totalKg = totalKg, bodyweightKg = bodyweight, classLabel = "admin", bestByLift = {},
+		perfect = false, clutch = false, gymRecord = false,
+	}, os.time())
+	return result, points
+end
+
+-- ADMIN PANEL: gives title `id` (a feat into the ranks record, a meet title into career.titles). Returns whether it was
+-- new, or nil for no save / an unknown title.
+function PlayerDataService.adminGiveTitle(player: Player, id: string): boolean?
+	local data = activeData(player, "adminGiveTitle")
+	if data == nil or RankConfig.TitleById[id] == nil then
+		return nil
+	end
+	if RankConfig.isFeat(id) then
+		local ranks = (data :: any).ranks
+		if typeof(ranks) ~= "table" or typeof(ranks.feats) ~= "table" then
+			return nil
+		end
+		if ranks.feats[id] ~= nil then
+			return false
+		end
+		ranks.feats[id] = os.time()
+		return true
+	end
+	return ProfileOperations.addTitle(data, id) == 1
+end
+
+function PlayerDataService.markTitlesSeen(player: Player): boolean
+	local data = activeData(player, "markTitlesSeen")
+	return if data then ProfileOperations.markTitlesSeen(data, os.time()) else false
 end
 
 function PlayerDataService.adminGiveEntrance(player: Player, id: string): (boolean, string)

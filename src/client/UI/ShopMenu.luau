@@ -44,10 +44,12 @@ local EconomyFolder = Shared:WaitForChild("Economy")
 local ShopRemotes = require(EconomyFolder:WaitForChild("ShopRemotes"))
 local GearRemotes = require(EconomyFolder:WaitForChild("GearRemotes"))
 local GearStats = require(EconomyFolder:WaitForChild("GearStats"))
+local RankRemotes = require(Shared:WaitForChild("Progression"):WaitForChild("RankRemotes"))
 
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local GearPreview = require(script.Parent:WaitForChild("GearPreview"))
 local PromptController = require(script.Parent:WaitForChild("PromptController"))
+local RankMoment = require(script.Parent:WaitForChild("RankMoment"))
 local C = UIStyle.Colours
 local SIZES = UIStyle.TextSizes
 
@@ -63,6 +65,14 @@ local CARDS_PER_FRAME = 6
 local CRATE_LOAD_WAIT_SECONDS = 2.5
 
 local started = false
+-- Set by start(): opens the shop from the RANKS menu to open free rank crates (GAME_DESIGN §41), anywhere.
+local openForFree: (() -> ())? = nil
+
+function ShopMenu.openFree()
+	if openForFree then
+		task.spawn(openForFree)
+	end
+end
 
 function ShopMenu.start()
 	if started then
@@ -72,6 +82,9 @@ function ShopMenu.start()
 	local player = Players.LocalPlayer
 	local remotes = ShopRemotes.waitForClient(ReplicatedStorage)
 	local gearRemotes = GearRemotes.waitForClient(ReplicatedStorage)
+	local rankRemotes = RankRemotes.waitForClient(ReplicatedStorage)
+	-- Free crates from rank-ups (GAME_DESIGN §41): while any are left, OPEN uses one instead of coins.
+	local freeCrates = 0
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "Shop"
@@ -184,6 +197,11 @@ function ShopMenu.start()
 		local openButton: TextButton
 		local confirmUntil = 0
 		local function drawOpen()
+			if freeCrates > 0 then
+				openButton.Text = string.format("OPEN FREE CRATE (%d LEFT)", freeCrates)
+				openButton.BackgroundColor3, openButton.TextColor3 = Color3.fromRGB(110, 225, 90), C.ink
+				return
+			end
 			if os.clock() < confirmUntil then
 				openButton.Text = "CONFIRM " .. CoinConfig.format(selected.price) .. "?"
 				openButton.BackgroundColor3, openButton.TextColor3 = C.white, C.ink
@@ -678,7 +696,9 @@ function ShopMenu.start()
 			if busy then
 				return
 			end
-			if os.clock() >= confirmUntil then
+			-- A free rank crate opens at once (nothing to confirm: no coins are spent).
+			local free = freeCrates > 0
+			if not free and os.clock() >= confirmUntil then
 				confirmUntil = os.clock() + CONFIRM_SECONDS
 				drawOpen()
 				task.delay(CONFIRM_SECONDS + 0.05, drawOpen)
@@ -691,6 +711,18 @@ function ShopMenu.start()
 			openButton.Text = "OPENING..."
 			local crate = selected
 			local ok, done, message, view, id, piece = pcall(function()
+				if free then
+					local answer = rankRemotes.openFreeCrate:InvokeServer(crate.id)
+					if typeof(answer) ~= "table" then
+						return false, "That crate didn't open. Try again.", nil, nil, nil
+					end
+					local rankView = answer.view
+					freeCrates = if typeof(rankView) == "table" and typeof(rankView.freeCrates) == "number"
+						then rankView.freeCrates else math.max(0, freeCrates - 1)
+					-- (the RANKS tab's red dot follows)
+					RankMoment.refresh()
+					return answer.ok == true, answer.message, nil, answer.pieceId, answer.piece
+				end
 				return remotes.crate:InvokeServer(crate.id)
 			end)
 			if ok then
@@ -783,10 +815,22 @@ function ShopMenu.start()
 	end)
 
 	local openedAt: Vector3? = nil
+	local function readFreeCrates()
+		local ok, view = pcall(function()
+			return rankRemotes.get:InvokeServer()
+		end)
+		if ok and typeof(view) == "table" and typeof(view.freeCrates) == "number" then
+			freeCrates = view.freeCrates
+		end
+	end
 	local function open()
 		build()
+		readFreeCrates()
 		holder.Visible = true
-		status.TextColor3, status.Text = C.muted, "Gear comes from crates. Press once, then CONFIRM."
+		status.TextColor3, status.Text = C.muted, if freeCrates > 0
+			then string.format("You have %d free crate%s from ranking up! Pick a crate and open it.", freeCrates,
+				if freeCrates == 1 then "" else "s")
+			else "Gear comes from crates. Press once, then CONFIRM."
 		local character = player.Character
 		local rootPart = character and character:FindFirstChild("HumanoidRootPart")
 		openedAt = if rootPart and rootPart:IsA("BasePart") then rootPart.Position else nil
@@ -800,6 +844,11 @@ function ShopMenu.start()
 	remotes.open.OnClientEvent:Connect(function()
 		task.spawn(open)
 	end)
+	-- From the RANKS menu: the same shop, anywhere (walking does not close it), to open free crates.
+	openForFree = function()
+		open()
+		openedAt = nil
+	end
 
 	-- Walking away from the counter closes the menu.
 	task.spawn(function()

@@ -28,7 +28,7 @@ local LiftAttemptController = require(script.Parent.Parent:WaitForChild("Lifting
 local MenuKeys = {}
 
 -- The side menus' screens (their ScreenGui names): ADMIN, MEETS, COINS, STATS, TELEPORT, GEAR, EMOTES, and the shop.
-local HIDDEN_ON_TURN = { "AdminPanel", "MeetsTab", "Coins", "Stats", "Teleport", "Gear", "EmoteWheel", "Shop" }
+local HIDDEN_ON_TURN = { "AdminPanel", "MeetsTab", "Coins", "Stats", "Teleport", "Gear", "EmoteWheel", "Shop", "Ranks" }
 
 local onTurn = false
 -- While on the turn: each hidden screen, whether it should be on once the turn is over.

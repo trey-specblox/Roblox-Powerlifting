@@ -13,7 +13,7 @@
 		2. raw meat tumbles out of the ceiling chute into the grinder's tub (a cow from KitchenConfig.CowFrom steaks,
 		   more cows for huge cooks)
 		3. the grinder churns and squirts the meat out of its outlet into the display bay, where the lifter's mountain of
-		   mince grows under the YOUR MEAT sign
+		   mince grows in the meat bay
 		4. the funnel over the bay draws it up (ONE shot); the lumps run along the overhead trunk and down the branch
 		   over the lifter's column of pans
 		   IN THE BACKGROUND of shots 3 and 4, far down the kitchen: the mafia boss cow waddles up to the EMPLOYEES
@@ -254,9 +254,9 @@ local function characterRoot(): BasePart?
 	return if body and body:IsA("BasePart") then body else nil
 end
 
--- Hides (or shows) the server's steak in the pan for this player only.
-local function hideSteak(zone: Model?, hidden: boolean)
-	local steak = zone and zone:FindFirstChild("Steak")
+-- Hides (or shows) the server's steak (or, with `name` "MeetMeal", the meet meal's plate) in the pan for this player only.
+local function hideSteak(zone: Model?, hidden: boolean, name: string?)
+	local steak = zone and zone:FindFirstChild(name or "Steak")
 	if steak then
 		for _, part in ipairs(steak:GetDescendants()) do
 			if part:IsA("BasePart") then
@@ -360,16 +360,19 @@ local function chefCopy(chef: Model): (Model?, BasePart?, { [string]: AnimationT
 		ButtonPress = Enum.AnimationPriority.Action,
 		Walk = Enum.AnimationPriority.Movement,
 	}
-	for name, id in pairs(KitchenConfig.ChefAnimations) do
-		local animation = Instance.new("Animation")
-		animation.AnimationId = id
-		local ok, track = pcall(function()
-			return (animator :: Animator):LoadAnimation(animation)
-		end)
-		if ok and track then
-			track.Priority = priorities[name] or Enum.AnimationPriority.Action
-			track.Looped = name == "Walk"
-			tracks[name] = track
+	local looped = { Walk = true }
+	for _, set in ipairs({ KitchenConfig.ChefAnimations }) do
+		for name, id in pairs(set) do
+			local animation = Instance.new("Animation")
+			animation.AnimationId = id
+			local ok, track = pcall(function()
+				return (animator :: Animator):LoadAnimation(animation)
+			end)
+			if ok and track then
+				track.Priority = priorities[name] or Enum.AnimationPriority.Action
+				track.Looped = looped[name] == true
+				tracks[name] = track
+			end
 		end
 	end
 	return copy, root, tracks
@@ -585,14 +588,147 @@ local function cowInTheBackground(hall0: CFrame, made: { Instance })
 end
 
 --[[
+	THE MEET MEAL'S DISPENSER (KitchenScene.play with kind "Meal"; user 2026-11-23: "a dispenser on top of the bay.
+	Where the chef can just press the button and out comes the chickens, brocolli, and rice. so if players drop a lot
+	of coins into making a big plate it makes sense for more chickens, broccoli, and rice to be put into the bay").
+	Right after the chef's button: the dispenser's lamp blinks, and out of its three chutes (WChewsLayout.Dispenser)
+	drop live hens, a shower of broccoli florets and a stream of rice that heaps up, all at once, into the bay. The
+	more meals, the more hens (1 for a small cook, up to 8) and florets (4 up to 24) and the bigger the rice heap.
+	Everything that lands goes into `bayItems` for the funnel to draw up; everything made goes into `made`.
+]]
+local function dispenseMeal(meals: number, spot: (number, number, number?) -> Vector3,
+	shoot: (Vector3, Vector3, boolean?, boolean?) -> (), made: { Instance }, bayItems: { { item: any, scale: number } })
+	local up = Vector3.yAxis
+	local bay, dispenser = WChewsLayout.Bay, WChewsLayout.Dispenser
+	local function mouth(index: number): Vector3
+		return spot(bay.X + dispenser.HopperXs[index], bay.Y + dispenser.HopperY, dispenser.Mouth)
+	end
+	-- Where things land on the bay's tray under chute `index`, spread about it (plan offsets).
+	local function landing(index: number, k: number): Vector3
+		local dx = math.sin(k * 2.39) * 2.6
+		local dy = math.cos(k * 1.71) * 3.2 + 2.0
+		return spot(bay.X + dispenser.HopperXs[index] + dx, bay.Y + dispenser.HopperY + dy, 0.3)
+	end
+	local hens = math.clamp(1 + meals // 15, 1, 8)
+	local florets = math.clamp(4 + meals // 4, 4, 24)
+	local riceSize = math.clamp(2.5 + meals ^ 0.4, 3, 9)
+
+	-- (from in front of the bay and a little to the left, looking up at the three hoppers and down into the bay)
+	shoot(spot(bay.X - 12, bay.Y - 34, 13.5), spot(bay.X, bay.Y - 6, 7), true)
+	wait(0.6)
+	-- The lamp on top blinks: the machine is on.
+	local hall = Workspace:FindFirstChild("KitchenHall")
+	local unit = hall and hall:FindFirstChild("WcMealDispenser", true)
+	local lamp = unit and unit:FindFirstChild("WcMealDispenser_Lamp", true)
+	if lamp and lamp:IsA("BasePart") then
+		local light = lamp :: BasePart
+		table.insert(undo, function()
+			light.LocalTransparencyModifier = 0
+		end)
+		beside(function()
+			for _ = 1, 6 do
+				light.LocalTransparencyModifier = 0.85
+				wait(0.12)
+				light.LocalTransparencyModifier = 0
+				wait(0.12)
+			end
+		end)
+	end
+	sound(KitchenConfig.Sounds.Buzzer, 0.4, SoundService)
+	wait(0.4)
+	sound(KitchenConfig.Sounds.Chute, 0.6, SoundService)
+
+	-- A prop falls from a chute's mouth to where it lands, tumbling, and stays in the bay.
+	local function drop(item: Model, scale: number, from: Vector3, to: Vector3, seconds: number, thud: string?)
+		item:PivotTo(CFrame.new(from - up * item:GetExtentsSize().Y))
+		item.Parent = Workspace
+		table.insert(made, item)
+		local spin = math.random() * 2 - 1
+		local start = item:GetPivot()
+		animate(seconds, function(t)
+			item:PivotTo(CFrame.new(start.Position:Lerp(to, t)) * CFrame.Angles(t * 1.6 * spin, t * 2.4 * spin, 0))
+		end, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		item:PivotTo(CFrame.new(to) * CFrame.Angles(0, spin * 3, 0))
+		if thud then
+			sound(thud, 0.55, SoundService).PlaybackSpeed = 0.9 + 0.2 * math.random()
+		end
+		table.insert(bayItems, { item = item, scale = scale })
+	end
+
+	-- The hens, one after another, out of the CHICKEN chute.
+	beside(function()
+		for k = 1, hens do
+			local hen = prop("LiveChicken")
+			if hen then
+				local scale = 2.4 / math.max(hen:GetExtentsSize().Y, 0.1)
+				hen:ScaleTo(scale)
+				local target = landing(1, k)
+				beside(function()
+					drop(hen, scale, mouth(1), target, 0.55, KitchenConfig.Sounds.MeatFall)
+				end)
+			end
+			wait(0.45)
+		end
+	end)
+	-- The florets, a quick shower out of the BROCCOLI chute.
+	beside(function()
+		for k = 1, florets do
+			local bit = prop("BroccoliBit")
+			if bit then
+				local scale = 1.3 / math.max(bit:GetExtentsSize().Y, 0.1)
+				bit:ScaleTo(scale)
+				local target = landing(2, k)
+				beside(function()
+					drop(bit, scale, mouth(2), target, 0.45, if k % 3 == 0 then KitchenConfig.Sounds.Plop else nil)
+				end)
+			end
+			wait(0.12)
+		end
+	end)
+	-- The rice: a white stream out of the RICE chute and a heap growing under it.
+	local pourFor = math.max(hens * 0.45, florets * 0.12, 2.0)
+	local heapAt = spot(bay.X + dispenser.HopperXs[3], bay.Y + dispenser.HopperY + 2.0, 0.3)
+	local heap = Instance.new("Part")
+	heap.Name = "MealRiceHeap"
+	heap.Shape = Enum.PartType.Ball
+	heap.Color = Color3.fromRGB(250, 248, 238)
+	heap.Material = Enum.Material.SmoothPlastic
+	heap.Anchored = true
+	heap.CanCollide = false
+	heap.CanQuery = false
+	heap.CanTouch = false
+	heap.CastShadow = false
+	heap.Size = Vector3.new(0.4, 0.2, 0.4)
+	heap.CFrame = CFrame.new(heapAt)
+	heap.Parent = Workspace
+	table.insert(made, heap)
+	burst(mouth(3), Color3.fromRGB(250, 248, 236), 9, 0.4, pourFor, 90, Vector3.new(0, -1, 0))
+	animate(pourFor, function(t)
+		local grow = math.sqrt(t)
+		heap.Size = Vector3.new(riceSize * grow + 0.4, riceSize * 0.45 * grow + 0.2, riceSize * grow + 0.4)
+		heap.CFrame = CFrame.new(heapAt)
+	end, Enum.EasingStyle.Linear)
+	table.insert(bayItems, { item = heap, scale = 1 })
+	wait(0.9)
+end
+--[[
 	Plays the scene for a cook of `steaks`. Returns when it's over (about 18 seconds for one bag) whether it played to
 	the very end (false when skipped, cut short or not played); does nothing when one is already playing or the hall's
 	pieces aren't there. `canSkip`: show the SKIP button (the player has watched it once).
+
+	`kind` "Meal" (user 2026-11-23): THE MEET MEAL SCENE instead of the steak's. The chef slaps his start button and says
+	his line as for steaks; then the DISPENSER on top of the meat bay drops live hens, broccoli florets and a stream of
+	rice into the bay, more for a bigger cook (dispenseMeal); the funnel sucks it all up the tube and it lands on the
+	lifter's pan, where the PILE of food (MealPile, no plate: "Plate should not be cooked with the food") builds up lump
+	by lump. The plate replaces the pile when the cook is ready (KitchenPans). No grinder or press: those make a steak.
 ]]
-function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
+function KitchenScene.play(steaks: number, canSkip: boolean?, kind: string?): boolean
 	if playing then
 		return false
 	end
+	local meal = kind == "Meal"
+	-- (a meal cooking shows as the pile of food on the pan, no plate: the plate comes when it is ready, KitchenPans)
+	local servedName = if meal then "MealPile" else "Steak"
 	local player = Players.LocalPlayer
 	local hall = Workspace:FindFirstChild("KitchenHall")
 	local chef = hall and hall:FindFirstChild("KitchenChef")
@@ -672,7 +808,7 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 	end)
 	local made: { Instance } = {}
 	local connections: { RBXScriptConnection } = {}
-	hideSteak(zone :: Model?, true)
+	hideSteak(zone :: Model?, true, servedName)
 	if canSkip then
 		table.insert(made, skipButton())
 	end
@@ -827,6 +963,26 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		end)
 		wait(0.7) -- (he sets off back to his spot)
 
+		-- The display bay, and the two bay shots (the grinding and the suction): filmed from far back by the kitchen's
+		-- front wall with a longer lens, aimed between the bay and the EMPLOYEES ONLY double door in the middle of the
+		-- far wall, so the door stands in the picture beside the bay, big enough to notice (BAY_SHOT).
+		local bayAt = spot(WChewsLayout.Bay.X, WChewsLayout.Bay.Y, 0.3)
+		local backDoor = WChewsLayout.BackDoor
+		local farDoor = spot(backDoor.Middle, WChewsLayout.BackWallY, backDoor.Height / 2)
+		local function bayShot(from: Vector3, subject: Vector3)
+			local aim = (subject - from).Unit * BAY_SHOT.Weight + (farDoor - from).Unit * (1 - BAY_SHOT.Weight)
+			camera.FieldOfView = BAY_SHOT.FieldOfView
+			shoot(from, from + aim * 50, true)
+		end
+		-- What lies in the bay to be drawn up: the steak's mound of mince, or the meal's hen, bags, florets and rice.
+		local mound: Model? = nil
+		local radius, moundScale = 3, 1
+		local bayItems: { { item: any, scale: number } } = {}
+
+		if meal then
+			dispenseMeal(steaks, spot, shoot, made, bayItems)
+		else
+
 		-- 2. The meat falls out of the ceiling chute into the grinder's tub (user 2026-11-22: "the bags of meats are too
 		-- much for a little amount of meat so instead ... meat falls"): a handful of raw chunks, more for a bigger cook;
 		-- a cow from CowFrom steaks, more cows for huge cooks.
@@ -886,14 +1042,12 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		wait(KitchenConfig.DropSeconds + (math.max(#drops, 1) - 1) * dropGap + 0.5)
 
 		-- 3. Grinding: the grinder churns and squirts the meat out of its outlet into the display bay, where the lifter's
-		-- mountain of mince grows under the YOUR MEAT sign.
-		local bayAt = spot(WChewsLayout.Bay.X, WChewsLayout.Bay.Y, 0.3)
+		-- mountain of mince grows in the meat bay.
 		local spoutDir = Vector3.new(spout.CFrame.LookVector.X, 0, spout.CFrame.LookVector.Z).Unit -- (the way it points)
 		local spoutFront = spout.Position + spoutDir * (spout.Size.Z / 2 + 0.4)
-		local mound = prop("MincePile") or prop("MeatMound")
+		mound = prop("MincePile") or prop("MeatMound")
 		local moundSize = math.clamp(length * 0.5, 3, 22)
-		local radius = moundSize / 2
-		local moundScale = 1
+		radius = moundSize / 2
 		if mound then
 			table.insert(made, mound)
 			moundScale = moundSize / math.max(mound:GetExtentsSize().X, 0.1)
@@ -901,17 +1055,7 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 			mound:PivotTo(CFrame.new(bayAt))
 			mound.Parent = Workspace
 		end
-		-- The two bay shots (this one and the suction shot) are filmed from far back by the kitchen's front wall with a
-		-- longer lens, aimed between the bay and the EMPLOYEES ONLY double door in the middle of the far wall, so the
-		-- door stands in the picture beside the bay, big enough to notice (BAY_SHOT). The cow sets off as this shot
-		-- starts.
-		local backDoor = WChewsLayout.BackDoor
-		local farDoor = spot(backDoor.Middle, WChewsLayout.BackWallY, backDoor.Height / 2)
-		local function bayShot(from: Vector3, subject: Vector3)
-			local aim = (subject - from).Unit * BAY_SHOT.Weight + (farDoor - from).Unit * (1 - BAY_SHOT.Weight)
-			camera.FieldOfView = BAY_SHOT.FieldOfView
-			shoot(from, from + aim * 50, true)
-		end
+		-- (the cow sets off as this shot starts)
 		-- (from the dining side of the bay, a little to one side: the sign, the mound, the grinder shaking behind it,
 		--  and the double door far behind, between the grinder and the left-hand islands)
 		bayShot(inKitchen(bayAt + hallVector(20 + radius * 0.5, 11.7 + radius * 0.3, -50 - radius)), bayAt + up * (3.5 + radius * 0.35))
@@ -931,6 +1075,7 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		end, Enum.EasingStyle.Linear)
 		grinder:PivotTo(grinderHome)
 		wait(1.0)
+		end -- (the steak's chute and grinder)
 
 		-- The pan end, worked out before the meat sets off: where the steak lies, how thick it is, how much room there is
 		-- under the nozzle, and from that the press's size, how high it hovers and how tall the pile can stand.
@@ -939,14 +1084,14 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		local target = zoneAt + up * panFloor
 		local zoneHall = hall0:PointToObjectSpace(zoneAt)
 		local tubeY = WChewsLayout.TubeHeight
-		local served = zone and (zone :: Model):FindFirstChild("Steak")
+		local served = zone and (zone :: Model):FindFirstChild(servedName)
 		local steakModel: Model? = if served and served:IsA("Model") then served else nil
 		local steakBase = if steakModel then steakModel:GetPivot() else CFrame.new(target) * CFrame.Angles(0, math.rad(18), 0)
 		local thickness = if steakModel then steakModel:GetExtentsSize().Y else math.max(length * 0.135, 0.6)
 		local steakTop = steakBase.Position.Y + thickness
 		local nozzleBottom = hall0:PointToWorldSpace(Vector3.new(zoneHall.X, tubeY - NOZZLE_DROP, zoneHall.Z)).Y
 		local room = nozzleBottom - 0.4 - steakTop
-		local pressModel = prop("MeatPress")
+		local pressModel = if meal then nil else prop("MeatPress")
 		local pressScale, lift = 1, math.clamp(room * 0.5, 1.5, 5)
 		if pressModel then
 			local size = pressModel:GetExtentsSize()
@@ -959,8 +1104,27 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 				table.insert(made, pressModel)
 			end
 		end
-		local pile = prop("MincePile") or prop("MeatMound")
+		local pile = if meal then nil else (prop("MincePile") or prop("MeatMound"))
 		local pileScale = 1
+		-- The meal: this screen's copy of the server's food pile grows on the pan as the lumps land (the real one shows
+		-- after; the plate only comes when the cook is ready).
+		local plate: Model? = nil
+		local plateScale = 1
+		if meal and steakModel then
+			plate = (steakModel :: Model):Clone()
+			for _, part in ipairs((plate :: Model):GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Anchored = true
+					part.CanCollide = false
+					part.CanQuery = false
+					part.CanTouch = false
+					part.CastShadow = false
+					part.LocalTransparencyModifier = 0
+				end
+			end
+			plateScale = (plate :: Model):GetScale()
+			table.insert(made, plate :: Model)
+		end
 		if pile then
 			table.insert(made, pile)
 			pileScale = (thickness + lift * 0.6) / math.max(pile:GetExtentsSize().Y, 0.1)
@@ -996,11 +1160,40 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		end
 		local travel = math.clamp(total / 150, KitchenConfig.TubeMinSeconds, KitchenConfig.TubeMaxSeconds)
 		local speed = total / travel
-		local lumps: { { model: Model, delay: number, done: boolean } } = {}
+		local lumps: { { model: any, delay: number, done: boolean } } = {}
 		for index = 1, KitchenConfig.TubeLumps do
-			local lump = prop("MeatMound")
+			local lump: any = nil
+			if not meal then
+				lump = prop("MeatMound")
+				if lump then
+					lump:ScaleTo(KitchenConfig.TubeLumpSize / math.max(lump:GetExtentsSize().X, 0.1))
+				end
+			elseif index == 1 then
+				-- the meal: the hen goes up the tube first (whole), then florets and lumps of rice in turn
+				lump = prop("LiveChicken")
+				if lump then
+					lump:ScaleTo(3.0 / math.max(lump:GetExtentsSize().Magnitude, 0.1))
+				end
+			elseif index % 2 == 0 then
+				lump = prop("BroccoliBit")
+				if lump then
+					lump:ScaleTo(KitchenConfig.TubeLumpSize / math.max(lump:GetExtentsSize().Magnitude, 0.1))
+				end
+			else
+				local rice = Instance.new("Part")
+				rice.Name = "RiceLump"
+				rice.Shape = Enum.PartType.Ball
+				rice.Size = Vector3.one * KitchenConfig.TubeLumpSize * 0.8
+				rice.Color = Color3.fromRGB(250, 248, 238)
+				rice.Material = Enum.Material.SmoothPlastic
+				rice.Anchored = true
+				rice.CanCollide = false
+				rice.CanQuery = false
+				rice.CanTouch = false
+				rice.CastShadow = false
+				lump = rice
+			end
 			if lump then
-				lump:ScaleTo(KitchenConfig.TubeLumpSize / math.max(lump:GetExtentsSize().X, 0.1))
 				table.insert(made, lump)
 				table.insert(lumps, { model = lump, delay = (index - 1) * KitchenConfig.TubeLumpGap, done = false })
 			end
@@ -1023,6 +1216,13 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 							pile:ScaleTo(pileScale * math.max(landed / math.max(#lumps, 1), 0.08))
 							pile:PivotTo(CFrame.new(target))
 							pile.Parent = Workspace
+						end
+						if plate then
+							-- (the meal: the plate builds up on the pan, lump by lump)
+							local building = plate :: Model
+							building:ScaleTo(plateScale * math.max(landed / math.max(#lumps, 1), 0.1))
+							building:PivotTo(steakBase)
+							building.Parent = Workspace
 						end
 						if landed == 1 then
 							sound(KitchenConfig.Sounds.MeatLand, 0.8, SoundService)
@@ -1050,6 +1250,25 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 				leaving.Parent = nil
 			end
 		end)
+		-- (the meal: everything in the bay is drawn up one after another, shrinking into the funnel)
+		for index, entry in ipairs(bayItems) do
+			beside(function()
+				wait((index - 1) * drawUp / math.max(#bayItems, 1) * 0.8)
+				local item = entry.item
+				local home = item:GetPivot()
+				local size0 = if item:IsA("BasePart") then item.Size else Vector3.one
+				local funnel = spot(WChewsLayout.Bay.X, WChewsLayout.Bay.Y, 9)
+				animate(0.6, function(t)
+					if item:IsA("Model") then
+						item:ScaleTo(math.max(entry.scale * (1 - t), 0.02))
+					else
+						item.Size = size0 * math.max(1 - t, 0.05)
+					end
+					item:PivotTo(CFrame.new(home.Position:Lerp(funnel, t)) * home.Rotation)
+				end, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+				item.Parent = nil
+			end)
+		end
 		-- ONE shot of it (user 2026-11-22: "the first frame, when the meat first starts getting sucked in is enough we
 		-- dont need the second frame"): low beside the bay, looking up at the funnel, well outside the bay's front corner
 		-- (closer in, a post crossed the picture and the sign showed from behind). It holds until the first lump is
@@ -1065,8 +1284,24 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		local away = Vector3.new(target.X - farCorner.X, 0, target.Z - farCorner.Z)
 		away = if away.Magnitude > 1 then away.Unit else hallVector(0, 0, -1)
 		camera.FieldOfView = usualFieldOfView
-		shoot(inKitchen(target + away * (19 + length * 0.5) + up * (8 + length * 0.25)), target + up * 6, true)
+		if meal then
+			-- (higher, looking down into the pan: the plate lies flat on its floor, below the rim from a low camera)
+			shoot(inKitchen(target + away * (13 + length * 0.4) + up * (15 + length * 0.3)), target + up * 1.5, true)
+		else
+			shoot(inKitchen(target + away * (19 + length * 0.5) + up * (8 + length * 0.25)), target + up * 6, true)
+		end
 		wait(0.6 + #lumps * KitchenConfig.TubeLumpGap + 0.7)
+
+		if meal then
+			-- The pile is all there: a puff of steam, the copy goes and the real pile shows (the same thing in the same place).
+			burst(target + up * 1, Color3.fromRGB(240, 240, 240), 9, 2.2, 1.4, 30)
+			sound(KitchenConfig.Sounds.MeatLand, 0.7, SoundService)
+			wait(0.6)
+			hideSteak(zone :: Model?, false, servedName)
+			if plate then
+				(plate :: Model).Parent = nil
+			end
+		else
 
 		-- 6. The giant meat press (user 2026-11-22: "a Giant meat presser ... that slams the meat and slowly lifts up
 		-- which makes it form into a raw steak"). It slides in under the nozzle from the kitchen's middle aisle, hangs
@@ -1186,6 +1421,7 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 		else
 			burst(target + up * 1, Color3.fromRGB(240, 240, 240), 10, 2.5, 1.2, 40)
 		end
+		end -- (the steak's press and cooking)
 		-- (a slow pull back off the finished steak)
 		shoot(inKitchen(target + away * (26 + length * 0.6) + up * (18 + length * 0.4)), target)
 		wait(KitchenConfig.LandingSeconds)
@@ -1207,7 +1443,7 @@ function KitchenScene.play(steaks: number, canSkip: boolean?): boolean
 	table.clear(undo)
 	hideChef(chef :: Model, false)
 	hideCharacter(false)
-	hideSteak(zone :: Model?, false)
+	hideSteak(zone :: Model?, false, servedName)
 	RunService:UnbindFromRenderStep("KitchenSceneCamera")
 	camera.FieldOfView = usualFieldOfView
 	camera.CameraType = Enum.CameraType.Custom

@@ -87,14 +87,19 @@ function KitchenService.start()
 		return PlayerDataService.getKitchen(player)
 	end
 
-	set.cook.OnServerInvoke = function(player: Player, steaks: any): any
+	-- `kind`: nil or "Steak" for steaks, "Meal" for meet meals (GAME_DESIGN §40.7, user 2026-11-23).
+	set.cook.OnServerInvoke = function(player: Player, steaks: any, kind: any): any
 		if tooSoon(player) then
 			return { outcome = "Busy" }
 		end
-		if not KitchenConfig.isSteakCount(steaks) then
+		if kind ~= nil and typeof(kind) ~= "string" then
 			return { outcome = "Rejected" }
 		end
-		local outcome, balance = PlayerDataService.startCook(player, steaks)
+		local cooking = if kind == nil then "Steak" else kind
+		if not KitchenConfig.isSteakCount(steaks) or not KitchenConfig.isKind(cooking) then
+			return { outcome = "Rejected" }
+		end
+		local outcome, balance = PlayerDataService.startCook(player, steaks, cooking)
 		-- The steak appears in the player's pan and the clock starts.
 		KitchenPans.refresh(player)
 		return { outcome = outcome or "Rejected", balance = balance, view = PlayerDataService.getKitchen(player) }
@@ -104,9 +109,9 @@ function KitchenService.start()
 		if tooSoon(player) then
 			return { outcome = "NotReady" }
 		end
-		local outcome, percent = PlayerDataService.eatSteak(player)
+		local outcome, percent, kind = PlayerDataService.eatSteak(player)
 		KitchenPans.refresh(player)
-		return { outcome = outcome or "Rejected", percent = percent, view = PlayerDataService.getKitchen(player) }
+		return { outcome = outcome or "Rejected", percent = percent, kind = kind, view = PlayerDataService.getKitchen(player) }
 	end
 
 	for _, spot in ipairs(CollectionService:GetTagged(KitchenConfig.CookerSpotTag)) do

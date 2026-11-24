@@ -16,6 +16,159 @@ CURRENT MILESTONE block).
 **PUBLISHED 2026-11-19 (the user tested and published): the live game is commit 03a2883 (main = origin/main).
 Max Players 40.**
 
+**DESIGN, 2026-11-23 (not built): the coaches are made-up characters (Squatavious / Benchamin / Sumo, renamed in
+QuestConfig; the gym owner is every new player's free basic coach; your coach shows only on your own screen;
+GAME_DESIGN §40.5), and RANKS AND TITLES (GAME_DESIGN §41: the user's four picks; Claude's 12-rank ladder, first
+titles and placement wait for the user's OK). Cosmetics are deliberately NOT being designed now.**
+
+**RANKS AND TITLES BUILT AND TESTED IN STUDIO (2026-11-23; user: "Start building ranks and titles, but first research
+games with ranks and titles ..."). NOT COMMITTED, NOT SAVED TO ROBLOX.**
+- STUDY: References/Ranks and Titles Study.md (two research passes over written sources, Roblox and other games, plus
+  the fwjelaa vault notes; videos not watched). GAME_DESIGN §41.3 records what was built from it.
+- CODE: RankConfig (60 ranks, thresholds, coins, crates, luck boost, 25 titles, the 12 materials and title colours);
+  save VERSION 35 (`ranks` record, migrations[34] repairs, never overwrites); ProfileOperations (recordRankMeet,
+  claimRankRewards with upTo, useFreeCrate, setTitle, markTitlesSeen, getRanks, getRank; luckMultiplier doubles with
+  the rank boost, capped 10x); PlayerDataService wrappers + adminRankUp / adminGiveTitle; LocalMeetService.saveLifter
+  scores every real meet total in GL inside its own save and checks the feats (9/9, clutch, gym record, streak, clubs);
+  RankService (remotes, RankIndex / TitleId / TitleCount attributes, leaderstats "Rank", server chat line for names
+  from Platform Pro up and Legendary titles); RankRemotes; client RankLook (plate emblem in the name's material, level
+  pips, title colours, Legendary shimmer), RankMoment (toast for a level, ceremony + CLAIM for a new name, title cards
+  with EQUIP, held until the awards / cutscenes / turn are over; LocalMeetAwards.isPlaying added), RanksMenu (RANKS tab,
+  key R, red dot; rank road; titles), RankNameTags (others' small tags, 70 studs, 16 nearest, hidden on turn and in
+  cutscenes); ShopMenu opens free rank crates (ShopMenu.openFree); MenuKeys hides RANKS on the turn; admin RANK UP button
+  and GiveTitle action.
+- STUDIO RESULTS (one player, all 34 changed scripts matched disk): save 34 -> 35 on load; Unranked in the player list;
+  admin RANK UP x6: five toasts each collecting only their own rank (coins 5,000 -> 5,350), then the Plate Loader I
+  ceremony; CLAIM paid +100 coins and the luck boost; RANKS menu, rank road, titles page, TITLE UNLOCKED card, EQUIP
+  (the tag's attribute and the preview changed), the gold Legendary title, a free crate opened in the shop (coins
+  unchanged); chat line for the Legendary title; 21 rule checks on a test save all PASS (migration, best kept, every
+  feat, streak and its reset, claim upTo, no double pay, luck x2 and the 10x cap, title ownership, counts, free crates).
+  No errors (only Studio's DataStore messages). Fixed during the test: dark rank names unreadable, pips drawn as bars,
+  toasts collecting a later ceremony's rewards, the red dot not clearing after a free crate.
+- NOT TESTED: a real meet feeding the rank (the minigames need a person; the rules were tested directly), the name tags
+  over OTHER players (needs two players), a phone, the moments after a real awards ceremony.
+- WAITING FOR THE USER: Blender-rendered emblem pictures (RankConfig.Images; an upload), dedicated rank-up sounds
+  (ElevenLabs credits); saving to Roblox; commit.
+- Test-tool note: Studio on the PC had no place open; it was reopened with `-task EditPlace -placeId 96814269062063
+  -universeId 10769034794`, and Rojo's Connect / Accept were clicked on the PC screen (the connector cannot press a
+  downloaded plugin's buttons).
+
+**MEET MEALS + "YOUR MEAT" WORDS OFF (2026-11-23, user: "Lets start meet meals, also can you remove these words";
+GAME_DESIGN §40.7 "Meet meals"). TESTED IN STUDIO (one player, checksums matched). NOT COMMITTED. The plate model
+and the bay without its bar are MADE AND UPLOADED (see MODELS below).**
+- THE USER'S PICKS: 24 hours; 50 coins and 20 s per meal (double steaks), the same % table; one cook at a time
+  (steaks OR meals); a chicken, rice and broccoli plate.
+- CODE: KitchenConfig (PricePerMeal, SecondsPerMeal, isKind, cost/cookSeconds take a kind, boostPercent);
+  PlayerProfileSchema VERSION 34 (kitchen.kind, boosts.meal; migrations[33] repairs, never overwrites);
+  ProfileOperations (startCook takes a kind, eatSteak eats either kind and returns it, getKitchen has kind and the
+  meal boost; settleMeetCompetitionNumber multiplies a meet's raise by GainBoosts.meetBonus without using more
+  allowance); GainBoosts.meetBonus; PlayerDataService / KitchenService pass the kind (checked with typeof and
+  isKind); KitchenRemotes types; KitchenPans (zone and player Kind attributes, shows "MeetMeal" when that model
+  exists); KitchenMenu (the chef's Meet meals answer, the picker in meal mode, a chef caption instead of the grinder
+  scene, "MEAL EATEN!"); BoostBar (the navy MEET MEAL BOOST chip, the ready chip and note say meal);
+  KitchenClocks ("Your meet meal"); KitchenSignTimer ("YOUR MEET MEAL 0:20"). KitchenBuilding removes the meat
+  bay's WcBay_SignText piece (the words): its dark backing bar is part of WcBay_Frame and stays, blank.
+- STUDIO RESULTS: on test data a +50% meal made a 100 -> 110 raise 100 -> 115 with the same allowance used; an ended
+  meal adds nothing; steaks refused while a meal cooks; no eating early; eating sets the meal boost for 24 h and
+  leaves the steak boost; 33 -> 34 migration fills the fields. In the game: the player loaded at version 34; the
+  chef's "Meet meals" opened "HOW MANY MEET MEALS?" (50 meals 2,500 coins, 16:40, +45%); 1 meal cost 50 coins and
+  cooked in 20 s (zone Kind Meal); "Eat / Your meet meal" at the pan gave "MEAL EATEN! +1% MEETS FOR 24H" and the
+  navy chip; the bay shows no words. The coin pop-up said "MEETMEALS": the reason is now "Meet meals" (changed
+  during Play; checked afterwards, Studio's copy matches disk; the pop-up itself not seen again). NOT TRIED: a real meet with the boost on (only the settle function changed, and
+  it was tested directly), a phone, two players.
+- MODELS (same day, user "Yes, both", then "line up the chicken lines ... falling off the chicken breast", then
+  "Yes, upload both"): UPLOADED. MeetMeal_01 = rbxassetid://121160158126451 (art/scripts/build_meet_meal_01.py ->
+  art/blender/MeetMeal_01.blend, art/exports/MeetMeal_01.glb; CHECK PASSED, 8 meshes, 4,962 triangles: plate, navy
+  rim, CENTRAL label, chicken, grill marks laid onto the breast's surface by ray casts and stopped where it turns
+  down, rice with grains, broccoli heads and stems). WChewsBay_02 = rbxassetid://93427071048621
+  (art/scripts/build_wchews_bay_02.py; CHECK PASSED, 216 triangles; WcBay without the sign's bar and words, listed
+  AFTER WChewsKit_01 in PropAssets so it replaces that bay). Both in art/materials/materials.json "models".
+  StarterGymConfig: both PropAssets entries, the Meal* paints, the MeetMeal colourway (the plate pale blue-grey: a
+  white plate hid the white rice in Studio). KitchenPans puts MeetMeal into ReplicatedStorage.KitchenModels (the
+  picker). write_wchews_layout.py reads WChewsBay_02_bounds.json; WChewsLayout regenerated (only WcBay's pivot
+  offset changed, -0.055 -> 0). Pictures: art/previews/MeetMeal_01_and_Bay_02.jpg (Blender, one-sided) and
+  MeetMeal_InGame.jpg.
+- STUDIO (models): KitchenModels.MeetMeal 10 x 2 x 10 with every piece painted; the bay is Tray / Frame / Glass /
+  Lights only, 26 x 12 x 26; the picker shows the plate spinning; a 1-meal cook shows a 5-stud plate on the pan, a
+  100-meal cook (5,000 coins, through the real Cook remote) a bigger one; the rice shows on the blue-grey plate; no
+  errors. NOT SEEN: the picker with the blue-grey plate (its picture was taken before the colour change).
+- NEXT: the user looks in the game; commit.
+- ADMIN SKIP COOLDOWNS (same day, user: "a skip cooldown for everything like food, and for the future if there is a
+  cooldown make it where i can skip anything"; memory admin-skip-cooldowns): a SKIP COOLDOWNS button on the admin
+  panel's PLAYER STATS page (AdminPanel) -> AdminService action SkipCooldowns -> PlayerDataService /
+  ProfileOperations.adminSkipCooldowns (the cook ready now, training limits, every build's meet allowance full, the
+  cow's free spin and game tries, today's quests start over, suit test waits) + MockMeetService.adminClearCooldown
+  (the Mock Meet's 30 min wait) + KitchenPans.refresh. Checker clean. NOT TESTED IN STUDIO YET (the user had a play
+  test running). Every new cooldown must add its line to adminSkipCooldowns.
+- THE MEAL CUTSCENE (same day, user: "the chef walks up, drops a chicken inside the meat bay, and pours in a bag of
+  broccoli and a bag of rice then the thing sucks it up, and drops it on the pan ... a little staircase, to the bay so
+  the chef can dump the things with his hands"): PROPS MODELLED, NOT UPLOADED (waiting for the user's OK on
+  art/previews/MealSceneProps_01.jpg): art/scripts/build_wchews_meal_props_01.py -> art/blender/WChewsMealProps_01.blend
+  / .glb, CHECK PASSED (20 meshes, 10,400 triangles): WcBayStairs (steel stair to a platform 4.2 up in front of the
+  bay's glass, safety nosings, rails), RawChicken, BroccoliBag and RiceBag (CENTRAL labels: no real brands),
+  BroccoliBit. The scene itself (the chef's climb, hold-and-tip animations, the pour, the suction, onto the pan) is
+  NOT built yet.
+  UPLOADED on "Yes, upload them": WChewsMealProps_01 = rbxassetid://110375084853759 (in materials.json; NOT in
+  PropAssets). Then the user: "instead of the raw chicken, can you do a live chicken": art/scripts/
+  build_wchews_meal_props_02.py -> WChewsMealProps_02.blend / .glb, CHECK PASSED (24 meshes, 10,788 triangles), the
+  same items with LiveChicken (a white cartoon hen: comb, wattle, beak, eyes, orange legs and feet, wings, tail fan)
+  for RawChicken. Picture art/previews/LiveChicken_01.jpg. UPLOADED on "Yes, upload it": WChewsMealProps_02 =
+  rbxassetid://76529672344710 (01 marked "skip" in materials.json). WIRED: PropAssets entry, the Meal* paints and the
+  colourways for WcBayStairs / LiveChicken / BroccoliBag / RiceBag / BroccoliBit (StarterGymConfig); KitchenPans puts
+  the four scene props into KitchenModels; wchews_layout.py places WcBayStairs against the bay's LEFT side (plan
+  (-13.1, 32), turn 270; BAY_STAIRS, written as WChewsLayout.BayStairs), write_wchews_layout.py reads
+  WChewsMealProps_02_bounds.json. NOT SEEN IN STUDIO YET (a play test the user started was running).
+- THE CHEF'S MEAL MOVES (art/scripts/chef_animations.py, new clips; wrists searched on the rig with
+  D:/ClaudeScratch/meal/wrist_search.py): Chef_HoldSides and Chef_HoldBag (loops, arms and head: a box grip from the
+  sides at the chest, palms in, thumbs up), Chef_DropIn (1.9 s: over the glass, the hands open at DROP_RELEASE 0.95),
+  Chef_Pour (3.0 s: over the glass, tipped and shaken POUR_START 0.85 .. POUR_END 2.2, let go at BAG_RELEASE 2.45).
+  anim_qa PASS on Skinny / Fat / Muscular (two rounds fixed: hands at the belly with drooping fingers, then the hen's
+  hands nearly meeting palms down). UPLOADED on "Yes to both" (KitchenConfig.ChefMealAnimations: HoldSides
+  133699732098453, HoldBag 123643498924785, DropIn 129648130016237, Pour 136127363507436; ChefMealTimes).
+- SKIP COOLDOWNS TESTED IN STUDIO: a 200 s meal cook went to ready at once; the message lists every skip; the button is
+  on the admin panel's PLAYER STATS page.
+- THE MEAL CUTSCENE BUILT AND TESTED IN STUDIO (KitchenScene.play(steaks, canSkip, kind); KitchenMenu passes the
+  kind; the old caption-only answer for meals is gone): the line as before, then mealSteps: the chef stands at the
+  foot of the bay's steps with the live hen held between his hands, climbs the six steps, leans over the glass and
+  drops it in (Chef_DropIn); cut, the broccoli bag tipped and shaken, florets falling into the bay, the empty bag let
+  go in; cut, the rice bag, a white stream and a mound growing; then the existing suction shot draws up everything
+  in the bay (hen, bags, florets, rice), the tube carries the hen, florets and rice lumps, and this screen's copy of
+  the plate builds up on the pan lump by lump (higher camera looking into the pan); a puff of steam and the real
+  plate shows. No button, grinder or press for a meal. Held props are placed between the hands every frame, sized to
+  the palms' gap (measured 1.73-1.79 in the game; each palm 0.15 from the hen's box). Runs to the end
+  (ok, finished), nothing left behind, the camera back to Custom, the server's plate shown. Three camera fixes from
+  pictures (from behind him his body hid the hen; two shots too near the bay's front left post); the last two cuts'
+  new angles were NOT re-photographed. About 50 s at real speed: long (the steak's is about 32): ask the user.
+  Picture art/previews/MealCutscene_InGame.jpg.
+- REPLACED THE SAME DAY (user: "Instead of the chef dropping the chicken in and pouring the stuff, lets add a dispenser
+  on top of the bay ... press the button and out comes the chickens, brocolli, and rice ... more chickens, broccoli,
+  and rice ... lets not have the plate also drop with the food ... just have the food piling up ... then when its
+  done then the plate"): NEW MODELS (NOT UPLOADED, waiting for the user's OK on art/previews/MealDispenser_01.jpg):
+  art/scripts/build_wchews_dispenser_01.py -> WChewsDispenser_01.blend / .glb, CHECK PASSED (17 meshes, 10,666
+  triangles): WcMealDispenser (a steel frame on the bay's side rails over its front half, three hoppers CHICKEN /
+  BROCCOLI / RICE with windows showing hens, florets and rice, labels, funnels, chutes, red gates, CENTRAL, a lamp;
+  clear of the tube's funnel and intake run) and MealPile (a heap of rice with grilled chicken breasts laid on its
+  slope and florets, no plate). CODE (checker clean, NOT TESTED until the upload): wchews_layout places
+  WcMealDispenser at the bay (the steps are no longer placed; WChewsLayout.Dispenser has the chutes);
+  StarterGymConfig colourways for both (the PropAssets entry waits for the id); KitchenPans shows MealPile while a
+  meal cooks and MeetMeal (the plate) once ready, swapping by itself at the ready time; KitchenScene's meal: the
+  chef's button press and line as for steaks, then dispenseMeal (hens 1..8, florets 4..24, rice heap growing with
+  the meals), the suction, the tube, and the pile building up on the pan. The climb/drop/pour code is removed;
+  Chef_HoldSides / HoldBag / DropIn / Pour kept as ChefMealAnimationsUnused; WChewsMealProps_02's stairs and bags are
+  no longer used (the hen and the floret are).
+  UPLOADED on "Yes, upload them": WChewsDispenser_01 = rbxassetid://104922146247811 (materials.json "models";
+  PropAssets entry added).
+- THE DISPENSER SCENE TESTED IN STUDIO (one player, scripts matched disk): the dispenser stands on the bay; a
+  60-meal cook drops hens, florets and a growing rice heap into the bay; the suction draws them all up; the pile
+  builds on the pan with no plate; steam, then the server's MealPile shows. Runs to the end with no errors, nothing
+  left behind, the camera back to Custom. About 19 s at real speed for 5 meals and for 60 (the old steps scene was
+  about 50). The server swaps the pile for the plate by itself at the ready time (a 1-meal cook: the plate after
+  20.2 s) and on SKIP COOLDOWNS (through the real admin remote); the "Eat / Your meet meal" prompt is on. Pictures:
+  art/previews/MealDispenser_InGame.jpg. NOT TRIED: a phone, two players, a cook small enough to see the smallest
+  heap in the bay up close.
+- Test-tool notes: Rojo missed edits made during Play twice this session (fixed by appending and removing a comment
+  line); Studio's window was found minimized once (white capture).
+
 **COMMITTED 2026-11-22: 82c7ce0 (W Chews round 3, the luck bands, the whole-map flicker fixes, the NPC crew-neck
 tees and refitted chef, the unboxing study notes). NOT PUSHED. The user is publishing this version from Studio to
 test it on their phone. Left out on purpose: References/W Chews/ (four reference pictures, possibly third-party,
@@ -45,6 +198,10 @@ below; only a second player and a phone are still untried.**
   screen (art/previews/WChewsScene_16x9.jpg): the two-shot keeps the chef and the player, both bay shots keep the
   door and the cow. NOTE: the cow in the doorway is small on purpose (a background detail, the user's round 3 note),
   about 30 to 45 pixels tall at 1080p.
+- RUN AGAIN 2026-11-23 on the user's "Yes, run it" (one player, checksums matched, with the later W Chews work in):
+  FlickerAudit on the hall, 1,590 parts: again 0 block-against-block and 0 block-against-mesh lines; 144
+  mesh-against-mesh hints, the door's all bounding-box bottoms or pieces that the model keeps 0.05 or more proud.
+  Stills of the door shut (from the front and grazing along the wall) and open (from the back room): clean.
 - TEST-TOOL NOTES (not game bugs): an execute_luau `require` gets its OWN copy of a client module, so a scene played
   that way does not move the real door (KitchenBackDoor.hold on the copy does nothing): drive the real menu instead
   (prompt:InputHoldBegin, then user_mouse_input on CoachDialogue.Answer1 and Kitchen.Picker.Cook). execute_luau also
@@ -840,8 +997,8 @@ the first item and the gain display. COMMITTED with the gain display.**
   skippable only with the pass (user: "Part of the pass"); Replay Cutscene button. Skipping the basic opening is pass only (the free "TAP TO SKIP" in ShopMenu goes when the
   new opening is built; keep the opening ~3 s).
 - Coaching (§40.1, §40.5, 2026-11-19): coaches give daily quests and can be hired (Squat/Bench/Deadlift coach =
-  easier minigames; maybe an all-round coach = more gains). Coach Olivera's two trials are APPROVED (§40.5).
-  Open: price, how much easier, how long coaching lasts, whether Olivera is a real person (permission).
+  easier minigames; maybe an all-round coach = more gains). Coach Squatavious's two trials are APPROVED (§40.5).
+  Open: price, how much easier, how long coaching lasts. (Settled 2026-11-23: all coaches are made-up characters, not real lifters.)
 - Measured (live numbers, 59 kg starter): a full training day ~+5.4 kg over the three lifts; meets up to 2x that per
   day, saved 3 days; record level ~2-2.5 months with full meets, 5-7 months training only. BaseProgressRate is
   still 0.00482389 (the 0.01113418 candidate was never switched on; §37.1's meets made up the difference).

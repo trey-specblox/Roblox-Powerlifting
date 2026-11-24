@@ -60,6 +60,7 @@ local WeightClassConfig = require(ConfigFolder:WaitForChild("WeightClassConfig")
 local QuestConfig = require(ConfigFolder:WaitForChild("QuestConfig"))
 local KitchenConfig = require(ConfigFolder:WaitForChild("KitchenConfig"))
 local LuckConfig = require(ConfigFolder:WaitForChild("LuckConfig"))
+local RankConfig = require(ConfigFolder:WaitForChild("RankConfig"))
 
 local ProgressionFolder = Shared:WaitForChild("Progression")
 local CompetitionNumberReward = require(ProgressionFolder:WaitForChild("CompetitionNumberReward"))
@@ -692,8 +693,14 @@ function ProfileOperations.settleMeetCompetitionNumber(data: ProfileData, classK
 		return "Rejected", current, 0
 	end
 	if outcome.newCnKg > current + 1e-9 then
-		(build.competitionNumber :: any)[lift] = outcome.newCnKg
-		return "Raised", outcome.newCnKg, outcome.daysUsed
+		-- A meet meal (GAME_DESIGN §40.7, user 2026-11-23) raises the raise itself by its percent; it uses no more of
+		-- the allowance (as steaks give more strength from the same training).
+		local raised = current + (outcome.newCnKg - current) * (1 + GainBoosts.meetBonus((data :: any).boosts, nowUnix))
+		if not isFiniteNumber(raised) or raised < outcome.newCnKg then
+			raised = outcome.newCnKg
+		end
+		(build.competitionNumber :: any)[lift] = raised
+		return "Raised", raised, outcome.daysUsed
 	end
 	return "Unchanged", current, outcome.daysUsed
 end
@@ -2547,28 +2554,40 @@ end
 	THE KITCHEN  (GAME_DESIGN §40.7, user 2026-11-19)
 	=========================================================================
 
-	One cooker per player. startCook pays for the steaks and starts the cook in
-	one write; the cook finishes by the server clock (also while the player is
-	away or offline). eatSteak empties a finished cooker into the steak boost:
-	KitchenConfig.steakPercent(steaks) on TRAINING gains for BoostHours,
-	replacing any steak boost already running. Prices, times and the boost come
-	from KitchenConfig, never from a client. No yield.
+	One cooker per player. startCook pays for the steaks (or, version 34, meet
+	meals: one cook at a time, so the cooker holds one kind) and starts the cook
+	in one write; the cook finishes by the server clock (also while the player
+	is away or offline). eatSteak empties a finished cooker into its boost:
+	steaks give KitchenConfig.boostPercent on TRAINING gains, meals the same on
+	MEET gains, each for BoostHours, replacing a boost of the same kind already
+	running. Prices, times and the boost come from KitchenConfig, never from a
+	client. No yield.
 ]]
 
 export type CookOutcome = "Started" | "NotEnough" | "Busy" | "Rejected"
 export type EatOutcome = "Eaten" | "NotReady" | "Empty" | "Rejected"
 export type KitchenView = {
-	-- The cooker: steaks in it (0 = empty), and seconds until ready (0 = ready to eat).
+	-- The cooker: how many in it (0 = empty), what ("Steak" or "Meal"), and seconds until ready (0 = ready to eat).
 	steaks: number,
+	kind: string,
 	readyIn: number,
 	cookSeconds: number,
 	-- The steak boost running now (percent 0 = none), its seconds left and the meal's size.
 	boostPercent: number,
 	boostLeft: number,
 	boostSteaks: number,
+	-- The meet meal boost running now (percent 0 = none), its seconds left and its size.
+	mealPercent: number,
+	mealLeft: number,
+	mealCount: number,
 	-- Whether they have watched the chef scene once (it can be skipped after that).
 	sceneSeen: boolean,
 }
+
+-- What the cooker holds ("Meal" only when stored so; anything else reads as steaks).
+local function cookKind(kitchen: any): string
+	return if kitchen.kind == "Meal" then "Meal" else "Steak"
+end
 
 local function usableKitchen(data: ProfileData): (any?, any?)
 	local kitchen, boosts = (data :: any).kitchen, (data :: any).boosts
@@ -2586,14 +2605,15 @@ end
 -- The cooker and the steak boost, for the Kitchen menu and the boost timer. Reads only.
 function ProfileOperations.getKitchen(data: ProfileData, nowUnix: number): KitchenView
 	local kitchen, boosts = usableKitchen(data)
-	local view: KitchenView = { steaks = 0, readyIn = 0, cookSeconds = 0, boostPercent = 0, boostLeft = 0, boostSteaks = 0,
-		sceneSeen = false }
+	local view: KitchenView = { steaks = 0, kind = "Steak", readyIn = 0, cookSeconds = 0, boostPercent = 0, boostLeft = 0,
+		boostSteaks = 0, mealPercent = 0, mealLeft = 0, mealCount = 0, sceneSeen = false }
 	if kitchen == nil or not isFiniteNumber(nowUnix) then
 		return view
 	end
 	view.sceneSeen = kitchen.sceneSeen == true
 	if kitchen.steaks >= 1 then
 		view.steaks = kitchen.steaks
+		view.kind = cookKind(kitchen)
 		view.readyIn = math.max(0, kitchen.readyAt - nowUnix)
 		view.cookSeconds = math.max(0, kitchen.readyAt - kitchen.startedAt)
 	end
@@ -2602,6 +2622,12 @@ function ProfileOperations.getKitchen(data: ProfileData, nowUnix: number): Kitch
 		view.boostPercent = steak.percent
 		view.boostLeft = steak.endsAt - nowUnix
 		view.boostSteaks = if isFiniteNumber(boosts.steak.steaks) then boosts.steak.steaks else 0
+	end
+	local meal = GainBoosts.active(boosts.meal, nowUnix)
+	if meal then
+		view.mealPercent = meal.percent
+		view.mealLeft = meal.endsAt - nowUnix
+		view.mealCount = if isFiniteNumber(boosts.meal.meals) then boosts.meal.meals else 0
 	end
 	return view
 end
@@ -2621,21 +2647,26 @@ function ProfileOperations.markChefSceneSeen(data: ProfileData): boolean
 end
 
 --[[
-	Pays for `steaks` steaks and puts them in the cooker. "Busy" when something is already in it (cooking or waiting
-	to be eaten), "NotEnough" (with the balance) when the player can't afford it, "Rejected" for a bad count or broken
-	data. Nothing is written unless it returns "Started".
+	Pays for `steaks` of `kind` ("Steak", or "Meal" for meet meals; nil = steaks) and puts them in the cooker. "Busy"
+	when something is already in it (cooking or waiting to be eaten; one cook at a time, either kind), "NotEnough" (with
+	the balance) when the player can't afford it, "Rejected" for a bad count or kind or broken data. Nothing is written
+	unless it returns "Started".
 ]]
-function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix: number): (CookOutcome, number?)
+function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix: number, kind: string?): (CookOutcome, number?)
 	local kitchen = usableKitchen(data)
 	local wallet = walletOf(data)
-	if kitchen == nil or wallet == nil or not KitchenConfig.isSteakCount(steaks) or not isFiniteNumber(nowUnix)
-		or nowUnix < 0 then
+	local cooking = kind or "Steak"
+	if kitchen == nil or wallet == nil or not KitchenConfig.isSteakCount(steaks) or not KitchenConfig.isKind(cooking)
+		or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return "Rejected", nil
+	end
+	if cooking == "Meal" and typeof((data :: any).boosts.meal) ~= "table" then
 		return "Rejected", nil
 	end
 	if kitchen.steaks >= 1 then
 		return "Busy", wallet.coins
 	end
-	local price = KitchenConfig.cost(steaks)
+	local price = KitchenConfig.cost(steaks, cooking)
 	if not isWholeCoins(price) then
 		return "Rejected", nil
 	end
@@ -2645,38 +2676,51 @@ function ProfileOperations.startCook(data: ProfileData, steaks: number, nowUnix:
 	wallet.coins -= price
 	wallet.spentTotal += price
 	kitchen.steaks = steaks
+	kitchen.kind = cooking
 	kitchen.startedAt = math.floor(nowUnix)
-	kitchen.readyAt = kitchen.startedAt + KitchenConfig.cookSeconds(steaks)
+	kitchen.readyAt = kitchen.startedAt + KitchenConfig.cookSeconds(steaks, cooking)
 	return "Started", wallet.coins
 end
 
 --[[
-	Eats a finished meal: empties the cooker and sets the steak boost (replacing one already running). Returns the
-	boost's percent with "Eaten". Nothing is written otherwise.
+	Eats a finished cook: empties the cooker and sets its boost (steaks: the training boost; meals: the meet boost),
+	replacing a boost of that kind already running. Returns the boost's percent and the kind with "Eaten". Nothing is
+	written otherwise.
 ]]
-function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOutcome, number?)
+function ProfileOperations.eatSteak(data: ProfileData, nowUnix: number): (EatOutcome, number?, string?)
 	local kitchen, boosts = usableKitchen(data)
 	if kitchen == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
-		return "Rejected", nil
+		return "Rejected", nil, nil
 	end
 	if kitchen.steaks < 1 then
-		return "Empty", nil
+		return "Empty", nil, nil
 	end
 	if nowUnix < kitchen.readyAt then
-		return "NotReady", nil
+		return "NotReady", nil, nil
 	end
-	local steaks = kitchen.steaks
-	local percent = KitchenConfig.steakPercent(steaks)
+	local count, kind = kitchen.steaks, cookKind(kitchen)
+	local percent = KitchenConfig.boostPercent(count, kind)
 	if not isFiniteNumber(percent) or percent <= 0 then
-		return "Rejected", nil
+		return "Rejected", nil, nil
 	end
-	boosts.steak.percent = percent
-	boosts.steak.endsAt = math.floor(nowUnix) + KitchenConfig.BoostHours * 3600
-	boosts.steak.steaks = steaks
+	local endsAt = math.floor(nowUnix) + KitchenConfig.BoostHours * 3600
+	if kind == "Meal" then
+		if typeof(boosts.meal) ~= "table" then
+			return "Rejected", nil, nil
+		end
+		boosts.meal.percent = percent
+		boosts.meal.endsAt = endsAt
+		boosts.meal.meals = count
+	else
+		boosts.steak.percent = percent
+		boosts.steak.endsAt = endsAt
+		boosts.steak.steaks = count
+	end
 	kitchen.steaks = 0
+	kitchen.kind = "Steak"
 	kitchen.startedAt = 0
 	kitchen.readyAt = 0
-	return "Eaten", percent
+	return "Eaten", percent, kind
 end
 
 --[[
@@ -2721,10 +2765,17 @@ end
 -- The multiplier in force at `nowUnix` (1 when none, ended or unusable). Reads only.
 function ProfileOperations.luckMultiplier(data: ProfileData, nowUnix: number): number
 	local luck = usableLuck(data)
-	if luck == nil or not isFiniteNumber(nowUnix) or luck.endsAt <= nowUnix or not LuckConfig.isMultiplier(luck.multiplier) then
-		return 1
+	local wheel = 1
+	if luck ~= nil and isFiniteNumber(nowUnix) and luck.endsAt > nowUnix and LuckConfig.isMultiplier(luck.multiplier) then
+		wheel = luck.multiplier
 	end
-	return luck.multiplier
+	-- A new rank name's boost doubles the luck in force, never above its cap (GAME_DESIGN §41, RankConfig.LuckBoost).
+	local ranks = (data :: any).ranks
+	if typeof(ranks) == "table" and isFiniteNumber(ranks.luckBoostEndsAt) and isFiniteNumber(nowUnix)
+		and ranks.luckBoostEndsAt > nowUnix then
+		return math.min(wheel * RankConfig.LuckBoost.Factor, RankConfig.LuckBoost.Cap)
+	end
+	return wheel
 end
 
 -- Luck for the wheel's screen and the luck chip. Reads only.
@@ -2913,6 +2964,84 @@ function ProfileOperations.adminRefillDaily(data: ProfileData): (boolean, string
 		end
 	end
 	return true, "Today's training limits are full again."
+end
+
+--[[
+	ADMIN PANEL: SKIP ALL COOLDOWNS (user 2026-11-23: "a skip cooldown for everything like food, and for the future if there
+	is a cooldown make it where i can skip anything"). Ends every wait in the save at once: the cook is ready now, today's
+	training limits refill, every build's meet allowance refills to full, the cow's free daily spin and today's game tries
+	come back, today's coach quests start over, and a rare suit test can be tried again now. Returns the names of what it
+	skipped. EVERY NEW COOLDOWN ADDS ITS OWN LINE HERE (memory "admin-skip-cooldowns"); waits kept outside the save (the
+	Mock Meet's) are skipped by their service from AdminService. ADMIN ONLY: AdminService checks the caller.
+]]
+function ProfileOperations.adminSkipCooldowns(data: ProfileData, nowUnix: number): { string }
+	local profile = data :: any
+	local skipped: { string } = {}
+	if not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return skipped
+	end
+	-- The Kitchen: whatever is cooking is ready now.
+	local kitchen = profile.kitchen
+	if typeof(kitchen) == "table" and isFiniteNumber(kitchen.steaks) and kitchen.steaks >= 1 and isFiniteNumber(kitchen.readyAt)
+		and kitchen.readyAt > nowUnix then
+		kitchen.readyAt = math.floor(nowUnix)
+		table.insert(skipped, "cooking")
+	end
+	-- Today's training limits.
+	ProfileOperations.adminRefillDaily(data)
+	table.insert(skipped, "training limits")
+	-- Every build's meet allowance, full.
+	local refilled = false
+	if typeof(profile.builds) == "table" then
+		for _, build in pairs(profile.builds) do
+			local allowance = if typeof(build) == "table" then build.meetAllowance else nil
+			if typeof(allowance) == "table" then
+				for _, lift in ipairs(ProgressionConfig.Lifts) do
+					local resource = allowance[lift]
+					if typeof(resource) == "table" then
+						resource.amount = ProgressionConfig.MeetCnAllowance.MaxDays
+						resource.lastUpdatedUnix = math.floor(nowUnix)
+						refilled = true
+					end
+				end
+			end
+		end
+	end
+	if refilled then
+		table.insert(skipped, "meet allowance")
+	end
+	-- The cow's wheel: the free daily spin and today's game tries.
+	local luck = profile.luck
+	if typeof(luck) == "table" then
+		luck.freeDayKey = ""
+		luck.gameDayKey = ""
+		luck.gameTries = 0
+		table.insert(skipped, "free spin and cow game tries")
+	end
+	-- Today's coach quests start over (a fresh day).
+	local quests = profile.dailyQuests
+	if typeof(quests) == "table" then
+		quests.dayKey = DayKey.UNSTAMPED
+		for _, field in ipairs({ "goodLifts", "done", "taken" }) do
+			if typeof(quests[field]) == "table" then
+				for _, lift in ipairs(ProgressionConfig.Lifts) do
+					quests[field][lift] = if field == "goodLifts" then 0 else false
+				end
+			end
+		end
+		table.insert(skipped, "daily quests")
+	end
+	-- Rare suit tests: no wait before the next try.
+	local inventory = profile.inventory
+	if typeof(inventory) == "table" and typeof(inventory.suitTests) == "table" then
+		for _, test in pairs(inventory.suitTests) do
+			if typeof(test) == "table" and test.passed ~= true then
+				test.nextTryAt = nil
+			end
+		end
+		table.insert(skipped, "suit test waits")
+	end
+	return skipped
 end
 
 --[[
@@ -3293,6 +3422,305 @@ function ProfileOperations.setGearOn(data: ProfileData, on: boolean): boolean
 	end
 	inventory.gearOn = on
 	return true
+end
+
+--[[
+	=====================================================================================================================
+	RANKS AND TITLES (schema 35; GAME_DESIGN §41, RankConfig)
+	=====================================================================================================================
+	SECURITY BOUNDARY: every value comes from the server's meet result (LocalMeetService) and RankConfig; a client only
+	asks to claim, to open a free crate or to pick a title it owns.
+]]
+
+local function usableRanks(data: ProfileData): any?
+	local ranks = (data :: any).ranks
+	if typeof(ranks) ~= "table" or typeof(ranks.hasTotal) ~= "boolean" or typeof(ranks.feats) ~= "table"
+		or typeof(ranks.title) ~= "string" or typeof(ranks.streakDayKey) ~= "string" or typeof(ranks.bestClass) ~= "string" then
+		return nil
+	end
+	for _, field in ipairs({ "bestPoints", "bestTotalKg", "bestBodyweightKg", "bestUnix", "claimed", "freeCrates",
+		"luckBoostEndsAt", "titlesSeenUnix", "streakDays" }) do
+		if not isFiniteNumber(ranks[field]) or ranks[field] < 0 then
+			return nil
+		end
+	end
+	return ranks
+end
+
+-- The rank reached (0 = none yet). Reads only.
+function ProfileOperations.getRank(data: ProfileData): number
+	local ranks = usableRanks(data)
+	return if ranks then RankConfig.rankFor(ranks.bestPoints, ranks.hasTotal) else 0
+end
+
+-- Whether the lifter owns title `id`: a feat in the ranks record, or a meet title in career.titles.
+local function ownsTitle(data: ProfileData, ranks: any, id: string): boolean
+	if RankConfig.TitleById[id] == nil then
+		return false
+	end
+	if RankConfig.isFeat(id) then
+		return isFiniteNumber(ranks.feats[id])
+	end
+	local career = (data :: any).career
+	local count = if typeof(career) == "table" and typeof(career.titles) == "table" then career.titles[id] else nil
+	return isFiniteNumber(count) and count >= 1
+end
+
+export type RankMeet = {
+	-- GL points of the meet total, the total and the weigh-in it was made at.
+	points: number,
+	totalKg: number,
+	bodyweightKg: number,
+	classLabel: string,
+	-- The best good lift of each lift at the meet (kg).
+	bestByLift: { [string]: number },
+	perfect: boolean, -- 9/9
+	clutch: boolean, -- a third attempt made after missing the first two on that lift
+	gymRecord: boolean, -- set a gym record at this meet
+}
+
+export type RankMeetResult = {
+	rankBefore: number,
+	rankAfter: number,
+	newBest: boolean,
+	newFeats: { string },
+	streakDays: number,
+}
+
+--[[
+	Records a real meet finished WITH A TOTAL: the best GL total (a rank never goes down), the feats it earned and the
+	day streak. Rewards are not paid here (claimRankRewards does, so a crash between the two never pays twice or loses
+	one). Returns nil (nothing written) for an unusable record or bad numbers.
+]]
+function ProfileOperations.recordRankMeet(data: ProfileData, meet: RankMeet, nowUnix: number): RankMeetResult?
+	local ranks = usableRanks(data)
+	if ranks == nil or typeof(meet) ~= "table" or not isFiniteNumber(meet.points) or meet.points <= 0
+		or not isFiniteNumber(meet.totalKg) or meet.totalKg <= 0 or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return nil
+	end
+	local result: RankMeetResult = { rankBefore = RankConfig.rankFor(ranks.bestPoints, ranks.hasTotal), rankAfter = 0,
+		newBest = false, newFeats = {}, streakDays = 0 }
+	if not ranks.hasTotal or meet.points > ranks.bestPoints then
+		ranks.hasTotal = true
+		ranks.bestPoints = meet.points
+		ranks.bestTotalKg = meet.totalKg
+		ranks.bestBodyweightKg = if isFiniteNumber(meet.bodyweightKg) then meet.bodyweightKg else 0
+		ranks.bestClass = if typeof(meet.classLabel) == "string" then string.sub(meet.classLabel, 1, 20) else ""
+		ranks.bestUnix = math.floor(nowUnix)
+		result.newBest = true
+	end
+	result.rankAfter = RankConfig.rankFor(ranks.bestPoints, ranks.hasTotal)
+	-- The day streak (Iron Streak): today continues yesterday's run; the same day keeps it; a gap starts over.
+	local today = DayKey.fromUnix(nowUnix)
+	if ranks.streakDayKey ~= today then
+		local yesterday = DayKey.fromUnix(nowUnix - 86400)
+		ranks.streakDays = if ranks.streakDayKey == yesterday then ranks.streakDays + 1 else 1
+		ranks.streakDayKey = today
+	end
+	result.streakDays = ranks.streakDays
+	local function earn(id: string)
+		if RankConfig.isFeat(id) and not isFiniteNumber(ranks.feats[id]) then
+			ranks.feats[id] = math.floor(nowUnix)
+			table.insert(result.newFeats, id)
+		end
+	end
+	if meet.perfect then
+		earn("NineForNine")
+	end
+	if meet.clutch then
+		earn("Clutch")
+	end
+	if meet.gymRecord then
+		earn("GymRecordHolder")
+	end
+	if ranks.streakDays >= RankConfig.StreakDays then
+		earn("IronStreak")
+	end
+	for _, club in ipairs(RankConfig.TotalClubs) do
+		if meet.totalKg >= club.kg then
+			earn(club.id)
+		end
+	end
+	if typeof(meet.bestByLift) == "table" then
+		for lift, clubs in pairs(RankConfig.LiftClubs) do
+			local kg = meet.bestByLift[lift]
+			if isFiniteNumber(kg) then
+				for _, club in ipairs(clubs) do
+					if kg >= club.kg then
+						earn(club.id)
+					end
+				end
+			end
+		end
+	end
+	return result
+end
+
+export type RankRewards = {
+	ranks: { number }, -- the ranks paid, lowest first
+	coins: number,
+	crates: number,
+	luckBoost: boolean,
+	coinsRefused: boolean, -- the wallet was full (CoinConfig.MaxBalance): the crates and boost were still given
+	balance: number?,
+}
+
+--[[
+	Pays every rank reached but not yet paid, up to rank `upTo` (nil = all): coins (RankConfig.coinsFor), a free crate
+	each, and the luck boost when one of them starts a new name (it lasts RankConfig.LuckBoost.Hours from now). Each
+	rank-up moment collects only its own ranks, so a later moment still has its rewards. Returns what was paid (an empty
+	list = nothing waiting), or nil for an unusable record.
+]]
+function ProfileOperations.claimRankRewards(data: ProfileData, nowUnix: number, upTo: number?): RankRewards?
+	local ranks = usableRanks(data)
+	if ranks == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return nil
+	end
+	local reached = RankConfig.rankFor(ranks.bestPoints, ranks.hasTotal)
+	if upTo ~= nil and isFiniteNumber(upTo) then
+		reached = math.min(reached, math.floor(upTo))
+	end
+	local paid: RankRewards = { ranks = {}, coins = 0, crates = 0, luckBoost = false, coinsRefused = false, balance = nil }
+	local from = math.floor(ranks.claimed) + 1
+	if reached < from then
+		return paid
+	end
+	for index = from, reached do
+		local rank = RankConfig.Ranks[index]
+		table.insert(paid.ranks, index)
+		paid.coins += rank.coins
+		paid.crates += RankConfig.CratesPerRank
+		if rank.newName then
+			paid.luckBoost = true
+		end
+	end
+	if paid.coins > 0 then
+		local outcome, balance = ProfileOperations.addCoins(data, paid.coins)
+		if outcome == "Added" then
+			paid.balance = balance
+		else
+			paid.coinsRefused = true
+			paid.coins = 0
+		end
+	end
+	ranks.freeCrates += paid.crates
+	if paid.luckBoost then
+		ranks.luckBoostEndsAt = math.floor(nowUnix) + RankConfig.LuckBoost.Hours * 3600
+	end
+	ranks.claimed = reached
+	return paid
+end
+
+export type FreeCrateOutcome = "Opened" | "NoneLeft" | "Full" | "Rejected"
+
+-- Opens one free rank crate: uses one and adds `piece` (rolled by the server). Only "Opened" changes anything.
+function ProfileOperations.useFreeCrate(data: ProfileData, piece: PlayerProfileSchema.StatPiece, maxPieces: number)
+	: (FreeCrateOutcome, string?, number?)
+	local ranks = usableRanks(data)
+	local inventory, pieces = piecesOf(data)
+	if ranks == nil or inventory == nil or typeof(piece) ~= "table" or not isItemId(piece.slot)
+		or not isItemId(piece.rarity) or not isItemId(piece.look) then
+		return "Rejected", nil, nil
+	end
+	if ranks.freeCrates < 1 then
+		return "NoneLeft", nil, 0
+	end
+	local count = 0
+	for _ in pairs(pieces) do
+		count += 1
+	end
+	if count >= maxPieces then
+		return "Full", nil, ranks.freeCrates
+	end
+	local id = tostring(inventory.nextPieceId)
+	inventory.nextPieceId += 1
+	pieces[id] = { slot = piece.slot, rarity = piece.rarity, look = piece.look }
+	ranks.freeCrates -= 1
+	return "Opened", id, ranks.freeCrates
+end
+
+-- Picks the title to show ("" = none: the newest shows). Only a title the lifter owns. Returns true when set.
+function ProfileOperations.setTitle(data: ProfileData, id: string): boolean
+	local ranks = usableRanks(data)
+	if ranks == nil or typeof(id) ~= "string" then
+		return false
+	end
+	if id ~= "" and not ownsTitle(data, ranks, id) then
+		return false
+	end
+	ranks.title = id
+	return true
+end
+
+-- Marks every title earned so far as seen (the titles screen's NEW tags go). Returns true when written.
+function ProfileOperations.markTitlesSeen(data: ProfileData, nowUnix: number): boolean
+	local ranks = usableRanks(data)
+	if ranks == nil or not isFiniteNumber(nowUnix) or nowUnix < 0 then
+		return false
+	end
+	ranks.titlesSeenUnix = math.floor(nowUnix)
+	return true
+end
+
+export type TitleOwned = { count: number, earnedUnix: number, new: boolean }
+export type RankView = {
+	rank: number,
+	points: number,
+	bestTotalKg: number,
+	bestBodyweightKg: number,
+	bestClass: string,
+	claimed: number,
+	freeCrates: number,
+	luckBoostLeft: number,
+	streakDays: number,
+	title: string, -- the title shown: the picked one, else the best one owned ("" = none)
+	picked: string,
+	titles: { [string]: TitleOwned },
+}
+
+-- The lifter's rank, rewards waiting and titles, for their screens and their name tag. Reads only.
+function ProfileOperations.getRanks(data: ProfileData, nowUnix: number): RankView
+	local view: RankView = { rank = 0, points = 0, bestTotalKg = 0, bestBodyweightKg = 0, bestClass = "", claimed = 0,
+		freeCrates = 0, luckBoostLeft = 0, streakDays = 0, title = "", picked = "", titles = {} }
+	local ranks = usableRanks(data)
+	if ranks == nil then
+		return view
+	end
+	view.rank = RankConfig.rankFor(ranks.bestPoints, ranks.hasTotal)
+	view.points = ranks.bestPoints
+	view.bestTotalKg = ranks.bestTotalKg
+	view.bestBodyweightKg = ranks.bestBodyweightKg
+	view.bestClass = ranks.bestClass
+	view.claimed = math.floor(ranks.claimed)
+	view.freeCrates = math.floor(ranks.freeCrates)
+	view.luckBoostLeft = if isFiniteNumber(nowUnix) then math.max(0, ranks.luckBoostEndsAt - nowUnix) else 0
+	local live = ranks.streakDayKey == DayKey.fromUnix(nowUnix) or ranks.streakDayKey == DayKey.fromUnix(nowUnix - 86400)
+	view.streakDays = if live then math.floor(ranks.streakDays) else 0
+	for id, when in pairs(ranks.feats) do
+		if RankConfig.TitleById[id] and isFiniteNumber(when) then
+			view.titles[id] = { count = 1, earnedUnix = when, new = when > ranks.titlesSeenUnix }
+		end
+	end
+	-- Meet titles have no time saved (career.titles counts them): never NEW.
+	local career = (data :: any).career
+	if typeof(career) == "table" and typeof(career.titles) == "table" then
+		for id, count in pairs(career.titles) do
+			if typeof(id) == "string" and RankConfig.TitleById[id] and isFiniteNumber(count) and count >= 1 then
+				view.titles[id] = { count = math.floor(count), earnedUnix = 0, new = false }
+			end
+		end
+	end
+	-- Nothing picked: the grandest title owned shows (highest tier, then the latest in the list).
+	local best = ""
+	for id in pairs(view.titles) do
+		local entry, current = RankConfig.TitleById[id], RankConfig.TitleById[best]
+		if current == nil or entry.tier > current.tier or (entry.tier == current.tier and entry.order > current.order) then
+			best = id
+		end
+	end
+	view.picked = if ranks.title ~= "" and view.titles[ranks.title] then ranks.title else ""
+	view.title = if view.picked ~= "" then view.picked else best
+	return view
 end
 
 return ProfileOperations

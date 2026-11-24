@@ -65,9 +65,10 @@ local PlayerProfileSchema = {}
 	numbered State Champion badges; version 27: the Nationals spots; version
 	28: the Worlds spots; version 31: the Kitchen and gain boosts; version 32:
 	whether the player has watched the chef scene once; version 33: the luck
-	wheel's multiplier, spins and game tries).
+	wheel's multiplier, spins and game tries; version 34: meet meals; version
+	35: ranks and feat titles).
 ]]
-PlayerProfileSchema.CURRENT_VERSION = 33
+PlayerProfileSchema.CURRENT_VERSION = 35
 
 --[[
 	Renamed from `Forecasted` in version 3. Player-facing terminology is
@@ -536,17 +537,22 @@ export type Kitchen = {
 	-- (version 32) Whether the player has watched the chef scene to the end once: after that it can be skipped
 	-- (user 2026-11-21: "Skip after first time"). Written only by ProfileOperations.markChefSceneSeen.
 	sceneSeen: boolean,
+	-- (version 34) What is in the cooker: "Steak" or "Meal" (meet meals, user 2026-11-23: one cook at a time, so the
+	-- cooker holds one kind; `steaks` is then the count of that kind). "Steak" when empty.
+	kind: string,
 }
 
 --[[
 	ACTIVE GAIN BOOSTS, added in version 31 (GAME_DESIGN §40.1, §40.7). Each entry: the boost in percent and the server
 	time it ends (an ended or zero entry is no boost). GainBoosts reads them; they add together.
 
-	Written only by ProfileOperations.eatSteak (steak). Meet meals and boosters will add their own entries.
+	Written only by ProfileOperations.eatSteak (steak and meal). Boosters will add their own entries.
 ]]
 export type Boosts = {
 	-- The steak meal: a TRAINING gain boost (strength and technique). `steaks` is the meal's size, for screens.
 	steak: { percent: number, endsAt: number, steaks: number },
+	-- (version 34) The meet meal: a MEET gain boost (the strength a finished meet gives). `meals` is its size.
+	meal: { percent: number, endsAt: number, meals: number },
 }
 
 --[[
@@ -566,6 +572,38 @@ export type Luck = {
 	-- The cow's games: the UTC day `gameTries` counts, and the tries used that day.
 	gameDayKey: string,
 	gameTries: number,
+}
+
+--[[
+	RANKS AND TITLES (version 35; GAME_DESIGN §41, RankConfig). Account-wide: one rank per player, from the best GL points
+	of any real meet total in any weight class. A rank never goes down.
+
+	Written only by ProfileOperations' rank operations (recordRankMeet, claimRankRewards, useFreeCrate, setTitle,
+	markTitlesSeen); the server decides every value from the meet's result.
+]]
+export type Ranks = {
+	-- The best real meet total, in GL points, and what it was (hasTotal false = no total yet).
+	hasTotal: boolean,
+	bestPoints: number,
+	bestTotalKg: number,
+	bestBodyweightKg: number,
+	bestClass: string,
+	bestUnix: number,
+	-- The highest rank whose rewards have been given (0 = none). Ranks above it up to the reached rank are waiting.
+	claimed: number,
+	-- Free crates from rank-ups, not opened yet.
+	freeCrates: number,
+	-- The new-name luck boost (luck x RankConfig.LuckBoost.Factor) lasts until this server time (0 = none).
+	luckBoostEndsAt: number,
+	-- The title the lifter picked to show ("" = none picked: their newest shows).
+	title: string,
+	-- Feat titles earned: id -> the server time it was earned.
+	feats: { [string]: number },
+	-- Titles earned after this server time show NEW on the titles screen.
+	titlesSeenUnix: number,
+	-- Iron Streak: the UTC day of the last real meet finished, and how many days in a row up to it.
+	streakDayKey: string,
+	streakDays: number,
 }
 
 export type Bodyweight = {
@@ -614,6 +652,7 @@ export type ProfileData = {
 	kitchen: Kitchen,
 	boosts: Boosts,
 	luck: Luck,
+	ranks: Ranks,
 
 	-- (competitionBudget, added in version 3, was removed in version 10: GAME_DESIGN 29.9.)
 	-- (trainingEnergy, added in version 3, was retired in version 8: GAME_DESIGN 29.8.)
@@ -777,12 +816,30 @@ local template: ProfileData = {
 	},
 
 	-- An empty cooker and no boosts.
-	kitchen = { steaks = 0, startedAt = 0, readyAt = 0, sceneSeen = false },
+	kitchen = { steaks = 0, startedAt = 0, readyAt = 0, sceneSeen = false, kind = "Steak" },
 	boosts = {
 		steak = { percent = 0, endsAt = 0, steaks = 0 },
+		meal = { percent = 0, endsAt = 0, meals = 0 },
 	},
 	-- No luck from the wheel yet, the free spin unused, no spins won, no tries used.
 	luck = { multiplier = 1, endsAt = 0, freeDayKey = "", spins = 0, gameDayKey = "", gameTries = 0 },
+	-- No meet total yet, so no rank, no rewards waiting, no titles, no streak.
+	ranks = {
+		hasTotal = false,
+		bestPoints = 0,
+		bestTotalKg = 0,
+		bestBodyweightKg = 0,
+		bestClass = "",
+		bestUnix = 0,
+		claimed = 0,
+		freeCrates = 0,
+		luckBoostEndsAt = 0,
+		title = "",
+		feats = {},
+		titlesSeenUnix = 0,
+		streakDayKey = "",
+		streakDays = 0,
+	},
 
 	meta = {
 		--[[
@@ -2209,6 +2266,77 @@ migrations[32] = function(data: ProfileData)
 	for _, field in ipairs({ "freeDayKey", "gameDayKey" }) do
 		if typeof(luck[field]) ~= "string" then
 			luck[field] = ""
+		end
+	end
+end
+
+--[[
+	Version 33 -> 34: meet meals (user 2026-11-23, GAME_DESIGN §40.7). Everything cooking so far was steaks, and nobody
+	has eaten a meal: the cooker's kind is "Steak" and the meal boost is empty.
+
+	REPAIRS, NEVER OVERWRITES: a stored "Steak" or "Meal" is kept, usable stored numbers are kept; anything missing or
+	broken is set to its empty value. Missing kitchen or boosts records are version 31's to make; they are made here too
+	so the fields have somewhere to live. IDEMPOTENT: a second run finds everything usable and changes nothing.
+]]
+migrations[33] = function(data: ProfileData)
+	local kitchen = (data :: any).kitchen
+	if typeof(kitchen) ~= "table" then
+		kitchen = { steaks = 0, startedAt = 0, readyAt = 0, sceneSeen = false }
+		(data :: any).kitchen = kitchen
+	end
+	if kitchen.kind ~= "Steak" and kitchen.kind ~= "Meal" then
+		kitchen.kind = "Steak"
+	end
+	local boosts = (data :: any).boosts
+	if typeof(boosts) ~= "table" then
+		boosts = { steak = { percent = 0, endsAt = 0, steaks = 0 } }
+		(data :: any).boosts = boosts
+	end
+	if typeof(boosts.meal) ~= "table" then
+		boosts.meal = {}
+	end
+	for _, field in ipairs({ "percent", "endsAt", "meals" }) do
+		if not isTimeOrCount(boosts.meal[field]) then
+			boosts.meal[field] = 0
+		end
+	end
+end
+
+--[[
+	Version 34 -> 35: ranks and titles (user 2026-11-23, GAME_DESIGN §41). Nobody has a rank yet: past meets were not
+	scored for ranks, so every lifter starts unranked and ranks up at their next real meet (their meet titles in
+	career.titles are kept where they are and count as titles at once).
+
+	REPAIRS, NEVER OVERWRITES: usable stored values are kept; anything missing or broken is set to its empty value. A
+	broken feats map keeps only its usable entries. IDEMPOTENT: a second run finds everything usable and changes nothing.
+]]
+migrations[34] = function(data: ProfileData)
+	local ranks = (data :: any).ranks
+	if typeof(ranks) ~= "table" then
+		ranks = {}
+		(data :: any).ranks = ranks
+	end
+	if typeof(ranks.hasTotal) ~= "boolean" then
+		ranks.hasTotal = false
+	end
+	for _, field in ipairs({ "bestPoints", "bestTotalKg", "bestBodyweightKg", "bestUnix", "claimed", "freeCrates",
+		"luckBoostEndsAt", "titlesSeenUnix", "streakDays" }) do
+		if not isTimeOrCount(ranks[field]) then
+			ranks[field] = 0
+		end
+	end
+	for _, field in ipairs({ "bestClass", "title", "streakDayKey" }) do
+		if typeof(ranks[field]) ~= "string" then
+			ranks[field] = ""
+		end
+	end
+	if typeof(ranks.feats) ~= "table" then
+		ranks.feats = {}
+	else
+		for id, when in pairs(ranks.feats) do
+			if typeof(id) ~= "string" or not isTimeOrCount(when) then
+				ranks.feats[id] = nil
+			end
 		end
 	end
 end

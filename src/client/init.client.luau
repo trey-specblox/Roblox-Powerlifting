@@ -46,6 +46,14 @@ task.spawn(CelebrationSpinner.start)
 -- The emote wheel (B, or the EMOTES tab): it only asks; the server plays the emote.
 local EmoteWheel = require(UIFolder:WaitForChild("EmoteWheel"))
 task.spawn(EmoteWheel.start)
+-- Ranks and titles (GAME_DESIGN §41): the rank-up moments (after the awards), the RANKS menu (R) and the small name
+-- tags over other players.
+local RankMoment = require(UIFolder:WaitForChild("RankMoment"))
+local LocalMeetAwardsForRanks = require(script:WaitForChild("Meet"):WaitForChild("LocalMeetAwards"))
+RankMoment.addBlocker(LocalMeetAwardsForRanks.isPlaying)
+task.spawn(RankMoment.start)
+task.spawn(require(UIFolder:WaitForChild("RanksMenu")).start)
+task.spawn(require(UIFolder:WaitForChild("RankNameTags")).start)
 
 -- MY GEAR (the GEAR tab): put on and take off owned gear. It only asks; the server checks and dresses.
 local GearMenu = require(UIFolder:WaitForChild("GearMenu"))

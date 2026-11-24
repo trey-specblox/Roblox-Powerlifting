@@ -37,11 +37,11 @@ export type Coach = {
 	trousers: Color3,
 }
 
--- The bench and deadlift coaches' names are placeholders until the user names them.
+-- The coaches' names (user, 2026-11-23): made-up characters, not real lifters.
 QuestConfig.Coaches = {
-	Squat = { name = "Coach Olivera", title = "SQUAT COACH", shirt = Color3.fromRGB(250, 206, 36), trousers = Color3.fromRGB(20, 22, 30) },
-	Bench = { name = "Bench Coach", title = "BENCH COACH", shirt = Color3.fromRGB(226, 46, 56), trousers = Color3.fromRGB(20, 22, 30) },
-	Deadlift = { name = "Deadlift Coach", title = "DEADLIFT COACH", shirt = Color3.fromRGB(70, 146, 255), trousers = Color3.fromRGB(20, 22, 30) },
+	Squat = { name = "Coach Squatavious", title = "SQUAT COACH", shirt = Color3.fromRGB(250, 206, 36), trousers = Color3.fromRGB(20, 22, 30) },
+	Bench = { name = "Coach Benchamin", title = "BENCH COACH", shirt = Color3.fromRGB(226, 46, 56), trousers = Color3.fromRGB(20, 22, 30) },
+	Deadlift = { name = "Coach Sumo", title = "DEADLIFT COACH", shirt = Color3.fromRGB(70, 146, 255), trousers = Color3.fromRGB(20, 22, 30) },
 } :: { [string]: Coach }
 
 -- What a lift is called in a coach's line ("squats", "bench presses", "deadlifts").

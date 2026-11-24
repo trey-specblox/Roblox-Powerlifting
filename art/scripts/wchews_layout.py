@@ -95,6 +95,10 @@ for y in ISLAND_YS:
 # ---- the chef scene's machines, on the centre line
 put("WcBay", BAY[0], BAY[1])
 put("WcTubeIntake", BAY[0], BAY[1])
+# The meet meal's food dispenser on top of the bay (user 2026-11-23: "a dispenser on top of the bay. Where the chef can
+# just press the button and out comes the chickens, brocolli, and rice"; it replaced the steps up to the bay, which
+# are no longer placed): built round the bay's centre on the floor, standing on its side rails over its front half.
+put("WcMealDispenser", BAY[0], BAY[1])
 put("WcChute", CHUTE[0], CHUTE[1], CHUTE_MOUTH)
 put("WcTubeTrunk", 0, TRUNK_Y, TUBE_HEIGHT, 0)
 put("WcTubeTrunk", 0, TRUNK_Y, TUBE_HEIGHT, 180)
@@ -214,6 +218,8 @@ def write_luau(path, bounds):
               f"WChewsLayout.TubeHeight = {TUBE_HEIGHT:g} -- the meat tube's axis",
               f"WChewsLayout.TrunkY = {TRUNK_Y:g} -- the trunk runs across at this y",
               f"WChewsLayout.Bay = Vector2.new({BAY[0]:g}, {BAY[1]:g}) -- the meat display bay's centre",
+              "WChewsLayout.Dispenser = { HopperXs = { -8.4, 0, 8.4 }, HopperY = -8.5, Mouth = 10.2 } -- the meal "
+              "dispenser's chutes (CHICKEN, BROCCOLI, RICE) from the bay's centre (plan), their mouths' height",
               f"WChewsLayout.Grinder = Vector2.new({GRINDER[0]:g}, {GRINDER[1]:g}) -- the grinder's centre, its outlet toward -y",
               f"WChewsLayout.GrinderScale = {GRINDER_SCALE:g}",
               f"WChewsLayout.Chute = Vector2.new({CHUTE[0]:g}, {CHUTE[1]:g})",

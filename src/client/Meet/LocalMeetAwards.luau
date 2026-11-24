@@ -71,6 +71,11 @@ local function playSound(id: string, volume: number): Sound
 	return sound
 end
 
+-- Whether the ceremony is on this screen now (RankMoment waits for it to end).
+function LocalMeetAwards.isPlaying(): boolean
+	return current ~= nil
+end
+
 -- Ends the ceremony on this screen: the camera back on the player, the music and celebration stopped.
 function LocalMeetAwards.stop()
 	local ceremony = current

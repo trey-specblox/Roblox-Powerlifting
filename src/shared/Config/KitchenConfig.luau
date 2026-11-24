@@ -27,6 +27,20 @@ KitchenConfig.BoostHours = 24
 KitchenConfig.MaxSteaksPerCook = 10000
 
 --[[
+	MEET MEALS (GAME_DESIGN §40.7, user 2026-11-23, picked from Claude's options): the MEET gain boost. A chicken, rice
+	and broccoli plate; eating it raises the strength every meet you finish gives, for BoostHours (24, as steaks).
+	Double a steak's price and cooking time per meal ("Meets are the biggest strength source"), the same % table.
+	ONE cook at a time: the cooker holds steaks OR meals (the user's pick), so a cook has a kind.
+]]
+KitchenConfig.PricePerMeal = 50
+KitchenConfig.SecondsPerMeal = 20
+
+-- Whether `kind` is something the cooker cooks.
+function KitchenConfig.isKind(kind: any): boolean
+	return kind == "Steak" or kind == "Meal"
+end
+
+--[[
 	THE PAN HALL (GAME_DESIGN §40.7, user 2026-11-19): every player in the server gets a pan zone (one per player, up to
 	PanZones), a giant pan with a giant clock behind it; their cook shows as ONE big steak in it, sized by the number of
 	steaks ("hugee like a person size, maby multiple person size"). The hall is off the map like the meet venues (an
@@ -72,6 +86,17 @@ KitchenConfig.ChefAnimationsUnused = {
 	Throw = "rbxassetid://128406849556919",
 }
 KitchenConfig.ChefWalkSpeed = 7 -- studs per second
+-- The meet meal scene's first moves (art/scripts/chef_animations.py, uploaded 2026-11-23): he carried the live hen and
+-- two bags up steps to the bay. REPLACED the same day by the dispenser on the bay (user: "Instead of the chef dropping
+-- the chicken in and pouring the stuff, lets add a dispenser"): kept, not loaded.
+KitchenConfig.ChefMealAnimationsUnused = {
+	HoldSides = "rbxassetid://133699732098453", -- loop, arms and head: the hen held by its sides at the chest
+	HoldBag = "rbxassetid://123643498924785", -- loop, arms and head: a bag held by its sides
+	DropIn = "rbxassetid://129648130016237", -- 1.9 s: over the glass, the hands open
+	Pour = "rbxassetid://136127363507436", -- 3.0 s: over the glass, tipped and shaken empty, let go
+}
+KitchenConfig.ChefMealTimes = { DropLength = 1.9, DropRelease = 0.95, PourLength = 3.0, PourStart = 0.85, PourEnd = 2.2,
+	BagRelease = 2.45 }
 -- Chef_ButtonPress: its length, when the palm lands (seconds in), and where his right hand is then, from his root:
 -- HandAhead in front of him, HandRight to his right, 0.28 below the root, 2.72 above the floor (measured in Studio on
 -- the Fat build, 2026-11-21). The scene stands him so the button is under it; the button panel's scale (0.6, in
@@ -229,12 +254,18 @@ function KitchenConfig.steakPercent(steaks: number): number
 	return last[2] * (steaks / last[1]) ^ PAST_TABLE_POWER
 end
 
-function KitchenConfig.cost(steaks: number): number
-	return steaks * KitchenConfig.PricePerSteak
+-- Coins and cooking seconds for `count` of a kind (steaks when `kind` is nil).
+function KitchenConfig.cost(steaks: number, kind: string?): number
+	return steaks * (if kind == "Meal" then KitchenConfig.PricePerMeal else KitchenConfig.PricePerSteak)
 end
 
-function KitchenConfig.cookSeconds(steaks: number): number
-	return steaks * KitchenConfig.SecondsPerSteak
+function KitchenConfig.cookSeconds(steaks: number, kind: string?): number
+	return steaks * (if kind == "Meal" then KitchenConfig.SecondsPerMeal else KitchenConfig.SecondsPerSteak)
+end
+
+-- The boost in percent a cook of `count` gives: the same table for steaks (training) and meals (meets).
+function KitchenConfig.boostPercent(count: number, _kind: string?): number
+	return KitchenConfig.steakPercent(count)
 end
 
 -- Whether `steaks` is a steak count a cook accepts: a whole number from 1 to MaxSteaksPerCook.
@@ -265,6 +296,8 @@ end
 assert(KitchenConfig.PricePerSteak >= 1 and KitchenConfig.PricePerSteak == math.floor(KitchenConfig.PricePerSteak),
 	"[KitchenConfig] PricePerSteak must be a whole number of coins")
 assert(KitchenConfig.SecondsPerSteak > 0 and KitchenConfig.BoostHours > 0, "[KitchenConfig] times must be above zero")
+assert(KitchenConfig.PricePerMeal >= 1 and KitchenConfig.PricePerMeal == math.floor(KitchenConfig.PricePerMeal)
+	and KitchenConfig.SecondsPerMeal > 0, "[KitchenConfig] meals need a whole coin price and a cooking time")
 for index = 2, #KitchenConfig.Table do
 	assert(KitchenConfig.Table[index][1] > KitchenConfig.Table[index - 1][1]
 		and KitchenConfig.Table[index][2] > KitchenConfig.Table[index - 1][2], "[KitchenConfig] Table must rise")

@@ -111,6 +111,75 @@ clip("ButtonPress", 1.6, [
 ])
 
 
+# ---------------------------------------------------------------- the meet meal scene (user 2026-11-23: "the chef walks
+# up, drops a chicken inside the meat bay, and pours in a bag of broccoli and a bag of rice", with a little staircase
+# so he can do it with his hands; the chicken a live one). He carries each thing up the steps to the platform at the
+# bay's side and tips it in over the glass. The scene puts the prop BETWEEN his two hands every frame (their middle,
+# turned with the hands), so it is held for real. Wrists found by a search on the rig (palm . wanted + fingers .
+# wanted, calibrated on W_TRAY; D:/ClaudeScratch/meal/wrist_search.py); every target inside 0.9 of the arm's reach.
+#   Chef_HoldSides  loop, arms and head only: the hen held at the chest from its sides, palms facing each other (the
+#                   walk and the climb play under it)
+#   Chef_HoldBag    loop, arms and head only: a bag held by its sides in front of the chest, wider apart
+#   Chef_DropIn     on the platform: lifts the hen forward and up over the glass, leaning in, opens the hands (the hen
+#                   falls at DROP_RELEASE), arms back down
+#   Chef_Pour       on the platform: lifts the bag over the glass, tips it forward and down (POUR_START..POUR_END, a
+#                   shake while it empties), lets it go into the bay too (BAG_RELEASE), arms back down
+DROP_RELEASE = 0.95
+POUR_START, POUR_END, BAG_RELEASE = 0.85, 2.2, 2.45
+
+# (2026-11-23 QA: at chest y 0.25 / 0.35 the hands sat at the belly with the fingers drooping: raised to the chest and
+#  further forward; the scene fits each prop to the gap between the palms, so it always touches both)
+# (second QA: at x -0.72 the hands nearly met with the palms down: the hen gets the bag's grip, a little lower)
+_HOLD_SIDES = B((-1.0, 0.55, -1.75))         # the hen's sides, at the chest, held out in front
+_BAG_SIDES = B((-1.0, 0.7, -1.75))           # a bag's sides, a little higher (the bag is taller)
+_OVER_HEN = (-1.0, 1.56, -2.0)               # forward and up over the glass (0.9 of the arm's reach), chest frame
+_OVER_BAG = (-1.0, 1.56, -2.0)
+_POUR_BAG = (-1.0, 1.09, -2.18)              # tipped: the hands a little lower and further out, the bag upside down
+W_SIDES, W_BAG, W_OVER, W_OVERBAG, W_POUR = (-50, 50), (-50, 30), (-20, -10), (-20, -10), (-90, 0)
+ELBOW_HOLD = (-1.0, -0.4, 0.1)               # out to the sides and down (never behind the body)
+ELBOW_REACH = (-0.9, -0.3, 0.2)              # reaching forward: out and down, a little forward
+
+
+def _pair(hand, wrist, elbow):
+    return dict(with_=both(hand), le=elbow, re=mx(elbow), lw=wrist, rw=mx_w(wrist))
+
+
+clip("HoldSides", 2.0, [
+    K(0.0, up=-6, **_pair(_HOLD_SIDES, W_SIDES, ELBOW_HOLD)),
+    K(1.0, up=-4, **_pair(_HOLD_SIDES, W_SIDES, ELBOW_HOLD)),
+    K(2.0, up=-6, **_pair(_HOLD_SIDES, W_SIDES, ELBOW_HOLD)),
+], only=C.ARMS_AND_HEAD, looped=True)
+
+clip("HoldBag", 2.0, [
+    K(0.0, up=-4, **_pair(_BAG_SIDES, W_BAG, ELBOW_HOLD)),
+    K(1.0, up=-2, **_pair(_BAG_SIDES, W_BAG, ELBOW_HOLD)),
+    K(2.0, up=-4, **_pair(_BAG_SIDES, W_BAG, ELBOW_HOLD)),
+], only=C.ARMS_AND_HEAD, looped=True)
+
+clip("DropIn", 1.9, [
+    K(0.0, up=-6, **_pair(_HOLD_SIDES, W_SIDES, ELBOW_HOLD)),
+    K(0.6, lean=14, cbend=8, up=-14, ease="slow", **_pair(_OVER_HEN, W_OVER, ELBOW_REACH)),
+    K(DROP_RELEASE - 0.1, lean=16, cbend=10, up=-20, **_pair(_OVER_HEN, W_OVER, ELBOW_REACH)),
+    # the hands open apart: the hen drops
+    K(DROP_RELEASE + 0.15, lean=16, cbend=10, up=-24, ease="fast",
+      **_pair((-1.35, 1.45, -1.85), W_OVER, ELBOW_REACH)),
+    K(1.55, lean=0, cbend=0, up=-8, with_=rest(), lw=(0, 0), rw=(0, 0)),
+    K(1.9, up=0),
+])
+
+clip("Pour", 3.0, [
+    K(0.0, up=-4, **_pair(_BAG_SIDES, W_BAG, ELBOW_HOLD)),
+    K(0.6, lean=12, cbend=6, up=-12, ease="slow", **_pair(_OVER_BAG, W_OVERBAG, ELBOW_REACH)),
+    K(POUR_START, lean=14, cbend=8, up=-16, **_pair(_OVER_BAG, W_OVERBAG, ELBOW_REACH)),
+    K(POUR_START + 0.45, lean=18, cbend=10, up=-22, ease="slow", **_pair(_POUR_BAG, W_POUR, ELBOW_REACH)),
+    K(POUR_END, lean=18, cbend=10, up=-22, **_pair(_POUR_BAG, W_POUR, ELBOW_REACH)),
+    # let go: the empty bag falls in after its contents
+    K(BAG_RELEASE, lean=16, cbend=8, up=-18, ease="fast", **_pair((-1.25, 1.15, -2.0), W_POUR, ELBOW_REACH)),
+    K(2.75, lean=0, cbend=0, up=-6, with_=rest(), lw=(0, 0), rw=(0, 0)),
+    K(3.0, up=0),
+], layers=[tremble(POUR_START + 0.5, POUR_END, amp=0.05, hz=6.0, chest=0.5)])
+
+
 def export(c, only, looped):
     path, frames = R.export(c, only=only, looped=looped)
     out = os.path.join(os.path.dirname(path), f"Chef_{c.name}.rbxmx")

@@ -11,7 +11,7 @@
 		TakeQuest   client -> server (RemoteFunction)  (lift: string) -> { [lift]: QuestView }
 			"I need a stronger squat": that coach's quest goes on the player's tracker. The server checks the lift.
 		QuestNews   server -> one client (RemoteEvent)  ({ string })
-			Lines after a meet moved a quest ("Coach Olivera: 1/2 good squats today."). Display only.
+			Lines after a meet moved a quest ("Coach Squatavious: 1/2 good squats today."). Display only.
 ]]
 
 local QuestRemotes = {}

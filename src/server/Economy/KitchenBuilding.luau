@@ -225,6 +225,13 @@ function KitchenBuilding.start()
 			-- (The EMPLOYEES ONLY double door needs no fitting here: its frame is modelled 0.1 into the doorway from
 			--  the wall's cut edges and 0.4 proud of the wall's faces, art/scripts/build_wchews_door_01.py. The single
 			--  door it replaced lay in the cut edges' planes and flashed two colours until it was resized here.)
+			-- (The meat bay's "YOUR MEAT" words are left off, user 2026-11-23: "can you remove these words".)
+			if item == "WcBay" then
+				local words = copy:FindFirstChild("WcBay_SignText", true)
+				if words then
+					words:Destroy()
+				end
+			end
 			copy.Parent = kit
 			placed += 1
 			if item == "WcTable" then

@@ -2258,6 +2258,47 @@
    "ids": {
     "model": "rbxassetid://72709187235561"
    }
+  },
+  "MeetMeal_01": {
+   "about": "The meet meal (GAME_DESIGN 40.7, user 2026-11-23: chicken, rice and broccoli; look approved after the grill lines were laid onto the breast, \"Yes, upload both\"): a white plate with a navy rim band and a yellow CENTRAL, a grilled chicken breast with parallel grill marks, a rice mound with grains, three broccoli florets. One item, MeetMeal, shared by all 40 pan zones and the chef's picker, scaled per cook like BigSteak. Built by art/scripts/build_meet_meal_01.py. CHECK PASSED (8 meshes, 4,962 triangles).",
+   "file": "art/exports/MeetMeal_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://121160158126451"
+   }
+  },
+  "WChewsBay_02": {
+   "about": "W Chews' meat display bay without its sign (user 2026-11-23: the YOUR MEAT words and the bar they sat on removed, \"Yes, upload both\"). Item WcBay, the same pieces as WChewsKit_01's minus WcBay_SignText and the sign's bar: listed AFTER WChewsKit_01 in StarterGymConfig.PropAssets so it replaces that bay. Built by art/scripts/build_wchews_bay_02.py. CHECK PASSED (4 meshes, 216 triangles).",
+   "file": "art/exports/WChewsBay_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://93427071048621"
+   }
+  },
+  "WChewsMealProps_01": {
+   "about": "The meet meal's chef scene props (GAME_DESIGN 40.7, user 2026-11-23: the chef climbs to the meat bay, drops a chicken, pours a bag of broccoli and a bag of rice; \"Yes, upload them\"): WcBayStairs (a steel stair to a platform in front of the meat bay's glass), RawChicken, BroccoliBag and RiceBag (CENTRAL labels, no real brands), BroccoliBit (one loose floret). Built by art/scripts/build_wchews_meal_props_01.py. CHECK PASSED (20 meshes, 10,400 triangles). SUPERSEDED the same day by WChewsMealProps_02 (a live chicken instead of the raw one); never placed.",
+   "file": "art/exports/WChewsMealProps_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://110375084853759"
+   },
+   "skip": true
+  },
+  "WChewsMealProps_02": {
+   "about": "The meet meal's chef scene props, version 02 (user 2026-11-23: \"instead of the raw chicken, can you do a live chicken\", then \"Yes, upload it\"): WcBayStairs, LiveChicken (a white cartoon hen), BroccoliBag and RiceBag (CENTRAL labels), BroccoliBit. Replaces WChewsMealProps_01. Built by art/scripts/build_wchews_meal_props_02.py. CHECK PASSED (24 meshes, 10,788 triangles).",
+   "file": "art/exports/WChewsMealProps_02.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://76529672344710"
+   }
+  },
+  "WChewsDispenser_01": {
+   "about": "The meet meal's food dispenser on top of the meat bay and the food pile on the pan (GAME_DESIGN 40.7, user 2026-11-23: the chef presses his button and out come chickens, broccoli and rice; the food piles up on the pan with no plate until it is done; \"Yes, upload them\"): WcMealDispenser (three hoppers CHICKEN / BROCCOLI / RICE on a frame over the bay's front half) and MealPile (rice heap, chicken breasts, florets). Built by art/scripts/build_wchews_dispenser_01.py. CHECK PASSED (17 meshes, 10,666 triangles).",
+   "file": "art/exports/WChewsDispenser_01.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://104922146247811"
+   }
   }
  },
  "images": {

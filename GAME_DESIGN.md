@@ -7604,7 +7604,7 @@ longevity. These are the user's decisions; the numbers are **[TBD]** until each 
 | **Meets** | The best way to grind strength. **Meet gain boost** items raise what a meet gives |
 | **Training** | **AFK-able** (already: §34's stations). **Training gain boost** items raise what training gives |
 | **Cooking: steaks** | The **training** gain boost. **Infinite stacking** stays (§25's table: 1 steak +1% ... 500 steaks +250%; more steaks cook longer into one bigger steak). The user's reasons: it trades real training for cooking, and steaks are bought **with coins only, never Robux**. Steaks let you gain **more**, not only faster |
-| **Cooking: meet meals** | The **meet** gain boost: raises the strength a completed meet gives |
+| **Cooking: meet meals** | The **meet** gain boost: raises the strength a completed meet gives. **Designed and built 2026-11-23: §40.7 "Meet meals"** |
 | **Monetization: cooking** | A Robux item that **skips the cooking time** (the steaks themselves stay coins only) |
 | **The strongman gym's rare NPC** | Not called steroids. A **rare NPC** spawns at the strongman gym and sells **stat gain boosters** (any stat gained is boosted). A **"TP" notification** to every player when it spawns (the user sees this as monetization). **Limited stock: only half the player count can buy one**. **Boosters cost coins** (user 2026-11-19: "NPC boosters will be for coins. Like The steroid guy") |
 | **Daily quests** | Given by NPCs; **a huge stat gain**, so players come back daily and get stronger even without playing a lot. **Free** (user 2026-11-19). **They give strength (Competition Number) directly** (user 2026-11-19, "Strength directly", picking Claude's recommendation over a gain boost). **[CHANGES §34.2's frozen rule]** that CN comes only from training and meets, and §29.5's "daily quests award no CN": quests are now a third source. The amounts count inside the 2-month target |
@@ -7661,11 +7661,11 @@ doesn't cover it. To settle while designing:
 - With no pass, the basic opening should stay short: Blade Ball's 5-10 s unskippable spin is the reason its players buy
   a skip, and it annoys everyone who doesn't.
 
-### 40.5 Getting coached: Coach Olivera (user, 2026-11-19; NOT BUILT; trials APPROVED)
+### 40.5 Getting coached: Coach Squatavious (user, 2026-11-19; NOT BUILT; trials APPROVED)
 
 | Step | The user's design |
 |---|---|
-| **The coaches** | Coaches stand around the gym. Example: **Coach Olivera**, the squat coach ("he has a really good squat") |
+| **The coaches** | Coaches stand around the gym. Example: **Coach Squatavious** (first called Coach Olivera), the squat coach ("he has a really good squat") |
 | **Talking to one** | The **same dialogue screen as the coach handing over a rare suit** (§35.12: big portrait, name, line, answers). Two answers: **"Can you coach me?"** and **"I need a stronger squat"** |
 | **"Can you coach me?"** | The coach: **"It's gonna cost you..."**. Once the lifter pays, he **brings the lifter to a Mock Meet room** where the trials begin: **"I don't want you to waste your money or your time, show me what you got."** |
 | **The trials (user's first idea, asked whether it's too cruel)** | 1: **50 perfect squats in a row**, no misses. 2: **go 3/3 on squat in a meet, and win** |
@@ -7693,13 +7693,42 @@ doesn't cover it. To settle while designing:
   agrees: computer lifters are tuned to about your level, so beating them all is hard but always possible, while real
   players can be much stronger. So the placing part becomes: **a meet with other real players: a top-3 squat; a meet
   with only computer lifters: the best squat of the meet** (ties broken the way the meet already breaks them).
-- If Coach Olivera is a real person, get his permission before using his name or likeness (§22's note).
+- **The coaches are made-up characters (user, 2026-11-23):** "I won't have real lifters be the coaches we can just make
+  them up" (after a short-lived rename to Coach Olivares and a thought of using real, famous lifters). Made-up names,
+  looks and voices, not based on any real person. Name, model and voice are kept as data, not built into the
+  coaching code.
+- **THE THREE COACHES (user, 2026-11-23):**
+
+  | Coach | Lift | Body (the user's words) |
+  |---|---|---|
+  | **Coach Squatavious** | Squat | "a really muscular short" man: very short and very stocky, heavily muscled |
+  | **Coach Benchamin** | Bench | "a muscular guy with less muscular legs": a big upper body on thinner legs |
+  | **Coach Sumo** | Deadlift | "a skinnier/leaner guy with a really short torso long legs and long arms" |
+
+  Their bodies are NOT BUILT yet (they follow CHARACTER_ART_DIRECTION.md and the cartoon body style).
+- **What the coaches do, and where they show (user, 2026-11-23):** "For now they will just stand talk and watch, like our
+  current "coach" place holder will be replaced with the coach of the lifters choosing. It's going to be client based
+  so the background is not filled with the same coaches."
+  - **For now:** stand, talk and watch only; no lifts on screen (so no lift animations on their odd proportions).
+  - **At meets:** today every platform has one generic coach figure (MeetFigures "Coach", built by the server for
+    everyone) who follows the lifter out, talks, chalks their back and slaps it. That coach becomes **the coach the
+    lifter chose, and ONLY THAT LIFTER SEES HIM** (user, same day: "Client based as in only the user can see their own
+    coach talking to them"): he exists on the lifter's own screen only, so other players never see your coach, and
+    you never see theirs; the meet isn't filled with copies of the same three characters.
+  - The coach's existing moves (walk out behind the lifter, talk, chalk the back, back slaps) must be checked on each
+    of the three bodies, above all Coach Squatavious's short arms reaching the lifter's back.
+  - **Who can be chosen (user, same day): "I don't want players getting the coaches for free, so Maby we set all new
+    players with a basic coach like the gym owner."** Every new player starts with a **basic coach, the gym owner**
+    (a new made-up character; the Starter Gym already has a GYM MANAGER office he could belong to). A lifter can
+    choose only the gym owner or a coach they have **paid for and been coached by** (§40.5's trials).
+  - OPEN: where the choice is made, and whether the Mock Meet room's coach and the meet scenes (rituals,
+    Nationals opening, the rare suit cutscene) use the chosen coach too.
 
 ### 40.6 Daily quests (user, 2026-11-19, picked from Claude's options; BUILT 2026-11-19)
 
 | Question | Decision |
 |---|---|
-| **Who gives them** | **Three coaches, one quest each:** the Squat Coach (Coach Olivera, §40.5), the Bench Coach and the Deadlift Coach each give one quest a day for their own lift, through the coach dialogue ("I need a stronger squat") |
+| **Who gives them** | **Three coaches, one quest each:** the Squat Coach (**Coach Squatavious**, §40.5), the Bench Coach (**Coach Benchamin**) and the Deadlift Coach (**Coach Sumo**) each give one quest a day for their own lift, through the coach dialogue ("I need a stronger squat") |
 | **What a quest asks** | **Good lifts at a meet** (the user's only pick), e.g. "Make 2 good squats in a meet" |
 | **The reward** | **Strength directly** (§40.1): **one full training day for that lift**, the same amount a full day at the rack gives it (the training formula, so it shrinks near the world-record level like everything else). All three quests = a full training day: roughly double a casual player's daily progress |
 | **Missed days** | **Each day is fresh:** unfinished quests disappear at the daily reset (the same UTC day as the training cap) |
@@ -7733,7 +7762,7 @@ can fit"):**
   approved above); a quest a meet moved shows on the tracker too.
 - **The tracker** (right side, like the reference): a round "!" and **CURRENT QUESTS [n]**, each quest in white
   ("Make 2 good squats in a meet! (1/2)") with the **time left until the daily reset** in yellow under it and a thin
-  line between quests. A finished quest says "Coach Olivera's quest done!" (timer "--:--") for 20 seconds, then
+  line between quests. A finished quest says "Coach Squatavious's quest done!" (timer "--:--") for 20 seconds, then
   leaves. No quests = nothing on screen. Phones: top right corner, 30% bigger text. Computers: right side, below the
   SESSION GAINS panel's space (the player list is top right there).
 - **Phone dialogue:** the yellow panel background stays full size, as in the suit scene (user 2026-11-19, after a
@@ -7753,6 +7782,7 @@ can fit"):**
 | **Cooking** | **Cooks while you're away**, even offline (user leaned this way; Claude agreed: making players stand at the oven for hours would push them to leave or pay). Put steaks in, go train or compete, come back and eat when it's ready. **One cook at a time** |
 | **Where** | **The Kitchen: its own building outside the gym** (the first outdoor building), with the cooker; built in Blender (pitched roof), the steak getting bigger with more steaks |
 | **Robux** | A Robux item **skips the cooking time** (§40.1); not sold yet, it needs a Developer Product the user creates |
+| **Meet meals (user, 2026-11-23, picked from Claude's options)** | The **meet** gain boost: eating one raises the strength (Competition Number) **every meet you finish** gives, for **24 hours** (as steaks). **Double a steak's price and cooking time: 50 coins and 20 seconds per meal**, the **same % table** (§25: 10 meals +10%, 100 meals +80% ...). **One cook at a time**: the cooker holds steaks OR meals. The meal is **a chicken, rice and broccoli plate** (a Blender model, sized by the number of meals, shown to the user before any upload). The boost multiplies a meet's raise without using more of the meet allowance (as steaks give more strength from the same training). **BUILT 2026-11-23** (code; the plate model still to come): the chef's "Meet meals" answer opens the same picker ("HOW MANY MEET MEALS?"); no grinder scene for a meal (that scene makes a steak): the chef answers in a caption; eat it at your pan ("MEAL EATEN!"); a navy MEET MEAL BOOST chip shows the time left. Save version 34. **The plate model uploaded 2026-11-23** (user: "Yes, upload both", after the grill lines were laid onto the breast): a pale blue-grey plate with a navy rim and CENTRAL, grilled chicken, rice, broccoli, on your pan and in the picker. The meat bay's YOUR MEAT words and their bar are gone (same day). **The meal's cutscene (user 2026-11-23: "the chef walks up, drops a chicken inside the meat bay, and pours in a bag of broccoli and a bag of rice then the thing sucks it up, and drops it on the pan. Maby you can add a little staircase"; then "instead of the raw chicken ... a live chicken")**: built and tested 2026-11-23: steps against the meat bay's side; the chef carries a live hen up them and drops it in over the glass, then pours a CENTRAL broccoli bag and a CENTRAL rice bag (no real brands), letting each empty bag fall in; the funnel sucks it all up the tube and the plate builds up on your pan. **REPLACED THE SAME DAY by the dispenser (user: "Instead of the chef dropping the chicken in and pouring the stuff, lets add a dispenser on top of the bay. Where the chef can just press the button and out comes the chickens, brocolli, and rice ... more chickens, broccoli, and rice ... lets not have the plate also drop with the food ... just have the food piling up scaling with how much food is being cooked, then when its done then the plate scaling of the size of the food is in place. Plate should not be cooked with the food")**: a big three-hopper dispenser (CHICKEN / BROCCOLI / RICE, CENTRAL) stands on top of the meat bay; the chef presses his button as for steaks and out drop live hens, broccoli florets and a rice heap, **more of each for a bigger cook**; the funnel sucks it all up and the food **piles up on your pan with no plate**, the pile sized by the number of meals; **when the cook is done the plate replaces the pile**, sized the same way. The steps, the carried hen and the bags are no longer used. Built, uploaded and tested 2026-11-23 (about 19 s) |
 
 **The Kitchen and the chef (user, 2026-11-19, after part 1):**
 - **A huge Kitchen** where the chef sells **steaks and meet meals** (and maybe more items later: buying several for more
@@ -7790,7 +7820,7 @@ can fit"):**
   **KITCHEN** stop.
 - **The chef** stands at the front of the hall beside the meat grinder: white top, a CENTRAL chef's hat and a navy
   CENTRAL apron. Talking to him opens the same dialogue as the coaches (panel, portrait, answer bubbles): Steaks /
-  Meet meals (coming soon) / Bye; while cooking he says how long is left and offers "Skip the wait" (the Robux skip,
+  Meet meals (built 2026-11-23) / Bye; while cooking he says how long is left and offers "Skip the wait" (the Robux skip,
   not sold yet); when it's done he sends you to your pan.
 - **The steak picker** (from the UI kit, not a plain box): turning rays and a glow in steak red, the big steak in 3D
   growing with the count ("ABOUT 3.9 LIFTERS LONG"), a big outlined count, a chunky slider (1 to 2,000; type a number
@@ -7966,8 +7996,9 @@ can fit"):**
     - **Meet notices**: the GO button on "the next meet is ..." asks once more (SURE?) before it takes you there.
     - **Standing rule**: nothing in the game may flash between two colours or have builds overlapping ("This makes
       the game look not well made"): check with tools/studio/FlickerAudit.luau and by eye.
-  - **[USER, 2026-11-22, second notes after watching the chef scene; BUILT IN CODE AND BLENDER, NOT YET UPLOADED OR
-    SEEN IN THE GAME: see DEVELOPMENT_STATUS "W CHEWS, ROUND 3"]:**
+  - **[USER, 2026-11-22, second notes after watching the chef scene; BUILT, UPLOADED ON THE USER'S "Yes, upload" AND
+    TESTED IN STUDIO WITH ONE PLAYER THE SAME DAY; the user: "Everything is good" (2026-11-23). See DEVELOPMENT_STATUS
+    "W CHEWS, ROUND 3" for what was and wasn't checked]:**
     - **The chef talks to YOU** ("he turns back and talks to the counter, but you cant visibly see yourself, as in my
       character"): the player's own character is seen in the scene, standing where it really is; after pressing the
       button the chef turns to the player and says "Alright, I'll handle this for you!" to them, both in the picture,
@@ -8057,3 +8088,131 @@ tells that one player (`GainNews` -> `GainRemotes.Gained` -> client `GainDisplay
 | **Floating numbers** | Big outlined numbers in the lift's colour rising just left of the panel; a newer one pushes the older ones up. **Training:** "+0.1 kg SQUAT" each time a row passes another 0.1 (kg, or technique points). **Meets:** each gain's full amount, one after another. Not over the head: the training menu covers that spot (tested) |
 | **Sounds** | The game's own crate sounds: the Tick, quietly, for a training pop; the Big sting when a meet's gains land |
 | **What sends gains today** | Rack training (strength every tick), technique training, the end of every meet against others (Local to Nationals: strength raises and Competition Scale), the Mock Meet (Scale). Quests, boosts and food will send through the same path |
+
+## 41. Ranks and titles (user, 2026-11-23, picked from Claude's options; NOT BUILT)
+
+Why (Claude's core-loop review, 2026-11-23): getting stronger was only a number nobody else sees. A rank and a
+title answer "what am I lifting for?" from the first meet, using the lifting and meets that already exist. The user:
+ranks, titles and cosmetics must be **earned**; **cosmetics are NOT designed now** ("I will be making the game wider
+instead of making the game 100%"), and the top of the ladder (Worlds, Sheffield) waits too.
+
+### 41.1 Decisions
+
+| Question | The user's pick |
+|---|---|
+| **What a rank is earned from** | **The lifter's best total at a real meet** (Local and up; not the Mock Meet), scored in the **IPF GL points** meets already rank by (`MeetPlacing.points`), so every weight class is judged fairly. Only a total made on the platform counts; training strength (CN), boosts and Robux never give a rank directly |
+| **The ladder's style** | **Fun gym names** (not real powerlifting classifications) |
+| **Can a rank go down?** | **Never.** The best total is kept forever; a bad meet costs nothing |
+| **Titles** | **Earned feats; the lifter picks one to show.** The champion titles meets already give (career.titles, §35.8) plus new feats |
+
+### 41.2 Claude's proposal, waiting for the user's OK
+
+**THE BIGGER LADDER (user, 2026-11-23, picked from Claude's options; replaces the 12-rank proposal).** The user:
+"add a lot more ranks, maby atleast a rank a day ... or even a couple of ranks a day as a beginner, with ranks being
+harder and harder to accomplish but even more rewards." Picks: **the 12 fun names, each with levels I to V (60
+ranks)**; **a daily player reaches the very top in about 3 months**; **every rank-up pays coins that grow with the
+rank, and reaching a new name (every 5 ranks) also gives a free crate.**
+
+**SCOPE: THE FIRST 3 MONTHS (user, 2026-11-23):** "for the game we should just be planning for the first 3 months
+and let the course of the game determine future updates that can give us the ability to want to add end game+
+content which will lead to the 6 months+ threshold." The ladder is built for about 3 months of daily play; content
+for 6 months and beyond (more names above Strength God, endgame+) comes in later updates, decided by how real
+players play. So the save and code must let new ranks be added on top later without resetting anyone's rank.
+
+Claude's thresholds and coin amounts below are PROVISIONAL (accepted as the 3-month plan, tuned after real
+playtests), from the simulation below: the rank's GL points, and in brackets the
+day a player who uses all their training and meets every day reaches it. About 7 ranks on day 1, about one a day by
+the second week, then every 2 to 3 days near the top. Meets only: about 1.5x the days (the top on day 135);
+training only: 3x.
+
+| Name | I | II | III | IV | V |
+|---|---|---|---|---|---|
+| Fresh Chalk | any total (d0) | 12.5 (d0) | 13 (d0.2) | 13.5 (d0.4) | 14 (d0.6) |
+| Plate Loader | 14.5 (d0.8) | 15 (d1) | 16 (d1.4) | 17 (d1.8) | 18 (d2.1) |
+| Bar Bender | 19.5 (d2.7) | 21 (d3.2) | 22.5 (d3.8) | 24 (d4.4) | 26 (d5.2) |
+| Gym Regular | 28 (d5.9) | 30 (d6.7) | 32.5 (d7.6) | 34.5 (d8.4) | 37 (d9.3) |
+| Iron Addict | 40 (d10.5) | 42.5 (d11.4) | 45.5 (d12.5) | 48.5 (d13.7) | 51.5 (d14.9) |
+| Platform Pro | 55 (d16.2) | 58.5 (d17.6) | 61.5 (d18.8) | 65 (d20.2) | 68.5 (d21.8) |
+| Big Total | 72 (d23.2) | 75.5 (d24.8) | 79 (d26.5) | 82.5 (d28.2) | 86 (d30) |
+| Plate Crusher | 89.5 (d31.9) | 92.5 (d33.6) | 95.5 (d35.5) | 98.5 (d37.4) | 101.5 (d39.5) |
+| Meet Monster | 104 (d41.4) | 106.5 (d43.4) | 109 (d45.5) | 111.5 (d47.8) | 114 (d50.2) |
+| Iron Titan | 116 (d52.2) | 118.5 (d55) | 120.5 (d57.2) | 122.5 (d59.8) | 124.5 (d62.3) |
+| Record Breaker | 126 (d64.4) | 128 (d67.3) | 129.5 (d69.6) | 131.5 (d72.8) | 133 (d75.3) |
+| Strength God | 134.5 (d78) | 136 (d80.7) | 137.5 (d83.6) | 139 (d86.6) | 140.5 (d89.8) |
+
+- **REWARDS (user, 2026-11-23, picked from Claude's options):**
+  - **A free crate on EVERY rank-up** (user: "Let's have a player earn a crate every level"): 60 crates over the 3
+    months, about 7 on day 1. The lifter picks which crate.
+  - **Plus coins that grow with the rank** (user: "crates + growing coins because gear is going to be needed and
+    rare"): 50 for rank 1, +10 per rank, 640 for Strength God V (about 20,700 in all) [PROVISIONAL numbers].
+  - **On each new name (every 5 ranks): a big luck boost** that stacks with the cow's wheel luck (the user asked for
+    "a food item or just a big luck boost that stacks with the cow luck", then picked how the luck stacks; free food
+    was not picked, and it would have sped up strength and shortened the 3-month pacing). **It doubles the luck the
+    lifter holds for 24 hours (1.5x from the wheel becomes 3x), total luck never goes above 10x, and a meet's rare
+    suit drop keeps its 3x cap** (LuckConfig.SuitLuckCap).
+  - Claude's notes: the boost arrives with that rank's own crate, so the crate is opened with the boost on; and the
+    100-piece gear inventory (GearStatsConfig.MaxPieces) will fill faster, so scrapping must stay easy.
+- **Skipped ranks still pay:** a big meet can pass several ranks at once; every rank passed gives its coins and crate.
+- The top sits above world-record level (about 120 GL), because strength keeps creeping up past the records (the
+  Hill curve slows but never stops).
+
+**The first titles (all earnable with what is built today): APPROVED by the user 2026-11-23 ("I approve the titles").**
+- The meet titles that already exist: Local / Regional / State Champion, Runner-up, 3rd Place, National Champion
+  (with "2x", "3x" as now).
+- **Nine for Nine:** go 9/9 at a real meet.
+- **Gym Record Holder:** set a gym record.
+- **Clutch:** make your third attempt after missing the first two on that lift.
+- **Total clubs:** 300, 500 and 700 kg Total Club (a meet total of at least that).
+- **Lift clubs:** 100 / 200 / 300 kg Squat, 100 / 150 / 200 kg Bench, 150 / 250 / 350 kg Deadlift (a good meet lift).
+- **Iron Streak:** finish a real meet on 7 days in a row.
+- Later, with coaching (§40.5): "Coached by Squatavious / Benchamin / Sumo".
+
+**Where they show (Claude's default):**
+- The rank: a small badge on the lifter's name over their head and in the player list (status means others see it),
+  on the lifter's meet card and podium, and on STATS.
+- The title: one line under the name, the one the lifter picked on STATS (none picked = their newest).
+- **Ranking up:** after the meet's awards, a short kit-style card on the lifter's own screen ("RANK UP! BAR BENDER")
+  with its own sound (memory: sound in every feature); a line in that meet's chat feed for everyone there.
+- One rank per player: the best GL total across all of their weight-class builds.
+
+**How fast GL points come today (Claude, 2026-11-23, a simulation with the game's real numbers: BaseProgressRate
+0.00482389, Hill h 0.75 m 5, the 4.00 EV daily training cap, meets worth 2 days of training; no steaks or meals; the
+lifter lifts their full strength at the meet).** A new lifter starts at about 12 GL. With the ladder above, a player
+who uses all their training and meets every day ranks up about **every 4 days** and reaches Strength God (120) on
+**day 57**; meets only: day 85; training only: day 170. Steaks and meet meals make it faster. **The first rank-up
+comes on day 3 or 4, which is too late:** a new player should rank up in their first session. Claude's suggested
+retune (not approved): 15 / 22 / 30 / 40 / 50 / 60 / 70 / 80 / 95 / 110 / 125, giving Plate Loader on day 1,
+Strength God about day 63 (meets only about day 95). BaseProgressRate is still marked "expected to be recalibrated",
+so these days move with it.
+
+**What it needs in the save:** the best meet total (kg, bodyweight, GL points, date) and the titles earned / the title
+picked; a new save version that **repairs, never overwrites** (career.titles stays as it is).
+
+### 41.3 How it looks and plays (built 2026-11-23 from the study; user: "research games with ranks and titles ... then build")
+
+From `References/Ranks and Titles Study.md` (Roblox and other games studied from written sources):
+
+- **Every name has a picture in its own material, in an order anyone can read** (the Deadlock lesson: fun names need a
+  visible order): chalk, rubber, iron, blue steel, bronze, silver, gold, platinum, emerald, ruby, diamond, cosmic. The
+  emblem is a **competition plate** (the game's own symbol); the level I to V shows as five pips under it. Only
+  Strength God's plate is animated. (Drawn in code for now; Blender-rendered pictures can replace them,
+  RankConfig.Images, after the user approves them.)
+- **Two sizes of moment** (Sol's RNG; WoW's pop-up spam lesson), always AFTER the meet's awards, never over a cutscene
+  or a turn: a **new level** is a small toast at the top that collects the rewards at once; a **new name** is a full
+  ceremony (dim, the old plate shakes and drops, the new one slams in with rays, a flash, a shake and the crowd), then a
+  **CLAIM** button (or LATER: the rewards wait, with a red dot on the RANKS tab). A new best that ranks nothing shows a
+  toast with the progress bar to the next rank (Overwatch: progress after every meet).
+- **TITLE UNLOCKED!** cards, one per new title (up to 3, then "and N more"), with **EQUIP** or LATER.
+- **The RANKS menu** (a tab under EMOTES, key **R**): the emblem, rank, best total, a bar to the next rank with the
+  kilograms it means at your bodyweight, CLAIM and OPEN FREE CRATES; **RANK ROAD** (every name's picture, material and
+  five levels with their points and coins, your spot marked, the ones ahead greyed); **TITLES** (a preview of your name
+  tag; every title grouped Feats / Clubs / Meets, owned ones in their colour to tap and equip, locked ones greyed with
+  how to earn them and a progress bar where it counts up, NEW tags).
+- **Free crates open in the shop's crate opener** (the same reel and reveal), from the RANKS menu, anywhere.
+- **Name tags over other players**: a small emblem, their name, their title in its colour (grey rank name if none);
+  only near players, the 16 nearest, never through walls, hidden on your turn and in cutscenes; your own never shows
+  to you. The player list has a **Rank** column.
+- **Title colours**: Common white, Rare blue, Epic purple, Legendary gold with a slow shimmer.
+- **One chat line for the whole server** only for reaching a name from Platform Pro up, or a Legendary title.
+- **Sounds for now**: the game's crate sounds and the crowd cheer; dedicated ElevenLabs sounds wait for the user's OK.
+- Admin: **RANK UP** on the admin panel's PLAYER STATS page gives the next rank through the same path a meet uses.

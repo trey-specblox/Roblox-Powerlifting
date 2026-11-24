@@ -39,6 +39,7 @@ local started = false
 local zones: { Zone } = {}
 local byPlayer: { [Player]: Zone } = {}
 local steakModelLength = 0
+local refreshToken: { [Player]: number } = {}
 
 -- The centre (on the floor, facing -Z) of zone `index`, in rows of ZoneColumns from the hall's front left.
 local function zoneCentre(index: number): CFrame
@@ -148,22 +149,29 @@ local function buildZone(folder: Folder, index: number): Zone?
 	return { index = index, model = model, centre = centre, owner = nil, steak = nil }
 end
 
--- The zone's big steak for a cook of `steaks` (none for 0).
-local function showSteak(zone: Zone, steaks: number)
-	if steaks < 1 then
+-- The zone's big steak for a cook of `steaks` (none for 0). `kind` "Meal" (user 2026-11-23): while it cooks, the PILE of
+-- food on the pan, no plate ("MealPile": "Plate should not be cooked with the food"); once it is ready, the plate
+-- ("MeetMeal"), sized the same way. `ready`: whether the cook is done.
+local function showSteak(zone: Zone, steaks: number, kind: string?, ready: boolean?)
+	local mealName = if ready then "MeetMeal" else "MealPile"
+	local want = if kind == "Meal" then mealName else "BigSteak"
+	if steaks < 1 or (zone.steak and zone.steak:GetAttribute("Item") ~= want) then
 		if zone.steak then
 			zone.steak:Destroy()
 			zone.steak = nil
 		end
-		return
+		if steaks < 1 then
+			return
+		end
 	end
 	local steak = zone.steak
 	if steak == nil then
-		steak = RoomProps.propCopy("BigSteak", 1)
+		steak = RoomProps.propCopy(want, 1)
 		if steak == nil then
 			return
 		end
-		steak.Name = "Steak"
+		steak.Name = if kind == "Meal" then mealName else "Steak"
+		steak:SetAttribute("Item", want)
 		for _, part in ipairs(steak:GetDescendants()) do
 			if part:IsA("BasePart") then
 				part.CastShadow = false -- (as the pans: no sun in the hall)
@@ -172,11 +180,16 @@ local function showSteak(zone: Zone, steaks: number)
 		zone.steak = steak
 	end
 	local s = steak :: Model
-	if steakModelLength <= 0 then
+	local length = steakModelLength
+	if kind == "Meal" then
+		s:ScaleTo(1)
+		length = s:GetExtentsSize().X
+	elseif steakModelLength <= 0 then
 		s:ScaleTo(1)
 		steakModelLength = s:GetExtentsSize().X
+		length = steakModelLength
 	end
-	s:ScaleTo(KitchenConfig.steakLength(steaks) / math.max(steakModelLength, 0.1))
+	s:ScaleTo(KitchenConfig.steakLength(steaks) / math.max(length, 0.1))
 	-- On the pan's floor, a little turned so it doesn't sit square.
 	s:PivotTo(zone.centre * CFrame.new(0, KitchenConfig.PanFloorHeight * KitchenConfig.PanScale - KitchenConfig.PanSink, 0)
 		* CFrame.Angles(0, math.rad(18), 0))
@@ -194,12 +207,27 @@ function KitchenPans.refresh(player: Player)
 	end
 	local view = PlayerDataService.getKitchen(player)
 	local steaks = if view then view.steaks else 0
+	local kind = if view and view.kind == "Meal" then "Meal" else "Steak"
 	zone.model:SetAttribute("Steaks", steaks)
+	zone.model:SetAttribute("Kind", kind)
 	zone.model:SetAttribute("ReadyAt", if view and steaks >= 1 then os.time() + view.readyIn else 0)
 	-- (on the player too, for their own timer on top of the Kitchen's sign outside: KitchenSignTimer)
 	player:SetAttribute("KitchenSteaks", steaks)
+	player:SetAttribute("KitchenKind", kind)
 	player:SetAttribute("KitchenReadyAt", if view and steaks >= 1 then os.time() + view.readyIn else 0)
-	showSteak(zone, steaks)
+	local readyIn = if view then view.readyIn else 0
+	showSteak(zone, steaks, kind, readyIn <= 0)
+	-- A meal still cooking swaps its pile for the plate the moment it is ready (one wait per cook: a newer refresh
+	-- replaces it).
+	refreshToken[player] = (refreshToken[player] or 0) + 1
+	if kind == "Meal" and steaks >= 1 and readyIn > 0 then
+		local mine = refreshToken[player]
+		task.delay(readyIn + 0.5, function()
+			if refreshToken[player] == mine and player.Parent then
+				KitchenPans.refresh(player)
+			end
+		end)
+	end
 end
 
 -- The zone `player` has, or nil.
@@ -235,6 +263,7 @@ local function release(player: Player)
 		return
 	end
 	byPlayer[player] = nil
+	refreshToken[player] = nil
 	zone.owner = nil
 	zone.model:SetAttribute("Owner", "")
 	zone.model:SetAttribute("Steaks", 0)
@@ -275,8 +304,10 @@ function KitchenPans.start()
 	-- One copy of the big steak for the clients (the chef's steak picker shows it growing with the number).
 	local shared = Instance.new("Folder")
 	shared.Name = "KitchenModels"
-	-- (and the chef scene's props: KitchenScene)
-	for _, item in ipairs({ "BigSteak", "MeatBag", "Cow", "MeatMound", "MeatPress", "MincePile", "MeatChunk" }) do
+	-- (and the chef scene's props: KitchenScene; and the meet meal's plate for the chef's picker: KitchenMenu)
+	for _, item in ipairs({ "BigSteak", "MeetMeal", "MeatBag", "Cow", "MeatMound", "MeatPress", "MincePile", "MeatChunk",
+		-- (the meet meal scene's: the hens and florets out of the dispenser, the food pile on the pan)
+		"LiveChicken", "BroccoliBit", "MealPile" }) do
 		local model = RoomProps.propCopy(item, 1)
 		if model then
 			model.Name = item

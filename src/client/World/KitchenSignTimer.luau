@@ -83,11 +83,13 @@ function KitchenSignTimer.start()
 		local readyAt = player:GetAttribute("KitchenReadyAt")
 		if typeof(steaks) == "number" and steaks >= 1 and typeof(readyAt) == "number" then
 			local left = readyAt - Workspace:GetServerTimeNow()
+			-- (a meet meal cooking: KitchenKind "Meal", user 2026-11-23)
+			local what = if player:GetAttribute("KitchenKind") == "Meal" then "MEET MEAL" else "STEAKS"
 			if left > 0 then
-				label.Text = "YOUR STEAKS  " .. KitchenConfig.clockText(left)
+				label.Text = "YOUR " .. what .. "  " .. KitchenConfig.clockText(left)
 				label.TextColor3 = C.white
 			else
-				label.Text = "YOUR STEAKS ARE READY!"
+				label.Text = if what == "STEAKS" then "YOUR STEAKS ARE READY!" else "YOUR MEET MEAL IS READY!"
 				label.TextColor3 = Color3.fromRGB(110, 230, 130)
 			end
 			gui.Enabled = true
