@@ -13,12 +13,13 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**2026-11-24 LATEST: main is commit 15b5326 (inventory stages 1-2), published as place version 1045. Everything in the
+**2026-11-24 LATEST: inventory stages 3-4 published as place version 1054 (commit 26e4448; stages 1-2 were 15b5326,
+version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
 **INVENTORY STAGES 3-4: HOLDING, MEDALS/TROPHIES, WIN COUNTER (2026-11-24, user: "Start building"; GAME_DESIGN §42).
-COMMITTED 26e4448 and SAVED to Roblox (place version 1054) on the user's "Commit and save"; NOT published (the live
-game is still version 1045).** Files: HoldService (new), HeldCounters (new), InventoryService, InventoryRemotes (Hold),
+COMMITTED 26e4448, SAVED and PUBLISHED as place version 1054 (2026-11-24, user: "Also publish I'll check it out on
+mobile"). The user's phone check is still to come.** Files: HoldService (new), HeldCounters (new), InventoryService, InventoryRemotes (Hold),
 InventoryMenu (HOLD/PUT AWAY, award pictures, "1 STEAK"), AdminService (GiveAward), Trophies (copy + a load race fix:
 a second caller got nil while the model downloaded), LocalMeetService (one award call + `Once` table),
 init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (new), art/animations/Carry_FoodTray.rbxmx, client World/HeldPlates (new).
