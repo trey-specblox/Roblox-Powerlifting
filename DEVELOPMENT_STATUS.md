@@ -13,7 +13,8 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**COACHING STAGE 1 (2026-11-24, user: "Yea let's start with the coaching system"; GAME_DESIGN §40.5). NOT COMMITTED.**
+**COACHING STAGE 1 (2026-11-24, user: "Yea let's start with the coaching system"; GAME_DESIGN §40.5). Commit 34b9cfb,
+SAVED and PUBLISHED as place version 1072 (the user approved Claude's three rule calls with "Commit save and publish").**
 New: CoachingConfig, CoachingRemotes, CoachingService; save VERSION 38 `coaching` (migrations[37]); ProfileOperations /
 PlayerDataService coaching ops; MockMeetService.startCoachTrial + runCoachTrial (visit.stepTag through every phase;
 MockMeetUI shows it on Ready/Result); LocalMeetService one call CoachingService.meetFinished (no new locals);
@@ -28,7 +29,7 @@ price with PAY / NOT NOW; admin CoachStep cycles and CoachReset works; console c
 NOT TESTED: trial 2 with other real players (top 3), leaving the room mid-trial (coded as a fail), the dialogue's
 trial 2 and "Be my coach" lines on screen, a phone.
 
-**2026-11-24 LATEST: published place version 1069 (LEAVE sign moved clear of the doorway; commit 6bbbf62); 1068 = holding the LEAVE sign works with a finger (f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**2026-11-24 LATEST: published place version 1072 (coaching stage 1; commit 34b9cfb); 1069 = LEAVE sign moved clear of the doorway (6bbbf62); 1068 = holding the LEAVE sign works with a finger (f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
