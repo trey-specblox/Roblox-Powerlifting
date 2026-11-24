@@ -5493,6 +5493,9 @@ function LocalMeetService.start()
 						showDroppedSuit(lifter, player)
 					end)
 					leave.HoldDuration = 1.5
+					-- (the sign sits clear of the doorway, ~7 studs from the waiting spot: a little more reach than the
+					-- venue's other prompts)
+					leave.MaxActivationDistance = 10
 					leave.Enabled = false
 					leave:SetAttribute("Hall", hall.index)
 					leave:SetAttribute("Platform", platform.index)

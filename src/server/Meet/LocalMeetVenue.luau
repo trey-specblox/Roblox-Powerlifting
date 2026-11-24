@@ -696,9 +696,11 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 		}
 		-- THE LEAVE SIGN (user 2026-11-24: "Add back a way to leave local regional meets ... make it where u can walk
 		-- around to a leave sign"): on the warm-up room's wall beside the lifter's waiting spot, on their own side of the
-		-- doorway (5 studs from it, in reach of the waiting spot), with a hold-to-leave prompt at its foot. Holding,
-		-- not tapping: the phone's LEAVE button was taken away because a stray tap withdrew lifters (2026-11-18).
-		local leaveX = doorX - side * (DOORWAY + 2)
+		-- doorway, in reach of the waiting spot, with a hold-to-leave prompt under it. Holding, not tapping: the phone's
+		-- LEAVE button was taken away because a stray tap withdrew lifters (2026-11-18). The board is ~8.6 studs wide:
+		-- its middle 8 studs from the doorway's centre leaves its edge 0.7 clear of the opening (user 2026-11-24: "It's
+		-- sticking out the walk way"; at 5 studs it hung 2.3 studs over the doorway).
+		local leaveX = doorX - side * (DOORWAY + 5)
 		wallBoard("LeaveBoard_" .. index, "MeetBoard", "MeetBoard_Screen", 0.3, Vector3.new(leaveX, 0, Z_BACK + WALL + 0.06),
 			Vector3.zAxis, Vector3.new(leaveX, 7, Z_BACK + WALL), "LEAVE", { "Hold to leave the meet" }, "bar", 30)
 		-- (its middle at head height under the sign: at the floor the lifter's own body hid the prompt from the camera)

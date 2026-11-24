@@ -93,6 +93,9 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
     STUDIO (ForcePhoneScreens): prompt:InputHoldBegin works; a mouse press held on the sign -> HoldBegan, withdrew,
     meet screen off. (Test clicks are in GUI coordinates = viewport minus the 58 px inset, and the chalk-shot camera
     moves: aim from a fresh measurement.)
+  - THE BOARD STUCK OUT INTO THE WALKWAY ("Reposition the screen. It's sticking out the walk way"): it hung 2.3 studs
+    over the doorway. NOT COMMITTED: its middle is now 8 studs from the doorway's centre (edge 0.7 clear; checked on
+    platforms 1, 2 and 8: no overlap); the prompt reaches 10 studs (the waiting spot is 7.2 away), the hold still starts.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip
