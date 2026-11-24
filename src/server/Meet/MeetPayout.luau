@@ -3,14 +3,13 @@
 	MeetPayout
 	Server / Meet
 
-	Works out what an official meet pays each lifter in coins (GAME_DESIGN.md
-	30.6, the money system's step 3). Pure: it only does the sums from the
-	settings (CoinConfig.LocalMeet) and the meet's result; the meet pays the
-	coins itself through PlayerDataService.addCoins.
+	Works out what a real meet pays each lifter in coins (GAME_DESIGN §41.4, which replaced 30.6's prize pot). Pure: it
+	only does the sums from the settings (CoinConfig.LocalMeet) and the meet's result; the meet pays the coins itself
+	through PlayerDataService.addCoins. Every amount is times the meet level's multiplier (Local 1 ... Nationals 5),
+	except the over-the-limit bonus.
 
-		forMeet      the prize pot shares by place, the finishing bonus and
-		             the 9/9 bonus, per lifter
-		forGymRecord the bonus for the records one good lift broke
+		forMeet      finishing, 9/9 and place, per lifter
+		forGymRecord the once-a-meet bonus for setting gym records
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,11 +23,9 @@ export type Settings = typeof(CoinConfig.LocalMeet)
 -- One lifter's meet result, as far as money goes.
 export type Lifter = {
 	key: number,
-	-- 1 = first, nil without a total.
+	-- 1 = first in the whole field (computer lifters counted), nil without a total.
 	place: number?,
 	hasTotal: boolean,
-	-- Started at least one lift (counts toward the pot).
-	qualified: boolean,
 	-- 9 good lifts of 9.
 	perfect: boolean,
 	-- Good lifts over the normal limit (GAME_DESIGN §37.5): each pays CoinConfig.overLimitCoins, on top of the rest.
@@ -48,48 +45,25 @@ local function placeText(place: number): string
 	return string.format("%d%s place", place, suffix)
 end
 
--- The pot: BasePot plus PerQualifiedLifter for each qualified lifter, times the meet level's multiplier (§35.8).
-function MeetPayout.pot(lifters: { Lifter }, settings: Settings, multiplier: number?): number
-	local qualified = 0
-	for _, lifter in ipairs(lifters) do
-		if lifter.qualified then
-			qualified += 1
-		end
-	end
-	return (settings.BasePot + settings.PerQualifiedLifter * qualified) * (multiplier or 1)
-end
-
 --[[
-	Every lifter's payments, by key (a lifter who earns nothing has an empty
-	list). Shares are rounded down to whole coins.
+	Every lifter's payments, by key (a lifter who earns nothing has an empty list): with a total, the finishing pay, the
+	9/9 bonus and a top-3 place bonus, each times `multiplier`; and the over-the-limit bonus for each such lift.
 ]]
 function MeetPayout.forMeet(lifters: { Lifter }, settings: Settings, multiplier: number?): { [number]: { Item } }
-	local pot = MeetPayout.pot(lifters, settings, multiplier)
-	local placed = 0
-	for _, lifter in ipairs(lifters) do
-		if lifter.place and lifter.hasTotal then
-			placed += 1
-		end
-	end
-	local splits = settings.PlaceShares
-	local shares = if placed > 0 then splits[math.min(placed, #splits)] else {}
-
+	local m = multiplier or 1
 	local result: { [number]: { Item } } = {}
 	for _, lifter in ipairs(lifters) do
 		local items: { Item } = {}
-		local place = lifter.place
-		if place and lifter.hasTotal then
-			local share = shares[place]
-			local amount = if share then math.floor(pot * share) else 0
-			if amount > 0 then
-				table.insert(items, { amount = amount, reason = placeText(place) })
+		if lifter.hasTotal then
+			table.insert(items, { amount = settings.FinishBonus * m, reason = "Finished with a total" })
+			if lifter.perfect then
+				table.insert(items, { amount = settings.PerfectBonus * m, reason = "9/9" })
 			end
-		end
-		if lifter.hasTotal and settings.FinishBonus > 0 then
-			table.insert(items, { amount = settings.FinishBonus, reason = "Finished with a total" })
-		end
-		if lifter.hasTotal and lifter.perfect and settings.PerfectBonus > 0 then
-			table.insert(items, { amount = settings.PerfectBonus, reason = "9/9" })
+			local place = lifter.place
+			local bonus = if place then settings.PlaceBonus[place] else nil
+			if place and bonus and bonus > 0 then
+				table.insert(items, { amount = bonus * m, reason = placeText(place) })
+			end
 		end
 		if lifter.hasTotal then
 			for _, heavy in ipairs(lifter.overLimit or {}) do
@@ -106,29 +80,25 @@ function MeetPayout.forMeet(lifters: { Lifter }, settings: Settings, multiplier:
 end
 
 --[[
-	The bonus for the records one good lift broke (GAME_DESIGN 30.5): each
-	broken record is worth GymRecordBonus when someone else held it,
-	OwnGymRecordBonus when the lifter did, and nothing for an empty spot; the
-	lift pays the best of those ONCE (a Total broken by the same lift is not
-	paid again). `broken` is GymRecords' list: { record, previous = { userId }? }.
-	Returns nil when it pays nothing.
+	The gym record bonus (GAME_DESIGN §41.4): GymRecordBonus x `multiplier` ONCE A MEET, however many records the lifter
+	sets there (`alreadyPaid` = this meet has paid it already). A record someone held, or the lifter's own, counts; an
+	empty spot pays nothing. `broken` is GymRecords' list: { record, previous = { userId }? }. Nil when it pays nothing.
 ]]
 function MeetPayout.forGymRecord(userId: number, broken: { { record: string, previous: { userId: number }? } },
-	settings: Settings): Item?
-	local best: Item? = nil
+	settings: Settings, multiplier: number?, alreadyPaid: boolean?): Item?
+	if alreadyPaid or settings.GymRecordBonus <= 0 then
+		return nil
+	end
 	for _, record in ipairs(broken) do
 		local previous = record.previous
-		local item: Item? = nil
-		if previous and previous.userId ~= userId and settings.GymRecordBonus > 0 then
-			item = { amount = settings.GymRecordBonus, reason = "Gym record: " .. record.record }
-		elseif previous and previous.userId == userId and settings.OwnGymRecordBonus > 0 then
-			item = { amount = settings.OwnGymRecordBonus, reason = "Own gym record: " .. record.record }
-		end
-		if item and (best == nil or item.amount > (best :: Item).amount) then
-			best = item
+		if previous then
+			return {
+				amount = settings.GymRecordBonus * (multiplier or 1),
+				reason = (if previous.userId == userId then "Own gym record: " else "Gym record: ") .. record.record,
+			}
 		end
 	end
-	return best
+	return nil
 end
 
 return MeetPayout

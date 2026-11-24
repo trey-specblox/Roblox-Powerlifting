@@ -2794,6 +2794,9 @@ and players a reason to enter meets.
 
 ### 30.6 The money system — first build (user, 2026-10-30, picked from options)
 
+> **[CHANGED BY THE USER, 2026-11-23]: the meet pay below (prize pot, finishing 25, 9/9 50, records 150 / 40) is
+> REPLACED by §41.4** (finishing 500, 9/9 200, place 200 / 130 / 70, one gym record bonus 100, all times the level).
+
 - **One currency first: COINS.** Earned at official meets. The deadlift-typing
   **cosmetic currency** (§34.9) stays a separate, later step, so a player-skill
   reward can never buy anything that adds strength.
@@ -7721,6 +7724,19 @@ doesn't cover it. To settle while designing:
     players with a basic coach like the gym owner."** Every new player starts with a **basic coach, the gym owner**
     (a new made-up character; the Starter Gym already has a GYM MANAGER office he could belong to). A lifter can
     choose only the gym owner or a coach they have **paid for and been coached by** (§40.5's trials).
+  - **WHAT A COACH GIVES (user, 2026-11-23, after Claude's proposal):**
+    - **No attempt calling:** "players should decide on their own what they want". A coach may only RECOMMEND
+      ("this gets you first or second"); the lifter always picks.
+    - **No lift cues** ("kinda useless").
+    - **COACH BOND is the main path** ("the best path"): meets with your coach raise a bond level that unlocks that
+      coach's cosmetic things. **Maxing a coach's bond unlocks their PHYSICAL LOOK** for the player, just for fun (for
+      example Coach Squatavious's very short, stocky look). **Usable everywhere, lifts too** (user's pick): the look
+      needs every lift animation corrected for the three coach shapes (hands on the bar), like the body-type work, so
+      it is its own big phase after the coach bodies exist.
+    - **Better quests** from your hired coach (approved).
+    - **No new lifting styles for now:** squat and bench have no real second style, only deadlift does (sumo), so it
+      would be unfair between the lifts.
+    - **Price: 28,000 coins per coach** (first 10,000; changed the same day to 12 hours of Local meets, §41.4).
   - OPEN: where the choice is made, and whether the Mock Meet room's coach and the meet scenes (rituals,
     Nationals opening, the rare suit cutscene) use the chosen coach too.
 
@@ -8216,3 +8232,55 @@ From `References/Ranks and Titles Study.md` (Roblox and other games studied from
 - **One chat line for the whole server** only for reaching a name from Platform Pro up, or a Legendary title.
 - **Sounds for now**: the game's crate sounds and the crowd cheer; dedicated ElevenLabs sounds wait for the user's OK.
 - Admin: **RANK UP** on the admin panel's PLAYER STATS page gives the next rank through the same path a meet uses.
+
+### 41.4 Meet pay: coins worth a crate for competing, and bonuses worth one more (user, 2026-11-23)
+
+The user: "I wanted every successful meet to give at least one crate" (any real meet finished with a total, computer-
+lifter meets included; a bomb-out gets nothing; the Mock Meet doesn't count), then, correcting Claude's free-crate
+reading: **"You do not get a free crate from lifting at a meet, you get enough coins to at least get one crate. So for
+local meets you're getting one crate, state meets I think the pot is 3x so you're getting 3 crates and so on"**, and
+earlier: "the amount of coin bonuses a lifter gets should all together add up to an extra crate". A crate costs 500.
+
+**The rule:** finishing a meet with a total pays **500 coins x the meet's level** (Local 1, Regional 2, State 3,
+Nationals 5); **all the bonuses together are worth one more crate at that level**.
+
+**APPROVED by the user 2026-11-23 ("Yea that works let's do 28000"), at a Local meet (x2 Regional, x3 State, x5 Nationals):**
+
+| Pay | Coins (was) |
+|---|---|
+| Finishing with a total (win or lose) | **500** (25) |
+| 9/9 | **200** (50) |
+| Place in the whole field, computer lifters counted: 1st / 2nd / 3rd | **200 / 130 / 70** |
+| A gym record at the meet (any number) | **100** (150 each, 40 for your own) |
+| **Most a Local meet pays** | **1,000 = two crates** (State 3,000, Nationals 5,000) |
+
+- It **replaces the old prize pot** (100 + 50 per lifter, shared by place): the level multipliers now do that job.
+- The over-the-limit bonus stays as it is (it pays a risk, not a result). Gym records still can't be set in a meet
+  with only computer lifters (§37.2).
+- **Claude's warning:** at about 4 Local meets an hour this pays about **2,500 coins an hour** on average, so a
+  10,000-coin coach takes about 4 hours of play and 100 steaks (2,500 coins) about one meet hour. Suggested: **coaches
+  at 25,000** (about a day or two), and the Kitchen's prices looked at again later.
+- **Body looks and body changes (user, same day):** "I'm fine with the body looks because I said before we need steady
+  body changes. NOT just 8 phases ... a person does not look big enough for a 120kg lifter only lifting like 30kg." The
+  body must change in many small steady steps with bodyweight and strength (CHARACTER_ART_DIRECTION §5.5), not a few
+  jumps; the coach looks and every body share that animation work.
+
+**The coach's price from a day of meets (user, 2026-11-23):** "I want players to be able to get a coach in a day. But
+nothing more than that ... from local meets only it should take 12 hours of non-stop local meets to get a coach", and
+asked how that compares with a player who climbs the ladder.
+
+Claude's simulation with the payouts above (4,000 runs each). Assumptions, to check after playtests: a Local meet about
+15 min, State about 22, Nationals about 30, plus 2 min to the next; 9/9 in 40% of meets; 1st / 2nd / 3rd in 25 / 25 /
+20%; a bomb-out in 5%; a gym record in 8% of meets with real players; a State meet with real players open half the
+time; the first State qualification at 10 ladder points; 10 top-2 State placings for a Nationals spot.
+
+| 12 hours of meets | Coins | Notes |
+|---|---|---|
+| **Local only** (half with computer lifters, half with real players) | **about 27,800** | 1 hour: about 2,600 |
+| **Climbing**: Local and Regional, then State as soon as qualified, Nationals when a spot comes | **about 50,900** | qualifies for State after about 1 hour; a Nationals spot by the end of the day in only about 1 run in 5 (about 11 hours in) |
+
+**BUILT 2026-11-23** (CoinConfig.LocalMeet, MeetPayout, LocalMeetService; the sign-up news says "coins x3"):
+the payouts above.
+
+**A coach costs 28,000 coins** (APPROVED 2026-11-23: 12 hours of Local meets; about 6 to 7 hours for a player who
+climbs). This replaces the 10,000 in §40.5.

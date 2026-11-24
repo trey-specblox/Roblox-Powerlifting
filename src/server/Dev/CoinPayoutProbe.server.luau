@@ -6,8 +6,8 @@
 	DEV TOOL, NOT GAMEPLAY. Checks the money system's meet payout (GAME_DESIGN
 	30.6, step 3) in Studio and prints a pass/fail line per check:
 
-		1. MeetPayout's sums (pot, place shares, finishing, 9/9, gym record
-		   bonus) for made-up meets
+		1. MeetPayout's sums (finishing, 9/9, place, the level, the gym record
+		   bonus) for made-up meets (GAME_DESIGN §41.4)
 		2. the real coin path: pays the first player in the server a few
 		   payouts through PlayerDataService.addCoins, exactly as a meet does,
 		   so the counter and the pop-ups can be watched
@@ -52,88 +52,65 @@ local function total(items: { MeetPayout.Item }?): number
 end
 
 local S = {
-	BasePot = 100,
-	PerQualifiedLifter = 50,
-	PlaceShares = { { 1 }, { 0.6, 0.4 }, { 0.5, 0.3, 0.2 } },
-	FinishBonus = 25,
-	PerfectBonus = 50,
-	GymRecordBonus = 150,
-	OwnGymRecordBonus = 40,
+	FinishBonus = 500,
+	PerfectBonus = 200,
+	PlaceBonus = { 200, 130, 70 },
+	GymRecordBonus = 100,
+	OverLimitBonus = 50,
+	OverLimitStepBonus = 25,
+	OverLimitStepPercent = 0.05,
 }
 
-print("=== Coin payout probe ===")
+print("=== Coin payout probe (GAME_DESIGN §41.4) ===")
 
-print("1. a 4-lifter meet (the GAME_DESIGN 30.6 example)")
+print("1. a Local meet: finishing, 9/9 and place")
 do
 	local lifters: { MeetPayout.Lifter } = {
-		{ key = 1, place = 1, hasTotal = true, qualified = true, perfect = true },
-		{ key = 2, place = 2, hasTotal = true, qualified = true, perfect = false },
-		{ key = 3, place = 3, hasTotal = true, qualified = true, perfect = false },
-		{ key = 4, place = 4, hasTotal = true, qualified = true, perfect = false },
+		{ key = 1, place = 1, hasTotal = true, perfect = true },
+		{ key = 2, place = 2, hasTotal = true, perfect = false },
+		{ key = 3, place = 3, hasTotal = true, perfect = false },
+		{ key = 4, place = 4, hasTotal = true, perfect = false },
 	}
-	check("pot = 100 + 4 x 50 = 300", MeetPayout.pot(lifters, S) == 300)
-	local pay = MeetPayout.forMeet(lifters, S)
-	check("1st: 150 + 25 + 50 (9/9) = 225", total(pay[1]) == 225, tostring(total(pay[1])))
-	check("2nd: 90 + 25 = 115", total(pay[2]) == 115, tostring(total(pay[2])))
-	check("3rd: 60 + 25 = 85", total(pay[3]) == 85, tostring(total(pay[3])))
-	check("4th: only the finishing 25", total(pay[4]) == 25, tostring(total(pay[4])))
-	check("1st's reasons", pay[1][1].reason == "1st place" and pay[1][2].reason == "Finished with a total"
-		and pay[1][3].reason == "9/9")
+	local pay = MeetPayout.forMeet(lifters, S, 1)
+	check("1st with 9/9: 500 + 200 + 200 = 900", total(pay[1]) == 900, tostring(total(pay[1])))
+	check("2nd: 500 + 130 = 630", total(pay[2]) == 630, tostring(total(pay[2])))
+	check("3rd: 500 + 70 = 570", total(pay[3]) == 570, tostring(total(pay[3])))
+	check("4th: only the finishing 500 (a crate)", total(pay[4]) == 500, tostring(total(pay[4])))
+	check("1st's reasons", pay[1][1].reason == "Finished with a total" and pay[1][2].reason == "9/9"
+		and pay[1][3].reason == "1st place")
 end
 
-print("2. bomb-outs, withdrawals and AFK sign-ups")
+print("2. the level multiplies it all; bomb-outs earn nothing")
 do
 	local lifters: { MeetPayout.Lifter } = {
-		{ key = 1, place = 1, hasTotal = true, qualified = true, perfect = false },
-		{ key = 2, place = nil, hasTotal = false, qualified = true, perfect = false }, -- bombed out
-		{ key = 3, place = nil, hasTotal = false, qualified = false, perfect = false }, -- never started a lift
+		{ key = 1, place = 1, hasTotal = true, perfect = true },
+		{ key = 2, place = nil, hasTotal = false, perfect = false },
 	}
-	check("pot counts only lifters who started a lift: 100 + 2 x 50", MeetPayout.pot(lifters, S) == 200)
-	local pay = MeetPayout.forMeet(lifters, S)
-	check("the only lifter with a total takes the whole pot + 25", total(pay[1]) == 225, tostring(total(pay[1])))
-	check("a bomb-out earns nothing", total(pay[2]) == 0)
-	check("an AFK sign-up earns nothing", total(pay[3]) == 0)
+	check("State x3: 900 x 3 = 2,700", total(MeetPayout.forMeet(lifters, S, 3)[1]) == 2700)
+	check("Nationals x5: 900 x 5 = 4,500", total(MeetPayout.forMeet(lifters, S, 5)[1]) == 4500)
+	check("a bomb-out earns nothing", total(MeetPayout.forMeet(lifters, S, 3)[2]) == 0)
+	check("a meet with nobody pays nobody", next(MeetPayout.forMeet({}, S, 1)) == nil)
 end
 
-print("3. two placed lifters split 60 / 40")
-do
-	local lifters: { MeetPayout.Lifter } = {
-		{ key = 1, place = 1, hasTotal = true, qualified = true, perfect = false },
-		{ key = 2, place = 2, hasTotal = true, qualified = true, perfect = false },
-	}
-	local pay = MeetPayout.forMeet(lifters, S)
-	check("1st: 120 + 25", total(pay[1]) == 145, tostring(total(pay[1])))
-	check("2nd: 80 + 25", total(pay[2]) == 105, tostring(total(pay[2])))
-	local none = MeetPayout.forMeet({}, S)
-	check("a meet with nobody pays nobody", next(none) == nil)
-end
-
-print("4. the gym record bonus")
+print("3. the gym record bonus, once a meet")
 do
 	local me = 42
-	local function bonus(broken: any): number
-		local item = MeetPayout.forGymRecord(me, broken, S)
+	local function bonus(broken: any, multiplier: number?, paid: boolean?): number
+		local item = MeetPayout.forGymRecord(me, broken, S, multiplier, paid)
 		return if item then item.amount else 0
 	end
 	check("an empty spot pays nothing", bonus({ { record = "Squat", previous = nil } }) == 0)
-	check("someone else's record pays 150", bonus({ { record = "Squat", previous = { userId = 7 } } }) == 150)
-	check("your own record pays 40", bonus({ { record = "Squat", previous = { userId = me } } }) == 40)
-	check("lift + Total broken pays once, not twice",
-		bonus({ { record = "Squat", previous = { userId = 7 } }, { record = "Total", previous = { userId = 7 } } }) == 150)
-	check("own lift + someone else's Total pays the better one once",
-		bonus({ { record = "Squat", previous = { userId = me } }, { record = "Total", previous = { userId = 7 } } }) == 150)
-	check("empty lift + empty Total pays nothing",
-		bonus({ { record = "Squat", previous = nil }, { record = "Total", previous = nil } }) == 0)
-	local item = MeetPayout.forGymRecord(me, { { record = "Bench", previous = { userId = 7 } } }, S)
-	check("its reason names the lift", item ~= nil and item.reason == "Gym record: Bench")
+	check("someone else's record pays 100", bonus({ { record = "Squat", previous = { userId = 7 } } }) == 100)
+	check("your own record pays 100", bonus({ { record = "Squat", previous = { userId = me } } }) == 100)
+	check("lift + Total broken pays once", bonus({ { record = "Squat", previous = { userId = 7 } }, { record = "Total", previous = { userId = 7 } } }) == 100)
+	check("x3 at State", bonus({ { record = "Squat", previous = { userId = 7 } } }, 3) == 300)
+	check("already paid this meet: nothing", bonus({ { record = "Bench", previous = { userId = 7 } } }, 1, true) == 0)
 end
 
-print("5. the live settings are the planned ones")
+print("4. most a Local meet pays = two crates")
 do
 	local live = CoinConfig.LocalMeet
-	check("CoinConfig.LocalMeet matches GAME_DESIGN 30.6", live.BasePot == 100 and live.PerQualifiedLifter == 50
-		and live.FinishBonus == 25 and live.PerfectBonus == 50 and live.GymRecordBonus == 150
-		and live.OwnGymRecordBonus == 40 and live.PlaceShares[3][1] == 0.5)
+	check("500 + 200 + 200 + 100 = 1,000", live.FinishBonus + live.PerfectBonus + live.PlaceBonus[1] + live.GymRecordBonus == 1000)
 end
 
 print(string.format("=== %d passed, %d failed ===", passed, failed))

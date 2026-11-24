@@ -232,6 +232,8 @@ type Lifter = {
 	liftsStarted: number,
 	-- Coins paid to this lifter at this meet (gym record bonuses during it, the rest at the end).
 	coinsEarned: number,
+	-- This meet's gym record bonus has been paid (once a meet, GAME_DESIGN §41.4).
+	recordPaid: boolean?,
 	-- The last attempt's result and weight, for the other lifters' coaches ("Tess missed 30 kg!").
 	lastResult: string?,
 	-- A miss: how long its fail animation lasts (the walk back starts right after it, user 2026-11-15).
@@ -652,13 +654,13 @@ local function broadcastLobby()
 	end
 end
 
--- What a level pays, for its boards ("Prize pot x3", "Top 3 earn titles").
+-- What a level pays, for its boards ("Coins x3", "Top 3 earn titles").
 local function perksOf(level: string): { string }
 	local info = MeetLevelConfig.Levels[level]
 	if info.potMultiplier <= 1 then
 		return { "Everyone lifts together", "Most points win" }
 	end
-	return { string.format("Prize pot x%d", info.potMultiplier), if info.titles then "Top 3 earn titles" else "" }
+	return { string.format("Coins x%d", info.potMultiplier), if info.titles then "Top 3 earn titles" else "" }
 end
 
 --[[
@@ -681,7 +683,7 @@ local function rollLevel(hall: Hall)
 	local info = MeetLevelConfig.Levels[hall.nextLevel]
 	LocalMeetVenue.setLevel(hall.venue, info.label, perksOf(hall.nextLevel), hall.index)
 	if hall.nextLevel ~= "Local" then
-		log("meet %d's next is a %s (prize pot x%d)", hall.index, info.label, info.potMultiplier)
+		log("meet %d's next is a %s (coins x%d)", hall.index, info.label, info.potMultiplier)
 		if remotes then
 			local news: LocalMeetRemotes.LevelNews = {
 				hallIndex = hall.index,
@@ -2094,9 +2096,12 @@ local function saveOfficialBest(current: Meet, lifter: Lifter, lift: string, kg:
 		if current.hall.meet == current and not current.final and stillLifting(lifter) and lifter.boardLines then
 			boardFor(lifter, lifter.boardLines :: { string }, lifter.boardMood)
 		end
-		-- The gym record bonus (GAME_DESIGN 30.5, 30.6): someone else's record or your own; never an empty spot.
-		local bonus = MeetPayout.forGymRecord(userId, broken :: any, CoinConfig.LocalMeet)
+		-- The gym record bonus (GAME_DESIGN §41.4): once a meet, times the level; someone else's record or your own,
+		-- never an empty spot.
+		local bonus = MeetPayout.forGymRecord(userId, broken :: any, CoinConfig.LocalMeet,
+			MeetLevelConfig.Levels[current.level].potMultiplier, lifter.recordPaid)
 		if bonus and player.Parent then
+			lifter.recordPaid = true
 			local outcome = PlayerDataService.addCoins(player, bonus.amount, bonus.reason)
 			if outcome == "Added" then
 				lifter.coinsEarned += bonus.amount
@@ -3881,15 +3886,16 @@ local function finishMeet(current: Meet)
 			placed += 1
 		end
 	end
-	-- The coins (GAME_DESIGN 30.6, §37.2): only an official meet pays, never a Solo / Mock Meet; real lifters
-	-- only, by their order among themselves. With one real player there is no prize pot: only the finishing
-	-- and 9/9 coins.
+	-- The coins (GAME_DESIGN §41.4): every real meet pays, computer-lifter meets too, never a Mock Meet. Finishing
+	-- with a total, 9/9, and a top-3 place in the WHOLE field (computer lifters counted; at Nationals in the class),
+	-- all times the meet's level. Real players only are paid.
 	local payouts: { [number]: { MeetPayout.Item } } = {}
 	if current.rewards or current.solo then
 		local results: { MeetPayout.Lifter } = {}
 		for _, lifter in ipairs(current.lifters) do
 			if lifter.player then
-				local place = current.rewardPlaces[lifter.key]
+				local placing = current.places[lifter.key]
+				local place = if placing then placing.place else nil
 				local good = goodLiftCount(lifter)
 				local overLimit: { { lift: string, percentOfCn: number } } = {}
 				for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -3901,41 +3907,12 @@ local function finishMeet(current: Meet)
 					end
 				end
 				table.insert(results, { key = lifter.key, place = place, hasTotal = not lifter.withdrawn and place ~= nil,
-					qualified = lifter.liftsStarted > 0, perfect = good == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift,
-					overLimit = overLimit })
+					perfect = good == #MeetConfig.LiftOrder * MeetConfig.AttemptsPerLift, overLimit = overLimit })
 			end
-		end
-		local settings = CoinConfig.LocalMeet
-		if not current.rewards then
-			settings = table.clone(settings)
-			settings.BasePot = 0
-			settings.PerQualifiedLifter = 0
 		end
 		local multiplier = MeetLevelConfig.Levels[current.level].potMultiplier
-		if current.hall.nationals then
-			-- Each weight class is its own meet's pot (GAME_DESIGN §39: x5), shared by its own places; placed on points, one
-			-- pot for everyone.
-			local classOf: { [number]: string } = {}
-			for _, lifter in ipairs(current.lifters) do
-				classOf[lifter.key] = groupOf(current, lifter)
-			end
-			local byClass: { [string]: { MeetPayout.Lifter } } = {}
-			for _, result in ipairs(results) do
-				local label = classOf[result.key] or "?"
-				byClass[label] = byClass[label] or {}
-				table.insert(byClass[label], result)
-			end
-			for label, classResults in pairs(byClass) do
-				for key, items in pairs(MeetPayout.forMeet(classResults, settings, multiplier)) do
-					payouts[key] = items
-				end
-				log("Nationals %s prize pot %d coins (x%d)", label, MeetPayout.pot(classResults, settings, multiplier), multiplier)
-			end
-		else
-			payouts = MeetPayout.forMeet(results, settings, multiplier)
-			log("prize pot %d coins (%s, x%d, solo %s)", MeetPayout.pot(results, settings, multiplier), current.level, multiplier,
-				tostring(current.solo))
-		end
+		payouts = MeetPayout.forMeet(results, CoinConfig.LocalMeet, multiplier)
+		log("meet pay: %s, x%d, solo %s", current.level, multiplier, tostring(current.solo))
 	end
 	-- Each State rack's screen ends on the best finisher on it.
 	if current.hall.state then
@@ -3968,7 +3945,7 @@ local function finishMeet(current: Meet)
 				end
 			end
 			if current.solo and result.total then
-				table.insert(saved, "Alone with computer lifters: no prize pot")
+				table.insert(saved, "Alone with computer lifters: no titles, gym records or rare drops")
 			end
 			if result.total and player.Parent then
 				local suitName = rollSuit(current, lifter, player)

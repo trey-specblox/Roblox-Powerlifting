@@ -26,7 +26,8 @@ export type Level = {
 	label: string,
 	-- The chance a scheduled meet is this level (Local takes what is left).
 	chance: number,
-	-- The prize pot is multiplied by this (§30.6's pot; the finishing, 9/9 and record bonuses are not).
+	-- Everything a meet pays in coins is multiplied by this (GAME_DESIGN §41.4: finishing, 9/9, place, gym record;
+	-- not the over-the-limit bonus). The name is from the old prize pot it used to multiply.
 	potMultiplier: number,
 	-- Ladder points are multiplied by this (§35.8, MeetLevelConfig.Ladder).
 	ladderMultiplier: number,

@@ -23,7 +23,7 @@
 	(GAME_DESIGN §35.8), with a GO button to the venue (skipped for players
 	already there):
 
-		The next meet is a STATE MEET: prize pot x3, titles for the top 3. Sign up within 8:30  [GO]
+		The next meet is a STATE MEET: coins x3, titles for the top 3. Sign up within 8:30  [GO]
 
 	GymRecordAnnouncer.note: a plain notice from the meets ("Nationals starts in 30
 	seconds!", "You are already signed up"...). User 2026-11-18: "make any text
@@ -364,7 +364,7 @@ function GymRecordAnnouncer.start()
 			end
 			local left = math.max(0, math.floor(news.signUpClosesAt - workspace:GetServerTimeNow()))
 			local there = player:GetAttribute(LocalMeetConfig.VenueAttribute) ~= nil
-			show(string.format("Meet %d's next is a %s: prize pot x%d, titles for the top 3. Sign up within %d:%02d",
+			show(string.format("Meet %d's next is a %s: coins x%d, titles for the top 3. Sign up within %d:%02d",
 				news.hallIndex, coloured(news.levelLabel, "#FACE24"), news.potMultiplier or 1, left // 60, left % 60), LEVEL_SECONDS,
 				if there then nil else "LocalMeet", "GO ▶", nil, true)
 		end)

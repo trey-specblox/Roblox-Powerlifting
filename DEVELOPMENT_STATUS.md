@@ -21,6 +21,18 @@ QuestConfig; the gym owner is every new player's free basic coach; your coach sh
 GAME_DESIGN §40.5), and RANKS AND TITLES (GAME_DESIGN §41: the user's four picks; Claude's 12-rank ladder, first
 titles and placement wait for the user's OK). Cosmetics are deliberately NOT being designed now.**
 
+**NEW MEET PAY BUILT (2026-11-23, user: "Start the new meet payouts"; GAME_DESIGN §41.4). NOT COMMITTED.**
+- Finishing with a total 500, 9/9 200, place 1st/2nd/3rd 200/130/70 in the WHOLE field (computer lifters counted; at
+  Nationals in the class), one gym record bonus 100 a meet; everything x the level (Local 1, Regional 2, State 3,
+  Nationals 5; MeetLevelConfig potMultiplier); the over-the-limit bonus unchanged; the old prize pot is gone. Computer-
+  lifter meets pay the same (no records, titles or rare drops there). A coach will cost 28,000 (coaching not built).
+- Files: CoinConfig.LocalMeet, MeetPayout (forMeet, forGymRecord once a meet), LocalMeetService (end-of-meet pay, record
+  bonus with `recordPaid`, "Coins x3" lines), GymRecordAnnouncer ("coins x3"), MeetLevelConfig comment, CoinPayoutProbe
+  (dev, off) rewritten.
+- STUDIO: scripts matched disk; 13 payout checks PASS in the running server (900 / 630 / 570 / 500 at Local, x2 / x3 /
+  x5, bomb-out 0, over-limit on top, record once and x3, empty spot 0); the venue starts, no errors. NOT TESTED: a real
+  meet's end paying a player (the lifts need a person).
+
 **RANKS AND TITLES BUILT AND TESTED IN STUDIO (2026-11-23; user: "Start building ranks and titles, but first research
 games with ranks and titles ..."). NOT COMMITTED, NOT SAVED TO ROBLOX.**
 - STUDY: References/Ranks and Titles Study.md (two research passes over written sources, Roblox and other games, plus

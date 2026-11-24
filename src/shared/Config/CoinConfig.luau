@@ -26,33 +26,24 @@ CoinConfig.MaxSingleChange = 1000000
 CoinConfig.MaxBalance = 1000000000
 
 --[[
-	[PROVISIONAL] What an OFFICIAL Local meet pays (GAME_DESIGN 30.6; only a
-	meet that rewards, never a Solo / Mock Meet). Balance numbers: change them
-	freely here.
+	What a real meet pays at the LOCAL level (GAME_DESIGN §41.4, APPROVED by the user 2026-11-23: "Yea that works let's
+	do 28000"). Every amount is multiplied by the meet's level (MeetLevelConfig potMultiplier: Local 1, Regional 2,
+	State 3, Nationals 5). The user's rule: finishing a meet with a total (win or lose) pays enough for a crate (500),
+	and all the bonuses together are worth one more crate. It replaced the old prize pot (100 + 50 a lifter, shared by
+	place). Any real meet counts, computer-lifter meets included; never the Mock Meet; a bomb-out gets nothing.
 
-		BasePot + PerQualifiedLifter x qualified lifters (a lifter who started
-		at least one lift) = the prize pot, shared by place among the lifters
-		with a total: PlaceShares[number placed] (more than 3 placed use the
-		3-place split; places past 3rd get no share)
-		FinishBonus   every lifter who ends with a total
-		PerfectBonus  9 good lifts of 9
-		GymRecordBonus / OwnGymRecordBonus   taking a gym record someone else
-		              holds / beating your own; an empty spot pays nothing; one
-		              bonus per lift (a Total broken by the same lift is not
-		              paid again)
+		FinishBonus     every lifter who ends with a total
+		PerfectBonus    9 good lifts of 9
+		PlaceBonus      1st / 2nd / 3rd in the WHOLE field, computer lifters counted (at Nationals: in the class)
+		GymRecordBonus  setting gym records at the meet, once a meet however many: someone else's record or your own;
+		                an empty spot pays nothing (and a meet with only computer lifters sets no records, §37.2)
+	500 + 200 + 200 + 100 = 1,000 at most, two crates.
 ]]
 CoinConfig.LocalMeet = {
-	BasePot = 100,
-	PerQualifiedLifter = 50,
-	PlaceShares = {
-		{ 1 },
-		{ 0.6, 0.4 },
-		{ 0.5, 0.3, 0.2 },
-	} :: { { number } },
-	FinishBonus = 25,
-	PerfectBonus = 50,
-	GymRecordBonus = 150,
-	OwnGymRecordBonus = 40,
+	FinishBonus = 500,
+	PerfectBonus = 200,
+	PlaceBonus = { 200, 130, 70 } :: { number },
+	GymRecordBonus = 100,
 	-- A good lift over the normal limit (LiftAttemptConfig.MeetCeilingPercent): this, plus OverLimitStepBonus for every
 	-- full OverLimitStepPercent of CN past the limit. Each such lift pays, on top of everything else.
 	OverLimitBonus = 50,
