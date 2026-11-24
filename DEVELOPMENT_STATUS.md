@@ -81,6 +81,11 @@ init.client (backpack bar off, HeldCounters), art/scripts/carry_animations.py (n
   venue). Not at State/Nationals (lifters roam to the arena EXIT). STUDIO: 40 prompts; only 2/1 on for me, 4.7 studs
   away; held E -> "withdrew from the meet (held the LEAVE sign)", meet screen off, free to walk. NOTE: Studio's
   screen_capture does not draw the prompt tiles (AlwaysOnTop billboards); a real screenshot shows it.
+  - THE PROMPT TILE WAS TOO BIG on the phone ("it covers up the screen. Just have the screen n when players hold it the
+    bar fills up"). NOT COMMITTED: the prompt has attribute NoTile (PromptController skips it); LocalMeetController puts
+    a SurfaceGui on the lifter's own LEAVE board screen: touching/clicking it calls InputHoldBegin/End, and a yellow bar
+    along the sign's foot fills over the hold (PromptButtonHoldBegan/Ended). STUDIO: no tile; held E -> the bar filled
+    on the sign, then "withdrew from the meet (held the LEAVE sign)" twice; let go early -> stayed in the meet.
 - FOOD CARRY: the user swapped the over-the-head pose for "two hands are foward holding the plate". Carry_FoodTray
   (arms only, looped; QA PASS on Skinny/Fat/Muscular/BigBuff) UPLOADED with the user's OK: rbxassetid://107112559176114
   (HoldService.CarryAnimationId, played server-side at Action priority). Client World/HeldPlates sets the RightGrip

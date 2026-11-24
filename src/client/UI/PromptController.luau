@@ -183,7 +183,8 @@ function PromptController.start()
 
 	local cleanups: { [ProximityPrompt]: () -> () } = {}
 	ProximityPromptService.PromptShown:Connect(function(prompt, inputType)
-		if prompt.Style ~= Enum.ProximityPromptStyle.Custom then
+		-- (a prompt with the attribute NoTile draws its own way: the meet's LEAVE sign fills a bar on the sign itself)
+		if prompt.Style ~= Enum.ProximityPromptStyle.Custom or prompt:GetAttribute("NoTile") == true then
 			return
 		end
 		local old = cleanups[prompt]

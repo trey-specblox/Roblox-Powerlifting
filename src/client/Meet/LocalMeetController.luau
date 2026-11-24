@@ -21,6 +21,7 @@
 
 local Players = game:GetService("Players")
 local CollectionService = game:GetService("CollectionService")
+local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -55,14 +56,117 @@ function LocalMeetController.start()
 
 	-- THE LEAVE SIGN beside each platform's waiting spot (user 2026-11-24): its hold-to-leave prompt is off for
 	-- everyone; this switches on the one for the platform this player is lifting on (the server checks it again).
+	-- No prompt tile over the screen (user 2026-11-24: "it covers up the screen. Just have the screen n when players
+	-- hold it the bar fills up"): the sign's own screen is the button. A finger (or the mouse) held on it holds the
+	-- prompt (InputHoldBegin), E still works, and a bar along the sign's foot fills over the hold.
+	local leaveOverlay: SurfaceGui? = nil
+	local overlayFor: ProximityPrompt? = nil
+	local overlayConnections: { RBXScriptConnection } = {}
+	local function clearOverlay()
+		for _, connection in ipairs(overlayConnections) do
+			connection:Disconnect()
+		end
+		table.clear(overlayConnections)
+		if leaveOverlay then
+			leaveOverlay:Destroy()
+		end
+		leaveOverlay, overlayFor = nil, nil
+	end
+	local function overlayLeave(leave: ProximityPrompt)
+		if overlayFor == leave and leaveOverlay then
+			return
+		end
+		clearOverlay()
+		local point = leave.Parent
+		local board = point and point.Parent and point.Parent:FindFirstChild("LeaveBoard_" .. tostring(leave:GetAttribute("Platform")))
+		local screenPart = if board and board:IsA("BasePart") then board
+			elseif board then board:FindFirstChild("MeetBoard_Screen", true) else nil
+		if screenPart == nil or not screenPart:IsA("BasePart") then
+			return
+		end
+		local writing = screenPart:FindFirstChildOfClass("SurfaceGui")
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "LeaveHold"
+		gui.Adornee = screenPart
+		gui.Face = if writing then writing.Face else Enum.NormalId.Front
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 40
+		gui.LightInfluence = 0
+		gui.ZOffset = 1
+		gui.ResetOnSpawn = false
+		local button = Instance.new("TextButton")
+		button.Name = "Hold"
+		button.BackgroundTransparency = 1
+		button.Text = ""
+		button.Size = UDim2.fromScale(1, 1)
+		button.Parent = gui
+		local track = Instance.new("Frame")
+		track.Name = "Track"
+		track.AnchorPoint = Vector2.new(0.5, 1)
+		track.Position = UDim2.fromScale(0.5, 0.94)
+		track.Size = UDim2.fromScale(0.86, 0.12)
+		track.BackgroundColor3 = Color3.fromRGB(10, 14, 34)
+		track.BorderSizePixel = 0
+		track.Parent = gui
+		local edge = Instance.new("UIStroke")
+		edge.Color = Color3.fromRGB(255, 206, 40)
+		edge.Thickness = 2
+		edge.Parent = track
+		local fill = Instance.new("Frame")
+		fill.Name = "Fill"
+		fill.Size = UDim2.fromScale(0, 1)
+		fill.BackgroundColor3 = Color3.fromRGB(255, 206, 40)
+		fill.BorderSizePixel = 0
+		fill.Parent = track
+		local filling: Tween? = nil
+		local function empty()
+			if filling then
+				filling:Cancel()
+				filling = nil
+			end
+			fill.Size = UDim2.fromScale(0, 1)
+		end
+		local function holdInput(input: InputObject): boolean
+			return input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1
+		end
+		table.insert(overlayConnections, button.InputBegan:Connect(function(input)
+			if holdInput(input) then
+				leave:InputHoldBegin()
+			end
+		end))
+		table.insert(overlayConnections, button.InputEnded:Connect(function(input)
+			if holdInput(input) then
+				leave:InputHoldEnd()
+			end
+		end))
+		table.insert(overlayConnections, leave.PromptButtonHoldBegan:Connect(function()
+			empty()
+			filling = TweenService:Create(fill, TweenInfo.new(leave.HoldDuration, Enum.EasingStyle.Linear),
+				{ Size = UDim2.fromScale(1, 1) })
+			;(filling :: Tween):Play()
+		end))
+		table.insert(overlayConnections, leave.PromptButtonHoldEnded:Connect(empty))
+		table.insert(overlayConnections, leave.Triggered:Connect(empty))
+		gui.Parent = player:WaitForChild("PlayerGui")
+		leaveOverlay, overlayFor = gui, leave
+	end
 	local function fitLeavePrompts()
 		local hallIndex = player:GetAttribute(LocalMeetConfig.HallAttribute)
 		local platformIndex = player:GetAttribute(LocalMeetConfig.PlatformAttribute)
+		local mine: ProximityPrompt? = nil
 		for _, leave in ipairs(CollectionService:GetTagged(LocalMeetConfig.LeavePromptTag)) do
 			if leave:IsA("ProximityPrompt") then
 				leave.Enabled = platformIndex ~= nil and leave:GetAttribute("Platform") == platformIndex
 					and leave:GetAttribute("Hall") == hallIndex
+				if leave.Enabled then
+					mine = leave
+				end
 			end
+		end
+		if mine then
+			overlayLeave(mine)
+		else
+			clearOverlay()
 		end
 	end
 	player:GetAttributeChangedSignal(LocalMeetConfig.PlatformAttribute):Connect(fitLeavePrompts)

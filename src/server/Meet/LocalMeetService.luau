@@ -5496,6 +5496,9 @@ function LocalMeetService.start()
 					leave.Enabled = false
 					leave:SetAttribute("Hall", hall.index)
 					leave:SetAttribute("Platform", platform.index)
+					-- No prompt tile (user 2026-11-24: "it covers up the screen. Just have the screen n when players hold it
+					-- the bar fills up"): the sign's own screen is the button and fills a bar (LocalMeetController).
+					leave:SetAttribute("NoTile", true)
 					CollectionService:AddTag(leave, LocalMeetConfig.LeavePromptTag)
 				end
 			end
