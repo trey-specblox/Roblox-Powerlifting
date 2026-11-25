@@ -11,7 +11,12 @@
 	Read from the player's own KitchenSteaks / KitchenReadyAt attributes (server time; KitchenPans writes them), so it
 	works from anywhere, even while the far-away hall isn't streamed in.
 
-	PERFORMANCE: one BillboardGui, rewritten once a second.
+	Only while the restaurant's sign can be SEEN from the camera (user 2026-11-24, a phone: "the kitchens steak is finished
+	ui on the gym don't know why that is there": from inside the gym the timer showed through the front glass while the
+	wall hid the W Chews name under it, so it looked like a stray screen in the gym). A ray from the camera to the sign:
+	anything solid in between (a wall, the gym's glass) hides it.
+
+	PERFORMANCE: one BillboardGui, rewritten once a second; one short raycast (a few at most) a second.
 ]]
 
 local Players = game:GetService("Players")
@@ -78,6 +83,38 @@ function KitchenSignTimer.start()
 	outline.Parent = label
 	gui.Parent = player:WaitForChild("PlayerGui")
 
+	-- Whether the camera sees the sign: nothing but see-through parts between them (the restaurant's own building and the
+	-- player's body don't count).
+	local entrance = anchor:FindFirstAncestorOfClass("Model") or anchor.Parent
+	local function inSight(): boolean
+		local camera = Workspace.CurrentCamera
+		if camera == nil then
+			return false
+		end
+		local from = camera.CFrame.Position
+		local target = anchor.Position + Vector3.new(0, signHeight / 2, 0)
+		local ignore: { Instance } = { entrance :: Instance }
+		if player.Character then
+			table.insert(ignore, player.Character)
+		end
+		for _ = 1, 6 do
+			local params = RaycastParams.new()
+			params.FilterType = Enum.RaycastFilterType.Exclude
+			params.FilterDescendantsInstances = ignore
+			local hit = Workspace:Raycast(from, target - from, params)
+			if hit == nil then
+				return true
+			end
+			-- (an invisible part, or a light's lens, doesn't hide it: look past it)
+			if hit.Instance.Transparency >= 0.9 then
+				table.insert(ignore, hit.Instance)
+			else
+				return false
+			end
+		end
+		return false
+	end
+
 	while true do
 		local steaks = player:GetAttribute("KitchenSteaks")
 		local readyAt = player:GetAttribute("KitchenReadyAt")
@@ -92,7 +129,7 @@ function KitchenSignTimer.start()
 				label.Text = if what == "STEAKS" then "YOUR STEAKS ARE READY!" else "YOUR MEET MEAL IS READY!"
 				label.TextColor3 = Color3.fromRGB(110, 230, 130)
 			end
-			gui.Enabled = true
+			gui.Enabled = inSight()
 		else
 			gui.Enabled = false
 		end

@@ -34,6 +34,7 @@ local CoachingRemotes = require(Shared:WaitForChild("Progression"):WaitForChild(
 local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local QuestTracker = require(script.Parent:WaitForChild("QuestTracker"))
 local PromptController = require(script.Parent:WaitForChild("PromptController"))
+local MenuKeys = require(script.Parent:WaitForChild("MenuKeys"))
 local C = UIStyle.Colours
 
 local CoachDialogue = {}
@@ -78,6 +79,10 @@ function CoachDialogue.start()
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 30
 	gui.Enabled = false
+	-- The panel art reaches into a phone's notch strip (fillNotch, below); a ScreenGui clips to the safe area unless told
+	-- not to, which left a hard edge with the gym and the side menus showing past it (user 2026-11-24, a phone: "it fills
+	-- Maby 65% ... there is a noticeable cutoff").
+	gui.ClipToDeviceSafeArea = false
 	UIStyle.fitToScreen(gui)
 
 	-- Who is talking: the panel and, on it, a portrait, in the lower left corner (the suit scene's layout).
@@ -127,6 +132,7 @@ function CoachDialogue.start()
 	words.TextStrokeTransparency = 0
 	words.TextYAlignment = Enum.TextYAlignment.Top
 	words.TextWrapped = true
+	-- (a long line is said in parts that each fit: say, below)
 	words.ZIndex = 3
 
 	-- Up to three answers: speech tabs beside the portrait, tails toward it.
@@ -197,15 +203,27 @@ function CoachDialogue.start()
 	edge.ResetOnSpawn = false
 	edge.ScreenInsets = Enum.ScreenInsets.None
 	edge.Parent = playerGui
+	--[[
+		Measured on screen (user 2026-11-24, a phone: the panel still stopped short of the edge): the gap between where the
+		speaker frame starts and the true screen edge (the edge gui's position), in screen pixels, turned into the panel's
+		own pixels by the frame's real scale on screen (the phone fit shrinks it, and fitToScreen can place it a little in
+		from the left). A few pixels past the edge, so no sliver of the gym shows there.
+	]]
 	local function fillNotch()
-		local strip = math.max(-edge.AbsolutePosition.X, 0)
-		local extra = if strip > 0 then (strip + 6) / UIStyle.screenScale() else 0
+		local scale = speaker.AbsoluteSize.X / SPEAKER_SIZE
+		if scale <= 0 then
+			return
+		end
+		local gap = speaker.AbsolutePosition.X - edge.AbsolutePosition.X
+		local extra = if gap > 0.5 then (gap + 6) / scale else 0
 		panel.Position = UDim2.fromOffset(-extra, -extra)
 		panel.Size = UDim2.new(1, extra, 1, extra)
 	end
 	fillNotch()
 	edge:GetPropertyChangedSignal("AbsolutePosition"):Connect(fillNotch)
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
+	speaker:GetPropertyChangedSignal("AbsolutePosition"):Connect(fillNotch)
+	speaker:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
 
 	local function frameCoach(copy: Model?)
 		local topShare, bottomShare = onScreenPart()
@@ -219,20 +237,65 @@ function CoachDialogue.start()
 	local open = false
 	local session = 0
 
-	local function say(text: string, mine: number)
-		words.Text = text
-		words.MaxVisibleGraphemes = 0
-		for shown = 1, #text do
-			if session ~= mine then
-				return
+	--[[
+		A long line is said in parts, one after another, each one fitting the words box (two lines on a phone), with a
+		pause to read it (user 2026-11-24, a phone: "when the coach is typing out directions, it gets cut off, and the
+		coach text stops continuing"). Parts break after a sentence, else after a comma, else between words.
+	]]
+	local PART_LETTERS = 95
+	local PART_PAUSE_SECONDS = 2.2
+	local function partsOf(text: string): { string }
+		local parts: { string } = {}
+		local rest = text
+		while #rest > PART_LETTERS do
+			local cut: number? = nil
+			for _, mark in ipairs({ "%. ", "%? ", "! ", ": ", ", ", " " }) do
+				local at = 0
+				while true do
+					local found = string.find(rest, mark, at + 1)
+					if found == nil or found > PART_LETTERS then
+						break
+					end
+					at = found
+				end
+				if at > PART_LETTERS * 0.4 then
+					cut = at
+					break
+				end
 			end
-			words.MaxVisibleGraphemes = shown
-			if shown % 3 == 0 then
-				tickSound:Play()
-			end
-			task.wait(LETTER_SECONDS)
+			cut = cut or PART_LETTERS
+			table.insert(parts, (string.gsub(string.sub(rest, 1, cut), "%s+$", "")))
+			rest = (string.gsub(string.sub(rest, cut + 1), "^%s+", ""))
 		end
-		words.MaxVisibleGraphemes = -1
+		if #rest > 0 then
+			table.insert(parts, rest)
+		end
+		return parts
+	end
+
+	local function say(text: string, mine: number)
+		local parts = partsOf(text)
+		for index, part in ipairs(parts) do
+			words.Text = part
+			words.MaxVisibleGraphemes = 0
+			for shown = 1, #part do
+				if session ~= mine then
+					return
+				end
+				words.MaxVisibleGraphemes = shown
+				if shown % 3 == 0 then
+					tickSound:Play()
+				end
+				task.wait(LETTER_SECONDS)
+			end
+			words.MaxVisibleGraphemes = -1
+			if index < #parts then
+				task.wait(PART_PAUSE_SECONDS)
+				if session ~= mine then
+					return
+				end
+			end
+		end
 	end
 
 	-- Shows these answers (text, value) and waits for one; nil when the dialogue closed instead.
@@ -264,6 +327,7 @@ function CoachDialogue.start()
 		gui.Enabled = false
 		portraitWorld:ClearAllChildren()
 		PromptController.hide("Dialogue", false)
+		MenuKeys.setTalking(false)
 	end
 
 	-- A copy of the coach for the portrait, without its name tag, bubble, clipboard or prompt.
@@ -330,6 +394,8 @@ function CoachDialogue.start()
 		speaker.Position = speakerAt
 		gui.Enabled = true
 		PromptController.hide("Dialogue", true) -- (no "E Talk" tiles over the conversation)
+		-- Nor the side menus and chips (the standing rule: UIs never overlap; on a phone they poked out past the panel).
+		MenuKeys.setTalking(true)
 
 		-- Walking away closes it.
 		task.spawn(function()

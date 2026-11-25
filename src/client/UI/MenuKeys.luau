@@ -40,6 +40,7 @@ local HIDDEN_ON_TURN = { "AdminPanel", "MeetsTab", "Coins", "Stats", "Teleport",
 local onTurn = false
 -- Whether a lift attempt was running at the last check, and whether the screens are hidden now (on the turn OR lifting).
 local lifting = false
+local talking = false
 local hidden = false
 -- While on the turn: each hidden screen, whether it should be on once the turn is over.
 local wanted: { [ScreenGui]: boolean } = {}
@@ -99,7 +100,30 @@ function MenuKeys.setOnTurn(on: boolean)
 		return
 	end
 	onTurn = on
-	setHidden(onTurn or lifting)
+	setHidden(onTurn or lifting or talking)
+end
+
+-- An NPC conversation opens (`on`) or closes (CoachDialogue: the coaches, the chef, the cow): the same screens step
+-- aside, so nothing pokes out past the dialogue's panel (user 2026-11-24, a phone), and so do the news lines at the top
+-- (RecordNews: meet calls, records), which sat over the panel; they come back as they were.
+local newsWasOn: boolean? = nil
+function MenuKeys.setTalking(on: boolean)
+	if on == talking then
+		return
+	end
+	talking = on
+	setHidden(onTurn or lifting or talking)
+	local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+	local news = playerGui and playerGui:FindFirstChild("RecordNews")
+	if news and news:IsA("ScreenGui") then
+		if on then
+			newsWasOn = news.Enabled
+			news.Enabled = false
+		elseif newsWasOn ~= nil then
+			news.Enabled = newsWasOn
+			newsWasOn = nil
+		end
+	end
 end
 
 -- Every lift attempt hides them too (checked a few times a second: cheap, one boolean).
@@ -114,7 +138,7 @@ if RunService:IsClient() then
 		local now = LiftAttemptController.isAttemptActive()
 		if now ~= lifting then
 			lifting = now
-			setHidden(onTurn or lifting)
+			setHidden(onTurn or lifting or talking)
 		end
 	end)
 end

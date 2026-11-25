@@ -43,6 +43,22 @@ Commit 094739e, SAVED and PUBLISHED as place version 1074.**
   mid-squat (screenshot), BarRack at unrack and rerack; forced Fail: squat fail 1 played, BarCaught, then TRIAL FAILED.
   Console clean. NOT TESTED: bench and deadlift in a Mock Meet (same code path the real meets use), a phone.
 
+**PHONE DIALOGUE + KITCHEN TIMER FIXES (2026-11-24, user screenshots: the coach dialogue "fills Maby 65% ... there is a
+noticeable cutoff", "the kitchens steak is finished ui on the gym", "when the coach is typing out directions, it gets
+cut off"). NOT COMMITTED.**
+- CoachDialogue: ClipToDeviceSafeArea = false (the panel art was clipped at the safe area); fillNotch now measures on
+  screen (speaker frame's left minus the true edge gui's left, divided by the frame's real scale; the old formula used
+  screenScale and assumed the frame started at 0, it starts at x 70 on an iPhone). Long lines are said in PARTS of up to
+  95 letters (sentence / comma / word breaks) with a 2.2 s pause, each fitting the two-line box.
+- MenuKeys.setTalking (CoachDialogue open/close): the side menus, boost chips and quest tracker hide during any NPC
+  conversation (coaches, chef, cow), and the RecordNews lines too; all come back as they were.
+- KitchenSignTimer: only shown when a ray from the camera to the W Chews sign meets nothing solid (see-through parts
+  under 0.9 transparency count as solid): from inside the gym (its front glass, 0.7) the floating "YOUR STEAKS ..."
+  timer no longer shows over the gym.
+- STUDIO (iPhone 17 Pro sim + ForcePhoneScreens, removed after): panel left edge -68 vs screen edge -62 (reaches it);
+  side menus/Boosts/RecordNews off while talking, back after; the trial line came in 4 parts, all TextFits; timer:
+  square true, inside the gym false, from behind the entrance glass the ray hits the glass. Console clean.
+
 **2026-11-24 LATEST: published place version 1074 (Mock Meet rooms off the kitchen, lifts animated; commit 094739e); 1072 = coaching stage 1 (34b9cfb); 1069 = LEAVE sign moved clear of the doorway (6bbbf62); 1068 = holding the LEAVE sign works with a finger (f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
