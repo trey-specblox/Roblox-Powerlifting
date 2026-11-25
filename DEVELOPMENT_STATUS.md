@@ -81,6 +81,14 @@ same head and feet lines on screen as before (the speaker square's shares), so t
 tall computer screen) keeps the speaker's square. STUDIO: iPhone 17 Pro, the chef in the striped area at his old size,
 below the Roblox buttons; computer (Studio's short window = whole-figure mode) the coach in the striped area.
 
+**YOUR COACH AT YOUR MEETS (2026-11-24, user: "Let's do show your chosen coach at meets"). NOT COMMITTED.** New client
+Meet/MeetCoachLook (started in init.client): when the platform coach's CoachTag (already moved into the lifter's own
+PlayerGui by LocalMeetVenue.staffFor) arrives, it asks CoachingRemotes.GET for the active coach and, locally only,
+sets the tag to SQUATAVIOUS / BENCHAMIN / SUMO (or GYM OWNER) and recolours the coach figure's navy shirt parts to that
+coach's QuestConfig shirt colour. STUDIO: squat coach hired (admin) -> Local meet: tag SQUATAVIOUS, 6 yellow parts on
+the client, 6 navy on the server (others see the gym coach); reset -> next meet: GYM OWNER, navy. Console clean. Works
+for any meet whose coach tag moves to the lifter (Local, Regional, State, Nationals); the Mock Meet coach not yet.
+
 **NEXT (Claude's suggestion, 2026-11-24): coaching stage 2 = your chosen coach shown at your own meets (only on your
 screen, in place of the generic coach figure) and the gym owner as a figure in the gym; then the three coach bodies in
 Blender (pictures and approval first).**

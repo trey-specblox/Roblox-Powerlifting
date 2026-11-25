@@ -7756,8 +7756,13 @@ doesn't cover it. To settle while designing:
       hired coach becomes active at once.
     - The bond counts real meets finished with that coach active (nothing unlocks yet). Admin panel: COACHES NEXT STEP
       per coach and RESET.
-    - NOT YET: the gym owner as a figure in the gym; the chosen coach shown at your meets (only on your screen); the
-      three coach bodies (Blender, approval first); better quests; bond unlocks.
+    - **YOUR COACH AT YOUR MEETS (BUILT 2026-11-24, user: "Let's do show your chosen coach at meets"):** on your own
+      screen only, your platform's meet coach becomes your active coach: the name tag says SQUATAVIOUS / BENCHAMIN /
+      SUMO and the shirt takes that coach's colour (yellow / red / blue); with the gym owner as your coach the tag says
+      GYM OWNER and the look is the gym's navy. Everyone else sees the normal meet coach. Same moves as before (walk
+      out, chalk, back slaps). Until the coach bodies exist, a chosen coach is the meet coach in their colours.
+    - NOT YET: the gym owner as a figure in the gym; the three coach bodies (Blender, approval first); the coach in
+      the Mock Meet room and the meet cutscenes; better quests; bond unlocks.
 
 ### 40.6 Daily quests (user, 2026-11-19, picked from Claude's options; BUILT 2026-11-19)
 

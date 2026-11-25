@@ -119,6 +119,8 @@ MockMeetController.start()
 -- The Local meet: the venue screen (countdown, sign-up, standings) and the lifter's meet screen.
 local LocalMeetController = require(MeetFolder:WaitForChild("LocalMeetController"))
 task.spawn(LocalMeetController.start)
+-- Your chosen coach at your meets, on your screen only (GAME_DESIGN §40.5).
+task.spawn(require(MeetFolder:WaitForChild("MeetCoachLook")).start)
 
 -- The meet's spotters follow the bar and the lifter (GAME_DESIGN §37.5). Visual only.
 local MeetSpotterAnimator = require(MeetFolder:WaitForChild("MeetSpotterAnimator"))
