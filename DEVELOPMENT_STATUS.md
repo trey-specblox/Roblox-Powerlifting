@@ -28,12 +28,11 @@ right"). EXPORTED (`export_coach_01.py` -> `art/exports/CoachBody01_<Coach>.glb`
 CoachSumo (+ `hipHeight`), HandShapeConfig.HandSize, LifterBodyService.swapBody uses the body's hipHeight,
 MeetFigures Look.build, QuestConfig.Coaches[lift].body, QuestService passes it. STUDIO (Rojo checksums matched): the
 three gym coaches load their bodies (heights 4.36 / 5.92 / 5.82, all on the floor, 26 clothes pieces each), the
-dialogue portraits show them (Sumo, Squatavious checked), console clean. SAVED (1082) and PUBLISHED. NOT COMMITTED.
-Not done: the meet platform coach and the Mock Meet coach still use the generic coach body; a real phone check. Latest commit 3f315ba (the meet coach look, pushed, NOT published: live is 1080). Uncommitted: the five scripts,
-the three .blend files, the doc notes. Next: the user's look at the clothes, then export (body + clothes per coach, as
-export_cartoon_body_08 / export_cartoon_08), the uploads (ask first), then game code (per-coach body template +
-HipHeight in LifterBodyService/ClothesConfig, the gym coaches, MeetCoachLook, the Mock Meet coach, the dialogue
-portraits).
+dialogue portraits show them (Sumo, Squatavious checked), console clean. SAVED (1082) and PUBLISHED. COMMITTED 0974526,
+pushed.
+Not done: the meet platform coach and the Mock Meet coach still use the generic coach body; a real phone check. Live is
+1082 (it also carries 3f315ba's meet coach look). Next: the coaches' own bodies on the meet platform coach (client-only,
+MeetCoachLook) and the Mock Meet coach, then the animation checks on their proportions (§40.5).
 
 **COACHING STAGE 1 (2026-11-24, user: "Yea let's start with the coaching system"; GAME_DESIGN §40.5). Commit 34b9cfb,
 SAVED and PUBLISHED as place version 1072 (the user approved Claude's three rule calls with "Commit save and publish").**
