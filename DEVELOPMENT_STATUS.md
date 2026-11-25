@@ -74,14 +74,18 @@ clipboard): a hat sticks up instead of shrinking him. Models with no direct body
 STUDIO, iPhone 17 Pro: the chef at the coaches' size and place, hat below the Roblox buttons.
 
 **DIALOGUE FIGURE IN THE STRIPED AREA (2026-11-24, user's phone with a marked area left of the panel's white and yellow
-stripes: "that's where all characters should be if they have this talking to them with choices ui"). NOT COMMITTED.**
+stripes: "that's where all characters should be if they have this talking to them with choices ui"). Commit a47610d, PUBLISHED as place version 1080.**
 The portrait ViewportFrame moved onto the edge layer with the panel. Whole-figure mode (a phone, or a short screen):
 the portrait is the panel's rectangle and the figure's middle stands at 0.24 of its width (PORTRAIT_X_SHARE), with the
 same head and feet lines on screen as before (the speaker square's shares), so the size is unchanged. The close-up (a
 tall computer screen) keeps the speaker's square. STUDIO: iPhone 17 Pro, the chef in the striped area at his old size,
 below the Roblox buttons; computer (Studio's short window = whole-figure mode) the coach in the striped area.
 
-**2026-11-24 LATEST: published place version 1079 (dialogue portraits framed by the body; commit f1291db); 1078 = dialogue panel on its own full-screen layer, coach framing restored (73534ab); 1077 = phone dialogue edge, HUD hides while talking, long lines in parts, kitchen timer only in sight (f3c15c9); 1074 = Mock Meet rooms off the kitchen, lifts animated (094739e); 1072 = coaching stage 1 (34b9cfb); 1069 = LEAVE sign moved clear of the doorway (6bbbf62); 1068 = holding the LEAVE sign works with a finger (f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
+**NEXT (Claude's suggestion, 2026-11-24): coaching stage 2 = your chosen coach shown at your own meets (only on your
+screen, in place of the generic coach figure) and the gym owner as a figure in the gym; then the three coach bodies in
+Blender (pictures and approval first).**
+
+**2026-11-24 LATEST: published place version 1080 (dialogue figure in the striped area; commit a47610d); 1079 = dialogue portraits framed by the body (f1291db); 1078 = dialogue panel on its own full-screen layer, coach framing restored (73534ab); 1077 = phone dialogue edge, HUD hides while talking, long lines in parts, kitchen timer only in sight (f3c15c9); 1074 = Mock Meet rooms off the kitchen, lifts animated (094739e); 1072 = coaching stage 1 (34b9cfb); 1069 = LEAVE sign moved clear of the doorway (6bbbf62); 1068 = holding the LEAVE sign works with a finger (f0608d1); 1065 = the LEAVE sign itself is the hold button with a filling bar (3f55862); 1064 = LEAVE sign at Local/Regional meets (eb5248d); 1063 = boost chips hide during meets (abbfe13); 1062 = boost chips in one right-hand column, every HUD hides during lifts (70701d8); 1060 = meet panel reverted, big typed weight, deadlift letter glow (00f1577); 1058 was the first phone-test fixes (7193e2b); 1055 added the admin GIVE AWARD buttons; inventory stages 3-4 were 1054 (commit 26e4448; stages 1-2 were 15b5326,
 version 1045). Everything in the
 blocks below marked "NOT COMMITTED" up to and including INVENTORY STAGES 1-2 IS committed now (db22eaf..15b5326).**
 
