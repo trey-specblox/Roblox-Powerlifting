@@ -172,10 +172,30 @@ function CoachDialogue.start()
 		return top, 1 - NAME_BAR_TOP / SPEAKER_SIZE
 	end
 
-	local function wholeBody(copy: Model, topShare: number, bottomShare: number)
+	--[[
+		The top and height of the BODY (the rig's own parts, the figure's direct children), not of everything it wears: a
+		hat sticks up above the frame's head line instead of shrinking the figure (user 2026-11-24, a phone: the chef
+		"is too small, it's not lined up with the background box"; his tall hat made him 7.2 studs against a coach's 5.9).
+		A figure with no body parts of its own (the cow's model) uses its whole box.
+	]]
+	local function bodyTopAndHeight(copy: Model): (number, number)
+		local top, bottom = -math.huge, math.huge
+		for _, child in ipairs(copy:GetChildren()) do
+			if child:IsA("BasePart") and child.Name ~= "HumanoidRootPart" and string.sub(child.Name, 1, 9) ~= "Clipboard" then
+				local half = child.Size.Y / 2
+				top = math.max(top, child.Position.Y + half)
+				bottom = math.min(bottom, child.Position.Y - half)
+			end
+		end
+		if top > bottom then
+			return top, top - bottom
+		end
 		local box, size = copy:GetBoundingBox()
-		local top = box.Position.Y + size.Y / 2
-		local height = size.Y
+		return box.Position.Y + size.Y / 2, size.Y
+	end
+
+	local function wholeBody(copy: Model, topShare: number, bottomShare: number)
+		local top, height = bodyTopAndHeight(copy)
 		local square = SPEAKER_SIZE * UIStyle.screenScale()
 		local headRoom = topShare + TOP_ROOM / square
 		local feet = math.min(bottomShare + 0.02, 0.98)
