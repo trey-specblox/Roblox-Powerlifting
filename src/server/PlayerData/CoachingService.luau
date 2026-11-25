@@ -194,6 +194,29 @@ function CoachingService.start()
 	Players.PlayerRemoving:Connect(function(player)
 		lastAsked[player] = nil
 	end)
+
+	-- THE COACHES' FIGURES FOR YOUR OWN SCREEN (GAME_DESIGN §40.5, user 2026-11-24: "Yes work on that"): one dressed
+	-- figure of each lift coach, in his own body, kept in ReplicatedStorage (CoachingConfig.FiguresFolder, named by
+	-- lift). A lifter's client copies theirs to stand in for the meet platform's coach on their screen only
+	-- (MeetCoachLook). Built once at start, like the coach figure the suit cutscene copies (MockMeetService).
+	-- PERFORMANCE: three figures in storage, never rendered.
+	task.spawn(function()
+		-- (required here: MeetFigures pulls in the body and meet modules)
+		local MeetFigures = require(ServerFolder:WaitForChild("Meet"):WaitForChild("MeetFigures") :: any)
+		local folder = Instance.new("Folder")
+		folder.Name = CoachingConfig.FiguresFolder
+		for _, lift in ipairs(CoachingConfig.Lifts) do
+			local coach = QuestConfig.Coaches[lift]
+			if coach then
+				local _, figure = MeetFigures.build(folder, "Coach", Vector3.zero, Vector3.new(0, 0, -5), nil,
+					{ top = coach.shirt, trousers = coach.trousers, tag = coach.title, build = coach.body })
+				if figure then
+					figure.Name = lift
+				end
+			end
+		end
+		folder.Parent = ReplicatedStorage
+	end)
 end
 
 return CoachingService

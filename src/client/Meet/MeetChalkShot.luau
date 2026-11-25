@@ -29,6 +29,7 @@ local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("Loca
 local MockMeetRemotes = require(Shared:WaitForChild("Meet"):WaitForChild("MockMeetRemotes"))
 
 local MeetCinema = require(script.Parent:WaitForChild("MeetCinema"))
+local MeetCoachLook = require(script.Parent:WaitForChild("MeetCoachLook"))
 local MeetLiftMoment = require(script.Parent:WaitForChild("MeetLiftMoment"))
 local MeetSoundController = require(script.Parent:WaitForChild("MeetSoundController"))
 
@@ -68,7 +69,9 @@ local function makeFollower(figure: Model?, id: string, moments: { Moment }, han
 	if figure == nil then
 		return nil
 	end
-	local hand = figure:FindFirstChild(handName)
+	-- (the puff on the hand you see: your own coach's copy stands in for the platform's coach, MeetCoachLook)
+	local shown = MeetCoachLook.shownAs(figure) or figure
+	local hand = shown:FindFirstChild(handName)
 	local attachment: Attachment? = nil
 	local emitter: ParticleEmitter? = nil
 	if hand and hand:IsA("BasePart") then
@@ -112,12 +115,14 @@ local function follow(follower: Follower?)
 				-- Passed since the last frame; a loop that came round passes what lies past its end, or before now.
 				local passed = if now >= last then last < moment.at and moment.at <= now else moment.at > last or moment.at <= now
 				if passed then
+					-- (Coach Squatavious jumps up and slaps HARD: the louder slap and twice the chalk, MeetCoachLook)
+					local hard = moment.sound == "BackSlap" and MeetCoachLook.slapsHard(follower.figure)
 					local attachment = follower.attachment
 					if attachment then
-						MeetSoundController.playAt(moment.sound, attachment.WorldPosition)
+						MeetSoundController.playAt(if hard then "BackSlapHard" else moment.sound, attachment.WorldPosition)
 					end
 					if moment.puff and follower.emitter then
-						follower.emitter:Emit(SETTINGS.PuffParticles)
+						follower.emitter:Emit(SETTINGS.PuffParticles * (if hard then 2 else 1))
 					end
 				end
 			end

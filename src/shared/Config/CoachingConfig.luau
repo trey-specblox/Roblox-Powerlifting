@@ -31,6 +31,10 @@ CoachingConfig.Owner = { name = "The Gym Owner", title = "GYM OWNER" }
 -- The lift coaches, in the order the dialogue and admin panel list them (QuestConfig.Coaches has their names).
 CoachingConfig.Lifts = { "Squat", "Bench", "Deadlift" }
 
+-- ReplicatedStorage folder of one dressed figure per lift coach (named by lift), for a lifter's screen to copy: your
+-- chosen coach at your meets, seen by you only (CoachingService builds them, MeetCoachLook copies them).
+CoachingConfig.FiguresFolder = "CoachFigures"
+
 CoachingConfig.Trial1 = {
 	Lifts = 10, -- good lifts in a row
 	PercentOfCn = 1.0, -- of the Competition Number

@@ -90,6 +90,8 @@ MeetSoundConfig.Cues = {
 	ChalkRub = cue("rbxassetid://70735128991498", 0.5, 10, 40, 1, 0, "ElevenLabs Sound Effects: rubbing chalk between the hands"),
 	ChalkClap = cue("rbxassetid://80485192542230", 0.7, 10, 40, 2, 0, "ElevenLabs Sound Effects: a chalky clap"),
 	BackSlap = cue("rbxassetid://92544739948841", 0.7, 10, 40, 2, 0, "ElevenLabs Sound Effects: a slap on the upper back"),
+	-- Coach Squatavious's jump slap (user 2026-11-24 "slaps your back hard"): the same slap, louder (volume, never slowed).
+	BackSlapHard = cue("rbxassetid://92544739948841", 1, 12, 50, 2, 0, "ElevenLabs Sound Effects: a slap on the upper back"),
 	-- On the walk out, more voices.
 	WalkShout3 = shout("rbxassetid://79247368338280", "ElevenLabs Sound Effects: Let's goooooo!"),
 	WalkShout4 = shout("rbxassetid://98604994214888", "ElevenLabs Sound Effects: Let's goooo!"),
