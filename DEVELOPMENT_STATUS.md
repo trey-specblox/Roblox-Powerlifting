@@ -15,7 +15,9 @@ CURRENT MILESTONE block).
 
 **COACH VOICES ROUND 2 + JUMP FIX (2026-11-25, user: the voices were "in the most calmest voice ... It has to be
 motivating it has to hype the player up"; "he does not fully complete the jump ... because I'm already walking out";
-upload: "Yes") [REMADE, UPLOADED 138/138, CONFIG REBUILT, TESTED IN STUDIO; NOT committed, NOT published].**
+upload: "Yes") [REMADE, UPLOADED 138/138, CONFIG REBUILT, TESTED IN STUDIO; user: "Commit publish": COMMITTED
+50b9f59, PUBLISHED as place version 1099 (Rojo reconnected and the four changed scripts' checksums matched disk before
+the publish); NOT pushed].**
 STUDIO 2026-11-25: Rojo had stopped pushing changes (server up, Studio's copy stale), so the new CoachVoiceConfig was
 patched into Studio's Edit copy and checked equal to disk (length 16528 + checksum). Play test: all 138 new ids load at
 their listed lengths; CoachVoice played Squat R1, Bench S1, Deadlift G1, Owner M2, Bench D1, Sumo D1 with the new ids;
@@ -28,8 +30,8 @@ ids kept under each line's "replaced". The round 1 ids all showed Approved on 20
 (`art/scripts/check_audio_moderation.py`, read-only), so Benchamin/Sumo being silent live was most likely the review
 still running. `MeetCoachLook` standIn: Squatavious's jump runs on its own clock (jumpClock) once it starts, so it
 lands even when the walk-out stops the slap animation (Studio: stopped the track mid-air, he landed).
-UNCOMMITTED: MeetCoachLook.luau, make_coach_voice_lines.py, check_audio_moderation.py, coach_voices.json,
-coach_voice_lines.json, CoachVoiceConfig.luau, these docs.
+Next: the user's phone check of 1099 (new voices, the jump landing; CoachDeadlift_D11 may still be in review);
+then the Mock Meet coach's own body.
 
 **THE COACHES' VOICES (2026-11-24, user: "Give every coach a voice ... Make sure it's within context"; voices approved
 "They sound different enough"; "Upload them all") [UPLOADED, BUILT, TESTED IN STUDIO; user: "Commit and push all of it
