@@ -7780,8 +7780,13 @@ doesn't cover it. To settle while designing:
       saying 'shrug it off' make sure he's saying in a calm Supportive voice"; the voices approved the same day, "They
       sound different enough", after a first set was rejected as "too similar"):** every coach has one fixed ElevenLabs
       voice for all his lines (art/sounds/coach_voices.json): Squatavious high, raspy and hyper; Benchamin very deep and
-      Southern; Sumo a calm UK mentor; the Gym Owner a grumbling old guy. Each line is delivered for its moment (a miss
-      calm and supportive, the send-off slap shouted). Uploaded 2026-11-24 ("Upload them all"). Heard on your own screen
+      Southern; Sumo a calm UK mentor; the Gym Owner a grumbling old guy. Uploaded 2026-11-24 ("Upload them all").
+      **Delivery remade 2026-11-25** (user: the first set was "in the most calmest voice. It has to be motivating it
+      has to hype the player up"; answers per kind of line): before the lift an intense low growl; the back slap a full
+      scream; a good lift excited and proud; a missed lift fired up for the next one; attempt advice a calm strategist;
+      end of meet proud / fired up; gym talk big personality; trials challenging / hyped / firm. Within a coach a
+      scream stays louder than a growl (one loudness per coach, not per line). Re-uploaded on the user's "Yes" the same
+      day. Before any new voice batch, ask the user the delivery per kind of line. Heard on your own screen
       only: your coach's speech-bubble lines at meets (ready, good lift, miss, send-off, attempt advice, end of meet), the
       Mock Meet room's lines (the coach on trial in his own voice), and the gym talk screen. Lines that change (weights,
       names, "So far: 1 of 2") stay text only.

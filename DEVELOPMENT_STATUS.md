@@ -13,6 +13,24 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**COACH VOICES ROUND 2 + JUMP FIX (2026-11-25, user: the voices were "in the most calmest voice ... It has to be
+motivating it has to hype the player up"; "he does not fully complete the jump ... because I'm already walking out";
+upload: "Yes") [REMADE, UPLOADED 138/138, CONFIG REBUILT, TESTED IN STUDIO; NOT committed, NOT published].**
+STUDIO 2026-11-25: Rojo had stopped pushing changes (server up, Studio's copy stale), so the new CoachVoiceConfig was
+patched into Studio's Edit copy and checked equal to disk (length 16528 + checksum). Play test: all 138 new ids load at
+their listed lengths; CoachVoice played Squat R1, Bench S1, Deadlift G1, Owner M2, Bench D1, Sumo D1 with the new ids;
+console clean. Roblox review right after the upload: 137 Approved, CoachDeadlift_D11 Reviewing. Reconnect the Rojo
+plugin in Studio before the next code test. All 138 lines remade
+with the delivery the user picked per kind of line (GAME_DESIGN §40.5; tags in `art/sounds/coach_voices.json`
+delivery_rules; ~8,529 credits), every take word-checked with local whisper (retakes: Bench G1/M1/R3/T3, Deadlift
+R2/T3/C3, Owner S4). `make_coach_voice_lines.py` now sets one gain per coach (screams stay louder than growls); old
+ids kept under each line's "replaced". The round 1 ids all showed Approved on 2026-11-25
+(`art/scripts/check_audio_moderation.py`, read-only), so Benchamin/Sumo being silent live was most likely the review
+still running. `MeetCoachLook` standIn: Squatavious's jump runs on its own clock (jumpClock) once it starts, so it
+lands even when the walk-out stops the slap animation (Studio: stopped the track mid-air, he landed).
+UNCOMMITTED: MeetCoachLook.luau, make_coach_voice_lines.py, check_audio_moderation.py, coach_voices.json,
+coach_voice_lines.json, CoachVoiceConfig.luau, these docs.
+
 **THE COACHES' VOICES (2026-11-24, user: "Give every coach a voice ... Make sure it's within context"; voices approved
 "They sound different enough"; "Upload them all") [UPLOADED, BUILT, TESTED IN STUDIO; user: "Commit and push all of it
 and publish": COMMITTED 24f432a (the meet coach work below in 3e58292), pushed, PUBLISHED as place version 1094 (Rojo

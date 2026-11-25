@@ -3,20 +3,49 @@
  "model": "eleven_v4",
  "voices_status": "APPROVED 2026-11-24 (user: \"They sound different enough\"), round 2. Round 1 was rejected the same day (\"I want them to have completely different voices, to me they sound too similar\"); round 2 differs in pitch, age, accent and energy at once.",
  "voices": {
-  "Squat": { "coach": "Coach Squatavious", "voice": "Minty The Holiday Elf", "voice_id": "1lXLcaBSLzgfQ2dCVmRt",
-   "why": "high-pitched, slightly raspy, mischievous, fast and full of energy: the very short, very muscular, funny squat coach" },
-  "Bench": { "coach": "Coach Benchamin", "voice": "Amaziyah - The Voice of Truth", "voice_id": "ziPT2CCE4pSSprfinSvc",
-   "why": "very deep, gritty, commanding, natural Southern accent: the big-chested bench coach" },
-  "Deadlift": { "coach": "Coach Sumo", "voice": "Cedric M - Casual Social Media Mentor", "voice_id": "RC8oAA5RAiRVQbaOrbkz",
-   "why": "relaxed, positive UK English mentor: the lean, calm, technical deadlift coach" },
-  "Owner": { "coach": "The Gym Owner", "voice": "Mister Gruff - Miserable old neighbor", "voice_id": "mSOmKHC6GZcZbSTGlqHO",
-   "why": "gritty, grumbling old guy with an attitude: everyone's free basic coach, the gruff veteran" }
+  "Squat": {
+   "coach": "Coach Squatavious",
+   "voice": "Minty The Holiday Elf",
+   "voice_id": "1lXLcaBSLzgfQ2dCVmRt",
+   "why": "high-pitched, slightly raspy, mischievous, fast and full of energy: the very short, very muscular, funny squat coach"
+  },
+  "Bench": {
+   "coach": "Coach Benchamin",
+   "voice": "Amaziyah - The Voice of Truth",
+   "voice_id": "ziPT2CCE4pSSprfinSvc",
+   "why": "very deep, gritty, commanding, natural Southern accent: the big-chested bench coach"
+  },
+  "Deadlift": {
+   "coach": "Coach Sumo",
+   "voice": "Cedric M - Casual Social Media Mentor",
+   "voice_id": "RC8oAA5RAiRVQbaOrbkz",
+   "why": "relaxed, positive UK English mentor: the lean, calm, technical deadlift coach"
+  },
+  "Owner": {
+   "coach": "The Gym Owner",
+   "voice": "Mister Gruff - Miserable old neighbor",
+   "voice_id": "mSOmKHC6GZcZbSTGlqHO",
+   "why": "gritty, grumbling old guy with an attitude: everyone's free basic coach, the gruff veteran"
+  }
  },
  "rejected_round1": {
-  "Squat": "Bub Pratt qh2E5jipDxztxzv9PON2", "Bench": "Matt 5zScdBQra0GhJzuIW5GB",
-  "Deadlift": "Joe ExKxkRpZWnl4ImIPkTZL", "Owner": "Joseph Ortman TTyZrDYo6LQowrH8mixJ"
+  "Squat": "Bub Pratt qh2E5jipDxztxzv9PON2",
+  "Bench": "Matt 5zScdBQra0GhJzuIW5GB",
+  "Deadlift": "Joe ExKxkRpZWnl4ImIPkTZL",
+  "Owner": "Joseph Ortman TTyZrDYo6LQowrH8mixJ"
  },
- "tags": {
+ "delivery_rules": {
+  "about": "THE USER'S ANSWERS, 2026-11-24 (after the first 138 takes came out too calm: \"It has to be motivating it has to hype the player up\"). Ask the user again before a new category (memory voice-context-questions).",
+  "before_lift_R": "intense, low growl (pushing hard up close, not yelling)",
+  "sendoff_slap_S": "full scream, raw and all-out",
+  "good_lift_G": "excited and proud (loud, not screaming)",
+  "missed_lift_M": "fired up, 'forget it, we're getting the next one' (not sad)",
+  "attempt_advice_A": "calm strategist, clear and level-headed",
+  "end_of_meet_E": "great meet = loud and proud; bombed out = determined, already planning the comeback",
+  "gym_talk_D": "big personality: confident, a bit cocky, testing you, hyped when he becomes your coach",
+  "trials_T_C": "start = intense challenge; pass = hyped and impressed; fail = firm, come back stronger, not sad"
+ },
+ "tags_round1_too_calm": {
   "ready": "[confident, focused]",
   "miss": "[calm, reassuring]",
   "good": "[excited, proud]",
@@ -25,14 +54,19 @@
   "dialogue": "[friendly, casual]"
  },
  "lines": {
-  "about": "2026-11-24, every coach line made (flow aVn34tXP7Ni26lhwabtN, eleven_v4, one take each). The working manifest is D:/ClaudeScratch/coachvoices/lines.json: line keys, texts, generation id per coach, credits. Takes are in D:/ClaudeScratch/coachvoices/lines/<Lift>_<key>.mp3 (Lift = Squat, Bench, Deadlift, Owner). UPLOADED 2026-11-24 (user: \"Upload them all\"), as group audio: the ids are in art/sounds/coach_voice_lines.json (made by art/scripts/make_coach_voice_lines.py, uploaded by art/scripts/upload_group_images.py) and in src/shared/Config/CoachVoiceConfig.luau (written by art/scripts/make_coach_voice_config.py). A NEW LINE: make the take in the coach's voice, add it to lines.json, run those three scripts.",
+  "about": "Round 2, 2026-11-25 (round 1 of 2026-11-24 was too calm): every coach line remade in the delivery the user chose per kind of line (delivery_rules), flow aVn34tXP7Ni26lhwabtN, eleven_v4. Working manifest D:/ClaudeScratch/coachvoices/lines.json (generations_v2, v2_spoken = the exact tagged text sent, v2_spoken_overrides for retakes, credits_v2). Takes in D:/ClaudeScratch/coachvoices/lines_v2/<Lift>_<key>.mp3, word-checked with wordcheck_lines.py lines_v2. UPLOADED 2026-11-25 (user: \"Yes\") as group audio: ids in art/sounds/coach_voice_lines.json (round 1 ids kept under each line's 'replaced') and src/shared/Config/CoachVoiceConfig.luau. A NEW LINE: ask the user the delivery first, make the take in the coach's voice with that category's tag, add it to lines.json, run make_coach_voice_lines.py, upload_group_images.py, make_coach_voice_config.py.",
   "meet_lines": "27 per lift coach, 24 for the Gym Owner (no Mock Meet lines): R1-R4 ready, G1-G3 good lift, M1-M3 missed lift, S1-S5 send-off slap, A1-A4 attempt advice, E1-E2 end of meet, T1-T3 gear trial, C1-C3 Mock Meet trial result.",
   "talk_lines": "11 per lift coach, the gym talk screen (CoachDialogue): D1 'What do you need?' ... D11 the daily quest. C1 + D3 play back to back for 'Show me what you got: ...', D5 + D3 for 'You paid. Now show me: ...'. Numbers are spoken as words, so a config change (price, percents, lift counts) needs those lines remade.",
-  "tags_used": "R2 [calm, focused], R3 [calm, confident], R4 [fired up], G1 [excited, cheering], G2 [excited, proud], G3 [laughing, proud], M2 [calm, steady], M3 [supportive, firm], S2-S5 [shouting, hyped], A1 [urgent, steady], A2 [fired up], A3 [steady, practical], A4 [gentle, supportive], E1 [warm, proud], E2 [warm, supportive], T1/C1/D2/D3 [serious, testing], T2 [proud], C2 [impressed], T3/C3 [gentle, firm], D1 [casual], D4 [dry, teasing], D5 [serious], D6 [proud, firm], D7 [fired up], D8 [warm], D9 [pleased], D10 [warm, proud], D11 [friendly].",
-  "credits": "about 6,730 for the lines (plus 744 for the two voice-sample rounds): 7,476 in all."
+  "credits": "round 1 about 7,476 (with voice samples); round 2 about 8,529.",
+  "tags_round1": "see tags_round1_too_calm",
+  "tags_round2": "R [intense low growl, powerlifting meet]; S [screaming all out, powerlifting meet]; G [excited, proud]; M [fired up, pushing]; A [calm, strategic]; E1 [loud, proud], E2 [determined, fired up]; T1/C1/D3/D6 [intense, challenging]; T2/C2 [hyped, impressed]; T3/C3 [firm, come back stronger] (Bench and Sumo retaken with [firm]: they spoke the tag); D1 [confident, cocky]; D2 [cocky, testing]; D4 [cocky, teasing]; D5 [intense]; D7/D9 [hyped]; D8/D11 [confident]; D10 [proud]. Bench R3 '[intense, powerlifting meet] Same... as training.'"
  },
  "samples": {
   "about": "2026-11-24 voice samples (flow aVn34tXP7Ni26lhwabtN; round 1 372 credits, rejected; round 2 372 credits; every word checked): \"Shake it off.\" [calm, reassuring], \"You got this.\" [confident, focused], \"LET'S GO!\" [shouting, hyped], once per coach.",
-  "lines": ["Shake it off.", "You got this.", "LET'S GO!"]
+  "lines": [
+   "Shake it off.",
+   "You got this.",
+   "LET'S GO!"
+  ]
  }
 }

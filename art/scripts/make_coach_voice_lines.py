@@ -25,7 +25,8 @@ TARGET_RMS = 0.10  # loudness of the speech itself (frames above the silence gat
 PEAK = 0.95
 
 
-def clean(data, sr):
+def trim(data, sr):
+    """The take cut to its speech (a short lead-in and tail), faded at both ends; and its speech loudness (RMS)."""
     frame = int(sr * 0.01)
     env = np.array([np.sqrt(np.mean(data[i:i + frame] ** 2)) for i in range(0, len(data) - frame, frame)])
     speech = np.where(env > 0.01)[0]
@@ -36,9 +37,16 @@ def clean(data, sr):
     data[:fade] *= np.linspace(0, 1, fade)
     data[-fade:] *= np.linspace(1, 0, fade)
     loud = env[speech]
-    gain = TARGET_RMS / float(np.sqrt(np.mean(loud ** 2)))
-    gain = min(gain, PEAK / float(np.max(np.abs(data))))
-    return (data * gain).astype("float32")
+    return data, float(np.sqrt(np.mean(loud ** 2)))
+
+
+def coach_gains(takes):
+    """ONE gain per coach (his median line to TARGET_RMS), so within a coach a scream stays louder than a growl
+    (user 2026-11-25: growls intense, the slap a full scream); each line only turned down if it would clip."""
+    by = {}
+    for (lift, _key), (_data, rms) in takes.items():
+        by.setdefault(lift, []).append(rms)
+    return {lift: TARGET_RMS / float(np.median(v)) for lift, v in by.items()}
 
 
 def main():
@@ -49,18 +57,34 @@ def main():
                          "Coach<Lift>_<key>; text = what the line says.")
     sounds = manifest.setdefault("sounds", {})
     OUT.mkdir(parents=True, exist_ok=True)
-    for lift, gens in lines["generations"].items():
+    # Round 2 (2026-11-25, in the delivery the user chose per kind of line) replaced round 1 (too calm).
+    generations = lines.get("generations_v2") or lines["generations"]
+    folder = "lines_v2" if "generations_v2" in lines else "lines"
+    takes, rate = {}, {}
+    for lift, gens in generations.items():
+        for key in gens:
+            data, sr = sf.read(TAKES / folder / f"{lift}_{key}.mp3", dtype="float32")
+            if data.ndim > 1:
+                data = data.mean(axis=1)
+            takes[(lift, key)] = trim(data, sr)
+            rate[(lift, key)] = sr
+    gains = coach_gains(takes)
+    for lift, gens in generations.items():
         for key in gens:
             text = lines["keys"].get(key) or lines["talk_keys"][key]
             text = text.replace("{plural}", PLURAL.get(lift, "")).replace("{word}", WORD.get(lift, ""))
-            data, sr = sf.read(TAKES / "lines" / f"{lift}_{key}.mp3", dtype="float32")
-            if data.ndim > 1:
-                data = data.mean(axis=1)
+            data, _rms = takes[(lift, key)]
+            sr = rate[(lift, key)]
             name = f"Coach{lift}_{key}"
             path = OUT / f"{name}.wav"
-            clean_data = clean(data, sr)
+            gain = min(gains[lift], PEAK / float(np.max(np.abs(data))))
+            clean_data = (data * gain).astype("float32")
             sf.write(path, clean_data, sr, subtype="PCM_16")
             entry = sounds.setdefault(name, {})
+            if entry.get("generation") and entry["generation"] != gens[key]:
+                # a new take: the old upload is kept for the record and the new one gets uploaded
+                entry.setdefault("replaced", []).append({"generation": entry["generation"], "ids": entry.get("ids", {})})
+                entry["ids"] = {}
             entry.update({"coach": COACH[lift], "lift": lift, "key": key, "text": text, "file": path.as_posix(),
                           "seconds": round(len(clean_data) / sr, 2), "generation": gens[key],
                           "license": "ElevenLabs generated; commercial use depends on the account's plan"})

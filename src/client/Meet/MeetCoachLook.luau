@@ -316,13 +316,25 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 		return if n > 0 then sum / n else 0
 	end
 
+	-- A jump once begun runs on its own clock to the landing (os.clock when it was at JUMP.crouch). It used to follow
+	-- the back loop's time, so a lifter walking out mid-jump stopped the loop and froze him half way (user 2026-11-24:
+	-- "he does not fully complete the jump ... then just stops because I'm already walking out").
+	local jumpClock: number? = nil
+
 	local function follow(dt: number)
 		local up, forward, tuck, bend = 0, 0, 0, 0
 		local t = backLoopTime(theirHumanoid:FindFirstChildOfClass("Animator"))
 		local base = (theirRoot :: BasePart).CFrame
 		if jumps then
-			if t then
-				up, forward, tuck, bend = jumpAt(t)
+			local now = os.clock()
+			if jumpClock and now - jumpClock > JUMP.settle - JUMP.crouch then
+				jumpClock = nil
+			end
+			if jumpClock == nil and t and t >= JUMP.crouch and t < JUMP.settle then
+				jumpClock = now - (t - JUMP.crouch)
+			end
+			if jumpClock then
+				up, forward, tuck, bend = jumpAt(JUMP.crouch + (now - jumpClock))
 			end
 		else
 			local rate = math.min(1, (dt or 0) * 10)
