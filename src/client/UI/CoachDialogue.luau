@@ -98,6 +98,8 @@ function CoachDialogue.start()
 	panel.Image = GearStatsConfig.CutsceneArt.Panel
 	panel.AnchorPoint = Vector2.new(0, 1)
 	panel.Visible = false
+	-- (the portrait sits on the panel's full-screen layer too, so a figure can stand in the panel's striped area at the
+	-- screen's left: see placePortrait)
 	local portrait = Instance.new("ViewportFrame")
 	portrait.Name = "Portrait"
 	portrait.Size = UDim2.fromScale(1, 1)
@@ -106,7 +108,7 @@ function CoachDialogue.start()
 	portrait.LightColor = Color3.fromRGB(255, 250, 240)
 	portrait.LightDirection = Vector3.new(-0.6, -1, 0.5)
 	portrait.ZIndex = 2
-	portrait.Parent = speaker
+	portrait.Visible = false
 	local portraitWorld = Instance.new("WorldModel")
 	portraitWorld.Parent = portrait
 	local portraitCamera = Instance.new("Camera")
@@ -194,16 +196,33 @@ function CoachDialogue.start()
 		return box.Position.Y + size.Y / 2, size.Y
 	end
 
-	local function wholeBody(copy: Model, topShare: number, bottomShare: number)
+	--[[
+		WHERE THE FIGURE STANDS (user 2026-11-24, a phone, marking the panel's striped area at the screen's left, left of the
+		white and yellow stripes: "that's where all characters should be if they have this talking to them with choices
+		ui"): the figure's middle at PORTRAIT_X_SHARE of the panel's width from the screen's left edge, the head just under
+		the top of the safe area (below the Roblox buttons), the feet at the name bar. The portrait is the whole panel's
+		rectangle (in true screen space), so the figure can stand left of where the safe area starts.
+	]]
+	local PORTRAIT_X_SHARE = 0.24
+	local function wholeBody(copy: Model)
 		local top, height = bodyTopAndHeight(copy)
-		local square = SPEAKER_SIZE * UIStyle.screenScale()
-		local headRoom = topShare + TOP_ROOM / square
-		local feet = math.min(bottomShare + 0.02, 0.98)
-		local view = height / math.max(feet - headRoom, 0.2)
+		local rectTop, w, h = portrait.AbsolutePosition.Y, portrait.AbsoluteSize.X, portrait.AbsoluteSize.Y
+		if w <= 0 or h <= 0 then
+			return
+		end
+		-- The same height on screen as before (the speaker square's head and feet lines: the size the user saw and kept);
+		-- only the side changes.
+		local topShare, bottomShare = onScreenPart()
+		local squareTop, square = speaker.AbsolutePosition.Y, speaker.AbsoluteSize.Y
+		local headY = squareTop + topShare * square + TOP_ROOM
+		local feetY = squareTop + math.min(bottomShare + 0.02, 0.98) * square
+		local headShare = (headY - rectTop) / h
+		local feetShare = math.min((feetY - rectTop) / h, 0.99)
+		local view = height / math.max(feetShare - headShare, 0.2)
 		local distance = view / (2 * math.tan(math.rad(portraitCamera.FieldOfView / 2)))
-		local centreY = top + headRoom * view - view / 2
-		-- The coach a little left of the middle, as in the close-up, so the answer bubbles don't cover them.
-		local side = -0.154 * view
+		local centreY = top + headShare * view - view / 2
+		-- (the camera looking along +Z: a camera at x = side puts the figure `side * h / view` pixels right of the middle)
+		local side = (PORTRAIT_X_SHARE * w - w / 2) * view / h
 		portraitCamera.CFrame = CFrame.lookAt(Vector3.new(side, centreY, -distance), Vector3.new(side, centreY, 0))
 	end
 
@@ -245,16 +264,27 @@ function CoachDialogue.start()
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
 	speaker:GetPropertyChangedSignal("AbsolutePosition"):Connect(fillNotch)
 	speaker:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
+	portrait.Parent = edge
 	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 		panel.Visible = gui.Enabled
+		portrait.Visible = gui.Enabled
 		fillNotch()
 	end)
 
+	-- The close-up (a computer with room for it) keeps the suit scene's framing in the speaker's square; the whole figure
+	-- (a phone, or a short screen) uses the whole panel and stands in its striped area (wholeBody).
 	local function frameCoach(copy: Model?)
-		local topShare, bottomShare = onScreenPart()
+		local topShare = onScreenPart()
 		if copy and (UIStyle.isTouchOnly() or topShare > 0) then
-			wholeBody(copy, topShare, bottomShare)
+			portrait.AnchorPoint = panel.AnchorPoint
+			portrait.Position = panel.Position
+			portrait.Size = panel.Size
+			wholeBody(copy)
 		else
+			local edgeAt = edge.AbsolutePosition
+			portrait.AnchorPoint = Vector2.new(0, 0)
+			portrait.Position = UDim2.fromOffset(speaker.AbsolutePosition.X - edgeAt.X, speaker.AbsolutePosition.Y - edgeAt.Y)
+			portrait.Size = UDim2.fromOffset(speaker.AbsoluteSize.X, speaker.AbsoluteSize.Y)
 			portraitCamera.CFrame = CLOSE_UP
 		end
 	end
@@ -411,13 +441,21 @@ function CoachDialogue.start()
 		session += 1
 		local mine = session
 		portraitWorld:ClearAllChildren()
-		fillNotch()
-		frameCoach(portraitOf(figure))
+		local copy = portraitOf(figure)
 		who.Text = string.upper(title)
 		words.Text = ""
 		-- Just appears: no slide, no bounce (user 2026-11-19: the bounce "looks weird").
 		speaker.Position = speakerAt
 		gui.Enabled = true
+		-- Framed once the screen has laid itself out (the name bar's and panel's places on screen are read).
+		fillNotch()
+		frameCoach(copy)
+		task.defer(function()
+			if session == mine then
+				fillNotch()
+				frameCoach(copy)
+			end
+		end)
 		PromptController.hide("Dialogue", true) -- (no "E Talk" tiles over the conversation)
 		-- Nor the side menus and chips (the standing rule: UIs never overlap; on a phone they poked out past the panel).
 		MenuKeys.setTalking(true)
