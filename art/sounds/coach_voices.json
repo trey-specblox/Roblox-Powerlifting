@@ -1,0 +1,38 @@
+{
+ "about": "THE COACHES' VOICES (user 2026-11-24: \"Give every coach a voice ... remember the voice for every coach making sure if I prompt you to make another voice line you are able to use the same voice\"). Every coach line is made with ElevenLabs creative_generate_speech, model eleven_v4, generations_count 1, with the coach's voice_id below and a SHORT direction tag that fits the line's context (the tag's characters are charged too: about 1 credit a character). Context rule (user, same day): the delivery matches the moment, e.g. \"Shake it off\" after a miss is calm and supportive, a send-off slap is shouted hype. Every take is word-checked with the local faster-whisper check (D:/ClaudeScratch/coachvoices/wordcheck.py) before use. Library voices (fixed ids), not designed ones. Audio files stay outside the repo (D:/ClaudeScratch/coachvoices); this file keeps the voices, the tags and, once uploaded, the asset ids.",
+ "model": "eleven_v4",
+ "voices_status": "APPROVED 2026-11-24 (user: \"They sound different enough\"), round 2. Round 1 was rejected the same day (\"I want them to have completely different voices, to me they sound too similar\"); round 2 differs in pitch, age, accent and energy at once.",
+ "voices": {
+  "Squat": { "coach": "Coach Squatavious", "voice": "Minty The Holiday Elf", "voice_id": "1lXLcaBSLzgfQ2dCVmRt",
+   "why": "high-pitched, slightly raspy, mischievous, fast and full of energy: the very short, very muscular, funny squat coach" },
+  "Bench": { "coach": "Coach Benchamin", "voice": "Amaziyah - The Voice of Truth", "voice_id": "ziPT2CCE4pSSprfinSvc",
+   "why": "very deep, gritty, commanding, natural Southern accent: the big-chested bench coach" },
+  "Deadlift": { "coach": "Coach Sumo", "voice": "Cedric M - Casual Social Media Mentor", "voice_id": "RC8oAA5RAiRVQbaOrbkz",
+   "why": "relaxed, positive UK English mentor: the lean, calm, technical deadlift coach" },
+  "Owner": { "coach": "The Gym Owner", "voice": "Mister Gruff - Miserable old neighbor", "voice_id": "mSOmKHC6GZcZbSTGlqHO",
+   "why": "gritty, grumbling old guy with an attitude: everyone's free basic coach, the gruff veteran" }
+ },
+ "rejected_round1": {
+  "Squat": "Bub Pratt qh2E5jipDxztxzv9PON2", "Bench": "Matt 5zScdBQra0GhJzuIW5GB",
+  "Deadlift": "Joe ExKxkRpZWnl4ImIPkTZL", "Owner": "Joseph Ortman TTyZrDYo6LQowrH8mixJ"
+ },
+ "tags": {
+  "ready": "[confident, focused]",
+  "miss": "[calm, reassuring]",
+  "good": "[excited, proud]",
+  "sendoff": "[shouting, hyped]",
+  "advice": "[urgent, steady]",
+  "dialogue": "[friendly, casual]"
+ },
+ "lines": {
+  "about": "2026-11-24, every coach line made (flow aVn34tXP7Ni26lhwabtN, eleven_v4, one take each). The working manifest is D:/ClaudeScratch/coachvoices/lines.json: line keys, texts, generation id per coach, credits. Takes are in D:/ClaudeScratch/coachvoices/lines/<Lift>_<key>.mp3 (Lift = Squat, Bench, Deadlift, Owner). UPLOADED 2026-11-24 (user: \"Upload them all\"), as group audio: the ids are in art/sounds/coach_voice_lines.json (made by art/scripts/make_coach_voice_lines.py, uploaded by art/scripts/upload_group_images.py) and in src/shared/Config/CoachVoiceConfig.luau (written by art/scripts/make_coach_voice_config.py). A NEW LINE: make the take in the coach's voice, add it to lines.json, run those three scripts.",
+  "meet_lines": "27 per lift coach, 24 for the Gym Owner (no Mock Meet lines): R1-R4 ready, G1-G3 good lift, M1-M3 missed lift, S1-S5 send-off slap, A1-A4 attempt advice, E1-E2 end of meet, T1-T3 gear trial, C1-C3 Mock Meet trial result.",
+  "talk_lines": "11 per lift coach, the gym talk screen (CoachDialogue): D1 'What do you need?' ... D11 the daily quest. C1 + D3 play back to back for 'Show me what you got: ...', D5 + D3 for 'You paid. Now show me: ...'. Numbers are spoken as words, so a config change (price, percents, lift counts) needs those lines remade.",
+  "tags_used": "R2 [calm, focused], R3 [calm, confident], R4 [fired up], G1 [excited, cheering], G2 [excited, proud], G3 [laughing, proud], M2 [calm, steady], M3 [supportive, firm], S2-S5 [shouting, hyped], A1 [urgent, steady], A2 [fired up], A3 [steady, practical], A4 [gentle, supportive], E1 [warm, proud], E2 [warm, supportive], T1/C1/D2/D3 [serious, testing], T2 [proud], C2 [impressed], T3/C3 [gentle, firm], D1 [casual], D4 [dry, teasing], D5 [serious], D6 [proud, firm], D7 [fired up], D8 [warm], D9 [pleased], D10 [warm, proud], D11 [friendly].",
+  "credits": "about 6,730 for the lines (plus 744 for the two voice-sample rounds): 7,476 in all."
+ },
+ "samples": {
+  "about": "2026-11-24 voice samples (flow aVn34tXP7Ni26lhwabtN; round 1 372 credits, rejected; round 2 372 credits; every word checked): \"Shake it off.\" [calm, reassuring], \"You got this.\" [confident, focused], \"LET'S GO!\" [shouting, hyped], once per coach.",
+  "lines": ["Shake it off.", "You got this.", "LET'S GO!"]
+ }
+}

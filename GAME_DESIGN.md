@@ -7714,8 +7714,18 @@ doesn't cover it. To settle while designing:
   right"; CHARACTER_ART_DIRECTION.md §12):** each on his own skeleton (Squatavious ~4.4 studs tall, Benchamin 5.9,
   Sumo 5.8; lifters 5.9), the game's basic clothes (tee in his colour, black joggers, dark sneakers). Uploaded and
   live (place version 1082) on the **three gym coaches** (QuestConfig.Coaches[lift].body, ClothesConfig.Bodies Coach*)
-  and so in their dialogue portraits. NOT yet on the meet platform coach (still the generic coach in your coach's
-  colours, MeetCoachLook) or the Mock Meet coach.
+  and so in their dialogue portraits. NOT yet on the Mock Meet coach.
+- **Your coach at your meets, in his own body (BUILT 2026-11-24, user: "Yes work on that"):** on the lifter's own
+  screen only, the platform's coach is hidden and a copy of the chosen coach stands in his place, copying every move
+  (walk out, chalking, slaps, talk) joint by joint at his own hip height (MeetCoachLook; the dressed figures:
+  CoachingConfig.FiguresFolder, built by CoachingService). Everyone else still sees the gym's coach. During the back
+  chalking and slaps the copy keeps his hands where the gym coach's land (as far forward and as wide), so long or short
+  arms never go into the lifter's back (Sumo) or hit the air. The gym owner stays the plain coach.
+  - **Coach Squatavious's JUMP SLAP (user, same day: "With squatavious Maby just have it where he jumps up in a funny
+    way and slaps your back hard"):** too short to reach the shoulders, he crouches, springs up and hangs in the air
+    through both slaps, knees tucked like a cannonball, open hands landing on the lifter's shoulders, then lands with a
+    squash; the slaps are louder (BackSlapHard) with twice the chalk. Every squat chalk-up and the State send-off.
+    His back RUB lands on the middle of the lifter's back (he's that short), only the slaps get the jump.
 - **What the coaches do, and where they show (user, 2026-11-23):** "For now they will just stand talk and watch, like our
   current "coach" place holder will be replaced with the coach of the lifters choosing. It's going to be client based
   so the background is not filled with the same coaches."
@@ -7766,6 +7776,15 @@ doesn't cover it. To settle while designing:
       SUMO and the shirt takes that coach's colour (yellow / red / blue); with the gym owner as your coach the tag says
       GYM OWNER and the look is the gym's navy. Everyone else sees the normal meet coach. Same moves as before (walk
       out, chalk, back slaps). Until the coach bodies exist, a chosen coach is the meet coach in their colours.
+    - **THE COACHES' VOICES (user 2026-11-24: "Give every coach a voice ... Make sure it's within context, like if he's
+      saying 'shrug it off' make sure he's saying in a calm Supportive voice"; the voices approved the same day, "They
+      sound different enough", after a first set was rejected as "too similar"):** every coach has one fixed ElevenLabs
+      voice for all his lines (art/sounds/coach_voices.json): Squatavious high, raspy and hyper; Benchamin very deep and
+      Southern; Sumo a calm UK mentor; the Gym Owner a grumbling old guy. Each line is delivered for its moment (a miss
+      calm and supportive, the send-off slap shouted). Uploaded 2026-11-24 ("Upload them all"). Heard on your own screen
+      only: your coach's speech-bubble lines at meets (ready, good lift, miss, send-off, attempt advice, end of meet), the
+      Mock Meet room's lines (the coach on trial in his own voice), and the gym talk screen. Lines that change (weights,
+      names, "So far: 1 of 2") stay text only.
     - NOT YET: the gym owner as a figure in the gym; the three coach bodies (Blender, approval first); the coach in
       the Mock Meet room and the meet cutscenes; better quests; bond unlocks.
 

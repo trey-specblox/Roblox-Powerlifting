@@ -1,0 +1,1799 @@
+{
+ "about": "The coaches' voice lines (made by art/scripts/make_coach_voice_lines.py from the takes listed in art/sounds/coach_voices.json; uploaded with art/scripts/upload_group_images.py). Name = Coach<Lift>_<key>; text = what the line says.",
+ "sounds": {
+  "CoachSquat_R1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "R1",
+   "text": "You got this.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_R1.wav",
+   "seconds": 1.3,
+   "generation": "lyxuO9TNWoGYCcIdPJ6W",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://96491943357419"
+   }
+  },
+  "CoachSquat_M1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "M1",
+   "text": "Shake it off.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_M1.wav",
+   "seconds": 1.11,
+   "generation": "sqE8cbfXmu5YXtjErY7J",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://71806028786723"
+   }
+  },
+  "CoachSquat_S1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "S1",
+   "text": "LET'S GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_S1.wav",
+   "seconds": 1.57,
+   "generation": "zfzIgMeqRTdCgJl2KUzz",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://108444727460209"
+   }
+  },
+  "CoachSquat_R2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "R2",
+   "text": "Breathe. Brace. Go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_R2.wav",
+   "seconds": 2.9,
+   "generation": "qFdxavh9ieC6xRfie0VV",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://83282134452542"
+   }
+  },
+  "CoachSquat_R3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "R3",
+   "text": "Same as training.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_R3.wav",
+   "seconds": 1.24,
+   "generation": "ndxw0ORTHE1bo7ZD1B7k",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://136788343542562"
+   }
+  },
+  "CoachSquat_R4": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "R4",
+   "text": "Big lift. Let's go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_R4.wav",
+   "seconds": 2.12,
+   "generation": "nBP2hBfP9coQ0z6M9xoj",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://120758111577561"
+   }
+  },
+  "CoachSquat_G1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "G1",
+   "text": "Smoked it!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_G1.wav",
+   "seconds": 1.56,
+   "generation": "BEEkfCsHNbyDxh8rV6Sv",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://84008504048511"
+   }
+  },
+  "CoachSquat_G2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "G2",
+   "text": "That's the one!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_G2.wav",
+   "seconds": 1.36,
+   "generation": "IVU9eYntsuaQ1GGpPSN6",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://134050758499478"
+   }
+  },
+  "CoachSquat_G3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "G3",
+   "text": "Easy work!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_G3.wav",
+   "seconds": 2.06,
+   "generation": "V5CCiYE31dBoSnowbYBt",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://122807088572130"
+   }
+  },
+  "CoachSquat_M2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "M2",
+   "text": "Reset. Next one.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_M2.wav",
+   "seconds": 1.77,
+   "generation": "kYMxggM2yPPhjC2GM5uk",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://102506967964207"
+   }
+  },
+  "CoachSquat_M3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "M3",
+   "text": "You had that. Again.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_M3.wav",
+   "seconds": 2.02,
+   "generation": "QiC0GpOrr52A98dNXXxV",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://112016028266055"
+   }
+  },
+  "CoachSquat_S2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "S2",
+   "text": "YOUR WEIGHT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_S2.wav",
+   "seconds": 1.56,
+   "generation": "hGmzRGIx76DLiLPn3pwI",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://105655187104588"
+   }
+  },
+  "CoachSquat_S3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "S3",
+   "text": "THIS IS YOURS!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_S3.wav",
+   "seconds": 1.68,
+   "generation": "2FQ3oLIrJltQP3emu5KM",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://139199188670379"
+   }
+  },
+  "CoachSquat_S4": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "S4",
+   "text": "BIG LIFT! GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_S4.wav",
+   "seconds": 1.85,
+   "generation": "XR5o1bcH4jfV3vzNVjcS",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://83561880902388"
+   }
+  },
+  "CoachSquat_S5": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "S5",
+   "text": "TAKE IT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_S5.wav",
+   "seconds": 1.12,
+   "generation": "bTz3P7Xb7SpuIZSGAyYR",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://99797147513317"
+   }
+  },
+  "CoachSquat_A1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "A1",
+   "text": "Make this one or you bomb out. Play it safe!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_A1.wav",
+   "seconds": 3.1,
+   "generation": "9YeYTKbU3YfbIfMo5hFT",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://89187489575515"
+   }
+  },
+  "CoachSquat_A2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "A2",
+   "text": "You're in the lead. Don't give it away!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_A2.wav",
+   "seconds": 2.59,
+   "generation": "PVVa6AMsVChCFyBDxdnV",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://81496677343222"
+   }
+  },
+  "CoachSquat_A3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "A3",
+   "text": "1st is out of reach this attempt. Lock in your spot.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_A3.wav",
+   "seconds": 3.42,
+   "generation": "G5pt2rqzwSW03ooEXrjq",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://131394423105841"
+   }
+  },
+  "CoachSquat_A4": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "A4",
+   "text": "No total today. Use these lifts as practice.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_A4.wav",
+   "seconds": 3.37,
+   "generation": "fmboXSIqaRLxOZ4YlI5y",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://130631970512078"
+   }
+  },
+  "CoachSquat_E1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "E1",
+   "text": "Great meet. Proud of you.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_E1.wav",
+   "seconds": 2.3,
+   "generation": "ND1RFZeoQGg2IalNjbS7",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://111730682292651"
+   }
+  },
+  "CoachSquat_E2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "E2",
+   "text": "We'll get them next time.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_E2.wav",
+   "seconds": 1.51,
+   "generation": "SaeK8bwAm724xSaOXk0l",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://113752135794239"
+   }
+  },
+  "CoachSquat_T1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "T1",
+   "text": "Three lifts in that gear. Show me you can handle it.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_T1.wav",
+   "seconds": 3.23,
+   "generation": "yYKxQFh9LkxS669l3Xt2",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://129696095861257"
+   }
+  },
+  "CoachSquat_T2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "T2",
+   "text": "You can handle it. It's yours.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_T2.wav",
+   "seconds": 2.39,
+   "generation": "Xpq6OQFOKxRdzTO15of7",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://100796066605287"
+   }
+  },
+  "CoachSquat_T3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "T3",
+   "text": "Not yet. Come back tomorrow.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_T3.wav",
+   "seconds": 2.24,
+   "generation": "7RiiYQoicmn6Js7nF18O",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://103045442548315"
+   }
+  },
+  "CoachSquat_C1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "C1",
+   "text": "I don't want you to waste your money or your time. Show me what you got.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_C1.wav",
+   "seconds": 4.38,
+   "generation": "8TSjk8fAsES0ApknARs3",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://125204271002202"
+   }
+  },
+  "CoachSquat_C2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "C2",
+   "text": "Not bad. Now show me in a real meet.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_C2.wav",
+   "seconds": 3.46,
+   "generation": "DCeE4JyRoaEHAxeIw23R",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://135190130526737"
+   }
+  },
+  "CoachSquat_C3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "C3",
+   "text": "Not today. Come back when you're ready.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_C3.wav",
+   "seconds": 2.36,
+   "generation": "mGYgX6cYnI6mZe7qAt8y",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://116603553024906"
+   }
+  },
+  "CoachSquat_D1": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D1",
+   "text": "What do you need?",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D1.wav",
+   "seconds": 1.04,
+   "generation": "6MM3zZaO7yrHUhmlYt6p",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://71209256335731"
+   }
+  },
+  "CoachSquat_D2": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D2",
+   "text": "It's gonna cost you... twenty-eight thousand coins. Then you prove yourself to me.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D2.wav",
+   "seconds": 6.01,
+   "generation": "oxXRbWnnsjxGJ1yQKZnu",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://74361072675224"
+   }
+  },
+  "CoachSquat_D3": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D3",
+   "text": "Ten good squats in a row at a hundred percent of your Competition Number, in your Mock Meet room. One miss and you pay again.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D3.wav",
+   "seconds": 7.46,
+   "generation": "nWUfQbMwkDGrjEntYDUy",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://109955400104059"
+   }
+  },
+  "CoachSquat_D4": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D4",
+   "text": "Come back when you've got the coins. Meets pay well.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D4.wav",
+   "seconds": 3.36,
+   "generation": "GiYqIYeYxuaU5CsEbV4Q",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://74761190987305"
+   }
+  },
+  "CoachSquat_D5": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D5",
+   "text": "You paid. Now show me.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D5.wav",
+   "seconds": 2.12,
+   "generation": "YpjSpiGxanLQyOKriJE7",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://132221282849396"
+   }
+  },
+  "CoachSquat_D6": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D6",
+   "text": "Now prove it where it counts, at a real meet: go three for three on squat, your third at a hundred and five percent of your Competition Number or more, and place top three. If it's only computer lifters, beat them all.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D6.wav",
+   "seconds": 12.84,
+   "generation": "qsXmA6sBHXhOmLFVIl9x",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://101053920090440"
+   }
+  },
+  "CoachSquat_D7": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D7",
+   "text": "I'm your coach. Let's go win some meets.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D7.wav",
+   "seconds": 2.98,
+   "generation": "6NXtvjsPRyWHDyHUdaxt",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://120303380216422"
+   }
+  },
+  "CoachSquat_D8": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D8",
+   "text": "Want me back in your corner?",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D8.wav",
+   "seconds": 1.55,
+   "generation": "nBSVUjZ8tssGCEAGCUYC",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://75094586147609"
+   }
+  },
+  "CoachSquat_D9": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D9",
+   "text": "Good. Let's get to work.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D9.wav",
+   "seconds": 2.21,
+   "generation": "OMKVgGBDu3TWHN0LlxrL",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://129999071440358"
+   }
+  },
+  "CoachSquat_D10": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D10",
+   "text": "You did my work for today. Rest up and come back tomorrow.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D10.wav",
+   "seconds": 4.14,
+   "generation": "4mgk0VAmH6ki7elvN2cR",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://128653868711988"
+   }
+  },
+  "CoachSquat_D11": {
+   "coach": "Coach Squatavious",
+   "lift": "Squat",
+   "key": "D11",
+   "text": "Make two good squats in a meet today and I'll make it worth your while.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachSquat_D11.wav",
+   "seconds": 3.98,
+   "generation": "s98lCM01O06n3ZZzbkm8",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://89477351962925"
+   }
+  },
+  "CoachBench_R1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "R1",
+   "text": "You got this.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_R1.wav",
+   "seconds": 0.98,
+   "generation": "FYRwqAjK7vS7h4LNJW3i",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://106284814667183"
+   }
+  },
+  "CoachBench_M1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "M1",
+   "text": "Shake it off.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_M1.wav",
+   "seconds": 0.92,
+   "generation": "LehkFmrSK0gaK8tOG3XB",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://89336502092572"
+   }
+  },
+  "CoachBench_S1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "S1",
+   "text": "LET'S GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_S1.wav",
+   "seconds": 1.48,
+   "generation": "ulGVIdkIo5L7z7D9AgfI",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://91884190989976"
+   }
+  },
+  "CoachBench_R2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "R2",
+   "text": "Breathe. Brace. Go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_R2.wav",
+   "seconds": 2.66,
+   "generation": "n8Y6SmtR8RHTTszymdcz",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://96548301251204"
+   }
+  },
+  "CoachBench_R3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "R3",
+   "text": "Same as training.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_R3.wav",
+   "seconds": 1.16,
+   "generation": "2vZANAu5jXrjDCVGoeCW",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://107235208962549"
+   }
+  },
+  "CoachBench_R4": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "R4",
+   "text": "Big lift. Let's go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_R4.wav",
+   "seconds": 1.91,
+   "generation": "blUo2PwH3zEGIRKRGbsp",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://79667978607411"
+   }
+  },
+  "CoachBench_G1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "G1",
+   "text": "Smoked it!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_G1.wav",
+   "seconds": 1.3,
+   "generation": "a4USHW6eMJFfqxtTNio6",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://128895688125852"
+   }
+  },
+  "CoachBench_G2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "G2",
+   "text": "That's the one!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_G2.wav",
+   "seconds": 1.43,
+   "generation": "2V2TOAirSFkGD4atGIhF",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://136939011731311"
+   }
+  },
+  "CoachBench_G3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "G3",
+   "text": "Easy work!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_G3.wav",
+   "seconds": 2.28,
+   "generation": "n50O4mgxORpLqAHVhKPC",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://85423980481757"
+   }
+  },
+  "CoachBench_M2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "M2",
+   "text": "Reset. Next one.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_M2.wav",
+   "seconds": 1.82,
+   "generation": "psTCjHKuYPDSUry6Zo4Z",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://109864478595186"
+   }
+  },
+  "CoachBench_M3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "M3",
+   "text": "You had that. Again.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_M3.wav",
+   "seconds": 2.05,
+   "generation": "Frq60cnIlCINH29DiAwL",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://121397778177956"
+   }
+  },
+  "CoachBench_S2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "S2",
+   "text": "YOUR WEIGHT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_S2.wav",
+   "seconds": 1.34,
+   "generation": "JYSuAN4d4g6wTAtopjR9",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://100427613406593"
+   }
+  },
+  "CoachBench_S3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "S3",
+   "text": "THIS IS YOURS!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_S3.wav",
+   "seconds": 1.47,
+   "generation": "hRotV6kfkbGYe5VskH2E",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://113941457287169"
+   }
+  },
+  "CoachBench_S4": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "S4",
+   "text": "BIG LIFT! GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_S4.wav",
+   "seconds": 1.62,
+   "generation": "B7sfqgti426sSq1zIesg",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://77563304464653"
+   }
+  },
+  "CoachBench_S5": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "S5",
+   "text": "TAKE IT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_S5.wav",
+   "seconds": 0.82,
+   "generation": "yHnoCbziFmU2TsJ3Yz1T",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://122529458938582"
+   }
+  },
+  "CoachBench_A1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "A1",
+   "text": "Make this one or you bomb out. Play it safe!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_A1.wav",
+   "seconds": 2.81,
+   "generation": "61nYHZnbesXrZ9MQEOIE",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://128804757557320"
+   }
+  },
+  "CoachBench_A2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "A2",
+   "text": "You're in the lead. Don't give it away!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_A2.wav",
+   "seconds": 2.41,
+   "generation": "lO3473sOhQLoa1LiWyep",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://110290668368592"
+   }
+  },
+  "CoachBench_A3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "A3",
+   "text": "1st is out of reach this attempt. Lock in your spot.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_A3.wav",
+   "seconds": 3.11,
+   "generation": "PE02cKqlH76LstJWTEqm",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://76998519884815"
+   }
+  },
+  "CoachBench_A4": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "A4",
+   "text": "No total today. Use these lifts as practice.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_A4.wav",
+   "seconds": 2.92,
+   "generation": "8ww1651A8VUOfo7x9xj5",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://89135270099898"
+   }
+  },
+  "CoachBench_E1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "E1",
+   "text": "Great meet. Proud of you.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_E1.wav",
+   "seconds": 2.21,
+   "generation": "4SNDWXO3GWW3Ye2LjbRm",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://97891550216809"
+   }
+  },
+  "CoachBench_E2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "E2",
+   "text": "We'll get them next time.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_E2.wav",
+   "seconds": 1.36,
+   "generation": "oqQv7V6tJI19KtpqdfZY",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://110155935237376"
+   }
+  },
+  "CoachBench_T1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "T1",
+   "text": "Three lifts in that gear. Show me you can handle it.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_T1.wav",
+   "seconds": 2.93,
+   "generation": "27TxrIjDhtIYsb1cdusw",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://85039828969359"
+   }
+  },
+  "CoachBench_T2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "T2",
+   "text": "You can handle it. It's yours.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_T2.wav",
+   "seconds": 2.18,
+   "generation": "HIK6qPgT6pTG0PjsU84C",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://82941399881140"
+   }
+  },
+  "CoachBench_T3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "T3",
+   "text": "Not yet. Come back tomorrow.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_T3.wav",
+   "seconds": 2.05,
+   "generation": "9bWdTG07WDijeGXUqYrF",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://127864773708519"
+   }
+  },
+  "CoachBench_C1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "C1",
+   "text": "I don't want you to waste your money or your time. Show me what you got.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_C1.wav",
+   "seconds": 4.04,
+   "generation": "g0tCuazbi8G3mt22cKjf",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://71777566581941"
+   }
+  },
+  "CoachBench_C2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "C2",
+   "text": "Not bad. Now show me in a real meet.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_C2.wav",
+   "seconds": 3.13,
+   "generation": "YbBjpBAfXwJXqXsnlZfF",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://93694215829761"
+   }
+  },
+  "CoachBench_C3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "C3",
+   "text": "Not today. Come back when you're ready.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_C3.wav",
+   "seconds": 2.34,
+   "generation": "kcxhTG5hO4D0zj98yMXG",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://133180129344567"
+   }
+  },
+  "CoachBench_D1": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D1",
+   "text": "What do you need?",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D1.wav",
+   "seconds": 1.01,
+   "generation": "mBwvHcF5ADo0NpUq8wpK",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://132514606816837"
+   }
+  },
+  "CoachBench_D2": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D2",
+   "text": "It's gonna cost you... twenty-eight thousand coins. Then you prove yourself to me.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D2.wav",
+   "seconds": 5.63,
+   "generation": "8OSxCzcBn9QKJ49fXqaY",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://98014529629838"
+   }
+  },
+  "CoachBench_D3": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D3",
+   "text": "Ten good bench presses in a row at a hundred percent of your Competition Number, in your Mock Meet room. One miss and you pay again.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D3.wav",
+   "seconds": 7.62,
+   "generation": "AjnTwiZmc3ULu2GQttIA",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://100307420040168"
+   }
+  },
+  "CoachBench_D4": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D4",
+   "text": "Come back when you've got the coins. Meets pay well.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D4.wav",
+   "seconds": 3.45,
+   "generation": "gOGnudi5bDf6fVp73zGJ",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://123257342894936"
+   }
+  },
+  "CoachBench_D5": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D5",
+   "text": "You paid. Now show me.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D5.wav",
+   "seconds": 2.13,
+   "generation": "ATk5PHbAJR3He6QbqPI8",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://99071544418568"
+   }
+  },
+  "CoachBench_D6": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D6",
+   "text": "Now prove it where it counts, at a real meet: go three for three on bench, your third at a hundred and five percent of your Competition Number or more, and place top three. If it's only computer lifters, beat them all.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D6.wav",
+   "seconds": 11.81,
+   "generation": "YrKC1d5kUycAg26meXIs",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://72881262525954"
+   }
+  },
+  "CoachBench_D7": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D7",
+   "text": "I'm your coach. Let's go win some meets.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D7.wav",
+   "seconds": 2.49,
+   "generation": "VLASu3M131iGGqpC655f",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://131889132001505"
+   }
+  },
+  "CoachBench_D8": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D8",
+   "text": "Want me back in your corner?",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D8.wav",
+   "seconds": 1.52,
+   "generation": "6lKxFCdV4IuWFsgExK6M",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://136225808993297"
+   }
+  },
+  "CoachBench_D9": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D9",
+   "text": "Good. Let's get to work.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D9.wav",
+   "seconds": 1.97,
+   "generation": "X3zh7VWjgQXVX9QYPsO1",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://124153422130760"
+   }
+  },
+  "CoachBench_D10": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D10",
+   "text": "You did my work for today. Rest up and come back tomorrow.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D10.wav",
+   "seconds": 3.75,
+   "generation": "J8cv3hc7rjPQ36jrnvmX",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://100155328144380"
+   }
+  },
+  "CoachBench_D11": {
+   "coach": "Coach Benchamin",
+   "lift": "Bench",
+   "key": "D11",
+   "text": "Make two good bench presses in a meet today and I'll make it worth your while.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachBench_D11.wav",
+   "seconds": 4.03,
+   "generation": "RTyjJvJNN4xFEK0EUPSp",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://102333901653814"
+   }
+  },
+  "CoachDeadlift_R1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "R1",
+   "text": "You got this.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_R1.wav",
+   "seconds": 1.21,
+   "generation": "FZVE8e0Huqk7jTQeCEw2",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://118583456357307"
+   }
+  },
+  "CoachDeadlift_M1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "M1",
+   "text": "Shake it off.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_M1.wav",
+   "seconds": 1.09,
+   "generation": "eqPOH5aIksiScMbxsaVT",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://108377521734261"
+   }
+  },
+  "CoachDeadlift_S1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "S1",
+   "text": "LET'S GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_S1.wav",
+   "seconds": 1.41,
+   "generation": "VBmtSONqbvaUQ2cVFuzc",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://83962298602542"
+   }
+  },
+  "CoachDeadlift_R2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "R2",
+   "text": "Breathe. Brace. Go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_R2.wav",
+   "seconds": 2.95,
+   "generation": "2n55zPac0ij5W4rAaKgg",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://132852703304561"
+   }
+  },
+  "CoachDeadlift_R3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "R3",
+   "text": "Same as training.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_R3.wav",
+   "seconds": 1.13,
+   "generation": "D9l15Bn2Sq3b8NBCKAWm",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://129750197656201"
+   }
+  },
+  "CoachDeadlift_R4": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "R4",
+   "text": "Big lift. Let's go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_R4.wav",
+   "seconds": 1.98,
+   "generation": "b8NYVJvrVzkz1tgDlQvn",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://96069331041810"
+   }
+  },
+  "CoachDeadlift_G1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "G1",
+   "text": "Smoked it!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_G1.wav",
+   "seconds": 1.33,
+   "generation": "W5dpLNZseEJPwcqBBwvT",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://139201751423495"
+   }
+  },
+  "CoachDeadlift_G2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "G2",
+   "text": "That's the one!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_G2.wav",
+   "seconds": 1.34,
+   "generation": "l04JI5Wcn0wDLR8OfeZW",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://91241093690746"
+   }
+  },
+  "CoachDeadlift_G3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "G3",
+   "text": "Easy work!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_G3.wav",
+   "seconds": 1.88,
+   "generation": "CgOMvSv8CvbihVGmM7Dg",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://78816006799803"
+   }
+  },
+  "CoachDeadlift_M2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "M2",
+   "text": "Reset. Next one.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_M2.wav",
+   "seconds": 1.82,
+   "generation": "dbnhBGAYjGLg5Z5XVCY1",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://79055065112016"
+   }
+  },
+  "CoachDeadlift_M3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "M3",
+   "text": "You had that. Again.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_M3.wav",
+   "seconds": 1.85,
+   "generation": "WY1u9otFIBF2OKW7fprt",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://86004544714186"
+   }
+  },
+  "CoachDeadlift_S2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "S2",
+   "text": "YOUR WEIGHT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_S2.wav",
+   "seconds": 1.35,
+   "generation": "QEatu5hVrkTvDXPysGra",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://89951666894831"
+   }
+  },
+  "CoachDeadlift_S3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "S3",
+   "text": "THIS IS YOURS!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_S3.wav",
+   "seconds": 1.63,
+   "generation": "YuPohIwoClBvfw6zaXJI",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://103453447386297"
+   }
+  },
+  "CoachDeadlift_S4": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "S4",
+   "text": "BIG LIFT! GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_S4.wav",
+   "seconds": 1.62,
+   "generation": "frs65amxHpGv2VGCOWKr",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://103194471741208"
+   }
+  },
+  "CoachDeadlift_S5": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "S5",
+   "text": "TAKE IT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_S5.wav",
+   "seconds": 0.94,
+   "generation": "LyoA9G1RlNbZA0nKi2qa",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://106763666170759"
+   }
+  },
+  "CoachDeadlift_A1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "A1",
+   "text": "Make this one or you bomb out. Play it safe!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_A1.wav",
+   "seconds": 3.04,
+   "generation": "LXnvdt56FE5DsqF4IUbC",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://93965823890306"
+   }
+  },
+  "CoachDeadlift_A2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "A2",
+   "text": "You're in the lead. Don't give it away!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_A2.wav",
+   "seconds": 2.4,
+   "generation": "mnBPmkCTIMCqccuKd6Ia",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://74301294725526"
+   }
+  },
+  "CoachDeadlift_A3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "A3",
+   "text": "1st is out of reach this attempt. Lock in your spot.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_A3.wav",
+   "seconds": 3.3,
+   "generation": "CQaeXUKaqEarG5kdcSNO",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://92267724417257"
+   }
+  },
+  "CoachDeadlift_A4": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "A4",
+   "text": "No total today. Use these lifts as practice.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_A4.wav",
+   "seconds": 3.16,
+   "generation": "E0mvXGvZwKOQRvbIsTE2",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://130381215628521"
+   }
+  },
+  "CoachDeadlift_E1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "E1",
+   "text": "Great meet. Proud of you.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_E1.wav",
+   "seconds": 2.25,
+   "generation": "nQso3oRnkYLhWmifoDhY",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://75499211500266"
+   }
+  },
+  "CoachDeadlift_E2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "E2",
+   "text": "We'll get them next time.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_E2.wav",
+   "seconds": 1.57,
+   "generation": "J93yhOXjOXFU8KKTPERU",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://93895551064124"
+   }
+  },
+  "CoachDeadlift_T1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "T1",
+   "text": "Three lifts in that gear. Show me you can handle it.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_T1.wav",
+   "seconds": 3.21,
+   "generation": "qoBySrBPDvInFBRxUdAI",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://75595343146259"
+   }
+  },
+  "CoachDeadlift_T2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "T2",
+   "text": "You can handle it. It's yours.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_T2.wav",
+   "seconds": 2.13,
+   "generation": "xbCQbSBx3SzltdzJ688h",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://93449861494482"
+   }
+  },
+  "CoachDeadlift_T3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "T3",
+   "text": "Not yet. Come back tomorrow.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_T3.wav",
+   "seconds": 1.89,
+   "generation": "pc2DaaeiMI4oH2jhMTIG",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://112641937369321"
+   }
+  },
+  "CoachDeadlift_C1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "C1",
+   "text": "I don't want you to waste your money or your time. Show me what you got.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_C1.wav",
+   "seconds": 4.26,
+   "generation": "jhGlmcq9AQ43mvCN7gr3",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://107992527783865"
+   }
+  },
+  "CoachDeadlift_C2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "C2",
+   "text": "Not bad. Now show me in a real meet.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_C2.wav",
+   "seconds": 3.19,
+   "generation": "WVpQr8j6vaY3BMCMG2Px",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://94933678982867"
+   }
+  },
+  "CoachDeadlift_C3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "C3",
+   "text": "Not today. Come back when you're ready.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_C3.wav",
+   "seconds": 2.24,
+   "generation": "ZrtwuPAGgFPSlrkbF27F",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://106745744640022"
+   }
+  },
+  "CoachDeadlift_D1": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D1",
+   "text": "What do you need?",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D1.wav",
+   "seconds": 0.82,
+   "generation": "tBWFlfSMGYoCt3FhVX56",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://72476202835475"
+   }
+  },
+  "CoachDeadlift_D2": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D2",
+   "text": "It's gonna cost you... twenty-eight thousand coins. Then you prove yourself to me.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D2.wav",
+   "seconds": 5.71,
+   "generation": "sSCWlmL2jGW2dVWCgTax",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://124744367850714"
+   }
+  },
+  "CoachDeadlift_D3": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D3",
+   "text": "Ten good deadlifts in a row at a hundred percent of your Competition Number, in your Mock Meet room. One miss and you pay again.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D3.wav",
+   "seconds": 7.27,
+   "generation": "mX9GBc5V50FqmvdXfXSF",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://99402804694998"
+   }
+  },
+  "CoachDeadlift_D4": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D4",
+   "text": "Come back when you've got the coins. Meets pay well.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D4.wav",
+   "seconds": 3.35,
+   "generation": "lZkPUGmu6lmzcBixFTCO",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://82656364015917"
+   }
+  },
+  "CoachDeadlift_D5": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D5",
+   "text": "You paid. Now show me.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D5.wav",
+   "seconds": 2.12,
+   "generation": "EWsY3Khgbeok9AkBEJ0w",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://101751178801398"
+   }
+  },
+  "CoachDeadlift_D6": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D6",
+   "text": "Now prove it where it counts, at a real meet: go three for three on deadlift, your third at a hundred and five percent of your Competition Number or more, and place top three. If it's only computer lifters, beat them all.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D6.wav",
+   "seconds": 11.93,
+   "generation": "RFmZRTw0lAvoxKEAFYDi",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://121682914332733"
+   }
+  },
+  "CoachDeadlift_D7": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D7",
+   "text": "I'm your coach. Let's go win some meets.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D7.wav",
+   "seconds": 2.6,
+   "generation": "leXHSEyk0RgsI3q3DNjU",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://99936848111915"
+   }
+  },
+  "CoachDeadlift_D8": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D8",
+   "text": "Want me back in your corner?",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D8.wav",
+   "seconds": 1.32,
+   "generation": "7MusLQcCFUDidGs8Y1lJ",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://94675123770903"
+   }
+  },
+  "CoachDeadlift_D9": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D9",
+   "text": "Good. Let's get to work.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D9.wav",
+   "seconds": 2.01,
+   "generation": "RFFFlmVI4mNs8Vaxfrz3",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://111734364928285"
+   }
+  },
+  "CoachDeadlift_D10": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D10",
+   "text": "You did my work for today. Rest up and come back tomorrow.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D10.wav",
+   "seconds": 3.88,
+   "generation": "8O1goI7tHdDjEoKNgeC8",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://136867278522013"
+   }
+  },
+  "CoachDeadlift_D11": {
+   "coach": "Coach Sumo",
+   "lift": "Deadlift",
+   "key": "D11",
+   "text": "Make two good deadlifts in a meet today and I'll make it worth your while.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachDeadlift_D11.wav",
+   "seconds": 3.8,
+   "generation": "PZ3ysyl0etyBneAeHJWQ",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://96903942196860"
+   }
+  },
+  "CoachOwner_R1": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "R1",
+   "text": "You got this.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_R1.wav",
+   "seconds": 1.16,
+   "generation": "XJab6kgKHLjsd4ciY8kT",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://98617172247654"
+   }
+  },
+  "CoachOwner_M1": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "M1",
+   "text": "Shake it off.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_M1.wav",
+   "seconds": 1.01,
+   "generation": "6mqQwZg3LFz2BK3TctWe",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://93828020699687"
+   }
+  },
+  "CoachOwner_S1": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "S1",
+   "text": "LET'S GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_S1.wav",
+   "seconds": 1.34,
+   "generation": "RwBLnvsdZZkZ7bie3ViZ",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://120393266108505"
+   }
+  },
+  "CoachOwner_R2": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "R2",
+   "text": "Breathe. Brace. Go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_R2.wav",
+   "seconds": 2.75,
+   "generation": "NLI8RTxLqEjen8hW0DmU",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://119577140653047"
+   }
+  },
+  "CoachOwner_R3": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "R3",
+   "text": "Same as training.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_R3.wav",
+   "seconds": 1.13,
+   "generation": "g7oIHsuvlxAg5Nel29Hj",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://132826134918368"
+   }
+  },
+  "CoachOwner_R4": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "R4",
+   "text": "Big lift. Let's go.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_R4.wav",
+   "seconds": 1.87,
+   "generation": "KTwfggSrTcKNKQuSvkKb",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://79710395523700"
+   }
+  },
+  "CoachOwner_G1": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "G1",
+   "text": "Smoked it!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_G1.wav",
+   "seconds": 1.32,
+   "generation": "6c9zHHzfBOM2cGKkySnp",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://132925332016451"
+   }
+  },
+  "CoachOwner_G2": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "G2",
+   "text": "That's the one!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_G2.wav",
+   "seconds": 1.2,
+   "generation": "3bO3Pj1n83gj5pVn7dmJ",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://84862773526799"
+   }
+  },
+  "CoachOwner_G3": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "G3",
+   "text": "Easy work!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_G3.wav",
+   "seconds": 1.9,
+   "generation": "ij2sQwdmPUUO3fNDkETF",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://82602505852256"
+   }
+  },
+  "CoachOwner_M2": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "M2",
+   "text": "Reset. Next one.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_M2.wav",
+   "seconds": 1.64,
+   "generation": "gxegIOuMT2WSMbt9IMXY",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://92633782872998"
+   }
+  },
+  "CoachOwner_M3": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "M3",
+   "text": "You had that. Again.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_M3.wav",
+   "seconds": 2.05,
+   "generation": "r9nzLycyniv3sG4sIcT8",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://86597214604080"
+   }
+  },
+  "CoachOwner_S2": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "S2",
+   "text": "YOUR WEIGHT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_S2.wav",
+   "seconds": 1.32,
+   "generation": "lPUkM4Af5OwvfA3HVwdL",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://139567705420740"
+   }
+  },
+  "CoachOwner_S3": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "S3",
+   "text": "THIS IS YOURS!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_S3.wav",
+   "seconds": 1.64,
+   "generation": "IATA9Ctq2nxbx9wZgzDK",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://127900130423343"
+   }
+  },
+  "CoachOwner_S4": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "S4",
+   "text": "BIG LIFT! GO!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_S4.wav",
+   "seconds": 1.64,
+   "generation": "M3hYJkAt6D74hnZwSYkN",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://133698518911297"
+   }
+  },
+  "CoachOwner_S5": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "S5",
+   "text": "TAKE IT!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_S5.wav",
+   "seconds": 0.93,
+   "generation": "ksr8b77EpXW5Z4eKjeym",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://105934301144334"
+   }
+  },
+  "CoachOwner_A1": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "A1",
+   "text": "Make this one or you bomb out. Play it safe!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_A1.wav",
+   "seconds": 2.93,
+   "generation": "Mnod1vQvijDQX2pcCOgE",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://135022399045995"
+   }
+  },
+  "CoachOwner_A2": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "A2",
+   "text": "You're in the lead. Don't give it away!",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_A2.wav",
+   "seconds": 2.32,
+   "generation": "SmJdambxEJPQbBw6zfvT",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://70598413350316"
+   }
+  },
+  "CoachOwner_A3": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "A3",
+   "text": "1st is out of reach this attempt. Lock in your spot.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_A3.wav",
+   "seconds": 3.22,
+   "generation": "sguXIJIURJuO0y8MIwzX",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://107496353310703"
+   }
+  },
+  "CoachOwner_A4": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "A4",
+   "text": "No total today. Use these lifts as practice.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_A4.wav",
+   "seconds": 3.28,
+   "generation": "tyCqmdbxgWeYX7IDNeEi",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://114362502178973"
+   }
+  },
+  "CoachOwner_E1": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "E1",
+   "text": "Great meet. Proud of you.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_E1.wav",
+   "seconds": 2.15,
+   "generation": "VdnMt8FoHgEcjWWkO95S",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://88500769411411"
+   }
+  },
+  "CoachOwner_E2": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "E2",
+   "text": "We'll get them next time.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_E2.wav",
+   "seconds": 1.49,
+   "generation": "7LaEvCx2IvmbRkUx83fh",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://135392322657265"
+   }
+  },
+  "CoachOwner_T1": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "T1",
+   "text": "Three lifts in that gear. Show me you can handle it.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_T1.wav",
+   "seconds": 3.21,
+   "generation": "APECW4UdvBbtprrwkY4x",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://140180614197963"
+   }
+  },
+  "CoachOwner_T2": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "T2",
+   "text": "You can handle it. It's yours.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_T2.wav",
+   "seconds": 2.3,
+   "generation": "ruT1wbSVl9ONcz3VDwit",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://102647876900688"
+   }
+  },
+  "CoachOwner_T3": {
+   "coach": "The Gym Owner",
+   "lift": "Owner",
+   "key": "T3",
+   "text": "Not yet. Come back tomorrow.",
+   "file": "D:/Powerlifting Roblox Extras/Sounds/CoachVoices/CoachOwner_T3.wav",
+   "seconds": 1.92,
+   "generation": "lvyLIlbUwGhiJvStNepo",
+   "license": "ElevenLabs generated; commercial use depends on the account's plan",
+   "ids": {
+    "audio": "rbxassetid://94193671439762"
+   }
+  }
+ }
+}

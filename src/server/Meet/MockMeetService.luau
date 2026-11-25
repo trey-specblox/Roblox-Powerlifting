@@ -679,6 +679,8 @@ local function runCoachTrial(player: Player, visit: Visit, trial: CoachTrial)
 	local coachName = if coach then coach.name else "The coach"
 	local liftWord = string.lower(lift)
 	updateBoard(player, visit, nil, nil, nil)
+	-- The coach on trial speaks in his own voice in this room (CoachVoice, on this player's screen).
+	visit.room.model:SetAttribute("CoachVoice", lift)
 	MockMeetArena.coachSays(visit.room, "I don't want you to waste your money or your time. Show me what you got.")
 	visit.stepTag = string.upper(lift) .. " TRIAL"
 	sendState(player, visit, "WeighIn", { secondsLeft = MockMeetConfig.WeighInSeconds,

@@ -13,6 +13,38 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**THE COACHES' VOICES (2026-11-24, user: "Give every coach a voice ... Make sure it's within context"; voices approved
+"They sound different enough"; "Upload them all") [UPLOADED, BUILT, TESTED IN STUDIO, NOT COMMITTED, NOT PUBLISHED].**
+138 ElevenLabs takes (Squatavious / Benchamin / Sumo 38 each, the Gym Owner 24), each coach one fixed voice
+(`art/sounds/coach_voices.json`: voice ids, the tag per kind of line; memory coach-voices), every take word-checked with
+local whisper (one Sumo retake). ~7,476 credits in all. `art/scripts/make_coach_voice_lines.py` (takes in
+D:/ClaudeScratch/coachvoices -> trimmed, one loudness, WAVs in Extras/Sounds/CoachVoices, manifest
+`art/sounds/coach_voice_lines.json`), UPLOADED as group audio (`upload_group_images.py`), then
+`make_coach_voice_config.py` -> `src/shared/Config/CoachVoiceConfig.luau` (generated). New client `Meet/CoachVoice`
+(started in init): your own coach's bubble at meets (the CoachTag in your PlayerGui) says each line with a take in your
+active coach's voice; your Mock Meet room's coach the same (the room's "CoachVoice" attribute = the coach on trial,
+set in MockMeetService.runCoachTrial); CoachDialogue says the talk lines by key (D1-D11, C1+D3, D5+D3; typing ticks quiet
+while voiced; numbers spoken as words, so only while the config matches). Changing lines stay text only.
+STUDIO (Rojo source checked): all four test lines load with the right lengths; the Squatavious talk screen says D1 then
+D2 with the price text; a Local meet with the Gym Owner said R4 "Big lift. Let's go." and M2 "Reset. Next one." at the
+bubble; after hiring Squatavious (admin CoachStep x3) a new meet said Squat_R2 and Squat_M2; preload fixed (Sounds, not
+bare ids: "Asset type does not match"), console clean after. NOT TESTED: the Mock Meet room voices (trial lines), the
+send-off shout in a State ritual, a phone, the volume against a loud crowd (the user's ears). Commit with the meet coach
+work below (also uncommitted).
+
+**YOUR COACH AT YOUR MEETS + SQUATAVIOUS'S JUMP SLAP (2026-11-24, user: "Yes work on that. With squatavious Maby just
+have it where he jumps up in a funny way and slaps your back hard") [BUILT, TESTED IN STUDIO, NOT COMMITTED, NOT
+PUBLISHED].** CoachingConfig.FiguresFolder + CoachingService builds one dressed figure per lift coach in
+ReplicatedStorage; MeetCoachLook (client) hides the platform coach on your screen and drives a copy of your coach
+(joint Transforms copied each PreSimulation; the bodies' joints are AnimationConstraints, not Motor6Ds), at his own
+hip height, tag re-adorned; reach/spread matching in the back loop; Squatavious's procedural jump (JUMP table: crouch,
+hang through SlapAt, cannonball tuck, squash landing; hips drop exactly as the bent legs shorten). MeetChalkShot puts
+the puffs on the copy's hands and plays BackSlapHard (MeetSoundConfig, same ElevenLabs slap, louder) for Squatavious.
+STUDIO (Rojo checksums matched each run): Squatavious copy, slap hands at the gym coach's place (0.30 / 0.16 under the
+shoulders vs 0.37 / 0.15), feet never under the floor (0.000), 1.6 up at the top, frames checked; Benchamin's slaps
+within 0.1 of the gym coach's; Sumo's within 0.1 after the reach/spread fix (was 0.36 into the back, hands crossed).
+Not done: the Mock Meet coach; no jump/landing sound (needs ElevenLabs credits: ask); a real phone; two players.
+
 **COACH BODIES 01 (2026-11-24, user: "Commit and push we can start with the coach figures"; "Make them all more
 toned"; "They look right" = APPROVED) [NOTHING COMMITTED].** Coach Squatavious, Benchamin and Sumo built in Blender
 (`art/scripts/build_coach_bodies_01.py` -> `art/blender/CoachBodies_01.blend`, pictures

@@ -35,6 +35,7 @@ local UIStyle = require(script.Parent:WaitForChild("UIStyle"))
 local QuestTracker = require(script.Parent:WaitForChild("QuestTracker"))
 local PromptController = require(script.Parent:WaitForChild("PromptController"))
 local MenuKeys = require(script.Parent:WaitForChild("MenuKeys"))
+local CoachVoice = require(script.Parent.Parent:WaitForChild("Meet"):WaitForChild("CoachVoice"))
 local C = UIStyle.Colours
 
 local CoachDialogue = {}
@@ -57,6 +58,8 @@ local TOP_ROOM = 10
 local NAME_BAR_TOP = 172
 
 local started = false
+-- While a coach says the line out loud (CoachVoice), the typing ticks stay quiet.
+local quietTicks = false
 
 function CoachDialogue.start()
 	if started then
@@ -338,7 +341,7 @@ function CoachDialogue.start()
 					return
 				end
 				words.MaxVisibleGraphemes = shown
-				if shown % 3 == 0 then
+				if shown % 3 == 0 and not quietTicks then
 					tickSound:Play()
 				end
 				task.wait(LETTER_SECONDS)
@@ -379,6 +382,8 @@ function CoachDialogue.start()
 	local function close()
 		session += 1
 		open = false
+		CoachVoice.stop()
+		quietTicks = false
 		gui.Enabled = false
 		portraitWorld:ClearAllChildren()
 		PromptController.hide("Dialogue", false)
@@ -496,8 +501,19 @@ function CoachDialogue.start()
 			return
 		end
 		local liftName = lift :: string
-		converse(figure, coach.name, function(say, ask)
-			say("What do you need?")
+		CoachVoice.preload(liftName)
+		converse(figure, coach.name, function(plainSay, ask)
+			-- The coach says it out loud in his own voice (CoachVoice: the takes for `keys`, one after another) while
+			-- the words type out; a line with no keys, or no take, is text only.
+			local function say(text: string, keys: { string }?)
+				if keys then
+					CoachVoice.say(liftName, keys)
+					quietTicks = true
+				end
+				plainSay(text)
+				quietTicks = false
+			end
+			say("What do you need?", { "D1" })
 			while true do
 				local choice = ask({
 					{ text = "Can you coach me?", value = "Coach" },
@@ -518,6 +534,11 @@ function CoachDialogue.start()
 					local thirdPercent = math.floor(CoachingConfig.Trial2.ThirdAtLeast * 100 + 0.5)
 					local trial1Line = string.format("%d good %s in a row at %d%% of your Competition Number, in your Mock Meet room. One miss and you pay again.",
 						CoachingConfig.Trial1.Lifts, plural, cnPercent)
+					-- The takes say the numbers as words: a line is only said out loud while the config still matches
+					-- them (change a price or a trial and remake those lines: art/sounds/coach_voices.json).
+					local priceSpoken = CoachingConfig.Price == 28000
+					local trial1Spoken = CoachingConfig.Trial1.Lifts == 10 and cnPercent == 100
+					local trial2Spoken = thirdPercent == 105 and CoachingConfig.Trial2.TopPlacesWithPlayers == 3
 					local function goToTrial(): boolean
 						local went, problem = false, "Try again in a moment."
 						pcall(function()
@@ -533,7 +554,7 @@ function CoachDialogue.start()
 						say("Give me a second... ask me again.")
 					elseif record.stage == "none" then
 						say(string.format("It's gonna cost you... %s coins. Then you prove yourself to me.",
-							string.format("%d,%03d", CoachingConfig.Price // 1000, CoachingConfig.Price % 1000)))
+							string.format("%d,%03d", CoachingConfig.Price // 1000, CoachingConfig.Price % 1000)), if priceSpoken then { "D2" } else nil)
 						local pay = ask({
 							{ text = string.format("Pay %d,%03d coins", CoachingConfig.Price // 1000, CoachingConfig.Price % 1000), value = "Pay" },
 							{ text = "Not now.", value = "No" },
@@ -545,7 +566,8 @@ function CoachDialogue.start()
 								return coachingRemotes.hire:InvokeServer(liftName)
 							end)
 							if paid and outcome == "Paid" then
-								say("I don't want you to waste your money or your time. Show me what you got: " .. trial1Line)
+								say("I don't want you to waste your money or your time. Show me what you got: " .. trial1Line,
+									if trial1Spoken then { "C1", "D3" } else { "C1" })
 								local go = ask({ { text = "Let's go.", value = "Go" }, { text = "Later.", value = "Later" } })
 								if go == nil then
 									return
@@ -553,13 +575,13 @@ function CoachDialogue.start()
 									return
 								end
 							elseif paid and outcome == "NotEnough" then
-								say("Come back when you've got the coins. Meets pay well.")
+								say("Come back when you've got the coins. Meets pay well.", { "D4" })
 							else
 								say("Give me a second... ask me again.")
 							end
 						end
 					elseif record.stage == "trial1" then
-						say("You paid. Now show me: " .. trial1Line)
+						say("You paid. Now show me: " .. trial1Line, if trial1Spoken then { "D5", "D3" } else { "D5" })
 						local go = ask({ { text = "Let's go.", value = "Go" }, { text = "Later.", value = "Later" } })
 						if go == nil then
 							return
@@ -568,11 +590,11 @@ function CoachDialogue.start()
 						end
 					elseif record.stage == "trial2" then
 						say(string.format("Now prove it where it counts, at a real meet: go 3 for 3 on %s, your third at %d%% of your Competition Number or more, and place top %d. If it's only computer lifters, beat them all.",
-							liftWord, thirdPercent, CoachingConfig.Trial2.TopPlacesWithPlayers))
+							liftWord, thirdPercent, CoachingConfig.Trial2.TopPlacesWithPlayers), if trial2Spoken then { "D6" } else nil)
 					elseif record.stage == "hired" and typeof(view) == "table" and view.active == liftName then
-						say("I'm your coach. Let's go win some meets.")
+						say("I'm your coach. Let's go win some meets.", { "D7" })
 					elseif record.stage == "hired" then
-						say("Want me back in your corner?")
+						say("Want me back in your corner?", { "D8" })
 						local back = ask({ { text = "Be my coach.", value = "Active" }, { text = "Not now.", value = "No" } })
 						if back == nil then
 							return
@@ -581,7 +603,7 @@ function CoachDialogue.start()
 								return coachingRemotes.setActive:InvokeServer(liftName)
 							end)
 							if done and typeof(newView) == "table" and newView.active == liftName then
-								say("Good. Let's get to work.")
+								say("Good. Let's get to work.", { "D9" })
 							else
 								say("Give me a second... ask me again.")
 							end
@@ -600,10 +622,12 @@ function CoachDialogue.start()
 					if typeof(mineToday) ~= "table" then
 						say("Give me a second... ask me again.")
 					elseif mineToday.done then
-						say("You did my work for today. Rest up and come back tomorrow.")
+						say("You did my work for today. Rest up and come back tomorrow.", { "D10" })
 					else
+						-- (the take says "two": only while the quest asks for QuestConfig.GoodLiftsNeeded = 2)
 						say(string.format("Make %d good %s in a meet today and I'll make it worth your while. So far: %d of %d.",
-							mineToday.needed, plural, mineToday.goodLifts, mineToday.needed))
+							mineToday.needed, plural, mineToday.goodLifts, mineToday.needed),
+							if mineToday.needed == 2 then { "D11" } else nil)
 					end
 				end
 			end
