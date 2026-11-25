@@ -79,10 +79,6 @@ function CoachDialogue.start()
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 30
 	gui.Enabled = false
-	-- The panel art reaches into a phone's notch strip (fillNotch, below); a ScreenGui clips to the safe area unless told
-	-- not to, which left a hard edge with the gym and the side menus showing past it (user 2026-11-24, a phone: "it fills
-	-- Maby 65% ... there is a noticeable cutoff").
-	gui.ClipToDeviceSafeArea = false
 	UIStyle.fitToScreen(gui)
 
 	-- Who is talking: the panel and, on it, a portrait, in the lower left corner (the suit scene's layout).
@@ -95,13 +91,13 @@ function CoachDialogue.start()
 	speaker.Size = UDim2.fromOffset(SPEAKER_SIZE, SPEAKER_SIZE)
 	speaker.BackgroundTransparency = 1
 	speaker.Parent = gui
+	-- (the panel art lives on its own full-screen layer, behind this one: see fillNotch)
 	local panel = Instance.new("ImageLabel")
 	panel.Name = "Panel"
-	panel.Size = UDim2.fromScale(1, 1)
 	panel.BackgroundTransparency = 1
 	panel.Image = GearStatsConfig.CutsceneArt.Panel
-	panel.ZIndex = 1
-	panel.Parent = speaker
+	panel.AnchorPoint = Vector2.new(0, 1)
+	panel.Visible = false
 	local portrait = Instance.new("ViewportFrame")
 	portrait.Name = "Portrait"
 	portrait.Size = UDim2.fromScale(1, 1)
@@ -204,26 +200,35 @@ function CoachDialogue.start()
 	edge.ScreenInsets = Enum.ScreenInsets.None
 	edge.Parent = playerGui
 	--[[
-		Measured on screen (user 2026-11-24, a phone: the panel still stopped short of the edge): the gap between where the
-		speaker frame starts and the true screen edge (the edge gui's position), in screen pixels, turned into the panel's
-		own pixels by the frame's real scale on screen (the phone fit shrinks it, and fitToScreen can place it a little in
-		from the left). A few pixels past the edge, so no sliver of the gym shows there.
+		THE PANEL ART ON ITS OWN LAYER (user 2026-11-24, phone screenshots): drawn in true screen space (the edge gui, which
+		ignores the phone's safe area), from the screen's bottom-left corner up to the top and across to the right of where
+		the speaker frame sits. So it reaches the very left and bottom edges of the screen ("it fills Maby 65% ... the
+		bottom area is not being covered"), while the coach, the name and the words stay in the safe-area gui as they were
+		(drawing that gui outside the safe area made the coach too big, under the phone's buttons). The edge layer sits just
+		behind the dialogue (DisplayOrder 29).
 	]]
+	edge.DisplayOrder = gui.DisplayOrder - 1
+	edge.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	panel.Parent = edge
 	local function fillNotch()
-		local scale = speaker.AbsoluteSize.X / SPEAKER_SIZE
-		if scale <= 0 then
+		local width = speaker.AbsolutePosition.X + speaker.AbsoluteSize.X - edge.AbsolutePosition.X
+		local height = edge.AbsolutePosition.Y + edge.AbsoluteSize.Y - (speaker.AbsolutePosition.Y)
+		if width <= 0 or height <= 0 then
 			return
 		end
-		local gap = speaker.AbsolutePosition.X - edge.AbsolutePosition.X
-		local extra = if gap > 0.5 then (gap + 6) / scale else 0
-		panel.Position = UDim2.fromOffset(-extra, -extra)
-		panel.Size = UDim2.new(1, extra, 1, extra)
+		panel.Position = UDim2.new(0, 0, 1, 0)
+		panel.Size = UDim2.fromOffset(width, height)
 	end
 	fillNotch()
 	edge:GetPropertyChangedSignal("AbsolutePosition"):Connect(fillNotch)
+	edge:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
 	speaker:GetPropertyChangedSignal("AbsolutePosition"):Connect(fillNotch)
 	speaker:GetPropertyChangedSignal("AbsoluteSize"):Connect(fillNotch)
+	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+		panel.Visible = gui.Enabled
+		fillNotch()
+	end)
 
 	local function frameCoach(copy: Model?)
 		local topShare, bottomShare = onScreenPart()
