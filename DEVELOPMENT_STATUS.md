@@ -14,7 +14,9 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **THE COACHES' VOICES (2026-11-24, user: "Give every coach a voice ... Make sure it's within context"; voices approved
-"They sound different enough"; "Upload them all") [UPLOADED, BUILT, TESTED IN STUDIO, NOT COMMITTED, NOT PUBLISHED].**
+"They sound different enough"; "Upload them all") [UPLOADED, BUILT, TESTED IN STUDIO; user: "Commit and push all of it
+and publish": COMMITTED 24f432a (the meet coach work below in 3e58292), pushed, PUBLISHED as place version 1094 (Rojo
+checksums of all ten changed scripts matched before the publish)].**
 138 ElevenLabs takes (Squatavious / Benchamin / Sumo 38 each, the Gym Owner 24), each coach one fixed voice
 (`art/sounds/coach_voices.json`: voice ids, the tag per kind of line; memory coach-voices), every take word-checked with
 local whisper (one Sumo retake). ~7,476 credits in all. `art/scripts/make_coach_voice_lines.py` (takes in
@@ -29,12 +31,12 @@ STUDIO (Rojo source checked): all four test lines load with the right lengths; t
 D2 with the price text; a Local meet with the Gym Owner said R4 "Big lift. Let's go." and M2 "Reset. Next one." at the
 bubble; after hiring Squatavious (admin CoachStep x3) a new meet said Squat_R2 and Squat_M2; preload fixed (Sounds, not
 bare ids: "Asset type does not match"), console clean after. NOT TESTED: the Mock Meet room voices (trial lines), the
-send-off shout in a State ritual, a phone, the volume against a loud crowd (the user's ears). Commit with the meet coach
-work below (also uncommitted).
+send-off shout in a State ritual, a phone, the volume against a loud crowd (the user's ears). Next: the user's phone
+check of 1094 (voices and the jump slap); then the Mock Meet coach's own body.
 
 **YOUR COACH AT YOUR MEETS + SQUATAVIOUS'S JUMP SLAP (2026-11-24, user: "Yes work on that. With squatavious Maby just
-have it where he jumps up in a funny way and slaps your back hard") [BUILT, TESTED IN STUDIO, NOT COMMITTED, NOT
-PUBLISHED].** CoachingConfig.FiguresFolder + CoachingService builds one dressed figure per lift coach in
+have it where he jumps up in a funny way and slaps your back hard") [BUILT, TESTED IN STUDIO, COMMITTED 3e58292,
+pushed, PUBLISHED in 1094].** CoachingConfig.FiguresFolder + CoachingService builds one dressed figure per lift coach in
 ReplicatedStorage; MeetCoachLook (client) hides the platform coach on your screen and drives a copy of your coach
 (joint Transforms copied each PreSimulation; the bodies' joints are AnimationConstraints, not Motor6Ds), at his own
 hip height, tag re-adorned; reach/spread matching in the back loop; Squatavious's procedural jump (JUMP table: crouch,
