@@ -13,6 +13,48 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**NO MORE FLOATING WHILE HELD IN PLACE (2026-11-25, user's phone screenshot of a Regional meet chalk-up: "stuck in a
+position where it looks like they are just floating ... same thing happens for mock meets ... running in space")
+[BUILT, TESTED IN STUDIO; user: "Commit push and publish all of it": COMMITTED, PUSHED, PUBLISHED (see the status note)].** Cause, reproduced in Studio: meets, Mock Meets, coach's
+trials, practice and stations hold the lifter by anchoring the HumanoidRootPart on the server; if that lands while the
+character is airborne (a jump, the drop after being moved into a room), the anchored humanoid stays in Freefall for the
+whole hold and Animate loops the fall animation. Jumping or pushing the stick AFTER the hold starts does nothing (the
+state machine is paused), and the standing height was right (feet 0.02 studs above the platform). Fix: new client
+module `src/client/World/LockedStance.luau` (started from init.client.luau): while your root is anchored, every 0.2 s,
+if the humanoid is airborne or Animate's walk/run/jump/fall still shows (Core/Idle/Movement priority only, so the
+game's own Action tracks like the treadmill run are left alone), it zeroes the velocity and ChangeState(Landed), at
+most once per 0.6 s; skipped while seated. Test: anchored mid-jump from the server = before: Freefall + fall forever;
+after: Landed then Running + idle within 0.25 s, standing picture checked, no errors. NOT TESTED: a whole real meet's
+chalk-up and a coach's trial with the fix (same code path), two players, the phone. Not covered: computer lifters and
+staff figures (server-animated, no Animate script; no fault reported).
+**NEXT (approved 2026-11-25, see GAME_DESIGN §40.5 "Big-moment lines"):** big-moment walk-out and yell lines, the
+end-of-meet scene (coach pat + talk, podium medal/trophy/handshake, skippable, every meet) and the coach-unlock
+handshake scene. User: "yes make the new lines" / "As written". ROUND 3 COACH LINES [user: "Upload": UPLOADED 71/71, CoachVoiceConfig rebuilt (209 lines, 0 without an id); NOT committed, NOT published]: 71 takes
+(18 keys W1-W5 walk-out screams, H1-H4 big yells, P1-P8 end-of-meet talks, U1 coach unlock; Owner has no U1), flow
+AyrpHx2aov4nwWVuWYmi, 5,848 credits + 50 for one retake (Sumo H1 said "Heyyy"), estimate was ~4,400. Manifest
+D:/ClaudeScratch/coachvoices/lines.json (keys_v3, v3_spoken, generations_v3, credits_v3, rejected_v3); takes in
+lines_v3; word check wordcheck_v3.py all pass (a few false flags rechecked with medium.en); W2 "TAKE THE LEED" vowel
+F1 350-445 Hz (closed "ee"). make_coach_voice_lines.py now adds round 3 at each coach's round 2 gain (old lines
+unchanged); coach_voice_lines.json has the 71 new entries without ids. Listening MP3s sent to the user. WIRED (server,
+not yet Studio-tested): new src/server/Meet/MeetCoachCalls.luau picks W lines for THIRD attempts from the attempt's
+stakesLine (walk-out bubble in LocalMeetService liftGroup) and H lines after a good third attempt / took the lead /
+moved up (liftOne); falls back to the old ready/good lines. P and U wait for the scenes. STUDIO TEST: all changed scripts'
+checksums matched disk; MeetCoachCalls checked case by case in a play test (third attempt FOR THE WIN -> W1, TAKE THE
+LEAD -> W1/W2, move into top 3 from 5th -> W3, 3rd to 2nd -> W4, last attempt -> W5, first attempt / LEADING / new best
+-> fallback; bigYell third attempt or took the lead / moved up -> H, else fallback) and every line maps to its key in
+CoachVoiceConfig.ByText; no errors on load. NOT TESTED: a whole live meet reaching a third attempt with the coach
+saying and playing it, the phone; round 3 audio is still in Roblox's review (plays in Studio for the owner).
+**CROWD SHOUT "YOU TOOK THE LEAD!" SAID "LED" (2026-11-25, user: "she pronounces it as (led) not LEED, fix that")
+[REMADE; user: "Upload the new shout and put it in the game": UPLOADED rbxassetid://99979942913514, Roblox review APPROVED, in MeetSoundConfig BigShout5; NOT committed, NOT published].** MeetSoundConfig BigShout5 (rbxassetid://94374920564013, an ElevenLabs Sound Effects take)
+plays on "TAKES THE LEAD!". Remade with ElevenLabs speech instead (eleven_v4, library voice "Kate - Surprised &
+Excited" bshPAWYM9E3kueiqa6gJ, text "[screaming, thrilled, packed powerlifting meet] You took the leed!", flow
+bXzkuEEiMj6T2rfqiC5C, take uyE1I3nRHqpGpKmBMXV7 of 2, 132 credits), a light hall echo added and prepared with
+make_lift_shouts.prepare (D:\ClaudeScratch\leadcheck\make_leed.py) into Shouts/BigShout_5.wav (2.24 s, loud part
+-14 dB like the others). Old file kept as BigShout_5_old_said_led.wav (and Raw/BigShout_5_old_said_led.mp3). Check:
+whisper hears "You took the lead!"; across "lead" F2 rises to ~2,700 Hz with F1 stuck on the pitch (a closed "ee"),
+where the old take sits at F2 ~2,000 Hz with F1 ~1,000 Hz (open, "led"). Screaming makes formant numbers rough, so the
+user's own listen decides. Old id kept under "replaced" in elevenlabs_shouts.json. Not yet heard in a Studio meet.
+
 **THE MOCK MEET COACH IN HIS OWN BODY (2026-11-25, user: "The mock meet coach own body") [BUILT, TESTED IN STUDIO;
 user: "Commit push and publish": COMMITTED c094fea, PUSHED, PUBLISHED as place version 1102 (both scripts' checksums matched disk before the publish)].** MockMeetArena.build takes the coach watching (MockMeetService.enterRoom: the coach on
 trial in a coach's trial, else the player's active coach, PlayerDataService.getCoaching). buildCoach builds him with

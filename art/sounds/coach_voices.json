@@ -43,7 +43,11 @@
   "attempt_advice_A": "calm strategist, clear and level-headed",
   "end_of_meet_E": "great meet = loud and proud; bombed out = determined, already planning the comeback",
   "gym_talk_D": "big personality: confident, a bit cocky, testing you, hyped when he becomes your coach",
-  "trials_T_C": "start = intense challenge; pass = hyped and impressed; fail = firm, come back stronger, not sad"
+  "trials_T_C": "start = intense challenge; pass = hyped and impressed; fail = firm, come back stronger, not sad",
+  "walkout_W": "screaming all out (user 2026-11-25: 'Screaming hype')",
+  "big_yell_H": "screaming, ecstatic; only on big lifts (user 2026-11-25)",
+  "end_scene_P": "loud and proud after a good day; 4th or lower warm and encouraging; no total determined",
+  "unlock_U": "proud, warm"
  },
  "tags_round1_too_calm": {
   "ready": "[confident, focused]",
@@ -59,7 +63,8 @@
   "talk_lines": "11 per lift coach, the gym talk screen (CoachDialogue): D1 'What do you need?' ... D11 the daily quest. C1 + D3 play back to back for 'Show me what you got: ...', D5 + D3 for 'You paid. Now show me: ...'. Numbers are spoken as words, so a config change (price, percents, lift counts) needs those lines remade.",
   "credits": "round 1 about 7,476 (with voice samples); round 2 about 8,529.",
   "tags_round1": "see tags_round1_too_calm",
-  "tags_round2": "R [intense low growl, powerlifting meet]; S [screaming all out, powerlifting meet]; G [excited, proud]; M [fired up, pushing]; A [calm, strategic]; E1 [loud, proud], E2 [determined, fired up]; T1/C1/D3/D6 [intense, challenging]; T2/C2 [hyped, impressed]; T3/C3 [firm, come back stronger] (Bench and Sumo retaken with [firm]: they spoke the tag); D1 [confident, cocky]; D2 [cocky, testing]; D4 [cocky, teasing]; D5 [intense]; D7/D9 [hyped]; D8/D11 [confident]; D10 [proud]. Bench R3 '[intense, powerlifting meet] Same... as training.'"
+  "tags_round2": "R [intense low growl, powerlifting meet]; S [screaming all out, powerlifting meet]; G [excited, proud]; M [fired up, pushing]; A [calm, strategic]; E1 [loud, proud], E2 [determined, fired up]; T1/C1/D3/D6 [intense, challenging]; T2/C2 [hyped, impressed]; T3/C3 [firm, come back stronger] (Bench and Sumo retaken with [firm]: they spoke the tag); D1 [confident, cocky]; D2 [cocky, testing]; D4 [cocky, teasing]; D5 [intense]; D7/D9 [hyped]; D8/D11 [confident]; D10 [proud]. Bench R3 '[intense, powerlifting meet] Same... as training.'",
+  "round3": "2026-11-25 (user: 'yes make the new lines', 'As written', 'Upload'): 18 keys per lift coach, 17 for the Gym Owner (no U1): W1-W5 big walk-out on a third attempt that decides places, H1-H4 big yells after a big made lift, P1-P8 end-of-meet scene, U1 coach unlock. Flow AyrpHx2aov4nwWVuWYmi, eleven_v4, one take each; 5,848 credits + 50 for one retake (Sumo H1 said 'Heyyy'). Working manifest D:/ClaudeScratch/coachvoices/lines.json (keys_v3, v3_spoken, generations_v3); takes in lines_v3; word check wordcheck_v3.py. W2 is spoken 'TAKE THE LEED!' so 'lead' is said 'leed'."
  },
  "samples": {
   "about": "2026-11-24 voice samples (flow aVn34tXP7Ni26lhwabtN; round 1 372 credits, rejected; round 2 372 credits; every word checked): \"Shake it off.\" [calm, reassuring], \"You got this.\" [confident, focused], \"LET'S GO!\" [shouting, hyped], once per coach.",

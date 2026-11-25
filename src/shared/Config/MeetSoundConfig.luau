@@ -155,7 +155,7 @@ MeetSoundConfig.Cues = {
 	BigShout2 = shout("rbxassetid://139968385671294", "ElevenLabs Sound Effects: That's a PR!"),
 	BigShout3 = shout("rbxassetid://103825655529490", "ElevenLabs Sound Effects: New gym record!"),
 	BigShout4 = shout("rbxassetid://132348431572583", "ElevenLabs Sound Effects: Yes! Still in it!"),
-	BigShout5 = shout("rbxassetid://94374920564013", "ElevenLabs Sound Effects: You took the lead!"),
+	BigShout5 = shout("rbxassetid://99979942913514", "ElevenLabs speech: You took the lead! (said \"leed\"; the 2026-11-05 take said \"led\")"),
 	-- Nationals (GAME_DESIGN §39, user 2026-11-17: "add more n not reuse the same ones"): its own voices, none of the
 	-- Local/State takes. On the walk out (walkOutShouts at Nationals).
 	NatWalkShout1 = shout("rbxassetid://88051571876734", "ElevenLabs Sound Effects: This is your moment!"),

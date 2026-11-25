@@ -111,6 +111,9 @@ CardioMachineAnimator.start()
 local CardioRhythmController = require(WorldFolder:WaitForChild("CardioRhythmController"))
 CardioRhythmController.start()
 
+-- While the game holds you in place (meets, Mock Meets, practice), you stand instead of hanging in a fall. Visual only.
+require(WorldFolder:WaitForChild("LockedStance")).start()
+
 -- The Mock Meet: the title and Leave button while you are in your private meet room.
 local MeetFolder = script:WaitForChild("Meet")
 local MockMeetController = require(MeetFolder:WaitForChild("MockMeetController"))

@@ -2514,7 +2514,10 @@ local function liftOne(current: Meet, lifter: Lifter, lift: string, attemptNumbe
 		task.delay(answerIn + build.ReactionDelaySeconds + (voice - 1) * build.ReactionGapSeconds, soundCue, lifter,
 			table.remove(bag) :: string, build.ShoutVolume[level])
 	end
-	LocalMeetVenue.coachSays(lifter.platform, pick(if good then COACH_GOOD else COACH_MISS))
+	-- A big made lift gets his big yell (third attempt, the lead, a place up: MeetCoachCalls, user 2026-11-25).
+	LocalMeetVenue.coachSays(lifter.platform, (if good
+		then require(script.Parent:WaitForChild("MeetCoachCalls")).bigYell(attemptNumber, moment)
+		else nil) or pick(if good then COACH_GOOD else COACH_MISS))
 	lifter.moment = moment
 	boardFor(lifter, { string.format("%s  ·  ATTEMPT %d", string.upper(lift), attemptNumber),
 		string.format("%s KG  ·  %s", kgText(weightKg), if good then "GOOD LIFT" else "NO LIFT"), lightsText(lifter.lights) },
@@ -3073,7 +3076,10 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				task.delay(LocalMeetConfig.CoachFollowSeconds, function()
 					if stillLifting(lifter) and lifter.outOnPlatform then
 						coachWalk(lifter, lifter.platform.coachDoorSpot, function()
-							LocalMeetVenue.coachSays(lifter.platform, pick(COACH_READY))
+							-- A third attempt that decides places gets his scream instead (MeetCoachCalls, user 2026-11-25).
+							LocalMeetVenue.coachSays(lifter.platform, require(script.Parent:WaitForChild("MeetCoachCalls"))
+								.walkOut(lifter.stakesLine, attemptNumber, isMeetsLastAttempt(lift, attemptNumber),
+									placeOf(current, lifter)) or pick(COACH_READY))
 						end)
 					end
 				end)

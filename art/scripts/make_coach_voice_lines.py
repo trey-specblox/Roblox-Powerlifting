@@ -69,9 +69,23 @@ def main():
             takes[(lift, key)] = trim(data, sr)
             rate[(lift, key)] = sr
     gains = coach_gains(takes)
+    texts = {key: lines["keys"].get(key) or lines["talk_keys"][key] for gens in generations.values() for key in gens}
+    # Round 3 (2026-11-25: walk-out W, big yells H, end-of-meet scene P, coach unlock U) is added on top, at each
+    # coach's round 2 gain, so the new lines are as loud as the ones already in the game (and those don't change).
+    if lines.get("generations_v3"):
+        generations = {lift: dict(gens) for lift, gens in generations.items()}
+        for lift, gens in lines["generations_v3"].items():
+            for key, gen in gens.items():
+                data, sr = sf.read(TAKES / "lines_v3" / f"{lift}_{key}.mp3", dtype="float32")
+                if data.ndim > 1:
+                    data = data.mean(axis=1)
+                takes[(lift, key)] = trim(data, sr)
+                rate[(lift, key)] = sr
+                generations.setdefault(lift, {})[key] = gen
+                texts[key] = lines["keys_v3"][key]
     for lift, gens in generations.items():
         for key in gens:
-            text = lines["keys"].get(key) or lines["talk_keys"][key]
+            text = texts[key]
             text = text.replace("{plural}", PLURAL.get(lift, "")).replace("{word}", WORD.get(lift, ""))
             data, _rms = takes[(lift, key)]
             sr = rate[(lift, key)]

@@ -7794,6 +7794,22 @@ doesn't cover it. To settle while designing:
       watching in your room is your chosen coach in his own body and clothes (Squatavious, Benchamin, Sumo; the gym
       owner in the gym coach's look, tagged GYM OWNER), and in a coach's trial the coach on trial. His name on the
       tag, his voice for his lines.
+    - **Big-moment lines, the end-of-meet scene and the coach-unlock scene (user 2026-11-25, answers picked from
+      Claude's options; APPROVED, NOT BUILT):**
+      - *Walk-out on a THIRD attempt that decides places* (make it and you take the lead, reach the podium or move
+        up; or the last attempt of the meet): your coach SCREAMS hype as you walk to the bar ("This is for first
+        place!"). Third attempts only (the user's "really important third attempt"), so first squats, where everyone
+        can take the lead, don't wear the line out. "Lead" is said "leed". BUILT 2026-11-25 (MeetCoachCalls).
+      - *Big yells after a big made lift* ("AYYYYY!", "LET'S GOOOO!"): only on third attempts and lifts that change
+        your place; the normal good-lift lines stay for the rest. BUILT 2026-11-25 (MeetCoachCalls); not at the Mock
+        Meet (practice, no rivals).
+      - *End-of-meet scene at EVERY meet, kept short with a Skip button* (Local meets run every 90 s): your coach walks
+        up, pats your back and talks about how it went (won, 9/9, podium, 4th or lower, bombed out), proud on a good
+        day and encouraging on a bad one. Top 3 then step onto the podium where a referee puts the medal on, hands
+        1st the trophy and shakes hands. The coach lines work for any meet (no meet names: one line fits all).
+      - *Coach-unlock scene*: when you pass a coach's trial, no podium; you step off the platform, the coach you just
+        unlocked walks up ("You did what I told you, kid ... I'll be there when you need coaching") and you shake
+        hands, the hand-clasp kind (user's photo).
     - NOT YET: the gym owner as a figure in the gym; the coach redesign (hair, clothes, accessories); the coach in the
       meet cutscenes and the rare-suit drop scene (deferred to near release or the first update); better quests;
       bond unlocks.
