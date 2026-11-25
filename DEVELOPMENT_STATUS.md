@@ -15,7 +15,7 @@ CURRENT MILESTONE block).
 
 **NO MORE FLOATING WHILE HELD IN PLACE (2026-11-25, user's phone screenshot of a Regional meet chalk-up: "stuck in a
 position where it looks like they are just floating ... same thing happens for mock meets ... running in space")
-[BUILT, TESTED IN STUDIO; user: "Commit push and publish all of it": COMMITTED, PUSHED, PUBLISHED (see the status note)].** Cause, reproduced in Studio: meets, Mock Meets, coach's
+[BUILT, TESTED IN STUDIO; user: "Commit push and publish all of it": COMMITTED 07165bb, PUSHED, PUBLISHED as place version 1106 (the six changed scripts' checksums matched disk before the publish)].** Cause, reproduced in Studio: meets, Mock Meets, coach's
 trials, practice and stations hold the lifter by anchoring the HumanoidRootPart on the server; if that lands while the
 character is airborne (a jump, the drop after being moved into a room), the anchored humanoid stays in Freefall for the
 whole hold and Animate loops the fall animation. Jumping or pushing the stick AFTER the hold starts does nothing (the
@@ -29,7 +29,7 @@ chalk-up and a coach's trial with the fix (same code path), two players, the pho
 staff figures (server-animated, no Animate script; no fault reported).
 **NEXT (approved 2026-11-25, see GAME_DESIGN §40.5 "Big-moment lines"):** big-moment walk-out and yell lines, the
 end-of-meet scene (coach pat + talk, podium medal/trophy/handshake, skippable, every meet) and the coach-unlock
-handshake scene. User: "yes make the new lines" / "As written". ROUND 3 COACH LINES [user: "Upload": UPLOADED 71/71, CoachVoiceConfig rebuilt (209 lines, 0 without an id); NOT committed, NOT published]: 71 takes
+handshake scene. User: "yes make the new lines" / "As written". ROUND 3 COACH LINES [user: "Upload": UPLOADED 71/71, CoachVoiceConfig rebuilt (209 lines, 0 without an id); COMMITTED 07165bb, PUBLISHED 1106; Roblox review: all 209 coach lines APPROVED]: 71 takes
 (18 keys W1-W5 walk-out screams, H1-H4 big yells, P1-P8 end-of-meet talks, U1 coach unlock; Owner has no U1), flow
 AyrpHx2aov4nwWVuWYmi, 5,848 credits + 50 for one retake (Sumo H1 said "Heyyy"), estimate was ~4,400. Manifest
 D:/ClaudeScratch/coachvoices/lines.json (keys_v3, v3_spoken, generations_v3, credits_v3, rejected_v3); takes in
@@ -43,9 +43,9 @@ checksums matched disk; MeetCoachCalls checked case by case in a play test (thir
 LEAD -> W1/W2, move into top 3 from 5th -> W3, 3rd to 2nd -> W4, last attempt -> W5, first attempt / LEADING / new best
 -> fallback; bigYell third attempt or took the lead / moved up -> H, else fallback) and every line maps to its key in
 CoachVoiceConfig.ByText; no errors on load. NOT TESTED: a whole live meet reaching a third attempt with the coach
-saying and playing it, the phone; round 3 audio is still in Roblox's review (plays in Studio for the owner).
+saying and playing it, the phone.
 **CROWD SHOUT "YOU TOOK THE LEAD!" SAID "LED" (2026-11-25, user: "she pronounces it as (led) not LEED, fix that")
-[REMADE; user: "Upload the new shout and put it in the game": UPLOADED rbxassetid://99979942913514, Roblox review APPROVED, in MeetSoundConfig BigShout5; NOT committed, NOT published].** MeetSoundConfig BigShout5 (rbxassetid://94374920564013, an ElevenLabs Sound Effects take)
+[REMADE; user: "Upload the new shout and put it in the game": UPLOADED rbxassetid://99979942913514, Roblox review APPROVED, in MeetSoundConfig BigShout5; COMMITTED 07165bb, PUBLISHED 1106].** MeetSoundConfig BigShout5 (rbxassetid://94374920564013, an ElevenLabs Sound Effects take)
 plays on "TAKES THE LEAD!". Remade with ElevenLabs speech instead (eleven_v4, library voice "Kate - Surprised &
 Excited" bshPAWYM9E3kueiqa6gJ, text "[screaming, thrilled, packed powerlifting meet] You took the leed!", flow
 bXzkuEEiMj6T2rfqiC5C, take uyE1I3nRHqpGpKmBMXV7 of 2, 132 credits), a light hall echo added and prepared with
