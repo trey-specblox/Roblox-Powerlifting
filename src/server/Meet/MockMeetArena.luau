@@ -27,6 +27,8 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ConfigFolder = Shared:WaitForChild("Config")
 local MockMeetConfig = require(ConfigFolder:WaitForChild("MockMeetConfig"))
+local QuestConfig = require(ConfigFolder:WaitForChild("QuestConfig"))
+local CoachingConfig = require(ConfigFolder:WaitForChild("CoachingConfig"))
 local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
 
 local ServerFolder = script.Parent.Parent
@@ -96,9 +98,37 @@ function MockMeetArena.hangOnWall(copy: Model, screen: BasePart, wallPoint: Vect
 	local alongWall = toScreen - out * toScreen:Dot(out)
 	copy:PivotTo(copy:GetPivot() + alongWall + out * (wallPoint - back):Dot(out))
 end
--- The lifter's coach, watching (MeetFigures, shared with the Local meet). Returns the speech bubble's text.
-local function buildCoach(model: Model, at: Vector3, watching: Vector3): TextLabel?
-	return MeetFigures.build(model, "Coach", at, watching)
+--[[
+	The lifter's coach, watching (MeetFigures, shared with the Local meet). Returns the speech bubble's text.
+	THE COACH IN HIS OWN BODY (user 2026-11-25: "The mock meet coach own body"): `coachId` is who stands here, a lift
+	coach (Squatavious, Benchamin, Sumo: his own body and clothes, built exactly as CoachingService builds his figure
+	for the meets) or the gym owner (the gym coach's look, tagged GYM OWNER: he has no figure of his own yet). The
+	room is the lifter's own, so the server builds him as he is; no copy on the client. The room's "CoachVoice"
+	attribute says whose voice his lines are in (CoachVoice, on the owner's screen).
+]]
+local COACH_TAG_WIDTH = 150 -- wide enough for "SQUATAVIOUS" (MeetCoachLook's tag width)
+local COACH_TAG_GAP = 0.45 -- studs of air between his head and the tag (MeetFigures' TAG_GAP)
+local function buildCoach(model: Model, at: Vector3, watching: Vector3, coachId: string): TextLabel?
+	local coach = QuestConfig.Coaches[coachId]
+	local look = if coach
+		then { top = coach.shirt, trousers = coach.trousers, build = coach.body,
+			tag = string.upper((string.gsub(coach.name, "^Coach%s+", ""))) }
+		else { tag = CoachingConfig.Owner.title }
+	local line, figure = MeetFigures.build(model, "Coach", at, watching, nil, look)
+	local billboard = figure and figure:FindFirstChild("CoachTag")
+	local label = billboard and billboard:FindFirstChild("Name")
+	if label and label:IsA("TextLabel") then
+		label.Size = UDim2.fromOffset(COACH_TAG_WIDTH, label.Size.Y.Offset)
+	end
+	-- His tag just over his head: the cartoon bodies' UpperTorso reports a box far above the head (Benchamin's 3.7
+	-- studs over it, the gym owner's staff body 3.4, Studio 2026-11-25), so the tag seated by the figure's bounding box
+	-- floated 3.5 studs up. (Give him hair or a hat later: seat it over that instead.)
+	local head = figure and figure:FindFirstChild("Head")
+	if billboard and billboard:IsA("BillboardGui") and head and head:IsA("BasePart") then
+		billboard.StudsOffset = Vector3.new(0, head.Size.Y / 2 + COACH_TAG_GAP, 0)
+	end
+	model:SetAttribute("CoachVoice", if coach then coachId else CoachingConfig.OwnerId)
+	return line
 end
 
 --[[
@@ -134,9 +164,9 @@ end
 
 --[[
 	Builds the private room for `slot` and returns it, or nil and the reason.
-	Nothing is left behind on failure.
+	Nothing is left behind on failure. `coachId` is the coach watching (a lift, or CoachingConfig.OwnerId).
 ]]
-function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
+function MockMeetArena.build(slot: number, owner: Player, coachId: string?): (Room?, string?)
 	local centre = slotCentre(slot)
 	local size = MockMeetConfig.RoomSize
 	local hx, hz, h = size.X / 2, size.Z / 2, size.Y
@@ -211,7 +241,8 @@ function MockMeetArena.build(slot: number, owner: Player): (Room?, string?)
 
 	-- The lifter's coach, watching from the front corner of the platform (no judges in a Mock Meet).
 	local liftAt = centre + Vector3.new(0, PLATFORM_HEIGHT, PLATFORM_Z - LIFT_SPOT_IN_FRONT)
-	local coachLine = buildCoach(model, centre + Vector3.new(half + 3, 0, PLATFORM_Z - half + 1), liftAt)
+	local coachLine = buildCoach(model, centre + Vector3.new(half + 3, 0, PLATFORM_Z - half + 1), liftAt,
+		coachId or CoachingConfig.OwnerId)
 
 	-- The attempt board on the back wall, above the platform: the screen (28 x 12, 9 to 21 up) in the Blender
 	-- frame with its CENTRAL header. The screen piece is named "AttemptBoard" and sits in the room's model,

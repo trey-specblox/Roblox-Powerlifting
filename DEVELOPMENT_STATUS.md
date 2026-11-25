@@ -13,11 +13,26 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**THE MOCK MEET COACH IN HIS OWN BODY (2026-11-25, user: "The mock meet coach own body") [BUILT, TESTED IN STUDIO;
+user: "Commit push and publish": COMMITTED, PUSHED, PUBLISHED (commit and version in the note below)].** MockMeetArena.build takes the coach watching (MockMeetService.enterRoom: the coach on
+trial in a coach's trial, else the player's active coach, PlayerDataService.getCoaching). buildCoach builds him with
+MeetFigures.build and his QuestConfig look (body, shirt, trousers), exactly as CoachingService builds the meet
+figures; the gym owner keeps the gym coach's look, tagged GYM OWNER. Tag 150 wide ("SQUATAVIOUS") and seated over the
+head (head half + 0.45): the cartoon bodies' UpperTorso reports a box far above the head (Benchamin 3.7, the staff body
+3.4 studs), so MeetFigures.seatTag floated every room coach's tag ~3.5 studs up (also before this change). The room's
+"CoachVoice" attribute is always set to whoever stands there. STUDIO (Rojo checksums matched each run): rooms with
+the gym owner, Squatavious, Benchamin and Sumo, each the right body, tag and voice attribute, tag 1.05 over the head,
+photos front/side/back of Squatavious; Sumo said R2 "Breathe. Brace. Go." in his voice at the ready; console clean.
+NOT TESTED: a coach's trial room (same path, coachId = the trial's lift), a phone. Test note: re-entering a room
+in Studio needs the camera set back to Custom in the same execute_luau (the tool restores a scripted camera, and the
+prompt then never shows). Same high-tag cause likely on other staff with cartoon bodies (meet judges, platform coach):
+not checked.
+
 **COACH VOICES ROUND 2 + JUMP FIX (2026-11-25, user: the voices were "in the most calmest voice ... It has to be
 motivating it has to hype the player up"; "he does not fully complete the jump ... because I'm already walking out";
 upload: "Yes") [REMADE, UPLOADED 138/138, CONFIG REBUILT, TESTED IN STUDIO; user: "Commit publish": COMMITTED
 50b9f59, PUBLISHED as place version 1099 (Rojo reconnected and the four changed scripts' checksums matched disk before
-the publish); NOT pushed].**
+the publish); user: "Push it": PUSHED with status note 8f59fd8].**
 STUDIO 2026-11-25: Rojo had stopped pushing changes (server up, Studio's copy stale), so the new CoachVoiceConfig was
 patched into Studio's Edit copy and checked equal to disk (length 16528 + checksum). Play test: all 138 new ids load at
 their listed lengths; CoachVoice played Squat R1, Bench S1, Deadlift G1, Owner M2, Bench D1, Sumo D1 with the new ids;

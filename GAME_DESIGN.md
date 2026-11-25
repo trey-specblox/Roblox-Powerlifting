@@ -7790,8 +7790,13 @@ doesn't cover it. To settle while designing:
       only: your coach's speech-bubble lines at meets (ready, good lift, miss, send-off, attempt advice, end of meet), the
       Mock Meet room's lines (the coach on trial in his own voice), and the gym talk screen. Lines that change (weights,
       names, "So far: 1 of 2") stay text only.
-    - NOT YET: the gym owner as a figure in the gym; the three coach bodies (Blender, approval first); the coach in
-      the Mock Meet room and the meet cutscenes; better quests; bond unlocks.
+    - **Your coach in your Mock Meet room (user 2026-11-25: "The mock meet coach own body"; BUILT):** the coach
+      watching in your room is your chosen coach in his own body and clothes (Squatavious, Benchamin, Sumo; the gym
+      owner in the gym coach's look, tagged GYM OWNER), and in a coach's trial the coach on trial. His name on the
+      tag, his voice for his lines.
+    - NOT YET: the gym owner as a figure in the gym; the coach redesign (hair, clothes, accessories); the coach in the
+      meet cutscenes and the rare-suit drop scene (deferred to near release or the first update); better quests;
+      bond unlocks.
 
 ### 40.6 Daily quests (user, 2026-11-19, picked from Claude's options; BUILT 2026-11-19)
 

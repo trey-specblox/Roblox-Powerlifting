@@ -801,7 +801,10 @@ local function enterRoom(player: Player, body: Body, suitTest: SuitTest?, coachT
 		notify(player, "Every Mock Meet room is in use. Try again in a moment.")
 		return false
 	end
-	local room, problem = MockMeetArena.build(slot, player)
+	-- Who watches: the coach on trial in a coach's trial, else the player's own chosen coach (the gym owner by default).
+	local coaching = PlayerDataService.getCoaching(player)
+	local coachId = if coachTrial then coachTrial.lift elseif coaching then coaching.active else CoachingConfig.OwnerId
+	local room, problem = MockMeetArena.build(slot, player, coachId)
 	if room == nil then
 		warn(string.format("[MockMeetService] could not build a room for %s: %s", player.Name, tostring(problem)))
 		return false
