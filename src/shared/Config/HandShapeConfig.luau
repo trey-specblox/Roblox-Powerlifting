@@ -69,7 +69,9 @@ HandShapeConfig.Meshes = {
 
 -- Each build's hand size (build_cartoon_body_05.body_spec "hand"; CHARACTER_ART_DIRECTION.md: the hands grow with the
 -- build).
-HandShapeConfig.HandSize = { Skinny = 1.05, SkinnyFat = 1.12, Fat = 1.30, Fit = 1.22, Muscular = 1.50, BigBuff = 1.58 } :: { [string]: number }
+HandShapeConfig.HandSize = { Skinny = 1.05, SkinnyFat = 1.12, Fat = 1.30, Fit = 1.22, Muscular = 1.50, BigBuff = 1.58,
+	-- the coaches' bodies (build_coach_bodies_01.py, ClothesConfig.Bodies Coach*)
+	CoachSquatavious = 1.40, CoachBenchamin = 1.50, CoachSumo = 1.10 } :: { [string]: number }
 
 -- Where shape `shape` on `side` sits in its hand part's space (the body's own, Default, hand), for `build`.
 function HandShapeConfig.offset(build: string, shape: string, side: string): Vector3

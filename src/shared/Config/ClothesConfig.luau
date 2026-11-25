@@ -49,6 +49,9 @@ export type Body = {
 	-- Each hand's grip on the squat bar, from the bar's centre (studs; Character Animation Quality.md §4.1b): a
 	-- little outside the shoulders, wide only on the big builds. For the game's per-build squat hold.
 	squatGrip: number,
+	-- The Root joint's height above the floor for this body (the Humanoid's HipHeight); nil = ClothesConfig.HipHeight.
+	-- Only the coaches' bodies differ (their own skeletons).
+	hipHeight: number?,
 }
 
 -- The production cartoon bodies (2026-11-15, materials.json "CartoonBody08_<Build>": CartoonBodies_05, the torso-tall
@@ -71,6 +74,20 @@ ClothesConfig.Bodies = {
 		squatGrip = 2.17, benchBarClear = 0.754, clothesAssetId = 110811863806108 },
 	BigBuff = { assetId = 127501040475668, neckMark = Vector3.new(0, 0.8354, -0.0047), squatBarRest = 1.075,
 		squatGrip = 2.35, benchBarClear = 0.847, clothesAssetId = 113927749809120 },
+
+	-- THE THREE LIFT COACHES' OWN BODIES (GAME_DESIGN §40.5; user 2026-11-23 descriptions, bodies approved 2026-11-24
+	-- "They look right", clothes "Cloths look right"; CHARACTER_ART_DIRECTION.md §12): Coach Squatavious very short and
+	-- very muscular, Coach Benchamin a huge top on thin legs, Coach Sumo lean with a short torso and long legs and arms.
+	-- Each on his own skeleton, so his own HipHeight. materials.json "CoachBody01_<Coach>" / "CoachClothes01_<Coach>",
+	-- every number from art/exports/CoachExport01.json (art/scripts/export_coach_01.py). Never a player's build
+	-- (LifterBuild only picks the six above); figures ask for them by name (QuestConfig.Coaches[lift].body). They don't
+	-- lift yet: squatGrip is the nearest lifter build's, the bar numbers are measured but unused.
+	CoachSquatavious = { assetId = 94688113139502, neckMark = Vector3.new(0, 0.5271, -0.0179), squatBarRest = 0.781,
+		squatGrip = 2.17, benchBarClear = 0.781, clothesAssetId = 70373891178480, hipHeight = 1.192 },
+	CoachBenchamin = { assetId = 82139846461954, neckMark = Vector3.new(0, 0.8659, 0.0376), squatBarRest = 0.801,
+		squatGrip = 2.35, benchBarClear = 0.801, clothesAssetId = 137430095064056, hipHeight = 2.0 },
+	CoachSumo = { assetId = 139907082755699, neckMark = Vector3.new(0, 0.5252, -0.0068), squatBarRest = 0.635,
+		squatGrip = 1.87, benchBarClear = 0.635, clothesAssetId = 96887330165432, hipHeight = 2.902 },
 } :: { [string]: Body }
 ClothesConfig.DefaultBuild = "Skinny"
 ClothesConfig.StudioBuildAttribute = "LifterBodyBuild"

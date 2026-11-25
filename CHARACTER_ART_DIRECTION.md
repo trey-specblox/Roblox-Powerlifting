@@ -909,3 +909,64 @@ exported or committed; no game file changed.
 **Order and size:** Phase 0 is decisions only. Phases 1 and 2 can run at the same time (skeleton/animations vs body
 sculpting), then 3, 4, 5, 6 in order. Each phase is a session's worth of work or more; Phase 4 is the riskiest (game
 code that needs Studio).
+
+## 12. The three coach bodies (prototype 01, 2026-11-24) [APPROVED 2026-11-24, user: "They look right" (the toned version)]
+
+From the user's descriptions (2026-11-23), GAME_DESIGN §40.5. Built by `art/scripts/build_coach_bodies_01.py` ->
+`art/blender/CoachBodies_01.blend`, pictures `art/previews/CoachBodies01_{Front,Back,Side,Threequarter}.png` (next to
+the Fit lifter for scale, backface culling on). Nothing rigged, exported, uploaded or committed.
+- **Method:** the approved body-05 method on each coach's OWN skeleton: the shared base mesh (Base05_Fit, same points
+  and order as the six lifter bodies) reshaped onto the coach's field; an approved build's shapes moved onto the coach's
+  joint heights (each part stretched or squashed between its joints) plus the coach's own shapes.
+- **Coach Squatavious** ("a really muscular short midget"): the Muscular build, 8% wider, big traps, on a very short
+  skeleton: thigh 0.52, shin 0.42, torso 1.95, arms 0.70 + 0.70 (hips 1.19, neck 3.14; ~4.3 studs with the head, the
+  lifters ~5.9).
+- **Coach Benchamin** ("a muscular guy with less muscular legs"): the lifters' skeleton; Muscular torso with a bigger
+  chest, Big-and-buff delts, traps and arms; the Skinny build's legs 14% thinner.
+- **Coach Sumo** ("a skinnier/leaner guy with a really short torso long legs and long arms"): the Skinny build on
+  thigh 1.55, shin 1.10, torso 1.70, arms 1.40 + 1.45 (hips 2.90, neck 4.60, wrist 1.50: hands at the knees).
+- **More toned (user 2026-11-24, "Make them all more toned"):** Sumo is now the Fit build's muscles slimmed (torso 88%
+  wide, limbs ~80% thick) instead of Skinny; Benchamin's legs are the Fit build's leg muscles at 80% (thin but
+  defined) instead of Skinny legs. All three get DEFINITION LINES measured off their own surface (`tone()`: sternum,
+  pec edge, centre line, ab rows (two on Squatavious's short torso, three on the others), obliques, spine, shoulder
+  blades, biceps/triceps, delt/biceps, two quad lines, hamstrings, calf; groove radius 0.065, depth 0.030-0.034), so
+  the lines sit at the same shallow depth on any shape. The Muscular build's own grooves are replaced by these.
+- **Checks:** 4,332 triangles each + 600 per hand; 0 folds, 0 faces turned in; CHECK PASSED.
+- **Rigged (2026-11-24, after the approval) [EXPERIMENTAL, nothing exported or uploaded]:**
+  `art/scripts/build_coach_rig_01.py` (run on CartoonBodies_05.blend) -> `art/blender/CoachBodies_01_Rigged.blend`:
+  `<Coach>Rig` + the 12 skin parts + open hands + stand-in head, swap hands (Fist, Point, ThumbsUp, Grip, SquatGrip)
+  in "CoachSwapHands"; each rig keeps `hip_height` (Squatavious 1.192, Benchamin 2.0, Sumo 2.902: the game's
+  HipHeight per coach) and `skeleton`. Weights: build_cartoon_rig_05's own weight code (the lifters' shared weights and
+  R15 part split, same faces per part), exactly the lifters' weights (a coach-only re-run of the fold solve,
+  COACHRIG01_SOLVE=1, changed nothing visible and made the clothes' sleeves bend differently from the arms: off);
+  5,532 triangles each with hands.
+- **Clothes (2026-11-24, user: "Start the coaches cloths") [APPROVED 2026-11-24, user: "Cloths look right"]:**
+  `art/scripts/build_coach_clothes_01.py` (run on CoachBodies_01_Rigged.blend) -> `art/blender/CoachClothes_01.blend`:
+  every basic clothes item (tee, long sleeve, shorts, joggers, sneakers, with their white pieces) as
+  `<Coach>_<Item>__<Part>`, taken from the uploaded clothes 14 (tee: CartoonGear_07, the rest: CartoonGear_05_Knee100)
+  of the most similar lifter body (Squatavious: Muscular; Benchamin: BigBuff tee, Fit joggers/shoes; Sumo: Fit tee and
+  shoes, Skinny joggers). Each clothes point is PINNED to the skin triangle under it (same triangles on every body) and
+  re-placed on the coach at the same height above the skin; loose fabric (over 0.05 from the skin, and the whole
+  jogger lower legs) follows the skin's smooth movement round it instead (pinned, it frayed into spikes at Sumo's cuffs
+  and crotch); the jogger cuff keeps its own height (0.20 above the ankle; Squatavious's half-length shins crushed it);
+  the lifter pieces' weights are kept (= the coach skin's); shading normals recomputed for the coach's shape (the copied
+  ones drew spiky creases); then a pose RELIEF (gear_fit_03.pose_relief's method for split pieces) in the coach moves,
+  the joggers also over the tee hem; not the sneakers (it swelled a shoe). Coaches wear tee + joggers + dark sneakers
+  in their QuestConfig colours (MeetFigures.build).
+  Check `art/scripts/check_coach_clothes_01.py` (skin points the clothes cover at rest that come out in the coach
+  moves; the same check on the lifters' approved clothes as the baseline): every coach at or near the lifters' level
+  (upper arms 1-8 vs lifters 2-7, torso 4-24 vs 1-25, feet 13-16 in the walk vs 10-18; Squatavious's walk legs 14/13
+  vs at most 6/9, not visible in the pictures); CHECK PASSED (207 meshes). Pictures
+  `art/previews/CoachClothes01_{Front,Back,Side,Threequarter,Poses}.png`. Small leftovers: the white sleeve bands
+  ruffle a little on Sumo and under one arm on Benchamin; the tee hem's red dots under Benchamin's waistband are gone.
+  About 11,000 triangles per dressed coach (body ~5,500 + clothes worn ~5,500), the same as a dressed lifter.
+  Pose check `art/scripts/check_coach_rig_01.py` (the game's animations posed as Roblox does) ->
+  `art/previews/CoachRig01_Poses.png`: standing, coach talk, chalk clap and walking bend cleanly on all three. Known,
+  for the animation phase: the coach back slap's hands land at face height without a lifter in front (on Squatavious
+  a lifter's back is far above his reach); on Sumo the talk's hand-on-hip lands on the upper thigh (his hips are
+  high and his arms long); arms raised sideways (not a coach move) pull the big delts flat on Squatavious and
+  Benchamin (the coach fold solve changed that little).
+- **Next, after the user's OK:** rig each on its own skeleton (build_cartoon_rig_05 with the coach's joint heights),
+  clothes in each coach's colours fitted per body, uploads (ask first), then the game: a per-build HipHeight and joint
+  marks (LifterBodyService already takes joints from the template), the gym coaches, the meet coach (MeetCoachLook),
+  the Mock Meet coach and the dialogue portraits.

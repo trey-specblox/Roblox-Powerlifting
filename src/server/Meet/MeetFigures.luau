@@ -375,7 +375,8 @@ end
 	works without one). `look` (optional) changes the outfit's top and trousers colours and the name tag (the gym's
 	quest coaches, GAME_DESIGN §40.6, each in their lift's colour).
 ]]
-export type Look = { top: Color3?, trousers: Color3?, tag: string? }
+-- build: the body (ClothesConfig.Bodies; the coaches' own, QuestConfig.Coaches[lift].body); nil = the staff build.
+export type Look = { top: Color3?, trousers: Color3?, tag: string?, build: string? }
 --[[
 	Seats a figure's name tag just above the top of the figure (its head, hair or hat), with the tag's BOTTOM edge there
 	at every distance (user 2026-11-21: "fix the ui sinking inside the chef, and not staying on top of the character ...
@@ -433,7 +434,7 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	-- The cartoon body (§38.1: staff get the same bodies; open hands when talking or relaxed, user 2026-11-12), in
 	-- their outfit's colours: a tee, joggers, dark sneakers.
-	LifterBodyService.prepareFigure(figure, LifterBuild.BuildRules.Spotter, {
+	LifterBodyService.prepareFigure(figure, (look and look.build) or LifterBuild.BuildRules.Spotter, {
 		Shirt = { item = "Tee", colour = outfit.top },
 		Bottom = { item = "Joggers", colour = outfit.trousers },
 		Shoes = { item = "Sneakers", colour = Color3.fromRGB(34, 34, 38) },

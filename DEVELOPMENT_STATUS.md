@@ -13,6 +13,28 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**COACH BODIES 01 (2026-11-24, user: "Commit and push we can start with the coach figures"; "Make them all more
+toned"; "They look right" = APPROVED) [NOTHING COMMITTED].** Coach Squatavious, Benchamin and Sumo built in Blender
+(`art/scripts/build_coach_bodies_01.py` -> `art/blender/CoachBodies_01.blend`, pictures
+`art/previews/CoachBodies01_*.png`), then RIGGED (`build_coach_rig_01.py` -> `CoachBodies_01_Rigged.blend`, pose check
+`check_coach_rig_01.py` -> `art/previews/CoachRig01_Poses.png`); CHECK PASSED; details CHARACTER_ART_DIRECTION.md §12.
+Then CLOTHES (user: "Start the coaches cloths"): `build_coach_clothes_01.py` -> `CoachClothes_01.blend`, check
+`check_coach_clothes_01.py` (at the lifters' level), pictures `art/previews/CoachClothes01_*.png`, APPROVED ("Cloths look
+right"). EXPORTED (`export_coach_01.py` -> `art/exports/CoachBody01_<Coach>.glb`, `CoachClothes01_<Coach>.glb`,
+`CoachExport01.json`; structure checked against CartoonBody10/CartoonClothes14). Upload manifest ready
+(`D:\ClaudeScratch\coaches\upload_manifest.json`). UPLOADED on the user's OK ("Upload save and publish"): bodies
+94688113139502 / 82139846461954 / 139907082755699, clothes 70373891178480 / 137430095064056 / 96887330165432
+(materials.json CoachBody01_* / CoachClothes01_*). GAME CODE: ClothesConfig.Bodies CoachSquatavious / CoachBenchamin /
+CoachSumo (+ `hipHeight`), HandShapeConfig.HandSize, LifterBodyService.swapBody uses the body's hipHeight,
+MeetFigures Look.build, QuestConfig.Coaches[lift].body, QuestService passes it. STUDIO (Rojo checksums matched): the
+three gym coaches load their bodies (heights 4.36 / 5.92 / 5.82, all on the floor, 26 clothes pieces each), the
+dialogue portraits show them (Sumo, Squatavious checked), console clean. SAVED (1082) and PUBLISHED. NOT COMMITTED.
+Not done: the meet platform coach and the Mock Meet coach still use the generic coach body; a real phone check. Latest commit 3f315ba (the meet coach look, pushed, NOT published: live is 1080). Uncommitted: the five scripts,
+the three .blend files, the doc notes. Next: the user's look at the clothes, then export (body + clothes per coach, as
+export_cartoon_body_08 / export_cartoon_08), the uploads (ask first), then game code (per-coach body template +
+HipHeight in LifterBodyService/ClothesConfig, the gym coaches, MeetCoachLook, the Mock Meet coach, the dialogue
+portraits).
+
 **COACHING STAGE 1 (2026-11-24, user: "Yea let's start with the coaching system"; GAME_DESIGN §40.5). Commit 34b9cfb,
 SAVED and PUBLISHED as place version 1072 (the user approved Claude's three rule calls with "Commit save and publish").**
 New: CoachingConfig, CoachingRemotes, CoachingService; save VERSION 38 `coaching` (migrations[37]); ProfileOperations /

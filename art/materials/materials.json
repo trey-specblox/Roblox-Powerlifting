@@ -2299,6 +2299,54 @@
    "ids": {
     "model": "rbxassetid://104922146247811"
    }
+  },
+  "CoachBody01_Squatavious": {
+   "about": "Coach body (Squatavious), CoachBodies_01 (approved 2026-11-24), rigged on his own skeleton with the lifters' weights (build_coach_rig_01.py), 14 skinned R15 parts, open hand, no head. Exported by art/scripts/export_coach_01.py from art/blender/CoachClothes_01.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CoachBody01_Squatavious.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://94688113139502"
+   }
+  },
+  "CoachClothes01_Squatavious": {
+   "about": "Coach clothes (Squatavious): the basic clothes (tee, long sleeve, shorts, joggers, sneakers + white pieces) moved onto his body (build_coach_clothes_01.py, approved 2026-11-24), '<Item>__<Part>'. Exported by art/scripts/export_coach_01.py. CHECK PASSED.",
+   "file": "art/exports/CoachClothes01_Squatavious.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://70373891178480"
+   }
+  },
+  "CoachBody01_Benchamin": {
+   "about": "Coach body (Benchamin), CoachBodies_01 (approved 2026-11-24), rigged on his own skeleton with the lifters' weights (build_coach_rig_01.py), 14 skinned R15 parts, open hand, no head. Exported by art/scripts/export_coach_01.py from art/blender/CoachClothes_01.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CoachBody01_Benchamin.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://82139846461954"
+   }
+  },
+  "CoachClothes01_Benchamin": {
+   "about": "Coach clothes (Benchamin): the basic clothes (tee, long sleeve, shorts, joggers, sneakers + white pieces) moved onto his body (build_coach_clothes_01.py, approved 2026-11-24), '<Item>__<Part>'. Exported by art/scripts/export_coach_01.py. CHECK PASSED.",
+   "file": "art/exports/CoachClothes01_Benchamin.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://137430095064056"
+   }
+  },
+  "CoachBody01_Sumo": {
+   "about": "Coach body (Sumo), CoachBodies_01 (approved 2026-11-24), rigged on his own skeleton with the lifters' weights (build_coach_rig_01.py), 14 skinned R15 parts, open hand, no head. Exported by art/scripts/export_coach_01.py from art/blender/CoachClothes_01.blend. CHECK PASSED, 5,532 triangles.",
+   "file": "art/exports/CoachBody01_Sumo.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://139907082755699"
+   }
+  },
+  "CoachClothes01_Sumo": {
+   "about": "Coach clothes (Sumo): the basic clothes (tee, long sleeve, shorts, joggers, sneakers + white pieces) moved onto his body (build_coach_clothes_01.py, approved 2026-11-24), '<Item>__<Part>'. Exported by art/scripts/export_coach_01.py. CHECK PASSED.",
+   "file": "art/exports/CoachClothes01_Sumo.glb",
+   "license": "own work",
+   "ids": {
+    "model": "rbxassetid://96887330165432"
+   }
   }
  },
  "images": {

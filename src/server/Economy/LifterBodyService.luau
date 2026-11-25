@@ -434,7 +434,8 @@ function swapBody(character: Model, build: string, label: string): boolean
 	if headScale and headScale:IsA("NumberValue") then
 		headScale.Value = ClothesConfig.HeadScale
 	end
-	humanoid.HipHeight = ClothesConfig.HipHeight
+	-- (a coach's body stands on his own skeleton: ClothesConfig.Bodies[build].hipHeight)
+	humanoid.HipHeight = ClothesConfig.Bodies[build].hipHeight or ClothesConfig.HipHeight
 	addHandShapes(character, build, skin)
 	character:SetAttribute(ClothesConfig.BodyAttribute, true)
 	character:SetAttribute(ClothesConfig.BodyAttribute .. "Build", build)

@@ -60,7 +60,7 @@ local function placeCoach(spot: Instance)
 	local forward = if typeof(facing) == "Vector3" and facing.Magnitude > 0 then facing.Unit else spot.CFrame.LookVector
 	local at = Vector3.new(spot.Position.X, spot.Position.Y - spot.Size.Y / 2, spot.Position.Z)
 	local _, figure = MeetFigures.build(folder :: Folder, "Coach", at, at + forward * 10, nil,
-		{ top = coach.shirt, trousers = coach.trousers, tag = coach.title })
+		{ top = coach.shirt, trousers = coach.trousers, tag = coach.title, build = coach.body })
 	if figure == nil then
 		return
 	end

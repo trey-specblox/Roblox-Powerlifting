@@ -7710,7 +7710,12 @@ doesn't cover it. To settle while designing:
   | **Coach Benchamin** | Bench | "a muscular guy with less muscular legs": a big upper body on thinner legs |
   | **Coach Sumo** | Deadlift | "a skinnier/leaner guy with a really short torso long legs and long arms" |
 
-  Their bodies are NOT BUILT yet (they follow CHARACTER_ART_DIRECTION.md and the cartoon body style).
+  **Their bodies are BUILT (2026-11-24, approved: the toned bodies "They look right", the clothes "Cloths look
+  right"; CHARACTER_ART_DIRECTION.md §12):** each on his own skeleton (Squatavious ~4.4 studs tall, Benchamin 5.9,
+  Sumo 5.8; lifters 5.9), the game's basic clothes (tee in his colour, black joggers, dark sneakers). Uploaded and
+  live (place version 1082) on the **three gym coaches** (QuestConfig.Coaches[lift].body, ClothesConfig.Bodies Coach*)
+  and so in their dialogue portraits. NOT yet on the meet platform coach (still the generic coach in your coach's
+  colours, MeetCoachLook) or the Mock Meet coach.
 - **What the coaches do, and where they show (user, 2026-11-23):** "For now they will just stand talk and watch, like our
   current "coach" place holder will be replaced with the coach of the lifters choosing. It's going to be client based
   so the background is not filled with the same coaches."

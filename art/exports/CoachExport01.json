@@ -1,0 +1,449 @@
+{
+ "coaches": {
+  "Squatavious": {
+   "joints": {
+    "Root": [
+     -0.0,
+     0.0,
+     0.0
+    ],
+    "HumanoidRootNode": [
+     -0.0,
+     2.192,
+     0.0
+    ],
+    "LowerTorso": [
+     -0.0,
+     1.192,
+     0.0
+    ],
+    "UpperTorso": [
+     -0.0,
+     1.582,
+     0.0
+    ],
+    "LeftUpperArm": [
+     -1.06,
+     2.8701,
+     0.0
+    ],
+    "LeftLowerArm": [
+     -1.6112,
+     2.1701,
+     0.0
+    ],
+    "LeftHand": [
+     -1.6112,
+     1.4701,
+     0.0
+    ],
+    "RightUpperArm": [
+     1.06,
+     2.8701,
+     0.0
+    ],
+    "RightLowerArm": [
+     1.6112,
+     2.1701,
+     0.0
+    ],
+    "RightHand": [
+     1.6112,
+     1.4701,
+     0.0
+    ],
+    "LeftUpperLeg": [
+     -0.5,
+     1.192,
+     0.0
+    ],
+    "LeftLowerLeg": [
+     -0.5,
+     0.672,
+     0.0
+    ],
+    "LeftFoot": [
+     -0.5,
+     0.252,
+     0.0
+    ],
+    "RightUpperLeg": [
+     0.5,
+     1.192,
+     0.0
+    ],
+    "RightLowerLeg": [
+     0.5,
+     0.672,
+     0.0
+    ],
+    "RightFoot": [
+     0.5,
+     0.252,
+     0.0
+    ]
+   },
+   "neckMark": [
+    -0.0,
+    0.5271,
+    -0.0179
+   ],
+   "hipHeight": 1.192,
+   "handSize": 1.4,
+   "squatBarRest": 0.781,
+   "benchBarClear": 0.781,
+   "handOffsets": {
+    "Fist_Left": [
+     0.0934,
+     0.1503,
+     0.0896
+    ],
+    "Fist_Right": [
+     -0.0934,
+     0.1503,
+     0.0896
+    ],
+    "Point_Left": [
+     0.094,
+     0.013,
+     0.091
+    ],
+    "Point_Right": [
+     -0.094,
+     0.013,
+     0.091
+    ],
+    "ThumbsUp_Left": [
+     0.0436,
+     0.0887,
+     0.0666
+    ],
+    "ThumbsUp_Right": [
+     -0.0436,
+     0.0887,
+     0.0666
+    ],
+    "Grip_Left": [
+     0.2101,
+     0.0436,
+     0.0913
+    ],
+    "Grip_Right": [
+     -0.2101,
+     0.0436,
+     0.0913
+    ],
+    "SquatGrip_Left": [
+     0.1123,
+     0.1116,
+     0.0912
+    ],
+    "SquatGrip_Right": [
+     -0.1123,
+     0.1116,
+     0.0912
+    ]
+   },
+   "triangles": 5532,
+   "clothesPieces": 44,
+   "clothesTriangles": 8837
+  },
+  "Benchamin": {
+   "joints": {
+    "Root": [
+     -0.0,
+     0.0,
+     0.0
+    ],
+    "HumanoidRootNode": [
+     -0.0,
+     3.0,
+     0.0
+    ],
+    "LowerTorso": [
+     -0.0,
+     2.0,
+     0.0
+    ],
+    "UpperTorso": [
+     -0.0,
+     2.54,
+     0.0
+    ],
+    "LeftUpperArm": [
+     -1.05,
+     4.38,
+     0.0
+    ],
+    "LeftLowerArm": [
+     -1.66,
+     3.287,
+     0.0
+    ],
+    "LeftHand": [
+     -1.66,
+     2.148,
+     0.0
+    ],
+    "RightUpperArm": [
+     1.05,
+     4.38,
+     0.0
+    ],
+    "RightLowerArm": [
+     1.66,
+     3.287,
+     0.0
+    ],
+    "RightHand": [
+     1.66,
+     2.148,
+     0.0
+    ],
+    "LeftUpperLeg": [
+     -0.5,
+     2.0,
+     0.0
+    ],
+    "LeftLowerLeg": [
+     -0.5,
+     1.0,
+     0.0
+    ],
+    "LeftFoot": [
+     -0.5,
+     0.252,
+     0.0
+    ],
+    "RightUpperLeg": [
+     0.5,
+     2.0,
+     0.0
+    ],
+    "RightLowerLeg": [
+     0.5,
+     1.0,
+     0.0
+    ],
+    "RightFoot": [
+     0.5,
+     0.252,
+     0.0
+    ]
+   },
+   "neckMark": [
+    -0.0,
+    0.8659,
+    0.0376
+   ],
+   "hipHeight": 2.0,
+   "handSize": 1.5,
+   "squatBarRest": 0.801,
+   "benchBarClear": 0.801,
+   "handOffsets": {
+    "Fist_Left": [
+     0.1001,
+     0.161,
+     0.096
+    ],
+    "Fist_Right": [
+     -0.1001,
+     0.161,
+     0.096
+    ],
+    "Point_Left": [
+     0.1007,
+     0.0139,
+     0.0975
+    ],
+    "Point_Right": [
+     -0.1007,
+     0.0139,
+     0.0975
+    ],
+    "ThumbsUp_Left": [
+     0.0467,
+     0.0951,
+     0.0714
+    ],
+    "ThumbsUp_Right": [
+     -0.0467,
+     0.0951,
+     0.0714
+    ],
+    "Grip_Left": [
+     0.2251,
+     0.0467,
+     0.0978
+    ],
+    "Grip_Right": [
+     -0.2251,
+     0.0467,
+     0.0978
+    ],
+    "SquatGrip_Left": [
+     0.1203,
+     0.1196,
+     0.0977
+    ],
+    "SquatGrip_Right": [
+     -0.1203,
+     0.1196,
+     0.0977
+    ]
+   },
+   "triangles": 5532,
+   "clothesPieces": 44,
+   "clothesTriangles": 8619
+  },
+  "Sumo": {
+   "joints": {
+    "Root": [
+     -0.0,
+     0.0,
+     0.0
+    ],
+    "HumanoidRootNode": [
+     -0.0,
+     3.902,
+     0.0
+    ],
+    "LowerTorso": [
+     -0.0,
+     2.902,
+     0.0
+    ],
+    "UpperTorso": [
+     -0.0,
+     3.242,
+     0.0
+    ],
+    "LeftUpperArm": [
+     -0.8096,
+     4.3481,
+     0.0
+    ],
+    "LeftLowerArm": [
+     -1.1264,
+     2.9481,
+     0.0
+    ],
+    "LeftHand": [
+     -1.1264,
+     1.4981,
+     0.0
+    ],
+    "RightUpperArm": [
+     0.8096,
+     4.3481,
+     0.0
+    ],
+    "RightLowerArm": [
+     1.1264,
+     2.9481,
+     0.0
+    ],
+    "RightHand": [
+     1.1264,
+     1.4981,
+     0.0
+    ],
+    "LeftUpperLeg": [
+     -0.5,
+     2.902,
+     0.0
+    ],
+    "LeftLowerLeg": [
+     -0.5,
+     1.352,
+     0.0
+    ],
+    "LeftFoot": [
+     -0.5,
+     0.252,
+     0.0
+    ],
+    "RightUpperLeg": [
+     0.5,
+     2.902,
+     0.0
+    ],
+    "RightLowerLeg": [
+     0.5,
+     1.352,
+     0.0
+    ],
+    "RightFoot": [
+     0.5,
+     0.252,
+     0.0
+    ]
+   },
+   "neckMark": [
+    -0.0,
+    0.5252,
+    -0.0068
+   ],
+   "hipHeight": 2.902,
+   "handSize": 1.1,
+   "squatBarRest": 0.635,
+   "benchBarClear": 0.635,
+   "handOffsets": {
+    "Fist_Left": [
+     0.0734,
+     0.1181,
+     0.0704
+    ],
+    "Fist_Right": [
+     -0.0734,
+     0.1181,
+     0.0704
+    ],
+    "Point_Left": [
+     0.0738,
+     0.0102,
+     0.0715
+    ],
+    "Point_Right": [
+     -0.0738,
+     0.0102,
+     0.0715
+    ],
+    "ThumbsUp_Left": [
+     0.0342,
+     0.0697,
+     0.0523
+    ],
+    "ThumbsUp_Right": [
+     -0.0342,
+     0.0697,
+     0.0523
+    ],
+    "Grip_Left": [
+     0.1651,
+     0.0342,
+     0.0717
+    ],
+    "Grip_Right": [
+     -0.1651,
+     0.0342,
+     0.0717
+    ],
+    "SquatGrip_Left": [
+     0.0882,
+     0.0877,
+     0.0717
+    ],
+    "SquatGrip_Right": [
+     -0.0882,
+     0.0877,
+     0.0717
+    ]
+   },
+   "triangles": 5532,
+   "clothesPieces": 44,
+   "clothesTriangles": 8868
+  }
+ },
+ "about": "art/scripts/export_coach_01.py: Roblox axes (x = -Blender x, y = up, z = Blender y = toward the back); offsets/marks in each part's own space at rest (the part's centre = its box centre)."
+}
