@@ -14,7 +14,7 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **THE MOCK MEET COACH IN HIS OWN BODY (2026-11-25, user: "The mock meet coach own body") [BUILT, TESTED IN STUDIO;
-user: "Commit push and publish": COMMITTED, PUSHED, PUBLISHED (commit and version in the note below)].** MockMeetArena.build takes the coach watching (MockMeetService.enterRoom: the coach on
+user: "Commit push and publish": COMMITTED c094fea, PUSHED, PUBLISHED as place version 1102 (both scripts' checksums matched disk before the publish)].** MockMeetArena.build takes the coach watching (MockMeetService.enterRoom: the coach on
 trial in a coach's trial, else the player's active coach, PlayerDataService.getCoaching). buildCoach builds him with
 MeetFigures.build and his QuestConfig look (body, shirt, trousers), exactly as CoachingService builds the meet
 figures; the gym owner keeps the gym coach's look, tagged GYM OWNER. Tag 150 wide ("SQUATAVIOUS") and seated over the
