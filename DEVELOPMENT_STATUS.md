@@ -14,7 +14,7 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **END-OF-MEET SCENE, PHASE 1: THE COACH'S WALK-UP, BACK PAT AND TALK (2026-11-25, user: "Start It now"; ceremony
-decisions in GAME_DESIGN §40.5 "The podium ceremony") [BUILT, TESTED IN STUDIO; user: "Yes commit push and publish": COMMITTED, PUSHED, PUBLISHED (see the status note)].**
+decisions in GAME_DESIGN §40.5 "The podium ceremony") [BUILT, TESTED IN STUDIO; user: "Yes commit push and publish": COMMITTED 2b7e68d, PUSHED, PUBLISHED as place version 1112 (the five changed scripts' checksums matched disk before the publish)].**
 Server `src/server/Meet/MeetEndScene.luau`: lineKey/lineText/allGood pick the P line (no total P8; 1st P1/P2; 2nd-3rd
 P5/P3/P4; 4th+ P7/P6); sceneSpot() steps the lifter 3 studs out from where they waited to open floor (rays every 45
 deg: room at their right for the coach, in front for the camera; at a Local meet the waiting spot faces along the back
