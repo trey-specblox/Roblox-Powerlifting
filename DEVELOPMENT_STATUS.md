@@ -13,6 +13,29 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**END-OF-MEET SCENE, PHASE 1: THE COACH'S WALK-UP, BACK PAT AND TALK (2026-11-25, user: "Start It now"; ceremony
+decisions in GAME_DESIGN §40.5 "The podium ceremony") [BUILT, TESTED IN STUDIO; user: "Yes commit push and publish": COMMITTED, PUSHED, PUBLISHED (see the status note)].**
+Server `src/server/Meet/MeetEndScene.luau`: lineKey/lineText/allGood pick the P line (no total P8; 1st P1/P2; 2nd-3rd
+P5/P3/P4; 4th+ P7/P6); sceneSpot() steps the lifter 3 studs out from where they waited to open floor (rays every 45
+deg: room at their right for the coach, in front for the camera; at a Local meet the waiting spot faces along the back
+wall with the chalk stand ahead, which put the coach inside the wall and the bowl in the shot); run() walks the player's
+platform coach to the chosen coach's spot for the lifter's build and plays that coach's Coach_BackPat
+(LocalMeetConfig.MeetEnd.PatVersions: Owner rbxassetid://122353536445792, Squat 109214888150364, Bench
+72117187498410, Deadlift 113519422221555, uploaded with the user's OK; per-build side/back/yaw tables), says the line
+at 1.35 s, ends at 9 s (max 14); SKIP ("MeetEndSkip") lets a player off the podium go at once, podium lifters skip the
+camera. Client `src/client/Meet/MeetEndScene.luau`: MeetCinema bars, one held two-shot gliding in, the angle chosen from
+11 round the pair (most clear room, both heads seen, walls and the bowl rule angles out), subtitle, SKIP. Animations:
+art/scripts/meet_end_animations.py (helper agent), one per coach body, anim_qa PASS each, pair check on all six lifter
+builds; user's fix 2026-11-25 ("keeping the arms shape"): the gym coach, Benchamin and Sumo keep a 23-31 deg elbow and
+swing from the shoulder (Sumo's elbow had creased at 116 deg); Squatavious unchanged (52 deg, smooth). LocalMeetService
+finishMeet runs it before the podium (old "Great meet" bubble removed there; Mock Meet keeps its E lines);
+announceAwards leaves out players who skipped. STUDIO TESTS (3 full Local meets, forced Pass, 1 player + 3 CPU, Sumo
+active in the last two): no errors; right P lines (P1 9/9 1st, P5 9/9 2nd); last run: lifter stepped into the warm-up
+room, Sumo beside him, hand on his back, both heads in frame, subtitle and SKIP shown (picture sent to the user).
+NOT TESTED: SKIP pressed, State/Nationals venues, the other coaches in game, two players, the phone; video capture
+failed (C: full). PHASE 2 next: worn medal model, referee, handshake, floor-then-step-up podium, winner-only inventory
+awards.
+
 **NO MORE FLOATING WHILE HELD IN PLACE (2026-11-25, user's phone screenshot of a Regional meet chalk-up: "stuck in a
 position where it looks like they are just floating ... same thing happens for mock meets ... running in space")
 [BUILT, TESTED IN STUDIO; user: "Commit push and publish all of it": COMMITTED 07165bb, PUSHED, PUBLISHED as place version 1106 (the six changed scripts' checksums matched disk before the publish)].** Cause, reproduced in Studio: meets, Mock Meets, coach's

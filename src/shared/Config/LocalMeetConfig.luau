@@ -431,4 +431,87 @@ assert(
 	"[LocalMeetConfig] sign-ups must close inside the cycle"
 )
 
+--[[
+	THE END-OF-MEET COACH SCENE (GAME_DESIGN §40.5, user 2026-11-25; server MeetEndScene, client MeetEndScene): when a
+	meet ends, each player's coach walks up beside them, pats their back and says how it went (CoachVoiceConfig P lines),
+	his hand resting on their back while he talks, before the podium. Skippable.
+]]
+LocalMeetConfig.MeetEnd = {
+	--[[
+		Coach_BackPat, one version per coach body (art/scripts/meet_end_animations.py, anim_qa PASS on each body and the
+		pair check on every lifter build, 2026-11-25), (2026-11-25 elbow fix, user: "keeping the arms shape": the gym coach, Benchamin and Sumo keep a gentle 23-31 deg elbow and swing the arm from the shoulder, standing about an arm's length beside the lifter; Squatavious unchanged) keyed by the player's active coach (CoachingConfig: "Owner" and
+		the lift coaches "Squat" = Squatavious, "Bench" = Benchamin, "Deadlift" = Sumo). The platform coach plays the
+		chosen coach's version and stands where its table says for the lifter's build, because on the lifter's screen
+		MeetCoachLook's copy of that coach copies his joints and stands where he stands. `side` to the lifter's right,
+		`back` behind them (+), `yaw` degrees turned toward them: coach = lifter * CFrame.new(side, 0, back) * Angles(0,
+		yaw, 0), on the floor. An empty id: the scene runs without the pat.
+	]]
+	PatVersions = {
+		Owner = { -- the gym coach's own body (the Fat build: LifterBuild.BuildRules.Spotter)
+			animationId = "rbxassetid://122353536445792",
+			place = {
+				Skinny = { side = 3.625, back = 0.003, yaw = 36 },
+				SkinnyFat = { side = 3.609, back = -0.188, yaw = 40 },
+				Fit = { side = 3.688, back = -0.089, yaw = 40 },
+				Fat = { side = 3.699, back = -0.305, yaw = 44 },
+				Muscular = { side = 3.674, back = -0.251, yaw = 44 },
+				BigBuff = { side = 3.748, back = -0.163, yaw = 44 },
+			},
+		},
+		Squat = { -- Coach Squatavious (short: pats the middle of the back)
+			animationId = "rbxassetid://109214888150364",
+			place = {
+				Skinny = { side = 2.350, back = 0.315, yaw = 45 },
+				SkinnyFat = { side = 2.390, back = 0.360, yaw = 45 },
+				Fit = { side = 2.462, back = 0.457, yaw = 45 },
+				Fat = { side = 2.540, back = 0.470, yaw = 45 },
+				Muscular = { side = 2.530, back = 0.736, yaw = 38 },
+				BigBuff = { side = 2.609, back = 0.809, yaw = 38 },
+			},
+		},
+		Bench = { -- Coach Benchamin
+			animationId = "rbxassetid://72117187498410",
+			place = {
+				Skinny = { side = 3.747, back = 0.002, yaw = 36 },
+				SkinnyFat = { side = 3.729, back = -0.200, yaw = 40 },
+				Fit = { side = 3.812, back = -0.091, yaw = 40 },
+				Fat = { side = 3.822, back = -0.327, yaw = 44 },
+				Muscular = { side = 3.799, back = -0.268, yaw = 44 },
+				BigBuff = { side = 3.869, back = -0.178, yaw = 44 },
+			},
+		},
+		Deadlift = { -- Coach Sumo
+			animationId = "rbxassetid://113519422221555",
+			place = {
+				Skinny = { side = 4.012, back = 0.102, yaw = 36 },
+				SkinnyFat = { side = 4.004, back = -0.111, yaw = 40 },
+				Fit = { side = 4.079, back = -0.046, yaw = 40 },
+				Fat = { side = 4.097, back = -0.250, yaw = 44 },
+				Muscular = { side = 4.064, back = -0.231, yaw = 44 },
+				BigBuff = { side = 4.144, back = -0.147, yaw = 44 },
+			},
+		},
+	},
+	-- A build missing from a table stands the coach as for this one.
+	PatFallbackBuild = "Fit",
+	-- The scene's spot (server MeetEndScene.sceneSpot): this far out from where the lifter waited, facing a way with
+	-- at least this much clear room at their right (the coach stands up to ~4.2 studs out) and in front (the camera).
+	SceneStep = 3.0,
+	SceneRightRoom = 5.5,
+	SceneFrontRoom = 9.0,
+	PatSeconds = 9.0,
+	-- He starts talking this long into the pat (the hand resting on their back after the two pats).
+	LineAt = 1.35,
+	-- The walk up is cut short after this long (he's then put beside them).
+	MaxWalkSeconds = 4.0,
+	-- The whole scene never holds the podium longer than this.
+	MaxSeconds = 14.0,
+	-- The camera: a held two-shot, this far away (less where a wall is), looking at this height over their feet (chest
+	-- high, so both heads are in the frame), gliding this far in; HeadHeight is where it checks it can see their heads.
+	CameraDistance = 10.0,
+	CameraHeight = 3.8,
+	CameraGlide = 1.0,
+	HeadHeight = 5.2,
+}
+
 return LocalMeetConfig

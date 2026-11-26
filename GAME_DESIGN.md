@@ -7807,6 +7807,22 @@ doesn't cover it. To settle while designing:
         up, pats your back and talks about how it went (won, 9/9, podium, 4th or lower, bombed out), proud on a good
         day and encouraging on a bad one. Top 3 then step onto the podium where a referee puts the medal on, hands
         1st the trophy and shakes hands. The coach lines work for any meet (no meet names: one line fits all).
+      - *The podium ceremony, decided 2026-11-25 (user, answers to Claude's questions):*
+        - **Order: on the floor, then step up.** The podium blocks are 1.4-3 studs tall, so a referee on the floor
+          can't reach a lifter's neck up there: the top 3 are called one by one, the referee puts the medal on or
+          hands the trophy and shakes hands in front of the podium, then the lifter steps up onto their spot.
+        - **What is handed over:** Local and Regional: a medal over the neck for each of the top 3. State and
+          Nationals: 1st is handed a TROPHY, 2nd and 3rd get a medal over the neck. A handshake for everyone, every
+          time ("Handshake for everyone and everything").
+        - **What is KEPT (changes §42):** only the WINNER keeps one in the inventory: the Local or Regional winner a
+          medal, the State or Nationals winner a trophy, and it counts up "LOCAL / REGIONAL / STATE / NATIONAL MEETS
+          WON". 2nd and 3rd are medalled in the ceremony but keep nothing. Medals and trophies players already own
+          stay (nothing is taken away).
+        - **Skip:** ends your scene and frees you: your camera comes back and, if you're not on the podium, you can
+          leave at once; podium lifters skip only the camera and stay until the ceremony ends.
+        - The worn medal is a new Blender model: the medal disc with CENTRAL plus a ribbon loop round the back of the
+          neck, hanging on the chest, rigid on the upper torso, fitted to each body build (the old Medal prop is a
+          wall-hanging medal on a flat V ribbon and can't go round a neck).
       - *Coach-unlock scene*: when you pass a coach's trial, no podium; you step off the platform, the coach you just
         unlocked walks up ("You did what I told you, kid ... I'll be there when you need coaching") and you shake
         hands, the hand-clasp kind (user's photo).
@@ -8423,7 +8439,7 @@ Decisions (picked from Claude's options, same day):
 | The INVENTORY screen | **Replaces the GEAR menu.** Categories on the left (ALL, GEAR, FOOD, TROPHIES, MISC), the items in a grid in the middle (rarity-coloured frames), the equip slots on the right (belt, singlet, wrist wraps, knee sleeves), the chosen item's description at the bottom. Layout inspired by the user's reference; never its artwork |
 | Food | **Collected from the chef** when it's done ("ask for their food"), then kept in the inventory as an item (its kind, size, boost and hours), **eaten from the inventory** whenever the player wants, and tradable later. **It never spoils** (spoiling can come with the trading center if needed) |
 | Holding | Any item can be **held**: held out in the hand like a Roblox gear; **food is carried in front with BOTH hands, palms up under the plate** (changed by the user 2026-11-24 after seeing the over-the-head pose: "just change it to where two hands are foward holding the plate") |
-| Medals and trophies | **Top 3 at a Local meet: a gold / silver / bronze MEDAL. Top 3 at Regional, State or Nationals: a TROPHY** (the podium trophy model). Each kind stacks with a count |
+| Medals and trophies | **Top 3 at a Local meet: a gold / silver / bronze MEDAL. Top 3 at Regional, State or Nationals: a TROPHY** (the podium trophy model). Each kind stacks with a count. **CHANGED by the user 2026-11-25 (§40.5 "The podium ceremony"): only the WINNER keeps one: a medal for winning a Local or Regional meet, a trophy for winning State or Nationals, counting "... MEETS WON"; 2nd and 3rd keep nothing (items already owned stay). NOT BUILT YET** |
 | The win counter | A small floating label over the medal or trophy **while it is held, seen only by players nearby** ("x12 STATE CHAMPION"); nothing floats when it is put away |
 
 Also the same day: **every screen must fit a phone** ("make sure screens don't do this, scale it accordingly with

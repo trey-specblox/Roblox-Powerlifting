@@ -3357,8 +3357,9 @@ local function announceAwards(current: Meet, v: LocalMeetVenue.Venue, classLabel
 			news[lifter.player] = lifter.nationalsNews
 		end
 	end
+	local skippedEnd = (current :: any).endSkipped or {} -- skipped the end-of-meet scene and let go (MeetEndScene)
 	for player, visit in pairs(visits) do
-		if visit.hall == current.hall.index then
+		if visit.hall == current.hall.index and not skippedEnd[player] then
 			local mine = news[player]
 			if mine then
 				local own = table.clone(moment)
@@ -3998,8 +3999,7 @@ local function finishMeet(current: Meet)
 				then " (misses above your CN still used your meet allowance)" else "")
 			boardFor(lifter, { if lifter.withdrawn then "WITHDRAWN" else "BOMBED OUT" })
 		end
-		LocalMeetVenue.coachSays(lifter.platform, if result.total and not lifter.withdrawn then "Great meet. Proud of you."
-			else "We'll get them next time.")
+		-- (The coach's word on how it went is now the end-of-meet scene's, below: MeetEndScene.)
 		sendState(lifter, "Done", { best = result.best, total = result.total, bombedOut = result.bombedOut, note = note })
 		log("%s finished the Local meet: %s", lifter.name,
 			if placing and placing.place then string.format("%s, total %s", placeText(placing.place), kgText(result.total or 0))
@@ -4018,6 +4018,62 @@ local function finishMeet(current: Meet)
 			stopChalk(lifter)
 			offSeat(lifter)
 			stopWarmUps(player)
+		end
+	end
+	-- THE END-OF-MEET COACH SCENE (GAME_DESIGN §40.5, user 2026-11-25): each player's coach walks up, pats their back
+	-- and says how it went, before the podium. SKIP lets a player off the podium go at once (their part of
+	-- finishCleanUp now, and no awards camera).
+	local MeetEndScene = require(script.Parent:WaitForChild("MeetEndScene"))
+	local beats: { any } = {}
+	for _, lifter in ipairs(current.lifters) do
+		local player = lifter.player
+		local body = player and bodyOf(player)
+		if player and body and visits[player] and not lifter.withdrawn then
+			local placing = current.places[lifter.key]
+			local histories = {}
+			for _, lift in ipairs(MeetConfig.LiftOrder) do
+				histories[lift] = lifter.lifts[lift].history
+			end
+			local place = if placing and placing.place and not bombed(lifter) then placing.place else nil
+			-- A step out to open floor first (MeetEndScene.sceneSpot): room for the coach at their right and the camera.
+			local sceneAt = MeetEndScene.sceneSpot(body.root.CFrame * CFrame.new(0, -standingHeight(body), 0))
+			standAt(player, sceneAt, true)
+			table.insert(beats, {
+				player = player,
+				platform = lifter.platform,
+				lifterAt = sceneAt,
+				line = MeetEndScene.lineText(MeetEndScene.lineKey(place, MeetEndScene.allGood(histories :: any))),
+				podium = place ~= nil and place <= 3,
+			})
+		end
+	end
+	local endSkipped: { [Player]: boolean } = {}
+	local meetAny: any = current
+	meetAny.endSkipped = endSkipped
+	if #beats > 0 then
+		local skipped = MeetEndScene.run(beats, remotes, function()
+			return current.hall.meet == current
+		end, function(player: Player)
+			for index, lifter in ipairs(current.lifters) do
+				if lifter.player == player and not lifter.withdrawn then
+					endSkipped[player] = true
+					lifter.withdrawn = true
+					LiftAttemptService.setFreeAttemptsBlocked(player, false)
+					player:SetAttribute(LocalMeetConfig.PlatformAttribute, nil)
+					release(player)
+					if visits[player] then
+						standAt(player, LocalMeetVenue.lobbySpotFor(v, index), false)
+					end
+					if current.hall.state then
+						StateArenaVenue.setCompetitor(player, false)
+					end
+					showDroppedSuit(lifter, player)
+				end
+			end
+		end)
+		-- (A podium lifter who skipped stays for the podium, without the awards camera.)
+		for player in pairs(skipped) do
+			endSkipped[player] = true
 		end
 	end
 	if current.hall.nationals then
