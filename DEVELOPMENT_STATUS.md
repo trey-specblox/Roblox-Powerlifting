@@ -13,8 +13,8 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**END-OF-MEET SCENE REDO + THE LINE FOR THE PODIUM (2026-11-26, user's phone test feedback) [IN PROGRESS; NOT
-committed, NOT published; nothing committed since 595eed2].** User: the scene was too slow (start on the pat, no
+**END-OF-MEET SCENE REDO + THE LINE FOR THE PODIUM (2026-11-26, user's phone test feedback) [BUILT, TESTED IN STUDIO; user:
+"Commit and publish": COMMITTED 1ee0160, PUSHED, PUBLISHED as place version 1130 (all 14 changed scripts' checksums matched disk before the publish)].** User: the scene was too slow (start on the pat, no
 walk-up), the coach should talk WHILE they walk with his arm patting the back and his free hand gesturing, he was too
 close, he must walk away once at the podium (and not be seen in the ceremony's background), and the winners appeared
 from nowhere: they must wait in a line facing the referee and go one by one. BUILT: server MeetEndScene rewritten (the
@@ -51,7 +51,7 @@ them: a second copy of the same walk started while the first still played never 
 coach: before, the walk vanished on the client at the cut; after, it plays through to the end). STUDIO TEST 5 (full
 Local meet after all fixes, player 1st): the walk plays on the client for player and coach through the cut to the line
 and on the coach's walk away; screenshot: the coach mid-stride beside the lifter on the front lane, arm across the
-back, free hand talking. All of this is NOT committed and NOT published yet. NOT YET CHECKED:
+back, free hand talking. All of this is COMMITTED 1ee0160 and PUBLISHED in 1130. NOT YET CHECKED:
 State meets' line placement (same layout off the podium; State arena geometry not checked); Squatavious on Skinny
 lifters while walking (forearm may touch on the widest swing, Blender used a stand-in walk).
 
@@ -86,7 +86,7 @@ make_ceremony_config.py from WornMedal_01_fit.json + the upload manifest (medal 
 referee placement, trophy grips). Coach_WalkPat clips key the LowerTorso (hips square: the stock walk's hip twist swung
 the hand 0.6-0.7 off the back). NEXT: the ceremony sequence (server module, referee figure, medal load/attach, paired
 clips, handshake, the hop with stepArc), replacing podiumAndAwards' teleport for Local halls; Studio test.
-BUILT 2026-11-25 [NOT committed, NOT published]: src/server/Meet/MeetCeremony.luau (called 3rd, 2nd, 1st; lifter walks
+BUILT 2026-11-25 [COMMITTED 1ee0160, PUBLISHED 1130]: src/server/Meet/MeetCeremony.luau (called 3rd, 2nd, 1st; lifter walks
 to 0.9 in front of their block's face, side-on; a Referee figure (MeetFigures) walks to CeremonyConfig.Place; medal:
 held/open ribbon + disc/text placed between his grips every Heartbeat (open 0.90-1.50), worn pieces welded to the
 UpperTorso at 1.85 (per-build C0, PropPaints colours, bronze text Cream); trophy (State/Nationals 1st): Trophies.copy
