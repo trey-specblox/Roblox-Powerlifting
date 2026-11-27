@@ -15,7 +15,7 @@ CURRENT MILESTONE block).
 
 **STATE MEETS GET THE WALK TO THE PODIUM WITH THE COACH (2026-11-27, user tested 1135 with two players: "i didnt get
 the walking out with coach cutscene, when i won", then "State: add the walk") [BUILT, TESTED IN STUDIO (3 solo State wins,
-position log + pictures); NOT committed, NOT published].** The walk off together (arm round the back, his line on the way,
+position log + pictures); COMMITTED f500166, PUBLISHED version 1136 (2026-11-27, user: "Commit and publish")].** The walk off together (arm round the back, his line on the way,
 the cut, the walk into the line) was built for Local meet halls only (1ee0160 gated it on platformTop/frontFloor and
 not State). LocalMeetService: `walksToLine` (top 3, a podium, not Nationals) gives a beat its line slot at State too, the
 scene starting from MeetEndScene.sceneSpot instead of the platform; the computer lifters in the top 3 walk in at State
