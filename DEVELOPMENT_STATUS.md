@@ -14,7 +14,8 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **TWO-PLAYER STATE TEST FIXES (2026-11-27, user's live test of 1136 with a friend) [BUILT, TESTED IN STUDIO (solo meets,
-logs + pictures); NOT committed, NOT published].** The user's report and what was done:
+logs + pictures); COMMITTED de45595, PUBLISHED version 1147 (2026-11-27, user: "Commit and publish")].** The user's
+report and what was done:
 (1) "Players can step onto the platform ... they can only be on the side, and behind the platform": LocalMeetVenue.platformGear
 builds an invisible fence (PlatformFence, 14 high, 1 thick, CanQuery/CanTouch off) just outside every meet platform's edge,
 in the gear so it goes with the rack for the awards. Lifters, coaches, spotters and computer lifters are walked by script
