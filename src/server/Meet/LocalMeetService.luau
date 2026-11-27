@@ -4050,11 +4050,12 @@ local function finishMeet(current: Meet)
 			local place = if placing and placing.place and not bombed(lifter) then placing.place else nil
 			-- Off the podium: a step out to open floor in the warm-up room (MeetEndScene.sceneSpot: room for the coach
 			-- at their right and the camera). On it, at a Local meet hall: on their own platform, then the walk
-			-- together to the podium (user 2026-11-25).
+			-- together to the podium (user 2026-11-25). At a State meet (user 2026-11-27: "State: add the walk") the
+			-- top 3 start from the open-floor spot and walk into the line the same way.
 			local gold = v.podiumSpots[1]
 			local top = lifter.platform.platformTop
-			local onStage = place ~= nil and place <= 3 and top ~= nil and gold ~= nil and lifter.platform.frontFloor ~= nil
-				and not current.hall.state and not current.hall.nationals
+			local walksToLine = place ~= nil and place <= 3 and gold ~= nil and not current.hall.nationals
+			local onStage = walksToLine and top ~= nil and lifter.platform.frontFloor ~= nil and not current.hall.state
 			local sceneAt = if onStage then MeetEndScene.platformSpot(top :: CFrame)
 				else MeetEndScene.sceneSpot(body.root.CFrame * CFrame.new(0, -standingHeight(body), 0),
 					{ player.Character, LocalMeetVenue.coachFigure(lifter.platform) }, v.model)
@@ -4064,7 +4065,7 @@ local function finishMeet(current: Meet)
 			lifter.coachToken = (lifter.coachToken or 0) + 1
 			local stage = nil
 			local slotIndex = if place then onPodium - place + 1 else 0
-			if onStage and lineSlots[slotIndex] then
+			if walksToLine and lineSlots[slotIndex] then
 				stage = { slot = lineSlots[slotIndex], slotIndex = slotIndex }
 			end
 			table.insert(beats, {
@@ -4082,7 +4083,7 @@ local function finishMeet(current: Meet)
 			})
 		end
 	end
-	if not current.hall.state and not current.hall.nationals then
+	if not current.hall.nationals then
 		for _, lifter in ipairs(current.lifters) do
 			local placing = current.places[lifter.key]
 			local slot = placing and placing.place and lineSlots[onPodium - placing.place + 1]

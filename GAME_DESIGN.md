@@ -7813,7 +7813,9 @@ doesn't cover it. To settle while designing:
           patting it now and then, his free hand talking ("making it look like the coach is talking through
           motions"); along the floor in front of the platforms to the podium. When you get there he lets go and
           walks away (he must not hang around in the background of the ceremony). He walks BESIDE you with a gap,
-          never pressed against or behind you ("the coach is too close").
+          never pressed against or behind you ("the coach is too close"). **At State meets too (user 2026-11-27: "State: add the walk"):** the State arena has no
+          platforms to start from, so the top 3 start on open floor where they stand after the last lift, take a few steps
+          together, then the same cut into the line by the podium. Nationals still has its own ceremony (not changed).
         - **The line (2026-11-26, user):** "The 1st, second, 3rd winner should be in line, in front the ref, facing
           the ref, then the lifters one by one get their medal and handshake": the top 3 wait in a line beside the
           podium facing the referee, nobody appears from nowhere. Claude's choices: 3rd at the front (called first,

@@ -360,8 +360,14 @@ local function runBeat(beat: Beat, remotes: any, stillOn: () -> boolean, began: 
 				return done >= 2
 			end
 		end
-		-- A few steps toward their platform's front...
-		local platformEnd = beat.lifterAt * CFrame.new(0, 0, -SETTINGS.PlatformWalkSeconds * SETTINGS.WalkSpeed)
+		-- A few steps toward their platform's front (at a State meet: the way the scene faces), stopping short of
+		-- anything solid on the way...
+		local walkStuds = SETTINGS.PlatformWalkSeconds * SETTINGS.WalkSpeed
+		local ahead = blockedAt(beat.lifterAt.Position + Vector3.new(0, 3, 0), beat.lifterAt.LookVector * (walkStuds + 3))
+		if ahead then
+			walkStuds = math.max(0, ahead - 3)
+		end
+		local platformEnd = beat.lifterAt * CFrame.new(0, 0, -walkStuds)
 		walkPair(platformEnd)
 		local cutAt = began + SETTINGS.LineAt + SETTINGS.PlatformWalkSeconds
 		waitUntil(cutAt, going)

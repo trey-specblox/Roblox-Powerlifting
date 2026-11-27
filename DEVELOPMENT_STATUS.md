@@ -13,6 +13,22 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**STATE MEETS GET THE WALK TO THE PODIUM WITH THE COACH (2026-11-27, user tested 1135 with two players: "i didnt get
+the walking out with coach cutscene, when i won", then "State: add the walk") [BUILT, TESTED IN STUDIO (3 solo State wins,
+position log + pictures); NOT committed, NOT published].** The walk off together (arm round the back, his line on the way,
+the cut, the walk into the line) was built for Local meet halls only (1ee0160 gated it on platformTop/frontFloor and
+not State). LocalMeetService: `walksToLine` (top 3, a podium, not Nationals) gives a beat its line slot at State too, the
+scene starting from MeetEndScene.sceneSpot instead of the platform; the computer lifters in the top 3 walk in at State
+too. MeetEndScene.runBeat: the first steps stop 3 studs short of anything solid ahead (at State the scene faces open floor
+of varying length; unchanged where nothing is in the way, as on a Local platform). Measured in Studio: pat at (0, 34) in
+the frame, 7 studs of walking (capped), cut to (-30.5, -13.1), walk to the line's front slot (-12.8, -13.1) with the coach
+3.9 studs to their right and the camera in front on the crowd side, the coach walks off, the ceremony runs. Pictures:
+D:/ClaudeScratch/state/5_state_walk_off.jpg, 6_state_walk_to_line.jpg. Known, not changed (same at Local): as the coach
+lets go and walks away the walk camera keeps framing between them, so the lifter drifts to the frame's edge for ~1 s.
+NOT tested: a State meet with 2+ players/computer lifters in the top 3 (Studio State meets have only you); a Local meet
+after this change. Files: src/server/Meet/LocalMeetService.luau, src/server/Meet/MeetEndScene.luau, GAME_DESIGN.md,
+DEVELOPMENT_STATUS.md.
+
 **STATE MEET CHECK OF THE END-OF-MEET SCENE AND CEREMONY (2026-11-27, user: "Check State meets") [FIXED, TESTED IN
 STUDIO (6 solo State meets, StudioForcePhaseResult Pass); COMMITTED 7cb22b3, PUBLISHED version 1135 (2026-11-27, user: "Commit and publish"); user approved 1130 ("Its good")].**
 Found and fixed: (1) the coach scene's camera showed only the back of the rack's CENTRAL banner: the lifter stands behind
