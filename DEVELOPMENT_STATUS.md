@@ -14,7 +14,7 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **STATE MEET CHECK OF THE END-OF-MEET SCENE AND CEREMONY (2026-11-27, user: "Check State meets") [FIXED, TESTED IN
-STUDIO (6 solo State meets, StudioForcePhaseResult Pass); NOT committed, NOT published; user approved 1130 ("Its good")].**
+STUDIO (6 solo State meets, StudioForcePhaseResult Pass); COMMITTED 7cb22b3, PUBLISHED version 1135 (2026-11-27, user: "Commit and publish"); user approved 1130 ("Its good")].**
 Found and fixed: (1) the coach scene's camera showed only the back of the rack's CENTRAL banner: the lifter stands behind
 it after the last lift and decor can't be hit by raycasts or walked into, so MeetEndScene.sceneSpot faced the pair at the
 cloth from a step away and the client camera set up on its far side. StateArenaVenue: GantryBanner_Cloth CanQuery and
