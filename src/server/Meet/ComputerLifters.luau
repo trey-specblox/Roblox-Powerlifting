@@ -595,6 +595,10 @@ end
 -- A walk's animation runs on this long after it ends, for a walk straight after it to carry on (walkBody).
 local WALK_CARRY_SECONDS = 0.12
 local lingering: { [Model]: { track: AnimationTrack, id: string } } = {}
+-- The walk animation each body is playing and the walk it belongs to: a walk cut off by a newer one (a move, then a walk
+-- at once) hands it on (Studio 2026-11-26: a second copy of the same walk started while the first still played never
+-- showed on the clients, so the legs stood still while the body slid along).
+local walkTracks: { [Model]: { track: AnimationTrack, id: string, walk: any } } = setmetatable({}, { __mode = "k" }) :: any
 
 -- Stepping back out of the rack goes at this share of the walking speed (MeetWalkPath.isBackStep).
 local BACK_STEP_SPEED = 0.6
@@ -639,11 +643,16 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 	-- copy started from its first frame and the arms jumped in one frame).
 	local carried = lingering[body]
 	lingering[body] = nil
+	local running = walkTracks[body]
+	if (carried == nil or carried.id ~= wantedId) and running and running.id == wantedId and running.track.IsPlaying then
+		carried = { track = running.track, id = running.id }
+	end
 	local track = if carried and carried.id == wantedId and carried.track.IsPlaying then carried.track
 		else playWalk(body, if styled then styleId else nil)
 	if carried and carried.track ~= track then
 		carried.track:Stop(0.25)
 	end
+	walkTracks[body] = if track then { track = track, id = wantedId, walk = walk } else nil
 	-- The speed the playing walk is made for: its steps keep pace with the body as it speeds up and slows down.
 	local madeFor = if styled then styleSpeed or CONFIG.WalkSpeed else CONFIG.WalkSpeed
 	local rate = math.huge
@@ -671,6 +680,9 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 				track:Stop(0.4)
 			end
 			track = playWalk(body, styleId, 0.4)
+			if walkTracks[body] == nil or walkTracks[body].walk == walk then
+				walkTracks[body] = if track then { track = track, id = styleId :: string, walk = walk } else nil
+			end
 			madeFor = styleSpeed or CONFIG.WalkSpeed
 			rate = math.huge
 		end
@@ -691,7 +703,13 @@ function ComputerLifters.walkBody(body: Model?, points: { Vector3 }, final: CFra
 			rate = wanted
 		end
 	end
-	if track then
+	-- (a newer walk that took this walk's animation over keeps it playing)
+	local mine = walkTracks[body]
+	local handedOn = mine ~= nil and mine.walk ~= walk and mine.track == track
+	if mine and mine.walk == walk then
+		walkTracks[body] = nil
+	end
+	if track and not handedOn then
 		-- Stopped a moment later unless another walk carries it on.
 		local ending = track
 		local entry = { track = ending, id = if styled then (styleId or CONFIG.WalkAnimationId) else CONFIG.WalkAnimationId }

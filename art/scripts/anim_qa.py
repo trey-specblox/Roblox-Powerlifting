@@ -650,6 +650,9 @@ label.data.materials.append(material("AnimQALabelMat", (0.95, 0.95, 0.9, 1)))
 coll.objects.link(label)
 label.parent = cam
 TILE = (900, 470)
+# (optional, a single build framed whole: QA_TILE=600,800 QA_VIEW_SCALE=4.5 QA_VIEW_Z=2.9; defaults unchanged)
+if os.environ.get("QA_TILE"):
+    TILE = tuple(int(v) for v in os.environ["QA_TILE"].split(","))
 # CLOSE-UP: QA_FOCUS=Left|Right frames that hand of the FIRST build (QA_BUILDS=Muscular for one build), QA_FOCUS_SCALE
 # the picture's width in studs (default 1.4); extra views "top" and "below" for grips
 FOCUS = os.environ.get("QA_FOCUS", "")
@@ -675,6 +678,9 @@ def shoot(path, text, view):
     n = len(BUILDS) - 1
     target = Vector((n * GAP / 2, 0, 2.3)) if spread == "x" else Vector((0, -n * GAP * 1.05 / 2 - 0.7, 2.3))
     scale = n * GAP + 5.4
+    if os.environ.get("QA_VIEW_SCALE"):
+        scale = float(os.environ["QA_VIEW_SCALE"])
+        target.z = float(os.environ.get("QA_VIEW_Z", "2.9"))
     floor.hide_render = view == "below"
     if FOCUS_AT:                                   # (close-up: QA_FOCUS)
         target, scale = FOCUS_AT[0], float(os.environ.get("QA_FOCUS_SCALE", "1.4"))

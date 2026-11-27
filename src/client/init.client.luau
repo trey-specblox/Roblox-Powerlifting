@@ -128,6 +128,8 @@ task.spawn(require(MeetFolder:WaitForChild("MeetCoachLook")).start)
 task.spawn(require(MeetFolder:WaitForChild("CoachVoice")).start)
 -- The end-of-meet coach scene's camera, subtitle and SKIP, on your screen only (GAME_DESIGN §40.5).
 task.spawn(require(MeetFolder:WaitForChild("MeetEndScene")).start)
+-- (no "TITLE UNLOCKED" card over the end-of-meet scene, the walk or the podium ceremony: it waits for them)
+RankMoment.addBlocker(require(MeetFolder:WaitForChild("MeetEndScene")).isPlaying)
 
 -- The meet's spotters follow the bar and the lifter (GAME_DESIGN §37.5). Visual only.
 local MeetSpotterAnimator = require(MeetFolder:WaitForChild("MeetSpotterAnimator"))

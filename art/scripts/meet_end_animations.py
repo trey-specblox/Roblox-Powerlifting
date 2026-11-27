@@ -107,25 +107,197 @@ VERSIONS = {
                                           "mid": (-0.75, -0.75, -0.75)},
 }
 
-# Measured by pairqa 2026-11-25 (Squatavious: D:/ClaudeScratch/backpat/v2_final; the reaching Fat, Benchamin and Sumo,
-# after the user's elbow note: D:/ClaudeScratch/backpat/v3_final): {version: {lifter build: (side, back, yaw)}}. On every
-# pair: the palm's middle on the shoulder blade (0.31-0.52 right of the spine by build, 4.05-4.15 up; Squatavious
-# 3.76-3.79 up), gap 0.012-0.019 to the outer layer, no sink, 1.5-13.7 deg off flat; no point of either body inside the
-# other at any keyframe; the coach (but his left arm) 0.16-0.24 from the widest (BigBuff) lifter, 0.45-0.58 from the
-# slimmest (Skinny: his narrow back leaves room); the hand passes at least 0.067 off the lifter on its way.
-PLACEMENT = {
-    "MeetEnd_Coach_BackPat": {
-        "Skinny": (3.625, 0.003, 36), "SkinnyFat": (3.609, -0.188, 40), "Fit": (3.688, -0.089, 40),
-        "Fat": (3.699, -0.305, 44), "Muscular": (3.674, -0.251, 44), "BigBuff": (3.748, -0.163, 44)},
-    "MeetEnd_Coach_BackPat_Benchamin": {
-        "Skinny": (3.747, 0.002, 36), "SkinnyFat": (3.729, -0.200, 40), "Fit": (3.812, -0.091, 40),
-        "Fat": (3.822, -0.327, 44), "Muscular": (3.799, -0.268, 44), "BigBuff": (3.869, -0.178, 44)},
-    "MeetEnd_Coach_BackPat_Squatavious": {
-        "Skinny": (2.350, 0.315, 45), "SkinnyFat": (2.390, 0.360, 45), "Fit": (2.462, 0.457, 45),
-        "Fat": (2.540, 0.470, 45), "Muscular": (2.530, 0.736, 38), "BigBuff": (2.609, 0.809, 38)},
-    "MeetEnd_Coach_BackPat_Sumo": {
-        "Skinny": (4.012, 0.102, 36), "SkinnyFat": (4.004, -0.111, 40), "Fit": (4.079, -0.046, 40),
-        "Fat": (4.097, -0.250, 44), "Muscular": (4.064, -0.231, 44), "BigBuff": (4.144, -0.147, 44)},
+# ---------------- the walk together (user 2026-11-25: "if the lifter made podium let the cutscene have the lifter and
+# coach walk together, with the coach having the same arm position of the coach patting the lifter"): after the pat
+# and the talk the coach keeps the hand resting on the lifter's upper back and they walk side by side, the coach at the
+# lifter's right, out to the front of the stage. LOOPED, Action priority, UPPER BODY ONLY: the Waist (the chest turned
+# to the lifter), the Neck and the LEFT arm; the game's walk cycle plays the legs, root and right arm underneath
+# (ComputerLifters.walkBody, LocalMeetConfig.ComputerLifters.WalkAnimationId: Roblox's stock R15 walk, not loadable
+# here; pairqa puts the game's own Entrance_Walk_Swagger under both figures instead: the nearest plain walk, its arm
+# swing 32 deg as big as the stock walk's or bigger, so the lifter's right arm swinging back is tested at least as hard).
+# Both roots face the walk (yaw 0); the BackPat rest arm (same elbow bend, same palm on the back) turned by the yaw the
+# coach stood at (WALK_FROM_YAW) so it still points at the lifter's back from his right.
+WALK_LENGTH = 4.0
+WALK_TURN = 18.0               # the chest turned toward the lifter (degrees, at the Waist)
+WALK_FROM_YAW = 40.0
+# (2026-11-25, main session: option (b)) the LowerTorso is keyed too: the hips held square to the walk (no hip twist or
+# side sway from the walk can swing the hand off the lifter's back), with a gentle bob of its own (WALK_BOB)
+WALK_PARTS = ("LowerTorso", "UpperTorso", "Head", "LeftUpperArm", "LeftLowerArm", "LeftHand")
+WALK_BOB = (0.035, 2.0)        # (studs down at the dip, dips per second: two steps a second at the meet walk's 9 st/s)
+WALK_UNDER = "Entrance_Walk_Swagger"
+# "yaw": the BackPat hand spot turned by this much (the BackPat yaw was 36-45; less turns the arm to point more forward,
+# so the coach walks a little further back and the forearm crosses BEHIND the lifter's right arm swinging back: at the
+# full BackPat turn the swinging arm met the forearm, 0.06-0.48 deep, pairqa walk 2026-11-25); "raise": degrees the
+# reaching arm is lifted (with the hips keyed the forearm clears the swing at -2: the palm ~3.9 up, on the flatter
+# part of the upper back, rides closer than at +6 / 4.2 up on the back's curve toward the neck).
+WALK_VERSIONS = {
+    "MeetEnd_Coach_WalkPat": {"from": "MeetEnd_Coach_BackPat", "yaw": 22.0, "raise": -2.0, "elbow": 31.0},
+    # (Squatavious, short: walking just behind the lifter's right side, his arm across the lifter's back, the hand on
+    #  the mid back left of the spine, just above the belt, wrist ~55 deg. Tried and dropped: (1) his hand up flat on
+    #  the right side of the back from behind: the wrist bent ~100 deg, "a hand pushed up onto the back"; (2) walking
+    #  beside with the arm straight out (wrist 25-39 deg): the lifter's right arm swinging back went through his arm and
+    #  chest, 0.27-0.42 deep; (3) further across, wrist 46-49: his chest met a BigBuff lifter's back. The palm laid on
+    #  the back's left side (normal turned to the lifter's left) so the forearm lies more along the back.)
+    "MeetEnd_Coach_WalkPat_Squatavious": {"from": "MeetEnd_Coach_BackPat_Squatavious", "reach_dir": (35.0, 15.0),
+                                          "normal": (-0.45, 0.03, 1.0), "palm_scale": -0.9, "elbow": 40.0},
+    "MeetEnd_Coach_WalkPat_Benchamin": {"from": "MeetEnd_Coach_BackPat_Benchamin", "yaw": 22.0, "raise": -2.0,
+                                        "elbow": 23.0},
+    "MeetEnd_Coach_WalkPat_Sumo": {"from": "MeetEnd_Coach_BackPat_Sumo", "yaw": 22.0, "raise": -2.0, "elbow": 31.0},
+}
+# Measured by pairqa PAIR_WALK=1 (2026-11-25, D:/ClaudeScratch/backpat/walk/final_*): {version: {lifter build: (side,
+# back)}}, both roots facing the walk (yaw 0), the coach's LowerTorso keyed by the clip (hips square, so the walk under
+# him cannot swing the hand), the lifter on the full Swagger walk. Over 8 lifter x 4 coach walk phases: never a sink, no
+# body inside the other; the palm 0.001-0.15 off the back (Squatavious 0.004-0.083); within 0.05 for 12-20 of the 32
+# phase pairs (Squatavious 20-32): what is left is the LIFTER's own walk (his chest turning +-9 deg, his bob) moving
+# his back under the still hand.
+WALK_PLACEMENT = {
+    "MeetEnd_Coach_WalkPat": {
+        "Skinny": (3.704, 1.045), "SkinnyFat": (3.749, 1.080), "Fit": (3.840, 1.188),
+        "Fat": (3.879, 1.215), "Muscular": (3.890, 1.245), "BigBuff": (3.970, 1.331)},
+    "MeetEnd_Coach_WalkPat_Squatavious": {
+        "Skinny": (1.723, 1.867), "SkinnyFat": (1.681, 1.908), "Fit": (1.625, 1.972),
+        "Fat": (1.597, 2.045), "Muscular": (1.579, 2.033), "BigBuff": (1.484, 2.118)},
+    "MeetEnd_Coach_WalkPat_Benchamin": {
+        "Skinny": (3.839, 1.057), "SkinnyFat": (3.885, 1.093), "Fit": (3.987, 1.209),
+        "Fat": (4.019, 1.236), "Muscular": (4.037, 1.266), "BigBuff": (4.112, 1.355)},
+    "MeetEnd_Coach_WalkPat_Sumo": {
+        "Skinny": (4.064, 1.185), "SkinnyFat": (4.107, 1.224), "Fit": (4.184, 1.310),
+        "Fat": (4.240, 1.345), "Muscular": (4.223, 1.370), "BigBuff": (4.303, 1.455)},
+}
+WALK_PLACEMENT_TWIST = WALK_PLACEMENT    # (the coach's hips are keyed now: one table for any walk under him)
+GAP_REACH = [0.8, 0.6]                   # (pairqa) how far the body gaps are looked for (walk_talk_qa: further)
+WALK_EXTRA_BACK = {}                     # {(version, lifter build): studs}: a pair moved further back by hand (none)
+
+# ---------------- TALKING WITH HIS BODY (user 2026-11-26, after the game test: "the coach should be walking with the
+# lifter saying this with his arm patting his back ... you could add the realism animation making it look like the
+# coach is talking through motions"; "the coach is too close"). New clips, the BackPat / WalkPat ones kept as they are:
+#   MeetEnd_Coach_TalkPat[...]   standing: the BackPat start (two pats 0.85 / 1.20 s), then the hand rests on the back
+#                                with a small pat now and then (TALK_REST_PATS) while the free RIGHT hand, the head and
+#                                a little of the chest talk (gestures 1.4-7.6 s); the hand comes away by RELEASE. 9.0 s.
+#   MeetEnd_Coach_WalkTalk[...]  walking beside the lifter (both facing the walk): the near arm round behind him, the
+#                                open hand on his shoulder blade with small pats, the free hand and head talking. Upper
+#                                body only on top of the game's walk (legs); 8.0 s LOOPED.
+# The free hand is OPEN throughout (rule 8: no fist without the game's hand swap; the "big word" is an open-hand shake).
+# Gestures are written from the right shoulder in the chest's frame, in units of the arm's length (so they read the
+# same on short Squatavious and long-armed Sumo), and kept in front of each body's own chest/belly (TALK_FRONT, measured
+# on the rest bodies with their clothes, 2026-11-26) by TALK_CLEAR. The wrist only rolls (palm up / down) and flexes a
+# little on top of the forearm's own line: no wrist pointing the hand somewhere the forearm is not.
+TALK_LENGTH = 9.0
+TALK_REST_PATS = (2.95, 4.75, 6.45)     # standing: the small pats while he talks (1.5-2.5 s apart)
+TALK_PAT_LIFT = 0.085                   # how far the hand lifts off the back for them (studs, along the back's normal)
+WALKTALK_LENGTH = 8.0
+WALKTALK_PATS = (1.45, 3.35, 5.15, 7.05)
+TALK_CLEAR = 0.34                       # the hand's centre kept this far in front of his own chest / belly
+# the most-forward point of each body's front (z, coach root frame, -z = in front) at each height, right half, at rest
+TALK_FRONT = {
+    "Fat": [(2.0, -0.60), (2.2, -0.79), (2.4, -0.87), (2.6, -0.98), (2.8, -1.0), (3.0, -1.0), (3.2, -0.94),
+            (3.4, -0.88), (3.6, -0.75), (3.8, -0.67), (4.0, -0.62), (4.2, -0.53), (4.4, -0.50)],
+    "Squatavious": [(1.2, -0.50), (1.4, -0.55), (1.6, -0.51), (1.8, -0.50), (2.0, -0.51), (2.2, -0.56), (2.4, -0.71),
+                    (2.6, -0.77), (2.8, -0.76), (3.0, -0.58), (3.2, -0.39)],
+    "Benchamin": [(2.0, -0.44), (2.4, -0.50), (2.8, -0.48), (3.2, -0.45), (3.4, -0.61), (3.6, -0.70), (3.8, -0.77),
+                  (4.0, -0.80), (4.2, -0.82), (4.4, -0.73)],
+    "Sumo": [(2.4, -0.31), (2.8, -0.36), (3.0, -0.46), (3.4, -0.40), (3.8, -0.49), (4.0, -0.55), (4.2, -0.61),
+             (4.4, -0.58)],
+}
+# The free hand's poses: (x, y, z) from the right shoulder joint, chest frame (x + = his right, y up, z + = behind;
+# x and y in torso lengths, z in arm lengths), the wrist's roll (deg about the hand's long axis; - = palm turning
+# up) and flex (deg; + = back).
+TALK_POSES = {
+    "ready_low": ((-0.04, -0.70, -0.34), -15.0, 0.0),   # forearm forward at the belly, palm in: the listening hand
+    "ready": ((-0.08, -0.45, -0.48), -20.0, 5.0),       # raised a little, about to say something
+    "point": ((-0.26, -0.22, -0.74), 30.0, -5.0),       # open hand out at the lifter, palm angled down
+    "point2": ((-0.20, -0.32, -0.70), 20.0, 0.0),       # a smaller one, lower
+    "chop": ((-0.06, -0.28, -0.70), 0.0, 8.0),          # the hand on its edge, fingers forward
+    "palm": ((-0.22, -0.30, -0.72), -72.0, 14.0),       # open palm up: "that's it"
+    "shake": ((-0.02, -0.24, -0.64), 38.0, -6.0),       # palm down-in, the hand shaken on a big word
+}
+# (standing, short Squatavious is close behind the lifter's right shoulder and turned 38-45 deg to him: his forward
+#  IS the lifter, and the point at 2.3 s went into a Muscular / BigBuff lifter's arm, pairqa overlap 0.125. His hand
+#  talks out to his own right front instead: x moved this far right (torso lengths), the reach shortened.)
+#  The chest's small forward beats are left out for him too: they took his chest to 0.09 from a BigBuff lifter.
+TALK_TWEAK = {("stand", "Squatavious"): {"dx": 0.34, "far": 0.82, "lean": 0.0}}
+TALK_PULL = (0.38, -1.0, 0.28)          # the talking arm's elbow: down, a little out and back (chest frame, right side)
+# (time, pose) keys of the free hand ("hang" = hanging at his side as in BackPat) and the beats on top of them:
+# (time, kind, size): push (a little toward the lifter), chop (down), open (a small lift of the open palm), shake.
+TALK_KEYS = {
+    "stand": [(0.0, "hang"), (1.40, "hang"), (1.85, "ready"), (2.05, "point"), (2.55, "point"), (2.85, "ready_low"),
+              (3.10, "chop"), (3.78, "chop"), (4.05, "ready"), (4.40, "palm"), (5.05, "palm"), (5.35, "ready_low"),
+              (5.65, "shake"), (6.30, "shake"), (6.55, "point2"), (7.00, "point2"), (7.30, "ready_low"),
+              (7.60, "ready_low"), (8.30, "hang"), (TALK_LENGTH, "hang")],
+    "walk": [(0.0, "ready_low"), (0.55, "ready_low"), (0.85, "point"), (1.35, "point"), (1.60, "ready"),
+             (1.80, "chop"), (2.45, "chop"), (2.70, "ready_low"), (2.95, "palm"), (3.55, "palm"), (3.85, "ready"),
+             (4.25, "shake"), (4.85, "shake"), (5.10, "ready_low"), (5.35, "point2"), (5.85, "point2"),
+             (6.10, "ready"), (6.40, "palm"), (6.95, "palm"), (7.30, "ready_low"), (WALKTALK_LENGTH, "ready_low")],
+}
+TALK_BEATS = {
+    "stand": [(2.30, "push", 1.0), (3.28, "chop", 1.0), (3.58, "chop", 0.8), (4.70, "open", 1.0),
+              (5.95, "shake", 1.0), (6.78, "push", 0.7)],
+    "walk": [(1.10, "push", 1.0), (1.98, "chop", 1.0), (2.28, "chop", 0.8), (3.22, "open", 1.0), (4.55, "shake", 1.0),
+             (5.60, "push", 0.7), (6.68, "open", 0.7)],
+}
+# the head: (time, nod deg, tilt deg) bumps - nods on the beats, a tilt on the open palm, and a couple of his own
+TALK_HEAD = {
+    "stand": [(1.55, -4.0, 0.0), (2.30, -6.0, 0.0), (3.28, -5.0, 0.0), (3.58, -3.0, 0.0), (4.70, -3.0, 5.0),
+              (5.95, -6.0, 0.0), (6.78, -4.0, -3.0), (7.40, -3.0, 0.0)],
+    "walk": [(0.30, -3.0, 0.0), (1.10, -6.0, 0.0), (1.98, -5.0, 0.0), (2.28, -3.0, 0.0), (3.22, -3.0, 5.0),
+             (4.55, -6.0, 0.0), (5.60, -4.0, -3.0), (6.68, -3.0, 4.0), (7.50, -3.0, 0.0)],
+}
+
+TALK_VERSIONS = {
+    "MeetEnd_Coach_TalkPat": {"from": "MeetEnd_Coach_BackPat"},
+    "MeetEnd_Coach_TalkPat_Squatavious": {"from": "MeetEnd_Coach_BackPat_Squatavious"},
+    "MeetEnd_Coach_TalkPat_Benchamin": {"from": "MeetEnd_Coach_BackPat_Benchamin"},
+    "MeetEnd_Coach_TalkPat_Sumo": {"from": "MeetEnd_Coach_BackPat_Sumo"},
+}
+for _n, _s in TALK_VERSIONS.items():
+    VERSIONS[_n] = dict(VERSIONS[_s["from"]], talk=True)
+
+# The walk beside (user 2026-11-26: "the coach is too close"): both roots face the walk; the coach at the lifter's right,
+# a clear gap between the bodies (WALK_GAP, everything but his near arm, his free arm's gestures and both walks'
+# swinging arms and legs included), no more than WALK_MAX_BACK behind. His near arm goes out from the shoulder and
+# round behind the lifter's shoulder, the elbow pointing down and a little back (the arm close to its relaxed
+# bend, swung from the shoulder), the open hand on the shoulder blade. (Elbow pointing back: the wrist had to turn
+# 65 deg to lay the palm on the back; pointing down it turns 33-37.) Per version: "hand" = the hand's centre from
+# the turned left shoulder (coach root frame: x left -, y up, z back +), "pull" = where the elbow points (chest frame).
+WALK_GAP = 0.35
+WALK_MAX_BACK = 0.70
+WALKTALK_TURN = 18.0
+WALKTALK_PARTS = WALK_PARTS + ("RightUpperArm", "RightLowerArm", "RightHand")
+WALKTALK_VERSIONS = {
+    "MeetEnd_Coach_WalkTalk": {"body": "Fat", "hip": 2.0, "hand": (-2.20, -0.38, 0.12), "bend": 30.0,
+                               "pull": (0.0, -1.0, 0.4)},
+    # (short Squatavious: his arm out to his left and UP to the lifter's mid back, straighter (bend 20), the elbow
+    #  down and back; side set by the gap (fit_gap) rather than by where the palm lands, his chest turned further;
+#  bend 20 left 0.02 of reach: the chest's talking moves straightened the arm)
+    "MeetEnd_Coach_WalkTalk_Squatavious": {"body": "Squatavious", "hip": 1.192, "hand": (-1.354, 0.634, 0.119),
+                                           "bend": 32.0, "pull": (0.0, -1.0, 0.4), "turn": 28.0, "fit_gap": 0.40},
+    "MeetEnd_Coach_WalkTalk_Benchamin": {"body": "Benchamin", "hip": 2.0, "hand": (-2.20, -0.38, 0.12), "bend": 30.0,
+                                         "pull": (0.0, -1.0, 0.4)},
+    "MeetEnd_Coach_WalkTalk_Sumo": {"body": "Sumo", "hip": 2.902, "hand": (-2.60, -0.30, 0.12), "bend": 30.0,
+                                    "pull": (0.0, -1.0, 0.4)},
+}
+for _n, _s in WALKTALK_VERSIONS.items():                 # (env WALKTALK_<Body>_HAND / _PULL = "x,y,z": trials)
+    for _k in ("hand", "pull"):
+        _e = os.environ.get("WALKTALK_%s_%s" % (_s["body"].upper(), _k.upper()))
+        if _e:
+            _s[_k] = tuple(float(c) for c in _e.split(","))
+    if os.environ.get("WALKTALK_%s_BEND" % _s["body"].upper()):
+        _s["bend"] = float(os.environ["WALKTALK_%s_BEND" % _s["body"].upper()])
+# Measured by pairqa PAIR_WALKTALK=1 WALKTALK_DENSE=1 (2026-11-26, D:/ClaudeScratch/talk/walk_final, walk_sq3): {version:
+# {lifter build: (side, back)}}, both roots facing the walk; WALK_PICTURES_ONLY=1 re-renders from it.
+WALKTALK_PLACEMENT = {
+    "MeetEnd_Coach_WalkTalk": {
+        "Skinny": (3.900, 0.407), "SkinnyFat": (3.948, 0.432), "Fit": (3.963, 0.545),
+        "Fat": (4.142, 0.555), "Muscular": (3.996, 0.607), "BigBuff": (4.164, 0.661)},
+    "MeetEnd_Coach_WalkTalk_Squatavious": {
+        "Skinny": (2.973, 0.242), "SkinnyFat": (3.041, 0.257), "Fit": (3.241, 0.361),
+        "Fat": (3.371, 0.413), "Muscular": (3.491, 0.505), "BigBuff": (3.625, 0.581)},
+    "MeetEnd_Coach_WalkTalk_Benchamin": {
+        "Skinny": (4.002, 0.426), "SkinnyFat": (4.051, 0.456), "Fit": (4.058, 0.538),
+        "Fat": (4.248, 0.559), "Muscular": (4.087, 0.600), "BigBuff": (4.202, 0.697)},
+    "MeetEnd_Coach_WalkTalk_Sumo": {
+        "Skinny": (4.279, 0.398), "SkinnyFat": (4.327, 0.421), "Fit": (4.350, 0.522),
+        "Fat": (4.516, 0.529), "Muscular": (4.391, 0.583), "BigBuff": (4.562, 0.624)},
 }
 
 
@@ -186,6 +358,174 @@ def build():
         yaw = track([(0.0, 0.0), (0.12, 0.0), (0.72, 18.0), (RELEASE[0], 18.0), (8.75, 0.0), (LENGTH, 0.0)], t)
         nod = -5.0 * sum(bump(t, c, 0.22) for c in NODS)
         return {"Waist": S.ry(turn) @ S.rx(lean), "Neck": S.ry(yaw) @ S.rx(nod - 2.0 * (yaw / 18.0))}
+
+    # ---------------- talking with his body (TALK_*): the free right arm, the head and a little of the chest
+    P = Matrix.Diagonal((-1.0, 1.0, 1.0, 1.0))
+
+    def mirrored(m):
+        return P @ m @ P
+
+    def ik_right(body, target, pull, prev):
+        """The RIGHT arm's angles (one_arm("Right", ...)) putting its hand centre on `target` (root frame), the elbow
+        toward `pull` (chest frame): the left arm's exact solve on the mirrored body (the rig is symmetric)."""
+        mb = {k: mirrored(v) for k, v in body.items()}
+        return E.ik_arm(mb, Vector((-target.x, target.y, target.z)), Vector((-pull[0], pull[1], pull[2])), prev)
+
+    def front_at(body_name, y_root, root_y):
+        rows = TALK_FRONT[body_name]
+        y = y_root + root_y
+        if y <= rows[0][0]:
+            return rows[0][1]
+        for (y0, z0), (y1, z1) in zip(rows, rows[1:]):
+            if y <= y1:
+                return z0 + (z1 - z0) * (y - y0) / (y1 - y0)
+        return rows[-1][1]
+
+    class Talk:
+        """The talking layer of one clip on one body: body(t) the Waist / Neck (and the walk's Root bob), right(t,
+        body, prev) the free arm's joints, pat(t) 0..1 the near hand lifted off the back."""
+
+        def __init__(self, mode, body_name, base_body, length, pats, looped):
+            self.mode, self.body_name, self.base, self.length, self.pats, self.looped = (
+                mode, body_name, base_body, length, pats, looped)
+            j = BODY_JOINTS[body_name]
+            self.root_y = j["HumanoidRootNode"][1]
+            sh = S.JOINTS["RightShoulder"][2]
+            self.shoulder_c = Vector(sh)                                  # (UpperTorso frame)
+            upper = (Vector(j["LeftLowerArm"]) - Vector(j["LeftUpperArm"])).length
+            fore = (Vector(j["LeftHand"]) - Vector(j["LeftLowerArm"])).length + 0.125
+            self.L = upper + fore
+            # heights and sideways in units of the torso (shoulder joint to hip joint): long-armed Sumo's short torso
+            # put his "chest-high" gestures at his hips when they were in arm lengths
+            self.Tz = j["LeftUpperArm"][1] - j["LowerTorso"][1]
+            self.front_x = {"Fat": 1.15, "Squatavious": 1.25, "Benchamin": 1.05, "Sumo": 0.95}[body_name]
+            self.keys = TALK_KEYS[mode]
+            self.beats = TALK_BEATS[mode]
+            self.head = TALK_HEAD[mode]
+            # the hanging hand (RIGHT_HANG) and the elbow way that solves back to exactly it
+            hang_pose = {}
+            hang_pose.update(E.one_arm("Right", RIGHT_HANG))
+            fk = S.forward_kinematics(I4, hang_pose)
+            ut = fk["UpperTorso"]
+            self.hang_c = ut.inverted() @ fk["RightHand"].to_translation() - self.shoulder_c
+            # (the arm's joints are not in line at rest - the upper arm splays out - so the elbow's way is found by
+            #  trying ways round the shoulder-hand line: the one whose solve turns the shoulder as RIGHT_HANG does)
+            want_sh = E.one_arm("Right", RIGHT_HANG)["RightShoulder"].to_quaternion()
+            target0 = self.shoulder_c + self.hang_c                     # (UpperTorso frame = root frame at rest,
+            target0 = ut @ target0                                       #  turned to the root frame)
+            line = self.hang_c.normalized()
+            ref = Vector((0.0, 0.0, 1.0))
+            ref = (ref - line * ref.dot(line)).normalized()
+            side_v = line.cross(ref)
+            best = None
+            for k in range(72):
+                ang = math.radians(k * 5.0)
+                pull = ref * math.cos(ang) + side_v * math.sin(ang)
+                a0 = ik_right({}, target0, tuple(pull), dict(HANG))
+                d = E.one_arm("Right", a0)["RightShoulder"].to_quaternion().rotation_difference(want_sh).angle
+                if best is None or d < best[0]:
+                    best = (d, tuple(pull))
+            self.hang_pull = best[1]
+
+        def _w(self, t):
+            if self.looped:
+                t = t % self.length
+            return t
+
+        def body(self, t):
+            t = self._w(t)
+            out = dict(self.base(t))
+            lean = sum(-1.6 * b[2] * bump(t, b[0], 0.30) for b in self.beats if b[1] in ("push", "chop", "shake"))
+            turn = 1.5 * math.sin(2 * math.pi * t / self.length * (2 if self.mode == "walk" else 1.5))
+            nod = sum(h[1] * bump(t, h[0], 0.24) for h in self.head)
+            tilt = sum(h[2] * bump(t, h[0], 0.45) for h in self.head)
+            w_on = 1.0 if self.mode == "walk" else S.smooth((t - 1.2) / 0.4) * (1.0 - S.smooth((t - 7.8) / 0.6))
+            lean *= TALK_TWEAK.get((self.mode, self.body_name), {}).get("lean", 1.0)
+            out["Waist"] = S.ry(turn * w_on) @ out["Waist"] @ S.rx(lean * w_on)
+            out["Neck"] = out["Neck"] @ S.rx(nod * w_on) @ S.rz(tilt * w_on)
+            return out
+
+        def _pose_at(self, name):
+            if name == "hang":
+                return self.hang_c, 0.0, 0.0, 0.0
+            off, roll, flex = TALK_POSES[name]
+            # (the hand as far from the shoulder, in arm lengths, as the pose says - so the elbow bends the same on
+            #  every body - its height and sideways in torso lengths, the rest forward)
+            tw = TALK_TWEAK.get((self.mode, self.body_name), {})
+            x, y = (off[0] + tw.get("dx", 0.0)) * self.Tz, off[1] * self.Tz
+            far = Vector(off).length * self.L * tw.get("far", 1.0)
+            z = -math.sqrt(max(far * far - x * x - y * y, (0.3 * self.L) ** 2))
+            return Vector((x, y, z)), roll, flex, 1.0
+
+        def hand(self, t):
+            """(hand centre from the right shoulder, chest frame), roll, flex, talking weight (0 = hanging)."""
+            t = self._w(t)
+            keys = self.keys
+            if t <= keys[0][0]:
+                a = b = self._pose_at(keys[0][1])
+                u = 0.0
+            else:
+                for (t0, n0), (t1, n1) in zip(keys, keys[1:]):
+                    if t <= t1:
+                        a, b = self._pose_at(n0), self._pose_at(n1)
+                        u = S.smooth((t - t0) / (t1 - t0))
+                        break
+                else:
+                    a = b = self._pose_at(keys[-1][1])
+                    u = 0.0
+            pos = a[0].lerp(b[0], u)
+            roll = a[1] + (b[1] - a[1]) * u
+            flex = a[2] + (b[2] - a[2]) * u
+            w = a[3] + (b[3] - a[3]) * u
+            L, Tz = self.L, self.Tz
+            for bt, kind, size in self.beats:
+                if kind == "push":
+                    k = bump(t, bt, 0.22) * size
+                    pos = pos + Vector((-0.03 * Tz, 0.025 * Tz, -0.06 * L)) * k
+                    flex -= 8.0 * k
+                elif kind == "chop":
+                    k = bump(t, bt, 0.13) * size
+                    pos = pos + Vector((0.0, -0.065 * Tz, -0.02 * L)) * k
+                    flex -= 14.0 * k
+                elif kind == "open":
+                    k = bump(t, bt, 0.28) * size
+                    pos = pos + Vector((-0.03 * Tz, 0.04 * Tz, -0.03 * L)) * k
+                    flex += 6.0 * k
+                elif kind == "shake":
+                    if bt - 0.25 < t < bt + 0.25:
+                        edge = min(1.0, (t - (bt - 0.25)) / 0.08, ((bt + 0.25) - t) / 0.08)
+                        pos = pos + Vector((0.0, 0.03 * Tz * edge * size * math.sin(2 * math.pi * 5.0 * (t - bt + 0.25)),
+                                            0.0))
+            return pos, roll, flex, w
+
+        def right(self, t, body, prev):
+            pos, roll, flex, w = self.hand(t)
+            ut = S.forward_kinematics(I4, body)["UpperTorso"]
+            target = ut @ (self.shoulder_c + pos)
+            if w > 0.0:
+                # in front of his own chest / belly at that height (root frame; the chest's small turns ignored)
+                lim = front_at(self.body_name, target.y, self.root_y) - TALK_CLEAR
+                # (fully while the hand is in front of the body, not beside it: rising from the hang it passed
+                #  through the belly's side, anim_qa arm_in_outfit 0.06)
+                k = 1.0 if target.x < self.front_x else w
+                if target.z > lim:
+                    target.z = lim + (target.z - lim) * (1.0 - k)
+            pull = Vector(self.hang_pull).lerp(Vector(TALK_PULL), w)
+            a = ik_right(body, target, pull, prev)
+            # (the mirrored solve's twist sign is the left arm's: one_arm("Right", a) mirrors it back)
+            wrist = S.ry(roll) @ S.rz(flex)
+            return a, wrist, target
+
+        def pat(self, t):
+            t = self._w(t)
+            s = 0.0
+            for p in self.pats:
+                for pp in ((p, p - self.length, p + self.length) if self.looped else (p,)):
+                    # up over 0.16 s, down onto the back at p (a quicker drop than the lift)
+                    if pp - 0.30 < t <= pp:
+                        u = (t - (pp - 0.30)) / 0.30
+                        s = max(s, math.sin(math.pi * u) ** 1.3 if u < 1 else 0.0)
+            return s
 
     clips = {}
     for name, spec in VERSIONS.items():
@@ -263,15 +603,24 @@ def build():
             return ut @ S.T(c0s) @ sh @ S.T(c1s).inverted() @ S.T(c0e) @ el @ S.T(c1e).inverted()
 
         poses, prev, worst = {}, dict(HANG), {"miss": 0.0, "wrist": 0.0, "elbow": 0.0}
+        talk = Talk("stand", spec["body"], body_at, TALK_LENGTH, TALK_REST_PATS, False) if spec.get("talk") else None
+        prev_r = dict(RIGHT_HANG)
+        if talk:
+            worst.update({"r_wrist": 0.0, "r_elbow": 0.0, "r_miss": 0.0})
         t = 0.0
         times = []
         while t < LENGTH - 1e-6:
             times.append(round(t, 3))
-            t += 0.05 if (t < 1.5 or RELEASE[0] - 0.1 <= t < RELEASE[1] + 0.1) else 0.1
+            t += 0.05 if (talk or t < 1.5 or RELEASE[0] - 0.1 <= t < RELEASE[1] + 0.1) else 0.1
         times.append(LENGTH)
         for t in times:
-            body = body_at(t)
+            body = talk.body(t) if talk else body_at(t)
             target = arc_track(t) if reach else track(keys, t)
+            if talk and talk.pat(t) > 0.0:
+                # (a small pat while he talks: the hand lifts off the back and lands again, pivoting at the shoulder
+                #  for the reaching arms as the first two do)
+                lifted = target + (n_c * TALK_PAT_LIFT + Vector((0, 0.02, 0))) * talk.pat(t)
+                target = on_sphere(lifted) if reach else lifted
             pull = track(pulls, t)
             w = track(palm_w, t)
             a = E.ik_arm(body, target, pull, prev)
@@ -287,39 +636,243 @@ def build():
             pose = dict(body)
             pose.update(E.one_arm("Left", a))
             pose["LeftWrist"] = wrist
-            right = E.one_arm("Right", RIGHT_HANG)
-            pose["RightShoulder"], pose["RightElbow"] = right["RightShoulder"], right["RightElbow"]
+            if talk:
+                ar, rwrist, rtarget = talk.right(t, body, prev_r)
+                prev_r = ar
+                pose.update(E.one_arm("Right", ar))
+                pose["RightWrist"] = rwrist
+            else:
+                right = E.one_arm("Right", RIGHT_HANG)
+                pose["RightShoulder"], pose["RightElbow"] = right["RightShoulder"], right["RightElbow"]
             fk = S.forward_kinematics(I4, pose)
             worst["miss"] = max(worst["miss"], (fk["LeftHand"].to_translation() - target).length)
             worst["elbow"] = max(worst["elbow"], a["elbow"])
+            if talk:
+                worst["r_miss"] = max(worst["r_miss"], (fk["RightHand"].to_translation() - rtarget).length)
+                worst["r_elbow"] = max(worst["r_elbow"], ar["elbow"])
+                worst["r_wrist"] = max(worst["r_wrist"], math.degrees(rwrist.to_quaternion().angle))
             poses[t] = pose
         clips[name] = (poses, spec, worst, {"on": on, "pre": pre, "mid": mid, "hang": hang})
+
+    # ---------------- the walk together (WALK_VERSIONS): the BackPat rest arm held while both walk
+    for name, wspec in WALK_VERSIONS.items():
+        spec = VERSIONS[wspec["from"]]
+        j = use_body(spec["body"])
+        shoulder0 = j["LeftUpperArm"] - j["HumanoidRootNode"]
+        upper = (j["LeftLowerArm"] - j["LeftUpperArm"]).length
+        fore = (j["LeftHand"] - j["LeftLowerArm"]).length + 0.125
+        # walking, his root faces the way they walk (yaw 0): the BackPat hand spot turned by the yaw it stood at, from
+        # the shoulder where the chest turn puts it (from the rest shoulder the arm came out straighter: 0-24 deg)
+        shoulder0 = S.joint_point(S.forward_kinematics(I4, {"Waist": S.ry(WALK_TURN) @ S.rx(-3.0)}), "LeftShoulder")
+        if "reach_dir" in wspec:
+            # (an arm way of its own for the walk, from the turned shoulder; its length set by the elbow below)
+            az, el = wspec["reach_dir"]
+            a_, e_ = math.radians(az), math.radians(el)
+            on = shoulder0 + Vector((-math.sin(a_) * math.cos(e_), math.sin(e_), -math.cos(a_) * math.cos(e_))) * (upper + fore)
+        elif "reach" in spec:
+            reach_len = math.sqrt(upper * upper + fore * fore + 2 * upper * fore * math.cos(math.radians(spec["bend"])))
+            az, el = spec["reach"]
+            a_, e_ = math.radians(az + wspec.get("yaw", WALK_FROM_YAW)), math.radians(el + wspec.get("raise", 0.0))
+            on = shoulder0 + Vector((-math.sin(a_) * math.cos(e_), math.sin(e_), -math.cos(a_) * math.cos(e_))) * reach_len
+        else:
+            on = shoulder0 + _rot_y(Vector(wspec.get("on", spec["on"])), wspec.get("yaw", WALK_FROM_YAW))
+        n_c = Vector(wspec.get("normal", BACK_NORMAL)).normalized()
+        pull = Vector(wspec.get("pull", spec["pull"]))
+        hcw = S.hand_centre_from_wrist("Left")
+        _p, _c, c0s, c1s = S.JOINTS["LeftShoulder"]
+        _p, _c, c0e, c1e = S.JOINTS["LeftElbow"]
+        # the fingers' way on the back (toward the spine ... straight up) with the least wrist turn for this arm
+        side_dir = Vector((-1.0, 0.0, 0.0)) - n_c * (-n_c.x)
+        side_dir.normalize()
+        up_dir = n_c.cross(side_dir) if n_c.cross(side_dir).y > 0 else side_dir.cross(n_c)
+        best = None
+        body0 = {"Waist": S.ry(WALK_TURN) @ S.rx(-3.0)}
+        ut0 = S.forward_kinematics(I4, body0)["UpperTorso"]
+        for deg in range(-30, 91, 10):
+            f = side_dir * math.cos(math.radians(deg)) + up_dir * math.sin(math.radians(deg))
+            w_ = S.hand_frame("Left", -n_c, f)
+            a0 = E.ik_arm(body0, on - w_ @ hcw, pull, dict(HANG), wrist_point=True)
+            sh, el = S._arm_tf("Left", a0)
+            lo = ut0 @ S.T(c0s) @ sh @ S.T(c1s).inverted() @ S.T(c0e) @ el @ S.T(c1e).inverted()
+            turn = math.degrees((lo.to_3x3().transposed() @ w_).to_quaternion().angle)
+            if best is None or turn < best[0]:
+                best = (turn, deg, f)
+        fingers_c = best[2]
+        want = S.hand_frame("Left", -n_c, fingers_c)
+        # the arm's length set so the elbow bends as much as at the BackPat rest (the approved shape)
+        lo_s, hi_s = 0.6, 1.4
+        for _ in range(24):
+            mid_s = (lo_s + hi_s) / 2
+            a0 = E.ik_arm(body0, shoulder0 + (on - shoulder0) * mid_s - want @ hcw, pull, dict(HANG), wrist_point=True)
+            if a0["elbow"] > wspec["elbow"]:
+                lo_s = mid_s
+            else:
+                hi_s = mid_s
+        on = shoulder0 + (on - shoulder0) * ((lo_s + hi_s) / 2)
+        print("WALK", name, "fingers %d deg up from the spine way, wrist %.1f, arm x%.3f" % (best[1], best[0],
+                                                                                           (lo_s + hi_s) / 2))
+
+        def walk_body(t):
+            # the chest turned toward the lifter (the hips face the walk: the game's walk keys the legs and root);
+            # the head turned a little further, looking at him now and then, a few small talking nods
+            look = 14.0 + 12.0 * (bump(t, 1.4, 0.55) + bump(t, 3.1, 0.45))
+            nod = -4.0 * (bump(t, 1.35, 0.18) + bump(t, 1.7, 0.18) + bump(t, 3.05, 0.18))
+            bob = -WALK_BOB[0] * 0.5 * (1.0 - math.cos(2.0 * math.pi * WALK_BOB[1] * t))
+            return {"Root": S.T((0.0, bob, 0.0)), "Waist": S.ry(WALK_TURN) @ S.rx(-3.0), "Neck": S.ry(look) @ S.rx(nod - 2.0)}
+
+        poses, prev, worst = {}, dict(HANG), {"miss": 0.0, "wrist": 0.0, "elbow": 0.0}
+        steps = int(round(WALK_LENGTH / 0.1))
+        for i in range(steps + 1):
+            t = round(min(WALK_LENGTH, i * 0.1), 3)
+            body = walk_body(0.0 if i == steps else t)      # (looped: it ends on its first pose)
+            a = prev
+            for _ in range(2):                              # (the first frame: settle the euler branch)
+                a = E.ik_arm(body, on - want @ hcw, pull, a, wrist_point=True)
+            ut = S.forward_kinematics(I4, body)["UpperTorso"]
+            sh, el = S._arm_tf("Left", a)
+            lower = ut @ S.T(c0s) @ sh @ S.T(c1s).inverted() @ S.T(c0e) @ el @ S.T(c1e).inverted()
+            wrist = (lower.to_3x3().transposed() @ want).to_4x4()
+            prev = a
+            pose = dict(body)
+            pose.update(E.one_arm("Left", a))
+            pose["LeftWrist"] = wrist
+            fk = S.forward_kinematics(I4, pose)
+            worst["miss"] = max(worst["miss"], (fk["LeftHand"].to_translation() - on).length)
+            worst["elbow"] = max(worst["elbow"], a["elbow"])
+            worst["wrist"] = max(worst["wrist"], math.degrees(wrist.to_quaternion().angle))
+            poses[t] = pose
+        clips[name] = (poses, dict(spec, walk=True), worst, {"on": on})
+
+    # ---------------- walking beside him, talking (WALKTALK_VERSIONS)
+    for name, wspec in WALKTALK_VERSIONS.items():
+        if os.environ.get("BACKPAT_ONLY") and name not in os.environ["BACKPAT_ONLY"].split(","):
+            continue
+        j = use_body(wspec["body"])
+        turn_w = float(os.environ.get("WALKTALK_%s_TURN" % wspec["body"].upper(), wspec.get("turn", WALKTALK_TURN)))
+        base0 = {"Waist": S.ry(turn_w) @ S.rx(-3.0)}
+        shoulder0 = S.joint_point(S.forward_kinematics(I4, base0), "LeftShoulder")
+        on = shoulder0 + Vector(wspec["hand"])
+        n_c = Vector(BACK_NORMAL).normalized()           # (both face the walk: the lifter's frame is the coach's)
+        pull = Vector(wspec["pull"])
+        hcw = S.hand_centre_from_wrist("Left")
+        _p, _c, c0s, c1s = S.JOINTS["LeftShoulder"]
+        _p, _c, c0e, c1e = S.JOINTS["LeftElbow"]
+        ut0 = S.forward_kinematics(I4, base0)["UpperTorso"]
+
+        def lower_rot(body, a):
+            ut = S.forward_kinematics(I4, body)["UpperTorso"]
+            sh, el = S._arm_tf("Left", a)
+            return (ut @ S.T(c0s) @ sh @ S.T(c1s).inverted() @ S.T(c0e) @ el @ S.T(c1e).inverted()).to_3x3()
+        # the fingers' way on the back (toward the spine ... up) with the least wrist turn for this arm
+        side_dir = Vector((-1.0, 0.0, 0.0)) - n_c * (-n_c.x)
+        side_dir.normalize()
+        up_dir = n_c.cross(side_dir) if n_c.cross(side_dir).y > 0 else side_dir.cross(n_c)
+
+        def fingers_for(on):
+            best = None
+            for deg in range(-40, 91, 5):
+                f = side_dir * math.cos(math.radians(deg)) + up_dir * math.sin(math.radians(deg))
+                w_ = S.hand_frame("Left", -n_c, f)
+                a0 = E.ik_arm(base0, on - w_ @ hcw, pull, dict(HANG), wrist_point=True)
+                a0 = E.ik_arm(base0, on - w_ @ hcw, pull, a0, wrist_point=True)
+                turn = math.degrees((lower_rot(base0, a0).transposed() @ w_).to_quaternion().angle)
+                if best is None or turn < best[0]:
+                    best = (turn, deg, f, a0)
+            return best
+        if "bend" in wspec:
+            # the hand's way kept, its distance set so the elbow bends `bend` degrees (the arm's relaxed shape)
+            lo_s, hi_s = 0.7, 1.3
+            for _ in range(22):
+                mid_s = (lo_s + hi_s) / 2
+                if fingers_for(shoulder0 + Vector(wspec["hand"]) * mid_s)[3]["elbow"] > wspec["bend"]:
+                    lo_s = mid_s
+                else:
+                    hi_s = mid_s
+            on = shoulder0 + Vector(wspec["hand"]) * ((lo_s + hi_s) / 2)
+        best = fingers_for(on)
+        want = S.hand_frame("Left", -n_c, best[2])
+        print("WALKTALK", name, "fingers %d deg up from the spine way, wrist %.1f, elbow %.1f, hand %s from the "
+              "shoulder" % (best[1], best[0], best[3]["elbow"], tuple(round(c, 3) for c in on - shoulder0)))
+
+        def walk_base(t):
+            bob = -WALK_BOB[0] * 0.5 * (1.0 - math.cos(2.0 * math.pi * WALK_BOB[1] * t))
+            look = 15.0 + 6.0 * math.sin(2 * math.pi * t / WALKTALK_LENGTH * 2 + 0.6)
+            return {"Root": S.T((0.0, bob, 0.0)), "Waist": S.ry(turn_w) @ S.rx(-3.0),
+                    "Neck": S.ry(look) @ S.rx(-2.0)}
+        talk = Talk("walk", wspec["body"], walk_base, WALKTALK_LENGTH, WALKTALK_PATS, True)
+        poses, prev, prev_r = {}, best[3], dict(HANG)
+        worst = {"miss": 0.0, "wrist": 0.0, "elbow": 0.0, "elbow_min": 999.0, "r_wrist": 0.0, "r_elbow": 0.0,
+                 "r_miss": 0.0}
+        steps = int(round(WALKTALK_LENGTH / 0.05))
+        for i in range(steps):
+            t = round(i * 0.05, 3)
+            body = talk.body(t)
+            target = on + n_c * (TALK_PAT_LIFT * talk.pat(t)) + Vector((0, 0.02, 0)) * talk.pat(t)
+            # (the pat pivots at the shoulder, the arm keeping its length: lifted straight off the back it pulled the
+            #  arm straight)
+            target = shoulder0 + (target - shoulder0).normalized() * (on - shoulder0).length
+            a = prev
+            for _ in range(2 if i else 3):
+                a = E.ik_arm(body, target - want @ hcw, pull, a, wrist_point=True)
+            wrist = (lower_rot(body, a).transposed() @ want).to_4x4()
+            prev = a
+            for _ in range(1 if i else 3):
+                ar, rwrist, rtarget = talk.right(t, body, prev_r)
+                prev_r = ar
+            pose = dict(body)
+            pose.update(E.one_arm("Left", a))
+            pose["LeftWrist"] = wrist
+            pose.update(E.one_arm("Right", ar))
+            pose["RightWrist"] = rwrist
+            fk = S.forward_kinematics(I4, pose)
+            worst["miss"] = max(worst["miss"], (fk["LeftHand"].to_translation() - target).length)
+            worst["elbow"] = max(worst["elbow"], a["elbow"])
+            worst["elbow_min"] = min(worst["elbow_min"], a["elbow"])
+            worst["wrist"] = max(worst["wrist"], math.degrees(wrist.to_quaternion().angle))
+            worst["r_miss"] = max(worst["r_miss"], (fk["RightHand"].to_translation() - rtarget).length)
+            worst["r_elbow"] = max(worst["r_elbow"], ar["elbow"])
+            worst["r_wrist"] = max(worst["r_wrist"], math.degrees(rwrist.to_quaternion().angle))
+            poses[t] = pose
+        poses[WALKTALK_LENGTH] = dict(poses[0.0])          # (looped: it ends on its first pose)
+        clips[name] = (poses, dict(wspec, walktalk=True), worst, {"on": on})
     S.JOINTS.clear()
     S.JOINTS.update(original)
     return clips, S
 
 
-def export(name, poses, hip, S):
-    """Writes art/animations/<name>.rbxmx (Action priority, NOT looped)."""
+def export(name, poses, hip, S, looped=False, only=None):
+    """Writes art/animations/<name>.rbxmx (Action priority). only: the parts keyed; their parents are written at
+    weight 0 (left to whatever else plays, entrance_animations.export's way), every other part left out."""
     refs = iter(range(1, 1_000_000))
     out = ['<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" '
            'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
            'xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">',
            f'<Item class="KeyframeSequence" referent="RBX{next(refs)}"><Properties>'
-           f'<float name="AuthoredHipHeight">{hip:g}</float><bool name="Loop">false</bool>'
+           f'<float name="AuthoredHipHeight">{hip:g}</float><bool name="Loop">{"true" if looped else "false"}</bool>'
            f'<string name="Name">{name}</string><token name="Priority">2</token>'
            f'</Properties>']
-    children = {}
+    children, parent_of = {}, {}
     for joint, (parent, child, c0, c1) in S.JOINTS.items():
         children.setdefault(parent, []).append((child, joint))
+        parent_of[child] = parent
+    keep = None
+    if only:
+        keep = set(only)
+        for part in only:
+            while part in parent_of:
+                part = parent_of[part]
+                keep.add(part)
 
     def pose_xml(part, transforms):
+        if keep is not None and part not in keep:
+            return ""
         joint = S.CHILD_JOINT.get(part)
         m = transforms.get(joint, Matrix.Identity(4)) if joint else Matrix.Identity(4)
+        weight = 0 if only and part not in only else 1
         s = (f'<Item class="Pose" referent="RBX{next(refs)}"><Properties>'
              f'<CoordinateFrame name="CFrame">{S._cframe_xml(m)}</CoordinateFrame>'
              f'<token name="EasingDirection">0</token><token name="EasingStyle">0</token>'
-             f'<string name="Name">{part}</string><float name="Weight">1</float></Properties>')
+             f'<string name="Name">{part}</string><float name="Weight">{weight}</float></Properties>')
         for child, _ in children.get(part, []):
             s += pose_xml(child, transforms)
         return s + "</Item>"
@@ -550,9 +1103,13 @@ def pair_qa(out_dir):
             cache[key] = (skin, worn, skin_pts + worn_pts)
         return cache[key]
 
-    def measure(name, coach, lifter, t, full=True):
+    def measure(name, coach, lifter, t, full=True, coach_tf=None, lifter_tf=None):
         c_rig, c_parts, c_clothes = coach
-        G["pose_rig"](c_rig, G["anim_at"](name, t))
+        coach_tf = coach_tf or G["anim_at"](name, t)
+        G["pose_rig"](c_rig, coach_tf)
+        if lifter_tf is not None:                   # (walking: the lifter posed too, his trees rebuilt)
+            G["pose_rig"](lifter[0], lifter_tf)
+            cache.pop(lifter[0].name, None)
         bpy.context.view_layer.update()
         l_skin, l_out, l_pts = lifter_trees(lifter)
         _h, hand_pts = points([c_parts["LeftHand"]])
@@ -567,7 +1124,7 @@ def pair_qa(out_dir):
             else:
                 gap = min(gap, out)
         res = {"gap": 0.0 if sink > 0 else gap, "sink": sink}
-        w = frames_of(c_rig, G["anim_at"](name, t))
+        w = frames_of(c_rig, coach_tf)
         palm = (c_rig.matrix_world.to_3x3() @ TO_B.to_3x3() @ (w["LeftHand"].to_3x3() @ Vector((1.0, 0.0, 0.0))))
         palm.normalize()
         hj = joints(c_rig)["LeftHand"]
@@ -580,6 +1137,7 @@ def pair_qa(out_dir):
             return res
         # the bodies, judged on the outer clothes: the coach (but his left arm) and the lifter
         c_skin, _cs = points([c_parts[n] for n in BODY_PARTS if n in c_parts])
+        hand_tree = points([c_parts["LeftHand"]])[0]
         c_body, _cb = points([c_parts[n] for n in BODY_PARTS if n in c_parts and n not in LEFT_ARM + ("LeftHand",)])
         torso_clothes = [o for o in c_clothes if o.name.partition("__")[2].split(".")[0] in ("UpperTorso", "LowerTorso")]
         c_out = points(torso_clothes)[0] if torso_clothes else None
@@ -592,7 +1150,7 @@ def pair_qa(out_dir):
         overlap, body_gap, arm_gap = 0.0, 9.0, 9.0
         for pts, is_arm in ((rest_pts[::2], False), (arm_pts, True)):
             for p in pts:
-                h = l_skin.find_nearest(p, 0.8)
+                h = l_skin.find_nearest(p, GAP_REACH[0])
                 if h[0] is None:
                     continue
                 if inside(p, l_skin):
@@ -607,15 +1165,17 @@ def pair_qa(out_dir):
                 else:
                     body_gap = min(body_gap, out)
         for p in l_pts[::2]:
-            h = c_skin.find_nearest(p, 0.6)
+            h = c_skin.find_nearest(p, GAP_REACH[1])
             if h[0] is None:
                 continue
-            if inside(p, c_skin):
+            if inside(p, c_skin) and not (hand_tree is not None and hand_tree.find_nearest(p, 0.25)[0] is not None
+                                          and inside(p, hand_tree)):
+                # (a lifter point inside the coach; the palm's own contact is `sink`'s, not counted twice here)
                 overlap = max(overlap, h[3] + 0.05)
             elif c_out is not None and clothes_out(p, c_skin, c_out) < 0:
                 overlap = max(overlap, -clothes_out(p, c_skin, c_out))
             else:
-                hb = c_body.find_nearest(p, 0.6)
+                hb = c_body.find_nearest(p, GAP_REACH[1])
                 if hb[0] is not None:
                     body_gap = min(body_gap, clothes_out(p, c_body, c_out))
         res.update({"overlap": overlap, "body_gap": body_gap, "arm_gap": arm_gap})
@@ -646,6 +1206,13 @@ def pair_qa(out_dir):
                 break
             side += palm_x - on.x
         return side, back
+
+    if os.environ.get("PAIR_WALKTALK"):
+        walk_talk_qa(out_dir, G, TO_B, lifters, pictured, coach_figure, lifter_figure, measure, place, frames_of, mat)
+        return
+    if os.environ.get("PAIR_WALK"):
+        walk_qa(out_dir, G, TO_B, lifters, pictured, coach_figure, lifter_figure, measure, place, frames_of, mat)
+        return
 
     report = ["# MeetEnd_Coach_BackPat pair check (meet_end_animations.py pairqa)\n\n",
               "Studs, degrees. Coach root `side` right of the lifter's root, `back` behind, turned `yaw` toward him. "
@@ -688,6 +1255,11 @@ def pair_qa(out_dir):
             for t in times:
                 r = measure(name, coach, lifter, t, full=True)
                 contact = PATS[0] - 0.01 <= t <= RELEASE[0] + 0.01 and (abs(t - PATS[0]) < 0.01 or t >= PATS[1] - 0.01)
+                if VERSIONS[name].get("talk"):
+                    # (the small pats while he talks lift the hand off on purpose; a sink counts at every moment)
+                    contact = contact and not any(pp - 0.32 < t < pp + 0.02 for pp in TALK_REST_PATS)
+                    if r["sink"] > worst["sink_contact"][0]:
+                        worst["sink_contact"] = (r["sink"], t)
                 if contact:
                     for k, v in (("sink_contact", r["sink"]), ("gap_contact", r["gap"]), ("tilt_contact", r["tilt"])):
                         if v > worst[k][0]:
@@ -760,6 +1332,8 @@ def pair_qa(out_dir):
              "back": (0.0, 1.0, 0.2), "backquarter": (-0.8, 0.9, 0.35)}
     ZOOMS = {"zoom_game": (-0.7, -0.6, 0.45), "zoom_back": (0.15, 1.0, 0.35), "zoom_top": (-0.1, 0.25, 1.0)}
     MOMENTS = [(0.45, "reach"), (PATS[0], "pat 1 lands"), (4.0, "resting, talking"), (8.35, "release")]
+    if any(VERSIONS[v].get("talk") for v in versions):
+        MOMENTS = [(PATS[0], "pat 1 lands"), (2.30, "point"), (4.70, "open palm"), (5.95, "shake"), (8.35, "release")]
 
     def shoot(path, text, direction, target, scale, size):
         cd.ortho_scale = scale
@@ -783,7 +1357,7 @@ def pair_qa(out_dir):
             place(lifter[0], coach[0], side, back, yaw)
             tiles, zooms = [], []
             centre = TO_B.to_3x3() @ Vector((side / 2, 0, back / 2))
-            tag = name.replace("MeetEnd_Coach_BackPat", "BackPat") or "BackPat"
+            tag = name.replace("MeetEnd_Coach_BackPat", "BackPat").replace("MeetEnd_Coach_TalkPat", "TalkPat")
             for t, note in MOMENTS:
                 G["pose_rig"](coach[0], G["anim_at"](name, t))
                 bpy.context.view_layer.update()
@@ -821,6 +1395,435 @@ def pair_qa(out_dir):
     print("[PairQA] DONE (nothing saved)")
 
 
+
+def walk_qa(out_dir, G, TO_B, lifters, pictured, coach_figure, lifter_figure, measure, place, frames_of, mat):
+    """The walk together: each WalkPat clip over the walk cycle (WALK_UNDER) on the coach, the same walk on the lifter
+    at another phase (in game the two walk cycles are not in step), both roots facing the walk (yaw 0). Per lifter
+    build: side/back fitted so the palm rests ON the back (no sink anywhere in the cycle), then every phase pair of a
+    grid measured: the palm's gap range (does the contact pop on and off?), sink, any body point inside the other
+    (the lifter's right arm swinging back through the coach's forearm shows here), the gaps. Pictures."""
+    import bpy
+    versions = [v for v in os.environ.get("PAIR_VERSIONS", ",".join(WALK_VERSIONS)).split(",") if v]
+    under = G["read_anim"](WALK_UNDER)
+    period = under[-1][0]
+    clip_t = 1.4
+
+    no_yaw = bool(os.environ.get("WALK_NO_YAW"))
+
+    def walk_tf(phase):
+        tf = dict(G["anim_at"](WALK_UNDER, (phase % 1.0) * period))
+        if no_yaw:
+            # (a stand-in for a walk without the hip twist: the Swagger's hips turn +-5 deg and its chest counter-turns
+            #  +-14; both turns taken out, the pitch, roll, bob, legs and arm swing kept)
+            for part in ("LowerTorso", "UpperTorso"):
+                if part in tf:
+                    m = tf[part]
+                    e = m.to_3x3().to_euler("YXZ")
+                    e.y = 0.0
+                    tf[part] = Matrix.Translation(m.to_translation()) @ e.to_matrix().to_4x4()
+        return tf
+
+    def coach_tf(name, phase, t=clip_t):
+        tf = walk_tf(phase)
+        mine = G["anim_at"](name, t)
+        for part in WALK_PARTS:
+            if part in mine:
+                tf[part] = mine[part]
+        return tf
+
+    L_PH = [i / 8.0 for i in range(8)]
+    C_PH = [0.0, 0.25, 0.5, 0.75]
+    REF = (0.0, 0.5)                    # (lifter phase, coach phase) the fit is made at
+    palm_x = {"Skinny": 0.31, "SkinnyFat": 0.35, "Fit": 0.40, "Fat": 0.48, "Muscular": 0.45, "BigBuff": 0.53}
+    report = ["# MeetEnd_Coach_WalkPat walk check (meet_end_animations.py pairqa, PAIR_WALK=1)\n\n",
+              "The game's walk cycle under both figures: %s (Roblox's stock R15 walk is not loadable here). Roots face "
+              "the walk (yaw 0). Grid: lifter phases %s x coach phases %s, clip at %.1f s.\n\n" % (
+                  WALK_UNDER, L_PH, C_PH, clip_t)]
+    table = {}
+    stored = (WALK_PLACEMENT if no_yaw else WALK_PLACEMENT_TWIST) if os.environ.get("WALK_PICTURES_ONLY") else None
+    for name in versions:
+        body = VERSIONS[WALK_VERSIONS[name]["from"]]["body"]
+        coach = coach_figure(body)
+        table[name] = {}
+        if stored:
+            table[name] = {lb: stored[name][lb] for lb in lifters if lb in stored.get(name, {})}
+            continue
+        for lb in lifters:
+            lifter = lifter_figure(lb)
+            want_x = palm_x.get(lb, 0.40) * WALK_VERSIONS[name].get("palm_scale", 1.0)
+
+            for other in lifters:                 # (only this lifter at the origin: the others out of the way)
+                if other != lb:
+                    lifter_figure(other)[0].location = (500, 500, 0)
+
+            def at(side, back, lph, cph, full=False):
+                place(lifter[0], coach[0], side, back, 0.0)
+                return measure(name, coach, lifter, clip_t, full=full, coach_tf=coach_tf(name, cph),
+                               lifter_tf=walk_tf(lph))
+            side, back = 3.0, 0.6
+            r = at(side, back, *REF)
+            side += want_x - (TO_B @ r["mid"]).x
+            for _ in range(4):
+                lo, hi = back - 1.2, back + 1.2
+                for _ in range(16):
+                    m = (lo + hi) / 2
+                    r = at(side, m, *REF)
+                    if r["sink"] > 0 or r["gap"] < 0.012:
+                        lo = m
+                    else:
+                        hi = m
+                back = hi
+                on = at(side, back, *REF)["mid_on"]
+                if on is None or abs(on.x - want_x) < 0.01:
+                    break
+                side += want_x - on.x
+            # no sink anywhere in the cycle: back out by the deepest sink over the grid (the palm only, quick)
+            for _ in range(3):
+                deepest = max(at(side, back, lph, cph)["sink"] for lph in L_PH for cph in C_PH)
+                if deepest <= 0:
+                    break
+                back += deepest + 0.004
+            back += WALK_EXTRA_BACK.get((name, lb), 0.0)     # (a pair that still touched at the arm swing)
+            worst = {"gap_min": 9.0, "gap_max": 0.0, "sink": 0.0, "tilt": 0.0, "overlap": 0.0, "body_gap": 9.0,
+                     "arm_gap": 9.0}
+            at_worst = {}
+            near = 0
+            for lph in L_PH:
+                for cph in C_PH:
+                    r = at(side, back, lph, cph, full=True)
+                    near += 1 if r["sink"] == 0 and r["gap"] <= 0.05 else 0
+                    for k, v, better in (("gap_min", r["gap"], min), ("gap_max", r["gap"], max),
+                                         ("sink", r["sink"], max), ("tilt", r["tilt"], max),
+                                         ("overlap", r["overlap"], max), ("body_gap", r["body_gap"], min),
+                                         ("arm_gap", r["arm_gap"], min)):
+                        if better(v, worst[k]) != worst[k]:
+                            worst[k] = v
+                            at_worst[k] = (lph, cph)
+            on = at(side, back, *REF)["mid_on"]
+            table[name][lb] = (round(side, 3), round(back, 3))
+            line = "%s/%s side %.3f back %.3f palm (%.2f, %.2f up) gap<=0.05 in %d/%d %s" % (
+                name, lb, side, back, on.x, on.y, near, len(L_PH) * len(C_PH),
+                {k: (round(v, 3), at_worst.get(k)) for k, v in worst.items()})
+            report.append("- " + line + "\n")
+            print("[WalkQA] RESULT%s %s" % (" (no hip twist)" if no_yaw else "", line))
+    tag = "_".join(v.split("_")[-1] for v in versions) + ("_noyaw" if no_yaw else "")
+    open(os.path.join(out_dir, "MeetEnd_walk_qa_%s.md" % tag), "w", encoding="utf-8").write("".join(report))
+    lua = ["-- (side, back) per lifter build, roots facing the walk (yaw 0); meet_end_animations.py pairqa PAIR_WALK=1\n"]
+    for name, rows in table.items():
+        lua.append("%s = {\n" % name)
+        for lb, (side, back) in rows.items():
+            lua.append("\t%s = { side = %.3f, back = %.3f },\n" % (lb, side, back))
+        lua.append("},\n")
+    open(os.path.join(out_dir, "walk_placement_%s.lua" % tag), "w", encoding="utf-8").write("".join(lua))
+    print("".join(lua))
+
+    # ---------------- pictures: three moments in the stride, game / side / back, and the hand close up
+    sc = bpy.context.scene
+    try:
+        sc.render.engine = "BLENDER_WORKBENCH"
+    except TypeError as e:
+        print("engine", e)
+    sh = sc.display.shading
+    sh.light, sh.color_type, sh.show_backface_culling, sh.show_cavity = "STUDIO", "MATERIAL", True, True
+    sh.cavity_type = "WORLD"
+    sh.background_type = "VIEWPORT"
+    sh.background_color = (0.16, 0.17, 0.2)
+    sc.render.image_settings.file_format = "PNG"
+    cd = bpy.data.cameras.new("WalkCam")
+    cd.type = "ORTHO"
+    cd.clip_end = 300
+    cam = bpy.data.objects.new("WalkCam", cd)
+    sc.collection.objects.link(cam)
+    sc.camera = cam
+    lc = bpy.data.curves.new("WalkLabel", "FONT")
+    label = bpy.data.objects.new("WalkLabel", lc)
+    label.data.materials.append(mat("PairLabelMat", (0.95, 0.95, 0.9, 1)))
+    sc.collection.objects.link(label)
+    label.parent = cam
+    bpy.ops.mesh.primitive_cylinder_add(radius=40, depth=0.02, vertices=8)
+    floor = bpy.context.active_object
+    floor.location = (0, 0, -0.011)
+    floor.data.materials.append(mat("PairFloor", (0.34, 0.35, 0.38, 1)))
+    VIEWS = {"game": (-0.55, -1.0, 0.22), "side": (-1.0, 0.0, 0.08), "back": (0.0, 1.0, 0.2)}
+    MOMENTS = [(0.0, 0.5), (1.0 / 3.0, 5.0 / 6.0), (2.0 / 3.0, 1.0 / 6.0)]     # (lifter phase, coach phase)
+
+    def shoot(path, text, direction, target, scale, size):
+        cd.ortho_scale = scale
+        sc.render.resolution_x, sc.render.resolution_y = size
+        cam.location = target + Vector(direction).normalized() * 60
+        cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+        lc.body = text
+        lc.size = scale * 0.03
+        label.location = (-scale / 2 + scale * 0.015, scale * size[1] / size[0] / 2 - lc.size * 1.35, -5)
+        sc.render.filepath = path
+        bpy.ops.render.render(write_still=True)
+        return path
+
+    os.makedirs(os.path.join(out_dir, "tiles"), exist_ok=True)
+    for name in versions:
+        for other in versions:                    # (only this coach in the pictures)
+            coach_figure(VERSIONS[WALK_VERSIONS[other]["from"]]["body"])[0].location = (500, 500, 0)
+        coach = coach_figure(VERSIONS[WALK_VERSIONS[name]["from"]]["body"])
+        tag = name.replace("MeetEnd_Coach_WalkPat", "WalkPat") + ("_noyaw" if no_yaw else "")
+        for lb in [b for b in pictured if b in table[name]]:
+            for other in lifters:
+                if other != lb:
+                    lifter_figure(other)[0].location = (500, 500, 0)
+            lifter = lifter_figure(lb)
+            side, back = table[name][lb]
+            tiles, zooms = [], []
+            for i, (lph, cph) in enumerate(MOMENTS):
+                place(lifter[0], coach[0], side, back, 0.0)
+                r = measure(name, coach, lifter, clip_t, full=False, coach_tf=coach_tf(name, cph), lifter_tf=walk_tf(lph))
+                centre = TO_B.to_3x3() @ Vector((side / 2, 0, back / 2))
+                for v, d in VIEWS.items():
+                    text = "%s + lifter %s  stride %d (lifter %.2f, coach %.2f)  -  %s" % (tag, lb, i + 1, lph, cph, v)
+                    tiles.append((None, None, shoot(os.path.join(out_dir, "tiles", "%s_%s_s%d_%s.png" % (tag, lb, i, v)),
+                                                    text, d, Vector((centre.x, centre.y, 3.0)), 7.0, (700, 700))))
+                text = "%s + %s stride %d  gap %.3f sink %.3f tilt %.0f" % (tag, lb, i + 1, r["gap"], r["sink"], r["tilt"])
+                zooms.append((None, None, shoot(os.path.join(out_dir, "tiles", "%s_%s_s%d_zoom.png" % (tag, lb, i)),
+                                                text, (0.15, 1.0, 0.35), r["mid"], 2.6, (640, 640))))
+            p1 = os.path.join(out_dir, "%s_Lifter%s.png" % (tag, lb))
+            G["contact_sheet"](tiles, p1, len(VIEWS))
+            p2 = os.path.join(out_dir, "%s_Lifter%s_HandZoom.png" % (tag, lb))
+            G["contact_sheet"](zooms, p2, len(MOMENTS))
+            print("[WalkQA] sheet", p1, p2)
+    print("[WalkQA] DONE (nothing saved)")
+
+
+def walk_talk_qa(out_dir, G, TO_B, lifters, pictured, coach_figure, lifter_figure, measure, place, frames_of, mat):
+    """The walk beside, talking (WALKTALK_VERSIONS): both roots facing the walk (yaw 0), a walk under both figures (the
+    clip's upper body on top of the coach's), the two walks out of step. Per lifter build: side from where the palm
+    sits across the shoulder blade, back so the palm rests ON the back (no sink at any lifter phase); then a grid of
+    (lifter phase, coach phase, clip time) measured: the gap between the bodies (everything but the coach's near arm:
+    his free arm's gestures, both walks' arms and legs), the near arm's own gap, anything inside the other, the palm.
+    The walk under them: WALK_UNDER_MODE=plain (default: the Swagger's legs, hips and chest with the arms swinging
+    +-WALK_PLAIN_SWING deg fore and aft from their rest hang, as Roblox's stock walk swings them) or swagger (its own
+    arms, flung out wide: harder than the game's)."""
+    import bpy
+    versions = [v for v in os.environ.get("PAIR_VERSIONS", ",".join(WALKTALK_VERSIONS)).split(",") if v]
+    mode = os.environ.get("WALK_UNDER_MODE", "plain")
+    plain_swing = math.radians(float(os.environ.get("WALK_PLAIN_SWING", "30")))
+    under = G["read_anim"](WALK_UNDER)
+    period = under[-1][0]
+    amp = max(abs(f[1]["RightUpperArm"].to_3x3().to_euler("YXZ").x) for f in under if "RightUpperArm" in f[1])
+    fit_t = float(os.environ.get("WALKTALK_FIT_T", "0.5"))
+    GAP_REACH[:] = [1.6, 1.4]               # (the real gap, not just "over 0.8")
+
+    def walk_tf(phase):
+        tf = dict(G["anim_at"](WALK_UNDER, (phase % 1.0) * period))
+        if mode == "plain":
+            for side in ("Right", "Left"):
+                if side + "UpperArm" not in tf:
+                    continue
+                sw = tf[side + "UpperArm"].to_3x3().to_euler("YXZ").x / amp * plain_swing
+                tf[side + "UpperArm"] = Matrix.Rotation(sw, 4, "X")
+                lo = tf.get(side + "LowerArm")
+                bend = 0.0 if lo is None else lo.to_3x3().to_euler("YXZ").x
+                tf[side + "LowerArm"] = Matrix.Rotation(max(math.radians(4.0), min(math.radians(25.0), bend)), 4, "X")
+                tf[side + "Hand"] = Matrix.Identity(4)
+        return tf
+
+    def coach_tf(name, phase, ct):
+        tf = walk_tf(phase)
+        mine = G["anim_at"](name, ct)
+        for part in WALKTALK_PARTS:
+            if part in mine:
+                tf[part] = mine[part]
+        return tf
+
+    L_PH = [i / 8.0 for i in range(8)]
+    C_PH = [0.0, 0.25, 0.5, 0.75]
+    dense = bool(os.environ.get("WALKTALK_DENSE"))
+    GRID = [(l, c, 1.10) for l in L_PH for c in (C_PH if dense else (0.0, 0.5))]
+    GRID += [(L_PH[i % 8], C_PH[(i // 2) % 4], round(i * (0.25 if dense else 0.5), 2))
+             for i in range(32 if dense else 16)]
+    palm_x = {lb: PALM_X * BACK_HALF[lb] / 0.91 * float(os.environ.get("WALKTALK_PALM_SCALE", "1.25"))
+              for lb in BACK_HALF}
+    report = ["# MeetEnd_Coach_WalkTalk walk check (meet_end_animations.py pairqa, PAIR_WALKTALK=1)\n\n",
+              "Walk under both figures: %s, mode %s (Roblox's stock R15 walk is not loadable here). Roots face the "
+              "walk (yaw 0). Grid %d (lifter phase, coach phase, clip time). Gap rule: bodies >= %.2f apart (all but "
+              "the coach's near arm), back <= %.2f.\n\n" % (WALK_UNDER, mode, len(GRID), WALK_GAP, WALK_MAX_BACK)]
+    table = {}
+    stored = WALKTALK_PLACEMENT if os.environ.get("WALK_PICTURES_ONLY") else None
+    for name in versions:
+        body = WALKTALK_VERSIONS[name]["body"]
+        coach = coach_figure(body)
+        for other in versions:
+            if other != name:
+                coach_figure(WALKTALK_VERSIONS[other]["body"])[0].location = (500, 500, 0)
+        table[name] = {}
+        if stored:
+            table[name] = {lb: stored[name][lb] for lb in lifters if lb in stored.get(name, {})}
+            continue
+        for lb in lifters:
+            lifter = lifter_figure(lb)
+            want_x = palm_x.get(lb, 0.5)
+            for other in lifters:
+                if other != lb:
+                    lifter_figure(other)[0].location = (500, 500, 0)
+
+            def at(side, back, lph, cph, ct, full=False):
+                place(lifter[0], coach[0], side, back, 0.0)
+                return measure(name, coach, lifter, ct, full=full, coach_tf=coach_tf(name, cph, ct),
+                               lifter_tf=walk_tf(lph))
+            side, back = 3.2, 0.5
+            r = at(side, back, 0.0, 0.5, fit_t)
+            side += want_x - (TO_B @ r["mid"]).x
+            for _ in range(4):
+                lo, hi = back - 1.5, back + 1.5
+                for _ in range(16):
+                    m = (lo + hi) / 2
+                    r = at(side, m, 0.0, 0.5, fit_t)
+                    if r["sink"] > 0 or r["gap"] < 0.012:
+                        lo = m
+                    else:
+                        hi = m
+                back = hi
+                on = at(side, back, 0.0, 0.5, fit_t)["mid_on"]
+                if on is None or abs(on.x - want_x) < 0.01:
+                    break
+                side += want_x - on.x
+            for _ in range(3):
+                deepest = max(at(side, back, lph, 0.5, fit_t)["sink"] for lph in L_PH)
+                if deepest <= 0:
+                    break
+                back += deepest + 0.004
+            fit_gap = float(os.environ.get("WALKTALK_FIT_GAP", WALKTALK_VERSIONS[name].get("fit_gap", 0.0)))
+            if fit_gap:
+                # (short Squatavious) side set by the gap instead: out until the bodies are fit_gap apart at the
+                # closest moments of the grid, the palm sliding out across the back with him, then back refitted
+                probe = [g for g in GRID if g[0] in (0.625, 0.75, 0.875)]
+                for _ in range(5):
+                    gmin = min(at(side, back, *g, full=True)["body_gap"] for g in probe)
+                    if abs(gmin - fit_gap) < 0.015:
+                        break
+                    side += fit_gap - gmin
+                    lo, hi = back - 0.6, back + 0.6
+                    for _ in range(14):
+                        m = (lo + hi) / 2
+                        r = at(side, m, 0.0, 0.5, fit_t)
+                        if r["sink"] > 0 or r["gap"] < 0.012:
+                            lo = m
+                        else:
+                            hi = m
+                    back = hi
+                    for _ in range(3):
+                        deepest = max(at(side, back, lph, 0.5, fit_t)["sink"] for lph in L_PH)
+                        if deepest <= 0:
+                            break
+                        back += deepest + 0.004
+            worst = {"body_gap": (9.0, None), "arm_gap": (9.0, None), "overlap": (0.0, None), "sink": (0.0, None),
+                     "palm_gap_max": (0.0, None)}
+            for g in GRID:
+                r = at(side, back, *g, full=True)
+                resting = all(abs(((g[2] - p) + WALKTALK_LENGTH / 2) % WALKTALK_LENGTH - WALKTALK_LENGTH / 2) > 0.32
+                              for p in WALKTALK_PATS)
+                for k, v, better in (("body_gap", r["body_gap"], min), ("arm_gap", r["arm_gap"], min),
+                                     ("overlap", r["overlap"], max), ("sink", r["sink"], max)):
+                    if better(v, worst[k][0]) != worst[k][0]:
+                        worst[k] = (v, g)
+                if resting and r["gap"] > worst["palm_gap_max"][0]:
+                    worst["palm_gap_max"] = (r["gap"], g)
+            on = at(side, back, 0.0, 0.5, fit_t)["mid_on"]
+            table[name][lb] = (round(side, 3), round(back, 3))
+            ok = (worst["body_gap"][0] >= WALK_GAP and worst["overlap"][0] == 0 and worst["sink"][0] == 0
+                  and back <= WALK_MAX_BACK + 1e-6)
+            line = "%s/%s side %.3f back %.3f palm (%.2f, %.2f up) %s %s" % (
+                name, lb, side, back, on.x, on.y, "PASS" if ok else "FAIL",
+                {k: (round(v, 3), g) for k, (v, g) in worst.items()})
+            report.append("- " + line + "\n")
+            print("[WalkTalkQA] RESULT", line)
+    tag = "_".join(v.split("_")[-1] for v in versions) + "_" + mode
+    open(os.path.join(out_dir, "MeetEnd_walktalk_qa_%s.md" % tag), "w", encoding="utf-8").write("".join(report))
+    lua = ["-- (side, back) per lifter build, roots facing the walk (yaw 0); meet_end_animations.py PAIR_WALKTALK=1\n"]
+    for name, rows in table.items():
+        lua.append("%s = {\n" % name)
+        for lb, (side, back) in rows.items():
+            lua.append("\t%s = { side = %.3f, back = %.3f },\n" % (lb, side, back))
+        lua.append("},\n")
+    open(os.path.join(out_dir, "walktalk_placement_%s.lua" % tag), "w", encoding="utf-8").write("".join(lua))
+    print("".join(lua))
+    if os.environ.get("WALK_NO_PICTURES"):
+        return
+
+    # ---------------- pictures: four moments (stride + gesture), five views, the hand close up
+    sc = bpy.context.scene
+    try:
+        sc.render.engine = "BLENDER_WORKBENCH"
+    except TypeError as e:
+        print("engine", e)
+    sh = sc.display.shading
+    sh.light, sh.color_type, sh.show_backface_culling, sh.show_cavity = "STUDIO", "MATERIAL", True, True
+    sh.cavity_type = "WORLD"
+    sh.background_type = "VIEWPORT"
+    sh.background_color = (0.16, 0.17, 0.2)
+    sc.render.image_settings.file_format = "PNG"
+    cd = bpy.data.cameras.new("WalkTalkCam")
+    cd.type = "ORTHO"
+    cd.clip_end = 300
+    cam = bpy.data.objects.new("WalkTalkCam", cd)
+    sc.collection.objects.link(cam)
+    sc.camera = cam
+    lc = bpy.data.curves.new("WalkTalkLabel", "FONT")
+    label = bpy.data.objects.new("WalkTalkLabel", lc)
+    label.data.materials.append(mat("PairLabelMat", (0.95, 0.95, 0.9, 1)))
+    sc.collection.objects.link(label)
+    label.parent = cam
+    bpy.ops.mesh.primitive_cylinder_add(radius=40, depth=0.02, vertices=8)
+    floor = bpy.context.active_object
+    floor.location = (0, 0, -0.011)
+    floor.data.materials.append(mat("PairFloor", (0.34, 0.35, 0.38, 1)))
+    VIEWS = {"game": (-0.55, -1.0, 0.22), "front": (0.0, -1.0, 0.1), "back": (0.0, 1.0, 0.2), "top": (0.0, 0.02, 1.0),
+             "threequarter": (-0.8, 0.7, 0.3)}
+    MOMENTS = [(0.0, 0.5, 1.10, "point"), (1.0 / 3.0, 5.0 / 6.0, 3.20, "open palm"),
+               (2.0 / 3.0, 1.0 / 6.0, 4.55, "shake"), (0.5, 0.0, 7.05, "pat lands")]
+
+    def shoot(path, text, direction, target, scale, size):
+        cd.ortho_scale = scale
+        sc.render.resolution_x, sc.render.resolution_y = size
+        cam.location = target + Vector(direction).normalized() * 60
+        cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
+        lc.body = text
+        lc.size = scale * 0.03
+        label.location = (-scale / 2 + scale * 0.015, scale * size[1] / size[0] / 2 - lc.size * 1.35, -5)
+        sc.render.filepath = path
+        bpy.ops.render.render(write_still=True)
+        return path
+
+    os.makedirs(os.path.join(out_dir, "tiles"), exist_ok=True)
+    for name in versions:
+        for other in versions:
+            coach_figure(WALKTALK_VERSIONS[other]["body"])[0].location = (500, 500, 0)
+        coach = coach_figure(WALKTALK_VERSIONS[name]["body"])
+        tag = name.replace("MeetEnd_Coach_WalkTalk", "WalkTalk") + "_" + mode
+        for lb in [b for b in pictured if b in table[name]]:
+            for other in lifters:
+                if other != lb:
+                    lifter_figure(other)[0].location = (500, 500, 0)
+            lifter = lifter_figure(lb)
+            side, back = table[name][lb]
+            tiles, zooms = [], []
+            for i, (lph, cph, ct, note) in enumerate(MOMENTS):
+                place(lifter[0], coach[0], side, back, 0.0)
+                r = measure(name, coach, lifter, ct, full=True, coach_tf=coach_tf(name, cph, ct),
+                            lifter_tf=walk_tf(lph))
+                centre = TO_B.to_3x3() @ Vector((side / 2, 0, back / 2))
+                for v, d in VIEWS.items():
+                    text = "%s + %s  t %.2f %s  body gap %.2f  -  %s" % (tag, lb, ct, note, r["body_gap"], v)
+                    tiles.append((None, None, shoot(os.path.join(out_dir, "tiles", "%s_%s_m%d_%s.png" % (tag, lb, i, v)),
+                                                    text, d, Vector((centre.x, centre.y, 3.0)), 7.5, (640, 640))))
+                text = "%s + %s t %.2f  palm gap %.3f sink %.3f tilt %.0f" % (tag, lb, ct, r["gap"], r["sink"], r["tilt"])
+                zooms.append((None, None, shoot(os.path.join(out_dir, "tiles", "%s_%s_m%d_zoom.png" % (tag, lb, i)),
+                                                text, (0.15, 1.0, 0.35), r["mid"], 2.8, (600, 600))))
+            p1 = os.path.join(out_dir, "%s_Lifter%s.png" % (tag, lb))
+            G["contact_sheet"](tiles, p1, len(VIEWS))
+            p2 = os.path.join(out_dir, "%s_Lifter%s_HandZoom.png" % (tag, lb))
+            G["contact_sheet"](zooms, p2, len(MOMENTS))
+            print("[WalkTalkQA] sheet", p1, p2)
+    print("[WalkTalkQA] DONE (nothing saved)")
+
+
 if __name__ == "__main__":
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if argv and argv[0] == "pairqa":
@@ -831,7 +1834,12 @@ if __name__ == "__main__":
         for name, (poses, spec, worst, keys) in clips.items():
             if only and name not in only:
                 continue
-            print("EXPORTED", export(name, poses, spec["hip"], S), "worst", {k: round(v, 3) for k, v in worst.items()},
+            walk = spec.get("walk", False)
+            only_parts = WALK_PARTS if walk else None
+            if spec.get("walktalk"):
+                walk, only_parts = True, WALKTALK_PARTS
+            print("EXPORTED", export(name, poses, spec["hip"], S, looped=walk, only=only_parts),
+                  "worst", {k: round(v, 3) for k, v in worst.items()},
                   "on", tuple(round(c, 3) for c in keys["on"]))
         print("DONE")
 
@@ -852,3 +1860,34 @@ if __name__ == "__main__":
 # touch ahead (back -0.33..+0.10), turned 36-44 deg in, the arm out and round behind the lifter; the bodies 0.55+ apart
 # (the user chose the arm's shape over closeness). Wrist turn 22-30 deg. Squatavious unchanged (52 deg, no crease).
 # PAIR_USE_TABLE=1 re-renders pictures from PLACEMENT without fitting; each sheet set now has an _ElbowZoom.
+
+# (2026-11-25, the walk together) MeetEnd_Coach_WalkPat[_Squatavious|_Benchamin|_Sumo]: 4.0 s loops, upper body only
+# (UpperTorso, Head, LeftUpperArm, LeftLowerArm, LeftHand; LowerTorso and the root written at weight 0, nothing else).
+# anim_qa PASS on each body (the legs at rest). Walk pair check (pairqa PAIR_WALK=1; 8 lifter x 4 coach walk phases):
+# with WALK_PLACEMENT and a walk without the hip twist, no sink and no body inside the other anywhere; the palm rides
+# 0.004-0.26 off the back over the cycle (the two walk cycles are independent). With the Swagger's hip twist
+# (WALK_PLACEMENT_TWIST) also no sink and no overlap, but the palm swings 0.6-0.7 on and off: the coach's hips turning
+# +-5 deg swing a hand held at arm's length about his root; an upper-body clip cannot cancel it (it would have to be in
+# step with the walk). The game's real walk (Roblox's stock R15 walk) needs a Studio look.
+# (Later 2026-11-25, main session: option b) the WalkPat clips key the LowerTorso too: hips square to the walk, a 0.035
+# bob twice a second (not in step with the legs; small enough not to read as a hitch). With that the walk under the coach
+# no longer moves the hand; the palm rides 0.001-0.15 off the back (the lifter's own walk). Squatavious walks just
+# behind the lifter's right side with his arm across the back, the hand left of the spine on the mid back (3.4 up),
+# wrist ~55 deg (it was ~100 with his hand up flat from behind: "pushed up onto the back").
+
+# (2026-11-26, the user's game test: talking with his body, and "the coach is too close") MeetEnd_Coach_TalkPat[...]
+# (9.0 s, not looped) and MeetEnd_Coach_WalkTalk[...] (8.0 s loop: UpperTorso, Head, both arms, LowerTorso keyed; the
+# legs from the game's walk), Action priority. BackPat / WalkPat untouched (rebuilt byte-identical).
+#   blender -b --factory-startup --python art/scripts/meet_end_animations.py   (env BACKPAT_ONLY=<names> to write some)
+#   ... CartoonBodies_05_Rigged.blend ... -- pairqa <dir>                       (PAIR_VERSIONS=MeetEnd_Coach_TalkPat...)
+#   PAIR_WALKTALK=1 [WALKTALK_DENSE=1] [WALK_UNDER_MODE=plain|swagger] ... -- pairqa <dir>
+# anim_qa PASS on every version on its own body (the gym coach: the Fat body in his Tee; the lift coaches:
+# CoachBodies_01, no outfit), talk and walk; pop <= 1191 deg/s (= BackPat's own reach), the free arm's elbow <= 113
+# deg, elbow_back <= 0.45. Standing pairqa (each coach x 6 lifter builds, every keyframe): no sink, no overlap, palm on
+# the back 0.012-0.017 at contact, gaps as BackPat's; Squatavious' gestures go to his own right front (TALK_TWEAK). Walk
+# check (plain stand-in walk, 8x4 phases at the point + 32 clip times): bodies 0.40-0.41 apart (Squatavious, fitted to
+# it), 0.63-1.25 (gym coach / Benchamin), 0.95+ (Sumo); back 0.23-0.70; no sink, no overlap; the palm rides 0.14-0.19
+# off the back over the lifter's walk (Squatavious on the wide builds 0.26-0.39: his hand is out on the shoulder
+# blade's edge, where the stand-in walk's chest turn moves the back most). With the Swagger's own wide-flung arms
+# (harder than the game's) the tall coaches still pass; Squatavious' near forearm meets a Skinny / SkinnyFat lifter's
+# flung arm (0.05-0.09) at its widest swing.

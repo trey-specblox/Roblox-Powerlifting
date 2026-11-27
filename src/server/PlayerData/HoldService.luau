@@ -49,8 +49,14 @@ local function lazyRequire(folder: string, name: string): any
 	return require(ServerRoot:WaitForChild(folder):WaitForChild(name) :: any)
 end
 
--- The words for a medal or trophy: "STATE CHAMPION", "LOCAL SILVER MEDAL".
+-- The words for a medal or trophy, over it as its win count ("x3 LOCAL MEETS WON"). Only winners get one since
+-- 2026-11-25 (user: counts up the "local meets won" count); older 2nd/3rd awards keep their old words ("LOCAL SILVER
+-- MEDAL", "STATE RUNNER-UP").
 function HoldService.awardLabel(kind: string, level: string, place: number): string
+	if place == 1 then
+		local name = if level == "Nationals" then "NATIONAL" else string.upper(level)
+		return name .. " MEETS WON"
+	end
 	if kind == "Trophy" then
 		local names = { "CHAMPION", "RUNNER-UP", "3RD PLACE" }
 		return string.format("%s %s", string.upper(level), names[place] or "")

@@ -7807,7 +7807,18 @@ doesn't cover it. To settle while designing:
         up, pats your back and talks about how it went (won, 9/9, podium, 4th or lower, bombed out), proud on a good
         day and encouraging on a bad one. Top 3 then step onto the podium where a referee puts the medal on, hands
         1st the trophy and shakes hands. The coach lines work for any meet (no meet names: one line fits all).
-      - *The podium ceremony, decided 2026-11-25 (user, answers to Claude's questions):*
+        - **Redone 2026-11-26 (user, after testing on the phone: "The cutscene is too slow"):** the scene OPENS on the
+          pat, the coach already beside you (no waiting for him to walk up). Off the podium it stays where you are
+          (the warm-up room). On the podium you walk off together while he says his line, his arm round your back,
+          patting it now and then, his free hand talking ("making it look like the coach is talking through
+          motions"); along the floor in front of the platforms to the podium. When you get there he lets go and
+          walks away (he must not hang around in the background of the ceremony). He walks BESIDE you with a gap,
+          never pressed against or behind you ("the coach is too close").
+        - **The line (2026-11-26, user):** "The 1st, second, 3rd winner should be in line, in front the ref, facing
+          the ref, then the lifters one by one get their medal and handshake": the top 3 wait in a line beside the
+          podium facing the referee, nobody appears from nowhere. Claude's choices: 3rd at the front (called first,
+          as real meets do), then 2nd, then 1st; the line stands on the bronze block's side, on the floor in front of
+          the platforms.
         - **Order: on the floor, then step up.** The podium blocks are 1.4-3 studs tall, so a referee on the floor
           can't reach a lifter's neck up there: the top 3 are called one by one, the referee puts the medal on or
           hands the trophy and shakes hands in front of the podium, then the lifter steps up onto their spot.
@@ -8439,7 +8450,7 @@ Decisions (picked from Claude's options, same day):
 | The INVENTORY screen | **Replaces the GEAR menu.** Categories on the left (ALL, GEAR, FOOD, TROPHIES, MISC), the items in a grid in the middle (rarity-coloured frames), the equip slots on the right (belt, singlet, wrist wraps, knee sleeves), the chosen item's description at the bottom. Layout inspired by the user's reference; never its artwork |
 | Food | **Collected from the chef** when it's done ("ask for their food"), then kept in the inventory as an item (its kind, size, boost and hours), **eaten from the inventory** whenever the player wants, and tradable later. **It never spoils** (spoiling can come with the trading center if needed) |
 | Holding | Any item can be **held**: held out in the hand like a Roblox gear; **food is carried in front with BOTH hands, palms up under the plate** (changed by the user 2026-11-24 after seeing the over-the-head pose: "just change it to where two hands are foward holding the plate") |
-| Medals and trophies | **Top 3 at a Local meet: a gold / silver / bronze MEDAL. Top 3 at Regional, State or Nationals: a TROPHY** (the podium trophy model). Each kind stacks with a count. **CHANGED by the user 2026-11-25 (§40.5 "The podium ceremony"): only the WINNER keeps one: a medal for winning a Local or Regional meet, a trophy for winning State or Nationals, counting "... MEETS WON"; 2nd and 3rd keep nothing (items already owned stay). NOT BUILT YET** |
+| Medals and trophies | **Top 3 at a Local meet: a gold / silver / bronze MEDAL. Top 3 at Regional, State or Nationals: a TROPHY** (the podium trophy model). Each kind stacks with a count. **CHANGED by the user 2026-11-25 (§40.5 "The podium ceremony"): only the WINNER keeps one: a medal for winning a Local or Regional meet, a trophy for winning State or Nationals, counting "... MEETS WON"; 2nd and 3rd keep nothing (items already owned stay). BUILT 2026-11-25 (InventoryService.meetPlaced; the win counter reads "x3 LOCAL MEETS WON"; a Regional win is now a medal, so earlier Regional trophies stay a separate stack)** |
 | The win counter | A small floating label over the medal or trophy **while it is held, seen only by players nearby** ("x12 STATE CHAMPION"); nothing floats when it is put away |
 
 Also the same day: **every screen must fit a phone** ("make sure screens don't do this, scale it accordingly with

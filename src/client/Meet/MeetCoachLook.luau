@@ -137,6 +137,16 @@ local function tagFor(active: string): string
 end
 
 -- The figure shown on this screen for `figure` (its copy while one stands in for it), for effects placed on the body.
+-- Copies placed again RIGHT NOW (a caller that just moved the platform coach this frame: MeetEndScene's walk to the
+-- podium keeps him beside the lifter, and the copy would otherwise trail a frame behind, off the lifter's back).
+local syncers: { [Model]: () -> () } = {}
+function MeetCoachLook.syncNow(figure: Model?)
+	local sync = figure and syncers[figure]
+	if sync then
+		sync()
+	end
+end
+
 function MeetCoachLook.shownAs(figure: Model?): Model?
 	if figure == nil then
 		return nil
@@ -377,6 +387,9 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 	follow()
 	copy.Parent = Workspace
 	doubles[figure] = copy
+	syncers[figure] = function()
+		root.CFrame = (theirRoot :: BasePart).CFrame + Vector3.new(0, lift, 0)
+	end
 	-- the tag and the speech bubble over the copy's head
 	local head = copy:FindFirstChild("Head")
 	if head and head:IsA("BasePart") then
@@ -396,6 +409,7 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 			hideConnection:Disconnect()
 		end
 		doubles[figure] = nil
+		syncers[figure] = nil
 		hardSlappers[copy] = nil
 		copy:Destroy()
 		if figure.Parent then

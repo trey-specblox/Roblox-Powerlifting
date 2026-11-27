@@ -1,0 +1,65 @@
+{
+ "about": "The worn medal for the end-of-meet podium ceremony (GAME_DESIGN \u00a740.5; art/scripts/build_worn_medal_01.py, build_held_medal_open_01.py; offsets in art/exports/WornMedal_01_fit.json). Uploaded as Model assets with art/scripts/upload_group_images.py.",
+ "models": {
+  "WornMedal_Disc": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Disc.glb",
+   "ids": {
+    "model": "rbxassetid://84249018860667"
+   }
+  },
+  "WornMedal_Text": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Text.glb",
+   "ids": {
+    "model": "rbxassetid://105354950377823"
+   }
+  },
+  "WornMedal_Ribbon_Skinny": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Ribbon_Skinny.glb",
+   "ids": {
+    "model": "rbxassetid://91948066665160"
+   }
+  },
+  "WornMedal_Ribbon_SkinnyFat": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Ribbon_SkinnyFat.glb",
+   "ids": {
+    "model": "rbxassetid://127447710545408"
+   }
+  },
+  "WornMedal_Ribbon_Fit": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Ribbon_Fit.glb",
+   "ids": {
+    "model": "rbxassetid://91192160337218"
+   }
+  },
+  "WornMedal_Ribbon_Fat": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Ribbon_Fat.glb",
+   "ids": {
+    "model": "rbxassetid://80818320620925"
+   }
+  },
+  "WornMedal_Ribbon_Muscular": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Ribbon_Muscular.glb",
+   "ids": {
+    "model": "rbxassetid://101227331950631"
+   }
+  },
+  "WornMedal_Ribbon_BigBuff": {
+   "file": "D:/Powerlifting Roblox/art/exports/WornMedal_Ribbon_BigBuff.glb",
+   "ids": {
+    "model": "rbxassetid://128173266483253"
+   }
+  },
+  "HeldMedal_Ribbon": {
+   "file": "D:/Powerlifting Roblox/art/exports/HeldMedal_Ribbon.glb",
+   "ids": {
+    "model": "rbxassetid://109362709584610"
+   }
+  },
+  "HeldMedal_Open": {
+   "file": "D:/Powerlifting Roblox/art/exports/HeldMedal_Open.glb",
+   "ids": {
+    "model": "rbxassetid://79448006379502"
+   }
+  }
+ }
+}

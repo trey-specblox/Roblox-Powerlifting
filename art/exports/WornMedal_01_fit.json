@@ -1,0 +1,473 @@
+{
+ "units": "studs",
+ "axes": "Roblox: x = the wearer's right, y up, -z front (UpperTorso part space)",
+ "outfitExports": [
+  "CartoonClothes14",
+  "CartoonGear12"
+ ],
+ "worn": {
+  "Skinny": {
+   "Disc": [
+    -0.0,
+    0.0828,
+    -0.5867,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.99189,
+    0.12711,
+    0.0,
+    -0.12711,
+    0.99189
+   ],
+   "Text": [
+    -0.0007,
+    0.0298,
+    -0.6106,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.99189,
+    0.12711,
+    0.0,
+    -0.12711,
+    0.99189
+   ],
+   "Ribbon": [
+    -0.002,
+    0.8276,
+    -0.0376,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "neckMarkCheck": [
+    -0.0,
+    1.0255,
+    0.0013
+   ],
+   "discTiltDeg": -7.3,
+   "ribbonInnerGap": [
+    0.026,
+    0.047
+   ],
+   "discBackGap": [
+    0.03,
+    0.069
+   ],
+   "headClearance": 0.023,
+   "loopLength": 4.819
+  },
+  "SkinnyFat": {
+   "Disc": [
+    -0.0,
+    0.0656,
+    -0.5105,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.99966,
+    0.0262,
+    0.0,
+    -0.0262,
+    0.99966
+   ],
+   "Text": [
+    -0.0007,
+    0.0152,
+    -0.5397,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.99966,
+    0.0262,
+    0.0,
+    -0.0262,
+    0.99966
+   ],
+   "Ribbon": [
+    -0.0061,
+    0.8283,
+    0.0787,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "neckMarkCheck": [
+    -0.0,
+    0.9993,
+    0.0838
+   ],
+   "discTiltDeg": -1.5,
+   "ribbonInnerGap": [
+    0.026,
+    0.045
+   ],
+   "discBackGap": [
+    0.03,
+    0.097
+   ],
+   "headClearance": 0.021,
+   "loopLength": 4.856
+  },
+  "Fit": {
+   "Disc": [
+    -0.0,
+    0.005,
+    -0.6697,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.97742,
+    0.21132,
+    0.0,
+    -0.21132,
+    0.97742
+   ],
+   "Text": [
+    -0.0007,
+    -0.0499,
+    -0.689,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.97742,
+    0.21132,
+    0.0,
+    -0.21132,
+    0.97742
+   ],
+   "Ribbon": [
+    0.001,
+    0.8051,
+    -0.0317,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "neckMarkCheck": [
+    -0.0,
+    0.9552,
+    -0.0155
+   ],
+   "discTiltDeg": -12.2,
+   "ribbonInnerGap": [
+    0.026,
+    0.048
+   ],
+   "discBackGap": [
+    0.03,
+    0.065
+   ],
+   "headClearance": 0.032,
+   "loopLength": 5.12
+  },
+  "Fat": {
+   "Disc": [
+    -0.0,
+    0.0525,
+    -0.6858,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.94885,
+    -0.31571,
+    0.0,
+    0.31571,
+    0.94885
+   ],
+   "Text": [
+    -0.0007,
+    0.0151,
+    -0.7303,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.94885,
+    -0.31571,
+    0.0,
+    0.31571,
+    0.94885
+   ],
+   "Ribbon": [
+    0.0002,
+    0.8795,
+    0.1745,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "neckMarkCheck": [
+    -0.0,
+    0.9503,
+    0.179
+   ],
+   "discTiltDeg": 18.4,
+   "ribbonInnerGap": [
+    0.026,
+    0.059
+   ],
+   "discBackGap": [
+    0.03,
+    0.093
+   ],
+   "headClearance": 0.043,
+   "loopLength": 5.428
+  },
+  "Muscular": {
+   "Disc": [
+    -0.0,
+    -0.0628,
+    -0.7429,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.9786,
+    0.20576,
+    0.0,
+    -0.20576,
+    0.9786
+   ],
+   "Text": [
+    -0.0007,
+    -0.1177,
+    -0.7625,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.9786,
+    0.20576,
+    0.0,
+    -0.20576,
+    0.9786
+   ],
+   "Ribbon": [
+    0.0004,
+    0.7931,
+    -0.0313,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "neckMarkCheck": [
+    -0.0,
+    0.8869,
+    -0.0172
+   ],
+   "discTiltDeg": -11.87,
+   "ribbonInnerGap": [
+    0.026,
+    0.056
+   ],
+   "discBackGap": [
+    0.03,
+    0.08
+   ],
+   "headClearance": 0.043,
+   "loopLength": 5.454
+  },
+  "BigBuff": {
+   "Disc": [
+    -0.0,
+    -0.1066,
+    -0.8504,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.99272,
+    0.12049,
+    0.0,
+    -0.12049,
+    0.99272
+   ],
+   "Text": [
+    -0.0007,
+    -0.1595,
+    -0.8747,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.99272,
+    0.12049,
+    0.0,
+    -0.12049,
+    0.99272
+   ],
+   "Ribbon": [
+    0.0,
+    0.8116,
+    -0.0459,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ],
+   "neckMarkCheck": [
+    -0.0,
+    0.8354,
+    -0.0047
+   ],
+   "discTiltDeg": -6.92,
+   "ribbonInnerGap": [
+    0.026,
+    0.045
+   ],
+   "discBackGap": [
+    0.03,
+    0.064
+   ],
+   "headClearance": 0.052,
+   "loopLength": 5.707
+  }
+ },
+ "held": {
+  "space": "HeldMedal_Ribbon MeshPart's own space (its mesh's bounds centre, Roblox axes, the medal's face toward -z)",
+  "holdPointPlusX": [
+   0.7498,
+   0.4963,
+   -0.1602
+  ],
+  "holdPointMinusX": [
+   -0.7502,
+   0.4963,
+   -0.1602
+  ],
+  "holdMidpoint": [
+   -0.0002,
+   0.4963,
+   -0.1602
+  ],
+  "discCentre": [
+   -0.0002,
+   -0.949,
+   -0.2302
+  ],
+  "Disc": [
+   -0.0002,
+   -0.9,
+   -0.2398
+  ],
+  "Text": [
+   -0.0009,
+   -0.9496,
+   -0.2702
+  ],
+  "frontVDepth": 1.096,
+  "loopLength": 5.12,
+  "handsApart": 1.5
+ },
+ "pieces": {
+  "Disc": "WornMedal_Disc (shared)",
+  "Text": "WornMedal_Text (shared)",
+  "Ribbon": "WornMedal_Ribbon_<Build>",
+  "HeldRibbon": "HeldMedal_Ribbon"
+ },
+ "colourways": [
+  {
+   "Disc": "Brass",
+   "Ribbon": "Red",
+   "Text": "Coffee"
+  },
+  {
+   "Disc": "Silver",
+   "Ribbon": "Blue",
+   "Text": "Charcoal"
+  },
+  {
+   "Disc": "Bronze",
+   "Ribbon": "Forest",
+   "Text": "Coffee"
+  }
+ ],
+ "heldOpen": {
+  "space": "HeldMedal_Open MeshPart's own space (its mesh's bounds centre, Roblox axes, the medal's face toward -z)",
+  "holdPointPlusX": [
+   0.75,
+   -0.0173,
+   0.0087
+  ],
+  "holdPointMinusX": [
+   -0.75,
+   -0.0173,
+   0.0087
+  ],
+  "holdMidpoint": [
+   -0.0,
+   -0.0173,
+   0.0087
+  ],
+  "discCentre": [
+   -0.0,
+   -1.0589,
+   -0.6913
+  ],
+  "Disc": [
+   -0.0,
+   -1.0099,
+   -0.7009
+  ],
+  "Text": [
+   -0.0007,
+   -1.0595,
+   -0.7313
+  ],
+  "fromHeldRibbon": [
+   -0.0002,
+   0.5136,
+   -0.1689
+  ],
+  "loopLength": 5.12,
+  "ringTipBelowGrips": 0.692,
+  "frontZ": -0.7,
+  "archUp": 0.7,
+  "archBack": 0.6,
+  "openingDepth": 1.275
+ }
+}

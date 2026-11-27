@@ -116,6 +116,11 @@ local function playNext(mine: number)
 		if mine ~= playing then
 			return
 		end
+		if not s.IsLoaded then
+			-- (user 2026-11-25: the round 3 lines were silent on a phone in the live game while the older ones played and
+			-- all of them played in Studio; this names the take that didn't load, in the developer console)
+			warn(string.format("[CoachVoice] the take %s did not load in 5 s", id))
+		end
 		if not s.IsPlaying then
 			s:Play()
 		end

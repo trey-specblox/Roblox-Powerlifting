@@ -184,6 +184,10 @@ export type Platform = {
 	waitSpot: CFrame,
 	-- The walk out from waitSpot (through the doorway, behind the platform to its middle), without either end.
 	walkOut: { Vector3 },
+	-- (Local meet halls only) the middle of the platform's top and its front edge on the floor, facing the crowd: the
+	-- end-of-meet walk to the podium starts on the platform and steps off its front (MeetEndScene, user 2026-11-25).
+	platformTop: CFrame?,
+	frontFloor: Vector3?,
 	-- The LEAVE sign's prompt point beside waitSpot (Local meet halls only; LocalMeetService gives it a hold-to-leave
 	-- prompt that only this platform's lifter sees).
 	leavePoint: BasePart?,
@@ -713,6 +717,9 @@ function LocalMeetVenue.build(hallIndex: number): (Venue?, string?)
 			-- Facing their chalk stand (further from the doorway, along the wall).
 			waitSpot = CFrame.lookAt(waitAt, waitAt - Vector3.xAxis * side),
 			walkOut = walkOut,
+			platformTop = CFrame.lookAt(centre + Vector3.new(x, PLATFORM_HEIGHT, PLATFORM_Z),
+				centre + Vector3.new(x, PLATFORM_HEIGHT, PLATFORM_Z - 1)),
+			frontFloor = centre + Vector3.new(x, 0, PLATFORM_FRONT),
 			styleFrom = walkOut[1],
 			rack = gear:FindFirstChild("CompetitionRack") :: Model?,
 			privateTags = {},

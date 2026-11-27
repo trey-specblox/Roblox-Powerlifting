@@ -179,6 +179,15 @@ for _, emote in ipairs(EmoteConfig.List) do
 	end
 end
 
+-- The podium ceremony (CeremonyConfig): the referee's fists close round the medal's ribbon until he lets go.
+do
+	local CeremonyConfig = require(script.Parent:WaitForChild("CeremonyConfig"))
+	local key = digits(CeremonyConfig.Animations.RefPlaceMedal)
+	if key then
+		HandShapeConfig.ByAnimation[key] = { both(0.0, CeremonyConfig.Times.MedalLetGo, "Grip") }
+	end
+end
+
 function HandShapeConfig.timelineFor(animationId: string): { Span }?
 	local key = digits(animationId)
 	return if key then HandShapeConfig.ByAnimation[key] else nil

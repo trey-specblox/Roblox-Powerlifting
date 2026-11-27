@@ -4025,6 +4025,19 @@ local function finishMeet(current: Meet)
 	-- finishCleanUp now, and no awards camera).
 	local MeetEndScene = require(script.Parent:WaitForChild("MeetEndScene"))
 	local beats: { any } = {}
+	-- (user 2026-11-26) the top 3 walk into a line for the podium at a Local meet hall: their place in it, 3rd at the
+	-- front (MeetCeremony.lineSpots); the computer lifters among them walk in with the players.
+	local lineSlots = if v.podiumSpots[1] then require(script.Parent:WaitForChild("MeetCeremony")).lineSpots(v.podiumSpots[1]).slots
+		else {}
+	local onPodium = 0
+	for _, lifter in ipairs(current.lifters) do
+		local placing = current.places[lifter.key]
+		if placing and placing.place and placing.place <= 3 and not lifter.withdrawn
+			and (lifter.player == nil or visits[lifter.player]) then
+			onPodium += 1
+		end
+	end
+	local walkers: { any } = {}
 	for _, lifter in ipairs(current.lifters) do
 		local player = lifter.player
 		local body = player and bodyOf(player)
@@ -4035,22 +4048,52 @@ local function finishMeet(current: Meet)
 				histories[lift] = lifter.lifts[lift].history
 			end
 			local place = if placing and placing.place and not bombed(lifter) then placing.place else nil
-			-- A step out to open floor first (MeetEndScene.sceneSpot): room for the coach at their right and the camera.
-			local sceneAt = MeetEndScene.sceneSpot(body.root.CFrame * CFrame.new(0, -standingHeight(body), 0))
+			-- Off the podium: a step out to open floor in the warm-up room (MeetEndScene.sceneSpot: room for the coach
+			-- at their right and the camera). On it, at a Local meet hall: on their own platform, then the walk
+			-- together to the podium (user 2026-11-25).
+			local gold = v.podiumSpots[1]
+			local top = lifter.platform.platformTop
+			local onStage = place ~= nil and place <= 3 and top ~= nil and gold ~= nil and lifter.platform.frontFloor ~= nil
+				and not current.hall.state and not current.hall.nationals
+			local sceneAt = if onStage then MeetEndScene.platformSpot(top :: CFrame)
+				else MeetEndScene.sceneSpot(body.root.CFrame * CFrame.new(0, -standingHeight(body), 0))
 			standAt(player, sceneAt, true)
+			-- (Studio 2026-11-26: his walk back after the last lift was still going and pulled him off mid-pat) any
+			-- coachWalk still under way ends here.
+			lifter.coachToken = (lifter.coachToken or 0) + 1
+			local stage = nil
+			local slotIndex = if place then onPodium - place + 1 else 0
+			if onStage and lineSlots[slotIndex] then
+				stage = { slot = lineSlots[slotIndex], slotIndex = slotIndex }
+			end
 			table.insert(beats, {
 				player = player,
 				platform = lifter.platform,
 				lifterAt = sceneAt,
-				line = MeetEndScene.lineText(MeetEndScene.lineKey(place, MeetEndScene.allGood(histories :: any))),
+				lineKey = MeetEndScene.lineKey(place, MeetEndScene.allGood(histories :: any)),
 				podium = place ~= nil and place <= 3,
+				stage = stage,
+				onArrived = function(final: CFrame)
+					if visits[player] then
+						standAt(player, final, true)
+					end
+				end,
 			})
+		end
+	end
+	if not current.hall.state and not current.hall.nationals then
+		for _, lifter in ipairs(current.lifters) do
+			local placing = current.places[lifter.key]
+			local slot = placing and placing.place and lineSlots[onPodium - placing.place + 1]
+			if lifter.player == nil and lifter.body and not lifter.withdrawn and placing and placing.place <= 3 and slot then
+				table.insert(walkers, { body = lifter.body, slot = slot, slotIndex = onPodium - placing.place + 1 })
+			end
 		end
 	end
 	local endSkipped: { [Player]: boolean } = {}
 	local meetAny: any = current
 	meetAny.endSkipped = endSkipped
-	if #beats > 0 then
+	if #beats > 0 or #walkers > 0 then
 		local skipped = MeetEndScene.run(beats, remotes, function()
 			return current.hall.meet == current
 		end, function(player: Player)
@@ -4070,12 +4113,13 @@ local function finishMeet(current: Meet)
 					showDroppedSuit(lifter, player)
 				end
 			end
-		end)
+		end, walkers)
 		-- (A podium lifter who skipped stays for the podium, without the awards camera.)
 		for player in pairs(skipped) do
 			endSkipped[player] = true
 		end
 	end
+	MeetEndScene.hideCoaches(v.platforms)
 	if current.hall.nationals then
 		nationalsAwards(current, v)
 	else
@@ -4089,6 +4133,43 @@ end
 	holding their trophies, the moment for everyone in the hall, then `seconds` before the next.
 ]]
 podiumAndAwards = function(current: Meet, v: LocalMeetVenue.Venue, classLabel: string?, seconds: number)
+	-- THE PODIUM CEREMONY (GAME_DESIGN §40.5, user 2026-11-25; MeetCeremony): called up 3rd, 2nd, 1st, the medal or the
+	-- trophy from a referee on the floor, a handshake, then the hop up onto the block. Not at Nationals yet (its awards
+	-- go class by class).
+	if classLabel == nil and not current.hall.nationals then
+		local entries = {}
+		for _, lifter in ipairs(current.lifters) do
+			local placing = current.places[lifter.key]
+			local place = placing and placing.place
+			local player = lifter.player
+			local model = if player then player.Character else lifter.body
+			if place and place <= 3 and not lifter.withdrawn and model and (player == nil or visits[player]) then
+				table.insert(entries, { model = model, place = place, lifter = lifter })
+			end
+		end
+		local clear = require(script.Parent:WaitForChild("MeetCeremony")).run({ lifters = entries,
+			podiumSpots = v.podiumSpots, level = current.level, stillOn = function()
+				return current.hall.meet == current
+			end, notify = function(data: any)
+				-- (everyone in the hall sees the ceremony; not those who skipped the end of the meet and left)
+				local skipped = (current :: any).endSkipped or {}
+				for player, visit in pairs(visits) do
+					if visit.hall == current.hall.index and not skipped[player] and remotes then
+						remotes.scene:FireClient(player, data)
+					end
+				end
+			end })
+		-- (a computer lifter's waves and emotes on the podium start once it's up there: none during the ceremony)
+		for _, entry in ipairs(entries) do
+			if entry.lifter.player == nil then
+				entry.lifter.onPodium = true
+			end
+		end
+		announceAwards(current, v, classLabel, seconds)
+		task.wait(seconds)
+		clear()
+		return
+	end
 	for _, lifter in ipairs(current.lifters) do
 		if classLabel and groupOf(current, lifter) ~= classLabel then
 			continue

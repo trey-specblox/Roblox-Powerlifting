@@ -13,6 +13,92 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**END-OF-MEET SCENE REDO + THE LINE FOR THE PODIUM (2026-11-26, user's phone test feedback) [IN PROGRESS; NOT
+committed, NOT published; nothing committed since 595eed2].** User: the scene was too slow (start on the pat, no
+walk-up), the coach should talk WHILE they walk with his arm patting the back and his free hand gesturing, he was too
+close, he must walk away once at the podium (and not be seen in the ceremony's background), and the winners appeared
+from nowhere: they must wait in a line facing the referee and go one by one. BUILT: server MeetEndScene rewritten (the
+coach is put beside them at the start; line at 1.35 s; off the podium: hold for the line, then he walks away (walkAway:
+the most open way not toward the lifter); on the podium: walk 2 s toward the platform's front, CUT ("MeetEndCut") to
+the floor in front of the platforms walking into their place in the line, every walker (players and the top-3 computer
+lifters, `walkers`) starting at once in single file (laneStarts: nearer the referee starts nearer, SlotGap apart, long
+enough for the line to finish on the way), then he lets go and walks away; hideCoaches stands every platform's coach
+under the floor for the ceremony). LocalMeetConfig.MeetEnd: WalkSpeed 5, PlatformWalkSeconds/LaneSeconds/LineTail/
+LeaveSeconds/LeaveStuds, MaxSeconds 20, `Line` (RefOut 9.4, LineIn 1.6, FirstGap 3.35, SlotGap 4.6, StripOut 5.1,
+RefStepBack 1). MeetCeremony.lineSpots (bronze side of the podium, floor in front of the platforms; the racks and
+referee chairs are gone by then); run(): everyone put in their place if not there, the camera cuts in on the line, the
+front steps up to the referee, medal/trophy, handshake, the ref steps aside, the lifter goes out to the strip in front
+of the podium, along to their block, hops up; the line steps forward. Client: the walk keeps the subtitle, eases the
+coach from the pat into step (pinCoach blend), "MeetEndCut" snaps the camera, the ceremony opens on the line;
+isPlaying holds 6 s after a scene (a title card had slipped into the gap). LocalMeetService builds the slots (3rd at
+the front). STUDIO TEST 1 (full Local meet, 4 lifters, player 2nd): pat -> line+walk -> cut -> end in 8.3 s; the line
+formed facing the referee; medal on the player's neck; all ended on their blocks. Seen and fixed after: a title card
+over the ceremony, a coach visible through a back doorway. NEW COACH CLIPS (helper agent, Blender, anim_qa PASS):
+MeetEnd_Coach_TalkPat* (standing, 9 s: two pats, then small pats while the free hand talks) and MeetEnd_Coach_WalkTalk*
+(walking, 8 s looped, beside the lifter with a gap); UPLOADED on the user's OK 2026-11-26 (TalkPat: gym coach
+140445976565061, Squatavious 126206342907972, Benchamin 93052574568688, Sumo 104494360312128; WalkTalk: 109444446005513,
+125742556136485, 135594416192492, 109743382223923) and swapped with their placements into PatVersions/WalkPatVersions.
+STUDIO TESTS 2-3 (full Local meets, player 1st/2nd, gym coach, Skinny): the coach stands at the pat spot playing
+TalkPat, walks beside at the WalkTalk spot (3.90 right, 0.41 back) through the cut and along the lane into the line,
+then walks off 7 studs; the ceremony ends with all three on their blocks with medals. Fixed from test 2: an earlier
+coachWalk (his walk back after the last lift) was still running and pulled him off mid-pat (LocalMeetService now ends
+it: coachToken bump as the scene starts); the meet's end handed the camera back to Custom 0.7 s into the scene
+(client MeetEndScene.render keeps it Scriptable while a scene is on; note the Studio MCP execute_luau also resets a
+scripted camera to Custom after each call, which may have caused part of that reading). Fixed from tests 3-4: after the
+cut the walking legs (507777826) stopped on the client for both the coach and the player, though the server played
+them: a second copy of the same walk started while the first still played never reached the clients
+(ComputerLifters.walkBody now hands the running walk track on to a walk that cuts in: walkTracks; repro test on a spare
+coach: before, the walk vanished on the client at the cut; after, it plays through to the end). STUDIO TEST 5 (full
+Local meet after all fixes, player 1st): the walk plays on the client for player and coach through the cut to the line
+and on the coach's walk away; screenshot: the coach mid-stride beside the lifter on the front lane, arm across the
+back, free hand talking. All of this is NOT committed and NOT published yet. NOT YET CHECKED:
+State meets' line placement (same layout off the podium; State arena geometry not checked); Squatavious on Skinny
+lifters while walking (forearm may touch on the widest swing, Blender used a stand-in walk).
+
+**END-OF-MEET SCENE, PHASE 2: THE PODIUM CEREMONY (2026-11-25, user: "You can start phase 2") [IN PROGRESS; NOT
+committed].** Done: only the WINNER keeps an award (InventoryService.meetPlaced: place 1 only; Local/Regional a medal,
+State/Nationals a trophy; HoldService.awardLabel place 1 = "LOCAL / REGIONAL / STATE / NATIONAL MEETS WON"; result line
+"LOCAL MEET WON! ..."); not yet tested in Studio. In progress (helper agents, Blender only, outputs on D:): the worn
+medal (art/scripts/build_worn_medal_01.py, per-build fit, + the referee's held medal) and the ceremony animations
+(referee places the medal / hands the trophy, handshake, lifter's hop onto the block). Then: the ceremony sequence
+(called 3rd, 2nd, 1st; on the floor in front of the block, then the hop up), uploads on the user's OK, Studio test.
+USER'S PHONE TEST OF 1112 (2026-11-25): (1) new coach lines silent live while the old ones played; in Studio every new
+line plays (W5, H1-H3, P1 logged through the CoachVoice sound in a full meet), the assets' Open Cloud metadata match the
+old ones; added a warn in CoachVoice naming a take that doesn't load in 5 s; ask the user to listen again. (2) the coach
+clipped the doorway: the back-room spot now steps 6 studs out (SceneStep). (3) NEW STAGING (user): off the podium the
+scene stays in the back room; ON the podium (Local meet halls) the scene is on their own platform
+(MeetEndScene.platformSpot; the 6-stud doorway is too narrow for two side by side), then they WALK TOGETHER off its front
+and along the front lane to beside the podium (MeetEndScene.podiumWalk: lane 5 studs in front of the platforms, end 10
+studs out from the podium's middle, queue 4 apart; from far platforms the walk starts 18 studs from the podium), the
+coach pinned beside the lifter on their screen every frame (client MeetEndScene.pinCoach + MeetCoachLook.syncNow,
+attributes WalkWithUserId/WalkSide/WalkBack), a tracking camera; then (for now) the old teleport onto the podium.
+LocalMeetVenue platforms got platformTop/frontFloor. Studio test: talk on the platform, the walk along the lane, P1
+played; fixed after: camera too close (now 12.5 out, higher, keeps up), walk too long (capped). NOT YET: the coach's
+arm while walking (Coach_WalkPat per coach, helper agent), the ceremony itself. ASSETS READY (Blender, not uploaded):
+the worn medal (art/scripts/build_worn_medal_01.py, art/exports/WornMedal_*.glb, HeldMedal_Ribbon.glb,
+WornMedal_01_fit.json: per-build UpperTorso offsets), 12 ceremony clips (art/scripts/ceremony_animations.py; a
+referee-hands fix and the held-medal grip in progress).
+UPLOADED 2026-11-25 (user: "Upload"): 16 animations (12 ceremony clips incl. TakeTrophy per build, 4
+MeetEnd_Coach_WalkPat; ids in LocalMeetConfig.MeetEnd.WalkPatVersions and art/scripts/make_ceremony_config.py) and the
+10 medal pieces as Model assets (art/exports/WornMedal_01_upload.json holds the ids; HeldMedal_Open = the opened loop
+for 0.90-1.50 s so the rigid ribbon clears the head). src/shared/Config/CeremonyConfig.luau is GENERATED by
+make_ceremony_config.py from WornMedal_01_fit.json + the upload manifest (medal pieces/offsets/paints, clips, times,
+referee placement, trophy grips). Coach_WalkPat clips key the LowerTorso (hips square: the stock walk's hip twist swung
+the hand 0.6-0.7 off the back). NEXT: the ceremony sequence (server module, referee figure, medal load/attach, paired
+clips, handshake, the hop with stepArc), replacing podiumAndAwards' teleport for Local halls; Studio test.
+BUILT 2026-11-25 [NOT committed, NOT published]: src/server/Meet/MeetCeremony.luau (called 3rd, 2nd, 1st; lifter walks
+to 0.9 in front of their block's face, side-on; a Referee figure (MeetFigures) walks to CeremonyConfig.Place; medal:
+held/open ribbon + disc/text placed between his grips every Heartbeat (open 0.90-1.50), worn pieces welded to the
+UpperTorso at 1.85 (per-build C0, PropPaints colours, bronze text Cream); trophy (State/Nationals 1st): Trophies.copy
+welded to the ref's RightHand, re-welded to the lifter's at 1.25; handshake after a 0.4 s half step; then turn to the
+block, StepUp with the stepArc root arc, turn to the crowd, stand on podiumSpots[place]); podiumAndAwards runs it for
+every hall but Nationals (then announceAwards, wait, clean-up); HandShapeConfig gives the ref's PlaceMedal clip a Grip
+span to 1.98. Ceremony camera for everyone in the hall (SCENE "Ceremony"/"CeremonyFocus"/"CeremonyEnd", client
+MeetEndScene.render ceremony branch, bars + SKIP) and RankMoment waits for MeetEndScene.isPlaying (a "TITLE UNLOCKED"
+card had landed over the ceremony). STUDIO TEST of the first version (full Local meet): the scene, the walk, then the
+ceremony ran with no errors and ended with the lifters on their blocks; the camera fix and the card hold are NOT yet
+tested; the medal/handshake/hop NOT yet seen up close in game.
+
 **END-OF-MEET SCENE, PHASE 1: THE COACH'S WALK-UP, BACK PAT AND TALK (2026-11-25, user: "Start It now"; ceremony
 decisions in GAME_DESIGN §40.5 "The podium ceremony") [BUILT, TESTED IN STUDIO; user: "Yes commit push and publish": COMMITTED 2b7e68d, PUSHED, PUBLISHED as place version 1112 (the five changed scripts' checksums matched disk before the publish)].**
 Server `src/server/Meet/MeetEndScene.luau`: lineKey/lineText/allGood pick the P line (no total P8; 1st P1/P2; 2nd-3rd

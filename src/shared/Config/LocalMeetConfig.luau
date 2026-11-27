@@ -438,28 +438,30 @@ assert(
 ]]
 LocalMeetConfig.MeetEnd = {
 	--[[
-		Coach_BackPat, one version per coach body (art/scripts/meet_end_animations.py, anim_qa PASS on each body and the
-		pair check on every lifter build, 2026-11-25), (2026-11-25 elbow fix, user: "keeping the arms shape": the gym coach, Benchamin and Sumo keep a gentle 23-31 deg elbow and swing the arm from the shoulder, standing about an arm's length beside the lifter; Squatavious unchanged) keyed by the player's active coach (CoachingConfig: "Owner" and
-		the lift coaches "Squat" = Squatavious, "Bench" = Benchamin, "Deadlift" = Sumo). The platform coach plays the
-		chosen coach's version and stands where its table says for the lifter's build, because on the lifter's screen
-		MeetCoachLook's copy of that coach copies his joints and stands where he stands. `side` to the lifter's right,
-		`back` behind them (+), `yaw` degrees turned toward them: coach = lifter * CFrame.new(side, 0, back) * Angles(0,
-		yaw, 0), on the floor. An empty id: the scene runs without the pat.
+		Coach_TalkPat (2026-11-26, user: "the coach should be talking through motions"), one version per coach body
+		(art/scripts/meet_end_animations.py, anim_qa PASS on each body and the pair check on every lifter build): two pats,
+		then the hand rests on the back with small pats while the free hand talks (points, chops, open palm, nods); 9 s, not
+		looped. Elbows keep the arm's shape. Keyed by the player's active coach (CoachingConfig: "Owner" and the lift coaches
+		"Squat" = Squatavious, "Bench" = Benchamin, "Deadlift" = Sumo). The platform coach plays the chosen coach's version
+		and stands where its table says for the lifter's build, because on the lifter's screen MeetCoachLook's copy of that
+		coach copies his joints and stands where he stands. `side` to the lifter's right, `back` behind them (+), `yaw`
+		degrees turned toward them: coach = lifter * CFrame.new(side, 0, back) * Angles(0, yaw, 0), on the floor. An empty
+		id: the scene runs without the pat. (The old Coach_BackPat ids: 122353536445792, 109214888150364, 72117187498410, 113519422221555.)
 	]]
 	PatVersions = {
 		Owner = { -- the gym coach's own body (the Fat build: LifterBuild.BuildRules.Spotter)
-			animationId = "rbxassetid://122353536445792",
+			animationId = "rbxassetid://140445976565061",
 			place = {
-				Skinny = { side = 3.625, back = 0.003, yaw = 36 },
-				SkinnyFat = { side = 3.609, back = -0.188, yaw = 40 },
-				Fit = { side = 3.688, back = -0.089, yaw = 40 },
-				Fat = { side = 3.699, back = -0.305, yaw = 44 },
-				Muscular = { side = 3.674, back = -0.251, yaw = 44 },
-				BigBuff = { side = 3.748, back = -0.163, yaw = 44 },
+				Skinny = { side = 3.600, back = -0.110, yaw = 38 },
+				SkinnyFat = { side = 3.638, back = -0.076, yaw = 38 },
+				Fit = { side = 3.655, back = -0.198, yaw = 42 },
+				Fat = { side = 3.678, back = -0.360, yaw = 45 },
+				Muscular = { side = 3.670, back = -0.312, yaw = 45 },
+				BigBuff = { side = 3.729, back = -0.217, yaw = 45 },
 			},
 		},
 		Squat = { -- Coach Squatavious (short: pats the middle of the back)
-			animationId = "rbxassetid://109214888150364",
+			animationId = "rbxassetid://126206342907972",
 			place = {
 				Skinny = { side = 2.350, back = 0.315, yaw = 45 },
 				SkinnyFat = { side = 2.390, back = 0.360, yaw = 45 },
@@ -470,42 +472,121 @@ LocalMeetConfig.MeetEnd = {
 			},
 		},
 		Bench = { -- Coach Benchamin
-			animationId = "rbxassetid://72117187498410",
+			animationId = "rbxassetid://93052574568688",
 			place = {
-				Skinny = { side = 3.747, back = 0.002, yaw = 36 },
-				SkinnyFat = { side = 3.729, back = -0.200, yaw = 40 },
-				Fit = { side = 3.812, back = -0.091, yaw = 40 },
-				Fat = { side = 3.822, back = -0.327, yaw = 44 },
-				Muscular = { side = 3.799, back = -0.268, yaw = 44 },
-				BigBuff = { side = 3.869, back = -0.178, yaw = 44 },
+				Skinny = { side = 3.721, back = -0.117, yaw = 38 },
+				SkinnyFat = { side = 3.759, back = -0.082, yaw = 38 },
+				Fit = { side = 3.778, back = -0.208, yaw = 42 },
+				Fat = { side = 3.798, back = -0.383, yaw = 45 },
+				Muscular = { side = 3.829, back = -0.150, yaw = 42 },
+				BigBuff = { side = 3.851, back = -0.236, yaw = 45 },
 			},
 		},
 		Deadlift = { -- Coach Sumo
-			animationId = "rbxassetid://113519422221555",
+			animationId = "rbxassetid://104494360312128",
 			place = {
-				Skinny = { side = 4.012, back = 0.102, yaw = 36 },
-				SkinnyFat = { side = 4.004, back = -0.111, yaw = 40 },
-				Fit = { side = 4.079, back = -0.046, yaw = 40 },
-				Fat = { side = 4.097, back = -0.250, yaw = 44 },
-				Muscular = { side = 4.064, back = -0.231, yaw = 44 },
-				BigBuff = { side = 4.144, back = -0.147, yaw = 44 },
+				Skinny = { side = 3.991, back = -0.023, yaw = 38 },
+				SkinnyFat = { side = 4.030, back = 0.013, yaw = 38 },
+				Fit = { side = 4.049, back = -0.168, yaw = 42 },
+				Fat = { side = 4.082, back = -0.312, yaw = 45 },
+				Muscular = { side = 4.098, back = -0.110, yaw = 42 },
+				BigBuff = { side = 4.125, back = -0.208, yaw = 45 },
 			},
 		},
 	},
 	-- A build missing from a table stands the coach as for this one.
 	PatFallbackBuild = "Fit",
+	--[[
+		THE WALK TO THE PODIUM (user 2026-11-25: "if the lifter made podium let the cutscene have the lifter and coach walk
+		together, with the coach having the same arm position ... until the lifter has to walk up to the podium"). At a
+		Local meet hall a lifter in the top 3 has the scene on their own platform (the warm-up doorway is too narrow
+		for two side by side), then they walk off its front together and along the front floor to the side of the
+		podium. Coach_WalkPat per coach: the arm resting on the back over the walk (upper body only); `place` as
+		PatVersions but walking (both face the way they go). An empty id: the walk runs without the arm.
+	]]
+	-- Coach_WalkTalk (2026-11-26): arm round the back, a pat every couple of seconds, the free hand talking; 8 s, looped.
+	-- Beside the lifter with a gap, never behind. (The old Coach_WalkPat ids: 85161077240106, 86454459242819, 112595927308177, 125573340359200.)
+	WalkPatVersions = {
+		Owner = {
+			animationId = "rbxassetid://109444446005513",
+			place = {
+				Skinny = { side = 3.900, back = 0.407 }, SkinnyFat = { side = 3.948, back = 0.432 }, Fit = { side = 3.963, back = 0.545 },
+				Fat = { side = 4.142, back = 0.555 }, Muscular = { side = 3.996, back = 0.607 }, BigBuff = { side = 4.164, back = 0.661 },
+			},
+		},
+		Squat = {
+			animationId = "rbxassetid://125742556136485",
+			place = {
+				Skinny = { side = 2.973, back = 0.242 }, SkinnyFat = { side = 3.041, back = 0.257 }, Fit = { side = 3.241, back = 0.361 },
+				Fat = { side = 3.371, back = 0.413 }, Muscular = { side = 3.491, back = 0.505 }, BigBuff = { side = 3.625, back = 0.581 },
+			},
+		},
+		Bench = {
+			animationId = "rbxassetid://135594416192492",
+			place = {
+				Skinny = { side = 4.002, back = 0.426 }, SkinnyFat = { side = 4.051, back = 0.456 }, Fit = { side = 4.058, back = 0.538 },
+				Fat = { side = 4.248, back = 0.559 }, Muscular = { side = 4.087, back = 0.600 }, BigBuff = { side = 4.202, back = 0.697 },
+			},
+		},
+		Deadlift = {
+			animationId = "rbxassetid://109743382223923",
+			place = {
+				Skinny = { side = 4.279, back = 0.398 }, SkinnyFat = { side = 4.327, back = 0.421 }, Fit = { side = 4.350, back = 0.522 },
+				Fat = { side = 4.516, back = 0.529 }, Muscular = { side = 4.391, back = 0.583 }, BigBuff = { side = 4.562, back = 0.624 },
+			},
+		},
+	},
+	WalkSpeed = 5.0, -- studs per second, both of them (a slow walk while he talks, the hand stays on the back)
+	-- Where the lifter stands on the platform for the scene: this far to the left of its middle (the coach then has
+	-- the platform at their right) and this far back from it.
+	PlatformLeft = 1.8,
+	PlatformBack = 3.0,
+	--[[
+		THE WALK WHILE HE TALKS (user 2026-11-26: "The 3rd screenshot is where the cutscene should start, waiting for the
+		coach to walk up takes too long ... the coach should be walking with the lifter saying this with his arm patting
+		his back"): the scene opens on the pat (the coach already beside them), then they walk off together and he says
+		his line on the way. PlatformWalkSeconds of walking toward their platform's front, then a CUT to the floor in
+		front of the platforms, walking into their place in the line for the podium (MeetCeremony.lineSpots) for at
+		least LaneSeconds, longer for a longer line so he finishes talking on the way (his line plus LineTail).
+	]]
+	PlatformWalkSeconds = 2.0,
+	LaneSeconds = 2.5,
+	LineTail = 0.6,
+	-- When they get there he lets go and walks away (user: "he should just walk away after the lifter gets by the
+	-- podium"): this long, this far, then he is put back behind the warm-up wall when the ceremony's camera cuts in.
+	LeaveSeconds = 1.8,
+	LeaveStuds = 7.0,
 	-- The scene's spot (server MeetEndScene.sceneSpot): this far out from where the lifter waited, facing a way with
 	-- at least this much clear room at their right (the coach stands up to ~4.2 studs out) and in front (the camera).
-	SceneStep = 3.0,
+	SceneStep = 6.0, -- (3 left the pair beside the doorway: the coach stood half in its edge, user's phone 2026-11-25)
 	SceneRightRoom = 5.5,
 	SceneFrontRoom = 9.0,
-	PatSeconds = 9.0,
-	-- He starts talking this long into the pat (the hand resting on their back after the two pats).
+	-- (Off the podium) the scene holds while he talks, at least this long, and his line plus LineTail.
+	PatSeconds = 5.0,
+	-- He starts talking (and on the podium, walking) this long into the pat: after the two pats.
 	LineAt = 1.35,
-	-- The walk up is cut short after this long (he's then put beside them).
-	MaxWalkSeconds = 4.0,
-	-- The whole scene never holds the podium longer than this.
-	MaxSeconds = 14.0,
+	-- A line's length when its take has none written (CoachVoiceConfig seconds).
+	LineFallbackSeconds = 5.0,
+	-- The whole scene never holds the podium longer than this (the walk to the podium included).
+	MaxSeconds = 20.0,
+	--[[
+		THE LINE FOR THE PODIUM (user 2026-11-26: "The 1st, second, 3rd winner should be in line, in front the ref,
+		facing the ref, then the lifters one bye one get their medal and handshake"): beside the podium on its bronze
+		side, on the floor in front of the platforms (the racks and referee chairs are gone by then). Measured from the
+		gold block's floor middle: the referee RefOut along the podium (its blocks end at 7.5), the line LineIn toward
+		the crowd (the coach walks on its platforms' side, clear of their edge), the first in line FirstGap in front of
+		the referee (about the medal's reach), the others SlotGap apart (front to back: the deepest build is about 2.6).
+		Leaving with the medal, the lifter steps out to StripOut toward the crowd (clear of the referee, who steps
+		RefStepBack toward the platforms) and walks along the podium's front to their block.
+	]]
+	Line = {
+		RefOut = 9.4,
+		LineIn = 1.6,
+		FirstGap = 3.35,
+		SlotGap = 4.6,
+		StripOut = 5.1,
+		RefStepBack = 1.0,
+	},
 	-- The camera: a held two-shot, this far away (less where a wall is), looking at this height over their feet (chest
 	-- high, so both heads are in the frame), gliding this far in; HeadHeight is where it checks it can see their heads.
 	CameraDistance = 10.0,

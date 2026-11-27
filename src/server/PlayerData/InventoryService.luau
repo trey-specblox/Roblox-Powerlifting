@@ -47,10 +47,13 @@ end
 	`lines` (the result screen's lines) gets one line. `place` nil or past 3 = nothing.
 ]]
 function InventoryService.meetPlaced(player: Player, level: string, place: number?, lines: { string })
-	if place == nil or place < 1 or place > 3 or typeof(level) ~= "string" then
+	-- Only the WINNER keeps one (user 2026-11-25, GAME_DESIGN §40.5 "The podium ceremony"; before: the top 3): a medal for
+	-- winning a Local or Regional meet, a trophy for State and Nationals, counting "... MEETS WON". 2nd and 3rd are
+	-- medalled in the ceremony but keep nothing; awards already owned stay.
+	if place ~= 1 or typeof(level) ~= "string" then
 		return
 	end
-	local kind = if level == "Local" then "Medal" else "Trophy"
+	local kind = if level == "Local" or level == "Regional" then "Medal" else "Trophy"
 	local id = PlayerDataService.addAward(player, kind, level, place)
 	local view = id and PlayerDataService.getInventory(player)
 	local item = view and view.items[id :: string]
@@ -59,8 +62,10 @@ function InventoryService.meetPlaced(player: Player, level: string, place: numbe
 		return
 	end
 	local label = HoldService.awardLabel(kind, level, place)
-	table.insert(lines, if item.qty > 1 then string.format("%s x%d (in your INVENTORY)", label, item.qty)
-		else string.format("NEW %s! It's in your INVENTORY.", label))
+	local thing = if kind == "Medal" then "medal" else "trophy"
+	table.insert(lines, if item.qty > 1
+		then string.format("%s MEET WON! x%d %s (your %s is in your INVENTORY)", string.upper(level), item.qty, label, thing)
+		else string.format("%s MEET WON! Your %s is in your INVENTORY.", string.upper(level), thing))
 	print(string.format("[InventoryService] %s won a %s (x%d)", player.Name, label, item.qty))
 	InventoryService.changed(player)
 end
