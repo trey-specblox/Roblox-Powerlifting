@@ -89,6 +89,9 @@ local PLATFORM_SIZE = 16
 local PLATFORM_HEIGHT = 0.6
 local PLATFORM_Z = 26 -- the platforms' middles
 local PLATFORM_FRONT = PLATFORM_Z - PLATFORM_SIZE / 2
+-- The invisible fence round every meet platform (platformGear): its walls' height and thickness.
+local PLATFORM_FENCE_HEIGHT = 14
+local PLATFORM_FENCE_THICK = 1
 -- The lift spot is this far behind the platform's middle (the rack's open side): StationLayout's exitZ.
 local LIFT_SPOT_BEHIND = 6.2
 local BOARD_SCALE = 0.5 -- small wall boards: MockMeet_01's attempt board at half size (14 x 6)
@@ -384,6 +387,29 @@ function LocalMeetVenue.platformGear(parent: Instance, platformCentre: Vector3, 
 	local platformRack = gear:FindFirstChild("CompetitionRack")
 	if platformRack then
 		platformRack:SetAttribute("DeadliftAtCentre", true)
+	end
+	--[[
+		(user 2026-11-27: "Players can step onto the platform. Make sure players cant do that, they can only be on the side,
+		and behind the platform to kinda spectate") an invisible fence just outside the platform's edge, too high to jump:
+		nobody walks onto it. The lifter, coach, spotters and computer lifters are walked by script (anchored), so it never
+		stops them; raycasts (cameras, scene spots) pass through it. In the gear: it goes with the rack for the awards.
+	]]
+	local fenceHalf = PLATFORM_SIZE / 2 + PLATFORM_FENCE_THICK / 2
+	local fenceLength = PLATFORM_SIZE + 2 * PLATFORM_FENCE_THICK
+	for _, side in ipairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
+		local alongX = side[1] == 0
+		local wall = Instance.new("Part")
+		wall.Name = "PlatformFence"
+		wall.Anchored = true
+		wall.CanCollide = true
+		wall.CanQuery = false
+		wall.CanTouch = false
+		wall.CastShadow = false
+		wall.Transparency = 1
+		wall.Size = if alongX then Vector3.new(fenceLength, PLATFORM_FENCE_HEIGHT, PLATFORM_FENCE_THICK)
+			else Vector3.new(PLATFORM_FENCE_THICK, PLATFORM_FENCE_HEIGHT, fenceLength)
+		wall.CFrame = CFrame.new(platformCentre + Vector3.new(side[1] * fenceHalf, PLATFORM_FENCE_HEIGHT / 2, side[2] * fenceHalf))
+		wall.Parent = gear
 	end
 	local function prop(name: string, item: string, at: Vector3, toward: Vector3): Model?
 		local copy = RoomProps.propCopy(item, 1)

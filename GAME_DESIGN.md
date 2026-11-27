@@ -6173,6 +6173,9 @@ in their weight class and stay in it. This reopens the ladder points
 >   a time on that rack; everyone is ranked together (user's pick). A full rack takes about 37 minutes.
 > - **Waiting lifters are free:** after a lift they celebrate and walk to the bench and sit, but they can get up and roam, and practise at the
 >   warm-up racks. **When their turn comes they are brought back automatically**, so nobody loses an attempt by being away (user's pick).
+> - **Nobody steps onto a platform but the lifter. [DECIDED BY THE USER, 2026-11-27]** ("Players can step onto the platform. Make
+>   sure players cant do that, they can only be on the side, and behind the platform to kinda spectate"): an invisible fence
+>   round every meet platform (Local, Regional, State), too high to jump; the lifter is walked on and off by the game.
 > - **Benches where nobody sits or walks inside anybody. [DECIDED BY THE USER, 2026-11-18]** (after the same fix at
 >   Nationals, §39: "Yes, fix State"). The seats were 2.4 studs apart and the slimmest body is 2.74 wide. Now the seats
 >   are **4.4 apart** (the widest body, 4.31). A rack has up to 10 lifters but only 34 studs of width, so they sit in
@@ -7827,6 +7830,14 @@ doesn't cover it. To settle while designing:
         - **What is handed over:** Local and Regional: a medal over the neck for each of the top 3. State and
           Nationals: 1st is handed a TROPHY, 2nd and 3rd get a medal over the neck. A handshake for everyone, every
           time ("Handshake for everyone and everything").
+        - **CHANGED 2026-11-27 (user, after a two-player State test: "the ref gives the trophy upside down, and the lifter
+          does a little celebration dance with the trophy in its hand. Lets change it if you are getting a trophy, lets
+          just have it where its a big floating trophy over the head, and have it have shiny vfx. for normal meets, you
+          can have it where it has a floating #1 #2 #3"; asked whether medals go too: "Keep the medals"):** the trophy is
+          no longer handed over or held. 1st at State and Nationals shakes hands and, up on the block, a big gold trophy
+          floats over their head, slowly turning, with sparkles and a glow. Everyone else in the top 3 still gets the
+          medal over the neck and the handshake, and their place floats over their head on the block: #1, #2 or #3 in
+          gold, silver or bronze. Nationals' class podiums (no referee yet) float the same: the trophy over 1st, #2 and #3.
         - **What is KEPT (changes §42):** only the WINNER keeps one in the inventory: the Local or Regional winner a
           medal, the State or Nationals winner a trophy, and it counts up "LOCAL / REGIONAL / STATE / NATIONAL MEETS
           WON". 2nd and 3rd are medalled in the ceremony but keep nothing. Medals and trophies players already own

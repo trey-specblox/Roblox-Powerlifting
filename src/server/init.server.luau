@@ -77,6 +77,9 @@ NationalsService.start()
 local TeleportService = require(WorldFolder:WaitForChild("TeleportService"))
 TeleportService.start()
 
+-- No Shift Lock while the game holds a character in place (meets, practice, stations): it shook and turned the lifter.
+require(WorldFolder:WaitForChild("ShiftLockGuard")).start()
+
 --[[
 	Gym racks from TrainingStationConfig.GymRacks (6D.2a), built from the
 	Git-tracked templates and tagged before TrainingStationService looks for racks.

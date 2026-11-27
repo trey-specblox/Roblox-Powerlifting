@@ -33,7 +33,7 @@ local StarterGymConfig = require(ConfigFolder:WaitForChild("StarterGymConfig"))
 local ComputerLifters = require(script.Parent:WaitForChild("ComputerLifters"))
 local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
-local Trophies = require(script.Parent:WaitForChild("Trophies"))
+local PodiumFloat = require(script.Parent:WaitForChild("PodiumFloat"))
 
 local T = CeremonyConfig.Times
 local FALLBACK_BUILD = "Fit"
@@ -260,54 +260,8 @@ end
 
 -- ---------------------------------------------------------------- the trophy
 
--- Welds every part of `model` to `hand` so its pivot sits at `pivot` (world) now.
-local function weldTo(model: Model, hand: BasePart, pivot: CFrame)
-	for _, weld in ipairs(model:GetDescendants()) do
-		if weld:IsA("Weld") and weld.Name == "CeremonyHold" then
-			weld:Destroy()
-		end
-	end
-	local old = model:GetPivot()
-	for _, part in ipairs(model:GetDescendants()) do
-		if part:IsA("BasePart") then
-			local inModel = old:ToObjectSpace(part.CFrame)
-			part.Anchored = false
-			part.CanCollide = false
-			part.Massless = true
-			part.CFrame = pivot * inModel
-			local weld = Instance.new("Weld")
-			weld.Name = "CeremonyHold"
-			weld.Part0 = hand
-			weld.Part1 = part
-			weld.C0 = hand.CFrame:ToObjectSpace(pivot * inModel)
-			weld.Parent = part
-		end
-	end
-end
+-- (user 2026-11-27) no longer handed over: the winner's trophy floats over their head on the block (PodiumFloat).
 
-local function handTrophy(referee: Model, lifter: Model, place: number, going: () -> boolean): Model?
-	local trophy = Trophies.copy(place)
-	local refHand = referee:FindFirstChild("RightHand")
-	local refWrist = refHand and refHand:FindFirstChild("RightWristRigAttachment")
-	if trophy == nil or refHand == nil or not refHand:IsA("BasePart") or refWrist == nil or not refWrist:IsA("Attachment") then
-		return nil
-	end
-	trophy.Parent = referee
-	weldTo(trophy, refHand, refWrist.WorldCFrame * CeremonyConfig.TrophyInRefHand)
-	local refTrack = play(referee, CeremonyConfig.Animations.RefHandTrophy)
-	play(lifter, CeremonyConfig.TakeTrophy[buildOf(lifter)])
-	local started = os.clock()
-	waitUntil(started + T.TrophyTaken, going)
-	local hand = lifter:FindFirstChild("RightHand")
-	local wrist = hand and hand:FindFirstChild("RightWristRigAttachment")
-	if hand and hand:IsA("BasePart") and wrist and wrist:IsA("Attachment") then
-		trophy.Parent = lifter
-		weldTo(trophy, hand, wrist.WorldCFrame * CeremonyConfig.TrophyInLifterHand[buildOf(lifter)])
-	end
-	waitUntil(started + T.TrophyLength, going)
-	MeetChalk.stop(refTrack)
-	return trophy
-end
 
 -- ---------------------------------------------------------------- the hop
 
@@ -419,7 +373,8 @@ function MeetCeremony.run(args: Args): () -> ()
 		-- The front of the line steps up to the referee (its build's medal reach in front of him), facing him.
 		local build = buildOf(lifter)
 		local trophy = trophyWins and entry.place == 1
-		local spot = if trophy then CeremonyConfig.Place.Trophy else (CeremonyConfig.Place.Medal :: any)[build]
+		-- (user 2026-11-27: the trophy is no longer handed over, it floats over their head on the block: PodiumFloat)
+		local spot = (CeremonyConfig.Place.Medal :: any)[build] or (CeremonyConfig.Place.Medal :: any)[FALLBACK_BUILD]
 		local awardAt = (refHome * CFrame.new(spot.x, 0, -spot.d)).Position
 		local awardSpot = CFrame.lookAt(awardAt, awardAt - refHome.LookVector)
 		notify({ kind = "CeremonyFocus", lifter = lifter, referee = referee })
@@ -433,12 +388,7 @@ function MeetCeremony.run(args: Args): () -> ()
 			local refAt = awardSpot * CFrame.new(spot.x, 0, -spot.d) * CFrame.Angles(0, math.pi, 0)
 			ComputerLifters.walkBody(referee, {}, refAt, going)
 			setFloor(referee, refAt)
-			if trophy then
-				local cup = handTrophy(referee, lifter, entry.place, going)
-				if cup then
-					table.insert(made, cup)
-				end
-			else
+			if not trophy then
 				for _, part in ipairs(placeMedal(referee, lifter, entry.place, folder, going)) do
 					table.insert(made, part)
 				end
@@ -485,6 +435,13 @@ function MeetCeremony.run(args: Args): () -> ()
 		hopUp(lifter, hopFrom, CFrame.lookAt(top.Position, top.Position + (top.Position - hopFrom.Position) * Vector3.new(1, 0, 1)), going)
 		turnTo(lifter, top.Position + crowd * 10, going)
 		setFloor(lifter, top)
+		-- Up on the block: the big shining trophy (1st at State and Nationals) or their place floats over their head.
+		if going() then
+			local float = PodiumFloat.show(lifter, entry.place, trophy, crowd, folder)
+			if float then
+				table.insert(made, float)
+			end
+		end
 		-- (the referee back in his place for the next)
 		if referee and index < #order then
 			ComputerLifters.walkBody(referee, {}, refHome, going)

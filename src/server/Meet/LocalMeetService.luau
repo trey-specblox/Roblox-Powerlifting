@@ -2695,17 +2695,20 @@ end
 	What this attempt is for, in a few words, for the lifter's card (client
 	MeetLiftMoment, §37.5), or nil when nothing special hangs on it, and whether it
 	raises the attempt's stakes level. As things stand when they walk out: the others
-	are lifting at the same time. On the meet's last attempt the lead is the win.
+	are lifting at the same time. On the meet's last attempt the lead is the win. `placesOnly`: only what it does for
+	their place (the coach's walk-out scream, MeetCoachCalls; user 2026-11-27: the gym record and a new best came first on
+	the card, so a third attempt for the win never got "THIS IS FOR FIRST PLACE!").
 ]]
-local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number): (string?, boolean)
+local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNumber: number, weightKg: number,
+	placesOnly: boolean?): (string?, boolean)
 	if bombed(lifter) then
 		return nil, false
 	end
-	if lifter.recordAttempt then
+	if lifter.recordAttempt and not placesOnly then
 		return "FOR THE GYM RECORD", true
 	end
 	local race = raceFor(current, lifter, lift, attemptNumber)
-	if race.mustMake then
+	if race.mustMake and not placesOnly then
 		return "MUST MAKE IT FOR A TOTAL", true
 	end
 	local last = isMeetsLastAttempt(lift, attemptNumber)
@@ -2716,7 +2719,7 @@ local function stakesFor(current: Meet, lifter: Lifter, lift: string, attemptNum
 	-- A new best only counts in a meet that saves it.
 	local overLimit = AttemptChoice.isOverLimit(lifter.competitionNumber[lift], weightKg)
 	local best = if current.rewards then officialBest(lifter, lift) else nil
-	if best and weightKg > best and not overLimit then
+	if best and weightKg > best and not overLimit and not placesOnly then
 		return "FOR A NEW BEST " .. string.upper(lift), true
 	end
 	if passed > 0 then
@@ -3056,6 +3059,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 				-- How much hangs on it sets the crowd, the stage light and the lifter's camera (LocalMeetConfig.StakesBuild).
 				local stakes, raises = stakesFor(current, lifter, lift, attemptNumber, weightKg)
 				lifter.stakesLevel, lifter.stakesLine = stakesLevelFor(lifter, lift, attemptNumber, raises), stakes
+				local forPlace = stakesFor(current, lifter, lift, attemptNumber, weightKg, true)
 				LocalMeetVenue.setStageLight(lifter.platform, LocalMeetConfig.StakesBuild.StageLight[lifter.stakesLevel])
 				-- The walk out from the warm-up room straight in to the bar (§37.5: the rack faces the entrance), then set
 				-- up for the lift.
@@ -3078,7 +3082,7 @@ local function runRound(current: Meet, lift: string, attemptNumber: number, grou
 						coachWalk(lifter, lifter.platform.coachDoorSpot, function()
 							-- A third attempt that decides places gets his scream instead (MeetCoachCalls, user 2026-11-25).
 							LocalMeetVenue.coachSays(lifter.platform, require(script.Parent:WaitForChild("MeetCoachCalls"))
-								.walkOut(lifter.stakesLine, attemptNumber, isMeetsLastAttempt(lift, attemptNumber),
+								.walkOut(forPlace, attemptNumber, isMeetsLastAttempt(lift, attemptNumber),
 									placeOf(current, lifter)) or pick(COACH_READY))
 						end)
 					end
@@ -4172,6 +4176,9 @@ podiumAndAwards = function(current: Meet, v: LocalMeetVenue.Venue, classLabel: s
 		clear()
 		return
 	end
+	-- (user 2026-11-27) no trophies in hand: the winner's trophy floats over their head, 2nd and 3rd their place.
+	local podiumFloat = require(script.Parent:WaitForChild("PodiumFloat"))
+	local floats: { Instance } = {}
 	for _, lifter in ipairs(current.lifters) do
 		if classLabel and groupOf(current, lifter) ~= classLabel then
 			continue
@@ -4184,12 +4191,19 @@ podiumAndAwards = function(current: Meet, v: LocalMeetVenue.Venue, classLabel: s
 			-- then one of its own emotes (runComputerEmotes), as a player would; before, Roblox's stock cheer for 20 s.
 			ComputerLifters.moveBody(lifter.body, spot)
 			lifter.onPodium = true
+			local float = lifter.body and podiumFloat.show(lifter.body, placing.place, placing.place == 1, spot.LookVector,
+				workspace)
+			if float then
+				table.insert(floats, float)
+			end
 		elseif spot and not lifter.withdrawn and player and visits[player] then
 			standAt(player, spot, true)
-			-- A Regional or State meet's top 3 hold a trophy (GAME_DESIGN §35.8), in a meet that pays in full.
 			local character = player.Character
-			if MeetLevelConfig.Levels[current.level].titles and current.rewards and character and placing and placing.place then
-				Trophies.give(character, placing.place)
+			if character and placing and placing.place then
+				local float = podiumFloat.show(character, placing.place, placing.place == 1, spot.LookVector, workspace)
+				if float then
+					table.insert(floats, float)
+				end
 			end
 		end
 	end
@@ -4203,6 +4217,9 @@ podiumAndAwards = function(current: Meet, v: LocalMeetVenue.Venue, classLabel: s
 		end
 	end
 	Trophies.clearFrom(characters)
+	for _, float in ipairs(floats) do
+		float:Destroy()
+	end
 end
 
 --[[

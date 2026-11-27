@@ -35,7 +35,7 @@ local WALL_MARGIN = 0.6 -- studs kept in front of a wall between the camera and 
 type Walk = { coach: Model, eye: Vector3?, started: number, seconds: number }
 type Ceremony = { gold: CFrame, line: CFrame?, lifter: Model?, referee: Model?, eye: Vector3? }
 type Scene = { started: number, eye0: Vector3, eye1: Vector3, look: Vector3, seconds: number, token: number, walk: Walk?,
-	ceremony: Ceremony? }
+	ceremony: Ceremony?, skip: (() -> ())?, line: string? }
 local PIN_NAME = "MeetEndScenePin"
 local MeetCoachLook = require(script.Parent:WaitForChild("MeetCoachLook"))
 
@@ -127,6 +127,23 @@ end
 local ANGLES = { 25, 0, 50, -25, 75, -50, 105, -80, 140, -120, 180 } -- degrees from straight in front, + to the coach's side
 local MIN_CLEAR = 5.5
 
+-- How far `point` is from the line from `from` to `to` (within it; past its ends, from the nearer end).
+local function gapFromLine(from: Vector3, to: Vector3, point: Vector3): number
+	local along = to - from
+	local length = along.Magnitude
+	if length < 1e-3 then
+		return (point - from).Magnitude
+	end
+	local t = math.clamp((point - from):Dot(along) / (length * length), 0, 1)
+	return (point - (from + along * t)).Magnitude
+end
+-- (Studio 2026-11-27, a bomb-out at State: with the front blocked it took an angle from the coach's side and Coach
+-- Benchamin stood right in front of the lifter) an angle where one stands in front of the other's face is marked down:
+-- the coach covering the lifter most, the lifter covering the coach less. Studs from the line of sight to their chest.
+local COVER_GAP = 1.4
+local COACH_COVERS, LIFTER_COVERS = 30, 12
+
+-- `heads`: the lifter's head, then the coach's.
 local function chooseEye(look: Vector3, forward: Vector3, heads: { Vector3 }): Vector3
 	local best: Vector3? = nil
 	local bestScore = -math.huge
@@ -144,6 +161,15 @@ local function chooseEye(look: Vector3, forward: Vector3, heads: { Vector3 }): V
 			end
 		end
 		local score = math.min(room, want) - index * 0.15 - (if seen then 0 else 100)
+		local lifterHead, coachHead = heads[1], heads[2]
+		if lifterHead and coachHead then
+			local chestDrop = Vector3.new(0, 1.2, 0)
+			if gapFromLine(eye, lifterHead, coachHead - chestDrop) < COVER_GAP then
+				score -= COACH_COVERS
+			elseif gapFromLine(eye, coachHead, lifterHead - chestDrop) < COVER_GAP then
+				score -= LIFTER_COVERS
+			end
+		end
 		if room < MIN_CLEAR then
 			score -= 50
 		end
@@ -168,11 +194,12 @@ local function begin(data: any)
 	local eye1 = look + (eye0 - look) * math.max(0.5, 1 - SETTINGS.CameraGlide / math.max(1, (eye0 - look).Magnitude))
 	local current: Scene = { started = os.clock(), eye0 = eye0, eye1 = eye1, look = look,
 		seconds = tonumber(data.seconds) or SETTINGS.MaxSeconds, token = tokens }
+	current.skip = function()
+		stop(true)
+	end
 	scene = current
 	MeetCinema.open()
-	MeetCinema.skipButton(function()
-		stop(true)
-	end)
+	MeetCinema.skipButton(current.skip)
 	-- You stay put while the camera is away (the server holds you there anyway).
 	ContextActionService:BindActionAtPriority(FREEZE_ACTION, function()
 		return Enum.ContextActionResult.Sink
@@ -197,6 +224,16 @@ function MeetEndScene.render(camera: Camera)
 		-- the scene keeps it, or Roblox's camera and the Nationals hall's HallCameraGuard pull the shot about)
 		if camera.CameraType ~= Enum.CameraType.Scriptable then
 			camera.CameraType = Enum.CameraType.Scriptable
+		end
+		-- (Studio 2026-11-27, user: "I did not get a cutscene when i bombed out") the film look is one switch shared with
+		-- the lift's own camera, which turned it off as it finished just after this scene began (a bomb-out's scene starts
+		-- at once): the meet's panels came back over the scene. The scene keeps it on, with its SKIP and his words.
+		if not MeetCinema.isOpen() then
+			MeetCinema.open()
+			MeetCinema.skipButton(now.skip)
+			if now.line then
+				MeetCinema.subtitle(now.line)
+			end
 		end
 		local t = os.clock() - now.started
 		local ceremony = now.ceremony
@@ -315,11 +352,12 @@ local function beginCeremony(data: any)
 		seconds = tonumber(data.seconds) or 40, token = tokens, walk = nil,
 		ceremony = { gold = data.gold, line = if typeof(data.line) == "CFrame" then data.line else nil, lifter = nil,
 			referee = nil, eye = nil } }
+	current.skip = function()
+		stop(false)
+	end
 	scene = current
 	MeetCinema.open()
-	MeetCinema.skipButton(function()
-		stop(false)
-	end)
+	MeetCinema.skipButton(current.skip)
 	local camera = Workspace.CurrentCamera
 	camera.CameraType = Enum.CameraType.Scriptable
 	RunService:BindToRenderStep(RENDER_NAME, Enum.RenderPriority.Camera.Value + 1, function()
@@ -346,6 +384,7 @@ function MeetEndScene.start()
 		if data.kind == "MeetEndCoach" then
 			begin(data)
 		elseif data.kind == "MeetEndCoachLine" and scene and typeof(data.line) == "string" then
+			(scene :: Scene).line = data.line
 			MeetCinema.subtitle(data.line)
 		elseif data.kind == "MeetEndWalk" and scene and typeof(data.coach) == "Instance" and data.coach:IsA("Model") then
 			-- (his line goes on while they walk: the subtitle stays)

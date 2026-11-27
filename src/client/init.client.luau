@@ -124,6 +124,8 @@ local LocalMeetController = require(MeetFolder:WaitForChild("LocalMeetController
 task.spawn(LocalMeetController.start)
 -- Your chosen coach at your meets, on your screen only (GAME_DESIGN §40.5).
 task.spawn(require(MeetFolder:WaitForChild("MeetCoachLook")).start)
+-- The podium's floating trophy and place numbers turn and bob on this screen (server PodiumFloat).
+require(MeetFolder:WaitForChild("PodiumFloatSpin")).start()
 -- The coaches' voices: your coach says his lines out loud, on your screen only (GAME_DESIGN §40.5).
 task.spawn(require(MeetFolder:WaitForChild("CoachVoice")).start)
 -- The end-of-meet coach scene's camera, subtitle and SKIP, on your screen only (GAME_DESIGN §40.5).

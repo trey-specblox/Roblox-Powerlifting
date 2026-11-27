@@ -13,6 +13,37 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**TWO-PLAYER STATE TEST FIXES (2026-11-27, user's live test of 1136 with a friend) [BUILT, TESTED IN STUDIO (solo meets,
+logs + pictures); NOT committed, NOT published].** The user's report and what was done:
+(1) "Players can step onto the platform ... they can only be on the side, and behind the platform": LocalMeetVenue.platformGear
+builds an invisible fence (PlatformFence, 14 high, 1 thick, CanQuery/CanTouch off) just outside every meet platform's edge,
+in the gear so it goes with the rack for the awards. Lifters, coaches, spotters and computer lifters are walked by script
+(anchored), so it never stops them. Studio: a player walking at a Local platform stopped at the wall, a jump didn't clear it.
+(2) Shift Lock before the walk-out made the lifter shake and face the locked way, bar and all: new server World/ShiftLockGuard
+turns Player.DevEnableMouseLock off while the HumanoidRootPart is anchored (every hold) and back on after (only the server
+may set it: a client try errored and broke LockedStance, reverted). Studio: the client saw it false while anchored.
+(3) The trophy was handed over upside down and held in the dance: no handover now. PodiumFloat (server) floats a big gold
+trophy (Trophies model, 2.6 studs) with sparkles and a glow over 1st at State/Nationals once on the block, and "#1/#2/#3"
+(gold/silver/bronze, game tag style) over everyone else in the top 3, whose medals STAY (user: "Keep the medals"); client
+PodiumFloatSpin turns/bobs them. Nationals' class podiums float the same (no more hand trophies). Studio: Local podium
+showed #1 #2 #3 with medals; State 1st showed the trophy; sparkle attachment fixed (was placed before parenting).
+(4) No end scene after bombing out: the scene ran but the lift's camera closed the shared film look (MeetCinema) just after
+it opened, so the meet's panels covered it. Client MeetEndScene now keeps the film look on (with SKIP and the coach's line)
+for the whole scene and ceremony. Also its camera now marks down angles where the coach covers the lifter (Benchamin did).
+(5) The 3rd-attempt hype lines: they work (the "LET'S GOOO" yells are the same round), but the card's single stakes line put
+"FOR THE GYM RECORD"/"FOR A NEW BEST"/"MUST MAKE IT" before the place, so MeetCoachCalls.walkOut never saw "FOR THE WIN".
+stakesFor(..., placesOnly) gives the coach the place stakes on their own. A bombed lifter has no place stakes (by design).
+(6) Coach Benchamin's hand at the lifter's head (State, the back chalking before a lift): the gym coach's own chalk move puts
+the hands 1.1-1.5 studs over a Skinny lifter's UpperTorso middle (0.8 from the head) and the copy followed it. MeetCoachLook
+now also tips the copy's shoulders so its hands keep the gym coach's height and never go above 0.6 under the bottom of
+the lifter's Head (the bodies' UpperTorso part reaches above the head's bottom, so caps from it left the hands at the neck;
+verified the cap moves the hands: with the torso-based caps they went from 0.3-0.7 above it to 0.3-0.7 below it). NOT done: the gym coach
+(Owner) himself has no copy, so players with the free coach still get the original move.
+Files: src/server/Meet/LocalMeetVenue.luau, LocalMeetService.luau, MeetCeremony.luau, PodiumFloat.luau (new),
+src/server/World/ShiftLockGuard.luau (new), src/server/init.server.luau, src/client/Meet/MeetEndScene.luau,
+MeetCoachLook.luau, PodiumFloatSpin.luau (new), src/client/init.client.luau, GAME_DESIGN.md, DEVELOPMENT_STATUS.md.
+NOT tested: two real players (fence vs a second player, both scenes at once); the Owner coach's chalking on small builds.
+
 **STATE MEETS GET THE WALK TO THE PODIUM WITH THE COACH (2026-11-27, user tested 1135 with two players: "i didnt get
 the walking out with coach cutscene, when i won", then "State: add the walk") [BUILT, TESTED IN STUDIO (3 solo State wins,
 position log + pictures); COMMITTED f500166, PUBLISHED version 1136 (2026-11-27, user: "Commit and publish")].** The walk off together (arm round the back, his line on the way,

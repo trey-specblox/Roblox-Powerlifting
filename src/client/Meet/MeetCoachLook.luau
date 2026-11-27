@@ -286,6 +286,17 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 	-- hands through each other, Studio 2026-11-24). Radians, right then left; at most SPREAD_LIMIT.
 	local spread = { 0, 0 }
 	local SPREAD_LIMIT = 0.6
+	-- ...and as HIGH: each shoulder tips down or up (about the torso's sideways axis) so each hand keeps the gym coach's
+	-- hand's height, and never above the lifter's upper back (user 2026-11-27, State: Coach Benchamin's
+	-- hand came up by the lifter's head. Measured in Studio: the gym coach's own chalking puts his hands 1.1 to 1.5 studs
+	-- over a Skinny lifter's UpperTorso middle, 0.8 from the head, so the cap does the work). Radians, right then left; at
+	-- most PITCH_LIMIT.
+	local pitch = { 0, 0 }
+	local PITCH_LIMIT = 0.9
+	-- Studs under the bottom of the lifter's Head: the upper back, under the shoulder line. (Measured from the head, not the
+	-- UpperTorso part: on the lifter bodies that part reaches above the head's bottom, so 0.15 and 0.5 under it still had
+	-- the hands at the neck, Studio 2026-11-27; big head accessories hang down to the shoulders too.)
+	local UNDER_HEAD = 0.6
 	local shoulderSide: { [any]: number } = {}
 	for _, pair in ipairs(joints) do
 		if pair[1].Name == "RightShoulder" then
@@ -295,7 +306,7 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 		end
 	end
 
-	local function spreadStep(base: CFrame, rate: number)
+	local function spreadStep(base: CFrame, rate: number, backTop: number?)
 		for i = 1, 2 do
 			local theirs, mine, upper = theirHands[i], myHands[i], myUpperArms[i]
 			if theirs and mine and upper and theirs:IsA("BasePart") and mine:IsA("BasePart") and upper:IsA("BasePart") then
@@ -307,6 +318,14 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 				local inFront = math.max(0.3, s.Z - c.Z)
 				local turn = -(g.X - c.X) / inFront
 				spread[i] = math.clamp(spread[i] + turn * rate, -SPREAD_LIMIT, SPREAD_LIMIT)
+				-- (a turn about the sideways axis lifts a hand out in front by about its distance in front times the turn)
+				-- (heights in the world: the copy stands on its own, longer or shorter, legs)
+				local wantY = theirs.Position.Y
+				if backTop then
+					wantY = math.min(wantY, backTop)
+				end
+				local tip = (wantY - mine.Position.Y) / inFront
+				pitch[i] = math.clamp(pitch[i] + tip * rate, -PITCH_LIMIT, PITCH_LIMIT)
 			end
 		end
 	end
@@ -352,10 +371,18 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 			reach += (target - reach) * rate
 			forward = reach
 			if t then
-				spreadStep(base, rate)
+				-- (the lifter whose back he chalks: this player, his coach)
+				local character = Players.LocalPlayer.Character
+				local head = character and character:FindFirstChild("Head")
+				local backTop = if head and head:IsA("BasePart")
+					then head.Position.Y - head.Size.Y / 2 - UNDER_HEAD
+					else nil
+				spreadStep(base, rate, backTop)
 			else
 				spread[1] -= spread[1] * rate
 				spread[2] -= spread[2] * rate
+				pitch[1] -= pitch[1] * rate
+				pitch[2] -= pitch[2] * rate
 			end
 		end
 		local ahead = Vector3.new(base.LookVector.X, 0, base.LookVector.Z)
@@ -371,9 +398,10 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 					elseif leg == "knee" then -(JUMP.tuckKnee * tuck + JUMP.bendKnee * bend)
 					else (JUMP.bendKnee - JUMP.bendHip) * bend
 				pair[1].Transform = pair[2].Transform * CFrame.Angles(math.rad(degrees), 0, 0)
-			elseif shoulderSide[pair[1]] and spread[shoulderSide[pair[1]]] ~= 0 then
-				-- (the turn in the torso's frame, before the animation's own shoulder turn)
-				pair[1].Transform = CFrame.Angles(0, spread[shoulderSide[pair[1]]], 0) * pair[2].Transform
+			elseif shoulderSide[pair[1]] and (spread[shoulderSide[pair[1]]] ~= 0 or pitch[shoulderSide[pair[1]]] ~= 0) then
+				-- (the turns in the torso's frame, before the animation's own shoulder turn)
+				local i = shoulderSide[pair[1]]
+				pair[1].Transform = CFrame.Angles(pitch[i], spread[i], 0) * pair[2].Transform
 			else
 				pair[1].Transform = pair[2].Transform
 			end
