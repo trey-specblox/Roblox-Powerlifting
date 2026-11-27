@@ -13,6 +13,26 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**STATE MEET CHECK OF THE END-OF-MEET SCENE AND CEREMONY (2026-11-27, user: "Check State meets") [FIXED, TESTED IN
+STUDIO (6 solo State meets, StudioForcePhaseResult Pass); NOT committed, NOT published; user approved 1130 ("Its good")].**
+Found and fixed: (1) the coach scene's camera showed only the back of the rack's CENTRAL banner: the lifter stands behind
+it after the last lift and decor can't be hit by raycasts or walked into, so MeetEndScene.sceneSpot faced the pair at the
+cloth from a step away and the client camera set up on its far side. StateArenaVenue: GantryBanner_Cloth CanQuery and
+CanCollide true (every walk goes round it through the gaps). (2) the coach's spot landed on the rack's Caller figure:
+sceneSpot(at, ignore, peopleRoot) keeps the lifter's and the coach's spot (SceneCoachSide 3.7 to the right) clear of other
+figures under the venue and other players by SceneClearOfPeople 3.8 (LocalMeetService passes the player's character and
+their coach figure to ignore, v.model as peopleRoot). (3) the judges' table stood on the walk from the line to the blocks
+and in front of the ceremony camera: it is placed in the rack's gear now, so showAwards takes it away with the rack.
+(4) the referee, standing aside after the last award, was in the corner of the winner's close-up: MeetCeremony walks him
+on past the line's end (Line.RefWalkOff 14) and removes him. (5) the State Champion card sat on top of the meet's bottom
+panel (MEET OVER, total): LocalMeetAwards hides LocalMeet.Action while the badge or Nationals card is up, until the awards
+end (checked: the hold is released after). Verified with pictures: the pat with both in shot and the caller clear, the
+trophy handover, the walk to the gold block with no table, the champion card alone. NOT re-run: a Local meet after these
+changes (they touch Local only through sceneSpot for off-podium players and the referee's walk-off, which ends where the
+line's third place stood); a State meet with 2+ lifters (Studio State meets have no computer lifters).
+Files: src/server/Meet/StateArenaVenue.luau, MeetEndScene.luau, MeetCeremony.luau, LocalMeetService.luau,
+src/client/Meet/LocalMeetAwards.luau, src/shared/Config/LocalMeetConfig.luau, DEVELOPMENT_STATUS.md.
+
 **END-OF-MEET SCENE REDO + THE LINE FOR THE PODIUM (2026-11-26, user's phone test feedback) [BUILT, TESTED IN STUDIO; user:
 "Commit and publish": COMMITTED 1ee0160, PUSHED, PUBLISHED as place version 1130 (all 14 changed scripts' checksums matched disk before the publish)].** User: the scene was too slow (start on the pat, no
 walk-up), the coach should talk WHILE they walk with his arm patting the back and his free hand gesturing, he was too

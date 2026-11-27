@@ -561,6 +561,10 @@ LocalMeetConfig.MeetEnd = {
 	SceneStep = 6.0, -- (3 left the pair beside the doorway: the coach stood half in its edge, user's phone 2026-11-25)
 	SceneRightRoom = 5.5,
 	SceneFrontRoom = 9.0,
+	-- (Studio 2026-11-26: the coach stood on a State rack's caller) the lifter's spot and the coach's (this far to their
+	-- right) keep this far from anyone else standing there: the widest bodies are 4.31 across.
+	SceneCoachSide = 3.7,
+	SceneClearOfPeople = 3.8,
 	-- (Off the podium) the scene holds while he talks, at least this long, and his line plus LineTail.
 	PatSeconds = 5.0,
 	-- He starts talking (and on the podium, walking) this long into the pat: after the two pats.
@@ -586,6 +590,7 @@ LocalMeetConfig.MeetEnd = {
 		SlotGap = 4.6,
 		StripOut = 5.1,
 		RefStepBack = 1.0,
+		RefWalkOff = 14.0, -- after the last award he walks this far on past the line's end and goes (out of the close-up)
 	},
 	-- The camera: a held two-shot, this far away (less where a wall is), looking at this height over their feet (chest
 	-- high, so both heads are in the frame), gliding this far in; HeadHeight is where it checks it can see their heads.

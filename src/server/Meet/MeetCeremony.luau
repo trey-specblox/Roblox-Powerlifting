@@ -491,6 +491,17 @@ function MeetCeremony.run(args: Args): () -> ()
 			setFloor(referee, refHome)
 		end
 	end
+	-- (Studio 2026-11-26: standing aside he was right in front of the winner's close-up in the awards that follow) his
+	-- part done, the referee walks off past the far end of the line and goes.
+	if referee and referee.Parent and going() then
+		local along = -Vector3.new(gold.RightVector.X, 0, gold.RightVector.Z).Unit
+		local away = refHome.Position + along * L.RefWalkOff
+		local leaving: Model = referee
+		task.spawn(function()
+			ComputerLifters.walkBody(leaving, {}, CFrame.lookAt(away, away + along), going)
+			leaving:Destroy()
+		end)
+	end
 	notify({ kind = "CeremonyEnd" })
 	return function()
 		for _, thing in ipairs(made) do

@@ -606,6 +606,13 @@ function StateArenaVenue.build(): (Venue?, string?)
 		end
 		-- Lower down on the back of the banner, facing the benches: the rack's lifting order (who is up, on deck, in the hole, ...).
 		local cloth = banner and banner:FindFirstChild("GantryBanner_Cloth", true)
+		-- (Studio 2026-11-26: the end-of-meet scene starts behind it, and the scene's spot and camera find walls by raycast
+		-- while decor can't be hit or walked into: the pair faced the cloth from a step away and the camera set up on its far
+		-- side, showing only the cloth) a solid backdrop now, as it looks. Every walk goes round it (the gaps beside it).
+		if cloth and cloth:IsA("BasePart") then
+			cloth.CanQuery = true
+			cloth.CanCollide = true
+		end
 		local orderBoard = RoomProps.propCopy("MeetBoard", 1)
 		local orderScreen = orderBoard and orderBoard:FindFirstChild("MeetBoard_Screen", true)
 		local showOrder: ((heading: string, lines: { string }) -> ())? = nil
@@ -636,7 +643,9 @@ function StateArenaVenue.build(): (Venue?, string?)
 		elseif orderBoard then
 			orderBoard:Destroy()
 		end
-		place(rack, "JudgesTable", CFrame.new(x, 0, -JUDGES_IN_FRONT) * CFrame.Angles(0, math.pi, 0), "Judges")
+		-- (Studio 2026-11-26: it stood in the way of the podium ceremony, on the walk from the line to the blocks and in front
+		-- of the camera) in with the rack's gear, so it makes way for the awards stage too (LocalMeetVenue.showAwards).
+		place(gear, "JudgesTable", CFrame.new(x, 0, -JUDGES_IN_FRONT) * CFrame.Angles(0, math.pi, 0), "Judges")
 		local spotlight = Instance.new("SpotLight")
 		spotlight.Face = Enum.NormalId.Bottom
 		spotlight.Range = 70

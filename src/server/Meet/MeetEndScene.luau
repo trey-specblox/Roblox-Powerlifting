@@ -26,6 +26,7 @@
 	wall (out of the ceremony's shot). Kept out of LocalMeetService (its main chunk is at Luau's 200-local limit).
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -156,14 +157,51 @@ end
 	their right (SceneRightRoom) and for the camera in front (SceneFrontRoom), and nothing in the way of the step.
 	Directions tried every 45 degrees, the one with the most room kept; `at` itself if nothing fits.
 ]]
-function MeetEndScene.sceneSpot(at: CFrame): CFrame
+function MeetEndScene.sceneSpot(at: CFrame, ignore: { Instance? }?, peopleRoot: Instance?): CFrame
 	local chest = Vector3.new(0, 3, 0)
 	local best, bestScore = at, -math.huge
+	-- (Studio 2026-11-26: at a State meet the coach's place at the lifter's right was on the rack's caller, whom the
+	-- raycasts pass through like any body) the people standing about: figures under `peopleRoot` (the venue's staff)
+	-- and the players, all but those in `ignore` (the lifter, their coach); neither spot may be on one of them.
+	local people: { Vector3 } = {}
+	local skip: { [Instance]: boolean } = {}
+	for _, thing in pairs(ignore or {}) do
+		if thing then
+			skip[thing] = true
+		end
+	end
+	local function consider(model: Instance?)
+		if model and model:IsA("Model") and not skip[model] and model:FindFirstChildOfClass("Humanoid") then
+			local spot = model:GetPivot().Position
+			if (spot - at.Position).Magnitude < 24 then
+				table.insert(people, spot)
+			end
+		end
+	end
+	if peopleRoot then
+		for _, item in ipairs(peopleRoot:GetDescendants()) do
+			if item:IsA("Humanoid") then
+				consider(item.Parent)
+			end
+		end
+	end
+	for _, other in ipairs(Players:GetPlayers()) do
+		consider(other.Character)
+	end
+	local function crowded(spot: Vector3): boolean
+		for _, person in ipairs(people) do
+			if Vector3.new(person.X - spot.X, 0, person.Z - spot.Z).Magnitude < SETTINGS.SceneClearOfPeople then
+				return true
+			end
+		end
+		return false
+	end
 	for step = 0, 7 do
 		local facing = CFrame.Angles(0, math.rad(step * 45), 0):VectorToWorldSpace(Vector3.new(0, 0, -1))
 		local from = at.Position + chest
 		local stepped = from + facing * SETTINGS.SceneStep
-		if blockedAt(from, facing * (SETTINGS.SceneStep + 1)) == nil then
+		local coachSpot = stepped + facing:Cross(Vector3.yAxis) * SETTINGS.SceneCoachSide
+		if blockedAt(from, facing * (SETTINGS.SceneStep + 1)) == nil and not crowded(stepped) and not crowded(coachSpot) then
 			local right = facing:Cross(Vector3.yAxis)
 			local rightRoom = blockedAt(stepped, right * 12) or 12
 			local frontRoom = blockedAt(stepped, facing * 32) or 32

@@ -22,6 +22,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
@@ -71,6 +72,28 @@ local function playSound(id: string, volume: number): Sound
 	return sound
 end
 
+--[[
+	(Studio 2026-11-26: the State Champion card landed on top of the meet's bottom panel, MEET OVER and the total; UIs never
+	overlap) the bottom panel makes way while the awards' cards are up, until the awards end. Returns how to put it back.
+]]
+local function clearBottomPanel(): () -> ()
+	local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+	local meet = playerGui and playerGui:FindFirstChild("LocalMeet")
+	local panel = meet and meet:FindFirstChild("Action")
+	if panel == nil or not panel:IsA("GuiObject") then
+		return function() end
+	end
+	local wasVisible = panel.Visible
+	-- (every frame: the meet screen redraws it on its own when the standings change)
+	local holding = RunService.RenderStepped:Connect(function()
+		panel.Visible = false
+	end)
+	return function()
+		holding:Disconnect()
+		panel.Visible = wasVisible
+	end
+end
+
 -- Whether the ceremony is on this screen now (RankMoment waits for it to end).
 function LocalMeetAwards.isPlaying(): boolean
 	return current ~= nil
@@ -101,6 +124,9 @@ function LocalMeetAwards.stop()
 	if ceremony.endNationals then
 		ceremony.endNationals()
 	end
+	if ceremony.endClear then
+		ceremony.endClear()
+	end
 	local camera = Workspace.CurrentCamera
 	local character = Players.LocalPlayer.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -120,7 +146,13 @@ function LocalMeetAwards.play(moment: LocalMeetRemotes.AwardsMoment)
 	nextId += 1
 	local id = nextId
 	local ceremony = { id = id, sounds = {} :: { Sound }, track = nil :: AnimationTrack?, tween = nil :: Tween?,
-		leaving = nil :: RBXScriptConnection?, endReveal = nil :: (() -> ())?, endNationals = nil :: (() -> ())? }
+		leaving = nil :: RBXScriptConnection?, endReveal = nil :: (() -> ())?, endNationals = nil :: (() -> ())?,
+		endClear = nil :: (() -> ())? }
+	local function clearForCard()
+		if ceremony.endClear == nil then
+			ceremony.endClear = clearBottomPanel()
+		end
+	end
 	current = ceremony
 	local function stillRunning(): boolean
 		return current ~= nil and current.id == id
@@ -203,6 +235,7 @@ function LocalMeetAwards.play(moment: LocalMeetRemotes.AwardsMoment)
 			and typeof(badge.name) == "string" then
 			task.delay(SETTINGS.WideShotSeconds + SETTINGS.GlideSeconds * 0.6, function()
 				if stillRunning() then
+					clearForCard()
 					ceremony.endReveal = ChampionBadge.reveal(badge, moment.winnerName or "", SETTINGS.CloseUpSeconds + SETTINGS.GlideSeconds)
 				end
 			end)
@@ -218,6 +251,7 @@ function LocalMeetAwards.play(moment: LocalMeetRemotes.AwardsMoment)
 		local showFor = math.clamp(moment.seconds - startAt - 0.6, 2.5, NATIONALS_CARD_SECONDS)
 		task.delay(startAt, function()
 			if stillRunning() then
+				clearForCard()
 				ceremony.endNationals = NationalsCard.show(nationals, showFor)
 			end
 		end)

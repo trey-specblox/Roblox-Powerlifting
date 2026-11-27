@@ -4056,7 +4056,8 @@ local function finishMeet(current: Meet)
 			local onStage = place ~= nil and place <= 3 and top ~= nil and gold ~= nil and lifter.platform.frontFloor ~= nil
 				and not current.hall.state and not current.hall.nationals
 			local sceneAt = if onStage then MeetEndScene.platformSpot(top :: CFrame)
-				else MeetEndScene.sceneSpot(body.root.CFrame * CFrame.new(0, -standingHeight(body), 0))
+				else MeetEndScene.sceneSpot(body.root.CFrame * CFrame.new(0, -standingHeight(body), 0),
+					{ player.Character, LocalMeetVenue.coachFigure(lifter.platform) }, v.model)
 			standAt(player, sceneAt, true)
 			-- (Studio 2026-11-26: his walk back after the last lift was still going and pulled him off mid-pat) any
 			-- coachWalk still under way ends here.
