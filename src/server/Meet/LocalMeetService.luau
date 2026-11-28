@@ -3852,7 +3852,7 @@ runLiftOffs = function(current: Meet)
 end
 
 local podiumAndAwards: (current: Meet, v: LocalMeetVenue.Venue, classLabel: string?, seconds: number) -> ()
-local nationalsAwards: (current: Meet, v: LocalMeetVenue.Venue) -> ()
+local nationalsAwards: (current: Meet, v: LocalMeetVenue.Venue, classWalk: (label: string) -> ()) -> ()
 local finishCleanUp: (current: Meet, v: LocalMeetVenue.Venue) -> ()
 
 local function finishMeet(current: Meet)
@@ -4045,7 +4045,12 @@ local function finishMeet(current: Meet)
 	for _, lifter in ipairs(current.lifters) do
 		local player = lifter.player
 		local body = player and bodyOf(player)
-		if player and body and visits[player] and not lifter.withdrawn then
+		local endPlacing = current.places[lifter.key]
+		-- (Nationals, user 2026-11-27: a podium player's scene, the pat and the walk into the line, plays when their class
+		-- is called: classWalk below)
+		local nationalsPodium = current.hall.nationals and endPlacing and endPlacing.place and endPlacing.place <= 3
+			and not bombed(lifter)
+		if player and body and visits[player] and not lifter.withdrawn and not nationalsPodium then
 			local placing = current.places[lifter.key]
 			local histories = {}
 			for _, lift in ipairs(MeetConfig.LiftOrder) do
@@ -4126,8 +4131,75 @@ local function finishMeet(current: Meet)
 		end
 	end
 	MeetEndScene.hideCoaches(v.platforms)
+	--[[
+		NATIONALS, CLASS BY CLASS (user 2026-11-27: "When their class is called"): as a class comes up, its podium players
+		have their scene, the coach's pat and line and the walk together into the line for the podium, then the ceremony.
+	]]
+	local function classWalk(label: string)
+		local classBeats: { any } = {}
+		local inClass = 0
+		for _, lifter in ipairs(current.lifters) do
+			local placing = current.places[lifter.key]
+			if groupOf(current, lifter) == label and placing and placing.place and placing.place <= 3 and not lifter.withdrawn
+				and not bombed(lifter) and (lifter.player == nil or visits[lifter.player]) then
+				inClass += 1
+			end
+		end
+		for _, lifter in ipairs(current.lifters) do
+			local player = lifter.player
+			local body = player and bodyOf(player)
+			local placing = current.places[lifter.key]
+			local place = placing and placing.place
+			if player and body and visits[player] and not lifter.withdrawn and not endSkipped[player] and place and place <= 3
+				and not bombed(lifter) and groupOf(current, lifter) == label then
+				local histories = {}
+				for _, lift in ipairs(MeetConfig.LiftOrder) do
+					histories[lift] = lifter.lifts[lift].history
+				end
+				local sceneAt = MeetEndScene.sceneSpot(body.root.CFrame * CFrame.new(0, -standingHeight(body), 0),
+					{ player.Character, LocalMeetVenue.coachFigure(lifter.platform) }, v.model)
+				standAt(player, sceneAt, true)
+				lifter.coachToken = (lifter.coachToken or 0) + 1
+				local slotIndex = inClass - place + 1
+				table.insert(classBeats, {
+					place = place,
+					player = player,
+					platform = lifter.platform,
+					lifterAt = sceneAt,
+					lineKey = MeetEndScene.lineKey(place, MeetEndScene.allGood(histories :: any)),
+					podium = true,
+					stage = if lineSlots[slotIndex] then { slot = lineSlots[slotIndex], slotIndex = slotIndex } else nil,
+					onArrived = function(final: CFrame)
+						if visits[player] then
+							standAt(player, final, true)
+						end
+					end,
+				})
+			end
+		end
+		-- A class lifts on one platform, which has one coach: its podium players go one after another, 3rd first (the
+		-- front of the line), each with the coach handed over to them (his tag on their screen: their chosen coach).
+		table.sort(classBeats, function(a, b)
+			return a.place > b.place
+		end)
+		for _, beat in ipairs(classBeats) do
+			if current.hall.meet ~= current or not visits[beat.player] then
+				continue
+			end
+			LocalMeetVenue.staffFor(beat.platform, beat.player)
+			local skipped = MeetEndScene.run({ beat }, remotes, function()
+				return current.hall.meet == current
+			end, function(_: Player) end, {})
+			for player in pairs(skipped) do
+				endSkipped[player] = true
+			end
+		end
+		if #classBeats > 0 then
+			MeetEndScene.hideCoaches(v.platforms)
+		end
+	end
 	if current.hall.nationals then
-		nationalsAwards(current, v)
+		nationalsAwards(current, v, classWalk)
 	else
 		podiumAndAwards(current, v, nil, LocalMeetConfig.DoneSeconds)
 	end
@@ -4139,17 +4211,19 @@ end
 	holding their trophies, the moment for everyone in the hall, then `seconds` before the next.
 ]]
 podiumAndAwards = function(current: Meet, v: LocalMeetVenue.Venue, classLabel: string?, seconds: number)
-	-- THE PODIUM CEREMONY (GAME_DESIGN §40.5, user 2026-11-25; MeetCeremony): called up 3rd, 2nd, 1st, the medal or the
-	-- trophy from a referee on the floor, a handshake, then the hop up onto the block. Not at Nationals yet (its awards
-	-- go class by class).
-	if classLabel == nil and not current.hall.nationals then
+	-- THE PODIUM CEREMONY (GAME_DESIGN §40.5, user 2026-11-25; MeetCeremony): called up 3rd, 2nd, 1st, the medal from a
+	-- referee on the floor (1st at State and Nationals: the floating trophy), a handshake, then the hop up onto the block.
+	-- At Nationals class by class (user 2026-11-27).
+	-- (Nationals too, class by class: user 2026-11-27)
+	if (classLabel == nil and not current.hall.nationals) or (classLabel ~= nil and current.hall.nationals) then
 		local entries = {}
 		for _, lifter in ipairs(current.lifters) do
 			local placing = current.places[lifter.key]
 			local place = placing and placing.place
 			local player = lifter.player
 			local model = if player then player.Character else lifter.body
-			if place and place <= 3 and not lifter.withdrawn and model and (player == nil or visits[player]) then
+			if place and place <= 3 and not lifter.withdrawn and model and (player == nil or visits[player])
+				and (classLabel == nil or groupOf(current, lifter) == classLabel) then
 				table.insert(entries, { model = model, place = place, lifter = lifter })
 			end
 		end
@@ -4226,7 +4300,7 @@ end
 	Nationals' awards (GAME_DESIGN §39): class by class, lightest first, each class's top three on the podium in turn (on
 	points: one podium for everyone). Those off the podium wait at the front of the stage.
 ]]
-nationalsAwards = function(current: Meet, v: LocalMeetVenue.Venue)
+nationalsAwards = function(current: Meet, v: LocalMeetVenue.Venue, classWalk: (label: string) -> ())
 	local classes: { string } = {}
 	for _, lifter in ipairs(current.lifters) do
 		if not table.find(classes, groupOf(current, lifter)) then
@@ -4243,6 +4317,7 @@ nationalsAwards = function(current: Meet, v: LocalMeetVenue.Venue)
 			end
 		end
 		if placed then
+			classWalk(label)
 			podiumAndAwards(current, v, label, NationalsConfig.AwardsClassSeconds)
 			for index, lifter in ipairs(current.lifters) do
 				local player = lifter.player

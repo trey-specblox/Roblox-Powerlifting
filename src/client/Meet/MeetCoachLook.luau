@@ -457,6 +457,77 @@ local function standIn(figure: Model, template: Model, billboard: BillboardGui, 
 	return true
 end
 
+--[[
+	THE GYM OWNER'S OWN CHALKING (user 2026-11-27, after Coach Benchamin's hands were fixed: "Yes, fix it"): the free coach
+	has no copy standing in for him, so his own figure's arms are tipped on this screen instead. While he chalks this
+	player's back, each shoulder tips down just enough that its hand stays under the player's shoulder line (UNDER_HEAD
+	under the Head's bottom: the gym coach's chalk move put his hands up by a Skinny lifter's head, 0.8 from its middle).
+	The animation poses him afresh every frame and the tip is put on top, nudged a little each frame, so it never jumps. Display only, this screen only; other players see him as the animation has him.
+]]
+local OWNER_PITCH_LIMIT = 0.9 -- radians
+local OWNER_UNDER_HEAD = 0.6 -- studs under the bottom of the lifter's Head
+
+local function capOwnHands(figure: Model, billboard: BillboardGui)
+	local theirRoot = figure:FindFirstChild("HumanoidRootPart")
+	local theirHumanoid = figure:FindFirstChildOfClass("Humanoid")
+	if theirRoot == nil or not theirRoot:IsA("BasePart") or theirHumanoid == nil then
+		return
+	end
+	-- (his joints are AnimationConstraints, the newer kind; Motor6D too, for any older figure: both have Transform)
+	local sides: { { shoulder: any, hand: BasePart, upper: BasePart } } = {}
+	for _, names in ipairs({ { "RightShoulder", "RightHand", "RightUpperArm" }, { "LeftShoulder", "LeftHand", "LeftUpperArm" } }) do
+		local upper = figure:FindFirstChild(names[3])
+		local hand = figure:FindFirstChild(names[2])
+		local shoulder = upper and upper:FindFirstChild(names[1])
+		if shoulder and (shoulder:IsA("Motor6D") or shoulder:IsA("AnimationConstraint")) and hand and hand:IsA("BasePart")
+			and upper and upper:IsA("BasePart") then
+			table.insert(sides, { shoulder = shoulder, hand = hand, upper = upper })
+		end
+	end
+	if #sides == 0 then
+		return
+	end
+	local pitch = { 0, 0 }
+	local stepping = RunService.PreSimulation:Connect(function(dt: number)
+		local t = backLoopTime(theirHumanoid:FindFirstChildOfClass("Animator"))
+		local character = Players.LocalPlayer.Character
+		local head = character and character:FindFirstChild("Head")
+		local backTop = if t and head and head:IsA("BasePart") then head.Position.Y - head.Size.Y / 2 - OWNER_UNDER_HEAD
+			else nil
+		local rate = math.min(1, (dt or 0) * 12)
+		local rootFrame = (theirRoot :: BasePart).CFrame
+		for i, side in ipairs(sides) do
+			if backTop then
+				-- (a turn about the sideways axis moves a hand out in front up or down by about its distance in front
+				-- times the turn. The hand read here was posed last frame, tip and all, so the tip is nudged toward the
+				-- line, never above the animation's own pose)
+				local c = rootFrame:PointToObjectSpace(side.hand.Position)
+				local s = rootFrame:PointToObjectSpace(side.upper.Position)
+				local inFront = math.max(0.3, s.Z - c.Z)
+				pitch[i] = math.clamp(pitch[i] + (backTop - side.hand.Position.Y) / inFront * rate, -OWNER_PITCH_LIMIT, 0)
+			else
+				pitch[i] -= pitch[i] * rate
+			end
+			if math.abs(pitch[i]) > 1e-3 then
+				side.shoulder.Transform = CFrame.Angles(pitch[i], 0, 0) * side.shoulder.Transform
+			end
+		end
+	end)
+	local function finish()
+		stepping:Disconnect()
+	end
+	billboard.AncestryChanged:Connect(function()
+		if not billboard:IsDescendantOf(game) then
+			finish()
+		end
+	end)
+	figure.AncestryChanged:Connect(function()
+		if not figure:IsDescendantOf(Workspace) then
+			finish()
+		end
+	end)
+end
+
 function MeetCoachLook.start()
 	if started then
 		return
@@ -490,6 +561,11 @@ function MeetCoachLook.start()
 		local coach = QuestConfig.Coaches[active]
 		local head = billboard.Adornee
 		local figure = head and head.Parent
+		if coach == nil and figure and figure:IsA("Model") then
+			-- (the gym owner stays as he is, his chalking hands kept under the shoulder line)
+			capOwnHands(figure, billboard)
+			return
+		end
 		if coach == nil or figure == nil or not figure:IsA("Model") then
 			return
 		end

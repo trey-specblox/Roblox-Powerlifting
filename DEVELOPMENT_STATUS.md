@@ -13,6 +13,24 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**GYM OWNER'S CHALKING + NATIONALS PODIUM CEREMONY (2026-11-27, user: "Yes, fix it, then start nationals") [NOT committed,
+NOT published].**
+(1) The free gym-owner coach (no copy on screen) still chalked with his hands by a small lifter's head: MeetCoachLook
+capOwnHands tips his own shoulders (AnimationConstraint or Motor6D Transform, PreSimulation, this screen only) so his
+hands stay 0.6 under the lifter's Head bottom. TESTED IN STUDIO (State, GYM OWNER tag): hands 0.37-0.76 under the head's
+bottom (were up to 0.44 above), 1.2-1.8 from its middle (was 0.75).
+(2) Nationals gets the §40.5 ceremony class by class (user: classes with a podium all get it; State and up have no
+computer lifters): podiumAndAwards runs MeetCeremony for each class (entries filtered by groupOf), then the class's 14 s
+podium (announceAwards). Nationals podium players skip the end-of-meet scene; nationalsAwards calls classWalk(label)
+before each class: their scene (sceneSpot, pat, line, walk into the line) one after another, 3rd first, the platform's
+coach handed to each (LocalMeetVenue.staffFor) since a class shares a platform and one coach. TESTED IN STUDIO (solo
+Nationals, StudioNationalsAnyone + StartNationals, Pass): after the last lift the class walk ran (MeetEndCoach, Walk, Cut,
+CoachEnd with only the film look on screen), then the ceremony (Ceremony, Focus, End), then the class's AWARDS moment;
+the floating trophy stood over 1st (1.5 over the head top), no medal for 1st, the referee gone; no errors. Studio captures
+were white (render glitch), so no pictures. NOT tested: 2+ players in a class (the one-after-another walks, the line),
+several classes in turn, a Nationals non-podium player's end scene.
+Files: src/client/Meet/MeetCoachLook.luau, src/server/Meet/LocalMeetService.luau, GAME_DESIGN.md, DEVELOPMENT_STATUS.md.
+
 **TWO-PLAYER STATE TEST FIXES (2026-11-27, user's live test of 1136 with a friend) [BUILT, TESTED IN STUDIO (solo meets,
 logs + pictures); COMMITTED de45595, PUBLISHED version 1147 (2026-11-27, user: "Commit and publish")].** The user's
 report and what was done:

@@ -7463,6 +7463,12 @@ pay and the Worlds spot; 3) the new arena from the user's photos, in Blender, th
 >   strongest. It never adds to totals, bests or records.
 > - **Awards:** class by class, lightest first, each class's top 3 on the podium for 14 s; the callers announce each
 >   National Champion. Then everyone is sent back to the game 45 s later.
+>   **CHANGED 2026-11-27 (user: the podium ceremony at Nationals; "Classes with a player, state and nationals above don't
+>   get computer lifters"; the coach walk "When their class is called"):** each class with a podium gets the full §40.5
+>   ceremony (the line, the referee, medals for 2nd and 3rd, the floating trophy over 1st, handshakes, the step up), then
+>   its 14 s on the podium. As a class comes up, its podium players have their end-of-meet scene then and there (the
+>   coach's pat and line, the walk together into the line), one after another, 3rd first: a class shares one platform and
+>   its one coach. Lifters off the podium have their scene at the meet's end, as before.
 >
 > **[DECIDED BY THE USER, 2026-11-18] Platforms, points, screens and two cinematics** (after the user's first two-player
 > lift-off test: "if there is two people in the same weight class ... they are split into two different platforms"):
