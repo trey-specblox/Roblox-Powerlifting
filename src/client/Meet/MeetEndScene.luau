@@ -276,7 +276,12 @@ function MeetEndScene.render(camera: Camera)
 			if root and root:IsA("BasePart") and coachRoot and coachRoot:IsA("BasePart") then
 				-- (Studio 2026-11-25: 8.5 studs out and eased slowly, it trailed as they walked at it and cropped them at the
 				-- waist: further out, higher, and it keeps up)
-				local mid = (root.Position + coachRoot.Position) / 2 + Vector3.new(0, 1.8, 0)
+				-- (Studio 2026-11-27: once he let go and walked off, framing between the two slid the lifter to the edge of
+				-- the shot for a second) while he walks with you the shot is on both of you; after he lets go
+				-- (WalkWithUserId cleared), on you, eased by the same follow below.
+				local together = walk.coach:GetAttribute("WalkWithUserId") == Players.LocalPlayer.UserId
+				local mid = (if together then (root.Position + coachRoot.Position) / 2 else root.Position)
+					+ Vector3.new(0, 1.8, 0)
 				local ahead = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
 				local right = ahead:Cross(Vector3.yAxis)
 				-- (Studio 2026-11-26: straight in front, the lifter ahead of them in the line filled the shot) from in
