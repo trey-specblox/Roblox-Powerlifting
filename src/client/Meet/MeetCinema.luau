@@ -20,6 +20,7 @@
 	PERFORMANCE: one small ScreenGui made once; a DepthOfFieldEffect only while a ritual runs.
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -180,6 +181,14 @@ function MeetCinema.open()
 	-- (LocalMeetVenue.staffFor). The coach's words are the subtitle meanwhile.
 	local bubbles: { BillboardGui } = {}
 	for _, item in ipairs(playerGui:GetChildren()) do
+		if item:IsA("BillboardGui") and item.Enabled then
+			item.Enabled = false
+			table.insert(bubbles, item)
+		end
+	end
+	-- (user 2026-11-28: the State rack caller's "DONE!" bubble and CALLER tag were over the podium cutscene) the
+	-- callers' bubbles, which float for everyone nearby, are hidden on this screen too (MeetFigures tags them).
+	for _, item in ipairs(CollectionService:GetTagged("CallerBubble")) do
 		if item:IsA("BillboardGui") and item.Enabled then
 			item.Enabled = false
 			table.insert(bubbles, item)

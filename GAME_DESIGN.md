@@ -7825,6 +7825,16 @@ doesn't cover it. To settle while designing:
           never pressed against or behind you ("the coach is too close"). **At State meets too (user 2026-11-27: "State: add the walk"):** the State arena has no
           platforms to start from, so the top 3 start on open floor where they stand after the last lift, take a few steps
           together, then the same cut into the line by the podium. Nationals still has its own ceremony (not changed).
+        - **CHANGED 2026-11-28 (user, after a two-player State test where both winners shared one coach who jumped
+          between them):** "every person should have their OWN coach ... coaches are client base and should be only
+          visible to the lifters screen", and "Change the cutscene to where it starts at the second screen shot, and
+          have the coach actually walk the lifter out, and NOT cut and teleport where they are walking parallel to the
+          podium". Every player in the scene gets a coach of their own that only they see (their chosen coach), and he
+          says his line in his voice. On the podium the scene OPENS with the two of them already walking, his arm round
+          your back, and he walks you the whole way to your place in the line, round barricades, banners and anything
+          else in the way, with no cut. The computer lifters in the top 3 walk into the line from where they are.
+          Coaches never walk through banners or other furniture in any meet walk (user: "make sure coaches dont just
+          phase through the banners").
         - **The line (2026-11-26, user):** "The 1st, second, 3rd winner should be in line, in front the ref, facing
           the ref, then the lifters one by one get their medal and handshake": the top 3 wait in a line beside the
           podium facing the referee, nobody appears from nowhere. Claude's choices: 3rd at the front (called first,
@@ -7844,6 +7854,14 @@ doesn't cover it. To settle while designing:
           floats over their head, slowly turning, with sparkles and a glow. Everyone else in the top 3 still gets the
           medal over the neck and the handshake, and their place floats over their head on the block: #1, #2 or #3 in
           gold, silver or bronze. Nationals' class podiums (no referee yet) float the same: the trophy over 1st, #2 and #3.
+        - **CHANGED 2026-11-28 (user: "for national meets give 1st place winners a medal animation like the second
+          and third. They just get a trophy as a bonus. Also have it where the trophy, appears to float and go towards
+          the lifters inventory button. Indicating the trophy is in their inventory. Make sure it lines up with mobile
+          as well"):** 1st gets the medal over the neck and the handshake like 2nd and 3rd. Up on the block the trophy
+          floats over their head for a moment, then on their screen it flies into their INVENTORY button (it pulses as
+          it lands; during the ceremony, when the HUD is hidden, a copy of the button shows in the same place), and on
+          everyone else's screen it rises and fades; then #1 floats over them like #2 and #3. Claude applied it to State
+          winners too (they also win a trophy, and the user's screenshot was a State podium): to confirm.
         - **What is KEPT (changes §42):** only the WINNER keeps one in the inventory: the Local or Regional winner a
           medal, the State or Nationals winner a trophy, and it counts up "LOCAL / REGIONAL / STATE / NATIONAL MEETS
           WON". 2nd and 3rd are medalled in the ceremony but keep nothing. Medals and trophies players already own
@@ -8469,6 +8487,7 @@ Decisions (picked from Claude's options, same day):
 | The INVENTORY screen | **Replaces the GEAR menu.** Categories on the left (ALL, GEAR, FOOD, TROPHIES, MISC), the items in a grid in the middle (rarity-coloured frames), the equip slots on the right (belt, singlet, wrist wraps, knee sleeves), the chosen item's description at the bottom. Layout inspired by the user's reference; never its artwork |
 | Food | **Collected from the chef** when it's done ("ask for their food"), then kept in the inventory as an item (its kind, size, boost and hours), **eaten from the inventory** whenever the player wants, and tradable later. **It never spoils** (spoiling can come with the trading center if needed) |
 | Holding | Any item can be **held**: held out in the hand like a Roblox gear; **food is carried in front with BOTH hands, palms up under the plate** (changed by the user 2026-11-24 after seeing the over-the-head pose: "just change it to where two hands are foward holding the plate") |
+| Small things only at meets (user, 2026-11-28) | "Make it where players cannot equipt giant steaks or any giant foods, while in a meet area. It is too large and they can cover a player's screen. They can equipt trophies and medals, small things." In a meet venue (a Local hall, the State arena, the Nationals hall) nothing longer than 2.5 studs can be held (trophies, medals and gear are smaller; food is its real size, a big steak far more), and a big thing held on the way in is put away. |
 | Medals and trophies | **Top 3 at a Local meet: a gold / silver / bronze MEDAL. Top 3 at Regional, State or Nationals: a TROPHY** (the podium trophy model). Each kind stacks with a count. **CHANGED by the user 2026-11-25 (§40.5 "The podium ceremony"): only the WINNER keeps one: a medal for winning a Local or Regional meet, a trophy for winning State or Nationals, counting "... MEETS WON"; 2nd and 3rd keep nothing (items already owned stay). BUILT 2026-11-25 (InventoryService.meetPlaced; the win counter reads "x3 LOCAL MEETS WON"; a Regional win is now a medal, so earlier Regional trophies stay a separate stack)** |
 | The win counter | A small floating label over the medal or trophy **while it is held, seen only by players nearby** ("x12 STATE CHAMPION"); nothing floats when it is put away |
 

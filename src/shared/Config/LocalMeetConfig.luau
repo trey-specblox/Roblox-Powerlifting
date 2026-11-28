@@ -541,16 +541,10 @@ LocalMeetConfig.MeetEnd = {
 	-- the platform at their right) and this far back from it.
 	PlatformLeft = 1.8,
 	PlatformBack = 3.0,
-	--[[
-		THE WALK WHILE HE TALKS (user 2026-11-26: "The 3rd screenshot is where the cutscene should start, waiting for the
-		coach to walk up takes too long ... the coach should be walking with the lifter saying this with his arm patting
-		his back"): the scene opens on the pat (the coach already beside them), then they walk off together and he says
-		his line on the way. PlatformWalkSeconds of walking toward their platform's front, then a CUT to the floor in
-		front of the platforms, walking into their place in the line for the podium (MeetCeremony.lineSpots) for at
-		least LaneSeconds, longer for a longer line so he finishes talking on the way (his line plus LineTail).
-	]]
-	PlatformWalkSeconds = 2.0,
-	LaneSeconds = 2.5,
+	-- (2026-11-28) walking to the podium from there: first straight off the platform's front, this far onto the floor.
+	PlatformStepOff = 3.0,
+	-- (2026-11-28: the walk on the platform, the cut to the floor in front and the lane start are gone; the scene opens
+	-- walking and goes the whole way: WalkLineAt, RouteBodyRadius below.) His line plus this, before he lets go.
 	LineTail = 0.6,
 	-- When they get there he lets go and walks away (user: "he should just walk away after the lifter gets by the
 	-- podium"): this long, this far, then he is put back behind the warm-up wall when the ceremony's camera cuts in.
@@ -571,8 +565,14 @@ LocalMeetConfig.MeetEnd = {
 	LineAt = 1.35,
 	-- A line's length when its take has none written (CoachVoiceConfig seconds).
 	LineFallbackSeconds = 5.0,
-	-- The whole scene never holds the podium longer than this (the walk to the podium included).
-	MaxSeconds = 20.0,
+	-- The whole scene never holds the podium longer than this (the walk to the podium included; 2026-11-28: the walk now
+	-- goes the whole way from where they waited, so longer).
+	MaxSeconds = 30.0,
+	-- (On the podium, 2026-11-28) the scene opens already walking; he starts his line this long in.
+	WalkLineAt = 0.6,
+	-- The way to the line (server MeetRoute, Roblox pathfinding): a body's half-width plus room to spare (the pair's way
+	-- is half the coach's side step wider).
+	RouteBodyRadius = 1.6,
 	--[[
 		THE LINE FOR THE PODIUM (user 2026-11-26: "The 1st, second, 3rd winner should be in line, in front the ref,
 		facing the ref, then the lifters one bye one get their medal and handshake"): beside the podium on its bronze

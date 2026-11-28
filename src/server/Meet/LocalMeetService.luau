@@ -1446,7 +1446,15 @@ local function coachWalk(lifter: Lifter, final: CFrame, onArrive: ((coach: Model
 		return lifter.coachToken == token and stillLifting(lifter) and coach.Parent ~= nil
 	end
 	task.spawn(function()
-		ComputerLifters.walkBody(coach, points, final, current)
+		-- (user 2026-11-28: "make sure coaches dont just phase through the banners") any leg that runs into the venue's
+		-- furniture (barricades, banner stands, the chalk stand...) goes round it: MeetRoute.
+		local here = ComputerLifters.positionOf(coach).Position
+		local route = require(script.Parent:WaitForChild("MeetRoute")).reroute(
+			Vector3.new(here.X, final.Position.Y, here.Z), points, final, 1.4) -- (studs: a body's half-width and a little room)
+		if not current() then
+			return
+		end
+		ComputerLifters.walkBody(coach, route, final, current)
 		if onArrive and current() then
 			onArrive(coach)
 		end
@@ -4177,8 +4185,7 @@ local function finishMeet(current: Meet)
 				})
 			end
 		end
-		-- A class lifts on one platform, which has one coach: its podium players go one after another, 3rd first (the
-		-- front of the line), each with the coach handed over to them (his tag on their screen: their chosen coach).
+		-- Its podium players go one after another, 3rd first (the front of the line), each with their own coach.
 		table.sort(classBeats, function(a, b)
 			return a.place > b.place
 		end)
@@ -4186,7 +4193,6 @@ local function finishMeet(current: Meet)
 			if current.hall.meet ~= current or not visits[beat.player] then
 				continue
 			end
-			LocalMeetVenue.staffFor(beat.platform, beat.player)
 			local skipped = MeetEndScene.run({ beat }, remotes, function()
 				return current.hall.meet == current
 			end, function(_: Player) end, {})

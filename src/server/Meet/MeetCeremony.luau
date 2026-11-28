@@ -373,7 +373,8 @@ function MeetCeremony.run(args: Args): () -> ()
 		-- The front of the line steps up to the referee (its build's medal reach in front of him), facing him.
 		local build = buildOf(lifter)
 		local trophy = trophyWins and entry.place == 1
-		-- (user 2026-11-27: the trophy is no longer handed over, it floats over their head on the block: PodiumFloat)
+		-- (user 2026-11-27: the trophy is no longer handed over, it floats over their head on the block: PodiumFloat; the
+		-- medal is put on everyone, 1st too, 2026-11-28)
 		local spot = (CeremonyConfig.Place.Medal :: any)[build] or (CeremonyConfig.Place.Medal :: any)[FALLBACK_BUILD]
 		local awardAt = (refHome * CFrame.new(spot.x, 0, -spot.d)).Position
 		local awardSpot = CFrame.lookAt(awardAt, awardAt - refHome.LookVector)
@@ -388,10 +389,9 @@ function MeetCeremony.run(args: Args): () -> ()
 			local refAt = awardSpot * CFrame.new(spot.x, 0, -spot.d) * CFrame.Angles(0, math.pi, 0)
 			ComputerLifters.walkBody(referee, {}, refAt, going)
 			setFloor(referee, refAt)
-			if not trophy then
-				for _, part in ipairs(placeMedal(referee, lifter, entry.place, folder, going)) do
-					table.insert(made, part)
-				end
+			-- (user 2026-11-28: 1st gets the medal like 2nd and 3rd, "They just get a trophy as a bonus")
+			for _, part in ipairs(placeMedal(referee, lifter, entry.place, folder, going)) do
+				table.insert(made, part)
 			end
 			-- The handshake: half a step to its own spot first.
 			local shake = (CeremonyConfig.Place.Handshake :: any)[build] or { x = 0.35, d = 3.45 }

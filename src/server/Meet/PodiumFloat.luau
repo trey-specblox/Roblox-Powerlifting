@@ -7,7 +7,8 @@
 	you are getting a trophy, lets just have it where its a big floating trophy over the head, and have it have shiny
 	vfx. for normal meets, you can have it where it has a floating #1 #2 #3"; the medals stay):
 	  - the winner of a State or Nationals meet: a big trophy (Trophies' uploaded model, gold), slowly turning, with
-	    sparkles and a warm glow, and a burst of sparkles as it appears;
+	    sparkles and a warm glow, and a burst of sparkles as it appears; after a moment it flies into their INVENTORY
+	    button on their screen (2026-11-28) and their "#1" floats instead (they get the medal too, MeetCeremony);
 	  - everyone else in the top 3: their place, "#1" "#2" "#3", in gold, silver or bronze.
 	Shown once they stand on their block (MeetCeremony; the Nationals class podiums), until the clean-up show returns.
 	The turning and bobbing happen on each screen (client PodiumFloatSpin, CollectionService tag), so the server sends
@@ -17,7 +18,9 @@
 ]]
 
 local CollectionService = game:GetService("CollectionService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local ConfigFolder = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config")
 local MeetLevelConfig = require(ConfigFolder:WaitForChild("MeetLevelConfig"))
@@ -166,18 +169,41 @@ local function numberOver(lifter: Model, place: number, folder: Instance): BaseP
 end
 
 --[[
+	THE TROPHY GOES INTO THE INVENTORY (user 2026-11-28: "have it where the trophy, appears to float and go towards the
+	lifters inventory button. Indicating the trophy is in their inventory"): it floats over them FLY_AFTER seconds, then
+	(attribute FlyAt, server time) on the winner's screen it flies into their INVENTORY button, and on everyone else's it
+	rises and fades (client PodiumFloatSpin, ForUserId). Then their "#1" floats there like everyone else's place.
+]]
+local FLY_AFTER = 2.5
+local FLY_SECONDS = 1.1
+
+--[[
 	Floats the award over `lifter` (standing on its block, facing `toward`): the big trophy when `trophy` (1st at State
-	or Nationals), else its place's number. Returns what to destroy afterwards (nil if nothing could be shown).
+	or Nationals: it flies off to their inventory, then "#1"), else its place's number. Returns what to destroy afterwards
+	(nil if nothing could be shown).
 ]]
 function PodiumFloat.show(lifter: Model, place: number, trophy: boolean, toward: Vector3, folder: Instance): Instance?
 	if lifter.Parent == nil then
 		return nil
 	end
 	if trophy then
-		local cup = trophyOver(lifter, toward, folder)
+		local holder = Instance.new("Folder")
+		holder.Name = "PodiumAward"
+		holder.Parent = folder
+		local cup = trophyOver(lifter, toward, holder)
 		if cup then
-			return cup
+			local player = Players:GetPlayerFromCharacter(lifter)
+			cup:SetAttribute("FlyAt", Workspace:GetServerTimeNow() + FLY_AFTER)
+			cup:SetAttribute("ForUserId", if player then player.UserId else 0)
+			task.delay(FLY_AFTER + FLY_SECONDS, function()
+				if holder.Parent and lifter.Parent then
+					cup:Destroy()
+					numberOver(lifter, place, holder)
+				end
+			end)
+			return holder
 		end
+		holder:Destroy()
 	end
 	return numberOver(lifter, place, folder)
 end

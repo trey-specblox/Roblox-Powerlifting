@@ -23,6 +23,7 @@
 	seven per lifter while a meet runs and removes them after it.
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -478,6 +479,10 @@ function MeetFigures.build(parent: Instance, kind: Kind, at: Vector3, watching: 
 	billboard.MaxDistance = 80
 	billboard.Adornee = head or root
 	billboard.Parent = figure
+	if kind == "Caller" then
+		-- (user 2026-11-28: the caller's "DONE!" showed over the podium cutscene) every screen's film look hides it.
+		CollectionService:AddTag(billboard, "CallerBubble")
+	end
 	local tag = Instance.new("TextLabel")
 	tag.Name = "Name"
 	tag.AnchorPoint = Vector2.new(0.5, 1)

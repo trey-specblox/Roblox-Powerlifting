@@ -45,7 +45,7 @@ import glob
 import os
 import sys
 
-from mathutils import Euler, Matrix, Vector
+from mathutils import Euler, Matrix, Quaternion, Vector
 
 _HERE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else r"D:\Powerlifting Roblox\art\scripts"
 _spec = importlib.util.spec_from_file_location("fail_animations", os.path.join(_HERE, "fail_animations.py"))
@@ -705,9 +705,16 @@ class Hype:
                 a_left, a_right, wrist = self._palm_solve(body, left, right, a_left, a_right, w)
             if self.hands and S.RIG == "torso":
                 specs = self.hands if isinstance(self.hands, list) else [self.hands]
-                ws = {sd: max([(self._track(sp["weight"], t), sp) for sp in specs if sd in sp.get("sides", ("Left", "Right"))]
-                              or [(0.0, None)], key=lambda x: x[0]) for sd in ("Left", "Right")}
-                if ws["Left"][0] > 0 or ws["Right"][0] > 0:
+                if self.hands_mix:
+                    # (cross-faded: every spec with its weight, _mix_turn blends them)
+                    ws = {sd: [(self._track(sp["weight"], t), sp) for sp in specs
+                               if sd in sp.get("sides", ("Left", "Right"))] for sd in ("Left", "Right")}
+                    any_w = any(w > 0 for sd in ws for w, _sp in ws[sd])
+                else:
+                    ws = {sd: max([(self._track(sp["weight"], t), sp) for sp in specs if sd in sp.get("sides", ("Left", "Right"))]
+                                  or [(0.0, None)], key=lambda x: x[0]) for sd in ("Left", "Right")}
+                    any_w = ws["Left"][0] > 0 or ws["Right"][0] > 0
+                if any_w:
                     a_left, a_right, wrist = self._turn_solve(body, left, right, a_left, a_right, ws, wrist)
                     if self.elbows is not None:
                         # (exact-solve hypes) a hand turned at the wrist swings its centre off the target: the arms
@@ -739,6 +746,8 @@ class Hype:
         """The hands turned toward their spec's palm/fingers by its weight, kept on their targets (claps, a point).
         ws: {side: (weight, spec)}; a spec for both sides gives the left's directions (the right mirrors), a spec for
         one side gives that side's own true directions."""
+        if self.hands_mix:
+            return self._mix_turn(body, a_left, a_right, ws, wrist_now)
         frames = S.forward_kinematics(Matrix.Identity(4), body)
         ut = frames["UpperTorso"]
         out, wrists = {"Left": a_left, "Right": a_right}, dict(wrist_now)
@@ -765,6 +774,44 @@ class Hype:
                                         **({"keep": self.keep, "first_step": 4} if self.keep else {}))
             out[side], wrists[side] = a, tfs[side + "Wrist"].to_quaternion()
         return out["Left"], out["Right"], wrists
+
+    # (2026-11-28, per hype, opt-in: False leaves every other move exactly as it was) hands_mix: the hand turns
+    # CROSS-FADE instead of the strongest one winning, so one turn hands over to the next without the wrist untwisting
+    # to its natural turn and twisting back (Hype_OverheadClap: the clap's palms-in turn handed to the fling's palms-up
+    # one while the arms swing down the sides). Wrist-only specs only. A spec may also be {"supinate": degrees}: the
+    # hand turned round the forearm's own length from the arm's natural turn, palm toward the elbow crease's side (as a
+    # forearm rolls palm-up; R15 has no forearm roll, so the wrist does it), the fingers kept straight down the forearm.
+    hands_mix = False
+
+    def _mix_turn(self, body, a_left, a_right, ws, wrist_now):
+        frames = S.forward_kinematics(Matrix.Identity(4), body)
+        ut = frames["UpperTorso"]
+        wrists = dict(wrist_now)
+        I = Matrix.Identity(3).to_quaternion()
+        for side, start in (("Left", a_left), ("Right", a_right)):
+            q, cum = None, 0.0
+            for w, spec in ws[side]:
+                if w <= 0:
+                    continue
+                if "supinate" in spec:
+                    ang = math.radians(spec["supinate"]) * (1 if side == "Left" else -1)
+                    local = Quaternion(Vector((0.0, 1.0, 0.0)), ang)
+                else:
+                    assert spec.get("wrist_only"), "hands_mix: wrist-only hand turns only"
+                    palm, fingers = Vector(spec["palm"]), Vector(spec["fingers"])
+                    if side == "Right" and len(spec.get("sides", ("Left", "Right"))) == 2:
+                        palm, fingers = mirror(palm), mirror(fingers)
+                    fingers = fingers - palm.normalized() * fingers.dot(palm.normalized())
+                    sh, el = S._arm_tf(side, start)
+                    c0s, c1s = S.JOINTS[side + "Shoulder"][2], S.JOINTS[side + "Shoulder"][3]
+                    c0e, c1e = S.JOINTS[side + "Elbow"][2], S.JOINTS[side + "Elbow"][3]
+                    lower = ut @ S.T(c0s) @ sh @ S.T(c1s).inverted() @ S.T(c0e) @ el @ S.T(c1e).inverted()
+                    local = (lower.to_3x3().transposed() @ S.hand_frame(side, palm, fingers)).to_quaternion()
+                cum += w
+                q = local if q is None else q.slerp(local, w / cum)
+            if q is not None:
+                wrists[side] = I.slerp(q, min(1.0, cum))
+        return a_left, a_right, wrists
 
     def _palm_weight(self, t):
         if not self.palms:
@@ -1109,6 +1156,21 @@ if S.RIG == "torso":
     OVERHEAD_CLAP.elbows, OVERHEAD_CLAP.arcs = OC_ELBOWS, True
     OVERHEAD_CLAP.hands = dict(CLAP_HANDS, weight=[(0.0, 0.0), (0.6, 0.0), (0.85, 1.0), (1.1, 1.0), (1.35, 0.0),
                                                    (3.0, 0.0)])
+    # (2026-11-28, the user's live test of ARM UP: "the arms are going the opposite direction ... twisting the entire
+    # arm. Hands should be pointing the other direction"; the reference: arms spread wide to the sides a little above
+    # the shoulders, elbows nearly straight with the creases forward/up, palms OPEN up and forward to the crowd, fingers
+    # outward.) The fling had no hand turn: as the arms swung down from the clap the wrists untwisted the clap's palms-in
+    # turn, so the hands spun to palms-forward-and-down, thumbs up, the backs of the hands to the crowd behind, and the
+    # arms reached 27 degrees forward with the elbows bent 23. Now the arms go out to the SIDES nearly straight (elbows
+    # under: creases up), and the clap's turn cross-fades straight into a palms-up roll of the hands (hands_mix: no
+    # untwist and re-twist on the way), which rolls back to palms-in as the arms come down to the hips.
+    OC_FLING = SHOULDER_NOW + Vector((-0.95, 0.3, -0.02)).normalized() * 0.983 * (HANG_HAND - SHOULDER_NOW).length
+    OVERHEAD_CLAP.left_keys = [(k, OC_FLING if v is FLING else v) for k, v in OVERHEAD_CLAP.left_keys]
+    FLING_PALMS_UP = {"supinate": 75.0}
+    OVERHEAD_CLAP.hands_mix = True
+    OVERHEAD_CLAP.hands = [OVERHEAD_CLAP.hands,
+                           dict(FLING_PALMS_UP, weight=[(0.0, 0.0), (1.1, 0.0), (1.35, 1.0), (2.1, 1.0), (2.6, 0.0),
+                                                        (3.0, 0.0)])]
 WINGS_V = Hype(3.2,
                [(0.0, STAND), (0.5, dict(STAND, neck=4.0)), (1.25, dict(STAND, neck=6.0)), (1.6, dip(0.35, 26.0)),
                 (2.5, dip(0.4, 28.0)), (2.9, STAND), (3.2, STAND)],
@@ -1125,6 +1187,12 @@ if S.RIG == "torso":
     # and more forward, still a V with the head back
     WV_UP = held_out(-1.72, 2.33, -0.38)
     WINGS_V.left_keys = [(k, WV_UP if v is V_UP else v) for k, v in WINGS_V.left_keys]
+    # (2026-11-28, checked with Hype_OverheadClap's twist fix) the wings stay palms DOWN (wings); in the V the hands
+    # had turned palms out and down (thumbs forward, the backs of the hands to the head): they roll palms FORWARD to
+    # the crowd as the arms go up into the V, and back to palms-in on the way down
+    WINGS_V.hands_mix = True
+    WINGS_V.hands = [dict(FLING_PALMS_UP, supinate=80.0,
+                          weight=[(0.0, 0.0), (1.25, 0.0), (1.6, 1.0), (2.5, 1.0), (2.95, 0.0), (3.2, 0.0)])]
 TRAP_SLAP = Hype(3.0,
                  [(0.0, STAND), (0.35, dict(STAND, neck=-6.0)), (1.0, dict(STAND, neck=-8.0)), (1.4, dip(0.6, -10.0)),
                   (1.7, dict(STAND, neck=6.0)), (2.4, dict(STAND, neck=10.0)), (3.0, STAND)],
@@ -1183,7 +1251,7 @@ if S.RIG == "torso":
 
     def _cr_hands(cross):
         return [(0.0, HANG_HAND), (0.25, THIGH), (0.36, LOOSE), (0.47, THIGH), (0.8, CR_OUT), (1.15, cross),
-                (1.45, HIGH_WIDE), (1.68, OC_APART), (1.78, OC_CLAP), (1.9, OC_CLAP), (2.2, FLING), (2.6, FLING),
+                (1.45, HIGH_WIDE), (1.68, OC_APART), (1.78, OC_CLAP), (1.9, OC_CLAP), (2.2, OC_FLING), (2.6, OC_FLING),
                 (3.1, HANG_HAND), (3.4, HANG_HAND)]
     CHALK_RITUAL = Hype(3.4, _cr_body, _cr_hands(CR_CROSS),
                         right=[(k, mirror(v)) for k, v in _cr_hands(CR_CROSS_R)])
@@ -1193,6 +1261,12 @@ if S.RIG == "torso":
     CHALK_RITUAL.arcs = True
     CHALK_RITUAL.hands = dict(CLAP_HANDS, weight=[(0.0, 0.0), (1.5, 0.0), (1.72, 1.0), (1.95, 1.0), (2.15, 0.0),
                                                   (3.4, 0.0)])
+    # (2026-11-28, the same fault as Hype_OverheadClap's fling, fixed the same way) flung out to the SIDES nearly
+    # straight (OC_FLING), the clap's turn cross-fading into palms up to the crowd, rolling back to palms-in going down
+    CHALK_RITUAL.hands_mix = True
+    CHALK_RITUAL.hands = [CHALK_RITUAL.hands,
+                          dict(FLING_PALMS_UP, weight=[(0.0, 0.0), (1.95, 0.0), (2.15, 1.0), (2.6, 1.0), (3.1, 0.0),
+                                                       (3.4, 0.0)])]
 if S.RIG == "torso":
     # (torso rig, 2026-11-13, the user's flagged move) each big arm swing goes round the shoulder on the arm's arc: the
     # explosion from swung back to up-and-out and the lowering snapped (~1,800 degrees a second) along straight lines
@@ -1229,6 +1303,9 @@ if S.RIG == "torso":
     # to the sides as the arms sweep up past them (the free solve bent them backward on the way up)
     WAR_CROUCH.elbows = [(0.0, EL_HANG), (1.4, EL_HANG), (1.7, EL_OUT), (2.8, EL_OUT), (3.25, EL_HANG), (3.6, EL_HANG)]
     WAR_CROUCH.arcs = True
+    # (2026-11-28, checked with Hype_OverheadClap's twist fix: NOT the same fault) up roaring with the arms up and out,
+    # the hands face the crowd (palms forward, thumbs toward the head, elbow creases up: the arms simply raised from
+    # palms-forward), and they stay turned the same way into and out of it; left as it was
 
 if S.RIG == "torso":
     # (2026-11-16, rule §5.0.17) hands and forearms kept outside the worn outfit on every build (Hype.outfit)

@@ -13,6 +13,58 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
+**TWO-PLAYER STATE TEST 2: OWN COACH, ONE WALK TO THE PODIUM, VOICES, SMALL THINGS AT MEETS, MEDAL FOR 1ST, TROPHY TO
+THE INVENTORY, COACHES ROUND THE FURNITURE (2026-11-28, user's live test of 1151 with a friend) [BUILT, TESTED IN STUDIO
+(solo: 2 State wins, 2 Local podiums); NOT committed, NOT published; ARM UP fix UPLOADED 2026-11-28 (user: "Yes, upload")].**
+STUDIO RESULTS: State win: one walk from the open floor to the line (no cut), the coach 3.92 studs beside the lifter on
+their screen the whole way, the P1 line sent with coachId, he let go after it and walked off; ceremony: 1st got the medal
+(WornMedal pieces), the trophy floated 2.5 s, flew from (359,75) to the INVENTORY tab, "#1" appeared at FlyAt + 1.1 s.
+With the film look on (HUD hidden) the button copy sat exactly on the real tab (same AbsolutePosition 0,229.7 and size
+70.5x20.7), pulsed, faded. Local podium (after adding PlatformStepOff: the first try walked straight across the row of
+empty platforms): off the platform's front (2.5 s), along the front floor to the line, coach 3.92 beside, P5 voice take
+played at the line's moment (SoundService.CoachVoice). MeetRoute: across every State barricade NoPath, both sides
+reachable. No script errors in 4 meets. NOT tested: two real players (each seeing only their own coach, two walks at
+once into the line), Nationals classes, a phone (the button copy uses the HUD's own layout, so it should line up).
+(1) Both State winners shared the platform's one coach, who jumped between them (the "cut" the user saw), and the P line's
+voice went to the other player's bubble: server MeetEndScene now builds a coach for each player in the scene
+(privateCoach: tagged PrivateFigure + OnlyForUserId, built out of sight then moved in; his CoachTag into their PlayerGui so
+MeetCoachLook dresses him as their chosen coach); client MeetEndScene hides every other player's one (LocalTransparency).
+The platforms' coaches are put out of sight for the scene. The client also says the line in the coach's voice itself
+(CoachVoice.sayText with the coachId sent with MeetEndCoachLine).
+(2) No cut: on the podium the scene opens already walking (WalkPat arm), and the pair walk the whole way to their line
+slot along a pathfinding route for the two side by side (MeetRoute.route on the middle between them, radius half the
+coach's side step + RouteBodyRadius), the line at WalkLineAt 0.6 s; he lets go after his line ends and walks away
+(rerouted round furniture). Computer lifters walk into the line from where they are (routed). MaxSeconds 30.
+PlatformWalkSeconds/LaneSeconds and the MeetEndCut kind are gone.
+(3) NEW server Meet/MeetRoute: markDecor puts the venues' floor furniture (DECOR_NAMES: Barricade_Frame, banner stands,
+curtains, chalk stands, plate trees, judges' table, chairs...) in collision group WalkAround (collides with nothing,
+CanCollide true) so pathfinding walks round it while players still pass through (Studio: a PathfindingModifier on a
+non-solid part is ignored; this works; across a State barricade: NoPath, both sides reachable); route() lifts the ends
+2.5 studs (a point right on the floor gives NoPath) and snaps waypoints to the floor; reroute() replaces only legs that
+run into something. LocalMeetService.coachWalk reroutes every coach walk during meets.
+(4) The State caller's "DONE!" bubble showed over the cutscene: MeetFigures tags caller billboards CallerBubble and
+MeetCinema hides them with the other bubbles.
+(5) HoldService: nothing longer than 2.5 studs can be held in a meet venue (VenueAttribute or InNationalsHall), and a big
+thing held on the way in is put away (HeldSize attribute).
+(6) MeetCeremony: 1st gets the medal too (State and Nationals; user said Nationals, the screenshot was State: to confirm).
+PodiumFloat: the trophy floats 2.5 s, then (FlyAt/ForUserId) client PodiumFloatSpin flies it on the winner's screen into
+the INVENTORY button (PlayerGui.Gear.Tab; during the film look a copy of the tab in a ScreenGui with the HUD's insets, so
+it sits on the real one on any screen), the button pulses; others see it rise and fade; then "#1" floats.
+(7) The ARM UP hype move's flung-out arms twisted (the clap's palms-together wrist turn was dropped while the arms swung
+out, so the hands rolled back to palms forward/down, and the arms reached forward, elbows bent): a subagent fixed
+art/scripts/entrance_animations.py (Hype.hands_mix cross-fades hand turns; {"supinate": deg} rolls palms up; OC_FLING out
+to the sides, palms up and forward, fingers out), the same fault in Hype_ChalkRitual (SUPER HEAVY) and the V of
+Hype_WingsV (AIRPLANE). anim_qa PASS on Skinny/Fat/Muscular before and after. Exports in D:/ClaudeScratch/armup/after/ (copy only those three into art/animations: a full re-export adds float noise to the others); pictures
+D:/ClaudeScratch/armup/qa_*, focus_*. UPLOADED (user: "Yes, upload"): OverheadClap 133467207011703, ChalkRitual
+82860928141865, WingsV 123213175310289, in EntranceConfig (ArmUp, SuperHeavy, Airplane hypeAnimationId); the three exports
+copied into art/animations. Studio: all load (3.00 / 3.40 / 3.20 s); ARM UP at 1.75 s the right hand is out to the side
+(2.57 out, 1.30 up, 0.12 back of the root), not reaching forward. Found, not changed: Hype_CrowdLift's palms face forward/down at the high lift (comment says up);
+Hype_NeckRoll's committed export no longer matches the script.
+Files: src/server/Meet/MeetEndScene.luau, MeetRoute.luau (new), LocalMeetService.luau, MeetCeremony.luau, PodiumFloat.luau,
+MeetFigures.luau, src/server/PlayerData/HoldService.luau, src/client/Meet/MeetEndScene.luau, PodiumFloatSpin.luau,
+MeetCinema.luau, src/shared/Config/LocalMeetConfig.luau, EntranceConfig.luau, art/scripts/entrance_animations.py,
+art/animations/Entrance_Hype_OverheadClap/ChalkRitual/WingsV.rbxmx, GAME_DESIGN.md, DEVELOPMENT_STATUS.md.
+
 **PODIUM WALK CAMERA: NO DRIFT WHEN THE COACH LETS GO (2026-11-27, user: "Fix the camera drift") [BUILT, TESTED IN STUDIO;
 COMMITTED 991ffa5, PUBLISHED version 1151].** Client MeetEndScene's walk shot framed the middle of the lifter and the coach the whole
 time, so as he let go and walked off the lifter slid to the frame's edge. Now it frames both while WalkWithUserId is this

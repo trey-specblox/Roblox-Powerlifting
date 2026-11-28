@@ -11,21 +11,23 @@
 	meet_end_animations.py).
 	  Off the podium (or at a State meet) the scene stays where they are, in the warm-up room; once he has said it he
 	lets go and walks away.
-	  On the podium at a Local meet hall they walk off together while he talks, his arm round their back (user: "the
-	coach should be walking with the lifter saying this with his arm patting his back"): a few steps toward their
-	platform's front, then a CUT to the floor in front of the platforms walking into their place in the line for the
-	podium (MeetCeremony.lineSpots), and there he lets go and walks away (user: "he should just walk away after the
-	lifter gets by the podium"). The computer lifters in the top 3 walk into the line at the same moment, so nobody
-	ever walks through anybody: the nearer the referee their place, the nearer it they start.
-	On the player's screen the client MeetEndScene runs the camera, the subtitle and SKIP (LocalMeetRemotes.SCENE kinds
-	"MeetEndCoach" / "MeetEndCoachLine" / "MeetEndWalk" / "MeetEndCut" / "MeetEndCoachEnd"). SKIP ends their camera; a
-	player off the podium is also let go at once (`onSkipFree`); a podium lifter's body still walks to the line.
+	  On the podium (user 2026-11-28, after a two-player State test: no cut, no teleport) the scene opens with them
+	already walking together, his arm round their back, and he walks them all the way to their place in the line for
+	the podium (MeetCeremony.lineSpots), round anything solid on the way (pathfinding), saying his line as they go; there
+	he lets go and walks away (user: "he should just walk away after the lifter gets by the podium"). The computer
+	lifters in the top 3 walk into the line from where they are at the same time.
+	On the player's screen the client MeetEndScene runs the camera, the subtitle, his voice and SKIP
+	(LocalMeetRemotes.SCENE kinds "MeetEndCoach" / "MeetEndCoachLine" / "MeetEndWalk" / "MeetEndCoachEnd"). SKIP ends
+	their camera; a player off the podium is also let go at once (`onSkipFree`); a podium lifter's body still walks to
+	the line.
 
-	The platform's coach figure is the one moved (LocalMeetVenue.coachFigure); on the lifter's own screen MeetCoachLook
-	shows their chosen coach's body copying it. When every scene is over the coaches are put back behind the warm-up
-	wall (out of the ceremony's shot). Kept out of LocalMeetService (its main chunk is at Luau's 200-local limit).
+	EVERY PLAYER HAS THEIR OWN COACH (user 2026-11-28: "every person should have their OWN coach ... only visible to the
+	lifters screen"): a coach figure built for the scene for each player (privateCoach), seen only on their screen, where
+	MeetCoachLook shows their chosen coach's body copying it. The platforms' shared coaches are put out of sight for the
+	scene. Kept out of LocalMeetService (its main chunk is at Luau's 200-local limit).
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -40,6 +42,7 @@ local ComputerLifters = require(script.Parent:WaitForChild("ComputerLifters"))
 local LocalMeetVenue = require(script.Parent:WaitForChild("LocalMeetVenue"))
 local MeetFigures = require(script.Parent:WaitForChild("MeetFigures"))
 local MeetChalk = require(script.Parent:WaitForChild("MeetChalk"))
+local MeetRoute = require(script.Parent:WaitForChild("MeetRoute"))
 
 local ServerRoot = script.Parent.Parent
 local PlayerDataService = require(ServerRoot:WaitForChild("PlayerData"):WaitForChild("PlayerDataService"))
@@ -270,7 +273,9 @@ local function walkAway(coach: Model, lifterAt: CFrame, alive: () -> boolean)
 	end
 	local to = floorAt(start + bestDir * studs)
 	local began = os.clock()
-	ComputerLifters.walkBody(coach, {}, CFrame.lookAt(to, to + bestDir), function()
+	local final = CFrame.lookAt(to, to + bestDir)
+	-- (round the barricades, banners and the rest of the furniture: MeetRoute)
+	ComputerLifters.walkBody(coach, MeetRoute.reroute(start, {}, final, SETTINGS.RouteBodyRadius), final, function()
 		return alive() and os.clock() - began < SETTINGS.LeaveSeconds
 	end, { animationId = LocalMeetConfig.ComputerLifters.WalkAnimationId, speed = SETTINGS.WalkSpeed,
 		styleStuds = math.huge })
@@ -282,10 +287,105 @@ local function waitUntil(clock: number, alive: () -> boolean)
 	end
 end
 
-local function runBeat(beat: Beat, remotes: any, stillOn: () -> boolean, began: number, laneStart: CFrame?,
-	onDone: (Model?) -> ())
-	local coach = LocalMeetVenue.coachFigure(beat.platform)
+--[[
+	THE COACH IS YOURS ALONE (user 2026-11-28, after a two-player State test where one platform coach walked both
+	winners in turn and jumped between them: "every person should have their OWN coach ... only visible to the lifters
+	screen"): each player in the scene gets a coach figure of their own, built for the scene and removed after it. It is
+	tagged PrivateFigure with their UserId, so every other screen hides it (client MeetEndScene), and his name tag and
+	speech bubble go into their PlayerGui, so MeetCoachLook dresses him as their chosen coach and CoachVoice says his
+	lines. He is built out of sight and only then moved beside them, so no other screen ever sees him for a frame.
+]]
+MeetEndScene.PrivateTag = "PrivateFigure"
+MeetEndScene.PrivateUserAttribute = "OnlyForUserId"
+local COACHES_FOLDER = "MeetEndCoaches"
+
+local function privateCoach(player: Player, at: CFrame): (Model?, TextLabel?)
+	local folder = Workspace:FindFirstChild(COACHES_FOLDER)
+	if folder == nil then
+		folder = Instance.new("Folder")
+		folder.Name = COACHES_FOLDER
+		folder.Parent = Workspace
+	end
+	local hidden = at.Position - Vector3.new(0, 200, 0)
+	local line, figure = MeetFigures.build(folder :: Instance, "Coach", hidden, hidden + at.LookVector * 4)
+	if figure == nil then
+		return nil, nil
+	end
+	figure:SetAttribute(MeetEndScene.PrivateUserAttribute, player.UserId)
+	CollectionService:AddTag(figure, MeetEndScene.PrivateTag)
+	local gui = player:FindFirstChildOfClass("PlayerGui")
+	for _, billboard in ipairs(figure:GetDescendants()) do
+		if billboard:IsA("BillboardGui") then
+			if gui then
+				billboard.ResetOnSpawn = false
+				billboard.Parent = gui
+			else
+				billboard:Destroy()
+			end
+		end
+	end
+	ComputerLifters.moveBody(figure, at)
+	return figure, line
+end
+
+-- Removes a scene coach and his tag and bubble on the lifter's screen.
+local function removeCoach(coach: Model)
+	for _, player in ipairs(Players:GetPlayers()) do
+		local gui = player:FindFirstChildOfClass("PlayerGui")
+		for _, billboard in ipairs(if gui then gui:GetChildren() else {}) do
+			local adornee = if billboard:IsA("BillboardGui") then billboard.Adornee else nil
+			if adornee and adornee:IsDescendantOf(coach) then
+				billboard:Destroy()
+			end
+		end
+	end
+	coach:Destroy()
+end
+
+--[[
+	THE WAY TO THE LINE, IN ONE WALK (user 2026-11-28: "have the coach actually walk the lifter out, and NOT cut and
+	teleport"; and coaches must never walk through banners): MeetRoute finds a way round the furniture and anything
+	solid for the two of them side by side: the way of the middle between them, wide enough for both, then the lifter
+	on its left and the coach on its right.
+]]
+local function flat(v: Vector3): Vector3
+	local f = Vector3.new(v.X, 0, v.Z)
+	return if f.Magnitude > 1e-3 then f.Unit else Vector3.zero
+end
+
+-- The lifter's and the coach's corners for walking side by side from `fromAt` to `toAt` (the coach `side` studs to the
+-- lifter's right).
+local function pairRoute(fromAt: CFrame, toAt: CFrame, side: number): ({ Vector3 }, { Vector3 })
+	local half = side / 2
+	local middle = MeetRoute.route(fromAt.Position + fromAt.RightVector * half, toAt.Position + toAt.RightVector * half,
+		half + SETTINGS.RouteBodyRadius)
+	local lifter: { Vector3 }, coach: { Vector3 } = {}, {}
+	for index = 2, #middle - 1 do
+		local along = flat(flat(middle[index] - middle[index - 1]) + flat(middle[index + 1] - middle[index]))
+		if along.Magnitude > 0 then
+			local right = along:Cross(Vector3.yAxis)
+			table.insert(lifter, middle[index] - right * half)
+			table.insert(coach, middle[index] + right * half)
+		end
+	end
+	return lifter, coach
+end
+
+local function runBeat(beat: Beat, remotes: any, stillOn: () -> boolean, began: number, onDone: (Model?) -> ())
 	local state = active[beat.player]
+	-- The chosen coach's own versions of the pat and the walk, and where they have him stand for this lifter's build.
+	local coaching = PlayerDataService.getCoaching(beat.player)
+	local coachId = if coaching and coaching.active then coaching.active else "Owner"
+	local okBuild, build = pcall(LifterBodyService.buildFor, beat.player)
+	local buildKey = if okBuild then build else ""
+	local version = SETTINGS.PatVersions[coachId] or SETTINGS.PatVersions.Owner
+	local spot = version.place[buildKey] or version.place[SETTINGS.PatFallbackBuild]
+	local walkVersion = SETTINGS.WalkPatVersions[coachId] or SETTINGS.WalkPatVersions.Owner
+	local walkSpot = walkVersion.place[buildKey] or walkVersion.place[SETTINGS.PatFallbackBuild]
+		or { side = spot.side, back = 0 }
+	local stage = beat.stage
+	local coachAt = if stage then offsetFrom(beat.lifterAt, walkSpot) else offsetFrom(beat.lifterAt, spot)
+	local coach, bubble = if state then privateCoach(beat.player, coachAt) else nil, nil
 	local function going(): boolean
 		return stillOn() and coach ~= nil and coach.Parent ~= nil and beat.player.Parent ~= nil
 	end
@@ -293,48 +393,38 @@ local function runBeat(beat: Beat, remotes: any, stillOn: () -> boolean, began: 
 		onDone(nil)
 		return
 	end
-	-- The chosen coach's own version of the pat, and where it has him stand for this lifter's build.
-	local coaching = PlayerDataService.getCoaching(beat.player)
-	local coachId = if coaching and coaching.active then coaching.active else "Owner"
-	local version = SETTINGS.PatVersions[coachId] or SETTINGS.PatVersions.Owner
-	local okBuild, build = pcall(LifterBodyService.buildFor, beat.player)
-	local spot = version.place[if okBuild then build else ""] or version.place[SETTINGS.PatFallbackBuild]
 	local line = MeetEndScene.lineText(beat.lineKey)
 	local seconds = lineSeconds(coachId, beat.lineKey)
-	-- Already beside them as the scene opens.
 	MeetFigures.showClipboard(coach, false)
-	LocalMeetVenue.coachSays(beat.platform, nil)
-	local coachAt = offsetFrom(beat.lifterAt, spot)
-	ComputerLifters.moveBody(coach, coachAt)
 	remotes.scene:FireClient(beat.player, { kind = "MeetEndCoach", lifterAt = beat.lifterAt, coachAt = coachAt,
 		startedAt = Workspace:GetServerTimeNow(), seconds = SETTINGS.MaxSeconds })
-	-- The two pats, then his line (his free hand talking: the clip).
-	local track = if version.animationId ~= "" then MeetChalk.play(coach, version.animationId) else nil
-	if track then
-		track.Looped = false
+	-- His words: the bubble (on their screen only, hidden under the film look) and the subtitle; the client also says
+	-- the line in his voice (user 2026-11-28: "the coaches have 0 voicelines for the podium cutscene").
+	local function say(words: string?)
+		MeetFigures.say(bubble, words)
+		if words then
+			remotes.scene:FireClient(beat.player, { kind = "MeetEndCoachLine", line = words, coachId = coachId })
+		end
 	end
-	waitUntil(began + SETTINGS.LineAt, going)
-	if going() then
-		LocalMeetVenue.coachSays(beat.platform, line)
-		remotes.scene:FireClient(beat.player, { kind = "MeetEndCoachLine", line = line })
-	end
-	local stage = beat.stage
-	if stage == nil or laneStart == nil then
-		-- Off the podium: he says it where they stand, then goes.
-		waitUntil(began + SETTINGS.LineAt + math.max(SETTINGS.PatSeconds, seconds + SETTINGS.LineTail), going)
+	if stage == nil then
+		-- Off the podium: the two pats, then his line where they stand (his free hand talking: the clip), then he goes.
+		local track = if version.animationId ~= "" then MeetChalk.play(coach, version.animationId) else nil
+		if track then
+			track.Looped = false
+		end
+		waitUntil(began + SETTINGS.LineAt, going)
 		if going() then
-			LocalMeetVenue.coachSays(beat.platform, nil)
-			MeetChalk.stop(track)
-			track = nil
+			say(line)
+		end
+		waitUntil(began + SETTINGS.LineAt + math.max(SETTINGS.PatSeconds, seconds + SETTINGS.LineTail), going)
+		MeetChalk.stop(track)
+		if going() then
+			say(nil)
 			walkAway(coach, beat.lifterAt, going)
 		end
-	elseif going() then
-		-- On the podium: off together while he talks, his arm round their back.
-		local walkVersion = SETTINGS.WalkPatVersions[coachId] or SETTINGS.WalkPatVersions.Owner
-		local walkSpot = walkVersion.place[if okBuild then build else ""] or walkVersion.place[SETTINGS.PatFallbackBuild]
-			or { side = spot.side, back = 0 }
-		MeetChalk.stop(track)
-		track = nil
+	else
+		-- On the podium (user 2026-11-28: start already walking together): his arm round their back from the first
+		-- frame, walking the whole way to their place in the line while he talks, round anything in the way.
 		local armTrack = if walkVersion.animationId ~= "" then MeetChalk.play(coach, walkVersion.animationId) else nil
 		local options = { animationId = LocalMeetConfig.ComputerLifters.WalkAnimationId, speed = SETTINGS.WalkSpeed,
 			styleStuds = math.huge }
@@ -343,57 +433,62 @@ local function runBeat(beat: Beat, remotes: any, stillOn: () -> boolean, began: 
 		coach:SetAttribute("WalkSide", walkSpot.side)
 		coach:SetAttribute("WalkBack", walkSpot.back)
 		remotes.scene:FireClient(beat.player, { kind = "MeetEndWalk", coach = coach, seconds = SETTINGS.MaxSeconds })
+		-- (on their own platform at a Local meet hall, Studio 2026-11-28: the way to the line ran straight across the
+		-- row of empty platforms) first off its front onto the floor, then the way to the line.
+		local startAt = beat.lifterAt
+		local lead: { Vector3 } = {}
+		local coachLead: { Vector3 } = {}
+		local top, front = beat.platform.platformTop, beat.platform.frontFloor
+		if top and front then
+			local out = flat(front - top.Position)
+			local fromMiddle = beat.lifterAt.Position - top.Position
+			local sideways = fromMiddle - out * fromMiddle:Dot(out)
+			local edge = (front - top.Position):Dot(out)
+			if out.Magnitude > 0 and Vector3.new(sideways.X, 0, sideways.Z).Magnitude < SETTINGS.PlatformLeft + 2
+				and math.abs(fromMiddle:Dot(out)) < edge then
+				local off = Vector3.new(top.Position.X, front.Y, top.Position.Z) + Vector3.new(sideways.X, 0, sideways.Z)
+					+ out * (edge + SETTINGS.PlatformStepOff)
+				startAt = CFrame.lookAt(off, off + out)
+				lead = { off }
+				coachLead = { off + startAt.RightVector * walkSpot.side }
+			end
+		end
+		local lifterPoints, coachPoints = pairRoute(startAt, stage.slot, walkSpot.side)
+		table.move(lifterPoints, 1, #lifterPoints, #lead + 1, lead)
+		table.move(coachPoints, 1, #coachPoints, #coachLead + 1, coachLead)
+		lifterPoints, coachPoints = lead, coachLead
+		local done = 0
 		local character = beat.player.Character
-		local function walkPair(lifterTo: CFrame)
-			local done = 0
-			task.spawn(function()
-				if character then
-					ComputerLifters.walkBody(character, {}, lifterTo, going, options)
-				end
-				done += 1
-			end)
-			task.spawn(function()
-				ComputerLifters.walkBody(coach, {}, offsetFrom(lifterTo, walkSpot), going, options)
-				done += 1
-			end)
-			return function(): boolean
-				return done >= 2
+		task.spawn(function()
+			if character then
+				ComputerLifters.walkBody(character, lifterPoints, stage.slot, going, options)
 			end
-		end
-		-- A few steps toward their platform's front (at a State meet: the way the scene faces), stopping short of
-		-- anything solid on the way...
-		local walkStuds = SETTINGS.PlatformWalkSeconds * SETTINGS.WalkSpeed
-		local ahead = blockedAt(beat.lifterAt.Position + Vector3.new(0, 3, 0), beat.lifterAt.LookVector * (walkStuds + 3))
-		if ahead then
-			walkStuds = math.max(0, ahead - 3)
-		end
-		local platformEnd = beat.lifterAt * CFrame.new(0, 0, -walkStuds)
-		walkPair(platformEnd)
-		local cutAt = began + SETTINGS.LineAt + SETTINGS.PlatformWalkSeconds
-		waitUntil(cutAt, going)
-		-- ...CUT to the floor in front of the platforms, walking into their place in the line (all at once: run).
+			done += 1
+		end)
+		task.spawn(function()
+			ComputerLifters.walkBody(coach, coachPoints, offsetFrom(stage.slot, walkSpot), going, options)
+			done += 1
+		end)
+		local lineAt = began + SETTINGS.WalkLineAt
+		waitUntil(lineAt, going)
 		if going() then
-			if beat.onArrived then
-				beat.onArrived(laneStart)
-			end
-			ComputerLifters.moveBody(coach, offsetFrom(laneStart, walkSpot))
-			remotes.scene:FireClient(beat.player, { kind = "MeetEndCut" })
-			local arrived = walkPair(stage.slot)
-			while going() and not arrived() and os.clock() - began < SETTINGS.MaxSeconds do
-				task.wait(POLL_SECONDS)
-			end
-			if beat.onArrived and beat.player.Parent then
-				beat.onArrived(stage.slot)
-			end
+			say(line)
+		end
+		-- (there before he has finished? he finishes it, then lets go)
+		local talkEnds = lineAt + seconds + SETTINGS.LineTail
+		while going() and (done < 2 or os.clock() < talkEnds) and os.clock() - began < SETTINGS.MaxSeconds do
+			task.wait(POLL_SECONDS)
+		end
+		if beat.onArrived and beat.player.Parent then
+			beat.onArrived(stage.slot)
 		end
 		MeetChalk.stop(armTrack)
 		coach:SetAttribute("WalkWithUserId", nil)
 		if coach.Parent then
-			LocalMeetVenue.coachSays(beat.platform, nil)
+			say(nil)
 			walkAway(coach, stage.slot, going)
 		end
 	end
-	MeetChalk.stop(track)
 	if beat.player.Parent then
 		remotes.scene:FireClient(beat.player, { kind = "MeetEndCoachEnd" })
 	end
@@ -401,87 +496,45 @@ local function runBeat(beat: Beat, remotes: any, stillOn: () -> boolean, began: 
 end
 
 --[[
-	Where each walker into the line starts, after the cut (user 2026-11-26): `seconds` of walking (at least LaneSeconds)
-	back along the line from their place, and never closer to the referee than SlotGap behind the walker for the place
-	in front, so everyone walks in single file at the same pace and nobody passes anybody.
-]]
-local function laneStarts(walkers: { { slot: CFrame, slotIndex: number, seconds: number } }): { CFrame }
-	local order = {}
-	for index in ipairs(walkers) do
-		table.insert(order, index)
-	end
-	table.sort(order, function(a, b)
-		return walkers[a].slotIndex < walkers[b].slotIndex
-	end)
-	local starts: { CFrame } = {}
-	local origin = walkers[order[1]] and walkers[order[1]].slot
-	local lastBack = -math.huge
-	for _, index in ipairs(order) do
-		local walker = walkers[index]
-		local behind = -walker.slot.LookVector -- (the slot faces the referee: the line runs back from him)
-		local at = if origin then (walker.slot.Position - origin.Position):Dot(behind) else 0
-		local back = math.max(at + math.max(SETTINGS.LaneSeconds, walker.seconds) * SETTINGS.WalkSpeed,
-			lastBack + LocalMeetConfig.MeetEnd.Line.SlotGap)
-		lastBack = back
-		local start = walker.slot.Position + behind * (back - at)
-		starts[index] = CFrame.lookAt(start, start + walker.slot.LookVector)
-	end
-	return starts
-end
-
---[[
-	Runs every beat at once (each player's own coach at their own platform), walks `walkers` (the computer lifters in
-	the top 3) into the line with them, and returns when all are over, or after MaxSeconds at most, with the coaches
-	put back behind the warm-up wall. `stillOn` says the meet is still on; `onSkipFree(player)` lets a player off the
-	podium go when they press SKIP. Returns the players who skipped.
+	Runs every beat at once (each player with their own coach), walks `walkers` (the computer lifters in the top 3)
+	from where they are into the line with them, and returns when all are over, or after MaxSeconds at most, with the
+	scene coaches removed and the platforms' coaches put out of sight. `stillOn` says the meet is still on;
+	`onSkipFree(player)` lets a player off the podium go when they press SKIP. Returns the players who skipped.
 ]]
 function MeetEndScene.run(beats: { Beat }, remotes: any, stillOn: () -> boolean, onSkipFree: (Player) -> (),
 	walkers: { Walker }?): { [Player]: boolean }
 	listen(remotes)
 	local began = os.clock()
 	local left = #beats
+	local platforms: { LocalMeetVenue.Platform } = {}
 	for _, beat in ipairs(beats) do
 		active[beat.player] = { skipped = false, onSkipFree = onSkipFree, podium = beat.podium }
+		table.insert(platforms, beat.platform)
 	end
-	-- Everyone walking into the line, and where each starts after the cut.
-	local lane: { { slot: CFrame, slotIndex: number, seconds: number } } = {}
-	local laneOf: { [any]: number } = {}
+	-- (the platforms' own coaches stay out of the scene: each player has their own here)
+	MeetEndScene.hideCoaches(platforms)
+	local coaches: { Model } = {}
 	for _, beat in ipairs(beats) do
-		local stage = beat.stage
-		if stage then
-			local coaching = PlayerDataService.getCoaching(beat.player)
-			local coachId = if coaching and coaching.active then coaching.active else "Owner"
-			-- (he finishes talking on the way: what's left of his line after the steps on the platform)
-			local talk = lineSeconds(coachId, beat.lineKey) + SETTINGS.LineTail - SETTINGS.PlatformWalkSeconds
-			table.insert(lane, { slot = stage.slot, slotIndex = stage.slotIndex, seconds = talk })
-			laneOf[beat] = #lane
-		end
-	end
-	for _, walker in ipairs(walkers or {}) do
-		table.insert(lane, { slot = walker.slot, slotIndex = walker.slotIndex, seconds = SETTINGS.LaneSeconds })
-		laneOf[walker] = #lane
-	end
-	local starts = if #lane > 0 then laneStarts(lane) else {}
-	local coaches: { [Model]: LocalMeetVenue.Platform } = {}
-	for _, beat in ipairs(beats) do
-		local index = laneOf[beat]
-		task.spawn(runBeat, beat, remotes, stillOn, began, if index then starts[index] else nil, function(coach: Model?)
+		task.spawn(runBeat, beat, remotes, stillOn, began, function(coach: Model?)
 			if coach then
-				coaches[coach] = beat.platform
+				table.insert(coaches, coach)
 			end
 			left -= 1
 		end)
 	end
-	-- The computer lifters set off at the cut, with the players.
+	-- The computer lifters walk into the line with the players, from where they are, round anything in the way.
 	for _, walker in ipairs(walkers or {}) do
-		local start = starts[laneOf[walker]]
 		task.spawn(function()
-			while stillOn() and os.clock() < began + SETTINGS.LineAt + SETTINGS.PlatformWalkSeconds do
-				task.wait(POLL_SECONDS)
+			local from = ComputerLifters.positionOf(walker.body) * CFrame.new(0, -3, 0)
+			local start = floorAt(from.Position)
+			local route = MeetRoute.route(start, walker.slot.Position, SETTINGS.RouteBodyRadius)
+			local points = {}
+			for index = 2, #route - 1 do
+				table.insert(points, route[index])
 			end
-			if stillOn() and walker.body.Parent and start then
-				ComputerLifters.moveBody(walker.body, start)
-				ComputerLifters.walkBody(walker.body, {}, walker.slot, stillOn, {
+			waitUntil(began + SETTINGS.WalkLineAt, stillOn)
+			if stillOn() and walker.body.Parent then
+				ComputerLifters.walkBody(walker.body, points, walker.slot, stillOn, {
 					animationId = LocalMeetConfig.ComputerLifters.WalkAnimationId, speed = SETTINGS.WalkSpeed,
 					styleStuds = math.huge })
 			end
@@ -490,10 +543,8 @@ function MeetEndScene.run(beats: { Beat }, remotes: any, stillOn: () -> boolean,
 	while left > 0 and stillOn() and os.clock() - began < SETTINGS.MaxSeconds do
 		task.wait(POLL_SECONDS)
 	end
-	for coach in pairs(coaches) do
-		if coach.Parent then
-			MeetFigures.showClipboard(coach, true)
-		end
+	for _, coach in ipairs(coaches) do
+		removeCoach(coach)
 	end
 	local skipped: { [Player]: boolean } = {}
 	for _, beat in ipairs(beats) do

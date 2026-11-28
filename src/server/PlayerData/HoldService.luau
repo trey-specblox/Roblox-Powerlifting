@@ -14,7 +14,7 @@
 	every nearby player's screen draws while it is held (client HeldCounters).
 
 	Put away automatically during a lift (LiftAttemptService.isAttemptActive), when the item is gone (eaten, scrapped),
-	and on respawn. SECURITY: the key comes from the client; the server checks the player owns it in their save.
+	on respawn, and in a meet venue when it is big (MEET_HELD_MAX: a giant steak covered other players' screens). SECURITY: the key comes from the client; the server checks the player owns it in their save.
 ]]
 
 local Players = game:GetService("Players")
@@ -25,6 +25,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ShopConfig = require(Shared:WaitForChild("Config"):WaitForChild("ShopConfig"))
 local MeetLevelConfig = require(Shared:WaitForChild("Config"):WaitForChild("MeetLevelConfig"))
 local KitchenConfig = require(Shared:WaitForChild("Config"):WaitForChild("KitchenConfig"))
+local LocalMeetConfig = require(Shared:WaitForChild("Config"):WaitForChild("LocalMeetConfig"))
+local NationalsConfig = require(Shared:WaitForChild("Config"):WaitForChild("NationalsConfig"))
 local ShopRemotes = require(Shared:WaitForChild("Economy"):WaitForChild("ShopRemotes"))
 
 local ServerRoot = script.Parent.Parent
@@ -41,6 +43,19 @@ HoldService.CarryAnimationId = "rbxassetid://107112559176114"
 local HELD_SIZES = { Food = 1.7, Trophy = 1.6, Medal = 1.2, Gear = 1.3 }
 local CHECK_SECONDS = 0.5
 local MEDAL_COLOURWAYS = { 1, 2, 3 } -- the Medal prop's colourways: gold, silver, bronze (StarterGymConfig.PropColourways.Medal)
+
+-- SMALL THINGS ONLY AT MEETS (user 2026-11-28: "Make it where players cannot equipt giant steaks or any giant foods,
+-- while in a meet area. It is too large and they can cover a player's screen. They can equipt trophies and medals, small
+-- things"): in a meet venue (a Local hall, the State arena, the Nationals hall) nothing longer than this (studs) can be
+-- held, and a big thing held on the way in is put away. Trophies 1.6, medals 1.2, gear 1.3; food is its real size
+-- (1.7 up, a big steak far more).
+local MEET_HELD_MAX = 2.5
+local SIZE_ATTRIBUTE = "HeldSize"
+
+local function inMeetArea(player: Player): boolean
+	return player:GetAttribute(LocalMeetConfig.VenueAttribute) == true
+		or player:GetAttribute(NationalsConfig.InHallAttribute) == true
+end
 
 -- Each player's held tool and the key it was made from.
 local held: { [Player]: { tool: Tool, key: string, track: AnimationTrack? } } = {}
@@ -227,6 +242,12 @@ function HoldService.hold(player: Player, key: any): (boolean, string)
 	if model == nil or kind == nil then
 		return false, "That can't be held yet."
 	end
+	local extent = model:GetExtentsSize()
+	local longest = math.max(extent.X, extent.Y, extent.Z)
+	if longest > MEET_HELD_MAX and inMeetArea(player) then
+		model:Destroy()
+		return false, "Too big for a meet. Trophies and medals are fine."
+	end
 	HoldService.putAway(player)
 	-- The Tool: an invisible handle in the grip, the model welded to it, held in front of the hand.
 	local tool = Instance.new("Tool")
@@ -236,6 +257,7 @@ function HoldService.hold(player: Player, key: any): (boolean, string)
 	tool.ManualActivationOnly = true
 	tool:SetAttribute("HeldKey", key)
 	tool:SetAttribute("HeldKind", kind)
+	tool:SetAttribute(SIZE_ATTRIBUTE, longest)
 	local handle = Instance.new("Part")
 	handle.Name = "Handle"
 	handle.Size = Vector3.new(0.2, 0.2, 0.2)
@@ -338,7 +360,8 @@ function HoldService.start()
 		since = 0
 		local lifting = lazyRequire("Lifting", "LiftAttemptService")
 		for player, current in pairs(held) do
-			if current.tool.Parent == nil or lifting.isAttemptActive(player) or not owns(player, current.key) then
+			local tooBig = (tonumber(current.tool:GetAttribute(SIZE_ATTRIBUTE)) or 0) > MEET_HELD_MAX and inMeetArea(player)
+			if current.tool.Parent == nil or lifting.isAttemptActive(player) or not owns(player, current.key) or tooBig then
 				HoldService.putAway(player)
 			elseif current.tool:GetAttribute("WinCount") ~= nil then
 				-- A won medal or trophy keeps its count up to date (another win while holding it).

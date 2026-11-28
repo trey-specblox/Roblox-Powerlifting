@@ -10,12 +10,13 @@
 	and SKIP. SKIP ends it here and tells the server ("MeetEndSkip": off the podium you are let go at once).
 
 	Display only: it moves nothing but the camera (and, walking, your coach beside you). Remote: LocalMeetRemotes.SCENE
-	kinds "MeetEndCoach" (start: where you stand, where he stands), "MeetEndCoachLine" (his words), "MeetEndWalk"
-	(on the podium: you walk off together while he talks, a tracking shot), "MeetEndCut" (cut to the floor in front of
-	the platforms, walking into the line for the podium), "MeetEndCoachEnd"; then for everyone in the hall "Ceremony",
+	kinds "MeetEndCoach" (start: where you stand, where he stands), "MeetEndCoachLine" (his words, said in his voice),
+	"MeetEndWalk" (on the podium: you walk together all the way to the line for the podium while he talks, one tracking
+	shot, no cut), "MeetEndCoachEnd"; then for everyone in the hall "Ceremony",
 	"CeremonyFocus", "CeremonyEnd" (MeetCeremony).
 ]]
 
+local CollectionService = game:GetService("CollectionService")
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -38,6 +39,7 @@ type Scene = { started: number, eye0: Vector3, eye1: Vector3, look: Vector3, sec
 	ceremony: Ceremony?, skip: (() -> ())?, line: string? }
 local PIN_NAME = "MeetEndScenePin"
 local MeetCoachLook = require(script.Parent:WaitForChild("MeetCoachLook"))
+local CoachVoice = require(script.Parent:WaitForChild("CoachVoice"))
 
 local MeetEndScene = {}
 
@@ -391,6 +393,11 @@ function MeetEndScene.start()
 		elseif data.kind == "MeetEndCoachLine" and scene and typeof(data.line) == "string" then
 			(scene :: Scene).line = data.line
 			MeetCinema.subtitle(data.line)
+			-- (user 2026-11-28: "the coaches have 0 voicelines for the podium cutscene") said in your coach's voice here,
+			-- not only through his bubble (CoachVoice skips it if the bubble already said it).
+			if typeof(data.coachId) == "string" then
+				CoachVoice.sayText(data.coachId, data.line)
+			end
 		elseif data.kind == "MeetEndWalk" and scene and typeof(data.coach) == "Instance" and data.coach:IsA("Model") then
 			-- (his line goes on while they walk: the subtitle stays)
 			local current = scene :: Scene
@@ -419,6 +426,26 @@ function MeetEndScene.start()
 			stop(false)
 		end
 	end)
+	-- EVERY PLAYER'S OWN COACH (user 2026-11-28: "only visible to the lifters screen"): a scene coach built for another
+	-- player (server MeetEndScene, tag PrivateFigure) is hidden on this screen, whatever is added to him later.
+	local function hideIfNotMine(item: Instance)
+		if not item:IsA("Model") or item:GetAttribute("OnlyForUserId") == Players.LocalPlayer.UserId then
+			return
+		end
+		local function apply(d: Instance)
+			if d:IsA("BasePart") or d:IsA("Decal") then
+				d.LocalTransparencyModifier = 1
+			end
+		end
+		for _, d in ipairs(item:GetDescendants()) do
+			apply(d)
+		end
+		item.DescendantAdded:Connect(apply)
+	end
+	for _, item in ipairs(CollectionService:GetTagged("PrivateFigure")) do
+		hideIfNotMine(item)
+	end
+	CollectionService:GetInstanceAddedSignal("PrivateFigure"):Connect(hideIfNotMine)
 	-- Leaving the meet mid-scene (or dying) never leaves the camera stuck.
 	Players.LocalPlayer.CharacterAdded:Connect(function()
 		stop(false)
