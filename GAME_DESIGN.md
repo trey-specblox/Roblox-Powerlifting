@@ -7861,11 +7861,15 @@ doesn't cover it. To settle while designing:
           floats over their head for a moment, then on their screen it flies into their INVENTORY button (it pulses as
           it lands; during the ceremony, when the HUD is hidden, a copy of the button shows in the same place), and on
           everyone else's screen it rises and fades; then #1 floats over them like #2 and #3. Claude applied it to State
-          winners too (they also win a trophy, and the user's screenshot was a State podium): to confirm.
+          winners too (they also win a trophy, and the user's screenshot was a State podium); CONFIRMED by the user the same
+          day: "yes 1st place state should have a medal keeping count of how many times they won state".
         - **What is KEPT (changes §42):** only the WINNER keeps one in the inventory: the Local or Regional winner a
           medal, the State or Nationals winner a trophy, and it counts up "LOCAL / REGIONAL / STATE / NATIONAL MEETS
           WON". 2nd and 3rd are medalled in the ceremony but keep nothing. Medals and trophies players already own
           stay (nothing is taken away).
+        - **CHANGED 2026-11-28 (user: "1st place state should have a medal keeping count of how many times they won
+          state"):** the State winner now keeps the gold medal too, counting "STATE MEETS WON", as well as the trophy
+          (the bonus). Claude did the same for the Nationals winner (the user called the trophy "a bonus" there too).
         - **Skip:** ends your scene and frees you: your camera comes back and, if you're not on the podium, you can
           leave at once; podium lifters skip only the camera and stay until the ceremony ends.
         - The worn medal is a new Blender model: the medal disc with CENTRAL plus a ribbon loop round the back of the

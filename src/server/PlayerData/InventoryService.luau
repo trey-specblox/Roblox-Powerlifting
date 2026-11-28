@@ -41,9 +41,9 @@ function InventoryService.changed(player: Player)
 end
 
 --[[
-	MEDALS AND TROPHIES (GAME_DESIGN §42, user 2026-11-24): a real meet finished in the top 3 of the whole field (computer
-	lifters counted, as the coins count it; at Nationals in the class) wins a MEDAL at a Local meet and a TROPHY at
-	Regional, State and Nationals, kept in the inventory with a count. LocalMeetService calls this after the meet's save;
+	MEDALS AND TROPHIES (GAME_DESIGN §42, user 2026-11-24): a real meet won (computer lifters counted, as the coins count
+	it; at Nationals in the class) keeps a MEDAL at a Local or Regional meet, and a MEDAL and a TROPHY at State and
+	Nationals (2026-11-28), in the inventory, each with a count. LocalMeetService calls this after the meet's save;
 	`lines` (the result screen's lines) gets one line. `place` nil or past 3 = nothing.
 ]]
 function InventoryService.meetPlaced(player: Player, level: string, place: number?, lines: { string })
@@ -53,20 +53,30 @@ function InventoryService.meetPlaced(player: Player, level: string, place: numbe
 	if place ~= 1 or typeof(level) ~= "string" then
 		return
 	end
-	local kind = if level == "Local" or level == "Regional" then "Medal" else "Trophy"
-	local id = PlayerDataService.addAward(player, kind, level, place)
-	local view = id and PlayerDataService.getInventory(player)
-	local item = view and view.items[id :: string]
-	if item == nil then
-		warn(string.format("[InventoryService] %s's %s %s was not saved", player.Name, level, kind))
+	-- (user 2026-11-28: "1st place state should have a medal keeping count of how many times they won state"; the
+	-- trophy is the bonus) the State and Nationals winner keeps the gold medal, counting those wins, AND the trophy.
+	local kinds = if level == "Local" or level == "Regional" then { "Medal" } else { "Medal", "Trophy" }
+	local saved: { { kind: string, qty: number } } = {}
+	for _, kind in ipairs(kinds) do
+		local id = PlayerDataService.addAward(player, kind, level, place)
+		local view = id and PlayerDataService.getInventory(player)
+		local item = view and view.items[id :: string]
+		if item == nil then
+			warn(string.format("[InventoryService] %s's %s %s was not saved", player.Name, level, kind))
+		else
+			table.insert(saved, { kind = kind, qty = item.qty })
+			print(string.format("[InventoryService] %s won a %s %s (x%d)", player.Name, level, kind, item.qty))
+		end
+	end
+	if #saved == 0 then
 		return
 	end
-	local label = HoldService.awardLabel(kind, level, place)
-	local thing = if kind == "Medal" then "medal" else "trophy"
-	table.insert(lines, if item.qty > 1
-		then string.format("%s MEET WON! x%d %s (your %s is in your INVENTORY)", string.upper(level), item.qty, label, thing)
-		else string.format("%s MEET WON! Your %s is in your INVENTORY.", string.upper(level), thing))
-	print(string.format("[InventoryService] %s won a %s (x%d)", player.Name, label, item.qty))
+	local label = HoldService.awardLabel("Medal", level, place) -- "STATE MEETS WON"
+	local things = if #saved > 1 then "medal and trophy are" elseif saved[1].kind == "Medal" then "medal is" else "trophy is"
+	local count = saved[1].qty
+	table.insert(lines, if count > 1
+		then string.format("%s MEET WON! x%d %s (your %s in your INVENTORY)", string.upper(level), count, label, things)
+		else string.format("%s MEET WON! Your %s in your INVENTORY.", string.upper(level), things))
 	InventoryService.changed(player)
 end
 
