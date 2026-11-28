@@ -15,7 +15,8 @@ CURRENT MILESTONE block).
 
 **TWO-PLAYER STATE TEST 2: OWN COACH, ONE WALK TO THE PODIUM, VOICES, SMALL THINGS AT MEETS, MEDAL FOR 1ST, TROPHY TO
 THE INVENTORY, COACHES ROUND THE FURNITURE (2026-11-28, user's live test of 1151 with a friend) [BUILT, TESTED IN STUDIO
-(solo: 2 State wins, 2 Local podiums); NOT committed, NOT published; ARM UP fix UPLOADED 2026-11-28 (user: "Yes, upload")].**
+(solo: 2 State wins, 2 Local podiums); ARM UP fix UPLOADED 2026-11-28 (user: "Yes, upload"); COMMITTED fbf6ac1,
+PUBLISHED version 1156 (user: "Commit and publish")].**
 STUDIO RESULTS: State win: one walk from the open floor to the line (no cut), the coach 3.92 studs beside the lifter on
 their screen the whole way, the P1 line sent with coachId, he let go after it and walked off; ceremony: 1st got the medal
 (WornMedal pieces), the trophy floated 2.5 s, flew from (359,75) to the INVENTORY tab, "#1" appeared at FlyAt + 1.1 s.
