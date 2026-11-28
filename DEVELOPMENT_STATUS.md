@@ -13,8 +13,8 @@ CURRENT MILESTONE block).
 
 ## 0. NEXT ACTION (start here)
 
-**GYM OWNER'S CHALKING + NATIONALS PODIUM CEREMONY (2026-11-27, user: "Yes, fix it, then start nationals") [NOT committed,
-NOT published].**
+**GYM OWNER'S CHALKING + NATIONALS PODIUM CEREMONY (2026-11-27, user: "Yes, fix it, then start nationals") [COMMITTED
+b4cb34d, PUBLISHED version 1150 (2026-11-27, user: "Commit push publish both")].**
 (1) The free gym-owner coach (no copy on screen) still chalked with his hands by a small lifter's head: MeetCoachLook
 capOwnHands tips his own shoulders (AnimationConstraint or Motor6D Transform, PreSimulation, this screen only) so his
 hands stay 0.6 under the lifter's Head bottom. TESTED IN STUDIO (State, GYM OWNER tag): hands 0.37-0.76 under the head's
