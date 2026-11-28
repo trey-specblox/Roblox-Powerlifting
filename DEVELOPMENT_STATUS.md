@@ -14,8 +14,8 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **STATE WINNERS KEEP A COUNTING MEDAL TOO (2026-11-28, user: "yes 1st place state should have a medal keeping count of
-how many times they won state") [BUILT, TESTED IN STUDIO (a solo State win saved "Medal State place 1 x1" and "Trophy State place 1 x1"); NOT committed,
-NOT published].** InventoryService.meetPlaced:
+how many times they won state") [BUILT, TESTED IN STUDIO (a solo State win saved "Medal State place 1 x1" and "Trophy State place 1 x1"); COMMITTED be3d0a8,
+PUBLISHED version 1157 (user: "Commit push publish it")].** InventoryService.meetPlaced:
 the State and Nationals winner keeps a gold medal (counts "STATE / NATIONAL MEETS WON") AND the trophy; Local/Regional
 unchanged (a medal). The result line says "Your medal and trophy are in your INVENTORY". Files:
 src/server/PlayerData/InventoryService.luau, GAME_DESIGN.md, DEVELOPMENT_STATUS.md.
