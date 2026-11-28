@@ -14,7 +14,7 @@ CURRENT MILESTONE block).
 ## 0. NEXT ACTION (start here)
 
 **PODIUM WALK CAMERA: NO DRIFT WHEN THE COACH LETS GO (2026-11-27, user: "Fix the camera drift") [BUILT, TESTED IN STUDIO;
-NOT committed, NOT published].** Client MeetEndScene's walk shot framed the middle of the lifter and the coach the whole
+COMMITTED 991ffa5, PUBLISHED version 1151].** Client MeetEndScene's walk shot framed the middle of the lifter and the coach the whole
 time, so as he let go and walked off the lifter slid to the frame's edge. Now it frames both while WalkWithUserId is this
 player and the lifter alone after (eased). Studio (Regional meet, 9/9 win): the lifter sat at 0.56 of the width walking
 together and 0.50 from the moment he let go to the scene's end. Files: src/client/Meet/MeetEndScene.luau,
